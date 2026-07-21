@@ -21,19 +21,19 @@ interface AutoChangeRule {
 }
 
 const TIME_UNITS = [
-  { value: "Minutes", label: "دقيقة" },
-  { value: "Hours", label: "ساعة" },
-  { value: "Days", label: "يوم" },
+  { value: "Minutes" },
+  { value: "Hours" },
+  { value: "Days" },
 ];
 
 const DEFAULT_STATUSES = [
-  { code: "PENDING", name: "قيد الانتظار", color: "#F59E0B" },
-  { code: "CONFIRMED", name: "مؤكد", color: "#3B82F6" },
-  { code: "PROCESSING", name: "قيد التجهيز", color: "#8B5CF6" },
-  { code: "SHIPPED", name: "تم الشحن", color: "#06B6D4" },
-  { code: "DELIVERED", name: "تم التسليم", color: "#10B981" },
-  { code: "CANCELLED", name: "ملغي", color: "#EF4444" },
-  { code: "ON_HOLD", name: "معلق", color: "#F97316" },
+  { code: "PENDING", color: "#F59E0B" },
+  { code: "CONFIRMED", color: "#3B82F6" },
+  { code: "PROCESSING", color: "#8B5CF6" },
+  { code: "SHIPPED", color: "#06B6D4" },
+  { code: "DELIVERED", color: "#10B981" },
+  { code: "CANCELLED", color: "#EF4444" },
+  { code: "ON_HOLD", color: "#F97316" },
 ];
 
 export default function OrderStatusAutomationPage() {
@@ -72,7 +72,7 @@ export default function OrderStatusAutomationPage() {
       setRules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch rules", err);
-      toast.error("حدث خطأ أثناء تحميل القواعد");
+      toast.error(t("orders.automationLoadError"));
     } finally {
       setLoading(false);
     }
@@ -85,11 +85,11 @@ export default function OrderStatusAutomationPage() {
 
   const handleCreate = async () => {
     if (!form.fromStatus || !form.toStatus || !form.waitTime) {
-      toast.error("يرجى تعبئة جميع الحقول");
+      toast.error(t("orders.automationFillAllFields"));
       return;
     }
     if (form.fromStatus === form.toStatus) {
-      toast.error("الحالة القديمة يجب أن تكون مختلفة عن الجديدة");
+      toast.error(t("orders.automationSameStatus"));
       return;
     }
 
@@ -106,7 +106,7 @@ export default function OrderStatusAutomationPage() {
       if (newRule && newRule.id) {
         setRules((prev) => [newRule, ...prev]);
         setForm({ fromStatus: "", toStatus: "", waitTime: "30", timeUnit: "Minutes" });
-        toast.success("تم إنشاء القاعدة بنجاح");
+        toast.success(t("orders.automationCreateSuccess"));
       } else {
         const payloadStr = JSON.stringify(res.data, null, 2);
         console.error("Invalid response from server. res.data:", payloadStr);
@@ -114,7 +114,7 @@ export default function OrderStatusAutomationPage() {
       }
     } catch (err: any) {
       console.error("Failed to create rule", err);
-      toast.error(err?.response?.data?.message || err?.message || "حدث خطأ أثناء إنشاء القاعدة");
+      toast.error(err?.response?.data?.message || err?.message || t("orders.automationCreateError"));
     } finally {
       setSaving(false);
     }
@@ -125,17 +125,19 @@ export default function OrderStatusAutomationPage() {
     try {
       await apiClient.delete(`/order-status-rules/${id}`);
       setRules((prev) => prev.filter((r) => r.id !== id));
-      toast.success("تم حذف القاعدة بنجاح");
+      toast.success(t("orders.automationDeleteSuccess"));
     } catch (err) {
       console.error("Failed to delete rule", err);
-      toast.error("حدث خطأ أثناء حذف القاعدة");
+      toast.error(t("orders.automationDeleteError"));
     } finally {
       setDeletingId(null);
     }
   };
 
   const getStatusName = (code: string) => {
-    return statuses.find((s) => s.code === code)?.name || code;
+    const statusKey = `orders.${code.toLowerCase()}`;
+    const translated = t(statusKey);
+    return translated !== statusKey ? translated : (statuses.find((s) => s.code === code)?.name || code);
   };
 
   const getStatusColor = (code: string) => {
@@ -143,16 +145,12 @@ export default function OrderStatusAutomationPage() {
   };
 
   const formatWaitTime = (waitTime: number, timeUnit: string) => {
-    const unitMap: Record<string, string> = {
-      Minutes: "دقيقة",
-      Hours: "ساعة",
-      Days: "يوم",
-    };
-    return `${waitTime || 0} ${unitMap[timeUnit] || timeUnit}`;
+    const unitKey = `orders.timeUnit${timeUnit}`;
+    return `${waitTime || 0} ${t(unitKey)}`;
   };
 
   useEffect(() => {
-    document.title = `أتمتة الحالات | ${t("common.maxp")}`;
+    document.title = `${t("orders.automationTitle")} | ${t("common.maxp")}`;
   }, [t]);
 
   return (
@@ -171,9 +169,9 @@ export default function OrderStatusAutomationPage() {
             <BoltIcon className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">أتمتة الحالات</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("orders.automationTitle")}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              غيّر حالة الطلبات تلقائياً بعد مرور وقت محدد (Cron Job يعمل في الخلفية)
+              {t("orders.automationSubtitle")}
             </p>
           </div>
         </div>
@@ -183,24 +181,24 @@ export default function OrderStatusAutomationPage() {
         {/* Add New Rule Form */}
         <div className="lg:col-span-1">
           <div className="rounded-[22px] border border-slate-200/70 bg-white/70 p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/50 backdrop-blur-xl sticky top-24">
-            <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-white">إضافة قاعدة جديدة</h3>
+            <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-white">{t("orders.automationAddRule")}</h3>
 
             <div className="space-y-4">
               {/* From Status */}
               <div>
-                <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">من حالة</label>
+                <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">{t("orders.automationFromStatus")}</label>
                 <select
                   value={form.fromStatus}
                   onChange={(e) => setForm((p) => ({ ...p, fromStatus: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-white/5 dark:text-white transition"
                   dir="rtl"
                 >
-                  <option value="" className="dark:bg-slate-900">اختر الحالة</option>
+                  <option value="" className="dark:bg-slate-900">{t("orders.automationSelectStatus")}</option>
                   {statuses
                     .filter((s) => s.code !== "TRASH")
                     .map((s) => (
                       <option key={s.code} value={s.code} className="dark:bg-slate-900">
-                        {s.name}
+                        {getStatusName(s.code)}
                       </option>
                     ))}
                 </select>
@@ -208,19 +206,19 @@ export default function OrderStatusAutomationPage() {
 
               {/* To Status */}
               <div>
-                <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">إلى حالة</label>
+                <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">{t("orders.automationToStatus")}</label>
                 <select
                   value={form.toStatus}
                   onChange={(e) => setForm((p) => ({ ...p, toStatus: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-white/5 dark:text-white transition"
                   dir="rtl"
                 >
-                  <option value="" className="dark:bg-slate-900">اختر الحالة</option>
+                  <option value="" className="dark:bg-slate-900">{t("orders.automationSelectStatus")}</option>
                   {statuses
                     .filter((s) => s.code !== "TRASH" && s.code !== form.fromStatus)
                     .map((s) => (
                       <option key={s.code} value={s.code} className="dark:bg-slate-900">
-                        {s.name}
+                        {getStatusName(s.code)}
                       </option>
                     ))}
                 </select>
@@ -229,7 +227,7 @@ export default function OrderStatusAutomationPage() {
               <div className="grid grid-cols-2 gap-3">
                 {/* Wait Time */}
                 <div>
-                  <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">المدة الزمنية</label>
+                  <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">{t("orders.automationWaitTime")}</label>
                   <input
                     type="number"
                     min="1"
@@ -243,7 +241,7 @@ export default function OrderStatusAutomationPage() {
 
                 {/* Time Unit */}
                 <div>
-                  <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">وحدة الوقت</label>
+                  <label className="mb-2 block text-xs font-semibold text-slate-600 dark:text-slate-400">{t("orders.automationTimeUnit")}</label>
                   <select
                     value={form.timeUnit}
                     onChange={(e) => setForm((p) => ({ ...p, timeUnit: e.target.value }))}
@@ -252,7 +250,7 @@ export default function OrderStatusAutomationPage() {
                   >
                     {TIME_UNITS.map((u) => (
                       <option key={u.value} value={u.value} className="dark:bg-slate-900">
-                        {u.label}
+                        {t(`orders.timeUnit${u.value}`)}
                       </option>
                     ))}
                   </select>
@@ -267,15 +265,15 @@ export default function OrderStatusAutomationPage() {
                 >
                   <ClockIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500 dark:text-indigo-400" />
                   <span className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                    بعد مرور{" "}
+                    {t("orders.automationAfter")}{" "}
                     <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                      {form.waitTime} {TIME_UNITS.find((u) => u.value === form.timeUnit)?.label}
+                      {form.waitTime} {t(`orders.timeUnit${form.timeUnit}`)}
                     </span>{" "}
-                    على بقاء الطلب في حالة{" "}
+                    {t("orders.automationOrderStaysIn")}{" "}
                     <span className="font-bold whitespace-nowrap" style={{ color: getStatusColor(form.fromStatus) }}>
                       {getStatusName(form.fromStatus)}
                     </span>
-                    ، سيتم تغييره تلقائياً إلى حالة{" "}
+                    {t("orders.automationWillChangeTo")}{" "}
                     <span className="font-bold whitespace-nowrap" style={{ color: getStatusColor(form.toStatus) }}>
                       {getStatusName(form.toStatus)}
                     </span>
@@ -297,7 +295,7 @@ export default function OrderStatusAutomationPage() {
                 ) : (
                   <PlusIcon className="h-5 w-5" />
                 )}
-                إنشاء القاعدة
+                {t("orders.automationCreateRule")}
               </button>
             </div>
           </div>
@@ -307,7 +305,7 @@ export default function OrderStatusAutomationPage() {
         <div className="lg:col-span-2">
           <div className="rounded-[22px] border border-slate-200/70 bg-white/70 p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/50 min-h-[400px]">
             <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-white flex items-center gap-3">
-              القواعد الفعّالة
+              {t("orders.automationActiveRules")}
               {rules.length > 0 && (
                 <span className="flex h-6 items-center justify-center rounded-full bg-indigo-500/10 px-2.5 text-xs text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
                   {rules.length}
@@ -318,16 +316,16 @@ export default function OrderStatusAutomationPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <span className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-                <p>جاري تحميل القواعد...</p>
+                <p>{t("orders.automationLoadingRules")}</p>
               </div>
             ) : rules.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-20 text-center dark:border-white/10">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900/50">
                   <BoltIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />
                 </div>
-                <p className="text-base font-semibold text-slate-800 dark:text-slate-300">لا توجد قواعد مفعّلة حالياً</p>
+                <p className="text-base font-semibold text-slate-800 dark:text-slate-300">{t("orders.automationNoRules")}</p>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                  قم بإضافة قواعد لتغيير حالات الطلبات آلياً لتقليل العمل اليدوي وتسريع معالجة الطلبات.
+                  {t("orders.automationNoRulesDesc")}
                 </p>
               </div>
             ) : (
@@ -388,7 +386,7 @@ export default function OrderStatusAutomationPage() {
                       onClick={() => handleDelete(rule.id)}
                       disabled={deletingId === rule.id}
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                      title="حذف القاعدة"
+                      title={t("orders.automationDeleteRule")}
                     >
                       {deletingId === rule.id ? (
                         <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />

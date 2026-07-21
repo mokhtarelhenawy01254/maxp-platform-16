@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowPathIcon,
   BanknotesIcon,
@@ -101,11 +102,11 @@ const EMPTY_TOTALS: MerchantOperationsTotals = {
   paidAmount: 0,
 };
 
-const STATUS_LABELS: Record<MerchantOperationStatus, string> = {
-  PREPARATION: "تحت التجهيز",
-  IN_SHIPPING: "في الشحن",
-  DELIVERED: "اتسلم",
-  NOT_DELIVERED: "لم يكتمل",
+const STATUS_LABEL_KEYS: Record<MerchantOperationStatus, string> = {
+  PREPARATION: "merchant.statuses.PREPARATION",
+  IN_SHIPPING: "merchant.statuses.IN_SHIPPING",
+  DELIVERED: "merchant.statuses.DELIVERED",
+  NOT_DELIVERED: "merchant.statuses.NOT_DELIVERED",
 };
 
 const STATUS_CLASSES: Record<MerchantOperationStatus, string> = {
@@ -124,6 +125,7 @@ const MerchantOperationsSummary = ({
   formatPrice,
   formatDate,
 }: MerchantOperationsSummaryProps) => {
+  const { t } = useTranslation();
   const [totals, setTotals] = useState<MerchantOperationsTotals>(EMPTY_TOTALS);
   const [rows, setRows] = useState<MerchantOperationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,7 @@ const MerchantOperationsSummary = ({
       setRows(Array.isArray(payload.rows) ? payload.rows : []);
     } catch (fetchError: unknown) {
       console.error("Failed to load merchant operations summary:", fetchError);
-      setError(getApiErrorMessage(fetchError) || "تعذر تحميل ملخص التاجر");
+      setError(getApiErrorMessage(fetchError) || t("merchant.loadError"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -165,69 +167,69 @@ const MerchantOperationsSummary = ({
   const statCards = useMemo(
     () => [
       {
-        label: "قطع في الشحن",
+        label: t("merchant.statCards.inShipping"),
         value: totals.inShippingPieces,
-        subValue: `${totals.inShippingOrdersCount} طلب`,
+        subValue: t("merchant.statSubValues.ordersCount", { count: totals.inShippingOrdersCount }),
         icon: TruckIcon,
         className: "border-sky-200 bg-sky-50 text-sky-900",
       },
       {
-        label: "قطع اتسلمت",
+        label: t("merchant.statCards.delivered"),
         value: totals.deliveredPieces,
-        subValue: `${totals.deliveredOrdersCount} طلب`,
+        subValue: t("merchant.statSubValues.ordersCount", { count: totals.deliveredOrdersCount }),
         icon: CheckCircleIcon,
         className: "border-emerald-200 bg-emerald-50 text-emerald-900",
       },
       {
-        label: "قطع مستحقة",
+        label: t("merchant.statCards.payable"),
         value: totals.payablePieces,
-        subValue: `${totals.pendingPayablePieces} قطعة معلقة`,
+        subValue: t("merchant.statSubValues.piecesCount", { count: totals.pendingPayablePieces }),
         icon: CubeIcon,
         className: "border-indigo-200 bg-indigo-50 text-indigo-900",
       },
       {
-        label: "لم تكتمل",
+        label: t("merchant.statCards.notCompleted"),
         value: totals.notDeliveredPieces,
-        subValue: `${totals.notDeliveredOrdersCount} طلب`,
+        subValue: t("merchant.statSubValues.ordersCount", { count: totals.notDeliveredOrdersCount }),
         icon: XCircleIcon,
         className: "border-rose-200 bg-rose-50 text-rose-900",
       },
     ],
-    [totals],
+    [t, totals],
   );
 
   const moneyCards = useMemo(
     () => [
       {
-        label: "المتوقع للتاجر",
+        label: t("merchant.moneyCards.expectedForMerchant"),
         value: formatPrice(totals.expectedReceivableAmount),
-        subValue: `${totals.assignedPieces} قطعة مخصصة`,
+        subValue: t("merchant.statSubValues.piecesAssigned", { count: totals.assignedPieces }),
         icon: ClockIcon,
         className: "border-slate-200 bg-white text-slate-900",
       },
       {
-        label: "مستحق بعد التسليم",
+        label: t("merchant.moneyCards.dueAfterDelivery"),
         value: formatPrice(totals.deliveredPayableAmount),
-        subValue: `${totals.payablePieces} قطعة`,
+        subValue: t("merchant.statSubValues.piecesCount", { count: totals.payablePieces }),
         icon: BanknotesIcon,
         className: "border-emerald-200 bg-white text-emerald-900",
       },
       {
-        label: "قيمة في الشحن",
+        label: t("merchant.moneyCards.inShippingValue"),
         value: formatPrice(totals.inShippingAmount),
-        subValue: `${totals.inShippingPieces} قطعة`,
+        subValue: t("merchant.statSubValues.piecesCount", { count: totals.inShippingPieces }),
         icon: TruckIcon,
         className: "border-sky-200 bg-white text-sky-900",
       },
       {
-        label: "تكلفة شحن مسجلة",
+        label: t("merchant.moneyCards.shippingCost"),
         value: formatPrice(totals.shippingCostAmount),
-        subValue: `${totals.paidAmount > 0 ? `مدفوع ${formatPrice(totals.paidAmount)}` : "لم تسجل دفعات"}`,
+        subValue: totals.paidAmount > 0 ? t("merchant.moneyCards.paid", { amount: formatPrice(totals.paidAmount) }) : t("merchant.moneyCards.noPaymentsRecorded"),
         icon: BanknotesIcon,
         className: "border-amber-200 bg-white text-amber-900",
       },
     ],
-    [formatPrice, totals],
+    [formatPrice, t, totals],
   );
 
   if (loading) {
@@ -243,10 +245,10 @@ const MerchantOperationsSummary = ({
       <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
-            شحن وتسوية التاجر
+            {t("merchant.title")}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            {totals.assignedOrdersCount} طلب مخصص • {totals.preparationPieces} قطعة تحت التجهيز
+            {t("merchant.summaryDesc", { ordersCount: totals.assignedOrdersCount, piecesCount: totals.preparationPieces })}
           </p>
         </div>
 
@@ -257,7 +259,7 @@ const MerchantOperationsSummary = ({
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          تحديث
+          {t("merchant.refresh")}
         </button>
       </div>
 
@@ -309,19 +311,19 @@ const MerchantOperationsSummary = ({
         <table className="min-w-full divide-y divide-gray-100 text-sm">
           <thead className="bg-gray-50 text-gray-500">
             <tr>
-              <th className="px-4 py-3 text-right font-medium">الطلب</th>
-              <th className="px-4 py-3 text-right font-medium">الحالة</th>
-              <th className="px-4 py-3 text-right font-medium">الشحن</th>
-              <th className="px-4 py-3 text-right font-medium">القطع</th>
-              <th className="px-4 py-3 text-right font-medium">المتوقع</th>
-              <th className="px-4 py-3 text-right font-medium">المستحق</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.order")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.status")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.shipping")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.pieces")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.expected")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("merchant.table.due")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {rows.length === 0 ? (
               <tr>
                 <td className="px-4 py-8 text-center text-gray-500" colSpan={6}>
-                  لا توجد طلبات تاجر للتسوية الآن
+                  {t("merchant.table.noOrders")}
                 </td>
               </tr>
             ) : (
@@ -337,14 +339,14 @@ const MerchantOperationsSummary = ({
                     <span
                       className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${STATUS_CLASSES[row.operationStatus]}`}
                     >
-                      {STATUS_LABELS[row.operationStatus]}
+                      {t(STATUS_LABEL_KEYS[row.operationStatus])}
                     </span>
                     <p className="mt-2 text-xs text-gray-500">
-                      طلب التاجر: {row.merchantOrderStatus || "---"}
+                      {t("merchant.table.merchantOrderStatus", { status: row.merchantOrderStatus || "---" })}
                     </p>
                   </td>
                   <td className="px-4 py-3 text-gray-700">
-                    <p>{row.shippingCompanyName || "بدون شركة شحن"}</p>
+                    <p>{row.shippingCompanyName || t("merchant.table.noShippingCompany")}</p>
                     <p className="mt-1 text-xs text-gray-500">
                       {row.trackingNumber || row.shipmentStatus || "---"}
                     </p>

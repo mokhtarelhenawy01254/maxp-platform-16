@@ -48,11 +48,12 @@ export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
 export const SHORTAGE_REASON_OPTIONS: Array<{
   value: ShortageReason;
   label: string;
+  labelKey: string;
 }> = [
-  { value: "stock_shortage", label: "نقص مخزون" },
-  { value: "waiting_transfer", label: "في انتظار تحويل" },
-  { value: "waiting_restock", label: "في انتظار توريد" },
-  { value: "other", label: "سبب آخر" },
+  { value: "stock_shortage", label: "Stock Shortage", labelKey: "preparation.shortageReasons.stock_shortage" },
+  { value: "waiting_transfer", label: "Awaiting Transfer", labelKey: "preparation.shortageReasons.waiting_transfer" },
+  { value: "waiting_restock", label: "Awaiting Restock", labelKey: "preparation.shortageReasons.waiting_restock" },
+  { value: "other", label: "Other Reason", labelKey: "preparation.shortageReasons.other" },
 ];
 
 export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
@@ -67,74 +68,113 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
 };
 
 export const FALLBACK_STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: "مؤكد",
-  PENDING_PREPARATION: "في انتظار التجهيز",
-  PREPARING: "قيد التجهيز",
-  PROCESSING: "قيد التجهيز",
-  QUALITY_CHECK: "فحص الجودة",
-  PACKAGED: "تم التغليف",
-  READY: "جاهز",
-  READY_TO_SHIP: "جاهز للشحن",
-  STOCK_SHORTAGE: "مؤجل بسبب العجز",
+  CONFIRMED: "Confirmed",
+  PENDING_PREPARATION: "Pending Preparation",
+  PREPARING: "Preparing",
+  PROCESSING: "Processing",
+  QUALITY_CHECK: "Quality Check",
+  PACKAGED: "Packaged",
+  READY: "Ready",
+  READY_TO_SHIP: "Ready to Ship",
+  STOCK_SHORTAGE: "Stock Shortage",
+};
+
+export const FALLBACK_STATUS_LABEL_KEYS: Record<string, string> = {
+  CONFIRMED: "preparation.fallbackStatusLabels.CONFIRMED",
+  PENDING_PREPARATION: "preparation.fallbackStatusLabels.PENDING_PREPARATION",
+  PREPARING: "preparation.fallbackStatusLabels.PREPARING",
+  PROCESSING: "preparation.fallbackStatusLabels.PROCESSING",
+  QUALITY_CHECK: "preparation.fallbackStatusLabels.QUALITY_CHECK",
+  PACKAGED: "preparation.fallbackStatusLabels.PACKAGED",
+  READY: "preparation.fallbackStatusLabels.READY",
+  READY_TO_SHIP: "preparation.fallbackStatusLabels.READY_TO_SHIP",
+  STOCK_SHORTAGE: "preparation.fallbackStatusLabels.STOCK_SHORTAGE",
 };
 
 export const STAGE_DEFINITIONS: Array<{
   key: StageKey;
   label: string;
+  labelKey: string;
   colorClass: string;
   description: string;
+  descriptionKey: string;
 }> = [
   {
     key: "WAITING",
-    label: "طلبات مؤكده",
+    label: "Confirmed Orders",
+    labelKey: "preparation.stages.WAITING",
     colorClass: "bg-amber-100 text-amber-800 border-amber-200",
-    description: "طلبات مؤكدة لم يبدأ تجهيزها بعد",
+    description: "Confirmed orders not yet prepared",
+    descriptionKey: "preparation.stageDescriptions.WAITING",
   },
   {
     key: "PREPARING",
-    label: "جاري التجهيز",
+    label: "Preparing",
+    labelKey: "preparation.stages.PREPARING",
     colorClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    description: "التقاط وتجهيز المنتجات من المخزن",
+    description: "Picking and preparing products from warehouse",
+    descriptionKey: "preparation.stageDescriptions.PREPARING",
   },
   {
     key: "QUALITY_CHECK",
-    label: "فحص الجودة",
+    label: "Quality Check",
+    labelKey: "preparation.stages.QUALITY_CHECK",
     colorClass: "bg-cyan-100 text-cyan-800 border-cyan-200",
-    description: "مراجعة الكمية والحالة قبل التغليف",
+    description: "Reviewing quantity and condition before packaging",
+    descriptionKey: "preparation.stageDescriptions.QUALITY_CHECK",
   },
   {
     key: "PACKAGED",
-    label: "تم التغليف",
+    label: "Packaged",
+    labelKey: "preparation.stages.PACKAGED",
     colorClass: "bg-violet-100 text-violet-800 border-violet-200",
-    description: "الطلب مغلف وينتظر التسليم للشحن",
+    description: "Order is packaged and awaiting delivery to shipping",
+    descriptionKey: "preparation.stageDescriptions.PACKAGED",
   },
   {
     key: "READY_TO_SHIP",
-    label: "جاهز للشحن",
+    label: "Ready to Ship",
+    labelKey: "preparation.stages.READY_TO_SHIP",
     colorClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    description: "جاهز لتسليم شركة الشحن أو إنشاء الشحنة",
+    description: "Ready to hand over to shipping company or create shipment",
+    descriptionKey: "preparation.stageDescriptions.READY_TO_SHIP",
   },
   {
     key: "STOCK_SHORTAGE",
-    label: "مؤجل للعجز",
+    label: "Stock Shortage",
+    labelKey: "preparation.stages.STOCK_SHORTAGE",
     colorClass: "bg-rose-100 text-rose-800 border-rose-200",
-    description: "طلبات متوقفة بسبب نقص المخزون أو انتظار تحويل",
+    description: "Orders on hold due to stock shortage or awaiting transfer",
+    descriptionKey: "preparation.stageDescriptions.STOCK_SHORTAGE",
   },
   {
     key: "PENDING_CANCELLATION",
-    label: "إلغاء قيد التنفيذ",
+    label: "Pending Cancellation",
+    labelKey: "preparation.stages.PENDING_CANCELLATION",
     colorClass: "bg-red-100 text-red-800 border-red-300 shadow-sm shadow-red-200 animate-pulse",
-    description: "طلبات طلب العميل إلغاءها أثناء فترة التجهيز - يجب إيقافها فوراً",
+    description: "Orders the customer requested cancellation during preparation — must stop immediately",
+    descriptionKey: "preparation.stageDescriptions.PENDING_CANCELLATION",
   },
 ];
 
 export const SOURCE_LABELS: Record<string, string> = {
-  ai_conversation: "محادثة تلقائية",
-  storefront: "المتجر",
+  ai_conversation: "AI Conversation",
+  storefront: "Storefront",
   woocommerce: "WooCommerce",
-  manual: "يدوي",
+  manual: "Manual",
   api: "API",
-  import: "استيراد",
+  import: "Import",
   pos: "POS",
-  unknown: "غير معروف",
+  unknown: "Unknown",
+};
+
+export const SOURCE_LABEL_KEYS: Record<string, string> = {
+  ai_conversation: "preparation.sourceLabels.ai_conversation",
+  storefront: "preparation.sourceLabels.storefront",
+  woocommerce: "preparation.sourceLabels.woocommerce",
+  manual: "preparation.sourceLabels.manual",
+  api: "preparation.sourceLabels.api",
+  import: "preparation.sourceLabels.import",
+  pos: "preparation.sourceLabels.pos",
+  unknown: "preparation.sourceLabels.unknown",
 };

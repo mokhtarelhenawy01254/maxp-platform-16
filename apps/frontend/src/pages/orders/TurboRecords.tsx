@@ -204,10 +204,10 @@ const TurboRecords: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <TruckIcon className="h-6 w-6 text-blue-600" />
-                        سجلات تربو (Turbo Records)
+                        {t("orders.turboRecordsTitle")}
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        إدارة الشحنات، متابعة الحالات، وإرسال الطلبات إلى تربو
+                        {t("orders.turboRecordsSubtitle")}
                     </p>
                 </div>
 
@@ -218,7 +218,7 @@ const TurboRecords: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                     >
                         <ArrowPathIcon className={`h-4 w-4 ${refreshingStatuses ? 'animate-spin' : ''}`} />
-                        تحديث الحالة
+                        {t("orders.turboRecordsUpdateStatus")}
                     </button>
 
                     <button
@@ -227,7 +227,7 @@ const TurboRecords: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                     >
                         <TruckIcon className="h-4 w-4" />
-                        إرسال إلى تربو
+                        {t("orders.turboRecordsSendToTurbo")}
                     </button>
                 </div>
             </div>
@@ -239,19 +239,19 @@ const TurboRecords: React.FC = () => {
                         onClick={() => handleFilterChange("all")}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'all' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
-                        الكل
+                        {t("orders.all")}
                     </button>
                     <button
                         onClick={() => handleFilterChange("unshipped")}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'unshipped' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
-                        لم يتم الشحن
+                        {t("orders.turboRecordsUnshipped")}
                     </button>
                     <button
                         onClick={() => handleFilterChange("shipped")}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'shipped' ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
-                        مُشحنة
+                        {t("orders.turboRecordsShipped")}
                     </button>
                 </div>
 
@@ -260,7 +260,7 @@ const TurboRecords: React.FC = () => {
                         <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="بحث برقم الطلب، العميل، التتبع..."
+                            placeholder={t("orders.turboRecordsSearchPlaceholder")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearchClick()}
@@ -271,7 +271,7 @@ const TurboRecords: React.FC = () => {
                         onClick={handleSearchClick}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm"
                     >
-                        بحث
+                        {t("orders.search")}
                     </button>
                 </div>
             </div>
@@ -290,13 +290,13 @@ const TurboRecords: React.FC = () => {
                                         onChange={toggleAllSelection}
                                     />
                                 </th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الطلب</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم التتبع</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.orderLabel")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.customer")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.total")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.trackingNumber")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.status")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.date")}</th>
+                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.actions")}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -306,13 +306,13 @@ const TurboRecords: React.FC = () => {
                                         <div className="flex justify-center mb-4">
                                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                         </div>
-                                        جاري تحميل الطلبات...
+                                        {t("orders.loadingOrders")}
                                     </td>
                                 </tr>
                             ) : orders.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                                        لا توجد طلبات مطابقة للبحث
+                                        {t("orders.noOrdersFound")}
                                     </td>
                                 </tr>
                             ) : (
@@ -360,7 +360,7 @@ const TurboRecords: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                             <Link to={`/orders/${encodeURIComponent(String(order.id))}`} className="text-blue-600 hover:text-blue-900 ml-3">
-                                                عرض
+                                                {t("orders.view")}
                                             </Link>
                                             {/* Can add single-track button here if needed */}
                                         </td>
@@ -374,7 +374,7 @@ const TurboRecords: React.FC = () => {
                 {/* Pagination placeholder, would normally use standard pagination component */}
                 <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                     <div className="text-sm text-gray-700">
-                        إجمالي الطلبات: <span className="font-medium">{totalOrders}</span>
+                        {t("orders.totalOrders")}: <span className="font-medium">{totalOrders}</span>
                     </div>
                     <div className="flex gap-2">
                         <button
@@ -382,15 +382,15 @@ const TurboRecords: React.FC = () => {
                             onClick={() => { setPage(p => p - 1); updateUrlParams({ page: String(page - 1) }) }}
                             className="px-3 py-1 border rounded disabled:opacity-50"
                         >
-                            السابق
+                            {t("orders.previous")}
                         </button>
-                        <span className="px-3 py-1">صفحة {page} من {totalPages}</span>
+                        <span className="px-3 py-1">{t("orders.pageOf", { page, totalPages })}</span>
                         <button
                             disabled={page >= totalPages}
                             onClick={() => { setPage(p => p + 1); updateUrlParams({ page: String(page + 1) }) }}
                             className="px-3 py-1 border rounded disabled:opacity-50"
                         >
-                            التالي
+                            {t("orders.next")}
                         </button>
                     </div>
                 </div>

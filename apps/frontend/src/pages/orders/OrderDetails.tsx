@@ -264,7 +264,7 @@ const OrderDetails: React.FC = () => {
   // Warn about unsaved changes
   useUnsavedChanges({
     hasUnsavedChanges,
-    message: "لديك تعديلات غير محفوظة على الطلب. هل أنت متأكد من المغادرة؟",
+    message: t("orderDetails.unsavedChangesMessage"),
   });
 
   // Calculate real-time totals during editing
@@ -310,7 +310,7 @@ const OrderDetails: React.FC = () => {
     const printWindow = window.open("", "_blank");
 
     if (!printWindow) {
-      alert("فشل في فتح نافذة جديدة للطباعة");
+      alert(t("orderDetails.printWindowError"));
       return;
     }
 
@@ -333,7 +333,7 @@ const OrderDetails: React.FC = () => {
         await printDirectInvoice();
       } catch (error: any) {
         console.error("Error printing guest order invoice:", error);
-        alert(`خطأ في طباعة الفاتورة: ${error.message}`);
+        alert(t("orderDetails.invoicePrintError", { error: error.message }));
       }
       return;
     }
@@ -365,9 +365,9 @@ const OrderDetails: React.FC = () => {
       } catch (fallbackError: any) {
         console.error("Direct invoice print fallback failed:", fallbackError);
         alert(
-          `خطأ في طباعة الفاتورة: ${
-            fallbackError?.message || error?.message || "حدث خطأ غير متوقع"
-          }`,
+          t("orderDetails.invoicePrintError", {
+            error: fallbackError?.message || error?.message || t("orderDetails.invoicePrintFallbackError"),
+          }),
         );
       }
     }
@@ -380,7 +380,7 @@ const OrderDetails: React.FC = () => {
       await printPreparationSlip(order.orderNumber);
     } catch (error: any) {
       console.error("Error generating preparation slip HTML:", error);
-      alert(`خطأ في توليد ورقة التجهيز: ${error.message}`);
+      alert(t("orderDetails.preparationSlipError", { error: error.message }));
     }
   };
 
@@ -468,10 +468,10 @@ const OrderDetails: React.FC = () => {
       if (response.data.success) {
         setShowPostponeModal(false);
         await fetchOrderDetails();
-        toast.success("تم تأجيل الطلب بنجاح");
+        toast.success(t("orderDetails.orderPostponed"));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "فشل تأجيل الطلب");
+      toast.error(error.response?.data?.message || t("orderDetails.postponeFailed"));
     } finally {
       setPostponing(false);
     }
@@ -493,7 +493,7 @@ const OrderDetails: React.FC = () => {
         shipping: order.shipping || 0,
         total: deliveredSubtotal + parseFloat(String(order.tax || 0)) + parseFloat(String(order.shipping || 0)),
       });
-      await updateStatus("PARTIALLY_DELIVERED", "تسليم جزئي للطلب");
+      await updateStatus("PARTIALLY_DELIVERED", t("orderDetails.partialDeliveryNote"));
 
       // Step 2: If there are returned items, create a new order for them
       if (returnedItems.length > 0) {
@@ -513,20 +513,20 @@ const OrderDetails: React.FC = () => {
           shipping: order.shipping || 0,
           tax: order.tax || 0,
           currency: order.currency,
-           notes: `مرتجع من الطلب ${order.orderNumber}`,
+           notes: t("orderDetails.returnedFromOrder", { orderNumber: order.orderNumber }),
           status: "PARTIALLY_RETURNED",
           paymentMethod: order.paymentMethod,
           paymentStatus: order.paymentStatus,
         });
-        toast.success("تم التسليم الجزئي وإنشاء طلب جديد للمرتجع بنجاح");
+        toast.success(t("orderDetails.partialDeliverySuccessWithReturn"));
       } else {
-        toast.success("تم تحديث الطلب بنجاح");
+        toast.success(t("orderDetails.orderUpdated"));
       }
 
       setShowPartialDeliveryModal(false);
       await fetchOrderDetails();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء تنفيذ التسليم الجزئي");
+      toast.error(error.response?.data?.message || t("orderDetails.partialDeliveryError"));
     } finally {
       setPartialDeliveryLoading(false);
     }
@@ -644,7 +644,7 @@ const OrderDetails: React.FC = () => {
 
     // ✅ Validate price
     if (actualPrice <= 0) {
-      alert("السعر يجب أن يكون أكبر من صفر");
+      alert(t("orderDetails.priceMustBeGreaterThanZero"));
       return;
     }
 
@@ -657,7 +657,7 @@ const OrderDetails: React.FC = () => {
     );
 
     if (isDuplicate) {
-      alert("هذا المنتج موجود بالفعل في الطلب");
+      alert(t("orderDetails.productAlreadyExists"));
       return;
     }
 
@@ -843,8 +843,8 @@ const OrderDetails: React.FC = () => {
 
   const isCurrentlyPending = ["PENDING", "PENDING_STOCK", "ON_HOLD_STOCK", "CANCELLED", "TRASH", "WOO_TAGHEZ"].includes(order.status?.toUpperCase() || "");
   const confirmationStatusLabel =
-    (!isCurrentlyPending && order.confirmedAt) || order.status === "CONFIRMED" ? "مؤكد" : "غير مؤكد";
-  const assignmentStatusLabel = order.assignedTo ? "موزع" : "غير موزع";
+    (!isCurrentlyPending && order.confirmedAt) || order.status === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
+  const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
 
   console.log("🔍 Order Status Debug:", {
     orderStatus: order.status,
@@ -897,7 +897,7 @@ const OrderDetails: React.FC = () => {
                 className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700 dark:hover:bg-orange-900/30"
               >
                 <CalendarDaysIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                تأجيل الطلب
+                {t("orderDetails.postponeOrder")}
               </button>
             )}
             {canUpdateOrderStatus && order.items && order.items.length > 0 && (
@@ -906,21 +906,21 @@ const OrderDetails: React.FC = () => {
                 className="inline-flex items-center px-3 py-2 border border-indigo-300 shadow-sm text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700 dark:hover:bg-indigo-900/30"
               >
                 <TruckIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                تسليم جزئي
+                {t("orderDetails.partialDelivery")}
               </button>
             )}
             {showLateCancellationButton && (
               <button
                 onClick={() => {
-                  if (confirm("هل أنت متأكد من طلب إلغاء هذا الطلب أثناء فترة التجهيز؟")) {
-                    void updateStatus("PENDING_CANCELLATION", "تم طلب إلغاء الأوردر من المودريتور", false);
+                  if (confirm(t("orderDetails.cancelConfirmMessage"))) {
+                    void updateStatus("PENDING_CANCELLATION", t("orderDetails.cancellationNote"), false);
                   }
                 }}
                 disabled={updating}
                 className="inline-flex items-center px-3 py-2 border border-rose-300 shadow-sm text-sm leading-4 font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-700 dark:hover:bg-rose-900/30"
               >
                 <XCircleIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                طلب إلغاء الأوردر
+                {t("orderDetails.cancelOrderRequest")}
               </button>
             )}
           </>
@@ -1023,62 +1023,62 @@ const OrderDetails: React.FC = () => {
           {showConfirmationDistributionCard && (
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                بيانات التأكيد والتوزيع
+                {t("orderDetails.confirmAndDistributionData")}
               </h3>
             <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  حالة التأكيد
+                  {t("orderDetails.confirmationStatus")}
                 </span>
                 <span className="font-semibold">{confirmationStatusLabel}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  تاريخ التأكيد
+                  {t("orderDetails.confirmationDate")}
                 </span>
                 <span>{formatOptionalDate(order.confirmedAt)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  تم التأكيد بواسطة
+                  {t("orderDetails.confirmedBy")}
                 </span>
                 <span>{confirmedByName || "—"}</span>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3" />
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  حالة التوزيع
+                  {t("orderDetails.distributionStatus")}
                 </span>
                 <span className="font-semibold">{assignmentStatusLabel}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  الموزع عليه
+                  {t("orderDetails.distributedToLabel")}
                 </span>
                 <span>{assignedToName || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  طريقة التوزيع
+                  {t("orderDetails.distributionMethod")}
                 </span>
                 <span>{order.assignmentStrategy || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  تاريخ التوزيع
+                  {t("orderDetails.distributionDate")}
                 </span>
                 <span>{formatOptionalDate(order.assignedAt)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
-                  تم التوزيع بواسطة
+                  {t("orderDetails.distributedByLabel")}
                 </span>
                 <span>{assignedByName || "—"}</span>
               </div>
               {order.confirmationNotes && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3 text-sm">
                   <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                    ملاحظات التأكيد
+                    {t("orderDetails.confirmationNotesLabel")}
                   </span>
                   <p className="text-gray-800 dark:text-gray-200">
                     {order.confirmationNotes}
@@ -1126,7 +1126,7 @@ const OrderDetails: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  تاريخ الجدولة
+                  {t("orderDetails.scheduledSectionTitle")}
                 </h3>
               </div>
 
@@ -1135,9 +1135,9 @@ const OrderDetails: React.FC = () => {
                   <div className="flex-1">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                          📅 تاريخ التسليم المحدد
-                        </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
+                            {t("orderDetails.scheduledDeliveryDateLabel")}
+                          </span>
                         <span
                           className="text-sm font-medium text-gray-900 dark:text-gray-100"
                           dir="ltr"
@@ -1153,9 +1153,9 @@ const OrderDetails: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                          🕐 وقت التسليم
-                        </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
+                            {t("orderDetails.deliveryTimeLabel")}
+                          </span>
                         <span
                           className="text-sm font-medium text-gray-900 dark:text-gray-100"
                           dir="ltr"
@@ -1173,9 +1173,9 @@ const OrderDetails: React.FC = () => {
 
                     {order.scheduledNotes && (
                       <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800">
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
-                          📝 ملاحظات الجدولة
-                        </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
+                            {t("orderDetails.scheduledNotesLabel")}
+                          </span>
                         <p className="text-sm text-gray-900 dark:text-gray-100">
                           {order.scheduledNotes}
                         </p>
@@ -1200,8 +1200,7 @@ const OrderDetails: React.FC = () => {
                       />
                     </svg>
                     <span>
-                      التحويل التلقائي مفعّل - سيتم تحويل الطلب تلقائياً عند
-                      حلول الموعد
+                      {t("orderDetails.autoTransitionText")}
                     </span>
                   </div>
                 )}
@@ -1257,7 +1256,7 @@ const OrderDetails: React.FC = () => {
                           );
                           const hint =
                             wfStatus?.requiresOverride
-                              ? " (تجاوز)"
+                              ? t("orderDetails.overrideSuffix")
                               : "";
                           return (
                             <option key={status.code} value={status.code}>
@@ -1280,7 +1279,7 @@ const OrderDetails: React.FC = () => {
                           htmlFor="override-checkbox"
                           className="text-sm text-gray-600 dark:text-gray-400"
                         >
-                          تجاوز قواعد المسار (Override)
+                          {t("orderDetails.overrideCheckboxLabel")}
                         </label>
                       </div>
                     )}
@@ -1288,7 +1287,7 @@ const OrderDetails: React.FC = () => {
                       {isModalCancellationStatus ? (
                         <>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            سبب الإلغاء <span className="text-red-500">*</span>
+                            {t("orderDetails.cancellationReasonRequiredLabel")}
                           </label>
                           {cancellationReasonOptions.length > 0 ? (
                           <select
@@ -1299,7 +1298,7 @@ const OrderDetails: React.FC = () => {
                             disabled={updating || cancellationReasonOptionsLoading}
                             className="block w-full px-4 py-3 text-sm border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 rounded-xl dark:bg-gray-700 dark:text-gray-100 mb-3"
                           >
-                            <option value="">اختر سبب الإلغاء...</option>
+                            <option value="">{t("orderDetails.selectCancellationReason")}</option>
                             {cancellationReasonOptions.map((reason) => (
                               <option key={reason.id} value={reason.reason}>
                                 {reason.reason}
@@ -1312,26 +1311,26 @@ const OrderDetails: React.FC = () => {
                               onChange={(e) => setStatusNotes(e.target.value)}
                               rows={2}
                               className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
-                              placeholder="سبب الإلغاء..."
+                              placeholder={t("orderDetails.cancellationReasonPlaceholder2")}
                             />
                           )}
                           {cancellationReasonOptionsLoading && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                              جاري تحميل الأسباب الجاهزة...
+                              {t("orderDetails.loadingReasons")}
                             </p>
                           )}
                           <p className="text-xs text-red-600 dark:text-red-300 mb-3">
                             {t("orderDetails.cancellationReasonHelp")}
                           </p>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            ملاحظة إضافية <span className="text-gray-400">(اختياري)</span>
+                            {t("orderDetails.additionalNotesLabel")}
                           </label>
                           <textarea
                             value={cancellationAdditionalNotes}
                             onChange={(e) => setCancellationAdditionalNotes(e.target.value)}
                             rows={2}
                             className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                            placeholder="أضف ملاحظة إضافية (اختياري)..."
+                            placeholder={t("orderDetails.additionalNotesPlaceholder")}
                           />
                         </>
                       ) : (
@@ -1344,7 +1343,7 @@ const OrderDetails: React.FC = () => {
                             onChange={(e) => setStatusNotes(e.target.value)}
                             rows={3}
                             className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                            placeholder={t("orderDetails.notesPlaceholder") || "أضف ملاحظة هنا..."}
+                            placeholder={t("orderDetails.notesPlaceholder")}
                           />
                         </>
                       )}
@@ -1429,10 +1428,7 @@ const OrderDetails: React.FC = () => {
                         onChange={(e) => setPaymentNotes(e.target.value)}
                         rows={3}
                         className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                        placeholder={
-                          t("orderDetails.notesPlaceholder") ||
-                          "أضف ملاحظة هنا..."
-                        }
+                        placeholder={t("orderDetails.notesPlaceholder")}
                       />
                     </div>
                   </div>
@@ -1523,9 +1519,9 @@ const OrderDetails: React.FC = () => {
         isOpen={showRecreateShipmentModal}
         onClose={() => setShowRecreateShipmentModal(false)}
         onConfirm={handleRecreateShipment}
-        title="إرجاع الشحنة على Turbo تاني"
-        message="سيتم إنشاء شحنة Turbo جديدة وربط الطلب بها. الشحنة القديمة لن يتم إلغاؤها تلقائياً."
-        confirmText="نعم، إرجاع على Turbo"
+        title={t("orderDetails.recreateShipmentTitle")}
+        message={t("orderDetails.recreateShipmentMessage")}
+        confirmText={t("orderDetails.recreateShipmentConfirm")}
         cancelText={t("orderDetails.goBack")}
         isDangerous={false}
         isLoading={turboLoading}
