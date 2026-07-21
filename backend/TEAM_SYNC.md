@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Auto-Seeding Turbo Shipping Statuses into Order Status Management (FEATURE / COMPLETE)**:
+  1. **Seeded Turbo Statuses**: Added all 10 Turbo shipping status codes (`TURBO_PROCESSING`, `TURBO_SHIPPED`, `TURBO_OUT_FOR_DELIVERY`, `TURBO_DELAYED`, `TURBO_FAILED_DELIVERY`, `TURBO_RESCHEDULED`, `TURBO_ON_HOLD`, `TURBO_DELIVERED`, `TURBO_CANCELLED`, `TURBO_RETURNED`) into `DEFAULT_SHIPPING_STATUSES` in `orderStatusController.js`.
+  2. **Automated Integration**: Hooked `initializeDefaultStatuses(companyId)` into `storeSettingsController.js` so any company connecting or configuring Turbo auto-populates all Turbo shipping statuses into `/settings/orders`.
+
 - **Turbo Webhook Intermediate Status Mapping Fix (BUGFIX / COMPLETE)**:
   1. **Root Cause Resolved**: Fixed issue where Turbo webhooks arriving at `/api/v1/turbo-webhook/webhook` logged activity and updated `turboShipmentStatus`, but failed to update main `Order.status` / `GuestOrder.status` for intermediate statuses (`processing`, `shipped`, `out_for_delivery`, `on_hold`).
   2. **Comprehensive Mapping**: Mapped `processing` (3) to `PROCESSING`, `shipped` (4) and `out_for_delivery` (9) to `SHIPPED`, and `on_hold` / `delayed` (12/8/11) to `ON_HOLD` in `apps/backend/routes/turboWebhook.js`.

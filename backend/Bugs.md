@@ -1,5 +1,16 @@
 # Backend Bugs Log
 
+### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
+- **Date**: 2026-07-21
+- **Requirement / Feature**:
+  1. **Automatic Status Seeding**: Users requested that all Turbo shipping status variants (Processing, Shipped, Out for Delivery, Delayed, Failed Delivery, Rescheduled, On Hold, Delivered, Cancelled, Returned) automatically populate into `/settings/orders` under "Shipping Statuses" (`statusType: 'shipping'`).
+- **Resolution**:
+  1. **Seeded Turbo Shipping Statuses**: Added `TURBO_PROCESSING`, `TURBO_SHIPPED`, `TURBO_OUT_FOR_DELIVERY`, `TURBO_DELAYED`, `TURBO_FAILED_DELIVERY`, `TURBO_RESCHEDULED`, `TURBO_ON_HOLD`, `TURBO_DELIVERED`, `TURBO_CANCELLED`, and `TURBO_RETURNED` to `DEFAULT_SHIPPING_STATUSES` in `apps/backend/controller/orderStatusController.js`.
+  2. **Automated Integration**: Connected `initializeDefaultStatuses` to trigger automatically whenever a company saves or updates Turbo settings in `storeSettingsController.js` or clicks "Initialize Statuses" in `/settings/orders`.
+- **Files Modified**:
+  - `apps/backend/controller/orderStatusController.js`
+  - `apps/backend/controller/storeSettingsController.js`
+
 ### [BUG FIX / TURBO] Webhook Intermediate Statuses (Processing, Shipped, Out for Delivery) Ignored for Order.status
 - **Date**: 2026-07-21
 - **Root Cause**:
