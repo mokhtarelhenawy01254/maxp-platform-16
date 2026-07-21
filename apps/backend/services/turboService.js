@@ -620,7 +620,6 @@ class TurboService {
         notes: notes || `Order #${orderNumber}`,
         invoice_number: orderNumber,
         order_summary: items.map(item => item.productName || item.name).join(', ') || 'طلب',
-        return_summary: items.map(item => item.productName || item.name).join(', ') || 'مرتجع',
         amount_to_be_collected: paymentMethod === 'CASH' ? (totalValue || 0) : 0,
         return_amount: parseFloat(shipping || 0),
         is_order: paymentMethod === 'CASH' && (totalValue || 0) > 0 ? 1 : 0,

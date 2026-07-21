@@ -27,33 +27,33 @@ import { useAuth } from "../../../../hooks/useAuthSimple";
 
 // قائمة المحافظات المصرية
 const EGYPT_GOVERNORATES = [
-  "القاهرة",
-  "الجيزة",
-  "الإسكندرية",
-  "الدقهلية",
-  "البحر الأحمر",
-  "البحيرة",
-  "الفيوم",
-  "الغربية",
-  "الإسماعيلية",
-  "المنوفية",
-  "المنيا",
-  "القليوبية",
-  "الوادي الجديد",
-  "السويس",
-  "أسوان",
-  "أسيوط",
-  "بني سويف",
-  "بورسعيد",
-  "دمياط",
-  "الشرقية",
-  "جنوب سيناء",
-  "كفر الشيخ",
-  "مطروح",
-  "الأقصر",
-  "قنا",
-  "شمال سيناء",
-  "سوهاج",
+  t('manualOrder.k_25'),
+  t('manualOrder.k_26'),
+  t('manualOrder.k_27'),
+  t('manualOrder.k_28'),
+  t('manualOrder.k_29'),
+  t('manualOrder.k_30'),
+  t('manualOrder.k_31'),
+  t('manualOrder.k_32'),
+  t('manualOrder.k_33'),
+  t('manualOrder.k_34'),
+  t('manualOrder.k_35'),
+  t('manualOrder.k_36'),
+  t('manualOrder.k_37'),
+  t('manualOrder.k_38'),
+  t('manualOrder.k_39'),
+  t('manualOrder.k_40'),
+  t('manualOrder.k_41'),
+  t('manualOrder.k_42'),
+  t('manualOrder.k_43'),
+  t('manualOrder.k_44'),
+  t('manualOrder.k_45'),
+  t('manualOrder.k_46'),
+  t('manualOrder.k_47'),
+  t('manualOrder.k_48'),
+  t('manualOrder.k_49'),
+  t('manualOrder.k_50'),
+  t('manualOrder.k_51'),
 ];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
@@ -287,7 +287,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 "",
             ),
           );
-          toast.success("تم العثور على العميل!");
+          toast.success(t('manualOrder.k_52'));
         }
       } catch (error) {
         console.error("Search error:", error);
@@ -435,12 +435,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   // Apply Coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      toast.error("أدخل كود الكوبون");
+      toast.error(t('manualOrder.k_53'));
       return;
     }
 
     if (subtotal <= 0) {
-      toast.error("أضف منتجات للسلة أولاً");
+      toast.error(t('manualOrder.k_54'));
       return;
     }
 
@@ -463,7 +463,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         setCouponCode("");
       }
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "كوبون غير صالح"));
+      toast.error(getApiErrorMessage(error, t('manualOrder.k_55')));
     } finally {
       setLoadingCoupon(false);
     }
@@ -472,7 +472,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   // Remove Coupon
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
-    toast.success("تم إزالة الكوبون");
+    toast.success(t('manualOrder.k_56'));
   };
 
   // Reset form after successful order
@@ -499,22 +499,22 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
   const handleCreateOrder = async () => {
     if (cartItems.length === 0) {
-      toast.error("السلة فارغة");
+      toast.error(t('manualOrder.k_57'));
       return;
     }
     if (!phone || !firstName) {
-      toast.error("بيانات العميل ناقصة");
+      toast.error(t('manualOrder.k_58'));
       return;
     }
     if (governorate && loadingShipping) {
-      toast.error("جاري حساب تكلفة الشحن، انتظر لحظة");
+      toast.error(t('manualOrder.k_59'));
       return;
     }
     if (
       customerBlock?.blocked &&
       !(canOverrideBlockedCustomer && allowBlockedCustomerOverride)
     ) {
-      toast.error(customerBlock.message || "هذا العميل محظور من إنشاء الطلبات");
+      toast.error(customerBlock.message || t('manualOrder.k_60'));
       return;
     }
 
@@ -588,7 +588,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
       const response = await apiClient.post("/orders-enhanced", payload);
 
       if (response.data.success) {
-        toast.success("تم إنشاء الطلب بنجاح!");
+        toast.success(t('manualOrder.k_61'));
 
         // Get order ID and show success modal
         const orderId = response.data.order?.id || response.data.data?.id;
@@ -596,12 +596,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         setShowSuccessModal(true);
       } else {
         toast.error(
-          "فشل إنشاء الطلب: " + (response.data.error || "خطأ غير معروف"),
+          t('manualOrder.k_62') + (response.data.error || t('manualOrder.k_63')),
         );
       }
     } catch (error: unknown) {
       console.error("Create order error:", error);
-      toast.error(getApiErrorMessage(error, "حدث خطأ أثناء إنشاء الطلب"));
+      toast.error(getApiErrorMessage(error, t('manualOrder.k_64')));
     } finally {
       setLoading(false);
     }
@@ -665,10 +665,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">
                     {checkingBlock
-                      ? "جاري التحقق من الحظر..."
+                      ? t('manualOrder.k_65')
                       : customerBlock?.blocked
-                        ? "هذا العميل محظور"
-                        : "يوجد تنبيه حظر على هذا العميل"}
+                        ? t('manualOrder.k_66')
+                        : t('manualOrder.k_67')}
                   </p>
                   {customerBlock?.message && (
                     <p className="mt-1 leading-5">{customerBlock.message}</p>
@@ -736,12 +736,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   setArea("");
                 }
               }}
-              placeholder="اختر المحافظة..."
-              searchPlaceholder="ابحث عن محافظة..."
-              emptyText="لا توجد محافظة تطابق البحث"
+              placeholder={t('manualOrder.k_1')}
+              searchPlaceholder={t('manualOrder.k_2')}
+              emptyText={t('manualOrder.k_3')}
               disabled={false}
               loading={loadingGovernments}
-              loadingText="جاري تحميل المحافظات..."
+              loadingText={t('manualOrder.k_4')}
             />
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
@@ -762,12 +762,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 }))}
                 value={area}
                 onChange={setArea}
-                placeholder={loadingAreas ? "جاري تحميل المناطق..." : "اختر المنطقة..."}
-                searchPlaceholder="ابحث عن منطقة..."
-                emptyText="لا توجد منطقة تطابق البحث"
+                placeholder={loadingAreas ? t('manualOrder.k_7') : t('manualOrder.k_68')}
+                searchPlaceholder={t('manualOrder.k_5')}
+                emptyText={t('manualOrder.k_6')}
                 disabled={false}
                 loading={loadingAreas}
-                loadingText="جاري تحميل المناطق..."
+                loadingText={t('manualOrder.k_7')}
               />
             ) : (
               <input
@@ -777,8 +777,8 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 placeholder={
                   governorate
-                    ? "مثال: مدينة نصر، الهرم، سيدي بشر..."
-                    : "اختر المحافظة أولاً ثم أدخل المنطقة"
+                    ? t('manualOrder.k_69')
+                    : t('manualOrder.k_70')
                 }
               />
             )}
@@ -795,7 +795,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 h-20 resize-none dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-              placeholder="اسم الشارع، رقم العمارة، علامة مميزة..."
+              placeholder={t('manualOrder.k_8')}
             />
             <MapPinIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-8" />
           </div>
@@ -859,7 +859,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 type="text"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="كود الكوبون"
+                placeholder={t('manualOrder.k_9')}
                 className="flex-1 border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
               />
@@ -871,7 +871,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 {loadingCoupon ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  "تطبيق"
+                  t('manualOrder.k_71')
                 )}
               </button>
             </div>
@@ -936,8 +936,8 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="CASH">الدفع عند الاستلام (COD)</option>
-                <option value="WALLET">محفظة إلكترونية</option>
+                <option value="CASH">{t('manualOrder.k_12')}</option>
+                <option value="WALLET">{t('manualOrder.k_13')}</option>
                 <option value="INSTAPAY">Instapay</option>
               </select>
             </div>
@@ -950,11 +950,11 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="PENDING">جديد (PENDING)</option>
-                <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
-                <option value="PROCESSING">جاري التجهيز</option>
-                <option value="RETURNED">مرتجع (RETURNED)</option>
-                <option value="EXCHANGED">استبدال (EXCHANGED)</option>
+                <option value="PENDING">{t('manualOrder.k_14')}</option>
+                <option value="CONFIRMED">{t('manualOrder.k_15')}</option>
+                <option value="PROCESSING">{t('manualOrder.k_16')}</option>
+                <option value="RETURNED">{t('manualOrder.k_17')}</option>
+                <option value="EXCHANGED">{t('manualOrder.k_18')}</option>
               </select>
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -976,9 +976,9 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 }}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="delivery">طلب تسليم (عادي)</option>
-                <option value="return">طلب مرتجع</option>
-                <option value="exchange">طلب استبدال</option>
+                <option value="delivery">{t('manualOrder.k_19')}</option>
+                <option value="return">{t('manualOrder.k_20')}</option>
+                <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
             </div>
           </div>
@@ -991,7 +991,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 h-16 resize-none text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-              placeholder="أي ملاحظات إضافية للتيم..."
+              placeholder={t('manualOrder.k_10')}
             />
           </div>
         </div>
@@ -1055,7 +1055,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                     onChange={(e) => setScheduledNotes(e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                     rows={2}
-                    placeholder="مثال: عيد ميلاد - يرجى التغليف الخاص"
+                    placeholder={t('manualOrder.k_11')}
                   />
                 </div>
                 <div className="flex items-start gap-2 text-xs text-orange-700 dark:text-orange-300">
@@ -1076,7 +1076,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-700">
           <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
             <ExclamationTriangleIcon className="w-4 h-4" />
-            <span>تحذير: بعض المنتجات تتجاوز المخزون المتاح</span>
+            <span>{t('manualOrder.k_22')}</span>
           </div>
         </div>
       )}
@@ -1095,14 +1095,14 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
         {totalDiscount > 0 && (
           <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-            <span>الخصم</span>
+            <span>{t('manualOrder.k_23')}</span>
             <span>-{totalDiscount.toLocaleString()} ج.م</span>
           </div>
         )}
 
         {shippingCost > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">الشحن</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('manualOrder.k_24')}</span>
             <span className="font-medium text-gray-900 dark:text-gray-100">
               +{shippingCost.toLocaleString()} ج.م
             </span>

@@ -138,8 +138,6 @@ export type ShortageReason =
 
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
-export type NotPrintedFilter = "all" | "not_printed";
-export type NoShippingCodeFilter = "all" | "no_shipping_code";
 export type SortBy = "createdAt" | "totalUnits" | "totalValue";
 export type SortOrder = "asc" | "desc";
 

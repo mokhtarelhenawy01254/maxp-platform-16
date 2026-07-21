@@ -221,9 +221,6 @@ const PreparationOrdersTable = ({
                         #{order.orderNumber}
                       </Link>
                     )}
-                    <p className="mt-0.5 text-xs font-medium text-gray-500">
-                      {formatDate(order.createdAt)}
-                    </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
                       <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
                         {SOURCE_LABELS[
@@ -240,13 +237,13 @@ const PreparationOrdersTable = ({
 
                   {/* Customer */}
                   <td className="px-3 py-2.5">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-xs font-medium text-gray-800">
                       {order.customerName}
                     </p>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-[11px] text-gray-400">
                       {order.customerPhone || ""}
                     </p>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-[11px] text-gray-400">
                       {getAgeLabel(order.createdAt)}
                       {order.governorate || order.city
                         ? ` • ${order.governorate || order.city}`
