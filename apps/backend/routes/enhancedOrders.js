@@ -634,17 +634,6 @@ router.post('/', async (req, res) => {
 
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
-    // 🚀 Push order to provider(s) for imported products
-    // (createEnhancedOrder also does this internally, but it may fail silently)
-    if (result.success && result.order?.id) {
-      const internalSyncService = require('../services/internalSyncService');
-      internalSyncService.pushOrderToProvider(result.order.id, orderData.companyId).catch(err => {
-        console.error(`❌ [INTERNAL-SYNC-Route] Failed to push order ${result.order.id} to provider:`, err.message);
-      });
-    }
-
-    await enhancedOrderService.disconnect();
-
     if (result.success) {
       // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
       try {
