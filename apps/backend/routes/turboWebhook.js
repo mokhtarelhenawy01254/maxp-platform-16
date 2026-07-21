@@ -382,9 +382,14 @@ router.post('/webhook', async (req, res) => {
       updateData.status = 'CANCELLED';
     }
 
-    // إذا كانت الشحنة مرتجعة، نحدث حالة الطلب
+    // إذا كانت الشحنة مرتجعة، نحدث حالة الطلب ونسجل return_amount
     if (status === 'returned' || returnStatus === '1' || statusCode === '7') {
       updateData.status = 'RETURNED';
+      const shippingCost = parseFloat(order.shipping || 0);
+      if (shippingCost > 0) {
+        turboMetadataObj.return_amount = shippingCost;
+        updateData.turboMetadata = JSON.stringify(turboMetadataObj);
+      }
     }
 
     await safeQuery(async () => {

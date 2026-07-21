@@ -520,6 +520,7 @@ class TurboService {
         items,
         totalWeight,
         totalValue,
+        shipping,
         paymentMethod = 'CASH',
         notes
       } = orderData;
@@ -606,8 +607,9 @@ class TurboService {
       // بناءً على الوثائق: https://backoffice.turbo-eg.com/external-api/add-order
       const shipmentData = {
         authentication_key: apiKey,
-        main_client_code: mainClientCode || 37321, // افتراضي أو من إعدادات الشركة
-        second_client: orderNumber || `Order ${orderNumber}`,
+        main_client_code: mainClientCode || 37321,
+        remote_order_id: orderNumber || `Order ${orderNumber}`,
+        remote_shipment_id: String(orderId || ''),
         receiver: customerName,
         phone1: customerPhone,
         phone2: null,
@@ -619,10 +621,11 @@ class TurboService {
         invoice_number: orderNumber,
         order_summary: items.map(item => item.productName || item.name).join(', ') || 'طلب',
         amount_to_be_collected: paymentMethod === 'CASH' ? (totalValue || 0) : 0,
-        return_amount: 0,
-        is_order: 0,
-        return_summary: null,
-        can_open: 1
+        return_amount: parseFloat(shipping || 0),
+        is_order: paymentMethod === 'CASH' && (totalValue || 0) > 0 ? 1 : 0,
+        weight: totalWeight || 1,
+        delivery_type: 0,
+        is_fragile: 0
       };
 
       console.log('📦 [TURBO] Creating shipment for order:', orderNumber);
@@ -872,6 +875,52 @@ class TurboService {
       };
     } catch (error) {
       this.handleError(error, 'Get Shipment Status');
+    }
+  }
+
+  async fetchAllStatuses(fromDate, toDate) {
+    try {
+      const apiKey = await this.getApiKey();
+      const headers = await this.getHeaders();
+      const mainClientCode = await this.getMainClientCode();
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const from = fromDate || thirtyDaysAgo.toISOString().split('T')[0];
+      const to = toDate || today.toISOString().split('T')[0];
+      const requestData = { authentication_key: apiKey, main_client_code: mainClientCode || 37321, from, to };
+      console.log(`📊 [TURBO] Fetching all statuses from ${from} to ${to}`);
+      const response = await axios.post(`${this.baseUrl}/get-status`, requestData, { headers, timeout: this.timeout });
+      const result = response.data;
+      if (result.success === 0 || result.success === false) {
+        throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+      }
+      const shipments = result.data || [];
+      console.log(`✅ [TURBO] Fetched ${shipments.length} shipments statuses`);
+      const statusMap = {
+        'delivered': 'delivered', 'cancelled': 'cancelled', 'returned': 'returned',
+        'returned to sender': 'returned', 'Accepted': 'processing',
+        'Under Delivery': 'out_for_delivery', 'pending': 'pending', 'confirmed': 'confirmed',
+        'in transit': 'shipped', 'delayed': 'delayed', 'failed delivery': 'failed_delivery',
+        'rescheduled': 'rescheduled', 'on hold': 'on_hold', 'lost': 'lost'
+      };
+      return {
+        success: true,
+        shipments: shipments.map(s => ({
+          code: s.code, barCode: s.bar_code, status: s.status, statusCode: s.status_code,
+          internalStatus: statusMap[(s.status || '').toLowerCase()] || `status_${s.status_code}`,
+          returnReason: s.return_reason, delayReason: s.delay_reason,
+          branch: s.branch, captain: s.captain,
+          captainNumber1: s.captain_number1, captainNumber2: s.captain_number2,
+          receivedAmount: s.received_amount, expectedBranch: s.expected_branch,
+          invoiceNumber: s.invoice_number, returnedInventoryStatus: s.returned_inventory_status,
+          raw: s
+        })),
+        count: shipments.length,
+        dateRange: { from, to }
+      };
+    } catch (error) {
+      this.handleError(error, 'Fetch All Statuses');
     }
   }
 
@@ -1185,9 +1234,10 @@ class TurboService {
       // بناء بيانات التحديث حسب Turbo API (/edit-order)
       const updateData = {
         authentication_key: apiKey,
-        code: String(shipmentId), // code هو معرف الشحنة
+        code: String(shipmentId),
         main_client_code: mainClientCode || 37321,
-        second_client: formattedData.orderNumber || '',
+        remote_order_id: formattedData.orderNumber || '',
+        remote_shipment_id: String(formattedData.orderId || ''),
         receiver: formattedData.customerName || '',
         phone1: formattedData.customerPhone || '',
         phone2: formattedData.alternativePhone || null,
@@ -1199,9 +1249,11 @@ class TurboService {
         invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
         order_summary: (formattedData.items || []).map(item => item.productName || item.name).join(', ') || 'طلب',
         amount_to_be_collected: formattedData.paymentMethod === 'CASH' ? (formattedData.totalValue || 0) : 0,
-        return_amount: 0,
-        is_order: 0,
-        can_open: 1
+        return_amount: parseFloat(formattedData.shipping || 0),
+        is_order: formattedData.paymentMethod === 'CASH' && (formattedData.totalValue || 0) > 0 ? 1 : 0,
+        weight: formattedData.totalWeight || 1,
+        delivery_type: 0,
+        is_fragile: 0
       };
 
       console.log('🔧 [TURBO] Update shipment data:', { ...updateData, authentication_key: '***' });

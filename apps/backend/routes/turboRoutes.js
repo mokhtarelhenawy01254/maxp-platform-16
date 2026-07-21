@@ -115,6 +115,7 @@ router.put('/reports/shipping/governorate-costs', verifyToken.authenticateToken,
  * GET /api/turbo/branches
  * جلب فروع Turbo
  */
+router.get('/records', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getRecords);
 router.get('/branches', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getBranches);
 
 /**

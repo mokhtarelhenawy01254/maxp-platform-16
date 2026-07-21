@@ -638,53 +638,25 @@ const trackShipment = async (req, res) => {
       });
     }
 
-    // إنشاء خدمة Turbo
     const turboService = new TurboService(order.company.turboApiKey, companyId);
-
-    // تتبع الشحنة
-    const result = await turboService.trackShipment(order.turboTrackingNumber);
-
-    // إذا لم تكن الوظيفة مدعومة، إرجاع رسالة واضحة
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        error: result.error || 'Tracking not available',
-        message: result.message || 'Turbo API قد لا يدعم تتبع الشحنة مباشرة. يتم تحديث الحالة تلقائياً عبر webhooks.'
-      });
+    const statusResult = await turboService.fetchAllStatuses();
+    if (!statusResult?.success || !statusResult.shipments.length) {
+      return res.status(400).json({ success: false, error: 'Tracking not available', message: 'لا توجد بيانات تتبع متاحة من Turbo في آخر 30 يوم' });
     }
-
-    // تحديث حالة الشحنة في قاعدة البيانات
-    if (result.status !== order.turboShipmentStatus) {
-      if (order.orderNumber) {
-        await safeQuery(async () => {
-          return await prisma.order.updateMany({
-            where: {
-              orderNumber: order.orderNumber,
-              companyId: companyId
-            },
-            data: {
-              turboShipmentStatus: result.status,
-              turboMetadata: JSON.stringify(result.data)
-            }
-          });
-        }, 3);
-      } else if (order.id) {
-        await safeQuery(async () => {
-          return await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              turboShipmentStatus: result.status,
-              turboMetadata: JSON.stringify(result.data)
-            }
-          });
-        }, 3);
-      }
+    const key = order.turboShipmentId || order.turboTrackingNumber;
+    const matched = statusResult.shipments.find(s => s.code === key || s.barCode === key);
+    if (!matched) {
+      return res.status(404).json({ success: false, error: 'Shipment not found in Turbo', message: 'لم يتم العثور على الشحنة في نظام Turbo خلال آخر 30 يوم' });
     }
-
-    res.json({
-      success: true,
-      data: result
-    });
+    if (matched.internalStatus !== order.turboShipmentStatus) {
+      const upd = { turboShipmentStatus: matched.internalStatus, turboMetadata: JSON.stringify(matched.raw || matched), updatedAt: new Date() };
+      if (matched.internalStatus === 'delivered') { upd.status = 'COMPLETED'; upd.paymentStatus = 'PAID'; }
+      else if (matched.internalStatus === 'cancelled') upd.status = 'CANCELLED';
+      else if (matched.internalStatus === 'returned') upd.status = 'RETURNED';
+      if (order.orderNumber) await prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: upd });
+      else if (order.id) await prisma.order.update({ where: { id: order.id }, data: upd });
+    }
+    res.json({ success: true, data: matched });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error tracking shipment:', error);
     res.status(500).json({
@@ -2569,7 +2541,68 @@ const getUnreadTicketsCount = async (req, res) => {
   }
 };
 
+const getRecords = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { page = '1', limit = '20', search, filterType, refresh } = req.query;
+    const pageNum = parseInt(page), limitNum = parseInt(limit), skip = (pageNum - 1) * limitNum;
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+    if (filterType === 'shipped') where.turboShipmentId = { not: null };
+    else if (filterType === 'unshipped') where.turboShipmentId = null;
+    if (search) where.OR = [
+      { orderNumber: { contains: search } }, { turboTrackingNumber: { contains: search } },
+      { turboShipmentId: { contains: search } }, { customerName: { contains: search } }
+    ];
+    const [orders, total] = await Promise.all([
+      safeQuery(() => prisma.order.findMany({ where, select: {
+        id: true, orderNumber: true, customerName: true, customerPhone: true, total: true,
+        status: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true,
+        turboMetadata: true, createdAt: true, shipping: true, paymentMethod: true, shippingAddress: true,
+        company: { select: { turboEnabled: true, turboApiKey: true } }
+      }, orderBy: { createdAt: 'desc' }, skip, take: limitNum }), 3),
+      safeQuery(() => prisma.order.count({ where }), 3)
+    ]);
+    let turboStatuses = null;
+    if (refresh === 'true') {
+      const first = orders.find(o => o.company?.turboEnabled && o.company?.turboApiKey)?.company;
+      if (first) {
+        try {
+          const TurboService = require('../services/turboService');
+          const svc = new TurboService(first.turboApiKey, companyId);
+          const r = await svc.fetchAllStatuses();
+          if (r.success) { turboStatuses = {}; for (const s of r.shipments) { if (s.code) turboStatuses[s.code] = s; if (s.barCode) turboStatuses[s.barCode] = s; } }
+        } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
+      }
+    }
+    const records = orders.map(o => {
+      const key = o.turboShipmentId || o.turboTrackingNumber;
+      const ls = turboStatuses && key && turboStatuses[key] ? {
+        status: turboStatuses[key].status, statusCode: turboStatuses[key].statusCode,
+        internalStatus: turboStatuses[key].internalStatus, captain: turboStatuses[key].captain,
+        captainNumber1: turboStatuses[key].captainNumber1, branch: turboStatuses[key].branch,
+        receivedAmount: turboStatuses[key].receivedAmount, returnReason: turboStatuses[key].returnReason,
+        delayReason: turboStatuses[key].delayReason
+      } : null;
+      return {
+        id: o.id, orderNumber: o.orderNumber, customerName: o.customerName, customerPhone: o.customerPhone,
+        total: o.total, shipping: o.shipping, paymentMethod: o.paymentMethod, status: o.status,
+        turboShipmentId: o.turboShipmentId, turboTrackingNumber: o.turboTrackingNumber,
+        turboShipmentStatus: o.turboShipmentStatus || ls?.internalStatus || null,
+        turboLiveStatus: ls,
+        governorate: o.shippingAddress?.governorate || null, city: o.shippingAddress?.city || null,
+        createdAt: o.createdAt
+      };
+    });
+    res.json({ success: true, data: records, pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) } });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error fetching records:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
+  getRecords,
   createShipment,
   bulkCreateShipments,
   trackShipment,
