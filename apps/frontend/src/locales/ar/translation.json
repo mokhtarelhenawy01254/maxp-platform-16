@@ -5730,14 +5730,14 @@
     "tierAllPercentage": "خصم على الكل بنسبة",
     "tierCheapestFree": "اشتر X وخد الأرخص مجاناً",
     "tierPieces": "قطعة",
-    "statusActive": "[AR] Active",
-    "statusInactive": "[AR] Inactive",
-    "statusComing": "[AR] Upcoming",
-    "statusExpired": "[AR] Expired",
-    "statusDepleted": "[AR] Depleted",
-    "typePercentage": "[AR] %",
-    "typeFixed": "[AR] Fixed",
-    "typeFreeShipping": "[AR] Free Shipping"
+    "statusActive": "نشط",
+    "statusInactive": "غير نشط",
+    "statusComing": "قادم",
+    "statusExpired": "منتهي",
+    "statusDepleted": "مستنفذ",
+    "typePercentage": "%",
+    "typeFixed": "ثابت",
+    "typeFreeShipping": "شحن مجاني"
   },
   "orderDetails": {
     "orderNotFound": "الطلب غير موجود",

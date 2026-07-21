@@ -433,11 +433,11 @@ function StorefrontThemeCard({
             onClick={() => onPreview(themeItem.themeId)}
             className="flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
           >
-            <Eye className="size-3" /> Preview
+            <Eye className="size-3" /> {t_sft("storefrontThemes.preview")}
           </button>
           <button
             onClick={handleCopyClick}
-            title={t("storefrontThemes.copyPreviewLink")}
+            title={t_sft("storefrontThemes.copyLink")}
             className={cn(
               "flex items-center justify-center w-8 h-8 rounded-lg border transition-all",
               copied
@@ -1110,7 +1110,7 @@ export default function StorefrontThemes() {
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               )}
             >
-              All {selectedPrimaryCategory.label}
+              {t("storefrontThemes.allPrefix")} {selectedPrimaryCategory.label}
             </button>
             {selectedPrimaryCategory.subcategories.map((sub) => (
               <button
