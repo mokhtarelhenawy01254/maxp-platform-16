@@ -5322,6 +5322,83 @@
     "noSearchResults": "لا توجد نتائج مطابقة للبحث",
     "noText": "بدون نص"
   },
+  "preparation": {
+    "stages": {
+      "WAITING": "طلبات مؤكدة",
+      "PREPARING": "جاري التجهيز",
+      "QUALITY_CHECK": "فحص الجودة",
+      "PACKAGED": "مغلفة",
+      "READY_TO_SHIP": "جاهزة للشحن",
+      "STOCK_SHORTAGE": "عجز في المخزون",
+      "PENDING_CANCELLATION": "في انتظار الإلغاء"
+    },
+    "stageDescriptions": {
+      "WAITING": "طلبات مؤكدة لم يتم تجهيزها بعد",
+      "PREPARING": "جاري جمع وتجهيز المنتجات من المخزن",
+      "QUALITY_CHECK": "مراجعة الكمية والحالة قبل التغليف",
+      "PACKAGED": "الطلب مغلف وفي انتظار التسليم للشحن",
+      "READY_TO_SHIP": "جاهز للتسليم لشركة الشحن",
+      "STOCK_SHORTAGE": "طلبات معلقة بسبب عجز المخزون أو بانتظار التحويل",
+      "PENDING_CANCELLATION": "طلبات طلب العميل إلغاءها أثناء التجهيز - يجب الإيقاف فوراً"
+    },
+    "shortageReasons": {
+      "stock_shortage": "عجز في المخزون",
+      "waiting_transfer": "بانتظار التحويل",
+      "waiting_restock": "بانتظار إعادة التخزين",
+      "other": "سبب آخر"
+    },
+    "fallbackStatusLabels": {
+      "CONFIRMED": "مؤكد",
+      "PENDING_PREPARATION": "بانتظار التجهيز",
+      "PREPARING": "جاري التجهيز",
+      "PROCESSING": "قيد المعالجة",
+      "QUALITY_CHECK": "فحص الجودة",
+      "PACKAGED": "مغلف",
+      "READY": "جاهز",
+      "READY_TO_SHIP": "جاهز للشحن",
+      "STOCK_SHORTAGE": "عجز في المخزون"
+    },
+    "sourceLabels": {
+      "ai_conversation": "محادثة ذكاء اصطناعي",
+      "storefront": "واجهة المتجر",
+      "woocommerce": "وو كوميرس",
+      "manual": "يدوي",
+      "api": "واجهة برمجية",
+      "import": "استيراد",
+      "pos": "نقاط البيع",
+      "unknown": "غير معروف"
+    },
+    "filters": {
+      "title": "فلاتر التجهيز",
+      "active": "الفلاتر النشطة",
+      "ordersCount": "الطلبات: {{count}}",
+      "clearAll": "مسح الكل",
+      "allStages": "كل المراحل",
+      "quickSearch": "بحث سريع",
+      "quickSearchPlaceholder": "ابحث برقم الطلب...",
+      "product": "المنتج",
+      "productPlaceholder": "ابحث عن منتج...",
+      "warehouse": "المخزن",
+      "allWarehouses": "كل المخازن",
+      "stockStatus": "حالة المخزون",
+      "allStock": "الكل",
+      "ready": "متوفر",
+      "shortage": "عجز",
+      "sortBy": "ترتيب حسب",
+      "itemsCount": "عدد العناصر",
+      "singleItem": "عنصر واحد",
+      "multipleItems": "عناصر متعددة",
+      "shortageReason": "سبب العجز",
+      "allReasons": "كل الأسباب",
+      "owner": "المسؤول",
+      "allOwners": "كل المسؤولين",
+      "followUpDate": "تاريخ المتابعة",
+      "allDates": "بدون تاريخ",
+      "today": "اليوم",
+      "overdue": "متأخر",
+      "withoutDate": "بدون تاريخ"
+    }
+  },
   "pricingStrategy": {
     "title": "حاسبة استراتيجية التسعير",
     "desc": "اعرف السعر الأمثل لمنتجك بناءً على التكاليف وهامش الربح المستهدف",
@@ -10039,107 +10116,5 @@
     "errorPause": "خطأ في إيقاف الاستيراد",
     "errorResume": "خطأ في استئناف الاستيراد",
     "errorCancel": "خطأ في إلغاء الاستيراد"
-  },
-  "preparation": {
-    "filters": {
-      "title": "فلترة الطلبات",
-      "active": "مفعّل",
-      "ordersCount": "عدد الطلبات: {{count}}",
-      "clearAll": "مسح الكل",
-      "allStages": "الكل ({{count}})",
-      "quickSearch": "بحث سريع",
-      "quickSearchPlaceholder": "رقم الطلب، اسم العميل...",
-      "product": "المنتج",
-      "productPlaceholder": "اسم المنتج أو SKU...",
-      "warehouse": "المخزن",
-      "allWarehouses": "كل المخازن",
-      "stockStatus": "حالة المخزون",
-      "allStock": "الكل",
-      "ready": "متوفر",
-      "shortage": "عجز",
-      "sortBy": "ترتيب حسب",
-      "itemsCount": "عدد القطع",
-      "singleItem": "قطعة واحدة",
-      "multipleItems": "عدة قطع",
-      "shortageReason": "سبب العجز",
-      "allReasons": "كل الأسباب",
-      "owner": "المسؤول",
-      "allOwners": "كل المسؤولين",
-      "followUpDate": "تاريخ المتابعة",
-      "allDates": "كل التواريخ",
-      "today": "اليوم",
-      "overdue": "متأخر",
-      "withoutDate": "بدون تاريخ"
-    },
-    "stages": {
-      "WAITING": "طلبات مؤكدة",
-      "PREPARING": "قيد التجهيز",
-      "QUALITY_CHECK": "فحص الجودة",
-      "PACKAGED": "تم التغليف",
-      "READY_TO_SHIP": "جاهز للشحن",
-      "STOCK_SHORTAGE": "عجز في المخزون",
-      "PENDING_CANCELLATION": "بانتظار الإلغاء"
-    },
-    "stageDescriptions": {
-      "WAITING": "طلبات مؤكدة لم تبدأ بعد",
-      "PREPARING": "يتم تجهيز المنتجات من المخزن",
-      "QUALITY_CHECK": "مراجعة الكمية والحالة قبل التغليف",
-      "PACKAGED": "الطلب مغلف وبانتظار التسليم للشحن",
-      "READY_TO_SHIP": "جاهز للتسليم لشركة الشحن",
-      "STOCK_SHORTAGE": "معلق بسبب عجز المخزون أو انتظار التحويل",
-      "PENDING_CANCELLATION": "طلب العميل الإلغاء أثناء التجهيز"
-    },
-    "shortageReasons": {
-      "stock_shortage": "عجز في المخزون",
-      "waiting_transfer": "انتظار تحويل",
-      "waiting_restock": "انتظار إعادة توريد",
-      "other": "سبب آخر"
-    },
-    "fallbackStatusLabels": {
-      "CONFIRMED": "مؤكد",
-      "PENDING_PREPARATION": "بانتظار التجهيز",
-      "PREPARING": "قيد التجهيز",
-      "PROCESSING": "قيد المعالجة",
-      "QUALITY_CHECK": "فحص الجودة",
-      "PACKAGED": "تم التغليف",
-      "READY": "جاهز",
-      "READY_TO_SHIP": "جاهز للشحن",
-      "STOCK_SHORTAGE": "عجز في المخزون"
-    },
-    "sourceLabels": {
-      "ai_conversation": "محادثة ذكية",
-      "storefront": "المتجر",
-      "woocommerce": "ووكومرس",
-      "manual": "يدوي",
-      "api": "API",
-      "import": "استيراد",
-      "pos": "نقطة بيع",
-      "unknown": "غير معروف"
-    },
-    "shortageFollowUp": {
-      "overdueLabel": "متأخر",
-      "overdueText": "تجاوز تاريخ المتابعة المحدد",
-      "todayLabel": "اليوم",
-      "todayText": "متابعة مطلوبة اليوم",
-      "withoutDateLabel": "بدون تاريخ",
-      "withoutDateText": "لم يتم تحديد تاريخ متابعة"
-    },
-    "quickAction": {
-      "WAITING": "بدء التجهيز",
-      "PREPARING": "إرسال لفحص الجودة",
-      "QUALITY_CHECK": "تأكيد التغليف",
-      "PACKAGED": "جاهز للشحن",
-      "STOCK_SHORTAGE": "إدارة العجز",
-      "default": "تحديث الحالة"
-    },
-    "age": {
-      "unknown": "غير معروف",
-      "days": "{{count}} يوم",
-      "days_plural": "{{count}} أيام",
-      "hours": "{{count}} ساعة",
-      "hours_plural": "{{count}} ساعات",
-      "minutes": "{{count}} دقيقة",
-      "minutes_plural": "{{count}} دقائق"
-    }
   }
 }

@@ -704,9 +704,13 @@ const matchesPreparationFilters = ({
   shortageReasonFilter,
   shortageOwnerQuery,
   shortageFollowUpFilter,
+  itemCountFilter,
   searchQuery
 }) => {
   if (!order.warehouseMatch) return false;
+
+  if (itemCountFilter === 'single' && order.itemInsights.length !== 1) return false;
+  if (itemCountFilter === 'multiple' && order.itemInsights.length <= 1) return false;
 
   const hasShortageContext =
     order.missingItemsCount > 0 || order.stage === 'STOCK_SHORTAGE';
@@ -1076,6 +1080,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageReasonFilter = String(query.shortageReason || 'all').trim();
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
+  const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
   const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
   const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
@@ -1198,6 +1203,7 @@ const getPreparationQueue = async ({ user, query }) => {
         shortageReasonFilter,
         shortageOwnerQuery,
         shortageFollowUpFilter,
+        itemCountFilter,
         searchQuery
       });
 

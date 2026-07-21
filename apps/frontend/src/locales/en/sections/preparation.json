@@ -1,0 +1,77 @@
+{
+  "stages": {
+    "WAITING": "Confirmed Orders",
+    "PREPARING": "Preparing",
+    "QUALITY_CHECK": "Quality Check",
+    "PACKAGED": "Packaged",
+    "READY_TO_SHIP": "Ready to Ship",
+    "STOCK_SHORTAGE": "Stock Shortage",
+    "PENDING_CANCELLATION": "Pending Cancellation"
+  },
+  "stageDescriptions": {
+    "WAITING": "Confirmed orders not yet prepared",
+    "PREPARING": "Picking and preparing products from warehouse",
+    "QUALITY_CHECK": "Reviewing quantity and condition before packaging",
+    "PACKAGED": "Order is packaged and awaiting delivery to shipping",
+    "READY_TO_SHIP": "Ready to hand over to shipping company or create shipment",
+    "STOCK_SHORTAGE": "Orders on hold due to stock shortage or awaiting transfer",
+    "PENDING_CANCELLATION": "Orders the customer requested cancellation during preparation — must stop immediately"
+  },
+  "shortageReasons": {
+    "stock_shortage": "Stock Shortage",
+    "waiting_transfer": "Awaiting Transfer",
+    "waiting_restock": "Awaiting Restock",
+    "other": "Other Reason"
+  },
+  "fallbackStatusLabels": {
+    "CONFIRMED": "Confirmed",
+    "PENDING_PREPARATION": "Pending Preparation",
+    "PREPARING": "Preparing",
+    "PROCESSING": "Processing",
+    "QUALITY_CHECK": "Quality Check",
+    "PACKAGED": "Packaged",
+    "READY": "Ready",
+    "READY_TO_SHIP": "Ready to Ship",
+    "STOCK_SHORTAGE": "Stock Shortage"
+  },
+  "sourceLabels": {
+    "ai_conversation": "AI Conversation",
+    "storefront": "Storefront",
+    "woocommerce": "WooCommerce",
+    "manual": "Manual",
+    "api": "API",
+    "import": "Import",
+    "pos": "POS",
+    "unknown": "Unknown"
+  },
+  "filters": {
+    "title": "Preparation Filters",
+    "active": "Active Filters",
+    "ordersCount": "Orders: {{count}}",
+    "clearAll": "Clear All",
+    "allStages": "All Stages",
+    "quickSearch": "Quick Search",
+    "quickSearchPlaceholder": "Search by order number...",
+    "product": "Product",
+    "productPlaceholder": "Search for a product...",
+    "warehouse": "Warehouse",
+    "allWarehouses": "All Warehouses",
+    "stockStatus": "Stock Status",
+    "allStock": "All",
+    "ready": "Ready",
+    "shortage": "Shortage",
+    "sortBy": "Sort By",
+    "itemsCount": "Items Count",
+    "singleItem": "Single Item",
+    "multipleItems": "Multiple Items",
+    "shortageReason": "Shortage Reason",
+    "allReasons": "All Reasons",
+    "owner": "Owner",
+    "allOwners": "All Owners",
+    "followUpDate": "Follow Up Date",
+    "allDates": "No Date",
+    "today": "Today",
+    "overdue": "Overdue",
+    "withoutDate": "Without Date"
+  }
+}
