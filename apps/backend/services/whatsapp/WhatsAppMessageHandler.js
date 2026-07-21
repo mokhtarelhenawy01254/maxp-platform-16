@@ -1297,7 +1297,8 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                         mediaMimeType: data.mediaMimeType,
                         mediaFileName: data.mediaFileName,
                         timestamp: new Date(),
-                        senderId: data.metadata?.senderId || options.senderId
+                        senderId: options.senderId || data.senderId,
+                        metadata: typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata
                     },
                     false // isIncoming = false
                 );
