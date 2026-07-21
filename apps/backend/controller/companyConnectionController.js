@@ -1771,35 +1771,35 @@ exports.createTestCommissions = async (req, res) => {
         let affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({ where: { userId: { in: myUserIds }, companyId: connection.providerId } }) : null;
         if (!affiliate) return res.status(404).json({ success: false, message: 'لا يوجد حساب مسوق' });
 
-        // نقاط البيع الافتراضية
+        // استخدام طلب موجود عند المورد أو إنشاء طلب بسيط
         const providerUser = await prisma.user.findFirst({ where: { companyId: connection.providerId, isActive: true } });
         if (!providerUser) return res.status(400).json({ success: false, message: 'لا يوجد مستخدم نشط عند المورد' });
 
-        const providerDefaultPOS = await prisma.pointOfSale.findFirst({ where: { companyId: connection.providerId } });
-        if (!providerDefaultPOS) return res.status(400).json({ success: false, message: 'لا توجد نقاط بيع عند المورد' });
-
-        const testAmount = 500;
-        const orderTotal = 10000;
-
-        // إنشاء طلب وهمي عند المورد
-        const order = await prisma.order.create({
-            data: {
-                companyId: connection.providerId,
-                userId: providerUser.id,
-                affiliateId: affiliate.id,
-                pointOfSaleId: providerDefaultPOS.id,
-                status: 'CONFIRMED',
-                sourceType: 'internal_push',
-                total: orderTotal,
-                subtotal: orderTotal,
-                orderNumber: 'TEST-' + Date.now().toString(36).toUpperCase(),
-                shippingAddress: 'test',
-                shippingCity: 'test',
-                shippingGovernorate: 'test',
-            }
+        let order = await prisma.order.findFirst({
+            where: { companyId: connection.providerId },
+            orderBy: { createdAt: 'desc' }
         });
 
-        // إنشاء العمولة
+        if (!order) {
+            order = await prisma.order.create({
+                data: {
+                    companyId: connection.providerId,
+                    userId: providerUser.id,
+                    affiliateId: affiliate.id,
+                    status: 'CONFIRMED',
+                    sourceType: 'internal_push',
+                    total: 10000,
+                    subtotal: 10000,
+                    orderNumber: 'TEST-' + Date.now().toString(36).toUpperCase(),
+                    shippingAddress: 'test',
+                    shippingCity: 'test',
+                    shippingGovernorate: 'test',
+                }
+            });
+        }
+
+        const testAmount = 500;
+
         const commission = await prisma.commission.create({
             data: {
                 affiliateId: affiliate.id,
@@ -1810,11 +1810,10 @@ exports.createTestCommissions = async (req, res) => {
                 amount: testAmount,
                 rate: 5,
                 status: 'CONFIRMED',
-                orderTotal: orderTotal,
+                orderTotal: Number(order.total),
             }
         });
 
-        // تحديث affiliate totals
         affiliate = await prisma.affiliate.update({
             where: { id: affiliate.id },
             data: {
@@ -1825,7 +1824,7 @@ exports.createTestCommissions = async (req, res) => {
 
         res.json({
             success: true,
-            message: `تم إنشاء طلب تجريبي (#${order.orderNumber}) وعمولة ${testAmount} ج.م`,
+            message: `تم إنشاء عمولة اختبارية ${testAmount} ج.م`,
             data: {
                 orderId: order.id,
                 orderNumber: order.orderNumber,
