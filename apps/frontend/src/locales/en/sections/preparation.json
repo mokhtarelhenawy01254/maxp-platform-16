@@ -75,5 +75,27 @@
     "withoutDate": "Without Date",
     "notPrinted": "Not Printed",
     "noShippingCode": "No Shipping Code"
+  },
+  "age": {
+    "unknown": "Unknown Age",
+    "days": "{{count}} days ago",
+    "hours": "{{count}} hours ago",
+    "minutes": "{{count}} minutes ago"
+  },
+  "shortageFollowUp": {
+    "overdueLabel": "Overdue",
+    "overdueText": "Follow-up is overdue.",
+    "todayLabel": "Today",
+    "todayText": "Follow-up is scheduled for today.",
+    "withoutDateLabel": "No Date",
+    "withoutDateText": "No follow-up date specified."
+  },
+  "quickAction": {
+    "WAITING": "Prepare",
+    "PREPARING": "Quality Check",
+    "QUALITY_CHECK": "Package",
+    "PACKAGED": "Ship",
+    "STOCK_SHORTAGE": "Follow up",
+    "default": "Update"
   }
 }

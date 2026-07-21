@@ -75,5 +75,27 @@
     "withoutDate": "بدون تاريخ",
     "notPrinted": "لم يطبع",
     "noShippingCode": "بدون كود شحن"
+  },
+  "age": {
+    "unknown": "غير معروف",
+    "days": "منذ {{count}} يوم",
+    "hours": "منذ {{count}} ساعة",
+    "minutes": "منذ {{count}} دقيقة"
+  },
+  "shortageFollowUp": {
+    "overdueLabel": "متأخر",
+    "overdueText": "المتابعة متأخرة.",
+    "todayLabel": "اليوم",
+    "todayText": "مجدول للمتابعة اليوم.",
+    "withoutDateLabel": "بدون تاريخ",
+    "withoutDateText": "لم يتم تحديد تاريخ للمتابعة."
+  },
+  "quickAction": {
+    "WAITING": "تجهيز",
+    "PREPARING": "فحص الجودة",
+    "QUALITY_CHECK": "تغليف",
+    "PACKAGED": "شحن",
+    "STOCK_SHORTAGE": "متابعة",
+    "default": "تحديث"
   }
 }
