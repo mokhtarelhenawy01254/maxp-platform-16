@@ -360,6 +360,14 @@
   1. Refactored `AdminAppBootstrap.tsx` to import `ErrorBoundary` statically instead of dynamically with `React.lazy`, ensuring the recovery mechanism is always active and doesn't fail to load itself when old chunks are deleted.
   2. Configured both `location /` blocks in `nginx_configs/maxp.online.conf` with Cache-Control headers (`no-cache, no-store, must-revalidate`, `Pragma "no-cache"`, `Expires "0"`) to prevent the browser from caching `index.html` and force it to fetch updated assets.
 
+## 2026-07-21 / 2026-03-09
+- **WhatsApp Template Broadcast & Session Resolution Fix (FIX)**: Fixed WhatsApp template list stale options in frontend and resolved the "Session not found" broadcast campaign failures.
+  1. Updated frontend `WhatsAppTemplateBroadcast.tsx` to immediately clear templates and reset the selected template upon changing WhatsApp sessions, preventing stale options from previously loaded sessions on network delay or load failures.
+  2. Passed the selected `whatsAppSessionId` in the body payload from frontend to the campaign creation API endpoint (`POST /api/v1/broadcast/campaigns`).
+  3. Added `whatsAppSessionId String?` optional field to the `BroadcastCampaign` prisma model and generated the updated client.
+  4. Updated `broadcastController.js` to store the selected `whatsAppSessionId` on campaign creation and retrieve it when triggering campaigns, falling back dynamically to the first available Meta Cloud session if not provided.
+  5. Completely refactored `broadcastSchedulerService.js` to support the WhatsApp channel, enabling scheduled campaigns to resolve the WhatsApp session and send messages using `WhatsAppMessageHandler.sendTemplateMessage` instead of attempting to send Facebook Messenger text messages.
+
 ## 2026-07-02 / 2026-03-09
 - **AI Agent Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors on the sandbox testing tab (`/admin/ai-hub?tab=sandbox`). Resolved a `NameError` crash in `skills_pipeline.py` caused by an undefined `has_images` variable reference inside `_llm_call`, and implemented a fallback Arabic response when the LLM returns an empty message after multiple retries (due to provider timeouts or rate limits), preventing empty replies from reaching downstream backend pipelines.
 - **DeepSeek DSML XML Tool Call Parsing (FIX)**: Fixed the bug where DeepSeek V4 models generated XML-like DSML tool calling markup inside plain text responses, which leaked to customers in chat sessions. Replaced the JSON-based DSML parser in `client.py` with a robust regex parser that correctly extracts tool calls and parameter values from spaced or standard XML DSML markup, performs automatic type coercion, and falls back to JSON-in-DSML legacy structures. Trigger conditions were also expanded to intercept DSML format leaks across alternative providers hosting DeepSeek models (e.g., OpenRouter, SambaNova).

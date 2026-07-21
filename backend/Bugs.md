@@ -1227,7 +1227,6 @@
   - `apps/frontend/src/components/dashboard/widgets/AppWidgetCard.tsx`
   - `apps/frontend/src/components/dashboard/widgets/AppWidgetMini.tsx`
 
-
 ### [SECURITY/FIX] WhatsApp Cloud Connect App Secret Protection & Dynamic PIN
 - **Date**: 2026-07-19 / 2026-03-09
 - **Description**: Secured the Meta OAuth credentials from git history, generated random registration PINs, and aligned Graph API versions.
@@ -1245,3 +1244,22 @@
   - `apps/backend/data/facebook-oauth-config.example.json`
   - `apps/backend/controller/whatsappController.js`
   - `.gitignore`
+
+### [BUG FIX] WhatsApp Template Broadcast Campaign Failures and Session Stale options
+- **Date**: 2026-07-21 / 2026-03-09
+- **Description**: Fixed WhatsApp template list stale options in frontend and resolved the "Session not found" broadcast campaign failures.
+- **Root Cause**:
+  1. In the frontend `WhatsAppTemplateBroadcast.tsx`, changing the WhatsApp session did not clear the template list from the previously selected session, leading to mixed templates when the new session's fetch failed or took too long.
+  2. In the database, the `BroadcastCampaign` model was missing a relation or field to track the specific WhatsApp session selected by the user.
+  3. The backend `broadcastController.js` had hardcoded `waSessionId` as `company:companyId` which is not a valid session ID inside `WhatsAppSession`, causing "Session not found" errors when executing immediate broadcasts.
+  4. The background scheduler `broadcastSchedulerService.js` had no implementation for WhatsApp campaigns, skipping recipients with no `facebookId` and attempting to send Messenger text messages for WhatsApp template campaigns.
+- **Resolution**:
+  1. Added `whatsAppSessionId String?` to `BroadcastCampaign` prisma model and regenerated the client.
+  2. Updated frontend to clear templates state immediately upon session change, and passed `whatsAppSessionId: selectedSessionId` during campaign creation.
+  3. Updated `broadcastController.js` to store `whatsAppSessionId` and resolve it during sending, with a fallback to the first active Meta Cloud session if not provided.
+  4. Implemented WhatsApp template message sending branch in `broadcastSchedulerService.js` so scheduled WhatsApp broadcasts are fully supported and sent using `WhatsAppMessageHandler.sendTemplateMessage`.
+- **Files Modified**:
+  - `apps/backend/prisma/schema/marketing.prisma`
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`

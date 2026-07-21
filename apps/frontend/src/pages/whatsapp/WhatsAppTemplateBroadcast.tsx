@@ -104,12 +104,21 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   }, [withCompanyConfig]);
 
   const fetchTemplates = useCallback(async () => {
-    if (!selectedSessionId) return;
+    if (!selectedSessionId) {
+      setTemplates([]);
+      setSelectedTemplate("");
+      return;
+    }
     try {
+      setTemplates([]);
+      setSelectedTemplate("");
       const res = await apiClient.get(`/whatsapp-templates/templates?sessionId=${selectedSessionId}`, withCompanyConfig());
       const approved = (res.data?.templates || []).filter((t: MetaTemplate) => t.status === "APPROVED");
       setTemplates(approved);
-    } catch { }
+    } catch {
+      setTemplates([]);
+      setSelectedTemplate("");
+    }
   }, [selectedSessionId, withCompanyConfig]);
 
   const fetchCustomerLists = useCallback(async () => {
@@ -227,6 +236,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         targetAudience: selectedListId || "manual",
         waTemplateName: selectedTemplate,
         waLanguageCode: languageCode,
+        whatsAppSessionId: selectedSessionId,
         sendNow: scheduleAt ? "false" : "true",
         scheduledAt: scheduleAt || undefined,
       };
@@ -258,11 +268,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     } finally {
       if (!scheduleAt) { setSending(false); setSendProgress(null); }
     }
-  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, withCompanyConfig, fetchCampaigns]);
-
-
-
-
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, selectedSessionId, withCompanyConfig, fetchCampaigns]);
 
   const openRate = (c: Campaign) =>
     c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;

@@ -56,6 +56,7 @@ exports.createCampaign = async (req, res) => {
       targetAudience,
       waTemplateName,
       waLanguageCode,
+      whatsAppSessionId,
       leadCategoryId,
       scheduledAt,
       tags,
@@ -164,6 +165,7 @@ exports.createCampaign = async (req, res) => {
         targetAudience,
         waTemplateName: waTemplateName || null,
         waLanguageCode: waLanguageCode || 'en',
+        whatsAppSessionId: whatsAppSessionId || null,
         leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         tags: tagsString,
@@ -798,6 +800,33 @@ exports.sendCampaign = async (req, res) => {
 
     if (isWhatsApp) {
       // ==================== إرسال عبر WhatsApp Templates ====================
+      // تحديد معرف الجلسة الصحيح
+      let waSessionId = campaign.whatsAppSessionId;
+      
+      // إذا لم تكن الجلسة محفوظة في الحملة، نبحث عن أول جلسة Meta Cloud للشركة
+      if (!waSessionId) {
+        console.log(`🔍 [SEND CAMPAIGN] لم يتم حفظ whatsAppSessionId في الحملة، يتم البحث عن جلسة Meta Cloud افتراضية`);
+        const metaSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+          where: { companyId, provider: 'META_CLOUD' }
+        });
+        if (metaSession) {
+          waSessionId = metaSession.id;
+        } else {
+          // fallback لأي جلسة افتراضية أو أول جلسة متاحة للشركة
+          const defaultSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { companyId, isDefault: true }
+          }) || await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { companyId }
+          });
+          waSessionId = defaultSession?.id || null;
+        }
+      }
+
+      console.log(`📞 [SEND CAMPAIGN] باستخدام معرف الجلسة: ${waSessionId}`);
+      if (!waSessionId) {
+        throw new Error('لا توجد جلسة واتساب نشطة متاحة لهذه الحملة');
+      }
+
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
         try {
@@ -813,7 +842,6 @@ exports.sendCampaign = async (req, res) => {
           }
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
-          const waSessionId = companyId ? `company:${companyId}` : null;
 
 
           // Build template body parameters from customer data
