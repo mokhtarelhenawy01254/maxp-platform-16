@@ -534,3 +534,227 @@ exports.getEmployeeAnalytics = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch employee analytics' });
   }
 };
+
+/**
+ * @route GET /api/v1/whatsapp-inbox/conversation-analytics
+ * @desc Conversation analytics: status distribution, hourly patterns, tags, recent conversations
+ * @query startDate - ISO date string
+ * @query endDate - ISO date string
+ */
+exports.getConversationAnalytics = async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const companyId = req.user.companyId;
+    const { startDate, endDate } = req.query;
+
+    let start, end;
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      const now = new Date();
+      start = new Date(now);
+      start.setDate(start.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+    }
+
+    const dateRange = { gte: start, lte: end };
+
+    // 1. All WhatsApp conversations created in period
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        companyId,
+        channel: 'WHATSAPP',
+        createdAt: dateRange,
+      },
+      select: {
+        id: true,
+        status: true,
+        assignedUserId: true,
+        lastMessageAt: true,
+        lastMessageIsFromCustomer: true,
+        unreadCount: true,
+        priority: true,
+        createdAt: true,
+      },
+    });
+
+    const totalConversations = conversations.length;
+
+    // 2. Status distribution
+    const statusCounts = {};
+    for (const conv of conversations) {
+      statusCounts[conv.status] = (statusCounts[conv.status] || 0) + 1;
+    }
+
+    // 3. Assigned vs unassigned
+    const assignedCount = conversations.filter(c => c.assignedUserId).length;
+    const unassignedCount = totalConversations - assignedCount;
+
+    // 4. Last message origin (who needs to reply next)
+    const waitingForReply = conversations.filter(c => c.lastMessageIsFromCustomer).length;
+    const awaitingCustomer = totalConversations - waitingForReply;
+
+    // 5. Messages in period for these conversations
+    const convIds = conversations.map(c => c.id);
+    const messages = convIds.length > 0
+      ? await prisma.message.findMany({
+          where: {
+            conversationId: { in: convIds },
+            createdAt: dateRange,
+          },
+          select: {
+            id: true,
+            conversationId: true,
+            isFromCustomer: true,
+            senderId: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        })
+      : [];
+
+    const totalMessages = messages.length;
+    const incomingMessages = messages.filter(m => m.isFromCustomer).length;
+    const outgoingMessages = totalMessages - incomingMessages;
+
+    // 6. Avg messages per conversation
+    const msgsPerConv = new Map();
+    for (const msg of messages) {
+      msgsPerConv.set(msg.conversationId, (msgsPerConv.get(msg.conversationId) || 0) + 1);
+    }
+    const avgMessagesPerConversation = convIds.length > 0
+      ? Math.round((totalMessages / convIds.length) * 10) / 10
+      : 0;
+
+    // 7. Hourly distribution (0-23)
+    const hourlyDistribution = Array.from({ length: 24 }, () => 0);
+    for (const msg of messages) {
+      const hour = new Date(msg.createdAt).getHours();
+      hourlyDistribution[hour]++;
+    }
+
+    // 8. Daily distribution (for time series)
+    const dailyMap = new Map();
+    for (const msg of messages) {
+      const day = new Date(msg.createdAt).toISOString().substring(0, 10);
+      if (!dailyMap.has(day)) dailyMap.set(day, { incoming: 0, outgoing: 0, conversations: new Set() });
+      const entry = dailyMap.get(day);
+      if (msg.isFromCustomer) entry.incoming++;
+      else entry.outgoing++;
+      entry.conversations.add(msg.conversationId);
+    }
+    const dailyDistribution = Array.from(dailyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, data]) => ({
+        date,
+        incoming: data.incoming,
+        outgoing: data.outgoing,
+        conversations: data.conversations.size,
+      }));
+
+    // 9. Tags distribution (from ConversationTag)
+    const tags = convIds.length > 0
+      ? await prisma.conversationTag.findMany({
+          where: { conversationId: { in: convIds } },
+          select: { tag: true, conversationId: true },
+        })
+      : [];
+    const tagCounts = {};
+    for (const t of tags) {
+      tagCounts[t.tag] = (tagCounts[t.tag] || 0) + 1;
+    }
+    const tagDistribution = Object.entries(tagCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([tag, count]) => ({ tag, count }));
+
+    // 10. Unread summary
+    const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+    const conversationsWithUnread = conversations.filter(c => c.unreadCount > 0).length;
+
+    // 11. Response time calculation
+    const convMsgs = new Map();
+    for (const msg of messages) {
+      if (!convMsgs.has(msg.conversationId)) convMsgs.set(msg.conversationId, []);
+      convMsgs.get(msg.conversationId).push(msg);
+    }
+    const responseTimes = [];
+    for (const [, msgs] of convMsgs) {
+      let lastCustomerTime = null;
+      for (const msg of msgs) {
+        if (msg.isFromCustomer) {
+          lastCustomerTime = msg.createdAt;
+        } else if (lastCustomerTime) {
+          const diffMs = msg.createdAt - lastCustomerTime;
+          if (diffMs > 0 && diffMs < 24 * 60 * 60 * 1000) {
+            responseTimes.push(diffMs);
+          }
+        }
+      }
+    }
+    const avgResponseTimeMs = responseTimes.length > 0
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+      : null;
+
+    // 12. Recent conversations (last 10 by lastMessageAt)
+    const recentConversations = [...conversations]
+      .sort((a, b) => {
+        const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+        const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, 10)
+      .map(c => ({
+        id: c.id,
+        status: c.status,
+        assignedUserId: c.assignedUserId,
+        lastMessageAt: c.lastMessageAt,
+        lastMessageIsFromCustomer: c.lastMessageIsFromCustomer,
+        unreadCount: c.unreadCount,
+        messageCount: msgsPerConv.get(c.id) || 0,
+      }));
+
+    // 13. Fetch user names for assigned moderators
+    const assignedUserIds = [...new Set(conversations.filter(c => c.assignedUserId).map(c => c.assignedUserId))];
+    const assignedUsers = assignedUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: assignedUserIds } },
+          select: { id: true, firstName: true, lastName: true },
+        })
+      : [];
+    const userMap = new Map(assignedUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
+
+    res.json({
+      success: true,
+      period: { start: start.toISOString(), end: end.toISOString() },
+      summary: {
+        totalConversations,
+        totalMessages,
+        incomingMessages,
+        outgoingMessages,
+        avgMessagesPerConversation,
+        assignedCount,
+        unassignedCount,
+        waitingForReply,
+        awaitingCustomer,
+        totalUnread,
+        conversationsWithUnread,
+        avgResponseTimeMs,
+        avgResponseTimeMin: avgResponseTimeMs ? Math.round(avgResponseTimeMs / 60000) : null,
+      },
+      statusDistribution: statusCounts,
+      hourlyDistribution,
+      dailyDistribution,
+      tagDistribution,
+      recentConversations,
+      userMap: Object.fromEntries(userMap),
+    });
+  } catch (error) {
+    console.error('[InboxController] getConversationAnalytics error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch conversation analytics' });
+  }
+};
