@@ -323,6 +323,12 @@ const Register: React.FC = () => {
       const SOURCE_TO_BUNDLE: Record<string, string> = {
         messaging: "messaging-bundle",
         "ai-inbox": "ai-inbox-bundle",
+        medical: "medical-bundle",
+      };
+
+      const SOURCE_LANDING_DESTINATION: Record<string, string> = {
+        "ai-inbox": "/admin/ai-hub?tab=sandbox",
+        medical: "/admin/booking/dashboard",
       };
 
       const token = localStorage.getItem("accessToken");
@@ -335,7 +341,7 @@ const Register: React.FC = () => {
             body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
           });
           const data = await res.json();
-          navigate(data.success ? "/admin/ai-hub?tab=sandbox" : (redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION), { replace: true });
+          navigate(data.success ? (SOURCE_LANDING_DESTINATION[source] || "/admin/ai-hub?tab=sandbox") : (redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION), { replace: true });
         } catch {
           navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
         }
