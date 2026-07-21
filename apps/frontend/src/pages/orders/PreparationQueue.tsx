@@ -1069,7 +1069,7 @@ const PreparationQueue: React.FC = () => {
               onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
               onProductFilterChange={uiActions.setProductFilter}
               onItemCountFilterChange={uiActions.setItemCountFilter}
-              onSortChange={uiActions.setSort}
+              onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
             />
           </div>
         )}
