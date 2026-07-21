@@ -908,6 +908,18 @@ exports.sendCampaign = async (req, res) => {
         throw new Error('لا توجد جلسة واتساب نشطة متاحة لهذه الحملة');
       }
 
+      // Fetch template body text from Meta API so chat history displays real text content
+      let templateBodyText = '';
+      try {
+        const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
+        const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
+        if (targetMetaTemplate) {
+          templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+        }
+      } catch (tmplErr) {
+        console.warn('⚠️ [SEND CAMPAIGN] Could not fetch template body text:', tmplErr.message);
+      }
+
       // تطبيق الحد الأقصى للمستلمين إذا تم تحديده
       const maxRecipients = parseInt(req.body.limit) || 0;
       if (maxRecipients > 0 && conversations.length > maxRecipients) {
@@ -946,7 +958,6 @@ exports.sendCampaign = async (req, res) => {
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-
           // Build template body parameters from customer data
           const bodyParams = [];
           if (conv.customer.firstName) {
@@ -960,12 +971,22 @@ exports.sendCampaign = async (req, res) => {
             ? [{ type: 'body', parameters: bodyParams }]
             : [];
 
+          // Resolve variables in templateBodyText if present
+          let resolvedBody = templateBodyText;
+          if (resolvedBody && bodyParams.length > 0) {
+            bodyParams.forEach((param, idx) => {
+              if (param.text) {
+                resolvedBody = resolvedBody.replace(new RegExp(`\\{\\{${idx + 1}\\}\\}`, 'g'), param.text);
+              }
+            });
+          }
+
           let result;
           try {
             result = await WhatsAppMessageHandler.sendTemplateMessage(
               waSessionId, to, campaign.waTemplateName,
               { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-              { metadata: { isBroadcast: true, campaignId: campaign.id } }
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody }
             );
           } catch (sendErr) {
             if (components.length > 0) {
@@ -973,7 +994,7 @@ exports.sendCampaign = async (req, res) => {
               result = await WhatsAppMessageHandler.sendTemplateMessage(
                 waSessionId, to, campaign.waTemplateName,
                 { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id } }
+                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText }
               );
             } else {
               throw sendErr;
