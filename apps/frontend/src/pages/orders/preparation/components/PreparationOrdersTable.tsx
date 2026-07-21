@@ -221,7 +221,7 @@ const PreparationOrdersTable = ({
                         #{order.orderNumber}
                       </Link>
                     )}
-                    <p className="mt-0.5 text-xs font-medium text-gray-500">
+                    <p className="mt-0.5 text-xs font-semibold text-gray-500">
                       {formatDate(order.createdAt)}
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
@@ -243,10 +243,10 @@ const PreparationOrdersTable = ({
                     <p className="text-sm font-bold text-gray-900">
                       {order.customerName}
                     </p>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-semibold text-gray-500">
                       {order.customerPhone || ""}
                     </p>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-semibold text-gray-500">
                       {getAgeLabel(order.createdAt)}
                       {order.governorate || order.city
                         ? ` • ${order.governorate || order.city}`

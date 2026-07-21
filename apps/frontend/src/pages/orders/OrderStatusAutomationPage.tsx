@@ -50,6 +50,14 @@ export default function OrderStatusAutomationPage() {
     timeUnit: "Minutes",
   });
 
+  const [eventSettings, setEventSettings] = useState({
+    printAutomationEnabled: false,
+    printAutomationStatus: "",
+    turboAutomationEnabled: false,
+    turboAutomationStatus: "",
+  });
+  const [loadingSettings, setLoadingSettings] = useState(false);
+
   const [statuses, setStatuses] = useState<OrderStatusDefinition[]>(DEFAULT_STATUSES);
 
   // Fetch store statuses
@@ -78,10 +86,45 @@ export default function OrderStatusAutomationPage() {
     }
   }, []);
 
+  const fetchSettings = useCallback(async () => {
+    setLoadingSettings(true);
+    try {
+      const res = await apiClient.get("/settings/company");
+      if (res.data?.success && res.data?.data?.settings) {
+        const companySettings = res.data.data.settings;
+        setEventSettings({
+          printAutomationEnabled: companySettings.printAutomationEnabled || false,
+          printAutomationStatus: companySettings.printAutomationStatus || "",
+          turboAutomationEnabled: companySettings.turboAutomationEnabled || false,
+          turboAutomationStatus: companySettings.turboAutomationStatus || "",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch company settings", err);
+    } finally {
+      setLoadingSettings(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchStatuses();
     fetchRules();
-  }, [fetchStatuses, fetchRules]);
+    fetchSettings();
+  }, [fetchStatuses, fetchRules, fetchSettings]);
+
+  const handleUpdateSetting = async (key: string, value: any) => {
+    const updated = { ...eventSettings, [key]: value };
+    setEventSettings(updated);
+    try {
+      await apiClient.put("/settings/company", {
+        settings: { [key]: value }
+      });
+      toast.success(t("common.savedSuccessfully") || "Saved successfully");
+    } catch (err) {
+      console.error("Failed to update setting", err);
+      toast.error(t("common.error") || "An error occurred");
+    }
+  };
 
   const handleCreate = async () => {
     if (!form.fromStatus || !form.toStatus || !form.waitTime) {
@@ -175,6 +218,106 @@ export default function OrderStatusAutomationPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Event-Based Automation Section */}
+      <div className="mb-6 rounded-[22px] border border-slate-200/70 bg-white/70 p-5 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/50">
+        <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
+          الأتمتة المبنية على الأحداث
+        </h3>
+        {loadingSettings ? (
+          <div className="flex justify-center p-4">
+            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Print Automation */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  تغيير الحالة عند طباعة الطلب
+                </span>
+                <button
+                  onClick={() => handleUpdateSetting("printAutomationEnabled", !eventSettings.printAutomationEnabled)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                    eventSettings.printAutomationEnabled ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-600"
+                  }`}
+                  role="switch"
+                  aria-checked={eventSettings.printAutomationEnabled}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                      eventSettings.printAutomationEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              {eventSettings.printAutomationEnabled && (
+                <div className="mt-3">
+                  <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                    الحالة المستهدفة
+                  </label>
+                  <select
+                    value={eventSettings.printAutomationStatus}
+                    onChange={(e) => handleUpdateSetting("printAutomationStatus", e.target.value)}
+                    className="w-full rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-900 dark:text-white transition"
+                    dir="rtl"
+                  >
+                    <option value="" className="dark:bg-slate-900">اختر الحالة...</option>
+                    {statuses.map((s) => (
+                      <option key={s.code} value={s.code} className="dark:bg-slate-900">
+                        {getStatusName(s.code)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Turbo Automation */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  تغيير الحالة عند الإرسال لتربو وصدور بوليصة
+                </span>
+                <button
+                  onClick={() => handleUpdateSetting("turboAutomationEnabled", !eventSettings.turboAutomationEnabled)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                    eventSettings.turboAutomationEnabled ? "bg-indigo-500" : "bg-slate-300 dark:bg-slate-600"
+                  }`}
+                  role="switch"
+                  aria-checked={eventSettings.turboAutomationEnabled}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                      eventSettings.turboAutomationEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              {eventSettings.turboAutomationEnabled && (
+                <div className="mt-3">
+                  <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                    الحالة المستهدفة
+                  </label>
+                  <select
+                    value={eventSettings.turboAutomationStatus}
+                    onChange={(e) => handleUpdateSetting("turboAutomationStatus", e.target.value)}
+                    className="w-full rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-900 dark:text-white transition"
+                    dir="rtl"
+                  >
+                    <option value="" className="dark:bg-slate-900">اختر الحالة...</option>
+                    {statuses.map((s) => (
+                      <option key={s.code} value={s.code} className="dark:bg-slate-900">
+                        {getStatusName(s.code)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -5,6 +5,7 @@
 
 const TurboService = require('../services/turboService');
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
+const orderService = require('../services/orderService');
 
 function normalizeGuestShippingAddress(rawShippingAddress) {
   let parsedShippingAddress = rawShippingAddress || {};
@@ -558,6 +559,38 @@ const createShipment = async (req, res) => {
     }
 
     console.log('🔍 [TURBO-CONTROLLER] Verification - Order after update:', verifyOrder);
+
+    // ─── Event-Based Automation: Turbo ───────────────────────────────────
+    try {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { settings: true }
+      });
+      if (company && company.settings) {
+        const companySettings = JSON.parse(company.settings);
+        if (
+          companySettings.turboAutomationEnabled &&
+          companySettings.turboAutomationStatus &&
+          companySettings.turboAutomationStatus !== order.status
+        ) {
+          await orderService.updateOrderStatus(
+            order.orderNumber,
+            companyId,
+            companySettings.turboAutomationStatus,
+            'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح',
+            'SYSTEM',
+            'System Automation',
+            null,
+            true // isOverride - bypass standard transition checks
+          );
+          console.log('✅ [TURBO-AUTOMATION] Order status updated to:', companySettings.turboAutomationStatus);
+        }
+      }
+    } catch (autoErr) {
+      // Don't fail the main request if automation fails
+      console.error('⚠️ [TURBO-AUTOMATION] Error running turbo automation:', autoErr.message);
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     res.json({
       success: true,
