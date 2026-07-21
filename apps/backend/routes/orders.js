@@ -689,6 +689,40 @@ const getBulkStatusNote = (status) => {
   return 'Bulk status update';
 };
 
+const PREPARATION_ONLY_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK'
+]);
+
+const getMappedRegularOrderStatus = (preparationStatus) =>
+  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
+    ? 'CONFIRMED'
+    : 'PROCESSING';
+
+const parseOrderMetadata = (rawMetadata) => {
+  if (!rawMetadata) return {};
+  if (typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)) {
+    return { ...rawMetadata };
+  }
+  if (typeof rawMetadata === 'string') {
+    try {
+      const parsed = JSON.parse(rawMetadata);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      return {};
+    }
+  }
+  return {};
+};
+
 const normalizeStatusNote = (value) => {
   if (value === null || value === undefined) {
     return '';
@@ -748,6 +782,98 @@ const updateAnyOrderStatus = async ({
   options = {}
 }) => {
   const { skipTransitionValidation = false } = options;
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: orderIdentifier, companyId },
+          { orderNumber: orderIdentifier, companyId }
+        ]
+      }
+    });
+
+    if (order) {
+      const currentMetadata = parseOrderMetadata(order.metadata);
+      const previousPreparationStatus =
+        typeof currentMetadata.preparationStatus === 'string'
+          ? currentMetadata.preparationStatus
+          : order.status;
+      const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
+      const nextMetadata = {
+        ...currentMetadata,
+        preparationStatus: normalizedStatus,
+        preparationStatusUpdatedAt: new Date().toISOString()
+      };
+
+      const updatedOrder = await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: mappedStatus,
+          notes: notes || undefined,
+          metadata: JSON.stringify(nextMetadata),
+          statusHistory: {
+            create: {
+              status: normalizedStatus,
+              oldStatus: previousPreparationStatus,
+              reason: notes || 'Bulk preparation queue update',
+              changedBy: userId,
+              userName
+            }
+          },
+          updatedAt: new Date()
+        }
+      });
+
+      return { orderType: 'regular', order: updatedOrder };
+    }
+
+    const guestOrder = await prisma.guestOrder.findFirst({
+      where: {
+        OR: [
+          { id: orderIdentifier, companyId },
+          { orderNumber: orderIdentifier, companyId }
+        ]
+      },
+      select: { id: true, status: true, metadata: true }
+    });
+
+    if (guestOrder) {
+      const currentMetadata = parseOrderMetadata(guestOrder.metadata);
+      const nextMetadata = {
+        ...currentMetadata,
+        preparationStatus: normalizedStatus,
+        preparationStatusUpdatedAt: new Date().toISOString()
+      };
+
+      const updatedGuestOrder = await prisma.guestOrder.update({
+        where: { id: guestOrder.id },
+        data: {
+          status: normalizedStatus,
+          notes: notes || undefined,
+          metadata: JSON.stringify(nextMetadata),
+          OrderStatusHistory: {
+            create: {
+              status: normalizedStatus,
+              oldStatus: guestOrder.status,
+              reason: notes || 'Bulk preparation queue update',
+              changedBy: userId,
+              userName
+            }
+          },
+          updatedAt: new Date()
+        }
+      });
+
+      return { orderType: 'guest', order: updatedGuestOrder };
+    }
+
+    const notFoundError = new Error('الطلب غير موجود');
+    notFoundError.statusCode = 404;
+    throw notFoundError;
+  }
 
   try {
     const order = await orderService.updateOrderStatus(
@@ -2139,37 +2265,6 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         message: getCancellationReasonError()
       });
     }
-    const PREPARATION_ONLY_STATUSES = new Set([
-      'PENDING_PREPARATION',
-      'PREPARING',
-      'QUALITY_CHECK',
-      'PACKAGED',
-      'READY_TO_SHIP',
-      'STOCK_SHORTAGE',
-      'PENDING_STOCK',
-      'ON_HOLD_STOCK'
-    ]);
-    const parseOrderMetadata = (rawMetadata) => {
-      if (!rawMetadata) return {};
-      if (typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)) {
-        return { ...rawMetadata };
-      }
-      if (typeof rawMetadata === 'string') {
-        try {
-          const parsed = JSON.parse(rawMetadata);
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch (error) {
-          return {};
-        }
-      }
-      return {};
-    };
-    const getMappedRegularOrderStatus = (preparationStatus) =>
-      ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
-        ? 'CONFIRMED'
-        : 'PROCESSING';
 
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
