@@ -1,0 +1,92 @@
+{
+  "filters": {
+    "title": "فلترة التجهيز",
+    "active": "الفلاتر النشطة",
+    "ordersCount": "الطلبات: {{count}}",
+    "clearAll": "مسح الكل",
+    "allStages": "كل المراحل ({{count}})",
+    "quickSearch": "بحث سريع",
+    "quickSearchPlaceholder": "ابحث برقم الطلب...",
+    "product": "المنتج",
+    "productPlaceholder": "ابحث عن منتج...",
+    "warehouse": "المخزن",
+    "allWarehouses": "كل المخازن",
+    "stockStatus": "حالة المخزون",
+    "allStock": "الكل",
+    "ready": "متاح",
+    "shortage": "عجز",
+    "itemsCount": "عدد العناصر",
+    "singleItem": "عنصر واحد",
+    "multipleItems": "عدة عناصر",
+    "shortageReason": "سبب العجز",
+    "allReasons": "كل الأسباب",
+    "owner": "المسؤول",
+    "allOwners": "كل المسؤولين",
+    "followUpDate": "تاريخ المتابعة",
+    "allDates": "كل التواريخ",
+    "today": "اليوم",
+    "overdue": "متأخر",
+    "withoutDate": "بدون تاريخ"
+  },
+  "age": {
+    "unknown": "غير معروف",
+    "minutes": "{{count}} د",
+    "hours": "{{count}} س",
+    "days": "{{count}} ي"
+  },
+  "quickAction": {
+    "WAITING": "بانتظار التجهيز",
+    "PREPARING": "قيد التجهيز",
+    "QUALITY_CHECK": "فحص الجودة",
+    "PACKAGED": "تم التغليف",
+    "STOCK_SHORTAGE": "عجز مخزون",
+    "default": "تحديث"
+  },
+  "shortageReasons": {
+    "stock_shortage": "عجز مخزون"
+  },
+  "shortageFollowUp": {
+    "overdueLabel": "متأخر",
+    "overdueText": "هذه المتابعة تجاوزت موعدها. يرجى اتخاذ إجراء.",
+    "todayLabel": "اليوم",
+    "todayText": "المتابعة مجدولة اليوم.",
+    "withoutDateLabel": "بدون تاريخ",
+    "withoutDateText": "لم يتم تحديد تاريخ للمتابعة."
+  },
+  "merchant": {
+    "title": "ملخص عمليات التاجر",
+    "summaryDesc": "{{ordersCount}} طلب · {{piecesCount}} قطعة",
+    "refresh": "تحديث",
+    "loadError": "فشل في تحميل بيانات التاجر",
+    "statCards": {
+      "inShipping": "في الشحن",
+      "delivered": "تم التسليم",
+      "payable": "مستحق الدفع",
+      "notCompleted": "غير مكتمل"
+    },
+    "statSubValues": {
+      "ordersCount": "{{count}} طلب",
+      "piecesCount": "{{count}} قطعة",
+      "piecesAssigned": "{{count}} مخصصة"
+    },
+    "moneyCards": {
+      "expectedForMerchant": "متوقع للتاجر",
+      "dueAfterDelivery": "مستحق بعد التسليم",
+      "inShippingValue": "قيمة في الشحن",
+      "shippingCost": "تكلفة الشحن",
+      "paid": "مدفوع: {{amount}}",
+      "noPaymentsRecorded": "لا توجد مدفوعات مسجلة"
+    },
+    "table": {
+      "order": "الطلب",
+      "status": "الحالة",
+      "shipping": "الشحن",
+      "pieces": "القطع",
+      "expected": "المتوقع",
+      "due": "المستحق",
+      "noOrders": "لا توجد طلبات تاجر",
+      "noShippingCompany": "غير محدد",
+      "merchantOrderStatus": "الحالة: {{status}}"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "filters": {
+    "title": "Preparation Filters",
+    "active": "Active Filters",
+    "ordersCount": "Orders: {{count}}",
+    "clearAll": "Clear All",
+    "allStages": "All Stages ({{count}})",
+    "quickSearch": "Quick Search",
+    "quickSearchPlaceholder": "Search by order number...",
+    "product": "Product",
+    "productPlaceholder": "Search product...",
+    "warehouse": "Warehouse",
+    "allWarehouses": "All Warehouses",
+    "stockStatus": "Stock Status",
+    "allStock": "All",
+    "ready": "Ready",
+    "shortage": "Shortage",
+    "itemsCount": "Items Count",
+    "singleItem": "Single Item",
+    "multipleItems": "Multiple Items",
+    "shortageReason": "Shortage Reason",
+    "allReasons": "All Reasons",
+    "owner": "Owner",
+    "allOwners": "All Owners",
+    "followUpDate": "Follow-Up Date",
+    "allDates": "All Dates",
+    "today": "Today",
+    "overdue": "Overdue",
+    "withoutDate": "Without Date"
+  },
+  "age": {
+    "unknown": "Unknown",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} hr",
+    "days": "{{count}} day"
+  },
+  "quickAction": {
+    "WAITING": "Waiting",
+    "PREPARING": "Preparing",
+    "QUALITY_CHECK": "QC Check",
+    "PACKAGED": "Packaged",
+    "STOCK_SHORTAGE": "Stock Shortage",
+    "default": "Update"
+  },
+  "shortageReasons": {
+    "stock_shortage": "Stock Shortage"
+  },
+  "shortageFollowUp": {
+    "overdueLabel": "Overdue",
+    "overdueText": "This follow-up is overdue. Please take action.",
+    "todayLabel": "Today",
+    "todayText": "Follow-up scheduled for today.",
+    "withoutDateLabel": "No Date",
+    "withoutDateText": "No follow-up date set."
+  },
+  "merchant": {
+    "title": "Merchant Operations Summary",
+    "summaryDesc": "{{ordersCount}} orders · {{piecesCount}} pieces",
+    "refresh": "Refresh",
+    "loadError": "Failed to load merchant data",
+    "statCards": {
+      "inShipping": "In Shipping",
+      "delivered": "Delivered",
+      "payable": "Payable",
+      "notCompleted": "Not Completed"
+    },
+    "statSubValues": {
+      "ordersCount": "{{count}} orders",
+      "piecesCount": "{{count}} pieces",
+      "piecesAssigned": "{{count}} assigned"
+    },
+    "moneyCards": {
+      "expectedForMerchant": "Expected for Merchant",
+      "dueAfterDelivery": "Due After Delivery",
+      "inShippingValue": "In Shipping Value",
+      "shippingCost": "Shipping Cost",
+      "paid": "Paid: {{amount}}",
+      "noPaymentsRecorded": "No payments recorded"
+    },
+    "table": {
+      "order": "Order",
+      "status": "Status",
+      "shipping": "Shipping",
+      "pieces": "Pieces",
+      "expected": "Expected",
+      "due": "Due",
+      "noOrders": "No merchant orders found",
+      "noShippingCompany": "N/A",
+      "merchantOrderStatus": "Status: {{status}}"
+    }
+  }
+}
