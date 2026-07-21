@@ -1,5 +1,13 @@
 # Team Sync Updates
 
+## 2026-07-21 / 2026-03-09
+- **WhatsApp Template Broadcast Campaign Failures (BUGFIX / COMPLETE)**:
+  1. **24h Activity Window Bypass**: Removed 24-hour activity limitation for WhatsApp campaigns so campaigns reach all company contacts.
+  2. **Session Resolution & DB Column Fix**: Fixed database migration sync issue where `whatsAppSessionId` column was missing in `broadcast_campaigns`.
+  3. **Prisma Relation Bug Fix**: Fixed Prisma relation name `recipients` -> `broadcastRecipients` in `getCampaign` and analytics controllers.
+  4. **Template Body Parameter Fallback**: Added automatic fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry template sending without body parameters if Meta Cloud API returns parameter count mismatch.
+  5. **Manual Recipients Fix**: Updated `WhatsAppTemplateBroadcast.tsx` to pass `manualPhones` in payload, and fixed critical backend `else if` branch that previously overwritten manual recipients with Facebook active chats. Verified single recipient delivery (`sentCount: 1`).
+
 ## 2026-07-20 / 2026-03-09
 - **Repository Migration (DEPLOY / COMPLETE)**:
   1. **Purpose**: Switched active development from the old repository `maxp-platform3` to the new repository `maxp-platform4` due to exhausted GitHub Actions quota on the old account.

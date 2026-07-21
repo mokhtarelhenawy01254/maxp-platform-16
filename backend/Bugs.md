@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [BUG FIX / BROADCAST] WhatsApp Template Campaign Overwrite & Parameter Mismatch Fixes
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Manual Recipients Overwritten**: In `broadcastController.js`, `if (isWhatsApp && !hasManualPhones)` was followed by a generic `else` block for Facebook Messenger. When sending a WhatsApp campaign with `manualPhones`, `!hasManualPhones` evaluated to `false`, causing execution to drop into the `else` block which overwrote `conversations` with Facebook 24h active chats.
+  2. **Template Parameter Mismatch**: Templates without `{{1}}` / `{{2}}` variables threw Meta Cloud API error `#100 Param count mismatch` when `bodyParams` (firstName/lastName) were forcibly passed.
+  3. **Prisma Relation Field**: `recipients` relation name in `getCampaign` and analytics endpoints did not match the schema model relation name (`broadcastRecipients`).
+- **Resolution**:
+  1. **Fixed Conditional Logic**: Changed `else` to `else if (!isWhatsApp && !hasManualPhones)` in `broadcastController.js`, preserving manual recipients array.
+  2. **Parameter Fallback**: Added `try/catch` fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry template message sending with `components: []` if Meta returns parameter mismatch error.
+  3. **Frontend Payload Fix**: Updated `WhatsAppTemplateBroadcast.tsx` to include `manualPhones` in FormData creation and pass `recipients` to `sendCampaign()`.
+- **Files Modified**:
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/backend/docs/whatsapp/whatsapp-broadcast-24h-window-bypass-2026-07-21.md`
+
 ### [FEATURE / OVERRIDE] Support for Separate WhatsApp Facebook App ID & Credentials
 - **Date**: 2026-07-19
 - **Root Cause / Requirement**:
