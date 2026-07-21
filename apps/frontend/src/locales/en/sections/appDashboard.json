@@ -73,6 +73,9 @@
     "orders": {
       "description": "Order management and analytics"
     },
+    "codDeposit": {
+      "description": "COD deposit — reduce returns with upfront payment"
+    },
     "products": {
       "description": "Product catalog and categories"
     },

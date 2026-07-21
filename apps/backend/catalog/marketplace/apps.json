@@ -1201,5 +1201,61 @@
     "engineCompatibility": null,
     "createdAt": "2026-07-20T00:00:00.000Z",
     "updatedAt": "2026-07-20T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-cod-deposit",
+    "slug": "cod-deposit",
+    "name": "COD Deposit",
+    "nameEn": "COD Deposit",
+    "description": "طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.",
+    "category": "ECOMMERCE",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": ["store"],
+    "positioning": {
+      "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
+      "surface": "داخل إعدادات الدفع، ولوحة تحكم الطلبات، وواتساب.",
+      "outcome": "تقليل المرتجعات وزيادة الالتزام من العملاء بدفع دفعة مقدمة بسيطة."
+    },
+    "features": {
+      "depositSettings": {
+        "enabled": true,
+        "name": "إعدادات الدفعة المقدمة",
+        "description": "تحديد نسبة أو مبلغ ثابت كدفعة مقدمه، مع حدود دنيا وعليا.",
+        "access": "FREE"
+      },
+      "onlinePayment": {
+        "enabled": true,
+        "name": "الدفع أونلاين عبر Kashier",
+        "description": "العميل يدفع الدفعة المقدمة عن طريق رابط دفع آمن (بطاقة/محفظة).",
+        "access": "FREE"
+      },
+      "manualProof": {
+        "enabled": true,
+        "name": "إثبات الدفع اليدوي",
+        "description": "العميل يبعت سكرين شوت تحويل والموظف يدخل الرقم ويأكد الدفعة.",
+        "access": "FREE"
+      },
+      "depositReport": {
+        "enabled": true,
+        "name": "تقارير الدفعات",
+        "description": "عرض تقارير بحالة الدفعات المقدمة لكل طلب COD.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "banknotes",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-21T00:00:00.000Z",
+    "updatedAt": "2026-07-21T00:00:00.000Z"
   }
 ]
