@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -105,27 +106,27 @@ interface PaymentStatusMeta {
 
 const PAYMENT_STATUS_META: Record<PaymentStatusKey, PaymentStatusMeta> = {
   PAID: {
-    label: "مدفوعة",
+    label: t('orderInvoices.k_19'),
     className:
       "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   },
   PENDING: {
-    label: "قيد الانتظار",
+    label: t('orderInvoices.k_18'),
     className:
       "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   },
   CANCELLED: {
-    label: "ملغاة",
+    label: t('orderInvoices.k_21'),
     className:
       "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   },
   REFUNDED: {
-    label: "مستردة",
+    label: t('orderInvoices.k_22'),
     className:
       "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   },
   PARTIALLY_PAID: {
-    label: "مدفوعة جزئياً",
+    label: t('orderInvoices.k_20'),
     className:
       "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300",
   },
@@ -212,10 +213,11 @@ const getErrorMessage = (error: unknown) => {
     return message;
   }
 
-  return "تعذر تحميل بيانات فواتير الطلبات حالياً.";
+  return t('orderInvoices.k_32');
 };
 
 const OrderInvoices: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [invoices, setInvoices] = useState<OrderInvoice[]>([]);
@@ -351,7 +353,7 @@ const OrderInvoices: React.FC = () => {
       window.open(`/orders/invoice/${invoiceId}`, "_blank");
     } catch (err) {
       console.error("Error printing invoice:", err);
-      setError("حدث خطأ أثناء محاولة طباعة الفاتورة.");
+      setError(t('orderInvoices.k_33'));
     }
   };
 
@@ -381,30 +383,30 @@ const OrderInvoices: React.FC = () => {
   const metricItems = stats
     ? [
         {
-          title: "إجمالي الفواتير",
+          title: t('orderInvoices.k_34'),
           value: stats.totalInvoices,
-          subtitle: "عدد الفواتير التي تم إصدارها داخل النظام.",
+          subtitle: t('orderInvoices.k_35'),
           tone: "primary" as const,
           icon: Receipt,
         },
         {
-          title: "فواتير مدفوعة",
+          title: t('orderInvoices.k_36'),
           value: stats.paidInvoices,
-          subtitle: "الفواتير التي تم تسويتها ماليًا بالكامل.",
+          subtitle: t('orderInvoices.k_37'),
           tone: "success" as const,
           icon: CheckCircle2,
         },
         {
-          title: "فواتير معلقة",
+          title: t('orderInvoices.k_38'),
           value: stats.pendingInvoices,
-          subtitle: "حالات تحتاج مراجعة أو متابعة في السداد.",
+          subtitle: t('orderInvoices.k_39'),
           tone: "warning" as const,
           icon: Clock3,
         },
         {
-          title: "إجمالي المبلغ",
+          title: t('orderInvoices.k_40'),
           value: formatCurrency(stats.totalAmount),
-          subtitle: "القيمة الإجمالية للفواتير ضمن النتائج الحالية.",
+          subtitle: t('orderInvoices.k_41'),
           tone: "secondary" as const,
           icon: WalletCards,
         },
@@ -413,18 +415,18 @@ const OrderInvoices: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <BusinessPageShell className="space-y-4 md:space-y-6" dir="rtl">
+      <BusinessPageShell className="space-y-4 md:space-y-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
         <BusinessPageHero
           eyebrow="ORDERS · FINANCE"
           title={
             <span className="business-page-title-row">
-              <span className="business-page-title-copy">فواتير الطلبات</span>
+              <span className="business-page-title-copy">{t('orderInvoices.k_16')}</span>
               <span className="business-page-title-artwork">
                 <Receipt className="size-6" />
               </span>
             </span>
           }
-          description="مراجعة فواتير الطلبات مع بحث سريع، حالات الدفع، والتنقل بين النتائج بشكل أوضح."
+          description={t('orderInvoices.k_1')}
           actions={
             <Button
               type="button"
@@ -446,10 +448,10 @@ const OrderInvoices: React.FC = () => {
         <BusinessMobileSearchPanel
           searchId="order-invoices-mobile-search"
           searchName="orderInvoicesMobileSearch"
-          searchLabel="بحث سريع"
-          searchPlaceholder="رقم الفاتورة أو اسم العميل"
+          searchLabel={t('orderInvoices.k_2')}
+          searchPlaceholder={t('orderInvoices.k_3')}
           searchValue={search}
-          searchAriaLabel="بحث سريع في فواتير الطلبات"
+          searchAriaLabel={t('orderInvoices.k_4')}
           onSearchChange={setSearch}
           onSearchSubmit={handleSearch}
           onOpenFilters={() => setIsFiltersSheetOpen(true)}
@@ -457,23 +459,23 @@ const OrderInvoices: React.FC = () => {
           summaryIcon={<Receipt className="size-3.5" />}
           summary={
             loading
-              ? "جاري التحديث..."
+              ? t('orderInvoices.k_42')
               : total > 0
                 ? `${currentFrom}-${currentTo} من ${total}`
-                : "لا توجد نتائج"
+                : t('orderInvoices.k_43')
           }
           activeFilters={activeFilterLabels}
         />
 
         <BusinessSectionPanel
           className="hidden md:block"
-          title="أدوات البحث والتصفية"
-          description="ابحث برقم الفاتورة أو العميل، ثم ضيّق النتائج بحالة الدفع أو التاريخ."
+          title={t('orderInvoices.k_5')}
+          description={t('orderInvoices.k_6')}
           contentClassName="space-y-4"
         >
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]">
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-search">البحث</Label>
+                <Label htmlFor="order-invoices-search">{t('orderInvoices.k_17')}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -486,15 +488,15 @@ const OrderInvoices: React.FC = () => {
                         handleSearch();
                       }
                     }}
-                    placeholder="رقم الفاتورة، اسم العميل، أو الهاتف"
+                    placeholder={t('orderInvoices.k_7')}
                     className="h-11 pr-10 text-right"
-                    aria-label="البحث في فواتير الطلبات"
+                    aria-label={t('orderInvoices.k_8')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>حالة الدفع</Label>
+                <Label>{t('orderInvoices.k_15')}</Label>
                 <Select
                   value={paymentStatus || "ALL"}
                   onValueChange={(value) => {
@@ -503,21 +505,21 @@ const OrderInvoices: React.FC = () => {
                   }}
                 >
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="كل الحالات" />
+                    <SelectValue placeholder={t('orderInvoices.k_9')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">كل الحالات</SelectItem>
-                    <SelectItem value="PENDING">قيد الانتظار</SelectItem>
-                    <SelectItem value="PAID">مدفوعة</SelectItem>
-                    <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
-                    <SelectItem value="CANCELLED">ملغاة</SelectItem>
-                    <SelectItem value="REFUNDED">مستردة</SelectItem>
+                    <SelectItem value="ALL">{t('orderInvoices.k_9')}</SelectItem>
+                    <SelectItem value="PENDING">{t('orderInvoices.k_18')}</SelectItem>
+                    <SelectItem value="PAID">{t('orderInvoices.k_19')}</SelectItem>
+                    <SelectItem value="PARTIALLY_PAID">{t('orderInvoices.k_20')}</SelectItem>
+                    <SelectItem value="CANCELLED">{t('orderInvoices.k_21')}</SelectItem>
+                    <SelectItem value="REFUNDED">{t('orderInvoices.k_22')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-from">من تاريخ</Label>
+                <Label htmlFor="order-invoices-date-from">{t('orderInvoices.k_10')}</Label>
                 <Input
                   id="order-invoices-date-from"
                   name="orderInvoicesDateFrom"
@@ -525,12 +527,12 @@ const OrderInvoices: React.FC = () => {
                   value={dateFrom}
                   onChange={(event) => setDateFrom(event.target.value)}
                   className="h-11"
-                  aria-label="من تاريخ"
+                  aria-label={t('orderInvoices.k_10')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-to">إلى تاريخ</Label>
+                <Label htmlFor="order-invoices-date-to">{t('orderInvoices.k_11')}</Label>
                 <Input
                   id="order-invoices-date-to"
                   name="orderInvoicesDateTo"
@@ -538,7 +540,7 @@ const OrderInvoices: React.FC = () => {
                   value={dateTo}
                   onChange={(event) => setDateTo(event.target.value)}
                   className="h-11"
-                  aria-label="إلى تاريخ"
+                  aria-label={t('orderInvoices.k_11')}
                 />
               </div>
 
@@ -557,23 +559,23 @@ const OrderInvoices: React.FC = () => {
             {error ? (
               <Alert variant="destructive" className="border-rose-500/30">
                 <AlertCircle className="size-4" />
-                <AlertTitle>تعذر تحميل البيانات</AlertTitle>
+                <AlertTitle>{t('orderInvoices.k_23')}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
         </BusinessSectionPanel>
 
         <BusinessSectionPanel
-          title="سجل الفواتير"
+          title={t('orderInvoices.k_12')}
           description={
             total > 0
               ? `عرض ${currentFrom} - ${currentTo} من أصل ${total} فاتورة`
-              : "لا توجد نتائج مطابقة حاليًا."
+              : t('orderInvoices.k_44')
           }
           headerAside={
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
               <Receipt className="size-3.5" />
-              {loading ? "جاري التحديث..." : `عدد العناصر في الصفحة: ${rowsPerPage}`}
+              {loading ? t('orderInvoices.k_42') : `عدد العناصر في الصفحة: ${rowsPerPage}`}
             </div>
           }
           contentClassName="p-0"
@@ -581,13 +583,13 @@ const OrderInvoices: React.FC = () => {
             {loading ? (
               <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
                 <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-sm">جارٍ تحميل فواتير الطلبات...</p>
+                <p className="text-sm">{t('orderInvoices.k_24')}</p>
               </div>
             ) : invoices.length === 0 ? (
               <div className="flex min-h-[280px] items-center justify-center px-6 py-10">
                 <Alert className="max-w-md border-dashed bg-background/70">
                   <AlertCircle className="size-4" />
-                  <AlertTitle>لا توجد فواتير</AlertTitle>
+                  <AlertTitle>{t('orderInvoices.k_25')}</AlertTitle>
                   <AlertDescription>
                     جرّب تغيير معايير البحث أو تحديث البيانات لمعرفة أحدث النتائج.
                   </AlertDescription>
@@ -625,13 +627,13 @@ const OrderInvoices: React.FC = () => {
 
                         <div className="mt-4 grid gap-3 rounded-2xl bg-muted/30 p-3 text-sm">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">الطلب</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_26')}</span>
                             <span className="font-medium text-foreground">
                               {invoice.order?.orderNumber || "—"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">العميل</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_27')}</span>
                             <div className="text-left">
                               <p className="font-medium text-foreground">
                                 {invoice.customerName}
@@ -644,13 +646,13 @@ const OrderInvoices: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">التاريخ</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_28')}</span>
                             <span className="font-medium text-foreground">
                               {formatDate(invoice.issueDate)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">المبلغ</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_29')}</span>
                             <span className="font-semibold text-foreground">
                               {formatCurrency(
                                 toAmount(invoice.totalAmount),
@@ -773,7 +775,7 @@ const OrderInvoices: React.FC = () => {
                                       <Eye className="size-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>عرض الفاتورة</TooltipContent>
+                                  <TooltipContent>{t('orderInvoices.k_30')}</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
@@ -789,7 +791,7 @@ const OrderInvoices: React.FC = () => {
                                       <Printer className="size-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>طباعة الفاتورة</TooltipContent>
+                                  <TooltipContent>{t('orderInvoices.k_31')}</TooltipContent>
                                 </Tooltip>
                               </div>
                             </TableCell>
@@ -892,13 +894,13 @@ const OrderInvoices: React.FC = () => {
         <BusinessFilterSheet
           open={isFiltersSheetOpen}
           onOpenChange={setIsFiltersSheetOpen}
-          title="فلترة النتائج"
-          description="اختَر حالة الدفع أو المدة الزمنية ثم طبّق الفلاتر."
+          title={t('orderInvoices.k_13')}
+          description={t('orderInvoices.k_14')}
           onClear={handleClearFilters}
           onApply={handleApplyFilters}
         >
           <div className="space-y-2">
-            <Label htmlFor="order-invoices-sheet-search">البحث</Label>
+            <Label htmlFor="order-invoices-sheet-search">{t('orderInvoices.k_17')}</Label>
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -906,14 +908,14 @@ const OrderInvoices: React.FC = () => {
                 name="orderInvoicesSheetSearch"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="رقم الفاتورة أو اسم العميل"
+                placeholder={t('orderInvoices.k_3')}
                 className="h-11 rounded-2xl pr-10 text-right"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>حالة الدفع</Label>
+            <Label>{t('orderInvoices.k_15')}</Label>
             <Select
               value={paymentStatus || "ALL"}
               onValueChange={(value) => {
@@ -921,23 +923,23 @@ const OrderInvoices: React.FC = () => {
                 setPage(0);
               }}
             >
-              <SelectTrigger className="h-11 rounded-2xl" aria-label="حالة الدفع">
-                <SelectValue placeholder="كل الحالات" />
+              <SelectTrigger className="h-11 rounded-2xl" aria-label={t('orderInvoices.k_15')}>
+                <SelectValue placeholder={t('orderInvoices.k_9')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الحالات</SelectItem>
-                <SelectItem value="PENDING">قيد الانتظار</SelectItem>
-                <SelectItem value="PAID">مدفوعة</SelectItem>
-                <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
-                <SelectItem value="CANCELLED">ملغاة</SelectItem>
-                <SelectItem value="REFUNDED">مستردة</SelectItem>
+                <SelectItem value="ALL">{t('orderInvoices.k_9')}</SelectItem>
+                <SelectItem value="PENDING">{t('orderInvoices.k_18')}</SelectItem>
+                <SelectItem value="PAID">{t('orderInvoices.k_19')}</SelectItem>
+                <SelectItem value="PARTIALLY_PAID">{t('orderInvoices.k_20')}</SelectItem>
+                <SelectItem value="CANCELLED">{t('orderInvoices.k_21')}</SelectItem>
+                <SelectItem value="REFUNDED">{t('orderInvoices.k_22')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-from">من تاريخ</Label>
+              <Label htmlFor="order-invoices-mobile-date-from">{t('orderInvoices.k_10')}</Label>
               <div className="relative">
                 <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -947,13 +949,13 @@ const OrderInvoices: React.FC = () => {
                   value={dateFrom}
                   onChange={(event) => setDateFrom(event.target.value)}
                   className="h-11 rounded-2xl pr-10"
-                  aria-label="من تاريخ"
+                  aria-label={t('orderInvoices.k_10')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-to">إلى تاريخ</Label>
+              <Label htmlFor="order-invoices-mobile-date-to">{t('orderInvoices.k_11')}</Label>
               <div className="relative">
                 <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -963,7 +965,7 @@ const OrderInvoices: React.FC = () => {
                   value={dateTo}
                   onChange={(event) => setDateTo(event.target.value)}
                   className="h-11 rounded-2xl pr-10"
-                  aria-label="إلى تاريخ"
+                  aria-label={t('orderInvoices.k_11')}
                 />
               </div>
             </div>

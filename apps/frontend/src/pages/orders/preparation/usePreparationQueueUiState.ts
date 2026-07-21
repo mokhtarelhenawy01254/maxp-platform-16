@@ -8,8 +8,6 @@ import type {
   StageFilter,
   StockFilter,
   ItemCountFilter,
-  NotPrintedFilter,
-  NoShippingCodeFilter,
 } from "./types";
 
 interface PreparationQueueUiState {
@@ -22,8 +20,6 @@ interface PreparationQueueUiState {
   productFilter: string;
   itemCountFilter: ItemCountFilter;
   search: string;
-  notPrintedFilter: NotPrintedFilter;
-  noShippingCodeFilter: NoShippingCodeFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
   page: number;
@@ -44,8 +40,6 @@ type PreparationQueueUiAction =
   | { type: "set_product_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_search"; value: string }
-  | { type: "set_not_printed_filter"; value: NotPrintedFilter }
-  | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
   | { type: "set_sort"; value: { sortBy: SortBy; sortOrder: SortOrder } }
   | { type: "set_page_size"; value: PageSize }
   | { type: "reset_page" }
@@ -70,8 +64,6 @@ const initialState: PreparationQueueUiState = {
   productFilter: "",
   itemCountFilter: "all",
   search: "",
-  notPrintedFilter: "all",
-  noShippingCodeFilter: "all",
   sortBy: "createdAt",
   sortOrder: "desc",
   page: 1,
@@ -119,10 +111,6 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { itemCountFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
-    case "set_not_printed_filter":
-      return withPageReset(state, { notPrintedFilter: action.value });
-    case "set_no_shipping_code_filter":
-      return withPageReset(state, { noShippingCodeFilter: action.value });
     case "set_sort":
       return withPageReset(state, {
         sortBy: action.value.sortBy,
@@ -231,10 +219,6 @@ export const usePreparationQueueUiState = () => {
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
-      setNotPrintedFilter: (value: NotPrintedFilter) =>
-        dispatch({ type: "set_not_printed_filter", value }),
-      setNoShippingCodeFilter: (value: NoShippingCodeFilter) =>
-        dispatch({ type: "set_no_shipping_code_filter", value }),
       setSort: (value: { sortBy: SortBy; sortOrder: SortOrder }) =>
         dispatch({ type: "set_sort", value }),
       setPageSize: (value: PageSize) =>

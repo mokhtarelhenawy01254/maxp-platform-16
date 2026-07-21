@@ -167,31 +167,22 @@ const TurboRecords: React.FC = () => {
 
     const getTurboStatusColor = (status: string) => {
         const s = status?.toLowerCase() || '';
-        if (s === 'delivered' || s === 'completed' || s === 'supplied') return 'bg-green-100 text-green-800';
-        if (s === 'out_for_delivery' || s === 'delayed_with_captain') return 'bg-blue-100 text-blue-800';
+        if (s === 'delivered' || s === 'completed') return 'bg-green-100 text-green-800';
+        if (s === 'shipped' || s === 'out_for_delivery') return 'bg-blue-100 text-blue-800';
         if (s === 'cancelled') return 'bg-red-100 text-red-800';
-        if (s === 'returned' || s === 'returned_to_company' || s === 'returned_to_merchant') return 'bg-orange-100 text-orange-800';
-        if (s === 'processing' || s === 'confirmed' || s === 'shipped') return 'bg-yellow-100 text-yellow-800';
-        if (s === 'failed_delivery' || s === 'lost' || s === 'destroyed' || s === 'missing') return 'bg-red-100 text-red-800';
-        if (s === 'incomplete') return 'bg-red-50 text-red-700 border-2 border-red-200';
-        if (s === 'delayed' || s === 'rescheduled') return 'bg-purple-100 text-purple-800';
-        if (s === 'international') return 'bg-indigo-100 text-indigo-800';
+        if (s === 'returned') return 'bg-orange-100 text-orange-800';
+        if (s === 'processing' || s === 'confirmed') return 'bg-yellow-100 text-yellow-800';
+        if (s === 'failed_delivery' || s === 'lost') return 'bg-red-100 text-red-800';
         return 'bg-gray-100 text-gray-800';
     };
 
     const statusSummaryItems = [
-        { key: 'incomplete', label: 'غير مكتملة', color: 'border-red-300 bg-red-50' },
-        { key: 'pending', label: 'قيد الإنتظار', color: 'border-gray-300 bg-gray-50' },
-        { key: 'processing', label: 'قيد التنفيذ', color: 'border-yellow-300 bg-yellow-50' },
-        { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-blue-300 bg-blue-50' },
-        { key: 'delayed_with_captain', label: 'مؤجلات مع المندوب', color: 'border-purple-300 bg-purple-50' },
-        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50' },
-        { key: 'returned_to_company', label: 'مرتجع مع الشحن', color: 'border-orange-300 bg-orange-50' },
-        { key: 'returned_to_merchant', label: 'مرتجع مع التاجر', color: 'border-orange-300 bg-orange-50' },
+        { key: 'delivered', label: 'تم التوصيل', color: 'border-green-300 bg-green-50' },
+        { key: 'out_for_delivery', label: 'قيد التوصيل', color: 'border-blue-300 bg-blue-50' },
+        { key: 'processing', label: 'قيد المعالجة', color: 'border-yellow-300 bg-yellow-50' },
+        { key: 'returned', label: 'مرتجع', color: 'border-orange-300 bg-orange-50' },
         { key: 'cancelled', label: 'ملغي', color: 'border-red-300 bg-red-50' },
-        { key: 'destroyed', label: 'مرتجعات معدومة', color: 'border-red-300 bg-red-50' },
-        { key: 'missing', label: 'مرتجعات مفقودة', color: 'border-red-300 bg-red-50' },
-        { key: 'delayed', label: 'متأخر', color: 'border-purple-300 bg-purple-50' },
+        { key: 'pending', label: 'معلق', color: 'border-gray-300 bg-gray-50' },
     ];
 
     const statusCounts = statusSummaryItems.map(s => ({

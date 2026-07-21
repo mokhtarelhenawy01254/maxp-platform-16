@@ -336,8 +336,6 @@ exports.lpActivate = async (req, res) => {
     let appSlugs;
     if (bundleSlug === 'ai-inbox-bundle') {
       appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-business"];
-    } else if (bundleSlug === 'medical-bundle') {
-      appSlugs = ["medical-system", "unified-inbox", "ai-chat-basic"];
     } else {
       const bundle = await marketplaceCatalogService.getBundleBySlug(bundleSlug, { onlyActive: true });
       if (!bundle) return res.status(404).json({ success: false, message: 'الباقة غير موجودة' });
