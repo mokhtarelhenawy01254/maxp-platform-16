@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ChevronDownIcon,
@@ -54,6 +55,7 @@ type BulkStatusResult = {
 
 const PreparationQueue: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
@@ -166,14 +168,14 @@ const PreparationQueue: React.FC = () => {
 
   const statusOptions = useMemo<PreparationStatusOption[]>(() => {
     const dynamicOptions = [
-      { code: preparationSettings.startingStatus, fallbackName: "في انتظار التجهيز" },
-      { code: "PREPARING", fallbackName: "قيد التجهيز" },
-      { code: "QUALITY_CHECK", fallbackName: "فحص الجودة" },
-      { code: "PACKAGED", fallbackName: "تم التغليف" },
-      { code: SHORTAGE_HOLD_STATUS, fallbackName: "مؤجل بسبب العجز" },
+      { code: preparationSettings.startingStatus, fallbackName: t('preparation.page.stages.WAITING') },
+      { code: "PREPARING", fallbackName: t('preparation.page.stages.PREPARING') },
+      { code: "QUALITY_CHECK", fallbackName: t('preparation.page.stages.QUALITY_CHECK') },
+      { code: "PACKAGED", fallbackName: t('preparation.page.stages.PACKAGED') },
+      { code: SHORTAGE_HOLD_STATUS, fallbackName: t('preparation.page.stages.STOCK_SHORTAGE') },
       {
         code: preparationSettings.handoffStatus || "READY_TO_SHIP",
-        fallbackName: "جاهز للشحن",
+        fallbackName: t('preparation.page.stages.READY_TO_SHIP'),
       },
     ];
 
@@ -207,7 +209,7 @@ const PreparationQueue: React.FC = () => {
         map.set(productId, {
           productId,
           productName:
-            record.products?.name || record.products?.sku || "منتج غير مسمى",
+            record.products?.name || record.products?.sku || t('preparation.page.unnamedProduct'),
           sku: record.products?.sku || null,
           totalQuantity: 0,
           totalAvailable: 0,
@@ -222,7 +224,7 @@ const PreparationQueue: React.FC = () => {
       entry.totalReserved += toNumber(record.reserved);
       entry.warehouses.push({
         warehouseId: String(record.warehouseId || ""),
-        warehouseName: record.warehouses?.name || "مخزن غير محدد",
+        warehouseName: record.warehouses?.name || t('preparation.page.unnamedWarehouse'),
         quantity: toNumber(record.quantity),
         available: toNumber(record.available),
         reserved: toNumber(record.reserved),
@@ -289,7 +291,7 @@ const PreparationQueue: React.FC = () => {
 
           return {
             ...item,
-            displayName: item.productName || item.name || metadataProductName || "منتج غير محدد",
+            displayName: item.productName || item.name || metadataProductName || t('preparation.page.unnamedProduct'),
             quantityNumber,
             availableInScope,
             reservedInScope,
@@ -457,7 +459,7 @@ const PreparationQueue: React.FC = () => {
       if (!preparationSettings.enabled) {
         return {
           valid: false,
-          message: "تم إيقاف مسار التجهيز من الإعدادات الحالية",
+          message: t('preparation.page.disabled'),
         };
       }
 
@@ -475,8 +477,8 @@ const PreparationQueue: React.FC = () => {
         return {
           valid: false,
           message: preparationSettings.allowCrossWarehouseTransfer
-            ? "لا يمكن متابعة الطلب مع وجود نواقص. يمكنك تحديد مخزن الوجهة ثم استخدام النقل السريع من العناصر الناقصة."
-            : "لا يمكن متابعة الطلب مع وجود نواقص لأن الإعدادات تشترط اكتمال المخزون أولًا.",
+            ? t('preparation.page.transferNoSource')
+            : t('preparation.page.stockMustBeComplete'),
         };
       }
 
@@ -487,7 +489,7 @@ const PreparationQueue: React.FC = () => {
       ) {
         return {
           valid: false,
-          message: "يجب استكمال checklist فحص الجودة قبل اعتماد التغليف.",
+          message: t('preparation.page.qcChecklistRequired'),
         };
       }
 
@@ -538,10 +540,10 @@ const PreparationQueue: React.FC = () => {
     try {
       setPrintingOrderNumber(orderNumber);
       await printPreparationSlip(orderNumber);
-      toast.success("تم فتح ورقة التجهيز للطباعة");
+      toast.success(t('preparation.page.slipOpened'));
     } catch (error: unknown) {
       console.error("Failed to print preparation slip:", error);
-      toast.error(getApiErrorMessage(error) || "فشل في فتح ورقة التجهيز");
+      toast.error(getApiErrorMessage(error) || t('preparation.page.slipFailed'));
     } finally {
       setPrintingOrderNumber(null);
     }
@@ -555,7 +557,7 @@ const PreparationQueue: React.FC = () => {
     ) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       if (!order) {
-        toast.error("تعذر العثور على الطلب المحدد");
+        toast.error(t('preparation.page.orderNotFound'));
         return false;
       }
 
@@ -582,7 +584,7 @@ const PreparationQueue: React.FC = () => {
         }));
 
         if (options?.successMessage !== null) {
-          toast.success(options?.successMessage || "تم حفظ بيانات تعليق العجز");
+          toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
         }
 
         void fetchAll();
@@ -590,7 +592,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to save shortage hold details:", error);
         toast.error(
-          getApiErrorMessage(error) || "تعذر حفظ بيانات تعليق العجز",
+          getApiErrorMessage(error) || t('preparation.page.shortageHoldFailed'),
         );
         return false;
       } finally {
@@ -639,7 +641,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to update order status:", error);
         toast.error(
-          getApiErrorMessage(error) || "تعذر تحديث مرحلة التجهيز",
+          getApiErrorMessage(error) || t('preparation.page.stageUpdateError'),
         );
       } finally {
         setRowUpdatingId(null);
@@ -674,7 +676,7 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error("كل الطلبات المحددة مخالفة لقواعد التجهيز الحالية");
+      toast.error(t('preparation.page.unnamedProduct'));
       return;
     }
 
@@ -716,7 +718,7 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update:", error);
       toast.error(
-        getApiErrorMessage(error) || "تعذر تحديث الطلبات المحددة",
+        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
       );
     } finally {
       setBulkUpdating(false);
@@ -748,7 +750,7 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error("كل الطلبات الظاهرة مخالفة لقواعد التجهيز الحالية");
+      toast.error(t('preparation.page.unnamedProduct'));
       return;
     }
 
@@ -790,7 +792,7 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update all:", error);
       toast.error(
-        getApiErrorMessage(error) || "تعذر تحديث جميع الطلبات",
+        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
       );
     } finally {
       setBulkUpdating(false);
@@ -808,12 +810,12 @@ const PreparationQueue: React.FC = () => {
   const handleQuickTransfer = useCallback(
     async (orderNumber: string, item: ItemInsight) => {
       if (!selectedWarehouseId) {
-        toast.error("حدد مخزن الوجهة أولًا لتفعيل النقل السريع");
+        toast.error(t('preparation.page.selectWarehouseFirst'));
         return;
       }
 
       if (!item.productId || item.shortage <= 0) {
-        toast.error("لا يوجد عجز صالح للنقل في هذا العنصر");
+        toast.error(t('preparation.page.transferNoShortage'));
         return;
       }
 
@@ -825,7 +827,7 @@ const PreparationQueue: React.FC = () => {
       );
 
       if (!sourceWarehouse) {
-        toast.error("لم يتم العثور على مخزن مصدر يملك كمية كافية للنقل");
+        toast.error(t('preparation.page.transferNoSource'));
         return;
       }
 
@@ -848,7 +850,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed quick transfer:", error);
         toast.error(
-          getApiErrorMessage(error) || "تعذر تنفيذ النقل السريع",
+          getApiErrorMessage(error) || t('preparation.page.transferFailed'),
         );
       } finally {
         setTransferingItemKey(null);
@@ -859,7 +861,7 @@ const PreparationQueue: React.FC = () => {
 
   const handleSendToTurbo = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error("حدد طلبًا واحدًا على الأقل للإرسال إلى تربو");
+      toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
 
@@ -883,11 +885,11 @@ const PreparationQueue: React.FC = () => {
         uiActions.clearBulkControls();
         void fetchAll();
       } else {
-        toast.error(response.data?.error || "فشل الإرسال إلى تربو");
+        toast.error(response.data?.error || t('preparation.page.failedToTurbo'));
       }
     } catch (error: unknown) {
       console.error("Failed to send to Turbo:", error);
-      toast.error(getApiErrorMessage(error) || "تعذر الإرسال إلى تربو");
+      toast.error(getApiErrorMessage(error) || t('preparation.page.failedToTurbo'));
     } finally {
       setSendingToTurbo(false);
     }
@@ -895,7 +897,7 @@ const PreparationQueue: React.FC = () => {
 
   const handlePrintInvoices = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error("حدد طلبًا واحدًا على الأقل لطباعة الفواتير");
+      toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
 
@@ -908,18 +910,18 @@ const PreparationQueue: React.FC = () => {
       if (response.data?.success) {
         const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
         if (invoices.length === 0) {
-          toast.error("لم يتم العثور على فواتير للطلبات المحددة");
+          toast.error(t('preparation.page.invoiceNotFound'));
           return;
         }
 
         const invoiceIds = invoices.map((inv) => inv.id).join(",");
         navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
       } else {
-        toast.error(response.data?.message || "فشل في تجهيز الفواتير");
+        toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
       }
     } catch (error: unknown) {
       console.error("Failed to print invoices:", error);
-      toast.error(getApiErrorMessage(error) || "تعذر طباعة الفواتير");
+      toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
     } finally {
       setPrintingInvoices(false);
     }
