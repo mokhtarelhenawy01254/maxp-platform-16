@@ -63,6 +63,8 @@ export interface SimpleOrder {
   turboShipmentId?: string | null;
   turboShipmentStatus?: string | null;
   shipments?: SimpleOrderShipment[];
+  printCount?: number;
+  printedAt?: string | null;
 }
 
 export interface InventoryRecord {
@@ -136,6 +138,9 @@ export type ShortageReason =
 
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
+export type SortBy = "createdAt" | "totalUnits" | "totalValue";
+export type SortOrder = "asc" | "desc";
+
 export type ShortageFollowUpState =
   | "none"
   | "today"
@@ -239,6 +244,8 @@ export interface ApiOrderResponse {
   turboShipmentId?: string | null;
   turboShipmentStatus?: string | null;
   shipments?: ApiOrderShipmentResponse[] | null;
+  printCount?: number;
+  printedAt?: string | null;
 }
 
 export interface ApiInventoryResponse {

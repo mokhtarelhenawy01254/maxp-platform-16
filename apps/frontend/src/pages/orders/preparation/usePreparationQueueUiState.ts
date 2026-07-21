@@ -3,6 +3,8 @@ import type { PageSize } from "./constants";
 import type {
   ShortageFollowUpFilter,
   ShortageReasonFilter,
+  SortBy,
+  SortOrder,
   StageFilter,
   StockFilter,
   ItemCountFilter,
@@ -18,6 +20,8 @@ interface PreparationQueueUiState {
   productFilter: string;
   itemCountFilter: ItemCountFilter;
   search: string;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
   page: number;
   pageSize: PageSize;
   selectedOrders: string[];
@@ -36,6 +40,7 @@ type PreparationQueueUiAction =
   | { type: "set_product_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_search"; value: string }
+  | { type: "set_sort"; value: { sortBy: SortBy; sortOrder: SortOrder } }
   | { type: "set_page_size"; value: PageSize }
   | { type: "reset_page" }
   | { type: "clamp_page"; totalPages: number }
@@ -59,6 +64,8 @@ const initialState: PreparationQueueUiState = {
   productFilter: "",
   itemCountFilter: "all",
   search: "",
+  sortBy: "createdAt",
+  sortOrder: "desc",
   page: 1,
   pageSize: 12,
   selectedOrders: [],
@@ -104,6 +111,11 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { itemCountFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
+    case "set_sort":
+      return withPageReset(state, {
+        sortBy: action.value.sortBy,
+        sortOrder: action.value.sortOrder,
+      });
     case "set_page_size":
       return withPageReset(state, { pageSize: action.value });
     case "reset_page":
@@ -207,6 +219,8 @@ export const usePreparationQueueUiState = () => {
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
+      setSort: (value: { sortBy: SortBy; sortOrder: SortOrder }) =>
+        dispatch({ type: "set_sort", value }),
       setPageSize: (value: PageSize) =>
         dispatch({ type: "set_page_size", value }),
       clampPage: (totalPages: number) =>

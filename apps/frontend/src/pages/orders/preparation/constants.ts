@@ -128,6 +128,15 @@ export const STAGE_DEFINITIONS: Array<{
   },
 ];
 
+export const SORT_OPTIONS = [
+  { value: "createdAt_desc", label: "الأحدث أولاً" },
+  { value: "createdAt_asc", label: "الأقدم أولاً" },
+  { value: "totalUnits_desc", label: "عدد القطع - الأكثر أولاً" },
+  { value: "totalUnits_asc", label: "عدد القطع - الأقل أولاً" },
+  { value: "totalValue_desc", label: "القيمة - الأعلى أولاً" },
+  { value: "totalValue_asc", label: "القيمة - الأقل أولاً" },
+] as const;
+
 export const SOURCE_LABELS: Record<string, string> = {
   ai_conversation: "محادثة تلقائية",
   storefront: "المتجر",

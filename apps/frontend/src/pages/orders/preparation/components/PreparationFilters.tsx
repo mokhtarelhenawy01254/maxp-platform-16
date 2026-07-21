@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { SHORTAGE_REASON_OPTIONS, STAGE_DEFINITIONS } from "../constants";
+import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS, STAGE_DEFINITIONS } from "../constants";
 import type {
   ItemCountFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
+  SortBy,
+  SortOrder,
   StageCounts,
   StageFilter,
   StockFilter,
@@ -24,6 +26,8 @@ interface PreparationFiltersProps {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   productFilter: string;
   itemCountFilter: ItemCountFilter;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
   warehouses: WarehouseOption[];
   onActiveStageChange: (stage: StageFilter) => void;
   onSearchChange: (value: string) => void;
@@ -34,6 +38,7 @@ interface PreparationFiltersProps {
   onShortageFollowUpFilterChange: (value: ShortageFollowUpFilter) => void;
   onProductFilterChange: (value: string) => void;
   onItemCountFilterChange: (value: ItemCountFilter) => void;
+  onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
 const selectClass =
@@ -52,6 +57,8 @@ const PreparationFilters = ({
   shortageFollowUpFilter,
   productFilter,
   itemCountFilter,
+  sortBy,
+  sortOrder,
   warehouses,
   onActiveStageChange,
   onSearchChange,
@@ -62,6 +69,7 @@ const PreparationFilters = ({
   onShortageFollowUpFilterChange,
   onProductFilterChange,
   onItemCountFilterChange,
+  onSortChange,
 }: PreparationFiltersProps) => {
   const [localSearch, setLocalSearch] = useState(search);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -83,6 +91,8 @@ const PreparationFilters = ({
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isDefaultSort = sortBy === "createdAt" && sortOrder === "desc";
+
   const hasActiveFilters =
     activeStage !== "ALL" ||
     selectedWarehouseId !== "" ||
@@ -92,7 +102,8 @@ const PreparationFilters = ({
     shortageFollowUpFilter !== "all" ||
     productFilter !== "" ||
     itemCountFilter !== "all" ||
-    search !== "";
+    search !== "" ||
+    !isDefaultSort;
 
   const resetAll = () => {
     onActiveStageChange("ALL");
@@ -105,6 +116,7 @@ const PreparationFilters = ({
     onShortageFollowUpFilterChange("all");
     onProductFilterChange("");
     onItemCountFilterChange("all");
+    onSortChange("createdAt", "desc");
   };
 
   return (
@@ -220,6 +232,23 @@ const PreparationFilters = ({
             <option value="all">الكل</option>
             <option value="ready">جاهزة بالكامل</option>
             <option value="shortage">بها نواقص</option>
+          </select>
+        </div>
+
+        {/* Sort */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">ترتيب حسب</label>
+          <select
+            value={`${sortBy}_${sortOrder}`}
+            onChange={(e) => {
+              const [newSortBy, newSortOrder] = e.target.value.split("_") as [SortBy, SortOrder];
+              onSortChange(newSortBy, newSortOrder);
+            }}
+            className={selectClass}
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
 

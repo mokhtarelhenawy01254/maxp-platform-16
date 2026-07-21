@@ -89,6 +89,8 @@ export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
     metadata,
     merchantFulfillment: normalizeMerchantFulfillment(metadata),
     items: Array.isArray(order.items) ? order.items.map(normalizeOrderItem) : [],
+    printCount: Number(order.printCount || 0),
+    printedAt: order.printedAt || null,
     turboTrackingNumber: String(order.turboTrackingNumber || "") || null,
     turboShipmentId: String(order.turboShipmentId || "") || null,
     turboShipmentStatus: String(order.turboShipmentStatus || "") || null,

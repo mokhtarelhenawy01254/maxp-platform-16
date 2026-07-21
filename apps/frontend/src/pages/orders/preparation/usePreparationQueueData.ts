@@ -31,6 +31,8 @@ import type {
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SimpleOrder,
+  SortBy,
+  SortOrder,
   StageFilter,
   StageCounts,
   StatusConfig,
@@ -63,6 +65,8 @@ interface UsePreparationQueueDataParams {
   productFilter: string;
   itemCountFilter: ItemCountFilter;
   search: string;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
 }
 
 interface UsePreparationQueueDataResult {
@@ -146,6 +150,8 @@ const buildOrdersQueryKey = (
     params.itemCountFilter,
     params.search.trim().toLowerCase(),
     prioritizeShortageOrders ? "prioritized" : "chronological",
+    params.sortBy,
+    params.sortOrder,
   ] as const;
 
 const fetchOrdersData = async (
@@ -168,6 +174,8 @@ const fetchOrdersData = async (
         itemCountFilter: params.itemCountFilter,
         search: params.search.trim() || undefined,
         prioritizeShortageOrders,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
       },
     },
   );
@@ -284,6 +292,8 @@ export const usePreparationQueueData = ({
   productFilter,
   itemCountFilter,
   search,
+  sortBy,
+  sortOrder,
 }: UsePreparationQueueDataParams): UsePreparationQueueDataResult => {
   const queryClient = useQueryClient();
   const [orders, setOrders] = useState<SimpleOrder[]>([]);
@@ -313,6 +323,8 @@ export const usePreparationQueueData = ({
       productFilter,
       itemCountFilter,
       search,
+      sortBy,
+      sortOrder,
     }),
     [
       activeStage,
@@ -326,6 +338,8 @@ export const usePreparationQueueData = ({
       stockFilter,
       productFilter,
       itemCountFilter,
+      sortBy,
+      sortOrder,
     ],
   );
 

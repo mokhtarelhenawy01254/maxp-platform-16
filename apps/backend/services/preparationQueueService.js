@@ -415,6 +415,8 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
     notes: order.notes,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    printCount: order.orderInvoice?.printCount ?? 0,
+    printedAt: order.orderInvoice?.printedAt ?? null,
     metadata: {
       ...parsePreparationJsonObject(order.metadata),
       ...(merchantFulfillment
@@ -514,7 +516,9 @@ const mapGuestOrderToSimple = (order) => {
     updatedAt: order.updatedAt,
     metadata,
     isViewed: order.isViewed ?? false,
-    sourceType: 'storefront'
+    sourceType: 'storefront',
+    printCount: 0,
+    printedAt: null,
   };
 };
 
@@ -570,6 +574,9 @@ const buildPreparationOrderSummary = (
     ? itemInsights.length > 0
     : true;
 
+  const totalUnits = itemInsights.reduce((sum, item) => sum + item.quantityNumber, 0);
+  const totalValue = toPreparationNumber(order.total);
+
   return {
     ...order,
     normalizedStatus,
@@ -577,6 +584,8 @@ const buildPreparationOrderSummary = (
     shortageHoldDetails,
     itemInsights,
     missingItemsCount,
+    totalUnits,
+    totalValue,
     isReady: itemInsights.length > 0 && missingItemsCount === 0,
     warehouseMatch,
     recommendedWarehouseName: dedupePreparationWarehouseName(
@@ -621,31 +630,38 @@ const buildPreparationSqlOr = (conditions) => {
   return Prisma.sql`(${Prisma.join(conditions, Prisma.sql` OR `)})`;
 };
 
-const comparePreparationOrders = (left, right, prioritizeShortageOrders) => {
-  if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
-    const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
-      getPreparationShortageFollowUpState(
-        left.shortageHoldDetails.followUpDate,
-        left.stage
-      )
-    ];
-    const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
-      getPreparationShortageFollowUpState(
-        right.shortageHoldDetails.followUpDate,
-        right.stage
-      )
-    ];
+const VALID_SORT_BY = new Set(['createdAt', 'totalUnits', 'totalValue']);
 
-    if (leftPriority !== rightPriority) {
-      return leftPriority - rightPriority;
+const comparePreparationOrders = (left, right, prioritizeShortageOrders, sortByField = 'createdAt', sortOrderDir = 'desc') => {
+  if (sortByField === 'createdAt' && sortOrderDir === 'desc') {
+    if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
+      const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
+        getPreparationShortageFollowUpState(
+          left.shortageHoldDetails.followUpDate,
+          left.stage
+        )
+      ];
+      const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
+        getPreparationShortageFollowUpState(
+          right.shortageHoldDetails.followUpDate,
+          right.stage
+        )
+      ];
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
+    }
+
+    if (prioritizeShortageOrders && left.missingItemsCount !== right.missingItemsCount) {
+      return right.missingItemsCount - left.missingItemsCount;
     }
   }
 
-  if (prioritizeShortageOrders && left.missingItemsCount !== right.missingItemsCount) {
-    return right.missingItemsCount - left.missingItemsCount;
-  }
+  const leftValue = sortByField === 'totalUnits' ? left.totalUnits : sortByField === 'totalValue' ? left.totalValue : left.createdAtMs;
+  const rightValue = sortByField === 'totalUnits' ? right.totalUnits : sortByField === 'totalValue' ? right.totalValue : right.createdAtMs;
 
-  return right.createdAtMs - left.createdAtMs;
+  return sortOrderDir === 'asc' ? leftValue - rightValue : rightValue - leftValue;
 };
 
 const stripPreparationTransientFields = ({
@@ -741,12 +757,14 @@ const collectTopPreparationOrders = ({
   buffer,
   order,
   limit,
-  prioritizeShortageOrders
+  prioritizeShortageOrders,
+  sortByField,
+  sortOrderDir,
 }) => {
   if (limit <= 0) return;
 
   buffer.push(order);
-  buffer.sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders));
+  buffer.sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders, sortByField, sortOrderDir));
 
   if (buffer.length > limit) {
     buffer.length = limit;
@@ -976,6 +994,9 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
               product: { select: { id: true, name: true, images: true } }
             }
           },
+          orderInvoice: {
+            select: { printCount: true, printedAt: true }
+          },
           shipments: {
             select: {
               id: true,
@@ -1056,6 +1077,8 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
+  const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
+  const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1220,7 +1243,9 @@ const getPreparationQueue = async ({ user, query }) => {
           buffer: topVisibleOrders,
           order,
           limit: requestedVisibleLimit,
-          prioritizeShortageOrders
+          prioritizeShortageOrders,
+          sortByField,
+          sortOrderDir,
         });
       }
     });
@@ -1230,7 +1255,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const safePage = Math.min(page, pages);
   const startIndex = (safePage - 1) * limit;
   const paginatedOrders = topVisibleOrders
-    .sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders))
+    .sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders, sortByField, sortOrderDir))
     .slice(startIndex, startIndex + limit)
     .map(stripPreparationTransientFields);
   const shortageOwnerOptions = [...shortageOwnerSet].sort((left, right) =>

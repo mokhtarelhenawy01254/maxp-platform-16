@@ -89,6 +89,8 @@ const PreparationQueue: React.FC = () => {
     productFilter: uiState.productFilter,
     itemCountFilter: uiState.itemCountFilter,
     search: deferredSearch,
+    sortBy: uiState.sortBy,
+    sortOrder: uiState.sortOrder,
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -119,6 +121,8 @@ const PreparationQueue: React.FC = () => {
     productFilter,
     itemCountFilter,
     search,
+    sortBy,
+    sortOrder,
     selectedOrders,
     statusSelections,
     bulkStatus,
@@ -372,6 +376,8 @@ const PreparationQueue: React.FC = () => {
         shortageFollowUpFilter,
         shortageOwnerFilter.trim().toLowerCase(),
         deferredSearch.trim().toLowerCase(),
+        sortBy,
+        sortOrder,
       ].join("|"),
     [
       activeStage,
@@ -380,6 +386,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUpFilter,
       shortageOwnerFilter,
       shortageReasonFilter,
+      sortBy,
+      sortOrder,
       stockFilter,
     ],
   );
@@ -1049,6 +1057,8 @@ const PreparationQueue: React.FC = () => {
               shortageFollowUpFilter={shortageFollowUpFilter}
               productFilter={productFilter}
               itemCountFilter={itemCountFilter}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
               warehouses={warehouses}
               onActiveStageChange={uiActions.setActiveStage}
               onSearchChange={uiActions.setSearch}
@@ -1059,6 +1069,7 @@ const PreparationQueue: React.FC = () => {
               onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
               onProductFilterChange={uiActions.setProductFilter}
               onItemCountFilterChange={uiActions.setItemCountFilter}
+              onSortChange={uiActions.setSort}
             />
           </div>
         )}

@@ -929,6 +929,9 @@
       "orders": {
         "description": "إدارة الطلبات والإحصائيات"
       },
+      "codDeposit": {
+        "description": "الدفعة المقدمة لطلبات COD — تقليل المرتجعات"
+      },
       "products": {
         "description": "كتالوج المنتجات والتصنيفات"
       },
@@ -6553,6 +6556,7 @@
     "whatsappSettings": "إعدادات واتساب",
     "whatsappCloudConnect": "ربط سحابي",
     "whatsappEmployeeAnalytics": "تحليل أداء الموظفين",
+    "whatsappConversationAnalytics": "تحليل المحادثات",
     "whatsappTemplates": "القوالب",
     "whatsappTemplatesOrders": "قوالب الطلبات",
     "whatsappTemplatesHR": "قوالب الـ HR",
