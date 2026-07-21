@@ -458,7 +458,7 @@ const PosPage = () => {
         '<html dir="rtl"><head><style>body{font:12px Arial;max-width:280px;margin:auto;padding:20px}.c{text-align:center}.r{display:flex;justify-content:space-between;margin:4px 0}.b{font-weight:bold}.hr{border-top:1px dashed #000;margin:10px 0}</style></head><body>',
       );
       w.document.write(
-        '<div class="c"><h2>{t('pos.k_3')}</h2><p>' +
+        '<div class="c"><h2>' + t('pos.k_3') + '</h2><p>' +
           lastOrder.orderNumber +
           "</p><p>" +
           lastOrder.date.toLocaleString("ar-EG") +
@@ -476,34 +476,34 @@ const PosPage = () => {
         ),
       );
       w.document.write(
-        '<div class="hr"></div><div class="r"><span>{t('pos.k_4')}</span><span>' +
+        '<div class="hr"></div><div class="r"><span>' + t('pos.k_4') + '</span><span>' +
           lastOrder.subtotal.toLocaleString() +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r"><span>{t('pos.k_5')}</span><span>' +
+        '<div class="r"><span>' + t('pos.k_5') + '</span><span>' +
           lastOrder.tax.toLocaleString() +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r b"><span>{t('pos.k_6')}</span><span>' +
+        '<div class="r b"><span>' + t('pos.k_6') + '</span><span>' +
           lastOrder.total.toLocaleString() +
           t('pos.k_17'),
       );
       if (lastOrder.paymentMethod === "CASH") {
         w.document.write(
-          '<div class="hr"></div><div class="r"><span>{t('pos.k_7')}</span><span>' +
+          '<div class="hr"></div><div class="r"><span>' + t('pos.k_7') + '</span><span>' +
             (lastOrder.cashReceived || 0).toLocaleString() +
             "</span></div>",
         );
         w.document.write(
-          '<div class="r b"><span>{t('pos.k_8')}</span><span>' +
+          '<div class="r b"><span>' + t('pos.k_8') + '</span><span>' +
             (lastOrder.change || 0).toLocaleString() +
             "</span></div>",
         );
       }
       w.document.write(
-        '<div class="hr"></div><p class="c">{t('pos.k_9')}</p></body></html>',
+        '<div class="hr"></div><p class="c">' + t('pos.k_9') + '</p></body></html>',
       );
       w.document.close();
       setTimeout(() => {
