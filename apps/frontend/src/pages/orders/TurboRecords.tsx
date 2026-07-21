@@ -8,6 +8,7 @@ import {
     ArrowPathIcon,
     TruckIcon,
     InformationCircleIcon,
+    CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
