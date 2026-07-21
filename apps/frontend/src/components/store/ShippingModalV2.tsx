@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   XMarkIcon,
   PlusIcon,
@@ -38,6 +39,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
   onSave,
   onChange,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"basic" | "advanced">(
     "basic",
   );
@@ -128,7 +130,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? "تعديل منطقة الشحن" : "إضافة منطقة شحن جديدة"}
+              {isEditing ? t("storeShipping.modalEditTitle") : t("storeShipping.modalAddTitle")}
             </h2>
             <button
               onClick={onClose}
@@ -147,7 +149,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
             >
-              المعلومات الأساسية
+              {t("storeShipping.basicInfo")}
             </button>
             <button
               onClick={() => setActiveTab("advanced")}
@@ -156,7 +158,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
             >
-              الإعدادات المتقدمة
+              {t("storeShipping.advancedSettings")}
             </button>
           </div>
         </div>
@@ -169,7 +171,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
               {/* Governorates Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  المحافظات <span className="text-red-500">*</span>
+                  {t("storeShipping.governorates")} <span className="text-red-500">*</span>
                 </label>
                 <GovernoratesSelector
                   selectedIds={zone.governorateIds || []}
@@ -181,7 +183,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
               {/* Delivery Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  مدة التوصيل <span className="text-red-500">*</span>
+                  {t("storeShipping.deliveryTime")} <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {DELIVERY_TIME_OPTIONS.map((option) => (
@@ -211,7 +213,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                       onChange({ ...zone, deliveryTime: e.target.value })
                     }
                     className="mt-3 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="أدخل مدة التوصيل المخصصة"
+                    placeholder={t("storeShipping.deliveryTimePlaceholder")}
                   />
                 )}
               </div>
@@ -221,7 +223,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
               {/* Pricing Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  نوع التسعير <span className="text-red-500">*</span>
+                  {t("storeShipping.pricingType")} <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button
@@ -232,7 +234,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                       }`}
                   >
                     <div className="font-semibold text-gray-900 dark:text-white mb-1">
-                      سعر ثابت
+                      {t("storeShipping.flatRate")}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       سعر واحد لجميع الطلبات بغض النظر عن الوزن أو القيمة
@@ -247,7 +249,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                       }`}
                   >
                     <div className="font-semibold text-gray-900 dark:text-white mb-1">
-                      تسعير متدرج
+                      {t("storeShipping.tieredPricing")}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       أسعار مختلفة حسب الوزن أو قيمة الطلب
@@ -260,7 +262,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
               {zone.pricingType === "flat" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    سعر الشحن (جنيه) <span className="text-red-500">*</span>
+                    {t("storeShipping.price")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -274,7 +276,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                       })
                     }
                     className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="50"
+                    placeholder={t("storeShipping.price")}
                   />
                 </div>
               )}
@@ -284,14 +286,14 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      شرائح الأسعار <span className="text-red-500">*</span>
+                      {t("storeShipping.tieredPricing")} <span className="text-red-500">*</span>
                     </label>
                     <button
                       onClick={addPricingTier}
                       className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 flex items-center gap-1"
                     >
                       <PlusIcon className="h-4 w-4" />
-                      إضافة شريحة
+                      {t("storeShipping.addTier")}
                     </button>
                   </div>
 
@@ -313,7 +315,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                       >
                         <div className="flex justify-between items-start mb-3">
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            الشريحة {index + 1}
+                            {t("storeShipping.addTier")} {index + 1}
                           </span>
                           {zone.pricingTiers &&
                             zone.pricingTiers.length > 1 && (
@@ -329,7 +331,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              الوزن من (كجم)
+                              {t("storeShipping.tierFrom")}
                             </label>
                             <input
                               type="number"
@@ -348,7 +350,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
 
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              الوزن إلى (كجم)
+                              {t("storeShipping.tierTo")}
                             </label>
                             <input
                               type="number"
@@ -367,7 +369,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
 
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              السعر (جنيه){" "}
+                              {t("storeShipping.tierPrice")}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -389,7 +391,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                         <div className="grid grid-cols-2 gap-3 mt-3">
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              قيمة الطلب من (جنيه)
+                              {t("storeShipping.tierFrom")}
                             </label>
                             <input
                               type="number"
@@ -410,7 +412,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
 
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              قيمة الطلب إلى (جنيه)
+                              {t("storeShipping.tierTo")}
                             </label>
                             <input
                               type="number"
@@ -442,7 +444,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
               {/* Free Shipping Threshold */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  حد الشحن المجاني (جنيه)
+                  {t("storeShipping.freeShippingTag")}
                 </label>
                 <input
                   type="number"
@@ -481,7 +483,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                     htmlFor="zoneActive"
                     className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
                   >
-                    المنطقة نشطة
+                    {t("storeShipping.active")}
                   </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     عند التعطيل، لن تظهر هذه المنطقة للعملاء
@@ -498,7 +500,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {!isValid() && (
                 <span className="text-red-600 dark:text-red-400">
-                  ⚠️ يرجى ملء جميع الحقول المطلوبة
+                  ⚠️ {t("storeShipping.nameRequired")}
                 </span>
               )}
             </div>
@@ -507,7 +509,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                 onClick={onClose}
                 className="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
               >
-                إلغاء
+                {t("storeShipping.cancel")}
               </button>
               <button
                 onClick={onSave}
@@ -517,7 +519,7 @@ export const ShippingModalV2: React.FC<ShippingModalV2Props> = ({
                   : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed"
                   }`}
               >
-                {isEditing ? "حفظ التغييرات" : "إضافة المنطقة"}
+                {isEditing ? t("storeShipping.save") : t("storeShipping.addZone")}
               </button>
             </div>
           </div>

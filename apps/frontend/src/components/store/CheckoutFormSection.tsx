@@ -7,6 +7,8 @@ import {
   Squares2X2Icon,
   CheckBadgeIcon
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
+import { getDirection } from "../../i18n";
 import { CheckoutFormSettings } from "../../services/checkoutFormSettingsService";
 import { SelectSetting, ToggleSetting } from "../settings/SettingControls";
 import {
@@ -41,6 +43,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
   pdpQuickOrderSettings,
   onPdpQuickOrderSettingsChange,
 }) => {
+  const { t } = useTranslation();
   const handleToggle = (field: keyof CheckoutFormSettings, value: boolean) => {
     onChange({ ...settings, [field]: value });
   };
@@ -107,7 +110,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-900 dark:text-white">{label}</span>
               {fieldSettings.enabled && fieldSettings.required ? (
-                <span className="px-1.5 py-0.5 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md font-bold uppercase tracking-wider">مطلوب</span>
+                <span className="px-1.5 py-0.5 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md font-bold uppercase tracking-wider">{t("storeCheckout.required")}</span>
               ) : null}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
@@ -115,7 +118,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
 
           <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-2 px-4 rounded-xl shrink-0">
             <ToggleSetting
-              label="تفعيل"
+              label={t("storeCheckout.enable")}
               value={fieldSettings.enabled}
               onChange={(value) =>
                 handleQuickOrderFieldToggle(fieldKey, "enabled", value)
@@ -129,7 +132,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
 
             {fieldSettings.enabled ? (
               <ToggleSetting
-                label="إجباري"
+                label={t("storeCheckout.mandatory")}
                 value={fieldSettings.required}
                 onChange={(value) =>
                   handleQuickOrderFieldToggle(fieldKey, "required", value)
@@ -150,7 +153,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-gray-900 dark:text-white">{label}</span>
             {settings[showKey] && settings[requireKey!] && (
-              <span className="px-1.5 py-0.5 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md font-bold uppercase tracking-wider">مطلوب</span>
+                <span className="px-1.5 py-0.5 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md font-bold uppercase tracking-wider">{t("storeCheckout.required")}</span>
             )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
@@ -158,7 +161,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
 
         <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-2 px-4 rounded-xl shrink-0">
           <ToggleSetting
-            label="تفعيل"
+            label={t("storeCheckout.enable")}
             value={settings[showKey] as boolean}
             onChange={(val) => handleToggle(showKey, val)}
           />
@@ -169,7 +172,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
 
           {requireKey && settings[showKey] && (
             <ToggleSetting
-              label="إجباري"
+              label={t("storeCheckout.mandatory")}
               value={settings[requireKey] as boolean}
               onChange={(val) => handleToggle(requireKey, val)}
             />
@@ -180,32 +183,31 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
   );
 
   return (
-    <div className="space-y-10" dir="rtl">
+    <div className="space-y-10" dir={getDirection()}>
       {typeof productPageCheckoutEnabled === "boolean" &&
       onProductPageCheckoutToggle ? (
         <section>
           <SectionHeader
             icon={SparklesIcon}
-            title="تكامل صفحة المنتج"
-            description="فعّل أو عطّل فورم الطلب السريع داخل صفحة المنتج ليظهر مباشرة بعد خيارات المنتج الأساسية."
+            title={t("storeCheckout.integrationTitle")}
+            description={t("storeCheckout.integrationDesc")}
           />
           <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    تفعيل فورم الطلب داخل صفحة المنتج
+                    {t("storeCheckout.enableCheckoutFormLabel")}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  عند التفعيل، سيظهر قسم `pdp-checkout` كفورم طلب سريع داخل صفحة المنتج.
-                  ويمكنك من الأقسام التالية ضبط ترتيب ظهور الفورم وحقوله بشكل مستقل عن صفحة الشيك أوت الكاملة.
+                  {t("storeCheckout.enableCheckoutFormHelp")}
                 </p>
               </div>
 
               <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-2 px-4 rounded-xl shrink-0">
                 <ToggleSetting
-                  label="تفعيل"
+                  label={t("storeCheckout.enable")}
                   value={productPageCheckoutEnabled}
                   onChange={onProductPageCheckoutToggle}
                   disabled={loading}
@@ -221,13 +223,13 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
           <section>
             <SectionHeader
               icon={Squares2X2Icon}
-              title="ترتيب وشكل فورم صفحة المنتج"
-              description="حدد مكان الفورم داخل صفحة المنتج وهل تكون كتلة مستقلة أو مدمجة مع المتغيرات والشراء."
+              title={t("storeCheckout.formOrderTitle")}
+              description={t("storeCheckout.formOrderDesc")}
             />
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
                 <SelectSetting
-                  label="موضع الفورم"
+                  label={t("storeCheckout.formOrderPlacement")}
                   value={pdpQuickOrderSettings.placement}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
@@ -245,13 +247,13 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                   disabled={loading}
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  يحدد هل يظهر الفورم قبل وصف المنتج أو بعده داخل صفحة المنتج نفسها.
+                  {t("storeCheckout.formOrderPlacementDesc")}
                 </p>
               </div>
 
               <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
                 <SelectSetting
-                  label="أسلوب الدمج"
+                  label={t("storeCheckout.formOrderSurfaceMode")}
                   value={pdpQuickOrderSettings.surfaceMode}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
@@ -269,13 +271,13 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                   disabled={loading}
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  اختر بين فورم مستقلة، أو دمجها مع المتغيرات وأزرار الشراء داخل نفس الكتلة.
+                  {t("storeCheckout.formOrderSurfaceModeDesc")}
                 </p>
               </div>
 
               <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300 space-y-4">
                 <ToggleSetting
-                  label="إظهار اختيار الكمية"
+                  label={t("storeCheckout.showQuantity")}
                   value={pdpQuickOrderSettings.showQuantity}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
@@ -286,7 +288,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                   disabled={loading}
                 />
                 <ToggleSetting
-                  label="إظهار ملخص الشحن والإجمالي"
+                  label={t("storeCheckout.showOrderSummary")}
                   value={pdpQuickOrderSettings.showOrderSummary}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
@@ -303,34 +305,34 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
           <section>
             <SectionHeader
               icon={SparklesIcon}
-              title="حقول فورم صفحة المنتج"
-              description="هذه الإعدادات تخص فورم الطلب السريع داخل صفحة المنتج فقط، ويمكن أن تختلف عن صفحة الشيك أوت الكاملة."
+              title={t("storeCheckout.formFieldsTitle")}
+              description={t("storeCheckout.formFieldsDesc")}
             />
             <div className="grid gap-4">
               <QuickOrderSettingRow
-                label="الاسم بالكامل"
+                label={t("storeCheckout.pdpFullName")}
                 fieldKey="fullName"
-                description="اسم العميل داخل فورم الطلب السريع في صفحة المنتج."
+                description={t("storeCheckout.pdpFullNameDesc")}
               />
               <QuickOrderSettingRow
-                label="رقم الهاتف"
+                label={t("storeCheckout.pdpPhone")}
                 fieldKey="phone"
-                description="رقم التواصل الأساسي لتأكيد الطلب من نفس صفحة المنتج."
+                description={t("storeCheckout.pdpPhoneDesc")}
               />
               <QuickOrderSettingRow
-                label="المحافظة"
+                label={t("storeCheckout.pdpGovernorate")}
                 fieldKey="governorate"
-                description="تستخدم لحساب الشحن داخل الفورم السريع إذا كانت ظاهرة."
+                description={t("storeCheckout.pdpGovernorateDesc")}
               />
               <QuickOrderSettingRow
-                label="العنوان بالتفصيل"
+                label={t("storeCheckout.pdpAddress")}
                 fieldKey="address"
-                description="العنوان الذي سيُرسل ضمن الطلب السريع من صفحة المنتج."
+                description={t("storeCheckout.pdpAddressDesc")}
               />
               <QuickOrderSettingRow
-                label="رقم هاتف بديل"
+                label={t("storeCheckout.pdpAlternatePhone")}
                 fieldKey="alternatePhone"
-                description="حقل إضافي اختياري للتواصل الاحتياطي مع العميل."
+                description={t("storeCheckout.pdpAlternatePhoneDesc")}
               />
             </div>
           </section>
@@ -341,27 +343,27 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
       <section>
         <SectionHeader
           icon={UserIcon}
-          title="حقول صفحة الشيك أوت الكاملة"
-          description="تحكم في المعلومات التي يطلبها المتجر داخل صفحة الشيك أوت الكاملة فقط"
+          title={t("storeCheckout.checkoutFullFieldsTitle")}
+          description={t("storeCheckout.checkoutFullFieldsDesc")}
         />
         <div className="grid gap-4">
           <SettingRow
-            label="الاسم الكامل"
+            label={t("storeCheckout.fullName")}
             showKey="showGuestName"
             requireKey="requireGuestName"
-            description="طلب اسم العميل بالكامل لسهولة التواصل والتوصيل"
+            description={t("storeCheckout.fullNameDesc")}
           />
           <SettingRow
-            label="رقم الهاتف"
+            label={t("storeCheckout.phoneNumber")}
             showKey="showGuestPhone"
             requireKey="requireGuestPhone"
-            description="الرقم الذي سيتم التواصل من خلاله لتأكيد الطلب"
+            description={t("storeCheckout.phoneNumberDesc")}
           />
           <SettingRow
-            label="البريد الإلكتروني"
+            label={t("storeCheckout.email")}
             showKey="showGuestEmail"
             requireKey="requireGuestEmail"
-            description="إرسال إشعارات حالة الطلب وتفاصيل الفاتورة"
+            description={t("storeCheckout.emailDesc")}
           />
         </div>
       </section>
@@ -370,21 +372,21 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
       <section>
         <SectionHeader
           icon={MapPinIcon}
-          title="عنوان الشحن والتوصيل"
-          description="تحديد تفاصيل الموقع لضمان وصول المنتج بشكل صحيح"
+          title={t("storeCheckout.shippingTitle")}
+          description={t("storeCheckout.shippingDesc")}
         />
         <div className="grid gap-4">
           <SettingRow
-            label="المدينة / المحافظة"
+            label={t("storeCheckout.city")}
             showKey="showCity"
             requireKey="requireCity"
-            description="تحديد المنطقة الجغرافية لحساب تكلفة الشحن"
+            description={t("storeCheckout.cityDesc")}
           />
           <SettingRow
-            label="العنوان التفصيلي"
+            label={t("storeCheckout.address")}
             showKey="showShippingAddress"
             requireKey="requireShippingAddress"
-            description="رقم المبنى، اسم الشارع، وأي علامات مميزة"
+            description={t("storeCheckout.addressDesc")}
           />
         </div>
       </section>
@@ -393,19 +395,19 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
       <section>
         <SectionHeader
           icon={PlusIcon}
-          title="خيارات إضافية"
-          description="تفعيل أو تعطيل حقول إضافية في صفحة الدفع"
+          title={t("storeCheckout.additionalTitle")}
+          description={t("storeCheckout.additionalDesc")}
         />
         <div className="grid gap-4">
           <SettingRow
-            label="طريقة الدفع"
+            label={t("storeCheckout.paymentMethod")}
             showKey="showPaymentMethod"
-            description="إظهار خيارات الدفع المتاحة (كاش، بطاقة، إلخ)"
+            description={t("storeCheckout.paymentMethodDesc")}
           />
           <SettingRow
-            label="ملاحظات الطلب"
+            label={t("storeCheckout.notes")}
             showKey="showNotes"
-            description="السماح للعميل بإضافة تعليمات خاصة للتوصيل"
+            description={t("storeCheckout.notesDesc")}
           />
         </div>
       </section>
@@ -417,7 +419,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
               <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-sm">
                 <CheckBadgeIcon className="h-5 w-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-indigo-900 dark:text-indigo-300">تذكر دائماً أن البساطة تزيد المبيعات!</p>
+              <p className="text-sm font-medium text-indigo-900 dark:text-indigo-300">{t("storeCheckout.simplicityTip")}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -426,7 +428,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                 disabled={loading}
                 className="px-4 py-2.5 rounded-xl border border-indigo-200 text-indigo-700 font-semibold hover:bg-white/70 transition-all disabled:opacity-50 dark:border-indigo-400/20 dark:text-indigo-200 dark:hover:bg-white/5"
               >
-                إعادة ضبط
+                {t("storeCheckout.reset")}
               </button>
               <button
                 type="button"
@@ -434,7 +436,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                 disabled={loading}
                 className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-50"
               >
-                {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
+                {loading ? t("storeCheckout.saving") : t("storeCheckout.save")}
               </button>
             </div>
           </div>

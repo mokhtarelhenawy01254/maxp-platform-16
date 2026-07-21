@@ -1,5 +1,13 @@
 # Team Sync Updates
 
+## 2026-07-21 / 2026-03-09
+- **WhatsApp Template Broadcast Campaign Failures (BUGFIX / COMPLETE)**:
+  1. **24h Activity Window Bypass**: Removed 24-hour activity limitation for WhatsApp campaigns so campaigns reach all company contacts.
+  2. **Session Resolution & DB Column Fix**: Fixed database migration sync issue where `whatsAppSessionId` column was missing in `broadcast_campaigns`.
+  3. **Prisma Relation Bug Fix**: Fixed Prisma relation name `recipients` -> `broadcastRecipients` in `getCampaign` and analytics controllers.
+  4. **Template Body Parameter Fallback**: Added automatic fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry template sending without body parameters if Meta Cloud API returns parameter count mismatch.
+  5. **Manual Recipients Fix**: Updated `WhatsAppTemplateBroadcast.tsx` to pass `manualPhones` in payload, and fixed critical backend `else if` branch that previously overwritten manual recipients with Facebook active chats. Verified single recipient delivery (`sentCount: 1`).
+
 ## 2026-07-20 / 2026-03-09
 - **Repository Migration (DEPLOY / COMPLETE)**:
   1. **Purpose**: Switched active development from the old repository `maxp-platform3` to the new repository `maxp-platform4` due to exhausted GitHub Actions quota on the old account.
@@ -359,6 +367,18 @@
 - **Vite Chunk Load Recovery & Nginx Cache Control (FIX)**: Fixed frontend crashes on navigation after deployment where old chunks failed to fetch (404):
   1. Refactored `AdminAppBootstrap.tsx` to import `ErrorBoundary` statically instead of dynamically with `React.lazy`, ensuring the recovery mechanism is always active and doesn't fail to load itself when old chunks are deleted.
   2. Configured both `location /` blocks in `nginx_configs/maxp.online.conf` with Cache-Control headers (`no-cache, no-store, must-revalidate`, `Pragma "no-cache"`, `Expires "0"`) to prevent the browser from caching `index.html` and force it to fetch updated assets.
+
+## 2026-07-21 / 2026-03-09
+- **WhatsApp Template Broadcast & Session Resolution Fix (FIX)**: Fixed WhatsApp template list stale options in frontend and resolved the "Session not found" broadcast campaign failures.
+  1. Updated frontend `WhatsAppTemplateBroadcast.tsx` to immediately clear templates and reset the selected template upon changing WhatsApp sessions, preventing stale options from previously loaded sessions on network delay or load failures.
+  2. Passed the selected `whatsAppSessionId` in the body payload from frontend to the campaign creation API endpoint (`POST /api/v1/broadcast/campaigns`).
+  3. Added `whatsAppSessionId String?` optional field to the `BroadcastCampaign` prisma model and generated the updated client.
+  4. Updated `broadcastController.js` to store the selected `whatsAppSessionId` on campaign creation and retrieve it when triggering campaigns, falling back dynamically to the first available Meta Cloud session if not provided.
+  5. Completely refactored `broadcastSchedulerService.js` to support the WhatsApp channel, enabling scheduled campaigns to resolve the WhatsApp session and send messages using `WhatsAppMessageHandler.sendTemplateMessage` instead of attempting to send Facebook Messenger text messages.
+- **WhatsApp Broadcast 24-Hour Recipient Window Bypass (FIX)**: Fixed campaign failure (`No active recipients found`) caused by enforcing Facebook's 24-hour customer activity restriction on WhatsApp templates.
+  1. Separated recipient query logic in `broadcastController.js` (`sendCampaign`) and `broadcastSchedulerService.js` (`sendScheduledCampaign`) by channel type.
+  2. Removed the 24-hour message filter requirement for WhatsApp campaigns to allow messaging any valid customer contact outside the 24h window as intended by WhatsApp Business templates.
+  3. Added dynamic `Conversation` creation for target `Customer` entries without prior conversations so they are successfully enrolled in broadcast recipient lists.
 
 ## 2026-07-02 / 2026-03-09
 - **AI Agent Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors on the sandbox testing tab (`/admin/ai-hub?tab=sandbox`). Resolved a `NameError` crash in `skills_pipeline.py` caused by an undefined `has_images` variable reference inside `_llm_call`, and implemented a fallback Arabic response when the LLM returns an empty message after multiple retries (due to provider timeouts or rate limits), preventing empty replies from reaching downstream backend pipelines.

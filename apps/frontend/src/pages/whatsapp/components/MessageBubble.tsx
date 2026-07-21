@@ -265,7 +265,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
           if (templateName && bodyContent.startsWith(templateName + '\n')) {
             bodyContent = bodyContent.slice(templateName.length).trim();
           }
+          if ((!bodyContent || bodyContent === `Template: ${templateName}` || bodyContent === templateName) && interactive?.templateBody) {
+            bodyContent = interactive.templateBody;
+          }
         } catch {}
+
+        const isFallbackText = templateName ? (bodyContent === `Template: ${templateName}` || bodyContent === templateName) : false;
+        const showBodyText = Boolean(bodyContent && !isFallbackText);
 
         return (
           <div className="space-y-1.5">
@@ -275,7 +281,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 {templateName || 'Template'}
               </span>
             </div>
-            {bodyContent ? (
+            {showBodyText ? (
               <LinkifiedText
                 text={bodyContent}
                 className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"

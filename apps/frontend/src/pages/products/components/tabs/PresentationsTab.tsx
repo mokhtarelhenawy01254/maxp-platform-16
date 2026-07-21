@@ -115,8 +115,8 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
       const res = await apiClient.post(`/products/${productId}/images`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      if (res.data?.success && res.data.data?.urls) {
-        const urls: string[] = res.data.data.urls;
+      if (res.data?.success && res.data.data?.uploadedImages) {
+        const urls: string[] = res.data.data.uploadedImages;
         const currentImages = editState[presentation.id!]?.images ?? presentation.images ?? [];
         const newImages = [...currentImages, ...urls];
         setEditState((prev) => ({

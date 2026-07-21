@@ -93,4 +93,11 @@ router.get(
   inboxController.getEmployeeAnalytics
 );
 
+// ─── Conversation Analytics ────────────────────────────────────────
+router.get(
+  '/conversation-analytics',
+  requireDbPermission('inbox.view'),
+  inboxController.getConversationAnalytics
+);
+
 module.exports = router;

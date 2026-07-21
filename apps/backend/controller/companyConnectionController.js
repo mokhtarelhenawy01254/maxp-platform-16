@@ -1013,3 +1013,862 @@ exports.deleteConnection = async (req, res) => {
         res.status(500).json({ success: false, message: 'خطأ في حذف الاتصال' });
     }
 };
+
+/**
+ * الحصول على بيانات الأفليت للشركة المسوقة (Consumer) عند مورد معين
+ * GET /api/v1/company-connections/:connectionId/consumer/affiliate
+ */
+exports.getConsumerAffiliateData = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({
+            where: { id: connectionId },
+            include: { provider: { select: { id: true, name: true, logo: true, email: true } } }
+        });
+
+        if (!connection) {
+            return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        }
+        if (connection.consumerId !== companyId) {
+            return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+        }
+
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({
+            where: { userId: { in: myUserIds }, companyId: connection.providerId }
+        }) : null;
+
+        if (!affiliate) {
+            return res.json({
+                success: true,
+                data: {
+                    affiliate: null,
+                    provider: connection.provider,
+                    connection
+                }
+            });
+        }
+
+        const [payoutsCount, recentPayouts] = await Promise.all([
+            prisma.affiliatePayout.count({ where: { affiliateId: affiliate.id } }),
+            prisma.affiliatePayout.findMany({
+                where: { affiliateId: affiliate.id },
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            })
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                affiliate: {
+                    id: affiliate.id,
+                    totalEarnings: Number(affiliate.totalEarnings),
+                    paidEarnings: Number(affiliate.paidEarnings),
+                    pendingEarnings: Number(affiliate.pendingEarnings),
+                    minPayout: Number(affiliate.minPayout),
+                    status: affiliate.status,
+                    commissionRate: affiliate.commissionRate,
+                    commissionType: affiliate.commissionType
+                },
+                provider: connection.provider,
+                payoutsCount,
+                recentPayouts: recentPayouts.map(p => ({
+                    id: p.id,
+                    amount: Number(p.amount),
+                    status: p.status,
+                    paymentMethod: p.paymentMethod,
+                    createdAt: p.createdAt,
+                    proofFileUrl: p.proofFileUrl,
+                    notes: p.notes
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Error in getConsumerAffiliateData:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب بيانات المسوق' });
+    }
+};
+
+/**
+ * أوردرات الشركة المسوقة (Consumer) عند مورد معين
+ * GET /api/v1/company-connections/:connectionId/consumer/orders
+ */
+exports.getConsumerConnectionOrders = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliateIds = myUserIds.length > 0 ? (await prisma.affiliate.findMany({
+            where: { userId: { in: myUserIds }, companyId: connection.providerId },
+            select: { id: true }
+        })).map(a => a.id) : [];
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId: connection.providerId,
+                    sourceType: 'internal_push'
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    total: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    sourceType: true,
+                    affiliateId: true
+                }
+            }),
+            prisma.order.count({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId: connection.providerId,
+                    sourceType: 'internal_push'
+                }
+            })
+        ]);
+
+        res.json({
+            success: true,
+            data: { orders, total, page, limit, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        console.error('Error in getConsumerConnectionOrders:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب الطلبات' });
+    }
+};
+
+/**
+ * عمولات الشركة المسوقة (Consumer) عند مورد معين
+ * GET /api/v1/company-connections/:connectionId/consumer/commissions
+ */
+exports.getConsumerConnectionCommissions = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliates = myUserIds.length > 0 ? await prisma.affiliate.findMany({
+            where: { userId: { in: myUserIds }, companyId: connection.providerId },
+            select: { id: true }
+        }) : [];
+        const affiliateIds = affiliates.map(a => a.id);
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [commissions, total] = await Promise.all([
+            prisma.commission.findMany({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId: connection.providerId
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    type: true,
+                    calculationType: true,
+                    rate: true,
+                    orderTotal: true,
+                    createdAt: true,
+                    order: { select: { orderNumber: true, status: true } }
+                }
+            }),
+            prisma.commission.count({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId: connection.providerId
+                }
+            })
+        ]);
+
+        const summary = affiliateIds.length > 0 ? await Promise.all([
+            prisma.commission.aggregate({
+                where: { affiliateId: { in: affiliateIds }, companyId: connection.providerId },
+                _sum: { amount: true }
+            }),
+            prisma.commission.aggregate({
+                where: { affiliateId: { in: affiliateIds }, companyId: connection.providerId, status: 'PAID' },
+                _sum: { amount: true }
+            }),
+            prisma.commission.aggregate({
+                where: { affiliateId: { in: affiliateIds }, companyId: connection.providerId, status: { in: ['CONFIRMED', 'PENDING'] } },
+                _sum: { amount: true }
+            })
+        ]) : [{ _sum: { amount: 0 } }, { _sum: { amount: 0 } }, { _sum: { amount: 0 } }];
+
+        res.json({
+            success: true,
+            data: {
+                commissions: commissions.map(c => ({
+                    id: c.id,
+                    amount: Number(c.amount),
+                    status: c.status,
+                    type: c.type,
+                    calculationType: c.calculationType,
+                    rate: c.rate,
+                    orderTotal: Number(c.orderTotal || 0),
+                    createdAt: c.createdAt,
+                    orderNumber: c.order?.orderNumber,
+                    orderStatus: c.order?.status
+                })),
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                summary: {
+                    totalCommissions: Number(summary[0]._sum?.amount || 0),
+                    paidCommissions: Number(summary[1]._sum?.amount || 0),
+                    pendingCommissions: Number(summary[2]._sum?.amount || 0)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error in getConsumerConnectionCommissions:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب العمولات' });
+    }
+};
+
+/**
+ * سجل طلبات السحب للشركة المسوقة (Consumer) عند مورد معين
+ * GET /api/v1/company-connections/:connectionId/consumer/payouts
+ */
+exports.getConsumerConnectionPayouts = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({
+            where: { userId: { in: myUserIds }, companyId: connection.providerId }
+        }) : null;
+
+        if (!affiliate) {
+            return res.json({ success: true, data: { payouts: [], total: 0 } });
+        }
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [payouts, total] = await Promise.all([
+            prisma.affiliatePayout.findMany({
+                where: { affiliateId: affiliate.id },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.affiliatePayout.count({ where: { affiliateId: affiliate.id } })
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                payouts: payouts.map(p => ({
+                    id: p.id,
+                    amount: Number(p.amount),
+                    status: p.status,
+                    paymentMethod: p.paymentMethod,
+                    notes: p.notes,
+                    transactionId: p.transactionId,
+                    proofFileUrl: p.proofFileUrl,
+                    processedAt: p.processedAt,
+                    createdAt: p.createdAt
+                })),
+                total, page, limit, totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error in getConsumerConnectionPayouts:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب طلبات السحب' });
+    }
+};
+
+/**
+ * إنشاء طلب سحب عمولة للشركة المسوقة (Consumer) من مورد معين
+ * POST /api/v1/company-connections/:connectionId/consumer/payout-request
+ */
+exports.createConsumerConnectionPayoutRequest = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const { paymentMethod, paymentDetails } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({
+            where: { userId: { in: myUserIds }, companyId: connection.providerId }
+        }) : null;
+
+        if (!affiliate) {
+            return res.status(404).json({ success: false, message: 'حساب المسوق غير موجود عند هذا المورد' });
+        }
+
+        if (affiliate.status !== 'ACTIVE') {
+            return res.status(403).json({ success: false, message: 'حساب المسوق غير نشط' });
+        }
+
+        const rawMethod = (paymentMethod || affiliate.paymentMethod || '').toUpperCase();
+        const payoutMethod = ['TRANSFERS', 'BANK_TRANSFER'].includes(rawMethod) ? 'TRANSFERS'
+            : ['WALLET', 'VODAFONE_CASH', 'ORANGE_CASH', 'INSTAPAY'].includes(rawMethod) ? 'WALLET'
+            : rawMethod === 'CASH' ? 'CASH' : null;
+        if (!payoutMethod) {
+            return res.status(400).json({ success: false, message: 'طريقة الدفع غير صالحة' });
+        }
+
+        const pendingAmount = Number(affiliate.pendingEarnings);
+        if (pendingAmount < Number(affiliate.minPayout || 100)) {
+            return res.status(400).json({
+                success: false,
+                message: `الحد الأدنى للسحب هو ${affiliate.minPayout || 100} جنيه، رصيدك الحالي ${pendingAmount} جنيه`
+            });
+        }
+
+        const pendingCommissions = await prisma.commission.findMany({
+            where: {
+                affiliateId: affiliate.id,
+                status: 'CONFIRMED',
+                payoutId: null
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        const availableAmount = Number(pendingCommissions.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2));
+        if (availableAmount <= 0) {
+            return res.status(400).json({ success: false, message: 'لا توجد عمولات مؤكدة متاحة للسحب' });
+        }
+
+        const commissionIds = pendingCommissions.map(c => c.id);
+        const payout = await prisma.$transaction(async (tx) => {
+            const newPayout = await tx.affiliatePayout.create({
+                data: {
+                    affiliateId: affiliate.id,
+                    amount: availableAmount,
+                    paymentMethod: payoutMethod,
+                    paymentDetails: paymentDetails ? JSON.stringify(paymentDetails) : null,
+                    status: 'PENDING'
+                }
+            });
+
+            await tx.commission.updateMany({
+                where: { id: { in: commissionIds }, affiliateId: affiliate.id, status: 'CONFIRMED', payoutId: null },
+                data: { payoutId: newPayout.id }
+            });
+
+            return newPayout;
+        });
+
+        res.json({
+            success: true,
+            message: 'تم إنشاء طلب السحب بنجاح',
+            data: { payoutId: payout.id, amount: Number(payout.amount), status: payout.status }
+        });
+    } catch (error) {
+        console.error('Error in createConsumerConnectionPayoutRequest:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ في إنشاء طلب السحب' });
+    }
+};
+
+// ───────────── PROVIDER SIDE ─────────────
+
+/**
+ * الأوردرات الواردة من شركة مسوقة معينة (Provider view)
+ * GET /api/v1/company-connections/:connectionId/provider/orders
+ */
+exports.getProviderConnectionOrders = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.providerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const consumerUserIds = (await prisma.user.findMany({
+            where: { companyId: connection.consumerId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliateIds = consumerUserIds.length > 0 ? (await prisma.affiliate.findMany({
+            where: { userId: { in: consumerUserIds }, companyId },
+            select: { id: true }
+        })).map(a => a.id) : [];
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId,
+                    sourceType: 'internal_push'
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    total: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    sourceType: true
+                }
+            }),
+            prisma.order.count({
+                where: {
+                    affiliateId: { in: affiliateIds },
+                    companyId,
+                    sourceType: 'internal_push'
+                }
+            })
+        ]);
+
+        res.json({
+            success: true,
+            data: { orders, total, page, limit, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        console.error('Error in getProviderConnectionOrders:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب الطلبات' });
+    }
+};
+
+/**
+ * عمولات شركة مسوقة معينة (Provider view)
+ * GET /api/v1/company-connections/:connectionId/provider/commissions
+ */
+exports.getProviderConnectionCommissions = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.providerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const consumerUserIds = (await prisma.user.findMany({
+            where: { companyId: connection.consumerId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliates = consumerUserIds.length > 0 ? await prisma.affiliate.findMany({
+            where: { userId: { in: consumerUserIds }, companyId },
+            select: { id: true }
+        }) : [];
+        const affiliateIds = affiliates.map(a => a.id);
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [commissions, total] = await Promise.all([
+            prisma.commission.findMany({
+                where: { affiliateId: { in: affiliateIds }, companyId },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    type: true,
+                    rate: true,
+                    orderTotal: true,
+                    createdAt: true,
+                    order: { select: { orderNumber: true, status: true } }
+                }
+            }),
+            prisma.commission.count({
+                where: { affiliateId: { in: affiliateIds }, companyId }
+            })
+        ]);
+
+        const summary = affiliateIds.length > 0 ? await Promise.all([
+            prisma.commission.aggregate({ where: { affiliateId: { in: affiliateIds }, companyId }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: { in: affiliateIds }, companyId, status: 'PAID' }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: { in: affiliateIds }, companyId, status: { in: ['CONFIRMED', 'PENDING'] } }, _sum: { amount: true } })
+        ]) : [{ _sum: { amount: 0 } }, { _sum: { amount: 0 } }, { _sum: { amount: 0 } }];
+
+        res.json({
+            success: true,
+            data: {
+                commissions: commissions.map(c => ({
+                    id: c.id,
+                    amount: Number(c.amount),
+                    status: c.status,
+                    type: c.type,
+                    rate: c.rate,
+                    orderTotal: Number(c.orderTotal || 0),
+                    createdAt: c.createdAt,
+                    orderNumber: c.order?.orderNumber,
+                    orderStatus: c.order?.status
+                })),
+                total, page, limit, totalPages: Math.ceil(total / limit),
+                summary: {
+                    totalCommissions: Number(summary[0]._sum?.amount || 0),
+                    paidCommissions: Number(summary[1]._sum?.amount || 0),
+                    pendingCommissions: Number(summary[2]._sum?.amount || 0)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error in getProviderConnectionCommissions:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب العمولات' });
+    }
+};
+
+/**
+ * طلبات السحب من شركة مسوقة معينة (Provider view)
+ * GET /api/v1/company-connections/:connectionId/provider/payouts
+ */
+exports.getProviderConnectionPayouts = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.providerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول' });
+
+        const consumerUserIds = (await prisma.user.findMany({
+            where: { companyId: connection.consumerId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        const affiliate = consumerUserIds.length > 0 ? await prisma.affiliate.findFirst({
+            where: { userId: { in: consumerUserIds }, companyId }
+        }) : null;
+
+        if (!affiliate) {
+            return res.json({ success: true, data: { payouts: [], total: 0, consumer: connection.consumer } });
+        }
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        const [payouts, total] = await Promise.all([
+            prisma.affiliatePayout.findMany({
+                where: { affiliateId: affiliate.id },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.affiliatePayout.count({ where: { affiliateId: affiliate.id } })
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                payouts: payouts.map(p => ({
+                    id: p.id,
+                    amount: Number(p.amount),
+                    status: p.status,
+                    paymentMethod: p.paymentMethod,
+                    notes: p.notes,
+                    transactionId: p.transactionId,
+                    proofFileUrl: p.proofFileUrl,
+                    processedAt: p.processedAt,
+                    createdAt: p.createdAt
+                })),
+                total, page, limit, totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error in getProviderConnectionPayouts:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب طلبات السحب' });
+    }
+};
+
+/**
+ * تسجيل دفع عمولة لشركة مسوقة (Provider)
+ * POST /api/v1/company-connections/:connectionId/provider/payouts/:payoutId/record
+ */
+exports.recordProviderPayout = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId, payoutId } = req.params;
+        const { transactionId, notes } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.providerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const payout = await prisma.affiliatePayout.findUnique({
+            where: { id: payoutId },
+            include: { affiliate: true }
+        });
+
+        if (!payout) return res.status(404).json({ success: false, message: 'طلب السحب غير موجود' });
+        if (payout.status !== 'PENDING') return res.status(400).json({ success: false, message: 'طلب السحب ليس في حالة معلقة' });
+
+        await prisma.$transaction(async (tx) => {
+            await tx.affiliatePayout.update({
+                where: { id: payoutId },
+                data: {
+                    status: 'PROCESSED',
+                    processedAt: new Date(),
+                    processedBy: req.user.id,
+                    transactionId: transactionId || null,
+                    notes: notes || payout.notes,
+                    isExternalPayment: true,
+                    externalPaymentDate: new Date()
+                }
+            });
+
+            await tx.commission.updateMany({
+                where: { payoutId, affiliateId: payout.affiliateId, status: 'CONFIRMED' },
+                data: { status: 'PAID', paidAt: new Date() }
+            });
+
+            const paidSum = await tx.commission.aggregate({
+                where: { payoutId, affiliateId: payout.affiliateId },
+                _sum: { amount: true }
+            });
+
+            const paidAmount = Number(paidSum._sum?.amount || 0);
+            await tx.affiliate.update({
+                where: { id: payout.affiliateId },
+                data: {
+                    paidEarnings: { increment: paidAmount },
+                    pendingEarnings: { decrement: paidAmount }
+                }
+            });
+        });
+
+        res.json({ success: true, message: 'تم تسجيل الدفع بنجاح' });
+    } catch (error) {
+        console.error('Error in recordProviderPayout:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ في تسجيل الدفع' });
+    }
+};
+
+/**
+ * إلغاء طلب سحب (Provider)
+ * POST /api/v1/company-connections/:connectionId/provider/payouts/:payoutId/cancel
+ */
+/**
+ * إعادة مزامنة رصيد الأفليت من العمولات الفعلية (لإصلاح عدم الاتساق)
+ * POST /api/v1/company-connections/:connectionId/consumer/resync-balance
+ */
+exports.resyncConsumerAffiliateBalance = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const myUserIds = (await prisma.user.findMany({ where: { companyId, isActive: true }, select: { id: true } })).map(u => u.id);
+        const affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({ where: { userId: { in: myUserIds }, companyId: connection.providerId } }) : null;
+        if (!affiliate) return res.status(404).json({ success: false, message: 'لا يوجد حساب مسوق' });
+
+        const [totalAgg, paidAgg, pendingAgg] = await Promise.all([
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId, status: 'PAID' }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId, status: { in: ['CONFIRMED', 'PENDING'] } }, _sum: { amount: true } })
+        ]);
+
+        const total = Number(totalAgg._sum?.amount || 0);
+        const paid = Number(paidAgg._sum?.amount || 0);
+        const pending = Number(pendingAgg._sum?.amount || 0);
+
+        await prisma.affiliate.update({
+            where: { id: affiliate.id },
+            data: { totalEarnings: total, paidEarnings: paid, pendingEarnings: pending }
+        });
+
+        res.json({ success: true, message: 'تمت المزامنة', data: { total, paid, pending } });
+    } catch (error) {
+        console.error('Error in resyncConsumerAffiliateBalance:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ' });
+    }
+};
+
+/**
+ * إنشاء طلب + عمولة اختبارية للشركة المسوقة (لأغراض الاختبار)
+ * POST /api/v1/company-connections/:connectionId/consumer/create-test-commissions
+ */
+exports.createTestCommissions = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const myUserIds = (await prisma.user.findMany({ where: { companyId, isActive: true }, select: { id: true } })).map(u => u.id);
+        let affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({ where: { userId: { in: myUserIds }, companyId: connection.providerId } }) : null;
+        if (!affiliate) return res.status(404).json({ success: false, message: 'لا يوجد حساب مسوق' });
+
+        // استخدام طلب موجود عند المورد أو إنشاء طلب بسيط
+        const providerUser = await prisma.user.findFirst({ where: { companyId: connection.providerId, isActive: true } });
+        if (!providerUser) return res.status(400).json({ success: false, message: 'لا يوجد مستخدم نشط عند المورد' });
+
+        let order = await prisma.order.findFirst({
+            where: { companyId: connection.providerId },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!order) {
+            order = await prisma.order.create({
+                data: {
+                    companyId: connection.providerId,
+                    userId: providerUser.id,
+                    affiliateId: affiliate.id,
+                    status: 'CONFIRMED',
+                    sourceType: 'internal_push',
+                    total: 10000,
+                    subtotal: 10000,
+                    orderNumber: 'TEST-' + Date.now().toString(36).toUpperCase(),
+                    shippingAddress: 'test',
+                    shippingCity: 'test',
+                    shippingGovernorate: 'test',
+                }
+            });
+        }
+
+        const testAmount = 500;
+
+        const commission = await prisma.commission.create({
+            data: {
+                affiliateId: affiliate.id,
+                companyId: connection.providerId,
+                orderId: order.id,
+                type: 'AFFILIATE',
+                calculationType: 'PERCENTAGE',
+                amount: testAmount,
+                rate: 5,
+                status: 'CONFIRMED',
+                orderTotal: Number(order.total),
+            }
+        });
+
+        affiliate = await prisma.affiliate.update({
+            where: { id: affiliate.id },
+            data: {
+                totalEarnings: { increment: testAmount },
+                pendingEarnings: { increment: testAmount }
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `تم إنشاء عمولة اختبارية ${testAmount} ج.م`,
+            data: {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                commissionId: commission.id,
+                amount: testAmount,
+                pendingEarnings: Number(affiliate.pendingEarnings)
+            }
+        });
+    } catch (error) {
+        console.error('Error in createTestCommissions:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ' });
+    }
+};
+
+exports.cancelProviderPayout = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId, payoutId } = req.params;
+        const { reason } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.providerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const payout = await prisma.affiliatePayout.findUnique({ where: { id: payoutId } });
+        if (!payout) return res.status(404).json({ success: false, message: 'طلب السحب غير موجود' });
+        if (payout.status !== 'PENDING') return res.status(400).json({ success: false, message: 'لا يمكن إلغاء طلب تمت معالجته' });
+
+        await prisma.$transaction(async (tx) => {
+            await tx.commission.updateMany({
+                where: { payoutId, affiliateId: payout.affiliateId },
+                data: { payoutId: null }
+            });
+
+            await tx.affiliatePayout.update({
+                where: { id: payoutId },
+                data: { status: 'CANCELLED', notes: reason || 'تم الإلغاء من قبل المورد' }
+            });
+        });
+
+        res.json({ success: true, message: 'تم إلغاء طلب السحب' });
+    } catch (error) {
+        console.error('Error in cancelProviderPayout:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ في إلغاء طلب السحب' });
+    }
+};

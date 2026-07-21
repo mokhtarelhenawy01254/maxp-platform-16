@@ -7,6 +7,7 @@ model BroadcastCampaign {
   targetAudience      String
   waTemplateName      String?              // WhatsApp template name (when channel=whatsapp)
   waLanguageCode      String?              @default("en")
+  whatsAppSessionId   String?
   leadCategoryId      String?
   scheduledAt         DateTime?
   sentAt              DateTime?

@@ -189,6 +189,7 @@ class BroadcastSchedulerService {
   async sendScheduledCampaign(campaign) {
     const { sendFacebookMessage } = require('../utils/allFunctions');
     const socketService = require('./socketService');
+    const WhatsAppMessageHandler = require('./whatsapp').WhatsAppMessageHandler;
 
     console.log(`📊 [BroadcastScheduler] Starting to send campaign ${campaign.id}`);
 
@@ -203,76 +204,106 @@ class BroadcastSchedulerService {
       });
     }, 5);
 
-    // حساب وقت آخر 24 ساعة
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    console.log(`⏰ [BroadcastScheduler] Filtering conversations with activity after: ${twentyFourHoursAgo.toISOString()}`);
-
-    // جلب المحادثات النشطة (آخر رسالة من العميل في آخر 24 ساعة)
+    const isWhatsApp = campaign.channel === 'whatsapp';
     let conversations = [];
 
-    if (campaign.targetAudience === 'all') {
-      console.log('🌐 [BroadcastScheduler] Fetching all active conversations');
+    if (isWhatsApp) {
+      console.log('🌐 [BroadcastScheduler] Fetching all WhatsApp conversations/customers (no 24h limit)');
       conversations = await safeQuery(async () => {
         return await getSharedPrismaClient().conversation.findMany({
-        where: {
-          companyId: campaign.companyId,
-          status: 'ACTIVE',
-          messages: {
-            some: {
-              isFromCustomer: true,
-              createdAt: {
-                gte: twentyFourHoursAgo
-              }
+          where: {
+            companyId: campaign.companyId,
+            customer: {
+              phone: { not: null }
             }
+          },
+          include: {
+            customer: true
           }
-        },
-        include: {
-          customer: true,
-          messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 1
-          }
-        }
-      });
+        });
       }, 4);
-    } else {
-      // منطق للجمهور المستهدف المخصص
-      conversations = await safeQuery(async () => {
-        return await getSharedPrismaClient().conversation.findMany({
-        where: {
-          companyId: campaign.companyId,
-          status: 'ACTIVE',
-          messages: {
-            some: {
-              isFromCustomer: true,
-              createdAt: {
-                gte: twentyFourHoursAgo
-              }
-            }
+
+      // إنشاء محادثات للعملاء الذين لديهم أرقام هواتف ولكن ليس لديهم سجلات محادثات بعد
+      const existingCustomerIds = new Set(conversations.map(c => c.customerId).filter(Boolean));
+      const customersWithoutConv = await safeQuery(async () => {
+        return await getSharedPrismaClient().customer.findMany({
+          where: {
+            companyId: campaign.companyId,
+            phone: { not: null, not: '' },
+            id: { notIn: Array.from(existingCustomerIds) }
           }
-        },
-        include: {
-          customer: true,
-          messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 1
+        });
+      }, 4);
+
+      if (customersWithoutConv && customersWithoutConv.length > 0) {
+        console.log(`➕ [BroadcastScheduler] Creating conversations for ${customersWithoutConv.length} customers without prior conversations`);
+        for (const cust of customersWithoutConv) {
+          try {
+            const newConv = await safeQuery(async () => {
+              return await getSharedPrismaClient().conversation.create({
+                data: {
+                  id: 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9),
+                  companyId: campaign.companyId,
+                  customerId: cust.id,
+                  status: 'ACTIVE',
+                  channel: 'whatsapp'
+                },
+                include: { customer: true }
+              });
+            }, 4);
+            if (newConv) conversations.push(newConv);
+          } catch (err) {
+            console.error(`❌ [BroadcastScheduler] Error creating conversation for customer ${cust.id}:`, err.message);
           }
         }
-      });
+      }
+
+      conversations = conversations.filter(c => c.customer?.phone && c.customer.phone.trim() !== '');
+
+      // تصفية تصنيف العملاء إذا تم تحديده
+      if (campaign.leadCategoryId) {
+        console.log(`🏷️ [BroadcastScheduler] Filtering by lead category: ${campaign.leadCategoryId}`);
+        const validContacts = await safeQuery(async () => {
+          return await getSharedPrismaClient().whatsAppContact.findMany({
+            where: { leadCategoryId: campaign.leadCategoryId, companyId: campaign.companyId },
+            select: { customerId: true }
+          });
+        }, 3);
+        const validCustomerIds = new Set(validContacts.map(c => c.customerId).filter(Boolean));
+        conversations = conversations.filter(c => validCustomerIds.has(c.customer?.id));
+      }
+
+    } else {
+      // Facebook Messenger: 24h active window policy
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      console.log(`⏰ [BroadcastScheduler] Filtering active Messenger conversations with activity after: ${twentyFourHoursAgo.toISOString()}`);
+      conversations = await safeQuery(async () => {
+        return await getSharedPrismaClient().conversation.findMany({
+          where: {
+            companyId: campaign.companyId,
+            status: 'ACTIVE',
+            messages: {
+              some: {
+                isFromCustomer: true,
+                createdAt: {
+                  gte: twentyFourHoursAgo
+                }
+              }
+            }
+          },
+          include: {
+            customer: true,
+            messages: {
+              where: { isFromCustomer: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            }
+          }
+        });
       }, 4);
     }
 
-    console.log(`📊 [BroadcastScheduler] Found ${conversations.length} active conversations`);
+    console.log(`📊 [BroadcastScheduler] Found ${conversations.length} target conversations`);
 
     // تحديث عدد المستلمين في الحملة
     await safeQuery(async () => {
@@ -316,6 +347,36 @@ class BroadcastSchedulerService {
       return;
     }
 
+    let waSessionId = null;
+
+    if (isWhatsApp) {
+      waSessionId = campaign.whatsAppSessionId;
+      if (!waSessionId) {
+        console.log(`🔍 [BroadcastScheduler] whatsAppSessionId not found on campaign, searching for default Meta session`);
+        const metaSession = await safeQuery(async () => {
+          return await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { companyId: campaign.companyId, provider: 'META_CLOUD' }
+          });
+        }, 3);
+        if (metaSession) {
+          waSessionId = metaSession.id;
+        } else {
+          const defaultSession = await safeQuery(async () => {
+            return await getSharedPrismaClient().whatsAppSession.findFirst({
+              where: { companyId: campaign.companyId, isDefault: true }
+            }) || await getSharedPrismaClient().whatsAppSession.findFirst({
+              where: { companyId: campaign.companyId }
+            });
+          }, 3);
+          waSessionId = defaultSession?.id || null;
+        }
+      }
+      console.log(`📞 [BroadcastScheduler] Using WhatsApp session ID: ${waSessionId}`);
+      if (!waSessionId) {
+        throw new Error('لا توجد جلسة واتساب نشطة متاحة لإرسال هذه الحملة المجدولة');
+      }
+    }
+
     // إرسال الرسائل
     let sentCount = 0;
     let failedCount = 0;
@@ -340,135 +401,236 @@ class BroadcastSchedulerService {
       const conv = conversations[i];
       
       try {
-        if (!conv.customer.facebookId) {
-          console.log(`⚠️ [BroadcastScheduler] Skipping customer ${conv.customer.firstName} - No Facebook ID`);
-          failedCount++;
-
-          await safeQuery(async () => {
-            return await getSharedPrismaClient().broadcastRecipient.updateMany({
-            where: {
-              campaignId: campaign.id,
-              conversationId: conv.id
-            },
-            data: {
-              status: 'failed',
-              failureReason: 'No Facebook ID',
-              sentAt: new Date()
-            }
-            });
-          }, 4);
-
-          continue;
-        }
-
-        // جلب Page ID من metadata المحادثة
-        let conversationPageId = null;
-        if (conv.metadata) {
-          try {
-            const metadata = JSON.parse(conv.metadata);
-            if (metadata.pageId) {
-              conversationPageId = metadata.pageId;
-            }
-          } catch (error) {
-            console.log(`⚠️ [BroadcastScheduler] Error parsing metadata: ${error.message}`);
-          }
-        }
-
-        // إذا لم يتم العثور على Page ID، استخدم أول صفحة متصلة
-        if (!conversationPageId) {
-          const defaultPage = await safeQuery(async () => {
-            return await getSharedPrismaClient().facebookPage.findFirst({
-            where: {
-              companyId: campaign.companyId,
-              status: 'connected'
-            },
-            orderBy: {
-              connectedAt: 'desc'
-            }
-            });
-          }, 3);
-
-          if (defaultPage) {
-            conversationPageId = defaultPage.pageId;
-          } else {
-            console.log(`❌ [BroadcastScheduler] No connected Facebook page for customer ${conv.customer.firstName}`);
+        if (isWhatsApp) {
+          const phone = conv.customer.phone;
+          if (!phone) {
+            console.log(`⚠️ [BroadcastScheduler] Skipping customer ${conv.customer.firstName} - No phone number`);
             failedCount++;
 
             await safeQuery(async () => {
               return await getSharedPrismaClient().broadcastRecipient.updateMany({
-              where: {
-                campaignId: campaign.id,
-                conversationId: conv.id
-              },
-              data: {
-                status: 'failed',
-                failureReason: 'No connected Facebook page',
-                sentAt: new Date()
-              }
+                where: {
+                  campaignId: campaign.id,
+                  conversationId: conv.id
+                },
+                data: {
+                  status: 'failed',
+                  failureReason: 'No phone number',
+                  sentAt: new Date()
+                }
               });
             }, 4);
 
             continue;
           }
-        }
 
-        // حفظ الرسائل في database قبل الإرسال
-        const savedMessages = [];
-        
-        // ✨ استبدال المتغيرات بالبيانات الفعلية للعميل
-        const personalizedMessage = replaceMessageVariables(campaign.message, conv.customer);
-        console.log(`✨ [SCHEDULER PERSONALIZATION] Original: "${campaign.message}" => Personalized: "${personalizedMessage}"`);
-        
-        if (personalizedMessage && personalizedMessage.trim().length > 0) {
-          const textMessage = await safeQuery(async () => {
-            return await getSharedPrismaClient().message.create({
-            data: {
-              conversationId: conv.id,
-              content: personalizedMessage,
-              isFromCustomer: false,
-              type: 'TEXT',
-              senderId: null,
-              metadata: JSON.stringify({
-                isBroadcast: true,
-                campaignId: campaign.id,
-                campaignName: campaign.name,
-                sentAt: new Date().toISOString(),
-                originalMessage: campaign.message,
-                hasVariables: campaign.message !== personalizedMessage
-              })
-            }
-            });
-          }, 6);
-          savedMessages.push(textMessage);
-        }
+          const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-        let sendResult;
-        
-        // إرسال الصور إن وجدت
-        if (campaign.images && Array.isArray(campaign.images) && campaign.images.length > 0) {
-          for (const imageUrl of campaign.images) {
-            const imageMessage = await safeQuery(async () => {
-              return await getSharedPrismaClient().message.create({
-              data: {
-                conversationId: conv.id,
-                content: imageUrl,
-                isFromCustomer: false,
-                type: 'IMAGE',
-                senderId: null,
-                metadata: JSON.stringify({
-                  isBroadcast: true,
-                  campaignId: campaign.id,
-                  campaignName: campaign.name,
-                  sentAt: new Date().toISOString()
-                })
-              }
-              });
-            }, 6);
-            savedMessages.push(imageMessage);
+          // Build template body parameters from customer data
+          const bodyParams = [];
+          if (conv.customer.firstName) {
+            bodyParams.push({ type: 'text', text: conv.customer.firstName });
+          }
+          if (conv.customer.lastName) {
+            bodyParams.push({ type: 'text', text: conv.customer.lastName });
           }
 
-          // إرسال النص المخصص أولاً
+          const components = bodyParams.length > 0
+            ? [{ type: 'body', parameters: bodyParams }]
+            : [];
+
+          let result;
+          try {
+            result = await WhatsAppMessageHandler.sendTemplateMessage(
+              waSessionId, to, campaign.waTemplateName,
+              { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
+            );
+          } catch (sendErr) {
+            if (components.length > 0) {
+              console.log(`⚠️ [BroadcastScheduler] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
+              result = await WhatsAppMessageHandler.sendTemplateMessage(
+                waSessionId, to, campaign.waTemplateName,
+                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+                { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
+              );
+            } else {
+              throw sendErr;
+            }
+          }
+
+          sentCount++;
+          const waMessageId = result?.messages?.[0]?.id || result?.messageId || null;
+
+          await safeQuery(async () => {
+            return await getSharedPrismaClient().broadcastRecipient.updateMany({
+              where: {
+                campaignId: campaign.id,
+                conversationId: conv.id
+              },
+              data: {
+                status: 'sent',
+                sentAt: new Date(),
+                messageId: waMessageId
+              }
+            });
+          }, 4);
+        } else {
+          // Facebook Messenger
+          if (!conv.customer.facebookId) {
+            console.log(`⚠️ [BroadcastScheduler] Skipping customer ${conv.customer.firstName} - No Facebook ID`);
+            failedCount++;
+
+            await safeQuery(async () => {
+              return await getSharedPrismaClient().broadcastRecipient.updateMany({
+                where: {
+                  campaignId: campaign.id,
+                  conversationId: conv.id
+                },
+                data: {
+                  status: 'failed',
+                  failureReason: 'No Facebook ID',
+                  sentAt: new Date()
+                }
+              });
+            }, 4);
+
+            continue;
+          }
+
+          // جلب Page ID من metadata المحادثة
+          let conversationPageId = null;
+          if (conv.metadata) {
+            try {
+              const metadata = JSON.parse(conv.metadata);
+              if (metadata.pageId) {
+                conversationPageId = metadata.pageId;
+              }
+            } catch (error) {
+              console.log(`⚠️ [BroadcastScheduler] Error parsing metadata: ${error.message}`);
+            }
+          }
+
+          // إذا لم يتم العثور على Page ID، استخدم أول صفحة متصلة
+          if (!conversationPageId) {
+            const defaultPage = await safeQuery(async () => {
+              return await getSharedPrismaClient().facebookPage.findFirst({
+                where: {
+                  companyId: campaign.companyId,
+                  status: 'connected'
+                },
+                orderBy: {
+                  connectedAt: 'desc'
+                }
+              });
+            }, 3);
+
+            if (defaultPage) {
+              conversationPageId = defaultPage.pageId;
+            } else {
+              console.log(`❌ [BroadcastScheduler] No connected Facebook page for customer ${conv.customer.firstName}`);
+              failedCount++;
+
+              await safeQuery(async () => {
+                return await getSharedPrismaClient().broadcastRecipient.updateMany({
+                  where: {
+                    campaignId: campaign.id,
+                    conversationId: conv.id
+                  },
+                  data: {
+                    status: 'failed',
+                    failureReason: 'No connected Facebook page',
+                    sentAt: new Date()
+                  }
+                });
+              }, 4);
+
+              continue;
+            }
+          }
+
+          // حفظ الرسائل في database قبل الإرسال
+          const savedMessages = [];
+          
+          // ✨ استبدال المتغيرات بالبيانات الفعلية للعميل
+          const personalizedMessage = replaceMessageVariables(campaign.message, conv.customer);
+          console.log(`✨ [SCHEDULER PERSONALIZATION] Original: "${campaign.message}" => Personalized: "${personalizedMessage}"`);
+          
           if (personalizedMessage && personalizedMessage.trim().length > 0) {
+            const textMessage = await safeQuery(async () => {
+              return await getSharedPrismaClient().message.create({
+                data: {
+                  conversationId: conv.id,
+                  content: personalizedMessage,
+                  isFromCustomer: false,
+                  type: 'TEXT',
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    isBroadcast: true,
+                    campaignId: campaign.id,
+                    campaignName: campaign.name,
+                    sentAt: new Date().toISOString(),
+                    originalMessage: campaign.message,
+                    hasVariables: campaign.message !== personalizedMessage
+                  })
+                }
+              });
+            }, 6);
+            savedMessages.push(textMessage);
+          }
+
+          let sendResult;
+          
+          // إرسال الصور إن وجدت
+          if (campaign.images && Array.isArray(campaign.images) && campaign.images.length > 0) {
+            for (const imageUrl of campaign.images) {
+              const imageMessage = await safeQuery(async () => {
+                return await getSharedPrismaClient().message.create({
+                  data: {
+                    conversationId: conv.id,
+                    content: imageUrl,
+                    isFromCustomer: false,
+                    type: 'IMAGE',
+                    senderId: null,
+                    metadata: JSON.stringify({
+                      isBroadcast: true,
+                      campaignId: campaign.id,
+                      campaignName: campaign.name,
+                      sentAt: new Date().toISOString()
+                    })
+                  }
+                });
+              }, 6);
+              savedMessages.push(imageMessage);
+            }
+
+            // إرسال النص المخصص أولاً
+            if (personalizedMessage && personalizedMessage.trim().length > 0) {
+              sendResult = await sendFacebookMessage(
+                conv.customer.facebookId,
+                personalizedMessage,
+                'TEXT',
+                conversationPageId
+              );
+            }
+            
+            // إرسال الصور
+            for (const imageUrl of campaign.images) {
+              const imageResult = await sendFacebookMessage(
+                conv.customer.facebookId,
+                imageUrl,
+                'IMAGE',
+                conversationPageId
+              );
+              
+              if (!imageResult.success) {
+                sendResult = imageResult;
+                break;
+              }
+              sendResult = imageResult;
+            }
+          } else {
+            // إرسال النص المخصص فقط
             sendResult = await sendFacebookMessage(
               conv.customer.facebookId,
               personalizedMessage,
@@ -476,72 +638,48 @@ class BroadcastSchedulerService {
               conversationPageId
             );
           }
-          
-          // إرسال الصور
-          for (const imageUrl of campaign.images) {
-            const imageResult = await sendFacebookMessage(
-              conv.customer.facebookId,
-              imageUrl,
-              'IMAGE',
-              conversationPageId
-            );
-            
-            if (!imageResult.success) {
-              sendResult = imageResult;
-              break;
-            }
-            sendResult = imageResult;
-          }
-        } else {
-          // إرسال النص المخصص فقط
-          sendResult = await sendFacebookMessage(
-            conv.customer.facebookId,
-            personalizedMessage,
-            'TEXT',
-            conversationPageId
-          );
-        }
 
-        if (sendResult.success) {
-          sentCount++;
+          if (sendResult.success) {
+            sentCount++;
 
-          await safeQuery(async () => {
-            return await getSharedPrismaClient().broadcastRecipient.updateMany({
-            where: {
-              campaignId: campaign.id,
-              conversationId: conv.id
-            },
-            data: {
-              status: 'sent',
-              sentAt: new Date()
-            }
-            });
-          }, 5);
-        } else {
-          failedCount++;
-
-          // حذف الرسائل المحفوظة لأن الإرسال فشل
-          for (const msg of savedMessages) {
             await safeQuery(async () => {
-              return await getSharedPrismaClient().message.delete({
-              where: { id: msg.id }
+              return await getSharedPrismaClient().broadcastRecipient.updateMany({
+                where: {
+                  campaignId: campaign.id,
+                  conversationId: conv.id
+                },
+                data: {
+                  status: 'sent',
+                  sentAt: new Date()
+                }
+              });
+            }, 5);
+          } else {
+            failedCount++;
+
+            // حذف الرسائل المحفوظة لأن الإرسال فشل
+            for (const msg of savedMessages) {
+              await safeQuery(async () => {
+                return await getSharedPrismaClient().message.delete({
+                  where: { id: msg.id }
+                });
+              }, 4);
+            }
+
+            await safeQuery(async () => {
+              return await getSharedPrismaClient().broadcastRecipient.updateMany({
+                where: {
+                  campaignId: campaign.id,
+                  conversationId: conv.id
+                },
+                data: {
+                  status: 'failed',
+                  failureReason: sendResult.error || sendResult.message || 'Unknown error',
+                  sentAt: new Date()
+                }
               });
             }, 4);
           }
-
-          await safeQuery(async () => {
-            return await getSharedPrismaClient().broadcastRecipient.updateMany({
-              where: {
-                campaignId: campaign.id,
-                conversationId: conv.id
-              },
-              data: {
-                status: 'failed',
-                failureReason: sendResult.error || sendResult.message || 'Unknown error',
-                sentAt: new Date()
-              }
-            });
-          }, 4);
         }
 
         // إرسال تحديث التقدم

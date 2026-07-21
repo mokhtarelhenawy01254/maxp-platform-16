@@ -56,6 +56,7 @@ exports.createCampaign = async (req, res) => {
       targetAudience,
       waTemplateName,
       waLanguageCode,
+      whatsAppSessionId,
       leadCategoryId,
       scheduledAt,
       tags,
@@ -164,6 +165,7 @@ exports.createCampaign = async (req, res) => {
         targetAudience,
         waTemplateName: waTemplateName || null,
         waLanguageCode: waLanguageCode || 'en',
+        whatsAppSessionId: whatsAppSessionId || null,
         leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         tags: tagsString,
@@ -290,7 +292,7 @@ exports.getCampaign = async (req, res) => {
             name: true
           }
         },
-        recipients: {
+        broadcastRecipients: {
           take: 10,
           orderBy: {
             createdAt: 'desc'
@@ -307,7 +309,7 @@ exports.getCampaign = async (req, res) => {
       });
     }
 
-    console.log(`✅ [GET CAMPAIGN] تم العثور على الحملة - الاسم: ${campaign.name}, الحالة: ${campaign.status}, المستلمين: ${campaign.recipients?.length || 0}`);
+    console.log(`✅ [GET CAMPAIGN] تم العثور على الحملة - الاسم: ${campaign.name}, الحالة: ${campaign.status}, المستلمين: ${campaign.broadcastRecipients?.length || 0}`);
 
     res.json({
       success: true,
@@ -657,44 +659,126 @@ exports.sendCampaign = async (req, res) => {
     });
 
     console.log(`👥 [SEND CAMPAIGN] جلب المحادثات المستهدفة للجمهور: ${campaign.targetAudience}`);
-    // جلب المحادثات المستهدفة
     let conversations = [];
+    const isWhatsApp = campaign.channel === 'whatsapp';
 
-    // حساب وقت آخر 24 ساعة
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    console.log(`⏰ [SEND CAMPAIGN] فلترة المحادثات التي تم التفاعل معها بعد: ${twentyFourHoursAgo.toISOString()}`);
+    const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
 
-    if (campaign.targetAudience === 'all') {
-      console.log('🌐 [SEND CAMPAIGN] جلب جميع المحادثات النشطة (آخر رسالة من العميل في آخر 24 ساعة)');
+    // ==================== معالجة الأرقام اليدوية ====================
+    const manualPhonesFromBody = req.body.manualPhones;
+    let manualPhonesList = [];
+    if (manualPhonesFromBody) {
+      if (typeof manualPhonesFromBody === 'string') {
+        try { manualPhonesList = JSON.parse(manualPhonesFromBody); } catch { manualPhonesList = [manualPhonesFromBody]; }
+      } else if (Array.isArray(manualPhonesFromBody)) {
+        manualPhonesList = manualPhonesFromBody;
+      }
+      manualPhonesList = manualPhonesList.filter(p => p && p.replace(/[^0-9]/g, '').length > 0);
+    }
+
+    const hasManualPhones = manualPhonesList.length > 0;
+
+    if (hasManualPhones) {
+      console.log(`📱 [SEND CAMPAIGN] تم استلام ${manualPhonesList.length} رقم يدوي - سيتم إرسال الحملة لهم فقط`);
+      for (const phone of manualPhonesList) {
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        if (!cleanPhone) continue;
+        try {
+          let customer = await getSharedPrismaClient().customer.findFirst({
+            where: { companyId, phone: { contains: cleanPhone } }
+          });
+          if (!customer) {
+            customer = await getSharedPrismaClient().customer.create({
+              data: {
+                id: generateId(),
+                companyId,
+                phone: cleanPhone,
+                firstName: cleanPhone,
+                lastName: '',
+                source: 'manual'
+              }
+            });
+          }
+          const existingConv = await getSharedPrismaClient().conversation.findFirst({
+            where: { companyId, customerId: customer.id, channel: 'whatsapp' },
+            include: { customer: true }
+          });
+          if (existingConv) {
+            conversations.push(existingConv);
+          } else {
+            const newConv = await getSharedPrismaClient().conversation.create({
+              data: {
+                id: generateId(),
+                companyId,
+                customerId: customer.id,
+                status: 'ACTIVE',
+                channel: 'whatsapp'
+              },
+              include: { customer: true }
+            });
+            conversations.push(newConv);
+          }
+        } catch (err) {
+          console.error(`❌ [SEND CAMPAIGN] خطأ في معالجة الرقم اليدوي ${phone}:`, err.message);
+        }
+      }
+      console.log(`📊 [SEND CAMPAIGN] تم تجهيز ${conversations.length} محادثة للأرقام اليدوية`);
+    }
+
+    if (isWhatsApp && !hasManualPhones) {
+      console.log('🌐 [SEND CAMPAIGN] جلب جميع محادثات الواتساب للشركة (بدون تقييد بـ 24 ساعة)');
       conversations = await getSharedPrismaClient().conversation.findMany({
         where: {
           companyId,
-          status: 'ACTIVE',
-          messages: {
-            some: {
-              isFromCustomer: true,
-              createdAt: {
-                gte: twentyFourHoursAgo
-              }
+          customer: {
+            phone: {
+              not: null
             }
           }
         },
         include: {
-          customer: true,
-          messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 1
-          }
+          customer: true
         }
       });
-    } else {
-      console.log(`📋 [SEND CAMPAIGN] جلب المحادثات للجمهور المخصص: ${campaign.targetAudience}`);
-      // منطق للجمهور المستهدف المخصص
+
+      // إدراج العملاء الذين لديهم أرقام هواتف ولكن ليس لديهم سجلات محادثات بعد
+      const existingCustomerIds = new Set(conversations.map(c => c.customerId).filter(Boolean));
+      const customersWithoutConv = await getSharedPrismaClient().customer.findMany({
+        where: {
+          companyId,
+          phone: { not: null, not: '' },
+          id: { notIn: Array.from(existingCustomerIds) }
+        }
+      });
+
+      if (customersWithoutConv.length > 0) {
+        console.log(`➕ [SEND CAMPAIGN] إنشاء محادثات جديدة لعدد ${customersWithoutConv.length} عميل لشمولهم في الحملة`);
+        for (const cust of customersWithoutConv) {
+          try {
+            const newConv = await getSharedPrismaClient().conversation.create({
+              data: {
+                id: 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9),
+                companyId,
+                customerId: cust.id,
+                status: 'ACTIVE',
+                channel: 'whatsapp'
+              },
+              include: { customer: true }
+            });
+            conversations.push(newConv);
+          } catch (err) {
+            console.error(`❌ [SEND CAMPAIGN] خطأ في إنشاء محادثة للعميل ${cust.id}:`, err.message);
+          }
+        }
+      }
+
+      // التصفية للتأكد من وجود رقم هاتف غير فارغ
+      conversations = conversations.filter(c => c.customer?.phone && c.customer.phone.trim() !== '');
+
+    } else if (!isWhatsApp && !hasManualPhones) {
+      // Facebook Messenger: نافذة 24 ساعة للمحادثات النشطة
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      console.log(`⏰ [SEND CAMPAIGN] فلترة محادثات فيسبوك النشطة في آخر 24 ساعة: ${twentyFourHoursAgo.toISOString()}`);
       conversations = await getSharedPrismaClient().conversation.findMany({
         where: {
           companyId,
@@ -711,22 +795,19 @@ exports.sendCampaign = async (req, res) => {
         include: {
           customer: true,
           messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
+            where: { isFromCustomer: true },
+            orderBy: { createdAt: 'desc' },
             take: 1
           }
         }
       });
     }
+    // else: hasManualPhones is true — conversations already populated above
 
-    console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة`);
+    console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة مستهدفة`);
 
     // Filter by lead category if set on campaign
-    if (campaign.channel === 'whatsapp' && campaign.leadCategoryId) {
+    if (isWhatsApp && campaign.leadCategoryId) {
       console.log(`🏷️ [SEND CAMPAIGN] تصفية حسب تصنيف العملاء: ${campaign.leadCategoryId}`);
       const validContacts = await getSharedPrismaClient().whatsAppContact.findMany({
         where: { leadCategoryId: campaign.leadCategoryId, companyId },
@@ -738,8 +819,6 @@ exports.sendCampaign = async (req, res) => {
     }
 
     console.log('📝 [SEND CAMPAIGN] إنشاء سجلات المستلمين');
-    // Generate ID helper function
-    const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
 
     // إنشاء سجلات المستلمين
     const recipients = conversations.map(conv => ({
@@ -763,8 +842,8 @@ exports.sendCampaign = async (req, res) => {
     }
 
     // ==================== إرسال الرسائل حسب القناة ====================
-    const isWhatsApp = campaign.channel === 'whatsapp';
-    console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsApp ? 'WhatsApp' : 'Facebook Messenger'}`);
+    const isWhatsAppChannel = campaign.channel === 'whatsapp';
+    console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsAppChannel ? 'WhatsApp' : 'Facebook Messenger'}`);
 
     let sentCount = 0;
     let failedCount = 0;
@@ -794,12 +873,77 @@ exports.sendCampaign = async (req, res) => {
     console.log('   Campaign ID:', campaign.id);
     console.log('   Total Recipients:', totalRecipients);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    io.emit('campaign:progress', startEvent);
+    if (io) {
+      io.emit('campaign:progress', startEvent);
+    } else {
+      console.warn('⚠️ [SOCKET] Skipped emit - Socket.IO not available');
+    }
 
     if (isWhatsApp) {
       // ==================== إرسال عبر WhatsApp Templates ====================
+      // تحديد معرف الجلسة الصحيح
+      let waSessionId = campaign.whatsAppSessionId;
+      
+      // إذا لم تكن الجلسة محفوظة في الحملة، نبحث عن أول جلسة Meta Cloud للشركة
+      if (!waSessionId) {
+        console.log(`🔍 [SEND CAMPAIGN] لم يتم حفظ whatsAppSessionId في الحملة، يتم البحث عن جلسة Meta Cloud افتراضية`);
+        const metaSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+          where: { companyId, provider: 'META_CLOUD' }
+        });
+        if (metaSession) {
+          waSessionId = metaSession.id;
+        } else {
+          // fallback لأي جلسة افتراضية أو أول جلسة متاحة للشركة
+          const defaultSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { companyId, isDefault: true }
+          }) || await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { companyId }
+          });
+          waSessionId = defaultSession?.id || null;
+        }
+      }
+
+      console.log(`📞 [SEND CAMPAIGN] باستخدام معرف الجلسة: ${waSessionId}`);
+      if (!waSessionId) {
+        throw new Error('لا توجد جلسة واتساب نشطة متاحة لهذه الحملة');
+      }
+
+      // Fetch template body text from Meta API so chat history displays real text content
+      let templateBodyText = '';
+      try {
+        const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
+        const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
+        if (targetMetaTemplate) {
+          templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+        }
+      } catch (tmplErr) {
+        console.warn('⚠️ [SEND CAMPAIGN] Could not fetch template body text:', tmplErr.message);
+      }
+
+      // تطبيق الحد الأقصى للمستلمين إذا تم تحديده
+      const maxRecipients = parseInt(req.body.limit) || 0;
+      if (maxRecipients > 0 && conversations.length > maxRecipients) {
+        console.log(`📊 [SEND CAMPAIGN] تطبيق الحد الأقصى: إرسال لـ ${maxRecipients} من أصل ${conversations.length} مستلم`);
+        conversations = conversations.slice(0, maxRecipients);
+      }
+
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
+
+        // التحقق من حالة الحملة قبل كل رسالة (للسماح بالإيقاف)
+        try {
+          const currentCampaign = await getSharedPrismaClient().broadcastCampaign.findUnique({
+            where: { id: campaignId },
+            select: { status: true }
+          });
+          if (currentCampaign && (currentCampaign.status === 'paused' || currentCampaign.status === 'cancelled')) {
+            console.log(`⏹️ [SEND CAMPAIGN] تم إيقاف الحملة (${currentCampaign.status}) بعد إرسال ${sentCount} رسالة`);
+            break;
+          }
+        } catch (statusErr) {
+          console.error(`⚠️ [SEND CAMPAIGN] فشل التحقق من حالة الحملة:`, statusErr.message);
+        }
+
         try {
           const phone = conv.customer.phone;
           if (!phone) {
@@ -813,8 +957,6 @@ exports.sendCampaign = async (req, res) => {
           }
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
-          const waSessionId = companyId ? `company:${companyId}` : null;
-
 
           // Build template body parameters from customer data
           const bodyParams = [];
@@ -829,11 +971,35 @@ exports.sendCampaign = async (req, res) => {
             ? [{ type: 'body', parameters: bodyParams }]
             : [];
 
-          const result = await WhatsAppMessageHandler.sendTemplateMessage(
-            waSessionId, to, campaign.waTemplateName,
-            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-            { metadata: { isBroadcast: true, campaignId: campaign.id } }
-          );
+          // Resolve variables in templateBodyText if present
+          let resolvedBody = templateBodyText;
+          if (resolvedBody && bodyParams.length > 0) {
+            bodyParams.forEach((param, idx) => {
+              if (param.text) {
+                resolvedBody = resolvedBody.replace(new RegExp(`\\{\\{${idx + 1}\\}\\}`, 'g'), param.text);
+              }
+            });
+          }
+
+          let result;
+          try {
+            result = await WhatsAppMessageHandler.sendTemplateMessage(
+              waSessionId, to, campaign.waTemplateName,
+              { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody, senderId: campaign.creatorId }
+            );
+          } catch (sendErr) {
+            if (components.length > 0) {
+              console.log(`⚠️ [SEND CAMPAIGN] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
+              result = await WhatsAppMessageHandler.sendTemplateMessage(
+                waSessionId, to, campaign.waTemplateName,
+                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
+              );
+            } else {
+              throw sendErr;
+            }
+          }
 
           sentCount++;
           const waMessageId = result?.messages?.[0]?.id || result?.messageId || null;
@@ -845,7 +1011,9 @@ exports.sendCampaign = async (req, res) => {
           sendResults.push({ customerId: conv.customer.id, customerName: `${conv.customer.firstName} ${conv.customer.lastName}`, status: 'sent', success: true });
 
           const progress = Math.round(((i + 1) / totalRecipients) * 100);
-          io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
+          if (io) {
+            io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
+          }
           await new Promise(resolve => setTimeout(resolve, 50));
         } catch (err) {
           console.error(`❌ [SEND CAMPAIGN] فشل إرسال واتساب لـ ${conv.customer.firstName}:`, err.message);
@@ -859,8 +1027,30 @@ exports.sendCampaign = async (req, res) => {
       }
     } else {
       // ==================== إرسال عبر Facebook Messenger ====================
+      // تطبيق الحد الأقصى للمستلمين إذا تم تحديده (للفيسبوك)
+      const fbMaxRecipients = parseInt(req.body.limit) || 0;
+      if (fbMaxRecipients > 0 && conversations.length > fbMaxRecipients) {
+        console.log(`📊 [SEND CAMPAIGN] تطبيق الحد الأقصى: إرسال لـ ${fbMaxRecipients} من أصل ${conversations.length} مستلم (فيسبوك)`);
+        conversations = conversations.slice(0, fbMaxRecipients);
+      }
+
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
+
+        // التحقق من حالة الحملة قبل كل رسالة
+        try {
+          const currentCampaign = await getSharedPrismaClient().broadcastCampaign.findUnique({
+            where: { id: campaignId },
+            select: { status: true }
+          });
+          if (currentCampaign && (currentCampaign.status === 'paused' || currentCampaign.status === 'cancelled')) {
+            console.log(`⏹️ [SEND CAMPAIGN] تم إيقاف حملة الفيسبوك (${currentCampaign.status}) بعد إرسال ${sentCount} رسالة`);
+            break;
+          }
+        } catch (statusErr) {
+          console.error(`⚠️ [SEND CAMPAIGN] فشل التحقق من حالة الحملة:`, statusErr.message);
+        }
+
         try {
           // Skip if customer doesn't have Facebook ID
           if (!conv.customer.facebookId) {
@@ -985,7 +1175,7 @@ exports.sendCampaign = async (req, res) => {
                 content: personalizedMessage,
                 isFromCustomer: false,
                 type: 'TEXT',
-                senderId: null,
+                senderId: campaign.creatorId,
                 metadata: JSON.stringify({
                   isBroadcast: true,
                   campaignId: campaign.id,
@@ -1015,7 +1205,7 @@ exports.sendCampaign = async (req, res) => {
                 content: imageUrl,
                 isFromCustomer: false,
                 type: 'IMAGE',
-                senderId: null,
+                senderId: campaign.creatorId,
                 metadata: JSON.stringify({
                   isBroadcast: true,
                   campaignId: campaign.id,
@@ -1178,7 +1368,9 @@ exports.sendCampaign = async (req, res) => {
           currentRecipient: `${conv.customer.firstName} ${conv.customer.lastName}`
         };
         console.log(`📊 [PROGRESS] ${progress}% - Sent: ${sentCount}, Failed: ${failedCount}`);
-        io.emit('campaign:progress', progressEvent);
+        if (io) {
+          io.emit('campaign:progress', progressEvent);
+        }
 
         // Add a small delay between messages to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -1221,14 +1413,16 @@ exports.sendCampaign = async (req, res) => {
     console.log('   Sent:', sentCount);
     console.log('   Failed:', failedCount);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    io.emit('campaign:progress', {
-      campaignId: campaign.id,
-      status: 'completed',
-      total: totalRecipients,
-      sent: sentCount,
-      failed: failedCount,
-      progress: 100
-    });
+    if (io) {
+      io.emit('campaign:progress', {
+        campaignId: campaign.id,
+        status: 'completed',
+        total: totalRecipients,
+        sent: sentCount,
+        failed: failedCount,
+        progress: 100
+      });
+    }
 
     console.log('🔄 [SEND CAMPAIGN] تحديث إحصائيات الحملة');
     // تحديث عدد المرسل إليهم
@@ -1414,7 +1608,7 @@ exports.getCampaignAnalytics = async (req, res) => {
         companyId
       },
       include: {
-        recipients: {
+        broadcastRecipients: {
           select: {
             status: true,
             sentAt: true,

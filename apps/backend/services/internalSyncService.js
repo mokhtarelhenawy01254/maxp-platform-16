@@ -346,6 +346,15 @@ class InternalSyncService {
                     try {
                         console.log(`📦 [INTERNAL-SYNC] Pushing subset of order ${orderId} to provider ${providerId}`);
 
+                        // Check if order was already pushed (dedup)
+                        const alreadyPushed = await this.prisma.order.findFirst({
+                            where: { externalId: orderId, sourceType: 'internal_push', companyId: providerId }
+                        });
+                        if (alreadyPushed) {
+                            console.log(`ℹ️ [INTERNAL-SYNC] Order ${orderId} already pushed as ${alreadyPushed.orderNumber}, skipping`);
+                            return;
+                        }
+
                         const affiliateService = require('./affiliateService');
                         const affiliate = await affiliateService.getOrCreateAffiliateForCompany(providerId, consumerId);
 

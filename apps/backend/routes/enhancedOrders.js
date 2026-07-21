@@ -602,8 +602,22 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // تحويل المنتجات (متوافق مع EnhancedOrderService)
+    const rawProducts = req.body.products || req.body.items || [];
+    const products = Array.isArray(rawProducts) ? rawProducts.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      productColor: item.productColor,
+      productSize: item.productSize,
+      price: parseFloat(item.price),
+      quantity: item.quantity,
+      total: parseFloat(item.total),
+      variantId: item.variantId
+    })) : [];
+
     const orderData = {
       ...req.body,
+      products,
       companyId: req.user.companyId,
       extractionMethod: 'manual',
 
@@ -619,8 +633,6 @@ router.post('/', async (req, res) => {
     console.log('📦 [ENHANCED-ORDERS] Processing order data:', JSON.stringify(orderData.products || orderData.productName, null, 2));
 
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
-
-    await enhancedOrderService.disconnect();
 
     if (result.success) {
       // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد

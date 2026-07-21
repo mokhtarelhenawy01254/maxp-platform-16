@@ -1,5 +1,6 @@
 import React from "react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { FooterSettings } from "../../services/footerSettingsService";
 
 interface FooterSettingsSectionProps {
@@ -29,6 +30,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
   onReset,
   loading,
 }) => {
+  const { t } = useTranslation();
   const handleChange = (field: keyof FooterSettings, value: any) => {
     onChange({ ...settings, [field]: value });
   };
@@ -45,10 +47,10 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            إعدادات الفوتر
+            {t("storeFooter.footerTitle")}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            تحكم في معلومات الفوتر التي تظهر في المتجر الإلكتروني
+            {t("storeFooter.footerSubtitleDetails")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -57,14 +59,14 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
-            إعادة تعيين
+            {t("storeFooter.reset")}
           </button>
           <button
             onClick={onSave}
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg"
           >
-            {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
+            {loading ? t("storeFooter.saving") : t("storeFooter.save")}
           </button>
         </div>
       </div>
@@ -73,7 +75,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
       <div className="bg-gray-50 dark:bg-gray-900/40 p-4 rounded-lg border border-transparent dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <label className="text-sm font-medium text-gray-900 dark:text-white">
-            عن المتجر
+            {t("storeFooter.aboutStore")}
           </label>
           <label className="flex items-center cursor-pointer">
             <input
@@ -83,7 +85,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
               className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
             />
             <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-              عرض
+              {t("storeFooter.show")}
             </span>
           </label>
         </div>
@@ -91,7 +93,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
           value={settings.aboutStore || ""}
           onChange={(e) => handleChange("aboutStore", e.target.value)}
           rows={4}
-          placeholder="نبذة عن المتجر..."
+          placeholder={t("storeFooter.aboutStorePlaceholder")}
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
         />
       </div>
@@ -99,14 +101,14 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
       {/* Contact Information */}
       <div className="bg-gray-50 dark:bg-gray-900/40 p-4 rounded-lg space-y-4 border border-transparent dark:border-gray-700">
         <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
-          معلومات التواصل
+          {t("storeFooter.contactInfo")}
         </h4>
 
         {/* Email */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              البريد الإلكتروني
+              {t("storeFooter.email")}
             </label>
             <label className="flex items-center cursor-pointer">
               <input
@@ -116,7 +118,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
                 className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
               />
               <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-                عرض
+                {t("storeFooter.show")}
               </span>
             </label>
           </div>
@@ -133,7 +135,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              رقم الهاتف
+              {t("storeFooter.phone")}
             </label>
             <label className="flex items-center cursor-pointer">
               <input
@@ -143,7 +145,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
                 className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
               />
               <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-                عرض
+                {t("storeFooter.show")}
               </span>
             </label>
           </div>
@@ -160,7 +162,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              العنوان
+              {t("storeFooter.address")}
             </label>
             <label className="flex items-center cursor-pointer">
               <input
@@ -170,7 +172,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
                 className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
               />
               <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-                عرض
+                {t("storeFooter.show")}
               </span>
             </label>
           </div>
@@ -178,7 +180,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
             value={settings.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
             rows={2}
-            placeholder="العنوان الكامل للمتجر..."
+            placeholder={t("storeFooter.addressPlaceholder")}
             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
           />
         </div>
@@ -188,10 +190,10 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
       <div className="bg-gray-50 dark:bg-gray-900/40 p-4 rounded-lg border border-transparent dark:border-gray-700">
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-900 dark:text-white">
-            روابط السوشيال
+            {t("storeFooter.socialLinks")}
           </label>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            الروابط دي بتظهر في فوتر المتجر، والقوالب تقدر تستخدمها بدل روابط الديمو.
+            {t("storeFooter.socialLinksDesc")}
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -217,10 +219,10 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <label className="text-sm font-medium text-gray-900 dark:text-white">
-              الروابط السريعة
+              {t("storeFooter.quickLinks")}
             </label>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              عرض روابط سريعة للصفحات الرئيسية في الفوتر
+              {t("storeFooter.quickLinksDesc")}
             </p>
           </div>
           <label className="flex items-center cursor-pointer">
@@ -231,7 +233,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
               className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
             />
             <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-              عرض
+              {t("storeFooter.show")}
             </span>
           </label>
         </div>
@@ -241,7 +243,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
       <div className="bg-gray-50 dark:bg-gray-900/40 p-4 rounded-lg border border-transparent dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <label className="text-sm font-medium text-gray-900 dark:text-white">
-            حقوق النشر
+            {t("storeFooter.copyright")}
           </label>
           <label className="flex items-center cursor-pointer">
             <input
@@ -251,7 +253,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
               className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 ml-2"
             />
             <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-              عرض
+              {t("storeFooter.show")}
             </span>
           </label>
         </div>
@@ -259,24 +261,24 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
           type="text"
           value={settings.copyrightText || ""}
           onChange={(e) => handleChange("copyrightText", e.target.value)}
-          placeholder="© 2024 اسم المتجر. جميع الحقوق محفوظة"
+          placeholder={t("storeFooter.copyrightPlaceholder")}
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
         />
         <div className="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
           <InformationCircleIcon className="h-4 w-4 flex-shrink-0 mt-0.5" />
-          <p>سيتم استبدال {"{year}"} بالسنة الحالية تلقائياً</p>
+          <p>{t("storeFooter.copyrightNote")}</p>
         </div>
       </div>
 
       <div className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white p-6 rounded-lg border border-gray-200 dark:border-gray-700">
         <h4 className="text-sm font-medium mb-4 text-gray-700 dark:text-gray-300">
-          معاينة الفوتر
+          {t("storeFooter.previewTitle")}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
           {/* About Store */}
           {settings.showAboutStore && settings.aboutStore && (
             <div>
-              <h5 className="font-semibold mb-2">عن المتجر</h5>
+              <h5 className="font-semibold mb-2">{t("storeFooter.aboutStore")}</h5>
               <p className="text-gray-600 dark:text-gray-300 text-xs">
                 {settings.aboutStore}
               </p>
@@ -285,7 +287,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
 
           {/* Contact Info */}
           <div>
-            <h5 className="font-semibold mb-2">تواصل معنا</h5>
+            <h5 className="font-semibold mb-2">{t("storeFooter.contactUs")}</h5>
             <div className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
               {settings.showEmail && settings.email && (
                 <p>📧 {settings.email}</p>
@@ -301,7 +303,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
 
           {Object.entries(socialLinks).some(([, url]) => Boolean(url?.trim())) ? (
             <div>
-              <h5 className="font-semibold mb-2">Social</h5>
+              <h5 className="font-semibold mb-2">{t("storeFooter.socialPreview")}</h5>
               <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
                 {Object.entries(socialLinks)
                   .filter(([, url]) => Boolean(url?.trim()))
@@ -315,11 +317,11 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
           {/* Quick Links */}
           {settings.showQuickLinks && (
             <div>
-              <h5 className="font-semibold mb-2">روابط سريعة</h5>
+              <h5 className="font-semibold mb-2">{t("storeFooter.quickLinksPreview")}</h5>
               <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
-                <li>من نحن</li>
-                <li>اتصل بنا</li>
-                <li>سياسة الخصوصية</li>
+                <li>{t("storeFooter.aboutUs")}</li>
+                <li>{t("storeFooter.contactUsLink")}</li>
+                <li>{t("storeFooter.privacyPolicy")}</li>
               </ul>
             </div>
           )}

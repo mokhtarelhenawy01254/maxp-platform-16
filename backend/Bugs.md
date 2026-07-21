@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [BUG FIX / BROADCAST] WhatsApp Template Campaign Overwrite & Parameter Mismatch Fixes
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Manual Recipients Overwritten**: In `broadcastController.js`, `if (isWhatsApp && !hasManualPhones)` was followed by a generic `else` block for Facebook Messenger. When sending a WhatsApp campaign with `manualPhones`, `!hasManualPhones` evaluated to `false`, causing execution to drop into the `else` block which overwrote `conversations` with Facebook 24h active chats.
+  2. **Template Parameter Mismatch**: Templates without `{{1}}` / `{{2}}` variables threw Meta Cloud API error `#100 Param count mismatch` when `bodyParams` (firstName/lastName) were forcibly passed.
+  3. **Prisma Relation Field**: `recipients` relation name in `getCampaign` and analytics endpoints did not match the schema model relation name (`broadcastRecipients`).
+- **Resolution**:
+  1. **Fixed Conditional Logic**: Changed `else` to `else if (!isWhatsApp && !hasManualPhones)` in `broadcastController.js`, preserving manual recipients array.
+  2. **Parameter Fallback**: Added `try/catch` fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry template message sending with `components: []` if Meta returns parameter mismatch error.
+  3. **Frontend Payload Fix**: Updated `WhatsAppTemplateBroadcast.tsx` to include `manualPhones` in FormData creation and pass `recipients` to `sendCampaign()`.
+- **Files Modified**:
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/backend/docs/whatsapp/whatsapp-broadcast-24h-window-bypass-2026-07-21.md`
+
 ### [FEATURE / OVERRIDE] Support for Separate WhatsApp Facebook App ID & Credentials
 - **Date**: 2026-07-19
 - **Root Cause / Requirement**:
@@ -1227,7 +1243,6 @@
   - `apps/frontend/src/components/dashboard/widgets/AppWidgetCard.tsx`
   - `apps/frontend/src/components/dashboard/widgets/AppWidgetMini.tsx`
 
-
 ### [SECURITY/FIX] WhatsApp Cloud Connect App Secret Protection & Dynamic PIN
 - **Date**: 2026-07-19 / 2026-03-09
 - **Description**: Secured the Meta OAuth credentials from git history, generated random registration PINs, and aligned Graph API versions.
@@ -1245,3 +1260,39 @@
   - `apps/backend/data/facebook-oauth-config.example.json`
   - `apps/backend/controller/whatsappController.js`
   - `.gitignore`
+
+### [BUG FIX] WhatsApp Template Broadcast Campaign Failures and Session Stale options
+- **Date**: 2026-07-21 / 2026-03-09
+- **Description**: Fixed WhatsApp template list stale options in frontend and resolved the "Session not found" broadcast campaign failures.
+- **Root Cause**:
+  1. In the frontend `WhatsAppTemplateBroadcast.tsx`, changing the WhatsApp session did not clear the template list from the previously selected session, leading to mixed templates when the new session's fetch failed or took too long.
+  2. In the database, the `BroadcastCampaign` model was missing a relation or field to track the specific WhatsApp session selected by the user.
+  3. The backend `broadcastController.js` had hardcoded `waSessionId` as `company:companyId` which is not a valid session ID inside `WhatsAppSession`, causing "Session not found" errors when executing immediate broadcasts.
+  4. The background scheduler `broadcastSchedulerService.js` had no implementation for WhatsApp campaigns, skipping recipients with no `facebookId` and attempting to send Messenger text messages for WhatsApp template campaigns.
+- **Resolution**:
+  1. Added `whatsAppSessionId String?` to `BroadcastCampaign` prisma model and regenerated the client.
+  2. Updated frontend to clear templates state immediately upon session change, and passed `whatsAppSessionId: selectedSessionId` during campaign creation.
+  3. Updated `broadcastController.js` to store `whatsAppSessionId` and resolve it during sending, with a fallback to the first active Meta Cloud session if not provided.
+  4. Implemented WhatsApp template message sending branch in `broadcastSchedulerService.js` so scheduled WhatsApp broadcasts are fully supported and sent using `WhatsAppMessageHandler.sendTemplateMessage`.
+- **Files Modified**:
+  - `apps/backend/prisma/schema/marketing.prisma`
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+
+### [BUG FIX] WhatsApp Template Broadcast 24h Recipient Window Restriction
+- **Date**: 2026-07-21 / 2026-03-09
+- **Description**: Resolved issues where WhatsApp template campaigns failed with "No active recipients found" due to an incorrect 24-hour messaging window restriction.
+- **Root Cause**:
+  1. The code in `broadcastController.js` and `broadcastSchedulerService.js` applied a strict `twentyFourHoursAgo` message activity check for all campaigns.
+  2. While necessary for Facebook Messenger, this restriction is incorrect for WhatsApp Templates, which are designed to re-initiate contact outside the 24-hour window.
+  3. Additionally, customers without existing `Conversation` records were skipped entirely.
+- **Resolution**:
+  1. Split query logic in `broadcastController.js` (`sendCampaign`) and `broadcastSchedulerService.js` (`sendScheduledCampaign`) based on campaign channel.
+  2. Removed the 24-hour filter condition entirely for WhatsApp campaigns, querying all company conversations with valid customer phone numbers.
+  3. Added auto-creation of active WhatsApp `Conversation` records for target `Customer` entries that lack one, ensuring they are enrolled in the campaign recipients list.
+  4. Preserved the 24-hour messaging policy constraint for Facebook Messenger campaigns.
+- **Files Modified**:
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+

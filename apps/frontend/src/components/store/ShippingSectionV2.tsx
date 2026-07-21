@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   TruckIcon,
   PlusIcon,
@@ -99,6 +100,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
   promotionSettings = {},
   onUpdatePromotionSettings,
 }) => {
+  const { t } = useTranslation();
   const normalizeGovernorateCode = useCallback((value: string) => {
     const raw = String(value || '').trim();
     return GOVERNORATE_CODE_ALIASES[raw] || raw;
@@ -247,11 +249,10 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            مناطق الشحن
+            {t("storeShipping.shippingZonesTitle")}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {analytics.totalZones} منطقة • تغطية {analytics.coveragePercent}% من
-            المحافظات
+            {t("storeShipping.shippingZonesSubtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -263,14 +264,14 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
               }`}
           >
             <ChartBarIcon className="h-5 w-5" />
-            التحليلات
+            {t("storeShipping.coverageAnalysis")}
           </button>
           <button
             onClick={onAdd}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
           >
             <PlusIcon className="h-5 w-5" />
-            إضافة منطقة
+            {t("storeShipping.addZone")}
           </button>
         </div>
       </div>
@@ -358,7 +359,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
         <div className="mb-6 p-6 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <ChartBarIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            تحليل التغطية
+            {t("storeShipping.coverageAnalysis")}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -367,7 +368,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                 {analytics.totalZones}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                إجمالي المناطق
+                {t("storeShipping.zonesCount")}
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -375,7 +376,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                 {analytics.activeZones}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                المناطق النشطة
+                {t("storeShipping.activeZones")}
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -490,9 +491,9 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
             }
             className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="all">كل المناطق</option>
-            <option value="active">النشطة فقط</option>
-            <option value="inactive">غير النشطة</option>
+            <option value="all">{t("storeShipping.allZones")}</option>
+            <option value="active">{t("storeShipping.activeOnly")}</option>
+            <option value="inactive">{t("storeShipping.inactiveOnly")}</option>
           </select>
         </div>
       </div>
@@ -511,14 +512,14 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
           <TruckIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">
             {searchTerm || filterStatus !== "all"
-              ? "لا توجد مناطق تطابق البحث"
-              : "لا توجد مناطق شحن مضافة"}
+              ? t("storeShipping.noZones")
+              : t("storeShipping.noZonesDesc")}
           </p>
           <button
             onClick={onAdd}
             className="mt-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
           >
-            إضافة منطقة جديدة
+            {t("storeShipping.addZone")}
           </button>
         </div>
       ) : (
@@ -574,7 +575,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {zone.name || "منطقة بدون اسم"}
+                        {zone.name || t("storeShipping.zoneName")}
                       </div>
                       <span
                         className={`px-2.5 py-1 text-xs font-medium rounded-full ${zone.isActive
@@ -582,16 +583,16 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                           : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400"
                           }`}
                       >
-                        {zone.isActive ? "نشط" : "غير نشط"}
+                        {zone.isActive ? t("storeShipping.active") : t("storeShipping.inactive")}
                       </span>
                       {zone.pricingType === "tiered" && (
                         <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400">
-                          تسعير متدرج
+                          {t("storeShipping.tieredPricing")}
                         </span>
                       )}
                       {zone.freeShippingThreshold && (
                         <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
-                          شحن مجاني فوق {zone.freeShippingThreshold} ج.م
+                          {t("storeShipping.freeShippingTag")} {zone.freeShippingThreshold} ج.م
                         </span>
                       )}
                     </div>
@@ -609,7 +610,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                         ))}
                         {displayNames.length > 8 && (
                           <span className="px-2.5 py-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs rounded-md font-medium">
-                            +{displayNames.length - 8} أخرى
+                            +{displayNames.length - 8}
                           </span>
                         )}
                       </div>
@@ -624,7 +625,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                       </div>
                     ) : (
                       <div className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                        {zone.pricingTiers?.length || 0} شريحة سعر
+                        {zone.pricingTiers?.length || 0}
                       </div>
                     )}
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -640,7 +641,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                   zone.pricingTiers.length > 0 && (
                     <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                       <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        شرائح الأسعار:
+                        {t("storeShipping.tieredPricing")}:
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {zone.pricingTiers.slice(0, 3).map((tier, idx) => (
@@ -659,7 +660,7 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                         ))}
                         {zone.pricingTiers.length > 3 && (
                           <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded flex items-center justify-center text-gray-600 dark:text-gray-400">
-                            +{zone.pricingTiers.length - 3} أخرى
+                            +{zone.pricingTiers.length - 3}
                           </div>
                         )}
                       </div>
@@ -673,21 +674,21 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                     className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center justify-center transition-colors gap-1"
                   >
                     <TruckIcon className="h-4 w-4" />
-                    طرق الشحن
+                    {t("storeShipping.shippingMethodsTitle")}
                   </button>
                   <button
                     onClick={() => onEdit(zone)}
                     className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors gap-1"
                   >
                     <PencilIcon className="h-4 w-4" />
-                    تعديل
+                    {t("storeShipping.edit")}
                   </button>
                   <button
                     onClick={() => onDelete(zone.id)}
                     className="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center justify-center transition-colors gap-1"
                   >
                     <TrashIcon className="h-4 w-4" />
-                    حذف
+                    {t("storeShipping.delete")}
                   </button>
                 </div>
               </div>

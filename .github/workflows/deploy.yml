@@ -206,16 +206,24 @@ jobs:
         run: |
           set -euo pipefail
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" "
+          ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" '
             set -e
-            DEPLOY_STAGING=\"\$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}\"
-            echo '🚀 Creating staging directory...'
-            rm -rf \"\$DEPLOY_STAGING\"
-            mkdir -p \"\$DEPLOY_STAGING/backend\"
-            mkdir -p \"\$DEPLOY_STAGING/frontend\"
-            echo \"✅ Staging directory created: \$DEPLOY_STAGING\"
-            df -h \$HOME
-          "
+            echo "🧹 Cleaning up old deploy staging directories, logs, and caches to free space..."
+            rm -rf $HOME/deploy_staging_* 2>/dev/null || true
+            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/backend_uploads_backup 2>/dev/null || true
+            sudo journalctl --vacuum-time=1d 2>/dev/null || true
+            sudo npm cache clean --force 2>/dev/null || true
+            sudo docker system prune -af --volumes 2>/dev/null || true
+            pm2 flush 2>/dev/null || true
+
+            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}"
+            echo "🚀 Creating staging directory: $DEPLOY_STAGING"
+            mkdir -p "$DEPLOY_STAGING/backend"
+            mkdir -p "$DEPLOY_STAGING/frontend"
+            echo "✅ Staging directory created."
+            echo "📊 Free disk space on server:"
+            df -h $HOME
+          '
 
       # Deploy Tarballs to Server
       - name: Deploy Tarballs to Server

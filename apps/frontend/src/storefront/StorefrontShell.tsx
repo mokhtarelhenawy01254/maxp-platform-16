@@ -8442,7 +8442,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route path={scopedPath("shop")} element={shopPageElement} />
         <Route path={scopedPath("product/:id")} element={productPageElement} />
         <Route path={scopedPath("products/:id")} element={productPageElement} />
-        <Route path={scopedPath("products/:slug/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
+        <Route path={scopedPath("product/:id/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
+        <Route path={scopedPath("products/:id/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
+        <Route path={scopedPath("shop/products/:id/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
         <Route
           path={scopedPath("lp/:id")}
           element={<ProductImageLandingPage />}

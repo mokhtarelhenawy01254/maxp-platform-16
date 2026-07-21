@@ -1,5 +1,7 @@
 import React from "react";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { getDirection } from "../../../i18n";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
@@ -18,7 +20,7 @@ export function SettingsLoadingState({
 }) {
   return (
     <div
-      dir="rtl"
+      dir={getDirection()}
       className="flex min-h-[420px] flex-col items-center justify-center rounded-[28px] border border-slate-200/70 bg-white/80 px-6 text-center shadow-sm"
     >
       <div className="flex size-16 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-600">
@@ -37,6 +39,7 @@ export function SettingsStatusAlert({
   message: SettingsStatusMessage | null;
   onDismiss?: () => void;
 }) {
+  const { t } = useTranslation();
   if (!message) {
     return null;
   }
@@ -58,7 +61,7 @@ export function SettingsStatusAlert({
         )}
         <div className="flex-1">
           <AlertTitle className="text-sm font-semibold">
-            {message.type === "success" ? "تم التنفيذ" : "حدثت مشكلة"}
+            {message.type === "success" ? t("settingsPrimitives.alertSuccess") : t("settingsPrimitives.alertError")}
           </AlertTitle>
           <AlertDescription
             className={cn(
@@ -76,7 +79,7 @@ export function SettingsStatusAlert({
             type="button"
             onClick={onDismiss}
             className="rounded-full p-1 text-slate-400 transition hover:bg-white/80 hover:text-slate-600"
-            aria-label="إغلاق التنبيه"
+            aria-label={t("settingsPrimitives.alertClose")}
           >
             <span aria-hidden="true" className="block text-sm leading-none">
               ×
@@ -140,7 +143,7 @@ export function SettingsPageShell({
   className?: string;
 }) {
   return (
-    <div dir="rtl" className={cn("space-y-5 text-right", className)}>
+    <div dir={getDirection()} className={cn("space-y-5 text-right", className)}>
       <div className="overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-sm shadow-slate-200/30">
         {children}
       </div>
@@ -213,7 +216,7 @@ export function SettingsPageHero({
                 {item.label}:{" "}
                 <span
                   className="font-bold text-slate-950"
-                  dir={item.valueDir || "rtl"}
+                  dir={item.valueDir || getDirection()}
                 >
                   {item.value}
                 </span>

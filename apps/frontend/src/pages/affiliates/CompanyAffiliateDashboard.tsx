@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
     BuildingStorefrontIcon,
     CurrencyDollarIcon,
@@ -10,6 +11,7 @@ import {
     LinkIcon,
     UserGroupIcon,
     PencilIcon,
+    ArrowLeftCircleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
@@ -231,17 +233,13 @@ const CompanyAffiliateDashboard: React.FC = () => {
                                 <CurrencyDollarIcon className="w-3 h-3" />
                                 العمولة: {currentDisplay}
                             </span>
-                            {item.role === "consumer" && item.pendingCommissions > 0 && (
-                                <a
-                                    href="/affiliates/commission"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
-                                >
-                                    <CurrencyDollarIcon className="w-3.5 h-3.5" />
-                                    طلب سحب العمولة
-                                </a>
-                            )}
+                            <Link
+                                to={item.role === "consumer" ? `/company-affiliates/consumer/${item.connectionId}` : `/company-affiliates/provider/${item.connectionId}`}
+                                className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+                            >
+                                <ArrowLeftCircleIcon className="w-3.5 h-3.5" />
+                                {item.role === "consumer" ? "تفاصيل العمولات والسحب" : "عرض التفاصيل"}
+                            </Link>
                         </div>
                     )}
                 </div>

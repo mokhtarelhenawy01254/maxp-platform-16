@@ -4222,6 +4222,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
     // إنشاء الطلب باستخدام خدمة الطلبات المحسنة
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
+
     await enhancedOrderService.disconnect();
 
     if (result.success) {

@@ -2497,7 +2497,9 @@ class EnhancedOrderService {
   }
 
   async disconnect() {
-    await this.getPrisma().$disconnect();
+    // No-op: getPrisma() returns a shared singleton client.
+    // Disconnecting it here would break other services (internalSyncService, etc.)
+    // that rely on the same Prisma connection.
   }
 }
 

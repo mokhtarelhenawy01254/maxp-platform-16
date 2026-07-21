@@ -208,7 +208,8 @@ async function broadcastMetaTemplate(req, res) {
           },
           {
             metadata: { isBroadcast: true },
-            templateBody: resolvedBody
+            templateBody: resolvedBody,
+            senderId: req.user.id
           }
         );
 

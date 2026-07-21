@@ -1297,7 +1297,8 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                         mediaMimeType: data.mediaMimeType,
                         mediaFileName: data.mediaFileName,
                         timestamp: new Date(),
-                        senderId: data.metadata?.senderId || options.senderId
+                        senderId: options.senderId || data.senderId,
+                        metadata: typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata
                     },
                     false // isIncoming = false
                 );
@@ -1530,17 +1531,38 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
             const result = await MetaCloudProvider.sendTemplate(sessionId, to, templateName, languageCode, components);
 
-            const templateBody = options?.templateBody || '';
+            let templateBody = options?.templateBody || '';
+            if (!templateBody) {
+                try {
+                    const allTemplates = await MetaCloudProvider.listTemplates(sessionId);
+                    const tmpl = Array.isArray(allTemplates) ? allTemplates.find(t => t.name === templateName) : null;
+                    const bodyComp = tmpl?.components?.find(c => c.type === 'BODY' || c.type === 'body');
+                    let bodyText = bodyComp?.text || '';
+                    if (bodyText) {
+                        const bodyParamObj = components.find(c => c.type === 'BODY' || c.type === 'body');
+                        if (bodyParamObj?.parameters && Array.isArray(bodyParamObj.parameters)) {
+                            bodyParamObj.parameters.forEach((param, idx) => {
+                                const val = param.text || param.value || '';
+                                bodyText = bodyText.replace(new RegExp(`\\\\{\\\\{\\\\s*${idx + 1}\\\\s*\\\\}\\\\}`, 'g'), val);
+                            });
+                        }
+                        templateBody = bodyText;
+                    }
+                } catch (err) {
+                    console.warn(`[WhatsAppMessageHandler] Could not auto-fetch body text for template ${templateName}:`, err.message);
+                }
+            }
+
             const displayContent = templateBody ? `${templateName}\n${templateBody}` : `Template: ${templateName}`;
             let meta = serializeOutgoingMetadata(options.metadata);
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
                 type: 'TEMPLATE',
                 content: displayContent,
-                interactiveData: JSON.stringify({ templateName, languageCode, components }),
+                interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody }),
                 isAIResponse: options.isAIResponse || false,
                 metadata: meta
-            }, { companyId: dbSession?.companyId });
+            }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
             return savedMessage;
@@ -1566,7 +1588,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             interactiveData: JSON.stringify({ templateId, parameters }),
             isAIResponse: options.isAIResponse || false,
             metadata: serializeOutgoingMetadata(options.metadata)
-        }, { companyId: session.companyId });
+        }, { companyId: session.companyId, senderId: options.senderId });
 
         return savedMessage;
     } catch (error) {

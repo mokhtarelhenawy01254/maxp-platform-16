@@ -1144,5 +1144,118 @@
     "engineCompatibility": null,
     "createdAt": "2026-06-30T00:00:00.000Z",
     "updatedAt": "2026-06-30T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-product-presentations",
+    "slug": "product-presentations",
+    "name": "MultiView - عروض متعددة للمنتج",
+    "nameEn": "MultiView - Product Gallery",
+    "description": "أنشئ نسخ متعددة لنفس المنتج بصور وعناوين مختلفة — كل نسخة لها رابط تتبع مستقل لاختبار أي صورة تحقق أعلى مبيعات.",
+    "descriptionEn": "Create multiple versions of the same product with different images and titles — each with its own trackable URL to test which images drive the most sales.",
+    "category": "ECOMMERCE",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق التي تريد اختبار صور المنتجات وقياس أيها يحقق أعلى مبيعات.",
+      "surface": "داخل صفحة تعديل المنتج — تبويب العروض التقديمية.",
+      "outcome": "قرارات تسويقية مبنية على بيانات حقيقية بدون تكرار المنتجات في المخزون."
+    },
+    "features": {
+      "presentations": {
+        "enabled": true,
+        "name": "عروض متعددة",
+        "description": "إضافة عدد غير محدود من العروض التقديمية لنفس المنتج.",
+        "access": "FREE"
+      },
+      "customUrls": {
+        "enabled": true,
+        "name": "روابط تتبع",
+        "description": "كل عرض له رابط مستقل يمكن استخدامه في الإعلانات والتتبع.",
+        "access": "FREE"
+      },
+      "customContent": {
+        "enabled": true,
+        "name": "عناوين ووصف مخصص",
+        "description": "عنوان ووصف مختلف لكل عرض ليناسب كل حملة إعلانية.",
+        "access": "FREE"
+      },
+      "canonicalSeo": {
+        "enabled": true,
+        "name": "حماية الـ SEO",
+        "description": "الرابط الأصلي للمنتج يبقى هو المرجعي (canonical) لتجنب مشاكل المحتوى المكرر.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "photo",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-20T00:00:00.000Z",
+    "updatedAt": "2026-07-20T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-cod-deposit",
+    "slug": "cod-deposit",
+    "name": "COD Deposit",
+    "nameEn": "COD Deposit",
+    "description": "طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.",
+    "category": "ECOMMERCE",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": ["store"],
+    "positioning": {
+      "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
+      "surface": "داخل إعدادات الدفع، ولوحة تحكم الطلبات، وواتساب.",
+      "outcome": "تقليل المرتجعات وزيادة الالتزام من العملاء بدفع دفعة مقدمة بسيطة."
+    },
+    "features": {
+      "depositSettings": {
+        "enabled": true,
+        "name": "إعدادات الدفعة المقدمة",
+        "description": "تحديد نسبة أو مبلغ ثابت كدفعة مقدمه، مع حدود دنيا وعليا.",
+        "access": "FREE"
+      },
+      "onlinePayment": {
+        "enabled": true,
+        "name": "الدفع أونلاين عبر Kashier",
+        "description": "العميل يدفع الدفعة المقدمة عن طريق رابط دفع آمن (بطاقة/محفظة).",
+        "access": "FREE"
+      },
+      "manualProof": {
+        "enabled": true,
+        "name": "إثبات الدفع اليدوي",
+        "description": "العميل يبعت سكرين شوت تحويل والموظف يدخل الرقم ويأكد الدفعة.",
+        "access": "FREE"
+      },
+      "depositReport": {
+        "enabled": true,
+        "name": "تقارير الدفعات",
+        "description": "عرض تقارير بحالة الدفعات المقدمة لكل طلب COD.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "banknotes",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-21T00:00:00.000Z",
+    "updatedAt": "2026-07-21T00:00:00.000Z"
   }
 ]
