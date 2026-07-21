@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { uploadService } from "../../services/uploadService";
 import {
@@ -113,6 +114,7 @@ const errorBannerStyle: React.CSSProperties = {
 
 const FacebookPostCreator: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [pages, setPages] = useState<FacebookPage[]>([]);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
 
@@ -170,7 +172,7 @@ const FacebookPostCreator: React.FC = () => {
 
     // For Stories, only allow one media
     if (postType === "STORY" && mediaFiles.length + files.length > 1) {
-      alert("القصص (Stories) تدعم ملف وسائط واحد فقط.");
+      alert(t("facebookPostCreator.storyMediaLimit"));
       return;
     }
 
@@ -212,25 +214,25 @@ const FacebookPostCreator: React.FC = () => {
 
   const handleSubmit = async () => {
     if (selectedPages.length === 0) {
-      alert("يرجى اختيار صفحة واحدة على الأقل");
+      alert(t("facebookPostCreator.selectPageError"));
       return;
     }
 
     // Validation
     if (postType === "STORY" && mediaFiles.length === 0) {
-      alert("يجب إضافة صورة أو فيديو لنشر القصة");
+      alert(t("facebookPostCreator.storyMediaRequired"));
       return;
     }
     if (activeTab === "LINK" && !linkUrl) {
-      alert("يرجى إدخال الرابط");
+      alert(t("facebookPostCreator.linkRequired"));
       return;
     }
     if (activeTab === "STATUS" && !message && mediaFiles.length === 0) {
-      alert("يرجى كتابة نص أو إضافة وسائط");
+      alert(t("facebookPostCreator.contentRequired"));
       return;
     }
     if (isScheduled && !scheduledDate) {
-      alert("يرجى تحديد موعد النشر");
+      alert(t("facebookPostCreator.scheduleDateRequired"));
       return;
     }
 
@@ -250,7 +252,7 @@ const FacebookPostCreator: React.FC = () => {
             }
             uploadedMediaUrls.push(finalUrl);
           } else {
-            throw new Error(`فشل رفع الملف: ${file.name}`);
+            throw new Error(t("facebookPostCreator.uploadError", { name: file.name }));
           }
         }
       }
@@ -290,11 +292,11 @@ const FacebookPostCreator: React.FC = () => {
         setMediaPreviews([]);
         setLinkUrl("");
       } else {
-        alert("حدث خطأ أثناء النشر");
+        alert(t("facebookPostCreator.publishError"));
       }
     } catch (error: any) {
       console.error("Publishing error:", error);
-      alert("فشل في عملية النشر: " + (error.message || "خطأ غير معروف"));
+      alert(t("facebookPostCreator.publishFailed", { message: error.message || "" }));
     } finally {
       setSubmitting(false);
     }
@@ -311,10 +313,10 @@ const FacebookPostCreator: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={headingStyle}>
-            إنشاء ومجدولة المنشورات
+            {t("facebookPostCreator.pageTitle")}
           </h1>
           <p className="mt-1 text-sm" style={mutedStyle}>
-            انشر أو جدول محتواك على فيسبوك بكل سهولة
+            {t("facebookPostCreator.pageSubtitle")}
           </p>
         </div>
         <button
@@ -322,7 +324,7 @@ const FacebookPostCreator: React.FC = () => {
           className="business-chip-button flex items-center gap-1 px-4 py-2"
         >
           <XMarkIcon className="h-5 w-5" />
-          إلغاء
+          {t("facebookPostCreator.cancel")}
         </button>
       </div>
 
@@ -343,7 +345,7 @@ const FacebookPostCreator: React.FC = () => {
                 >
                   1
                 </span>
-                اختر الصفحات
+                {t("facebookPostCreator.selectPages")}
               </h2>
               <button
                 onClick={handleSelectAll}
@@ -351,8 +353,8 @@ const FacebookPostCreator: React.FC = () => {
                 style={{ color: "var(--color-primary)" }}
               >
                 {selectedPages.length === pages.length
-                  ? "إلغاء التحديد"
-                  : "تحديد الكل"}
+                  ? t("facebookPostCreator.deselectAll")
+                  : t("facebookPostCreator.selectAll")}
               </button>
             </div>
 
@@ -410,7 +412,7 @@ const FacebookPostCreator: React.FC = () => {
               </div>
             )}
             <p className="mt-2 text-xs" style={mutedStyle}>
-              تم تحديد {selectedPages.length} صفحة
+              {t("facebookPostCreator.selectedCount", { count: selectedPages.length })}
             </p>
           </div>
 
@@ -428,7 +430,7 @@ const FacebookPostCreator: React.FC = () => {
                     postType === "FEED" ? activeTabStyle : inactiveTabStyle
                   }
                 >
-                  منشور (Feed)
+                  {t("facebookPostCreator.feedTab")}
                 </button>
                 <button
                   onClick={() => {
@@ -440,7 +442,7 @@ const FacebookPostCreator: React.FC = () => {
                     postType === "STORY" ? accentTabStyle : inactiveTabStyle
                   }
                 >
-                  قصة (Story)
+                  {t("facebookPostCreator.storyTab")}
                 </button>
               </div>
             </div>
@@ -455,7 +457,7 @@ const FacebookPostCreator: React.FC = () => {
                     activeTab === "STATUS" ? pillActiveStyle : pillIdleStyle
                   }
                 >
-                  <DocumentTextIcon className="w-4 h-4 ml-1" /> حالة
+                  <DocumentTextIcon className="w-4 h-4 ml-1" /> {t("facebookPostCreator.statusTab")}
                 </button>
                 <button
                   onClick={() => setActiveTab("MEDIA")}
@@ -464,14 +466,14 @@ const FacebookPostCreator: React.FC = () => {
                     activeTab === "MEDIA" ? pillActiveStyle : pillIdleStyle
                   }
                 >
-                  <PhotoIcon className="w-4 h-4 ml-1" /> صور/فيديو
+                  <PhotoIcon className="w-4 h-4 ml-1" /> {t("facebookPostCreator.mediaTab")}
                 </button>
                 <button
                   onClick={() => setActiveTab("LINK")}
                   className="flex items-center rounded-full px-3 py-1.5 text-sm"
                   style={activeTab === "LINK" ? pillActiveStyle : pillIdleStyle}
                 >
-                  <LinkIcon className="w-4 h-4 ml-1" /> رابط
+                  <LinkIcon className="w-4 h-4 ml-1" /> {t("facebookPostCreator.linkTab")}
                 </button>
               </div>
             )}
@@ -485,8 +487,8 @@ const FacebookPostCreator: React.FC = () => {
                   style={controlInputStyle}
                   placeholder={
                     postType === "STORY"
-                      ? "ملاحظة: القصص لا تدعم النص المرفق بشكل كامل في API."
-                      : "اكتب شيئاً مميزاً..."
+                      ? t("facebookPostCreator.storyNote")
+                      : t("facebookPostCreator.writeSomething")
                   }
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -500,7 +502,7 @@ const FacebookPostCreator: React.FC = () => {
                     className="mb-1 block text-sm font-medium"
                     style={headingStyle}
                   >
-                    رابط المقال أو الصفحة
+                    {t("facebookPostCreator.linkLabel")}
                   </label>
                   <div className="flex">
                     <span
@@ -513,7 +515,7 @@ const FacebookPostCreator: React.FC = () => {
                       type="text"
                       className="block w-full min-w-0 flex-1 rounded-l-md px-3 py-2 text-sm"
                       style={controlInputStyle}
-                      placeholder="www.example.com"
+                      placeholder={t("facebookPostCreator.linkPlaceholder")}
                       value={linkUrl}
                       onChange={(e) => setLinkUrl(e.target.value)}
                     />
@@ -552,10 +554,10 @@ const FacebookPostCreator: React.FC = () => {
                       />
                     </div>
                     <span className="font-medium" style={headingStyle}>
-                      اضغط لإضافة صور أو فيديو
+                      {t("facebookPostCreator.uploadLabel")}
                     </span>
                     <span className="mt-1 text-xs" style={mutedStyle}>
-                      يدعم JPG, PNG, MP4
+                      {t("facebookPostCreator.uploadHint")}
                     </span>
                   </label>
                 </div>
@@ -614,7 +616,7 @@ const FacebookPostCreator: React.FC = () => {
                     className="cursor-pointer select-none font-medium"
                     style={headingStyle}
                   >
-                    جدولة المنشور لوقت لاحق
+                    {t("facebookPostCreator.scheduleLabel")}
                   </label>
                 </div>
                 {isScheduled && (
@@ -630,7 +632,7 @@ const FacebookPostCreator: React.FC = () => {
                       className="mt-1 text-xs"
                       style={{ color: "var(--business-warning)" }}
                     >
-                      يجب أن يكون الوقت بين 10 دقائق و 6 أشهر من الآن
+                      {t("facebookPostCreator.scheduleHint")}
                     </p>
                   </div>
                 )}
@@ -651,7 +653,7 @@ const FacebookPostCreator: React.FC = () => {
                 }
               >
                 {submitting ? (
-                  "جاري النشر..."
+                  t("facebookPostCreator.publishing")
                 ) : (
                   <>
                     <PaperAirplaneIcon
@@ -660,7 +662,7 @@ const FacebookPostCreator: React.FC = () => {
                     <CalendarIcon
                       className={`w-5 h-5 ml-2 ${!isScheduled ? "hidden" : ""}`}
                     />
-                    {isScheduled ? "جدولة المنشور" : "نشر الآن"}
+                    {isScheduled ? t("facebookPostCreator.schedulePost") : t("facebookPostCreator.publishNow")}
                   </>
                 )}
               </button>
@@ -684,7 +686,7 @@ const FacebookPostCreator: React.FC = () => {
               }}
             >
               <h3 className="font-bold" style={headingStyle}>
-                معاينة البوست
+                {t("facebookPostCreator.previewTitle")}
               </h3>
               <span className="text-xs font-mono" style={mutedStyle}>
                 Desktop Preview
@@ -732,7 +734,7 @@ const FacebookPostCreator: React.FC = () => {
                     className="dir-auto whitespace-pre-line text-sm"
                     style={headingStyle}
                   >
-                    {message || "سيظهر نص منشورك هنا..."}
+                    {message || t("facebookPostCreator.previewPlaceholder")}
                   </p>
 
                   {linkUrl && activeTab === "LINK" && (
@@ -834,7 +836,7 @@ const FacebookPostCreator: React.FC = () => {
                   style={{ color: "var(--business-success)" }}
                 >
                   <CheckCircleIcon className="w-5 h-5 ml-2" />
-                  تمت العملية بنجاح!
+                  {t("facebookPostCreator.successTitle")}
                 </h3>
               </div>
               <div className="p-4">
@@ -855,9 +857,9 @@ const FacebookPostCreator: React.FC = () => {
                         <span>
                           {res.success
                             ? isScheduled
-                              ? "تمت الجدولة"
-                              : "تم النشر"
-                            : "فشل"}
+                              ? t("facebookPostCreator.scheduled")
+                              : t("facebookPostCreator.published")
+                            : t("facebookPostCreator.failed")}
                         </span>
                       </div>
                       {!res.success && (

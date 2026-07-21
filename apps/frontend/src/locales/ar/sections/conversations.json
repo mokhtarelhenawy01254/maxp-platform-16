@@ -152,6 +152,7 @@
   "customerBlockedWarning": "هذا العميل محظور على صفحة الفيس بوك - لن يتم استقبال رسائله",
   "newMessageFrom": "New message from {{name}}",
   "unknownCustomer": "عميل غير معروف",
+  "newMessage": "رسالة جديدة",
   "newCustomer": "عميل جديد",
   "authError": "رمز المصادقة غير موجود. يرجى تسجيل الدخول مرة أخرى.",
   "sessionExpired": "انتهت صلاحية جلسة العمل. يرجى تسجيل الدخول مرة أخرى.",

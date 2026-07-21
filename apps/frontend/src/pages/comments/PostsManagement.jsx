@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
@@ -17,6 +18,7 @@ import {
 
 const PostsManagement = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [pages, setPages] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -71,7 +73,7 @@ const PostsManagement = ({ embedded = false }) => {
       }
     } catch (error) {
       console.error("Error fetching pages:", error);
-      setError("فشل تحميل الصفحات. يرجى المحاولة مرة أخرى.");
+      setError(t("postsManagement.loadError"));
       setErrorType("pages");
     } finally {
       setLoadingPages(false);
@@ -89,7 +91,7 @@ const PostsManagement = ({ embedded = false }) => {
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
-      setError("فشل تحميل المنشورات. يرجى المحاولة مرة أخرى.");
+      setError(t("postsManagement.postsLoadError"));
       setErrorType("posts");
     } finally {
       setLoading(false);
@@ -153,30 +155,30 @@ const PostsManagement = ({ embedded = false }) => {
     if (!date) return "";
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     const intervals = [
-      { s: 31536000, l: "سنة", p: "سنوات" },
-      { s: 2592000, l: "شهر", p: "أشهر" },
-      { s: 86400, l: "يوم", p: "أيام" },
-      { s: 3600, l: "ساعة", p: "ساعات" },
-      { s: 60, l: "دقيقة", p: "دقائق" },
+      { s: 31536000, k: "year" },
+      { s: 2592000, k: "month" },
+      { s: 86400, k: "day" },
+      { s: 3600, k: "hour" },
+      { s: 60, k: "minute" },
     ];
     for (const i of intervals) {
       const c = seconds / i.s;
-      if (c >= 2) return `${Math.floor(c)} ${i.p} مضت`;
-      if (c >= 1) return `${Math.floor(c)} ${i.l} مضت`;
+      if (c >= 2) return `${Math.floor(c)} ${t("postsManagement." + i.k + "s")} ${t("postsManagement.ago")}`;
+      if (c >= 1) return `${Math.floor(c)} ${t("postsManagement." + i.k)} ${t("postsManagement.ago")}`;
     }
-    return "منذ لحظات";
+    return t("postsManagement.justNow");
   };
 
   const getResponseMethodLabel = (method) => {
     switch (method) {
       case "ai":
-        return "رد تلقائي";
+        return t("postsManagement.autoReply");
       case "fixed":
-        return "رد محدد";
+        return t("postsManagement.fixedReply");
       case "manual":
-        return "رد يدوي";
+        return t("postsManagement.manualReply");
       default:
-        return "غير محدد";
+        return t("postsManagement.unassigned");
     }
   };
 
@@ -210,16 +212,16 @@ const PostsManagement = ({ embedded = false }) => {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-[#6b52a3] flex-shrink-0" />
           <h1 className="text-base md:text-xl font-bold text-[#6b52a3]">
-            حملة أتمتة تعليقات فيسبوك
+            {t("postsManagement.pageTitle")}
           </h1>
         </div>
         <div className="text-[10px] md:text-xs text-blue-400 font-medium flex gap-1 md:gap-2 items-center">
           <span className="hover:underline cursor-pointer">
-            أدوات نمو التعليقات
+            {t("postsManagement.commentGrowthTools")}
           </span>
           <span className="text-gray-400">/</span>
           <span className="text-[#6b52a3] whitespace-nowrap">
-            حملة أتمتة تعليقات فيسبوك
+            {t("postsManagement.pageTitle")}
           </span>
         </div>
       </div>
@@ -256,7 +258,7 @@ const PostsManagement = ({ embedded = false }) => {
               {/* Delay Reply Toggle */}
               <div className="flex items-center gap-2">
                 <span className="text-xs md:text-sm font-bold text-gray-600 whitespace-nowrap">
-                  تأخير الرد
+                  {t("postsManagement.delayReply")}
                 </span>
                 <button
                   onClick={toggleDelayReply}
@@ -268,7 +270,7 @@ const PostsManagement = ({ embedded = false }) => {
                   ></span>
                 </button>
                 <span className="text-[10px] md:text-xs font-bold text-gray-500">
-                  {enableDelayReply ? "تشغيل" : "إيقاف"}
+                  {enableDelayReply ? t("postsManagement.enabled") : t("postsManagement.disabled")}
                 </span>
               </div>
 
@@ -277,7 +279,7 @@ const PostsManagement = ({ embedded = false }) => {
                 <div className="flex items-center gap-1.5 bg-[#f8f9fa] px-2.5 py-1.5 rounded-lg border border-gray-100">
                   <MessageCircle className="w-3.5 h-3.5 text-[#6b52a3]" />
                   <span className="text-[10px] md:text-xs font-bold text-gray-700 whitespace-nowrap">
-                    الرد التلقائي
+                    {t("postsManagement.autoReply")}
                   </span>
                   <span className="bg-gray-200 text-gray-600 text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                     {posts.filter(
@@ -290,7 +292,7 @@ const PostsManagement = ({ embedded = false }) => {
                 <div className="flex items-center gap-1.5 bg-[#eef8fc] px-2.5 py-1.5 rounded-lg border border-gray-100">
                   <MessageSquare className="w-3.5 h-3.5 text-[#3bb0d9]" />
                   <span className="text-[10px] md:text-xs font-bold text-gray-700 whitespace-nowrap">
-                    التعليقات
+                    {t("postsManagement.comments")}
                   </span>
                   <span className="bg-gray-200 text-gray-600 text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                     {posts.reduce((sum, p) => sum + (p.totalComments || 0), 0)}
@@ -314,7 +316,7 @@ const PostsManagement = ({ embedded = false }) => {
             className="text-red-600 hover:text-red-800 font-bold ml-2 flex items-center gap-1"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            إعادة المحاولة
+            {t("postsManagement.retry")}
           </button>
           <button
             onClick={() => setError(null)}
@@ -336,7 +338,7 @@ const PostsManagement = ({ embedded = false }) => {
             >
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5" />
-                <span>الصفحات ({filteredPages.length})</span>
+                <span>{t("postsManagement.pages")} ({filteredPages.length})</span>
               </div>
               <ChevronDown
                 className={`w-4 h-4 transition-transform ${showMobilePages ? "rotate-180" : ""}`}
@@ -386,13 +388,13 @@ const PostsManagement = ({ embedded = false }) => {
           <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-[#6b52a3] text-sm md:text-base">
               <Layers className="w-4 h-4 md:w-5 md:h-5" />
-              <span>الصفحات</span>
+              <span>{t("postsManagement.pages")}</span>
             </div>
             <div className="relative w-24 md:w-32">
               <Search className="w-3 h-3 md:w-3.5 md:h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="بحث..."
+                placeholder={t("postsManagement.search")}
                 className="w-full text-[10px] md:text-xs pl-6 md:pl-7 pr-1.5 md:pr-2 py-1 md:py-1.5 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 value={pagesSearch}
                 onChange={(e) => setPagesSearch(e.target.value)}
@@ -407,7 +409,7 @@ const PostsManagement = ({ embedded = false }) => {
               </div>
             ) : filteredPages.length === 0 ? (
               <div className="text-center py-10 text-gray-400 font-medium text-sm">
-                لا توجد صفحات
+                {t("postsManagement.noPages")}
               </div>
             ) : (
               filteredPages.map((page) => (
@@ -450,14 +452,14 @@ const PostsManagement = ({ embedded = false }) => {
           <div className="bg-gradient-to-r from-[#6b52a3] via-[#ab5498] to-[#e84b5c] rounded-t-xl flex items-center justify-between px-3 md:px-6 py-2 md:py-3 flex-shrink-0">
             <div className="flex items-center gap-1.5 md:gap-2 text-white font-bold text-sm md:text-lg">
               <Rss className="w-4 h-4 md:w-5 md:h-5" />
-              <span>آخر المنشورات</span>
-              {syncing && <span className="text-white/70 text-xs mr-2 animate-pulse">جاري التحديث...</span>}
+              <span>{t("postsManagement.latestPosts")}</span>
+              {syncing && <span className="text-white/70 text-xs mr-2 animate-pulse">{t("postsManagement.syncing")}</span>}
             </div>
             <div className="flex items-center gap-2 md:gap-4">
 
               <input
                 type="text"
-                placeholder="بحث..."
+                placeholder={t("postsManagement.search")}
                 className="w-28 md:w-56 text-[10px] md:text-sm px-2 md:px-4 py-1 md:py-1.5 rounded-full bg-white text-gray-700 focus:outline-none shadow-sm"
                 value={postsSearch}
                 onChange={(e) => setPostsSearch(e.target.value)}
@@ -465,7 +467,7 @@ const PostsManagement = ({ embedded = false }) => {
               <button
                 onClick={() => fetchPosts()}
                 className="p-1.5 md:p-2 text-white/80 hover:text-white transition-colors"
-                title="تحديث"
+                title={t("postsManagement.refresh")}
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 md:w-4 md:h-4 ${loading ? "animate-spin" : ""}`}
@@ -481,11 +483,11 @@ const PostsManagement = ({ embedded = false }) => {
               </div>
             ) : !selectedPage ? (
               <div className="text-center py-10 text-gray-400 font-medium text-sm">
-                اختر صفحة من القائمة لعرض المنشورات
+                {t("postsManagement.selectPage")}
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="text-center py-10 text-gray-500 font-medium text-sm">
-                {posts.length > 0 ? "لا توجد نتائج مطابقة للبحث" : "لا توجد منشورات"}
+                {posts.length > 0 ? t("postsManagement.noSearchResults") : t("postsManagement.noPosts")}
               </div>
             ) : (
               <div className="flex flex-col gap-4 md:gap-6">
@@ -535,7 +537,7 @@ const PostsManagement = ({ embedded = false }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] md:text-[13px] font-bold text-gray-800 line-clamp-2 leading-relaxed">
-                        {post.message || "بدون نص"}
+                        {post.message || t("postsManagement.noText")}
                       </p>
                       <div className="flex flex-wrap items-center justify-between gap-1.5 mt-2">
                         <div className="flex items-center gap-1.5 md:gap-2">
@@ -564,7 +566,7 @@ const PostsManagement = ({ embedded = false }) => {
                             }
                             className="px-2 md:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-xs rounded-lg font-medium transition-colors"
                           >
-                            التعليقات
+                            {t("postsManagement.comments")}
                           </button>
                         </div>
                       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
 
 interface FacebookPost {
@@ -44,6 +45,7 @@ const mutedStyle: React.CSSProperties = {
 };
 
 export default function FacebookPostManager() {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<FacebookPost[]>([]);
   const [pages, setPages] = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage] = useState<string>("");
@@ -244,9 +246,9 @@ export default function FacebookPostManager() {
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ ...headingStyle, fontSize: "1.5rem", marginBottom: "0.25rem" }}>إدارة منشورات فيسبوك</h1>
+      <h1 style={{ ...headingStyle, fontSize: "1.5rem", marginBottom: "0.25rem" }}>{t("facebookPostManager.pageTitle")}</h1>
       <p style={{ ...mutedStyle, marginBottom: "1.5rem", fontSize: "0.875rem" }}>
-        حدد المنتج المرتبط بكل منشور — الايجنت يستخدم هذه المعلومة تلقائياً
+        {t("facebookPostManager.pageSubtitle")}
       </p>
 
       <div style={controlsStyle}>
@@ -255,7 +257,7 @@ export default function FacebookPostManager() {
           value={selectedPage}
           onChange={e => setSelectedPage(e.target.value)}
         >
-          <option value="">-- اختر الصفحة --</option>
+          <option value="">{t("facebookPostManager.selectPage")}</option>
           {pages.map(p => (
             <option key={p.pageId} value={p.pageId}>{p.pageName}</option>
           ))}
@@ -266,9 +268,9 @@ export default function FacebookPostManager() {
           value={filterProduct}
           onChange={e => setFilterProduct(e.target.value)}
         >
-          <option value="all">كل المنشورات</option>
-          <option value="product">المنتجات فقط</option>
-          <option value="nonproduct">غير المنتجات</option>
+          <option value="all">{t("facebookPostManager.allPosts")}</option>
+          <option value="product">{t("facebookPostManager.productsOnly")}</option>
+          <option value="nonproduct">{t("facebookPostManager.nonProducts")}</option>
         </select>
 
         <button
@@ -276,7 +278,7 @@ export default function FacebookPostManager() {
           disabled={!selectedPage || syncing}
           onClick={handleSync}
         >
-          {syncing ? "جاري السحب..." : "🔄 سحب المنشورات"}
+          {syncing ? t("facebookPostManager.syncing") : t("facebookPostManager.syncPosts")}
         </button>
       </div>
 
@@ -293,19 +295,19 @@ export default function FacebookPostManager() {
       )}
 
       {loading ? (
-        <p style={mutedStyle}>جاري التحميل...</p>
+        <p style={mutedStyle}>{t("facebookPostManager.loading")}</p>
       ) : posts.length === 0 ? (
-        <p style={mutedStyle}>لا توجد منشورات. اختر صفحة واضغط "سحب المنشورات".</p>
+        <p style={mutedStyle}>{t("facebookPostManager.noPosts")}</p>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={thStyle}>صورة</th>
-                <th style={thStyle}>النص</th>
-                <th style={thStyle}>الصفحة</th>
-                <th style={thStyle}>التاريخ</th>
-                <th style={thStyle}>المنتج</th>
+                <th style={thStyle}>{t("facebookPostManager.tableImage")}</th>
+                <th style={thStyle}>{t("facebookPostManager.tableText")}</th>
+                <th style={thStyle}>{t("facebookPostManager.tablePage")}</th>
+                <th style={thStyle}>{t("facebookPostManager.tableDate")}</th>
+                <th style={thStyle}>{t("facebookPostManager.tableProduct")}</th>
               </tr>
             </thead>
             <tbody>
@@ -324,11 +326,11 @@ export default function FacebookPostManager() {
                   </td>
                   <td style={tdStyle}>
                     <div style={{ maxWidth: "350px", lineHeight: 1.4 }}>
-                      {post.message ? truncate(post.message, 200) : <span style={mutedStyle}>(بدون نص)</span>}
+                      {post.message ? truncate(post.message, 200) : <span style={mutedStyle}>{t("facebookPostManager.noText")}</span>}
                     </div>
                     {post.permalink && (
                       <a href={post.permalink} target="_blank" rel="noopener noreferrer" style={linkStyle}>
-                        🔗 عرض على فيسبوك
+                        🔗 {t("facebookPostManager.viewOnFacebook")}
                       </a>
                     )}
                   </td>
@@ -344,7 +346,7 @@ export default function FacebookPostManager() {
                         {post.product.mainImage && (
                           <SafeImage src={post.product.mainImage} alt="" style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }} />
                         )}
-                        <button style={removeBtnStyle} onClick={() => handleSetProduct(post.id, null)} title="إزالة المنتج">×</button>
+                        <button style={removeBtnStyle} onClick={() => handleSetProduct(post.id, null)} title={t("facebookPostManager.removeProduct")}>×</button>
                         {post.product.name}
                       </span>
                     ) : (
@@ -355,7 +357,7 @@ export default function FacebookPostManager() {
                         tabIndex={0}
                         onKeyDown={e => e.key === "Enter" && setPickerPostId(post.id)}
                       >
-                        اختيار منتج
+                        {t("facebookPostManager.selectProduct")}
                       </span>
                     )}
 
@@ -379,7 +381,7 @@ export default function FacebookPostManager() {
                           type="text"
                           value={productSearch}
                           onChange={e => setProductSearch(e.target.value)}
-                          placeholder="ابحث عن منتج..."
+                          placeholder={t("facebookPostManager.searchProduct")}
                           autoFocus
                           style={{
                             width: "100%",
@@ -394,9 +396,9 @@ export default function FacebookPostManager() {
                         />
                         <div style={{ marginTop: "0.5rem", maxHeight: "200px", overflowY: "auto" }}>
                           {loadingProducts ? (
-                            <p style={{ ...mutedStyle, fontSize: "0.75rem", padding: "0.5rem" }}>جاري التحميل...</p>
+                            <p style={{ ...mutedStyle, fontSize: "0.75rem", padding: "0.5rem" }}>{t("facebookPostManager.loading")}</p>
                           ) : filteredProducts.length === 0 ? (
-                            <p style={{ ...mutedStyle, fontSize: "0.75rem", padding: "0.5rem" }}>لا توجد منتجات</p>
+                            <p style={{ ...mutedStyle, fontSize: "0.75rem", padding: "0.5rem" }}>{t("facebookPostManager.noProducts")}</p>
                           ) : filteredProducts.map(p => (
                             <div
                               key={p.id}

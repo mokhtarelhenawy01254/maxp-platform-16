@@ -152,6 +152,7 @@
   "customerBlockedWarning": "This customer is blocked on the Facebook page - their messages will not be received",
   "newMessageFrom": "New message from {{name}}",
   "unknownCustomer": "Unknown Customer",
+  "newMessage": "New message",
   "newCustomer": "New Customer",
   "authError": "Authentication token missing. Please login again.",
   "sessionExpired": "Session expired. Please login again.",
