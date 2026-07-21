@@ -1293,8 +1293,14 @@ const getRegionsAnalytics = async (req, res) => {
 
     const regionsMap = {};
     orders.forEach(order => {
-      // Access city and governorate directly from order, not from customer
-      const region = order.governorate || order.city || 'غير محدد';
+      let governorate = order.governorate;
+      if (!governorate && order.shippingAddress) {
+        const parsed = parseJsonSafely(order.shippingAddress);
+        if (parsed && typeof parsed === 'object') {
+          governorate = parsed.governorate || parsed.state || parsed.region || '';
+        }
+      }
+      const region = governorate || order.city || 'غير محدد';
       if (!regionsMap[region]) {
         regionsMap[region] = {
           region,

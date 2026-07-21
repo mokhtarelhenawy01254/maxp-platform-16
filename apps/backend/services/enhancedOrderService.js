@@ -713,6 +713,7 @@ class EnhancedOrderService {
       customerName: data.customerName || `${customer.firstName} ${customer.lastName}`,
       customerPhone: data.customerPhone || customer.phone,
       customerEmail: data.customerEmail || customer.email,
+      governorate: addrGov,
       city: addrCity,
       customerAddress: data.customerAddress || '',
 

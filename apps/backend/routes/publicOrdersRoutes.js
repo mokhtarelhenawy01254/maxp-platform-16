@@ -2050,6 +2050,7 @@ router.post('/', async (req, res) => {
           customerEmail: order.guestEmail || null,
           customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
           shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
+          governorate: shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '',
           city: shippingAddress?.city || '',
           subtotal: parseFloat(order.total),
           shipping: parseFloat(order.shippingCost || 0),
