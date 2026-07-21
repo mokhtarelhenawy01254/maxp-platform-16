@@ -4222,16 +4222,18 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
     // إنشاء الطلب باستخدام خدمة الطلبات المحسنة
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
-    await enhancedOrderService.disconnect();
 
     if (result.success) {
       console.log('✅ Order created successfully:', result.order.orderNumber);
 
       // 🚀 Push order to provider(s) if it contains imported products
+      // MUST happen BEFORE disconnect() because disconnect() closes the shared Prisma client
       const internalSyncService = require('../services/internalSyncService');
       internalSyncService.pushOrderToProvider(result.order.id, companyId).catch(err => {
         console.error('❌ [INTERNAL-SYNC] Failed to push manual order to provider:', err.message);
       });
+
+      await enhancedOrderService.disconnect();
 
       res.status(201).json({
         success: true,
