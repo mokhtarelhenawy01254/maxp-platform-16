@@ -2,7 +2,7 @@ const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 async function deleteBundlesExceptKept() {
   const prisma = getSharedPrismaClient();
-  const keepSlugs = ['ai-inbox-bundle', 'messaging-bundle'];
+  const keepSlugs = ['ai-inbox-bundle', 'messaging-bundle', 'medical-bundle'];
 
   const deleted = await prisma.appBundle.deleteMany({
     where: { slug: { notIn: keepSlugs } }

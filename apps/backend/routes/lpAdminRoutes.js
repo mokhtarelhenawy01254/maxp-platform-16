@@ -11,6 +11,7 @@ const SEED_PAGES = [
   { slug: 'ai-inbox', title: 'AI Inbox — البريد الذكي', componentName: 'AiInboxLanding', sortOrder: 2, bundleSlug: 'ai-inbox-bundle', activationType: 'both' },
   { slug: 'mg', title: 'MG Agency — تسويق عقاري', componentName: 'MgAgencyLeadLanding', sortOrder: 3, bundleSlug: null, activationType: 'both' },
   { slug: 'mg-agency', title: 'MG Agency Lead — تسويق عقاري', componentName: 'MgAgencyLeadLanding', sortOrder: 4, bundleSlug: null, activationType: 'both' },
+  { slug: 'medical', title: 'النظام الطبي — الباقة الطبية الشاملة', componentName: 'MedicalLanding', sortOrder: 5, bundleSlug: 'medical-bundle', activationType: 'both' },
 ];
 
 let ensureTablePromise = null;
@@ -39,15 +40,18 @@ async function ensureLpPagesTable(prisma) {
         ON "lp_pages" ("slug")
       `);
 
-      const rows = await prisma.$queryRawUnsafe(`SELECT COUNT(*)::int as cnt FROM "lp_pages"`);
-      if (rows[0].cnt === 0) {
-        for (const p of SEED_PAGES) {
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType")
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            `lp-seed-${p.slug}`, p.slug, p.title, p.componentName, p.sortOrder, true, p.bundleSlug, p.activationType,
-          );
-        }
+      for (const p of SEED_PAGES) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           ON CONFLICT ("slug") DO UPDATE SET
+             "title" = EXCLUDED."title",
+             "componentName" = EXCLUDED."componentName",
+             "sortOrder" = EXCLUDED."sortOrder",
+             "bundleSlug" = EXCLUDED."bundleSlug",
+             "activationType" = EXCLUDED."activationType"`,
+          `lp-seed-${p.slug}`, p.slug, p.title, p.componentName, p.sortOrder, true, p.bundleSlug, p.activationType,
+        );
       }
     })().catch((err) => {
       ensureTablePromise = null;
