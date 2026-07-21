@@ -205,15 +205,16 @@ const PosProductImage = ({
 const PosPage = () => {
   const { t, i18n } = useTranslation();
   const { actualTheme, toggleTheme } = useTheme();
+  const { t, i18n } = useTranslation();
   const isDark = actualTheme === "dark";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(t('pos.k_1'));
+  const [selectedCategory, setSelectedCategory] = useState(t("posPage.all"));
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [categories, setCategories] = useState<string[]>([t('pos.k_1')]);
+  const [categories, setCategories] = useState<string[]>([t("posPage.all")]);
   const [processing, setProcessing] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showShiftReport, setShowShiftReport] = useState(false);
@@ -263,13 +264,13 @@ const PosPage = () => {
             name: p.name,
             price: Number(p.price),
             sku: p.sku || "",
-            category: p.category?.name || t('pos.k_13'),
+            category: p.category?.name || t("posPage.notSpecified"),
             images: getImageCandidates(p.mainImage, p.image, p.images),
             stock: Number(p.stock || 0),
           }));
           setProducts(prods);
           setCategories([
-            t('pos.k_1'),
+            t("posPage.all"),
             ...(Array.from(
               new Set(prods.map((product) => product.category)),
             ) as string[]),
@@ -293,12 +294,12 @@ const PosPage = () => {
     const q = searchQuery.toLowerCase();
     return (
       (p.name.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)) &&
-      (selectedCategory === t('pos.k_1') || p.category === selectedCategory)
+      (selectedCategory === t("posPage.all") || p.category === selectedCategory)
     );
   });
 
   const addToCart = (p: Product) => {
-    if (p.stock <= 0) return alert(t('pos.k_14'));
+    if (p.stock <= 0) return alert(t("posPage.notAvailable"));
     setCart((prev) => {
       const ex = prev.find((i) => i.id === p.id);
       if (ex) {
@@ -320,7 +321,7 @@ const PosPage = () => {
   const removeItem = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
   const clearCart = () => {
-    if (cart.length > 0 && !window.confirm(t('pos.k_15'))) return;
+    if (cart.length > 0 && !window.confirm(t("posPage.clearCartConfirm"))) return;
     setCart([]);
     setCustomer(null);
   };
@@ -333,7 +334,7 @@ const PosPage = () => {
         const p = products.find((x) => x.sku === sku || x.id === sku);
         if (p) {
           if (p.stock <= 0) {
-            alert(t('pos.k_14'));
+            alert(t("posPage.notAvailable"));
           } else {
             setCart((prev) => {
               const ex = prev.find((i) => i.id === p.id);
@@ -444,7 +445,7 @@ const PosPage = () => {
         setCashReceived(0);
       } else alert(data.message);
     } catch {
-      alert(t('pos.k_16'));
+      alert(t("posPage.connectionError"));
     } finally {
       setProcessing(false);
     }
@@ -452,16 +453,19 @@ const PosPage = () => {
 
   const printReceipt = () => {
     if (!lastOrder) return;
+    const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
     const w = window.open("", "", "width=400,height=600");
     if (w) {
       w.document.write(
         '<html dir="rtl"><head><style>body{font:12px Arial;max-width:280px;margin:auto;padding:20px}.c{text-align:center}.r{display:flex;justify-content:space-between;margin:4px 0}.b{font-weight:bold}.hr{border-top:1px dashed #000;margin:10px 0}</style></head><body>',
       );
       w.document.write(
-        '<div class="c"><h2>' + t('pos.k_3') + '</h2><p>' +
+        '<div class="c"><h2>' +
+          t("posPage.posReceipt") +
+          '</h2><p>' +
           lastOrder.orderNumber +
           "</p><p>" +
-          lastOrder.date.toLocaleString("ar-EG") +
+          lastOrder.date.toLocaleString(locale) +
           '</p></div><div class="hr"></div>',
       );
       lastOrder.items.forEach((i) =>
@@ -471,39 +475,53 @@ const PosPage = () => {
             " x" +
             i.qty +
             "</span><span>" +
-            (i.price * i.qty).toLocaleString() +
+            (i.price * i.qty).toLocaleString(locale) +
             "</span></div>",
         ),
       );
       w.document.write(
-        '<div class="hr"></div><div class="r"><span>' + t('pos.k_4') + '</span><span>' +
-          lastOrder.subtotal.toLocaleString() +
+        '<div class="hr"></div><div class="r"><span>' +
+          t("posPage.subtotal") +
+          '</span><span>' +
+          lastOrder.subtotal.toLocaleString(locale) +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r"><span>' + t('pos.k_5') + '</span><span>' +
-          lastOrder.tax.toLocaleString() +
+        '<div class="r"><span>' +
+          t("posPage.vat") +
+          '</span><span>' +
+          lastOrder.tax.toLocaleString(locale) +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r b"><span>' + t('pos.k_6') + '</span><span>' +
-          lastOrder.total.toLocaleString() +
-          t('pos.k_17'),
+        '<div class="r b"><span>' +
+          t("posPage.total") +
+          '</span><span>' +
+          lastOrder.total.toLocaleString(locale) +
+          " " +
+          t("posPage.egp") +
+          "</span></div>",
       );
       if (lastOrder.paymentMethod === "CASH") {
         w.document.write(
-          '<div class="hr"></div><div class="r"><span>' + t('pos.k_7') + '</span><span>' +
-            (lastOrder.cashReceived || 0).toLocaleString() +
+          '<div class="hr"></div><div class="r"><span>' +
+            t("posPage.paid") +
+            '</span><span>' +
+            (lastOrder.cashReceived || 0).toLocaleString(locale) +
             "</span></div>",
         );
         w.document.write(
-          '<div class="r b"><span>' + t('pos.k_8') + '</span><span>' +
-            (lastOrder.change || 0).toLocaleString() +
+          '<div class="r b"><span>' +
+            t("posPage.change") +
+            '</span><span>' +
+            (lastOrder.change || 0).toLocaleString(locale) +
             "</span></div>",
         );
       }
       w.document.write(
-        '<div class="hr"></div><p class="c">' + t('pos.k_9') + '</p></body></html>',
+        '<div class="hr"></div><p class="c">' +
+          t("posPage.thankYou") +
+          '</p></body></html>',
       );
       w.document.close();
       setTimeout(() => {
@@ -536,7 +554,7 @@ const PosPage = () => {
             <input
               ref={searchRef}
               type="text"
-              placeholder={t('pos.k_2')}
+              placeholder={t("posPage.searchPlaceholder")}
               className="w-full pr-10 pl-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -546,7 +564,7 @@ const PosPage = () => {
           <button
             onClick={toggleTheme}
             className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            title={isDark ? t('pos.k_18') : t('pos.k_19')}
+            title={isDark ? t("posPage.toggleLightMode") : t("posPage.toggleDarkMode")}
           >
             {isDark ? (
               <Sun className="h-5 w-5 text-yellow-500" />
@@ -636,7 +654,7 @@ const PosPage = () => {
                             : "bg-green-500")
                       }
                     >
-                      {p.stock <= 0 ? t('pos.k_20') : p.stock}
+                      {p.stock <= 0 ? t("posPage.outOfStock") : p.stock}
                     </span>
                   </div>
                   <div className="p-3">
@@ -644,7 +662,7 @@ const PosPage = () => {
                       {p.name}
                     </h3>
                     <p className="text-blue-600 font-bold mt-1">
-                      {p.price.toLocaleString()} {t('pos.k_39')}
+                      {p.price.toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US")} {t("posPage.egp")}
                     </p>
                   </div>
                 </div>
@@ -654,10 +672,10 @@ const PosPage = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 px-4 py-2 flex items-center gap-2 text-xs text-gray-500">
           <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-            {t('pos.k_44')}
+            {t("posPage.f2Search")}
           </span>
           <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-            {t('pos.k_45')}
+            {t("posPage.f4Pay")}
           </span>
         </div>
       </div>
@@ -946,16 +964,16 @@ const PosPage = () => {
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-900/30">
                 <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('pos.k_57')}
+                  {t("posPage.totalSales")}
                 </p>
                 <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {shiftData.totalSales.toLocaleString()} {t('pos.k_39')}
+                  {shiftData.totalSales.toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US")} {t("posPage.egp")}
                 </p>
               </div>
               <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center border border-green-100 dark:border-green-900/30">
                 <Package className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('pos.k_58')}
+                  {t("posPage.ordersCount")}
                 </p>
                 <p className="text-xl font-bold text-green-600 dark:text-green-400">
                   {shiftData.totalOrders}
@@ -964,7 +982,7 @@ const PosPage = () => {
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-900/30">
                 <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('pos.k_59')}
+                  {t("posPage.totalProducts")}
                 </p>
                 <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
                   {shiftData.totalItems}
@@ -973,7 +991,7 @@ const PosPage = () => {
               <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 text-center border border-orange-100 dark:border-orange-900/30">
                 <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('pos.k_60')}
+                  {t("posPage.shiftStart")}
                 </p>
                 <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
                   {shiftData.startTime.toLocaleTimeString("ar-EG")}
@@ -986,13 +1004,13 @@ const PosPage = () => {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
                 <RotateCcw className="h-5 w-5" />
-                {t('pos.k_61')}
+                {t("posPage.newShift")}
               </button>
               <button
                 onClick={() => setShowShiftReport(false)}
                 className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
-                {t('pos.k_55')}
+                {t("posPage.close")}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ChevronLeftIcon,
@@ -112,6 +113,7 @@ const getInitialPreparationState = (searchParams: URLSearchParams): Partial<Prep
 const PreparationQueue: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
@@ -364,10 +366,17 @@ const PreparationQueue: React.FC = () => {
   }, [statusConfigs]);
 
   const statusOptions = useMemo<PreparationStatusOption[]>(() => {
-    const dynamicOptions = preparationStatuses.map((s) => ({
-      code: toUpper(s.code),
-      fallbackName: s.name,
-    }));
+    const dynamicOptions = [
+      { code: preparationSettings.startingStatus, fallbackName: t('preparation.page.stages.WAITING') },
+      { code: "PREPARING", fallbackName: t('preparation.page.stages.PREPARING') },
+      { code: "QUALITY_CHECK", fallbackName: t('preparation.page.stages.QUALITY_CHECK') },
+      { code: "PACKAGED", fallbackName: t('preparation.page.stages.PACKAGED') },
+      { code: SHORTAGE_HOLD_STATUS, fallbackName: t('preparation.page.stages.STOCK_SHORTAGE') },
+      {
+        code: preparationSettings.handoffStatus || "READY_TO_SHIP",
+        fallbackName: t('preparation.page.stages.READY_TO_SHIP'),
+      },
+    ];
 
     const includesStarting = dynamicOptions.some(
       (opt) => opt.code === toUpper(preparationSettings.startingStatus),
@@ -457,7 +466,7 @@ const PreparationQueue: React.FC = () => {
         map.set(productId, {
           productId,
           productName:
-            record.products?.name || record.products?.sku || t('preparation.k_11'),
+            record.products?.name || record.products?.sku || t('preparation.page.unnamedProduct'),
           sku: record.products?.sku || null,
           totalQuantity: 0,
           totalAvailable: 0,
@@ -472,7 +481,7 @@ const PreparationQueue: React.FC = () => {
       entry.totalReserved += toNumber(record.reserved);
       entry.warehouses.push({
         warehouseId: String(record.warehouseId || ""),
-        warehouseName: record.warehouses?.name || t('preparation.k_12'),
+        warehouseName: record.warehouses?.name || t('preparation.page.unnamedWarehouse'),
         quantity: toNumber(record.quantity),
         available: toNumber(record.available),
         reserved: toNumber(record.reserved),
@@ -539,7 +548,7 @@ const PreparationQueue: React.FC = () => {
 
           return {
             ...item,
-            displayName: item.productName || item.name || metadataProductName || t('preparation.k_13'),
+            displayName: item.productName || item.name || metadataProductName || t('preparation.page.unnamedProduct'),
             quantityNumber,
             availableInScope,
             reservedInScope,
@@ -732,7 +741,7 @@ const PreparationQueue: React.FC = () => {
       if (!preparationSettings.enabled) {
         return {
           valid: false,
-          message: t('preparation.k_14'),
+          message: t('preparation.page.disabled'),
         };
       }
 
@@ -750,8 +759,8 @@ const PreparationQueue: React.FC = () => {
         return {
           valid: false,
           message: preparationSettings.allowCrossWarehouseTransfer
-            ? t('preparation.k_15')
-            : t('preparation.k_16'),
+            ? t('preparation.page.transferNoSource')
+            : t('preparation.page.stockMustBeComplete'),
         };
       }
 
@@ -762,7 +771,7 @@ const PreparationQueue: React.FC = () => {
       ) {
         return {
           valid: false,
-          message: t('preparation.k_17'),
+          message: t('preparation.page.qcChecklistRequired'),
         };
       }
 
@@ -813,10 +822,10 @@ const PreparationQueue: React.FC = () => {
     try {
       setPrintingOrderNumber(orderNumber);
       await printPreparationSlip(orderNumber);
-      toast.success(t('preparation.k_18'));
+      toast.success(t('preparation.page.slipOpened'));
     } catch (error: unknown) {
       console.error("Failed to print preparation slip:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.k_19'));
+      toast.error(getApiErrorMessage(error) || t('preparation.page.slipFailed'));
     } finally {
       setPrintingOrderNumber(null);
     }
@@ -830,7 +839,7 @@ const PreparationQueue: React.FC = () => {
     ) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       if (!order) {
-        toast.error(t('preparation.k_20'));
+        toast.error(t('preparation.page.orderNotFound'));
         return false;
       }
 
@@ -857,7 +866,7 @@ const PreparationQueue: React.FC = () => {
         }));
 
         if (options?.successMessage !== null) {
-          toast.success(options?.successMessage || t('preparation.k_21'));
+          toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
         }
 
         void fetchAll();
@@ -865,7 +874,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to save shortage hold details:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.k_22'),
+          getApiErrorMessage(error) || t('preparation.page.shortageHoldFailed'),
         );
         return false;
       } finally {
@@ -914,7 +923,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to update order status:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.k_23'),
+          getApiErrorMessage(error) || t('preparation.page.stageUpdateError'),
         );
       } finally {
         setRowUpdatingId(null);
@@ -949,7 +958,7 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error(t('preparation.k_24'));
+      toast.error(t('preparation.page.unnamedProduct'));
       return;
     }
 
@@ -991,7 +1000,7 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update:", error);
       toast.error(
-        getApiErrorMessage(error) || t('preparation.k_25'),
+        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
       );
     } finally {
       setBulkUpdating(false);
@@ -1010,9 +1019,20 @@ const PreparationQueue: React.FC = () => {
   const handleBulkUpdateAll = useCallback(async () => {
     if (!bulkStatus) return;
 
-    const totalMatching = pagination.total;
-    if (totalMatching === 0) {
-      toast.error(t('preparation.k_26'));
+    const validOrders: PreparationOrder[] = [];
+    const invalidOrders: PreparationOrder[] = [];
+
+    paginatedOrders.forEach((order) => {
+      const validation = validateTransition(order, bulkStatus);
+      if (validation.valid) {
+        validOrders.push(order);
+      } else {
+        invalidOrders.push(order);
+      }
+    });
+
+    if (validOrders.length === 0) {
+      toast.error(t('preparation.page.unnamedProduct'));
       return;
     }
 
@@ -1067,7 +1087,7 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update all:", error);
       toast.error(
-        getApiErrorMessage(error) || t('preparation.k_27'),
+        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
       );
     } finally {
       setBulkUpdating(false);
@@ -1096,12 +1116,12 @@ const PreparationQueue: React.FC = () => {
   const handleQuickTransfer = useCallback(
     async (orderNumber: string, item: ItemInsight) => {
       if (!selectedWarehouseId) {
-        toast.error(t('preparation.k_28'));
+        toast.error(t('preparation.page.selectWarehouseFirst'));
         return;
       }
 
       if (!item.productId || item.shortage <= 0) {
-        toast.error(t('preparation.k_29'));
+        toast.error(t('preparation.page.transferNoShortage'));
         return;
       }
 
@@ -1113,7 +1133,7 @@ const PreparationQueue: React.FC = () => {
       );
 
       if (!sourceWarehouse) {
-        toast.error(t('preparation.k_30'));
+        toast.error(t('preparation.page.transferNoSource'));
         return;
       }
 
@@ -1136,7 +1156,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed quick transfer:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.k_31'),
+          getApiErrorMessage(error) || t('preparation.page.transferFailed'),
         );
       } finally {
         setTransferingItemKey(null);
@@ -1147,7 +1167,7 @@ const PreparationQueue: React.FC = () => {
 
   const handleSendToTurbo = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error(t('preparation.k_32'));
+      toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
 
@@ -1171,11 +1191,11 @@ const PreparationQueue: React.FC = () => {
         uiActions.clearBulkControls();
         void fetchAll();
       } else {
-        toast.error(response.data?.error || t('preparation.k_33'));
+        toast.error(response.data?.error || t('preparation.page.failedToTurbo'));
       }
     } catch (error: unknown) {
       console.error("Failed to send to Turbo:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.k_34'));
+      toast.error(getApiErrorMessage(error) || t('preparation.page.failedToTurbo'));
     } finally {
       setSendingToTurbo(false);
     }
@@ -1183,7 +1203,7 @@ const PreparationQueue: React.FC = () => {
 
   const handlePrintInvoices = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error(t('preparation.k_35'));
+      toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
 
@@ -1196,18 +1216,18 @@ const PreparationQueue: React.FC = () => {
       if (response.data?.success) {
         const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
         if (invoices.length === 0) {
-          toast.error(t('preparation.k_36'));
+          toast.error(t('preparation.page.invoiceNotFound'));
           return;
         }
 
         const invoiceIds = invoices.map((inv) => inv.id).join(",");
         navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
       } else {
-        toast.error(response.data?.message || t('preparation.k_37'));
+        toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
       }
     } catch (error: unknown) {
       console.error("Failed to print invoices:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.k_38'));
+      toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
     } finally {
       setPrintingInvoices(false);
     }
