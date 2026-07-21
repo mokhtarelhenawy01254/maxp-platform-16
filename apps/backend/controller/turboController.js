@@ -683,7 +683,7 @@ const trackShipment = async (req, res) => {
     }
     if (matched.internalStatus !== order.turboShipmentStatus) {
       const upd = { turboShipmentStatus: matched.internalStatus, turboMetadata: JSON.stringify(matched.raw || matched), updatedAt: new Date() };
-      if (matched.internalStatus === 'delivered') { upd.status = 'COMPLETED'; upd.paymentStatus = 'PAID'; }
+      if (matched.internalStatus === 'delivered') { upd.status = 'DELIVERED'; upd.paymentStatus = 'COMPLETED'; }
       else if (matched.internalStatus === 'cancelled') upd.status = 'CANCELLED';
       else if (matched.internalStatus === 'returned') upd.status = 'RETURNED';
       if (order.orderNumber) await prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: upd });

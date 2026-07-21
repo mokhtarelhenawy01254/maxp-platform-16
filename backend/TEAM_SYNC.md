@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Turbo Webhook & Controller Order/Payment Status Alignment (BUGFIX / COMPLETE)**:
+  1. **Fixed Webhook and Controller Status Mismatch**: Resolved a 500 database validation error when receiving Turbo webhook status updates or manually tracking shipment status. Changed order status update to `DELIVERED` (from `COMPLETED`) and paymentStatus to `COMPLETED` (from `PAID`) to align with `OrderStatus` and `PaymentStatus` Prisma enums.
+  2. **Fixed Invoice Payment Sync**: Fixed `orderInvoiceService.js` to update the order's `paymentStatus` to `COMPLETED` instead of `PAID` to match the `PaymentStatus` enum.
+  3. **Verified Deploy and logs**: Verified clean server restart and successful API resolution.
+
 - **Order Sync Queue PostgreSQL Mismatch (BUGFIX / COMPLETE)**:
   1. **PostgreSQL Column Naming Fix**: Resolved the `column "order_id" does not exist` production database mapping error inside `SyncQueueService` by migrating all background sync queue SQL queries from `$queryRawUnsafe` / `$executeRawUnsafe` to native Prisma Client ORM query methods (like `prisma.orderSyncQueue.findFirst`, `create`, `update`, `findMany`).
   2. **Code Safety**: Re-aligned queries with camelCase column structures generated dynamically by Prisma, eliminating SQL syntax injection risks and raw DB queries.

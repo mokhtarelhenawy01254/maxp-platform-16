@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [BUG FIX / WEBHOOK] Turbo Webhook OrderStatus & PaymentStatus Mismatch
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Invalid Enum Values on Order Status Updates**: When a delivery update webhook is received from Turbo (`routes/turboWebhook.js`) or when manually tracking shipment status via the controller (`controller/turboController.js`), the code attempted to update the order's status to `COMPLETED` and paymentStatus to `PAID`. However, in the Prisma schema (`OrderStatus` and `PaymentStatus` enums), `COMPLETED` is not a valid `OrderStatus` (the correct value is `DELIVERED`), and `PAID` is not a valid `PaymentStatus` (the correct value is `COMPLETED`). This caused a 500 Internal Server Error / database validation crash during status syncs.
+  2. **Invoice Payment Status Update Mismatch**: In `orderInvoiceService.js`, updating the invoice payment status to `PAID` incorrectly attempted to set `paymentStatus` on the `Order` model to `PAID` instead of `COMPLETED`, triggering the same Prisma validation error.
+- **Resolution**:
+  1. **Enum Alignment**: Corrected the delivered status mapping in `routes/turboWebhook.js` and `controller/turboController.js` to use `status: 'DELIVERED'` and `paymentStatus: 'COMPLETED'`.
+  2. **Service Enum Sync**: Corrected `orderInvoiceService.js` to update the order's `paymentStatus` to `'COMPLETED'` instead of `'PAID'`.
+- **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/services/orderInvoiceService.js`
+
 ### [BUG FIX / SYNC] Order Sync Queue PostgreSQL Column Mismatch
 - **Date**: 2026-07-21
 - **Root Cause**:

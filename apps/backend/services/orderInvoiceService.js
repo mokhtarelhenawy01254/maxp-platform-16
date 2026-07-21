@@ -359,7 +359,7 @@ async function updateInvoicePaymentStatus(invoiceId, paymentStatus, paidAt = nul
     if (paymentStatus === 'PAID') {
       await prisma.order.update({
         where: { id: invoice.orderId },
-        data: { paymentStatus: 'PAID' }
+        data: { paymentStatus: 'COMPLETED' }
       });
     }
 

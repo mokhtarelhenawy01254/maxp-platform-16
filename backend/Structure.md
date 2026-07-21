@@ -158,5 +158,6 @@
 3. **Conversational Slot-Filling Prompting**: Enhanced `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` templates directory to instruct the model to conversationally gather missing required fields (name, phone, dates) rather than inventing mock values or aborting.
 4. **Pydantic ValidationError Handling**: Upgraded `_execute_one_tool` inside the skills pipeline (`skills_pipeline.py`) to catch validation errors (`ValidationError`) from Pydantic input models during tool calling, formats them into a structured human-readable parameter-by-parameter error description, and feeds them back as a tool execution error to the LLM to guide self-correction.
 
-
-
+### Webhook and Controller Status Sync Realignment
+1. **OrderStatus and PaymentStatus Webhook and Controller Alignment**: Corrected delivered shipment mapping in `routes/turboWebhook.js` and `controller/turboController.js` to set `status` to `'DELIVERED'` (conforming to `OrderStatus` enum values) and `paymentStatus` to `'COMPLETED'` (conforming to `PaymentStatus` enum values).
+2. **Service Enum Sync**: Corrected `services/orderInvoiceService.js` to set order `paymentStatus` to `'COMPLETED'` instead of `'PAID'` to avoid database enum validation crashes (500 Internal Server Errors).

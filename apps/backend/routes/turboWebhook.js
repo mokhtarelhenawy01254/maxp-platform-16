@@ -373,8 +373,8 @@ router.post('/webhook', async (req, res) => {
 
     // إذا كانت الشحنة تم تسليمها، نحدث حالة الطلب
     if (status === 'delivered' || statusCode === '5') {
-      updateData.status = 'COMPLETED';
-      updateData.paymentStatus = 'PAID'; // افتراض أن الدفع تم عند التسليم
+      updateData.status = 'DELIVERED';
+      updateData.paymentStatus = 'COMPLETED'; // افتراض أن الدفع تم عند التسليم
     }
 
     // إذا كانت الشحنة ملغاة، نحدث حالة الطلب
