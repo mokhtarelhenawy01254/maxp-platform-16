@@ -23,37 +23,38 @@ import {
 import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../../hooks/useAuthSimple";
 
 // قائمة المحافظات المصرية
 const EGYPT_GOVERNORATES = [
-  t('manualOrder.k_25'),
-  t('manualOrder.k_26'),
-  t('manualOrder.k_27'),
-  t('manualOrder.k_28'),
-  t('manualOrder.k_29'),
-  t('manualOrder.k_30'),
-  t('manualOrder.k_31'),
-  t('manualOrder.k_32'),
-  t('manualOrder.k_33'),
-  t('manualOrder.k_34'),
-  t('manualOrder.k_35'),
-  t('manualOrder.k_36'),
-  t('manualOrder.k_37'),
-  t('manualOrder.k_38'),
-  t('manualOrder.k_39'),
-  t('manualOrder.k_40'),
-  t('manualOrder.k_41'),
-  t('manualOrder.k_42'),
-  t('manualOrder.k_43'),
-  t('manualOrder.k_44'),
-  t('manualOrder.k_45'),
-  t('manualOrder.k_46'),
-  t('manualOrder.k_47'),
-  t('manualOrder.k_48'),
-  t('manualOrder.k_49'),
-  t('manualOrder.k_50'),
-  t('manualOrder.k_51'),
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "الدقهلية",
+  "البحر الأحمر",
+  "البحيرة",
+  "الفيوم",
+  "الغربية",
+  "الإسماعيلية",
+  "المنوفية",
+  "المنيا",
+  "القليوبية",
+  "الوادي الجديد",
+  "السويس",
+  "أسوان",
+  "أسيوط",
+  "بني سويف",
+  "بورسعيد",
+  "دمياط",
+  "الشرقية",
+  "جنوب سيناء",
+  "كفر الشيخ",
+  "مطروح",
+  "الأقصر",
+  "قنا",
+  "شمال سيناء",
+  "سوهاج",
 ];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
@@ -131,6 +132,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   cartItems,
   onClearCart,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
