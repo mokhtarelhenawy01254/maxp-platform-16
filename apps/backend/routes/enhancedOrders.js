@@ -602,8 +602,22 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // تحويل items إلى products (متوافق مع EnhancedOrderService)
+    const items = req.body.items || [];
+    const products = Array.isArray(items) ? items.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      productColor: item.productColor,
+      productSize: item.productSize,
+      price: parseFloat(item.price),
+      quantity: item.quantity,
+      total: parseFloat(item.total),
+      variantId: item.variantId
+    })) : [];
+
     const orderData = {
       ...req.body,
+      products,
       companyId: req.user.companyId,
       extractionMethod: 'manual',
 
