@@ -4229,7 +4229,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       // 🚀 Push order to provider(s) if it contains imported products
       // MUST happen BEFORE disconnect() because disconnect() closes the shared Prisma client
       const internalSyncService = require('../services/internalSyncService');
-      internalSyncService.pushOrderToProvider(result.order.id, companyId).catch(err => {
+      internalSyncService.pushOrderToProvider(result.order.id, orderData.companyId).catch(err => {
         console.error('❌ [INTERNAL-SYNC] Failed to push manual order to provider:', err.message);
       });
 

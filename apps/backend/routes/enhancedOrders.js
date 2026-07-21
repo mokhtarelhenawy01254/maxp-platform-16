@@ -639,7 +639,7 @@ router.post('/', async (req, res) => {
       // MUST happen BEFORE disconnect() because disconnect() closes the shared Prisma client
       try {
         const internalSyncService = require('../services/internalSyncService');
-        await internalSyncService.pushOrderToProvider(result.order.id, req.user.companyId);
+        await internalSyncService.pushOrderToProvider(result.order.id, orderData.companyId);
       } catch (pushError) {
         console.error('❌ [INTERNAL-SYNC] Failed to push enhanced order to provider:', pushError.message);
       }
