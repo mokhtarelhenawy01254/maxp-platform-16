@@ -193,8 +193,17 @@ const PreparationQueue: React.FC = () => {
       });
     });
 
+    statusConfigs.forEach((status) => {
+      if (!deduped.has(toUpper(status.code))) {
+        deduped.set(toUpper(status.code), {
+          code: toUpper(status.code),
+          fallbackName: status.name,
+        });
+      }
+    });
+
     return [...deduped.values()];
-  }, [preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+  }, [preparationSettings.handoffStatus, preparationSettings.startingStatus, statusConfigs]);
 
   const enabledQcChecks = useMemo(
     () =>
