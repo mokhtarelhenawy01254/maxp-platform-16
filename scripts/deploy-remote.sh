@@ -38,6 +38,8 @@ if [ ! -x "$PM2_BIN" ]; then
 fi
 
 echo "🧹 Running automatic cleanup to free space..."
+find "$HOME" -maxdepth 1 -name "deploy_staging_*" -not -name "$(basename "$DEPLOY_STAGING")" -exec rm -rf {} + 2>/dev/null || true
+sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
 if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" flush || echo "⚠️ PM2 flush failed"
 fi
