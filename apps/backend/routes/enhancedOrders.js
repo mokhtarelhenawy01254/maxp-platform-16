@@ -602,9 +602,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // تحويل items إلى products (متوافق مع EnhancedOrderService)
-    const items = req.body.items || [];
-    const products = Array.isArray(items) ? items.map(item => ({
+    // تحويل المنتجات (متوافق مع EnhancedOrderService)
+    const rawProducts = req.body.products || req.body.items || [];
+    const products = Array.isArray(rawProducts) ? rawProducts.map(item => ({
       productId: item.productId,
       productName: item.productName,
       productColor: item.productColor,
