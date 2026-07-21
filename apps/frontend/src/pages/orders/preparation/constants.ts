@@ -16,7 +16,7 @@ export const DEFAULT_PREPARATION_QUEUE_SETTINGS: PreparationQueueSettings = {
   startingStatus: "PENDING_PREPARATION",
   handoffStatus: "READY_TO_SHIP",
   requireStockBeforePreparing: true,
-  allowPartialPreparation: false,
+  allowPartialPreparation: true,
   allowCrossWarehouseTransfer: true,
   enableQcChecklist: true,
   qcChecks: {

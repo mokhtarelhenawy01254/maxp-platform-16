@@ -116,7 +116,7 @@ const DEFAULT_SETTINGS: PreparationSettingsState = {
   handoffStatus: "READY_TO_SHIP",
   autoReserveStock: true,
   requireStockBeforePreparing: true,
-  allowPartialPreparation: false,
+  allowPartialPreparation: true,
   allowCrossWarehouseTransfer: true,
   enableQcChecklist: true,
   qcChecks: {
