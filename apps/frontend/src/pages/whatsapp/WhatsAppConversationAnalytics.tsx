@@ -11,6 +11,8 @@ import {
   MessageCircle,
   TrendingUp,
   User,
+  Megaphone,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +53,7 @@ interface ConversationSummary {
   incomingMessages: number;
   outgoingMessages: number;
   manualOutgoing: number;
+  broadcastOutgoing: number;
   autoOutgoing: number;
   avgMessagesPerConversation: number;
   assignedCount: number;
@@ -351,7 +354,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
         <WhatsAppMetricCard
           label="رسائل صادرة"
           value={summary?.outgoingMessages ?? 0}
-          hint={`يدوي ${summary?.manualOutgoing ?? 0} · تلقائي ${summary?.autoOutgoing ?? 0}`}
+          hint={`يدوي ${summary?.manualOutgoing ?? 0} · برودكاست ${summary?.broadcastOutgoing ?? 0} · تلقائي ${summary?.autoOutgoing ?? 0}`}
           icon={Send}
           tone="success"
         />
@@ -376,7 +379,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
                   <Send className="size-3.5 text-indigo-500" />
-                  <span className="text-xs text-muted-foreground">يدوي</span>
+                  <span className="text-xs text-muted-foreground">يدوي (ردود)</span>
                 </div>
                 <span className="text-sm font-bold">{summary?.manualOutgoing ?? 0}</span>
               </div>
@@ -390,8 +393,23 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <MessageCircle className="size-3.5 text-violet-400" />
-                  <span className="text-xs text-muted-foreground">تلقائي</span>
+                  <Megaphone className="size-3.5 text-amber-500" />
+                  <span className="text-xs text-muted-foreground">برودكاست</span>
+                </div>
+                <span className="text-sm font-bold">{summary?.broadcastOutgoing ?? 0}</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted">
+                <div
+                  className="h-2.5 rounded-full bg-amber-500 transition-[width]"
+                  style={{ width: `${((summary?.broadcastOutgoing ?? 0) / Math.max(1, summary?.outgoingMessages ?? 1)) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Bot className="size-3.5 text-violet-400" />
+                  <span className="text-xs text-muted-foreground">تلقائي (فلو + AI)</span>
                 </div>
                 <span className="text-sm font-bold">{summary?.autoOutgoing ?? 0}</span>
               </div>
@@ -403,10 +421,12 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
               </div>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
-              <strong className="font-semibold text-amber-600">تنبيه:</strong> الأرقام أعلاه تشمل{" "}
-              <strong>كل</strong> الرسائل الصادرة: ردود المودريترز اليدوية + البرود كاست + فلو المتابعة التلقائية + ردود الذكاء الاصطناعي.
-              خانة "يدوي" = اللي المودريترز كاتبها بنفسهم.
-              خانة "تلقائي" = الباقي (برود كاست، فلو متابعة، ردود AI).
+              <strong className="font-semibold text-amber-600">تنبيه:</strong> الأرقام أعلاه تشمل <strong>كل</strong> الرسائل الصادرة. تم التمييز عن طريق فحص حقل metadata لكل رسالة:
+              <ul className="mt-1 list-disc list-inside space-y-0.5">
+                <li><strong>يدوي</strong> = رسائل المودريترز اليدوية (senderId + بدون isBroadcast)</li>
+                <li><strong>برودكاست</strong> = حملات البريد الجماعي (metadata.isBroadcast = true)</li>
+                <li><strong>تلقائي</strong> = فلو المتابعة + ردود AI (بدون senderId)</li>
+              </ul>
             </div>
             <div className="border-t border-dashed border-[color:var(--shell-control-border)] pt-4 space-y-2">
               <div className="flex items-center justify-between text-xs">

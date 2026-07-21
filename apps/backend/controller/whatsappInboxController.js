@@ -611,6 +611,7 @@ exports.getConversationAnalytics = async (req, res) => {
             conversationId: true,
             isFromCustomer: true,
             senderId: true,
+            metadata: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'asc' },
@@ -620,8 +621,23 @@ exports.getConversationAnalytics = async (req, res) => {
     const totalMessages = messages.length;
     const incomingMessages = messages.filter(m => m.isFromCustomer).length;
     const outgoingMessages = totalMessages - incomingMessages;
-    const manualOutgoing = messages.filter(m => !m.isFromCustomer && m.senderId).length;
-    const autoOutgoing = outgoingMessages - manualOutgoing;
+
+    // Categorize outgoing: broadcast (metadata.isBroadcast) vs manual (senderId set) vs automated (no senderId)
+    let broadcastOutgoing = 0;
+    let manualOutgoing = 0;
+    let autoOutgoing = 0;
+    for (const m of messages) {
+      if (m.isFromCustomer) continue;
+      let meta = null;
+      try { meta = m.metadata ? JSON.parse(m.metadata) : null; } catch(e) {}
+      if (meta && meta.isBroadcast === true) {
+        broadcastOutgoing++;
+      } else if (m.senderId) {
+        manualOutgoing++;
+      } else {
+        autoOutgoing++;
+      }
+    }
 
     // 6. Avg messages per conversation
     const msgsPerConv = new Map();
@@ -739,6 +755,7 @@ exports.getConversationAnalytics = async (req, res) => {
         incomingMessages,
         outgoingMessages,
         manualOutgoing,
+        broadcastOutgoing,
         autoOutgoing,
         avgMessagesPerConversation,
         assignedCount,
