@@ -615,6 +615,11 @@ router.post('/', async (req, res) => {
       variantId: item.variantId
     })) : [];
 
+    // Map address field to customerAddress for the order service
+    if (req.body.address && !req.body.customerAddress) {
+      req.body.customerAddress = req.body.address;
+    }
+
     const orderData = {
       ...req.body,
       products,
