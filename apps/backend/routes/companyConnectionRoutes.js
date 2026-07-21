@@ -30,8 +30,7 @@ router.get('/:connectionId/consumer/orders', companyConnectionController.getCons
 router.get('/:connectionId/consumer/commissions', companyConnectionController.getConsumerConnectionCommissions);
 router.get('/:connectionId/consumer/payouts', companyConnectionController.getConsumerConnectionPayouts);
 router.post('/:connectionId/consumer/payout-request', companyConnectionController.createConsumerConnectionPayoutRequest);
-router.post('/:connectionId/consumer/resync-balance', companyConnectionController.resyncConsumerAffiliateBalance);
-router.post('/:connectionId/consumer/create-test-commissions', companyConnectionController.createTestCommissions);
+
 
 // ───────── Provider Side (الشركة المورّدة) ─────────
 router.get('/:connectionId/provider/orders', companyConnectionController.getProviderConnectionOrders);
