@@ -11,6 +11,7 @@ const SEED_PAGES = [
   { slug: 'ai-inbox', title: 'AI Inbox — البريد الذكي', componentName: 'AiInboxLanding', sortOrder: 2, bundleSlug: 'ai-inbox-bundle', activationType: 'both' },
   { slug: 'mg', title: 'MG Agency — تسويق عقاري', componentName: 'MgAgencyLeadLanding', sortOrder: 3, bundleSlug: null, activationType: 'both' },
   { slug: 'mg-agency', title: 'MG Agency Lead — تسويق عقاري', componentName: 'MgAgencyLeadLanding', sortOrder: 4, bundleSlug: null, activationType: 'both' },
+  { slug: 'medical', title: 'النظام الطبي — الباقة الطبية الشاملة', componentName: 'MedicalLanding', sortOrder: 5, bundleSlug: 'medical-bundle', activationType: 'both' },
 ];
 
 let ensureTablePromise = null;
