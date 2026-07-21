@@ -235,10 +235,9 @@ class EnhancedOrderService {
           console.error('❌ [ENHANCED-ORDER] Error stack:', wooError.stack);
         }
 
-        // 🚀 Push order to provider(s) if it contains imported products
-        internalSyncService.pushOrderToProvider(order.id, data.companyId).catch(err => {
-          console.error(`❌ [INTERNAL-SYNC] Failed to push order ${order.id} to provider:`, err.message);
-        });
+        // 🚀 Push order to provider(s) via sync queue
+        const syncQueueService = require('./syncQueueService');
+        syncQueueService.enqueue(order.id, data.companyId);
       }
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل

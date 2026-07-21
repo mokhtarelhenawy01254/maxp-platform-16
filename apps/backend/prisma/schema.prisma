@@ -5780,6 +5780,33 @@ model CompanyConnectionRequest {
   @@map("company_connection_requests")
 }
 
+model OrderSyncQueue {
+  id             String    @id @default(cuid())
+  orderId        String
+  consumerId     String              // The company that created the order
+  providerId     String?             // The provider company (null = not yet matched)
+  status         SyncQueueStatus     @default(PENDING)
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(10)
+  lastError      String?
+  nextRetryAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([orderId])
+  @@index([consumerId])
+  @@map("order_sync_queue")
+}
+
+enum SyncQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum ConnectionStatus {
   ACTIVE
   PAUSED
