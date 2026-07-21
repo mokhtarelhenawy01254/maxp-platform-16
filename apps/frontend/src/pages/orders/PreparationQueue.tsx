@@ -215,84 +215,71 @@ const PreparationQueue: React.FC = () => {
   }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
 
   const stageDefinitions = useMemo<StageDefinition[]>(() => {
-    const built: StageDefinition[] = [];
-    const systemStageKeys = new Set(
-      FALLBACK_STAGE_DEFINITIONS.map((s) => s.key),
-    );
-
-    preparationStatuses.forEach((status, index) => {
-      const code = toUpper(status.code);
-      if (systemStageKeys.has(code)) return;
-
-      built.push({
-        key: code,
-        label: status.name,
-        labelKey: status.name,
-        colorClass:
-          DYNAMIC_STAGE_COLORS[index % DYNAMIC_STAGE_COLORS.length],
-        description: status.name,
-        descriptionKey: status.name,
-      });
-    });
-
-    const KNOWN_SYSTEM_STAGES: Record<string, StageDefinition> = {};
-    FALLBACK_STAGE_DEFINITIONS.forEach((def) => {
-      KNOWN_SYSTEM_STAGES[def.key] = def;
-    });
+    const systemDefs = FALLBACK_STAGE_DEFINITIONS;
+    const KNOWN_SYSTEM: Record<string, StageDefinition> = {};
+    systemDefs.forEach((def) => { KNOWN_SYSTEM[def.key] = def; });
 
     const allKeys = new Set<string>();
     const ordered: StageDefinition[] = [];
+    let dynamicColorIdx = 0;
 
-    const shouldInclude = (key: string) => {
-      if (allKeys.has(key)) return false;
-      allKeys.add(key);
-      return true;
+    const addStage = (def: StageDefinition) => {
+      if (allKeys.has(def.key)) return;
+      allKeys.add(def.key);
+      ordered.push(def);
     };
 
-    if (
-      preparationSettings.startingStatus &&
-      shouldInclude(toUpper(preparationSettings.startingStatus))
-    ) {
-      const code = toUpper(preparationSettings.startingStatus);
-      if (KNOWN_SYSTEM_STAGES["WAITING"]) {
-        ordered.push({
-          ...KNOWN_SYSTEM_STAGES["WAITING"],
-          key: code,
+    const systemStageForStatus: Record<string, string> = {
+      PENDING: "WAITING",
+      CONFIRMED: "WAITING",
+      PENDING_PREPARATION: "WAITING",
+      PROCESSING: "PREPARING",
+      PREPARING: "PREPARING",
+      QUALITY_CHECK: "QUALITY_CHECK",
+      PACKAGED: "PACKAGED",
+      PACKED: "PACKAGED",
+      STOCK_SHORTAGE: "STOCK_SHORTAGE",
+      PENDING_STOCK: "STOCK_SHORTAGE",
+      ON_HOLD_STOCK: "STOCK_SHORTAGE",
+      READY: "READY_TO_SHIP",
+      READY_TO_SHIP: "READY_TO_SHIP",
+      PENDING_CANCELLATION: "PENDING_CANCELLATION",
+    };
+
+    preparationStatuses.forEach((status) => {
+      const code = toUpper(status.code);
+      const systemStage = systemStageForStatus[code];
+
+      if (systemStage && KNOWN_SYSTEM[systemStage]) {
+        addStage({
+          ...KNOWN_SYSTEM[systemStage],
+          labelKey: status.name,
+          label: status.name,
+          descriptionKey: status.name,
+          description: status.name,
         });
-      }
-    }
+      } else {
+        if (allKeys.has(code)) return;
+        allKeys.add(code);
 
-    const addIfIncluded = (code: string) => {
-      if (shouldInclude(code)) {
-        ordered.push(KNOWN_SYSTEM_STAGES[code]);
-      }
-    };
-
-    addIfIncluded("PREPARING");
-    addIfIncluded("QUALITY_CHECK");
-    addIfIncluded("PACKAGED");
-
-    if (
-      preparationSettings.handoffStatus &&
-      shouldInclude(toUpper(preparationSettings.handoffStatus))
-    ) {
-      const code = toUpper(preparationSettings.handoffStatus);
-      if (KNOWN_SYSTEM_STAGES["READY_TO_SHIP"]) {
-        ordered.push({ ...KNOWN_SYSTEM_STAGES["READY_TO_SHIP"], key: code });
-      }
-    }
-
-    addIfIncluded("STOCK_SHORTAGE");
-    addIfIncluded("PENDING_CANCELLATION");
-
-    built.forEach((def) => {
-      if (shouldInclude(def.key)) {
-        ordered.push(def);
+        ordered.push({
+          key: code,
+          label: status.name,
+          labelKey: status.name,
+          colorClass:
+            DYNAMIC_STAGE_COLORS[dynamicColorIdx % DYNAMIC_STAGE_COLORS.length],
+          description: status.name,
+          descriptionKey: status.name,
+        });
+        dynamicColorIdx++;
       }
     });
 
+    addStage(KNOWN_SYSTEM["STOCK_SHORTAGE"]);
+    addStage(KNOWN_SYSTEM["PENDING_CANCELLATION"]);
+
     return ordered;
-  }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+  }, [preparationStatuses]);
 
   const enabledQcChecks = useMemo(
     () =>
