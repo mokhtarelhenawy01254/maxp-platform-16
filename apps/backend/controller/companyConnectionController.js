@@ -1713,6 +1713,46 @@ exports.recordProviderPayout = async (req, res) => {
  * إلغاء طلب سحب (Provider)
  * POST /api/v1/company-connections/:connectionId/provider/payouts/:payoutId/cancel
  */
+/**
+ * إعادة مزامنة رصيد الأفليت من العمولات الفعلية (لإصلاح عدم الاتساق)
+ * POST /api/v1/company-connections/:connectionId/consumer/resync-balance
+ */
+exports.resyncConsumerAffiliateBalance = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const myUserIds = (await prisma.user.findMany({ where: { companyId, isActive: true }, select: { id: true } })).map(u => u.id);
+        const affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({ where: { userId: { in: myUserIds }, companyId: connection.providerId } }) : null;
+        if (!affiliate) return res.status(404).json({ success: false, message: 'لا يوجد حساب مسوق' });
+
+        const [totalAgg, paidAgg, pendingAgg] = await Promise.all([
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId, status: 'PAID' }, _sum: { amount: true } }),
+            prisma.commission.aggregate({ where: { affiliateId: affiliate.id, companyId: connection.providerId, status: { in: ['CONFIRMED', 'PENDING'] } }, _sum: { amount: true } })
+        ]);
+
+        const total = Number(totalAgg._sum?.amount || 0);
+        const paid = Number(paidAgg._sum?.amount || 0);
+        const pending = Number(pendingAgg._sum?.amount || 0);
+
+        await prisma.affiliate.update({
+            where: { id: affiliate.id },
+            data: { totalEarnings: total, paidEarnings: paid, pendingEarnings: pending }
+        });
+
+        res.json({ success: true, message: 'تمت المزامنة', data: { total, paid, pending } });
+    } catch (error) {
+        console.error('Error in resyncConsumerAffiliateBalance:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ' });
+    }
+};
+
 exports.cancelProviderPayout = async (req, res) => {
     try {
         const companyId = req.user.companyId;
