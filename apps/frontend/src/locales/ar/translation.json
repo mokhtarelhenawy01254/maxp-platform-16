@@ -1233,7 +1233,16 @@
     "errorExport": "فشل التصدير. الرجاء المحاولة مرة أخرى.",
     "errorNoCopy": "لا توجد نتائج للنسخ",
     "successCopy": "تم نسخ النتائج إلى الحافظة",
-    "errorCopy": "فشل النسخ. الرجاء المحاولة مرة أخرى."
+    "errorCopy": "فشل النسخ. الرجاء المحاولة مرة أخرى.",
+    "selected": "محدد",
+    "selectAll": "تحديد الكل",
+    "updateStatus": "تغيير الحالة",
+    "updating": "جاري التحديث...",
+    "confirmBulkUpdate": "هل أنت متأكد من تحديث حالة {{count}} طلب؟",
+    "bulkUpdateSuccess": "تم تحديث {{count}} طلب بنجاح",
+    "bulkUpdatePartial": "تم تحديث {{success}} طلب وفشل {{failed}} طلب",
+    "bulkUpdateFailed": "فشل تحديث الطلبات",
+    "bulkUpdateError": "حدث خطأ أثناء التحديث"
   },
   "categories": {
     "management": {
@@ -4052,6 +4061,24 @@
     "stockLevel": "مستوى المخزون",
     "lowStock": "مخزون منخفض",
     "updateStock": "تحديث المخزون"
+  },
+  "invoiceContent": {
+    "sender": "المرسل: {{companyName}}",
+    "recipientName": "اسم المستلم",
+    "phone": "الهاتف",
+    "governorate": "المحافظة",
+    "city": "المدينة",
+    "address": "العنوان",
+    "product": "المنتج",
+    "sku": "كود",
+    "qty": "العدد",
+    "price": "السعر",
+    "total": "الإجمالي",
+    "notes": "ملاحظات",
+    "orderCode": "كود الطلب",
+    "shippingCode": "كود الشحن",
+    "shippingCost": "تكلفة الشحن",
+    "amountToCollect": "المبلغ المحصل"
   },
   "language": {
     "current": "العربية",
