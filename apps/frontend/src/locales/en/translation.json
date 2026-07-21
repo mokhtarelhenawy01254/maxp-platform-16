@@ -10039,5 +10039,107 @@
     "errorPause": "Error pausing import",
     "errorResume": "Error resuming import",
     "errorCancel": "Error cancelling import"
+  },
+  "preparation": {
+    "filters": {
+      "title": "Filter Orders",
+      "active": "Active",
+      "ordersCount": "{{count}} orders",
+      "clearAll": "Clear All",
+      "allStages": "All ({{count}})",
+      "quickSearch": "Quick Search",
+      "quickSearchPlaceholder": "Order number, customer name...",
+      "product": "Product",
+      "productPlaceholder": "Product name or SKU...",
+      "warehouse": "Warehouse",
+      "allWarehouses": "All Warehouses",
+      "stockStatus": "Stock Status",
+      "allStock": "All",
+      "ready": "In Stock",
+      "shortage": "Shortage",
+      "sortBy": "Sort By",
+      "itemsCount": "Items Count",
+      "singleItem": "Single Item",
+      "multipleItems": "Multiple Items",
+      "shortageReason": "Shortage Reason",
+      "allReasons": "All Reasons",
+      "owner": "Owner",
+      "allOwners": "All Owners",
+      "followUpDate": "Follow-Up Date",
+      "allDates": "All Dates",
+      "today": "Today",
+      "overdue": "Overdue",
+      "withoutDate": "Without Date"
+    },
+    "stages": {
+      "WAITING": "Confirmed Orders",
+      "PREPARING": "Preparing",
+      "QUALITY_CHECK": "Quality Check",
+      "PACKAGED": "Packaged",
+      "READY_TO_SHIP": "Ready to Ship",
+      "STOCK_SHORTAGE": "Stock Shortage",
+      "PENDING_CANCELLATION": "Pending Cancellation"
+    },
+    "stageDescriptions": {
+      "WAITING": "Confirmed orders not yet prepared",
+      "PREPARING": "Picking and preparing products from warehouse",
+      "QUALITY_CHECK": "Reviewing quantity and condition before packaging",
+      "PACKAGED": "Order is packaged and awaiting delivery to shipping",
+      "READY_TO_SHIP": "Ready to hand over to shipping company",
+      "STOCK_SHORTAGE": "On hold due to stock shortage or awaiting transfer",
+      "PENDING_CANCELLATION": "Customer requested cancellation during preparation"
+    },
+    "shortageReasons": {
+      "stock_shortage": "Stock Shortage",
+      "waiting_transfer": "Awaiting Transfer",
+      "waiting_restock": "Awaiting Restock",
+      "other": "Other Reason"
+    },
+    "fallbackStatusLabels": {
+      "CONFIRMED": "Confirmed",
+      "PENDING_PREPARATION": "Pending Preparation",
+      "PREPARING": "Preparing",
+      "PROCESSING": "Processing",
+      "QUALITY_CHECK": "Quality Check",
+      "PACKAGED": "Packaged",
+      "READY": "Ready",
+      "READY_TO_SHIP": "Ready to Ship",
+      "STOCK_SHORTAGE": "Stock Shortage"
+    },
+    "sourceLabels": {
+      "ai_conversation": "AI Conversation",
+      "storefront": "Storefront",
+      "woocommerce": "WooCommerce",
+      "manual": "Manual",
+      "api": "API",
+      "import": "Import",
+      "pos": "POS",
+      "unknown": "Unknown"
+    },
+    "shortageFollowUp": {
+      "overdueLabel": "Overdue",
+      "overdueText": "Past the scheduled follow-up date",
+      "todayLabel": "Today",
+      "todayText": "Follow-up required today",
+      "withoutDateLabel": "Without Date",
+      "withoutDateText": "No follow-up date set"
+    },
+    "quickAction": {
+      "WAITING": "Start Preparation",
+      "PREPARING": "Send to Quality Check",
+      "QUALITY_CHECK": "Confirm Packaging",
+      "PACKAGED": "Mark Ready to Ship",
+      "STOCK_SHORTAGE": "Manage Shortage",
+      "default": "Update Status"
+    },
+    "age": {
+      "unknown": "Unknown",
+      "days": "{{count}} day",
+      "days_plural": "{{count}} days",
+      "hours": "{{count}} hour",
+      "hours_plural": "{{count}} hours",
+      "minutes": "{{count}} minute",
+      "minutes_plural": "{{count}} minutes"
+    }
   }
 }

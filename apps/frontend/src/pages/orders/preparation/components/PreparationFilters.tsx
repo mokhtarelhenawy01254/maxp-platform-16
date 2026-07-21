@@ -239,7 +239,7 @@ const PreparationFilters = ({
 
         {/* Sort */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">ترتيب حسب</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.sortBy")}</label>
           <select
             value={`${sortBy}_${sortOrder}`}
             onChange={(e) => {

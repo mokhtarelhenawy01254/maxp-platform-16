@@ -10039,5 +10039,107 @@
     "errorPause": "خطأ في إيقاف الاستيراد",
     "errorResume": "خطأ في استئناف الاستيراد",
     "errorCancel": "خطأ في إلغاء الاستيراد"
+  },
+  "preparation": {
+    "filters": {
+      "title": "فلترة الطلبات",
+      "active": "مفعّل",
+      "ordersCount": "عدد الطلبات: {{count}}",
+      "clearAll": "مسح الكل",
+      "allStages": "الكل ({{count}})",
+      "quickSearch": "بحث سريع",
+      "quickSearchPlaceholder": "رقم الطلب، اسم العميل...",
+      "product": "المنتج",
+      "productPlaceholder": "اسم المنتج أو SKU...",
+      "warehouse": "المخزن",
+      "allWarehouses": "كل المخازن",
+      "stockStatus": "حالة المخزون",
+      "allStock": "الكل",
+      "ready": "متوفر",
+      "shortage": "عجز",
+      "sortBy": "ترتيب حسب",
+      "itemsCount": "عدد القطع",
+      "singleItem": "قطعة واحدة",
+      "multipleItems": "عدة قطع",
+      "shortageReason": "سبب العجز",
+      "allReasons": "كل الأسباب",
+      "owner": "المسؤول",
+      "allOwners": "كل المسؤولين",
+      "followUpDate": "تاريخ المتابعة",
+      "allDates": "كل التواريخ",
+      "today": "اليوم",
+      "overdue": "متأخر",
+      "withoutDate": "بدون تاريخ"
+    },
+    "stages": {
+      "WAITING": "طلبات مؤكدة",
+      "PREPARING": "قيد التجهيز",
+      "QUALITY_CHECK": "فحص الجودة",
+      "PACKAGED": "تم التغليف",
+      "READY_TO_SHIP": "جاهز للشحن",
+      "STOCK_SHORTAGE": "عجز في المخزون",
+      "PENDING_CANCELLATION": "بانتظار الإلغاء"
+    },
+    "stageDescriptions": {
+      "WAITING": "طلبات مؤكدة لم تبدأ بعد",
+      "PREPARING": "يتم تجهيز المنتجات من المخزن",
+      "QUALITY_CHECK": "مراجعة الكمية والحالة قبل التغليف",
+      "PACKAGED": "الطلب مغلف وبانتظار التسليم للشحن",
+      "READY_TO_SHIP": "جاهز للتسليم لشركة الشحن",
+      "STOCK_SHORTAGE": "معلق بسبب عجز المخزون أو انتظار التحويل",
+      "PENDING_CANCELLATION": "طلب العميل الإلغاء أثناء التجهيز"
+    },
+    "shortageReasons": {
+      "stock_shortage": "عجز في المخزون",
+      "waiting_transfer": "انتظار تحويل",
+      "waiting_restock": "انتظار إعادة توريد",
+      "other": "سبب آخر"
+    },
+    "fallbackStatusLabels": {
+      "CONFIRMED": "مؤكد",
+      "PENDING_PREPARATION": "بانتظار التجهيز",
+      "PREPARING": "قيد التجهيز",
+      "PROCESSING": "قيد المعالجة",
+      "QUALITY_CHECK": "فحص الجودة",
+      "PACKAGED": "تم التغليف",
+      "READY": "جاهز",
+      "READY_TO_SHIP": "جاهز للشحن",
+      "STOCK_SHORTAGE": "عجز في المخزون"
+    },
+    "sourceLabels": {
+      "ai_conversation": "محادثة ذكية",
+      "storefront": "المتجر",
+      "woocommerce": "ووكومرس",
+      "manual": "يدوي",
+      "api": "API",
+      "import": "استيراد",
+      "pos": "نقطة بيع",
+      "unknown": "غير معروف"
+    },
+    "shortageFollowUp": {
+      "overdueLabel": "متأخر",
+      "overdueText": "تجاوز تاريخ المتابعة المحدد",
+      "todayLabel": "اليوم",
+      "todayText": "متابعة مطلوبة اليوم",
+      "withoutDateLabel": "بدون تاريخ",
+      "withoutDateText": "لم يتم تحديد تاريخ متابعة"
+    },
+    "quickAction": {
+      "WAITING": "بدء التجهيز",
+      "PREPARING": "إرسال لفحص الجودة",
+      "QUALITY_CHECK": "تأكيد التغليف",
+      "PACKAGED": "جاهز للشحن",
+      "STOCK_SHORTAGE": "إدارة العجز",
+      "default": "تحديث الحالة"
+    },
+    "age": {
+      "unknown": "غير معروف",
+      "days": "{{count}} يوم",
+      "days_plural": "{{count}} أيام",
+      "hours": "{{count}} ساعة",
+      "hours_plural": "{{count}} ساعات",
+      "minutes": "{{count}} دقيقة",
+      "minutes_plural": "{{count}} دقائق"
+    }
   }
 }
