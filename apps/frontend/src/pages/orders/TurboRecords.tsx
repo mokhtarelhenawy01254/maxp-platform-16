@@ -13,6 +13,18 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 
+interface TurboLiveStatus {
+    status: string;
+    statusCode: number;
+    internalStatus: string;
+    captain: string | null;
+    captainNumber1: string | null;
+    branch: string | null;
+    receivedAmount: string | null;
+    returnReason: string | null;
+    delayReason: string | null;
+}
+
 interface TurboOrder {
     id: string;
     orderNumber: string;
@@ -20,11 +32,12 @@ interface TurboOrder {
     customerPhone: string;
     total: number;
     status: string;
-    shippingAddress?: {
-        governorate?: string;
-        city?: string;
-    };
-    trackingNumber?: string;
+    turboShipmentId?: string;
+    turboTrackingNumber?: string;
+    turboShipmentStatus?: string;
+    turboLiveStatus?: TurboLiveStatus | null;
+    governorate?: string;
+    city?: string;
     createdAt: string;
 }
 
@@ -54,16 +67,12 @@ const TurboRecords: React.FC = () => {
         fetchOrders();
     }, [page, limit, filterType]);
 
-    // Update URL params when search state changes (handling debounce/button click manually below)
     const updateUrlParams = (newParams: Record<string, string>) => {
         const params = Object.fromEntries(searchParams.entries());
         Object.assign(params, newParams);
-
-        // Clean up empty params
         Object.keys(params).forEach(key => {
             if (!params[key]) delete params[key];
         });
-
         setSearchParams(params, { replace: true });
     };
 
@@ -74,31 +83,16 @@ const TurboRecords: React.FC = () => {
                 page: page.toString(),
                 limit: limit.toString(),
                 search: currentSearch,
+                filterType,
             };
 
-            // To filter unshipped orders (orders without Turbo tracking code or specific status)
-            // Custom implementation: assuming backend supports these or we might need to filter.
-            // Based on typical behavior, let's use the simple endpoint and filter here or pass a specific status if backend supports it.
-            // We'll pass 'shippingProvider=turbo' if backend supported it, else we fetch orders and show.
-
-            const response = await apiClient.get("/orders-new/simple", { params });
+            const response = await apiClient.get("/turbo/records", { params });
 
             if (response.data.success) {
-                let fetchedOrders = response.data.data || [];
-
-                // Filter locally if backend doesn't support specific 'unshipped turbo' flags directly
-                // For Turbo: looking for orders that either have trackingNumber from Turbo, OR user wants to send them to Turbo
-                if (filterType === "unshipped") {
-                    fetchedOrders = fetchedOrders.filter((o: any) => !o.trackingNumber);
-                } else if (filterType === "shipped") {
-                    fetchedOrders = fetchedOrders.filter((o: any) => !!o.trackingNumber); // Basic check for tracking
-                }
-
-                setOrders(fetchedOrders);
+                setOrders(response.data.data || []);
                 if (response.data.pagination) {
-                    // If we filtered locally, pagination might be slightly off visually, but acceptable for MVP
                     setTotalPages(response.data.pagination.pages || 1);
-                    setTotalOrders(response.data.pagination.total || fetchedOrders.length);
+                    setTotalOrders(response.data.pagination.total || 0);
                 }
             }
         } catch (error) {
@@ -132,18 +126,12 @@ const TurboRecords: React.FC = () => {
         if (selectedOrders.length === orders.length) {
             setSelectedOrders([]);
         } else {
-            setSelectedOrders(orders.map(o => o.id)); // assuming 'id' is used for these actions
+            setSelectedOrders(orders.map(o => o.id));
         }
     };
 
-    // Turbo Actions
     const handleBulkCreateShipments = async () => {
         if (selectedOrders.length === 0) return toast.error("Select orders first");
-
-        // Ensure we are sending the correct identifier (orderNumber vs id) based on backend. 
-        // The previous implementation used selectedOrders containing orderNumbers or IDs. 
-        // Assuming apiClient.post("/turbo/bulk/create-shipments", { orderIds: selectedOrders }) expects IDs based on standard.
-
         if (!window.confirm(`Are you sure you want to send ${selectedOrders.length} orders to Turbo?`)) return;
 
         setCreatingShipments(true);
@@ -151,7 +139,7 @@ const TurboRecords: React.FC = () => {
             const response = await apiClient.post("/turbo/bulk/create-shipments", { orderIds: selectedOrders });
             if (response.data.success) {
                 toast.success(`Success: ${response.data.data?.success?.length || 0}, Failed: ${response.data.data?.failed?.length || 0}`);
-                fetchOrders(); // Refresh
+                fetchOrders();
                 setSelectedOrders([]);
             } else {
                 toast.error(response.data.message || "Failed to create shipments");
@@ -166,37 +154,50 @@ const TurboRecords: React.FC = () => {
     };
 
     const handleRefreshStatuses = async () => {
-        // This could loop through selected orders to track them, or call a backend bulk track if exists.
-        // For single orders: GET /api/turbo/orders/:orderId/track
-        if (selectedOrders.length === 0) return toast.error("Select orders first");
-
         setRefreshingStatuses(true);
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const orderId of selectedOrders) {
-            try {
-                await apiClient.get(`/turbo/orders/${orderId}/track`);
-                successCount++;
-            } catch (err) {
-                failCount++;
-            }
+        try {
+            await fetchOrders();
+            toast.success(t("orders.statusUpdated", "تم تحديث الحالات"));
+        } catch (err) {
+            toast.error(t("orders.updateError", "فشل في تحديث الحالات"));
+        } finally {
+            setRefreshingStatuses(false);
         }
-
-        toast.success(`Refresh complete. Success: ${successCount}, Fail: ${failCount}`);
-        fetchOrders(); // Refresh table
-        setSelectedOrders([]);
-        setRefreshingStatuses(false);
     };
 
-    // Get status color (using standard order status map)
-    const getStatusColor = (status: string) => {
-        const s = status.toLowerCase();
-        if (s === 'delivered') return 'bg-green-100 text-green-800';
-        if (s === 'shipped') return 'bg-blue-100 text-blue-800';
+    const getTurboStatusColor = (status: string) => {
+        const s = status?.toLowerCase() || '';
+        if (s === 'delivered' || s === 'completed' || s === 'supplied') return 'bg-green-100 text-green-800';
+        if (s === 'out_for_delivery' || s === 'delayed_with_captain') return 'bg-blue-100 text-blue-800';
         if (s === 'cancelled') return 'bg-red-100 text-red-800';
+        if (s === 'returned' || s === 'returned_to_company' || s === 'returned_to_merchant') return 'bg-orange-100 text-orange-800';
+        if (s === 'processing' || s === 'confirmed' || s === 'shipped') return 'bg-yellow-100 text-yellow-800';
+        if (s === 'failed_delivery' || s === 'lost' || s === 'destroyed' || s === 'missing') return 'bg-red-100 text-red-800';
+        if (s === 'incomplete') return 'bg-red-50 text-red-700 border-2 border-red-200';
+        if (s === 'delayed' || s === 'rescheduled') return 'bg-purple-100 text-purple-800';
+        if (s === 'international') return 'bg-indigo-100 text-indigo-800';
         return 'bg-gray-100 text-gray-800';
     };
+
+    const statusSummaryItems = [
+        { key: 'incomplete', label: 'غير مكتملة', color: 'border-red-300 bg-red-50' },
+        { key: 'pending', label: 'قيد الإنتظار', color: 'border-gray-300 bg-gray-50' },
+        { key: 'processing', label: 'قيد التنفيذ', color: 'border-yellow-300 bg-yellow-50' },
+        { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-blue-300 bg-blue-50' },
+        { key: 'delayed_with_captain', label: 'مؤجلات مع المندوب', color: 'border-purple-300 bg-purple-50' },
+        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50' },
+        { key: 'returned_to_company', label: 'مرتجع مع الشحن', color: 'border-orange-300 bg-orange-50' },
+        { key: 'returned_to_merchant', label: 'مرتجع مع التاجر', color: 'border-orange-300 bg-orange-50' },
+        { key: 'cancelled', label: 'ملغي', color: 'border-red-300 bg-red-50' },
+        { key: 'destroyed', label: 'مرتجعات معدومة', color: 'border-red-300 bg-red-50' },
+        { key: 'missing', label: 'مرتجعات مفقودة', color: 'border-red-300 bg-red-50' },
+        { key: 'delayed', label: 'متأخر', color: 'border-purple-300 bg-purple-50' },
+    ];
+
+    const statusCounts = statusSummaryItems.map(s => ({
+        ...s,
+        count: orders.filter(o => (o.turboShipmentStatus || '').toLowerCase() === s.key).length
+    }));
 
     return (
         <div className="p-6">
@@ -214,7 +215,7 @@ const TurboRecords: React.FC = () => {
                 <div className="flex gap-2 mt-4 md:mt-0">
                     <button
                         onClick={handleRefreshStatuses}
-                        disabled={refreshingStatuses || selectedOrders.length === 0}
+                        disabled={refreshingStatuses}
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                     >
                         <ArrowPathIcon className={`h-4 w-4 ${refreshingStatuses ? 'animate-spin' : ''}`} />
@@ -230,6 +231,16 @@ const TurboRecords: React.FC = () => {
                         {t("orders.turboRecordsSendToTurbo")}
                     </button>
                 </div>
+            </div>
+
+            {/* Status Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                {statusCounts.map(item => (
+                    <div key={item.key} className={`rounded-xl border-2 ${item.color} p-3 text-center`}>
+                        <div className="text-2xl font-bold text-gray-800">{item.count}</div>
+                        <div className="text-xs text-gray-600 mt-1">{item.label}</div>
+                    </div>
+                ))}
             </div>
 
             {/* Filters & Search */}
@@ -294,7 +305,7 @@ const TurboRecords: React.FC = () => {
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.customer")}</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.total")}</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.trackingNumber")}</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.status")}</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">حالة الشحن</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.date")}</th>
                                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.actions")}</th>
                             </tr>
@@ -335,25 +346,35 @@ const TurboRecords: React.FC = () => {
                                             <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
                                             <div className="text-sm text-gray-500">{order.customerPhone}</div>
                                             <div className="text-xs text-gray-400 mt-1">
-                                                {order.shippingAddress?.governorate} - {order.shippingAddress?.city}
+                                                {order.governorate} - {order.city}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {formatPrice(order.total)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {order.trackingNumber ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 font-mono border border-gray-200">
-                                                    {order.trackingNumber}
-                                                </span>
+                                            {order.turboTrackingNumber || order.turboShipmentId ? (
+                                                <div>
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 font-mono border border-gray-200">
+                                                        {order.turboTrackingNumber || order.turboShipmentId}
+                                                    </span>
+                                                </div>
                                             ) : (
                                                 <span className="text-gray-400 text-xs">-</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                                                {t(`orders.status.${order.status.toLowerCase()}`, order.status)}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTurboStatusColor(order.turboShipmentStatus || '')}`}>
+                                                    {order.turboShipmentStatus || "غير مرسلة"}
+                                                </span>
+                                                {order.turboLiveStatus && (
+                                                    <span className="text-xs text-gray-400">
+                                                        {order.turboLiveStatus.status}
+                                                        {order.turboLiveStatus.captain && ` - ${order.turboLiveStatus.captain}`}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(order.createdAt)}
@@ -362,7 +383,6 @@ const TurboRecords: React.FC = () => {
                                             <Link to={`/orders/${encodeURIComponent(String(order.id))}`} className="text-blue-600 hover:text-blue-900 ml-3">
                                                 {t("orders.view")}
                                             </Link>
-                                            {/* Can add single-track button here if needed */}
                                         </td>
                                     </tr>
                                 ))
@@ -371,7 +391,6 @@ const TurboRecords: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Pagination placeholder, would normally use standard pagination component */}
                 <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                     <div className="text-sm text-gray-700">
                         {t("orders.totalOrders")}: <span className="font-medium">{totalOrders}</span>
