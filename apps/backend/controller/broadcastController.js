@@ -664,7 +664,68 @@ exports.sendCampaign = async (req, res) => {
 
     const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
 
-    if (isWhatsApp) {
+    // ==================== معالجة الأرقام اليدوية ====================
+    const manualPhonesFromBody = req.body.manualPhones;
+    let manualPhonesList = [];
+    if (manualPhonesFromBody) {
+      if (typeof manualPhonesFromBody === 'string') {
+        try { manualPhonesList = JSON.parse(manualPhonesFromBody); } catch { manualPhonesList = [manualPhonesFromBody]; }
+      } else if (Array.isArray(manualPhonesFromBody)) {
+        manualPhonesList = manualPhonesFromBody;
+      }
+      manualPhonesList = manualPhonesList.filter(p => p && p.replace(/[^0-9]/g, '').length > 0);
+    }
+
+    const hasManualPhones = manualPhonesList.length > 0;
+
+    if (hasManualPhones) {
+      console.log(`📱 [SEND CAMPAIGN] تم استلام ${manualPhonesList.length} رقم يدوي - سيتم إرسال الحملة لهم فقط`);
+      for (const phone of manualPhonesList) {
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        if (!cleanPhone) continue;
+        try {
+          let customer = await getSharedPrismaClient().customer.findFirst({
+            where: { companyId, phone: { contains: cleanPhone } }
+          });
+          if (!customer) {
+            customer = await getSharedPrismaClient().customer.create({
+              data: {
+                id: generateId(),
+                companyId,
+                phone: cleanPhone,
+                firstName: cleanPhone,
+                lastName: '',
+                source: 'manual'
+              }
+            });
+          }
+          const existingConv = await getSharedPrismaClient().conversation.findFirst({
+            where: { companyId, customerId: customer.id, channel: 'whatsapp' },
+            include: { customer: true }
+          });
+          if (existingConv) {
+            conversations.push(existingConv);
+          } else {
+            const newConv = await getSharedPrismaClient().conversation.create({
+              data: {
+                id: generateId(),
+                companyId,
+                customerId: customer.id,
+                status: 'ACTIVE',
+                channel: 'whatsapp'
+              },
+              include: { customer: true }
+            });
+            conversations.push(newConv);
+          }
+        } catch (err) {
+          console.error(`❌ [SEND CAMPAIGN] خطأ في معالجة الرقم اليدوي ${phone}:`, err.message);
+        }
+      }
+      console.log(`📊 [SEND CAMPAIGN] تم تجهيز ${conversations.length} محادثة للأرقام اليدوية`);
+    }
+
+    if (isWhatsApp && !hasManualPhones) {
       console.log('🌐 [SEND CAMPAIGN] جلب جميع محادثات الواتساب للشركة (بدون تقييد بـ 24 ساعة)');
       conversations = await getSharedPrismaClient().conversation.findMany({
         where: {
@@ -743,62 +804,6 @@ exports.sendCampaign = async (req, res) => {
     }
 
     console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة مستهدفة`);
-
-    // ==================== معالجة الأرقام اليدوية ====================
-    let manualPhones = req.body.manualPhones;
-    if (manualPhones) {
-      if (typeof manualPhones === 'string') {
-        try { manualPhones = JSON.parse(manualPhones); } catch { manualPhones = [manualPhones]; }
-      }
-      if (Array.isArray(manualPhones) && manualPhones.length > 0) {
-        console.log(`📱 [SEND CAMPAIGN] معالجة ${manualPhones.length} رقم يدوي`);
-        for (const phone of manualPhones) {
-          const cleanPhone = phone.replace(/[^0-9]/g, '');
-          if (!cleanPhone) continue;
-          const existingConv = conversations.find(c => c.customer?.phone?.replace(/[^0-9]/g, '') === cleanPhone);
-          if (existingConv) continue;
-          try {
-            let customer = await getSharedPrismaClient().customer.findFirst({
-              where: { companyId, phone: { contains: cleanPhone } }
-            });
-            if (!customer) {
-              customer = await getSharedPrismaClient().customer.create({
-                data: {
-                  id: generateId(),
-                  companyId,
-                  phone: cleanPhone,
-                  firstName: cleanPhone,
-                  lastName: '',
-                  source: 'manual'
-                }
-              });
-            }
-            const existingConvDb = await getSharedPrismaClient().conversation.findFirst({
-              where: { companyId, customerId: customer.id, channel: 'whatsapp' },
-              include: { customer: true }
-            });
-            if (existingConvDb) {
-              conversations.push(existingConvDb);
-            } else {
-              const newConv = await getSharedPrismaClient().conversation.create({
-                data: {
-                  id: generateId(),
-                  companyId,
-                  customerId: customer.id,
-                  status: 'ACTIVE',
-                  channel: 'whatsapp'
-                },
-                include: { customer: true }
-              });
-              conversations.push(newConv);
-            }
-          } catch (err) {
-            console.error(`❌ [SEND CAMPAIGN] خطأ في معالجة الرقم اليدوي ${phone}:`, err.message);
-          }
-        }
-        console.log(`📊 [SEND CAMPAIGN] بعد معالجة الأرقام اليدوية: ${conversations.length} محادثة`);
-      }
-    }
 
     // Filter by lead category if set on campaign
     if (isWhatsApp && campaign.leadCategoryId) {
