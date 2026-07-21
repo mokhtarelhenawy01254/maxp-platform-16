@@ -942,7 +942,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
           debouncedLoadConversations("unreplied");
         }
       } catch (error) {
-        alert("فشل في إرسال الملف");
+        alert(t("conversations.fileSendFailed"));
       }
     },
     [
@@ -954,6 +954,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       activeTab,
       isConnected,
       debouncedLoadConversations,
+      t,
     ],
   );
 
@@ -1040,7 +1041,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         }
       } catch (error) {
         console.error("Error sending from text gallery:", error);
-        alert("فشل في إرسال النص");
+        alert(t("conversations.textSendFailed"));
       }
     },
     [
@@ -1088,7 +1089,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         }
       } catch (error) {
         console.error("Error sending image from gallery:", error);
-        alert("فشل في إرسال الصورة");
+        alert(t("conversations.imageSendFailed"));
       }
     },
     [
@@ -1148,14 +1149,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
           }
 
           if (successCount < images.length) {
-            alert(`⚠️ تم إرسال ${successCount} صورة من ${images.length}`);
+            alert(t("conversations.imagesPartialSend", { success: successCount, total: images.length }));
           }
         } else {
-          alert("Failed to send images");
+          alert(t("conversations.imagesSendFailed"));
         }
       } catch (error) {
         console.error("Error sending images from gallery:", error);
-        alert("فشل في إرسال الصور");
+        alert(t("conversations.imagesSendFailed"));
       }
     },
     [
@@ -1172,16 +1173,16 @@ const getApiError = (error: unknown): ApiErrorLike => {
   // Bulk Action Handlers
   const handleBulkMarkDone = useCallback(async () => {
     if (!companyId || selectedIds.size === 0) return;
-    if (!window.confirm(`هل أنت متأكد من إنهاء ${selectedIds.size} محادثة؟`))
+    if (!window.confirm(t("conversations.bulkMarkDoneConfirm", { count: selectedIds.size })))
       return;
 
     try {
       await bulkUpdate(Array.from(selectedIds), "mark_done", null, companyId);
       debouncedLoadConversations(activeTab);
       clearSelection();
-      alert("✅ تم إنهاء المحادثات بنجاح");
+      alert(t("conversations.endConversationsSuccess"));
     } catch (error) {
-      alert("فشل في تنفيذ العملية");
+      alert(t("conversations.operationFailed"));
     }
   }, [
     selectedIds,
@@ -1190,17 +1191,18 @@ const getApiError = (error: unknown): ApiErrorLike => {
     activeTab,
     debouncedLoadConversations,
     clearSelection,
+    t,
   ]);
 
   const handleBulkAssign = useCallback(() => {
     // TODO: Show assignment modal
-    alert("سيتم إضافة نافذة اختيار الموظف قريباً");
-  }, []);
+    alert(t("conversations.employeePickerComing"));
+  }, [t]);
 
   const handleBulkTags = useCallback(() => {
     // TODO: Show tags modal
-    alert("سيتم إضافة نافذة اختيار التصنيفات قريباً");
-  }, []);
+    alert(t("conversations.categoryPickerComing"));
+  }, [t]);
 
   // Action handlers
   const handleStatusChange = useCallback(
@@ -1302,7 +1304,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     if (!selectedConversation || !companyId) return;
 
     const confirmed = window.confirm(
-      `هل أنت متأكد من حذف المحادثة مع ${selectedConversation.customerName}؟\nسيتم حذف الرسائل من صندوق الوارد ولا يمكن التراجع عن هذه العملية.`,
+      t("conversations.deleteConversationConfirm", { name: selectedConversation.customerName }),
     );
 
     if (!confirmed) return;
@@ -1318,10 +1320,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
         activeTab,
         debouncedSearchQuery.trim() || undefined,
       );
-      alert("✅ تم حذف المحادثة بنجاح");
+      alert(t("conversations.deleteConversationSuccess"));
     } catch (error) {
       console.error("فشل في حذف المحادثة:", error);
-      alert("فشل في حذف المحادثة");
+      alert(t("conversations.deleteConversationFailed"));
     }
   }, [
     selectedConversation,
@@ -1333,21 +1335,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
     loadConversations,
     activeTab,
     debouncedSearchQuery,
+    t,
   ]);
 
   const handleDeleteMessage = useCallback(
     async (messageId: string) => {
       if (!selectedConversation) return;
-      if (!window.confirm("هل أنت متأكد من حذف هذه الرسالة؟")) return;
+      if (!window.confirm(t("conversations.deleteMessageConfirm"))) return;
 
       try {
         await deleteMessage(selectedConversation.id, messageId);
         loadMessages(selectedConversation.id); // Reload to reflect deletion
       } catch (error) {
-        alert("فشل في حذف الرسالة");
+        alert(t("conversations.deleteMessageFailed"));
       }
     },
-    [selectedConversation, deleteMessage, loadMessages],
+    [selectedConversation, deleteMessage, loadMessages, t],
   );
 
   // Forward message request handler
@@ -1363,14 +1366,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
       try {
         await forwardMessage(targetConversationId, messageToForward, companyId);
-        alert("✅ تم إعادة توجيه الرسالة بنجاح");
+        alert(t("conversations.forwardMessageSuccess"));
         // Optional: Move to the target conversation
         // selectConversation(conversations.find(c => c.id === targetConversationId));
       } catch (error) {
-        alert("فشل في إعادة توجيه الرسالة");
+        alert(t("conversations.forwardMessageFailed"));
       }
     },
-    [messageToForward, companyId, forwardMessage],
+    [messageToForward, companyId, forwardMessage, t],
   );
 
   // Star message handler
@@ -1424,9 +1427,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
         await snoozeConversation(selectedConversation.id, until, companyId);
         setSnoozeModalOpen(false);
         debouncedLoadConversations(activeTab);
-        alert("✅ تم تأجيل المحادثة بنجاح");
+        alert(t("conversations.snoozeConversationSuccess"));
       } catch (error) {
-        alert("فشل في تأجيل المحادثة");
+        alert(t("conversations.snoozeConversationFailed"));
       }
     },
     [
@@ -1435,6 +1438,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       snoozeConversation,
       activeTab,
       debouncedLoadConversations,
+      t,
     ],
   );
 
@@ -1693,7 +1697,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
   const handleBlockCustomer = useCallback(async () => {
     if (!selectedConversation?.pageId || !selectedConversation?.customerId) {
-      alert("معرف الصفحة أو العميل غير متوفر");
+      alert(t("conversations.pageOrCustomerUnavailable"));
       return;
     }
 
@@ -1707,9 +1711,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
       setIsBlocked(true);
       setShowBlockModal(false);
       setBlockReason("");
-      alert("تم حظر العميل على الصفحة بنجاح");
+      alert(t("conversations.blockCustomerSuccess"));
     } catch (error: unknown) {
-      alert(getApiError(error).message || "فشل حظر العميل");
+      alert(getApiError(error).message || t("conversations.blockCustomerFailed"));
     } finally {
       setBlocking(false);
     }
@@ -1717,15 +1721,16 @@ const getApiError = (error: unknown): ApiErrorLike => {
     selectedConversation?.pageId,
     selectedConversation?.customerId,
     blockReason,
+    t,
   ]);
 
   const handleUnblockCustomer = useCallback(async () => {
     if (!selectedConversation?.pageId || !selectedConversation?.customerId) {
-      alert("معرف الصفحة أو العميل غير متوفر");
+      alert(t("conversations.pageOrCustomerUnavailable"));
       return;
     }
 
-    if (!window.confirm("هل أنت متأكد من إلغاء حظر هذا العميل على الصفحة؟")) {
+    if (!window.confirm(t("conversations.unblockConfirmMessage"))) {
       return;
     }
 
@@ -1736,13 +1741,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
         selectedConversation.pageId,
       );
       setIsBlocked(false);
-      alert("تم إلغاء حظر العميل بنجاح");
+      alert(t("conversations.unblockCustomerSuccess"));
     } catch (error: unknown) {
-      alert(getApiError(error).message || "فشل إلغاء حظر العميل");
+      alert(getApiError(error).message || t("conversations.unblockCustomerFailed"));
     } finally {
       setBlocking(false);
     }
-  }, [selectedConversation?.pageId, selectedConversation?.customerId]);
+  }, [selectedConversation?.pageId, selectedConversation?.customerId, t]);
 
   // Check block status when conversation changes
   useEffect(() => {
@@ -2678,7 +2683,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   .writeText(conversationLink)
                   .catch((err) => {
                     console.error("❌ Failed to copy link:", err);
-                    alert(`رابط المحادثة:\n${conversationLink}`);
+                    alert(t("conversations.conversationLinkAlert", { link: conversationLink }));
                   });
               }}
               isBlocked={isBlocked}
@@ -2746,7 +2751,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                     })
                     .catch((err) => {
                       console.error("❌ Failed to copy link:", err);
-                      alert(`رابط المحادثة:\n${conversationLink}`);
+                      alert(t("conversations.conversationLinkAlert", { link: conversationLink }));
                     });
                 }}
                 // 🆕 Block Customer Props
