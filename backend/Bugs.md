@@ -1,15 +1,18 @@
-# Backend Bugs Log
-
-### [FEATURE / TURBO RECORDS] Live Turbo Status Sync & Comprehensive 20-Status Display Matching Turbo Dashboard
+### [FEATURE / TURBO AUTO SYNC] Automatic System Order Status Updates Matched with Turbo 20 Statuses
 - **Date**: 2026-07-21
 - **Requirement / Feature**:
-  1. **Complete Status Parity**: Added all missing Turbo statuses (`incomplete` [18], `remitted` [19], `returned_received` [20]) matching Turbo dashboard exact names.
-  2. **Live Status Refresh & DB Sync**: Pass `refresh=true` on sync to query Turbo API live and persist mapped status directly to DB.
+  1. **Full Automated Synchronization**: System order statuses (`OrderStatus` enum) now update dynamically across Webhooks & live Turbo Record refresh for all 20 Turbo statuses:
+     - `1` / `incomplete` (18) -> `PENDING`
+     - `2` -> `CONFIRMED`
+     - `3` / `returned_resent` (15) -> `PROCESSING`
+     - `4` / `out_for_delivery` (9) -> `SHIPPED`
+     - `5` / `remitted` (19) -> `DELIVERED` & payment completed
+     - `6` -> `CANCELLED`
+     - `7` / `returned_to_company` (14) / `returned_received` (20) / `returned_missing` (16) / `returned_destroyed` (17) / `lost` (13) -> `RETURNED`
+     - `8` / `10` / `11` / `12` -> `ON_HOLD`
 - **Files Modified**:
   - `apps/backend/routes/turboWebhook.js`
-  - `apps/backend/controller/orderStatusController.js`
   - `apps/backend/controller/turboController.js`
-  - `apps/frontend/src/pages/orders/TurboRecords.tsx`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
 - **Date**: 2026-07-21

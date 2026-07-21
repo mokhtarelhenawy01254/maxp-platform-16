@@ -383,25 +383,31 @@ router.post('/webhook', async (req, res) => {
 
     // actualShippingCost يتم حفظه في turboMetadata (غير موجود في schema مباشرة)
 
-    // تحديث حالة الطلب الرئيسية (OrderStatus) بناءً على حالة Turbo
+    // تحديث حالة الطلب الرئيسية (OrderStatus) بناءً على جميع حالات Turbo العشرين
     if (status === 'processing' || statusCode === '3') {
       updateData.status = 'PROCESSING';
     } else if (status === 'shipped' || statusCode === '4' || status === 'out_for_delivery' || statusCode === '9') {
       updateData.status = 'SHIPPED';
-    } else if (status === 'delivered' || statusCode === '5') {
+    } else if (status === 'delivered' || statusCode === '5' || status === 'remitted' || statusCode === '19') {
       updateData.status = 'DELIVERED';
-      updateData.paymentStatus = 'COMPLETED'; // افتراض أن الدفع تم عند التسليم
+      updateData.paymentStatus = 'COMPLETED'; // تم التحصيل / التوريد
     } else if (status === 'cancelled' || statusCode === '6') {
       updateData.status = 'CANCELLED';
-    } else if (status === 'returned' || returnStatus === '1' || statusCode === '7') {
+    } else if (status === 'returned' || returnStatus === '1' || statusCode === '7' || status === 'returned_to_company' || statusCode === '14' || status === 'returned_received' || statusCode === '20' || status === 'returned_missing' || statusCode === '16' || status === 'returned_destroyed' || statusCode === '17' || status === 'lost' || statusCode === '13') {
       updateData.status = 'RETURNED';
       const shippingCost = parseFloat(order.shipping || 0);
       if (shippingCost > 0) {
         turboMetadataObj.return_amount = shippingCost;
         updateData.turboMetadata = JSON.stringify(turboMetadataObj);
       }
-    } else if (status === 'on_hold' || statusCode === '12' || statusCode === '8' || statusCode === '11') {
+    } else if (status === 'returned_resent' || statusCode === '15') {
+      updateData.status = 'PROCESSING';
+    } else if (status === 'on_hold' || statusCode === '12' || statusCode === '8' || statusCode === '10' || statusCode === '11') {
       updateData.status = 'ON_HOLD';
+    } else if (status === 'incomplete' || statusCode === '18' || status === 'pending' || statusCode === '1') {
+      updateData.status = 'PENDING';
+    } else if (status === 'confirmed' || statusCode === '2') {
+      updateData.status = 'CONFIRMED';
     }
 
     await safeQuery(async () => {
