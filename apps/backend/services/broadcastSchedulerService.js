@@ -347,7 +347,6 @@ class BroadcastSchedulerService {
       return;
     }
 
-    const isWhatsApp = campaign.channel === 'whatsapp';
     let waSessionId = null;
 
     if (isWhatsApp) {

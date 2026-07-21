@@ -32,3 +32,6 @@ This 24-hour activity condition is required for Facebook Messenger standard mess
 
 3. **Lead Category Filtering**:
    - Preserved and harmonized `leadCategoryId` filtering across both immediate and scheduled campaign execution paths for WhatsApp.
+
+4. **Duplicate Variable Fix**:
+   - Removed duplicate `isWhatsApp` variable declaration in `sendScheduledCampaign`.
