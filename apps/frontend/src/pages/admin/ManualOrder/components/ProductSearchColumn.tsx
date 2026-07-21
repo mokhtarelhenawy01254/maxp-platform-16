@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -109,6 +110,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
   onAddToCart,
   mode = "admin",
 }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);

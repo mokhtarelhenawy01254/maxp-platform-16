@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   UserIcon,
   MapPinIcon,
@@ -23,38 +24,36 @@ import {
 import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../../hooks/useAuthSimple";
-
-// قائمة المحافظات المصرية
-const EGYPT_GOVERNORATES = [
-  "القاهرة",
-  "الجيزة",
-  "الإسكندرية",
-  "الدقهلية",
-  "البحر الأحمر",
-  "البحيرة",
-  "الفيوم",
-  "الغربية",
-  "الإسماعيلية",
-  "المنوفية",
-  "المنيا",
-  "القليوبية",
-  "الوادي الجديد",
-  "السويس",
-  "أسوان",
-  "أسيوط",
-  "بني سويف",
-  "بورسعيد",
-  "دمياط",
-  "الشرقية",
-  "جنوب سيناء",
-  "كفر الشيخ",
-  "مطروح",
-  "الأقصر",
-  "قنا",
-  "شمال سيناء",
-  "سوهاج",
+// قائمة المحافظات المصرية - translation keys (resolved inside component via useTranslation)
+const EGYPT_GOVERNORATE_KEYS = [
+  'manualOrder.k_25',
+  'manualOrder.k_26',
+  'manualOrder.k_27',
+  'manualOrder.k_28',
+  'manualOrder.k_29',
+  'manualOrder.k_30',
+  'manualOrder.k_31',
+  'manualOrder.k_32',
+  'manualOrder.k_33',
+  'manualOrder.k_34',
+  'manualOrder.k_35',
+  'manualOrder.k_36',
+  'manualOrder.k_37',
+  'manualOrder.k_38',
+  'manualOrder.k_39',
+  'manualOrder.k_40',
+  'manualOrder.k_41',
+  'manualOrder.k_42',
+  'manualOrder.k_43',
+  'manualOrder.k_44',
+  'manualOrder.k_45',
+  'manualOrder.k_46',
+  'manualOrder.k_47',
+  'manualOrder.k_48',
+  'manualOrder.k_49',
+  'manualOrder.k_50',
+  'manualOrder.k_51',
 ];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
@@ -136,6 +135,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
+  const EGYPT_GOVERNORATES = useMemo(() => EGYPT_GOVERNORATE_KEYS.map(k => t(k)), [t]);
   const canOverrideBlockedCustomer = [
     "OWNER",
     "COMPANY_ADMIN",

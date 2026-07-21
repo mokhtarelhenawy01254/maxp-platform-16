@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Frontend Admin Bundle `t is not defined` Fix (BUGFIX / COMPLETE)**:
+  1. **Fixed Module Scope `t()` Execution**: Fixed runtime crash `Uncaught ReferenceError: t is not defined` in `route-admin-*.js` by removing module-level `t(...)` execution in `CheckoutColumn.tsx` and dynamically mapping `EGYPT_GOVERNORATE_KEYS` inside component body using `useMemo` and `useTranslation()`.
+  2. **Fixed Missing Hook**: Added `useTranslation` import and hook instantiation in `ProductSearchColumn.tsx`.
+
 - **Nginx Cache-Control 404 Caching Fix (BUGFIX / COMPLETE)**:
   1. **Fixed CDN/Cloudflare Immutable 404 Caching**: Removed `always` modifier from `add_header Cache-Control "public, max-age=31536000, immutable"` in asset and placeholder location blocks in `nginx_configs/maxp.online.conf` and on the production server (`/etc/nginx/sites-available/maxp.online.conf`). This prevents Nginx from attaching 1-year immutable cache headers to `404 Not Found` responses when assets are requested during deployment windows.
   2. **Verified Nginx Reload**: Reloaded Nginx configuration safely on production.

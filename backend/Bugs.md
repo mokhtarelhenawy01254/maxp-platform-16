@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [BUG FIX / FRONTEND] Uncaught ReferenceError: t is not defined in route-admin Chunk
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Module-Scope Execution of `t()`**: In `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`, `EGYPT_GOVERNORATES` was initialized at module level (outside any React component or hook) calling `t('manualOrder.k_25')`, etc. When Vite bundled the `route-admin` chunk, evaluating the module at script load time threw `Uncaught ReferenceError: t is not defined` because `t` was not in module scope.
+  2. **Missing `useTranslation` Hook**: In `ProductSearchColumn.tsx`, `t(...)` was invoked inside error toast handlers without importing or instantiating `useTranslation()`.
+- **Resolution**:
+  1. **Refactored Module Array**: Converted `EGYPT_GOVERNORATES` to `EGYPT_GOVERNORATE_KEYS` holding translation string keys, and resolved `t(key)` dynamically inside `CheckoutColumn` using `useMemo` and `useTranslation()`.
+  2. **Added Hook & Imports**: Added `useTranslation` import and `const { t } = useTranslation()` hook in `ProductSearchColumn.tsx`.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`
+  - `apps/frontend/src/pages/admin/ManualOrder/components/ProductSearchColumn.tsx`
+
 ### [BUG FIX / NGINX] CDN / Cloudflare Caching 404 Responses as Immutable Assets
 - **Date**: 2026-07-21
 - **Root Cause**:
