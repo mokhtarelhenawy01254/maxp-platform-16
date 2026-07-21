@@ -50,6 +50,8 @@ interface ConversationSummary {
   totalMessages: number;
   incomingMessages: number;
   outgoingMessages: number;
+  manualOutgoing: number;
+  autoOutgoing: number;
   avgMessagesPerConversation: number;
   assignedCount: number;
   unassignedCount: number;
@@ -349,7 +351,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
         <WhatsAppMetricCard
           label="رسائل صادرة"
           value={summary?.outgoingMessages ?? 0}
-          hint={`من الفريق`}
+          hint={`يدوي ${summary?.manualOutgoing ?? 0} · تلقائي ${summary?.autoOutgoing ?? 0}`}
           icon={Send}
           tone="success"
         />
@@ -360,6 +362,142 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
           icon={Clock}
           tone="primary"
         />
+      </div>
+
+      {/* Outgoing Message Breakdown + Note */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <WhatsAppSurfaceCard
+          title="تفصيل الرسائل الصادرة"
+          description="يدوي (ردود المودريترز) vs تلقائي (برود كاست + فلو متابعة)"
+          className="lg:col-span-1"
+        >
+          <div className="space-y-5">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Send className="size-3.5 text-indigo-500" />
+                  <span className="text-xs text-muted-foreground">يدوي</span>
+                </div>
+                <span className="text-sm font-bold">{summary?.manualOutgoing ?? 0}</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted">
+                <div
+                  className="h-2.5 rounded-full bg-indigo-500 transition-[width]"
+                  style={{ width: `${((summary?.manualOutgoing ?? 0) / Math.max(1, summary?.outgoingMessages ?? 1)) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <MessageCircle className="size-3.5 text-violet-400" />
+                  <span className="text-xs text-muted-foreground">تلقائي</span>
+                </div>
+                <span className="text-sm font-bold">{summary?.autoOutgoing ?? 0}</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted">
+                <div
+                  className="h-2.5 rounded-full bg-violet-400 transition-[width]"
+                  style={{ width: `${((summary?.autoOutgoing ?? 0) / Math.max(1, summary?.outgoingMessages ?? 1)) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
+              <strong className="font-semibold text-amber-600">تنبيه:</strong> الأرقام أعلاه تشمل{" "}
+              <strong>كل</strong> الرسائل الصادرة: ردود المودريترز اليدوية + البرود كاست + فلو المتابعة التلقائية + ردود الذكاء الاصطناعي.
+              خانة "يدوي" = اللي المودريترز كاتبها بنفسهم.
+              خانة "تلقائي" = الباقي (برود كاست، فلو متابعة، ردود AI).
+            </div>
+            <div className="border-t border-dashed border-[color:var(--shell-control-border)] pt-4 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">بانتظار رد الفريق</span>
+                <span className="font-semibold text-info">{summary?.waitingForReply ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">بانتظار رد العميل</span>
+                <span className="font-semibold text-success">{summary?.awaitingCustomer ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">غير معين</span>
+                <span className="font-medium">{summary?.unassignedCount ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">غير مقروءة</span>
+                <span className="font-medium">{summary?.conversationsWithUnread ?? 0}</span>
+              </div>
+            </div>
+          </div>
+        </WhatsAppSurfaceCard>
+
+        <WhatsAppSurfaceCard
+          title="حركة الرسائل اليومية"
+          description="الرسائل الواردة والصادرة يومياً"
+          className="lg:col-span-3"
+        >
+          {dailyDist.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={dailyDist} margin={{ top: 8, bottom: 0, left: -10, right: 0 }}>
+                <defs>
+                  <linearGradient id="gradIncoming" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="gradOutgoing" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" opacity={0.3} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: string) => v.substring(5)}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={28}
+                />
+                <RechartsTooltip
+                  cursor={{ stroke: "var(--color-muted)" }}
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: "1px solid var(--color-border)",
+                    background: "var(--color-card)",
+                    fontSize: 12,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="incoming"
+                  name="واردة"
+                  stroke="#22d3ee"
+                  strokeWidth={2}
+                  fill="url(#gradIncoming)"
+                  animationDuration={600}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="outgoing"
+                  name="صادرة"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  fill="url(#gradOutgoing)"
+                  animationDuration={600}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[260px] flex-col items-center justify-center text-center">
+              <TrendingUp className="mb-2 size-8 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">لا توجد بيانات</p>
+            </div>
+          )}
+        </WhatsAppSurfaceCard>
       </div>
 
       {/* Row 2: Status Distribution + Hourly Distribution */}
@@ -460,117 +598,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
         </WhatsAppSurfaceCard>
       </div>
 
-      {/* Row 3: Daily Volume Trend + Last Message Source */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <WhatsAppSurfaceCard
-          title="حالة المحادثات"
-          description="أين تنتظر المحادثات الرد"
-          className="lg:col-span-1"
-        >
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-info/15">
-                <Inbox className="size-6 text-[color:var(--color-info)]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">بانتظار رد الفريق</p>
-                <p className="text-2xl font-bold">{summary?.waitingForReply ?? 0}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-success/15">
-                <Send className="size-6 text-[color:var(--color-success)]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">بانتظار رد العميل</p>
-                <p className="text-2xl font-bold">{summary?.awaitingCustomer ?? 0}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">غير معين</span>
-                <span className="font-medium">{summary?.unassignedCount ?? 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">غير مقروءة</span>
-                <span className="font-medium">{summary?.conversationsWithUnread ?? 0}</span>
-              </div>
-            </div>
-          </div>
-        </WhatsAppSurfaceCard>
-
-        <WhatsAppSurfaceCard
-          title="حركة الرسائل اليومية"
-          description="الرسائل الواردة والصادرة يومياً"
-          className="lg:col-span-2"
-        >
-          {dailyDist.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={dailyDist} margin={{ top: 8, bottom: 0, left: -10, right: 0 }}>
-                <defs>
-                  <linearGradient id="gradIncoming" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.02} />
-                  </linearGradient>
-                  <linearGradient id="gradOutgoing" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" opacity={0.3} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v: string) => v.substring(5)}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <RechartsTooltip
-                  cursor={{ stroke: "var(--color-muted)" }}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid var(--color-border)",
-                    background: "var(--color-card)",
-                    fontSize: 12,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="incoming"
-                  name="واردة"
-                  stroke="#22d3ee"
-                  strokeWidth={2}
-                  fill="url(#gradIncoming)"
-                  animationDuration={600}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="outgoing"
-                  name="صادرة"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  fill="url(#gradOutgoing)"
-                  animationDuration={600}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-[260px] flex-col items-center justify-center text-center">
-              <TrendingUp className="mb-2 size-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">لا توجد بيانات</p>
-            </div>
-          )}
-        </WhatsAppSurfaceCard>
-      </div>
-
-      {/* Row 4: Tags + Recent Conversations */}
+      {/* Row 3: Tags + Recent Conversations */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {tagDist.length > 0 && (
           <WhatsAppSurfaceCard

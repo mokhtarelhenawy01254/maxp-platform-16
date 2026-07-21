@@ -620,6 +620,8 @@ exports.getConversationAnalytics = async (req, res) => {
     const totalMessages = messages.length;
     const incomingMessages = messages.filter(m => m.isFromCustomer).length;
     const outgoingMessages = totalMessages - incomingMessages;
+    const manualOutgoing = messages.filter(m => !m.isFromCustomer && m.senderId).length;
+    const autoOutgoing = outgoingMessages - manualOutgoing;
 
     // 6. Avg messages per conversation
     const msgsPerConv = new Map();
@@ -736,6 +738,8 @@ exports.getConversationAnalytics = async (req, res) => {
         totalMessages,
         incomingMessages,
         outgoingMessages,
+        manualOutgoing,
+        autoOutgoing,
         avgMessagesPerConversation,
         assignedCount,
         unassignedCount,
