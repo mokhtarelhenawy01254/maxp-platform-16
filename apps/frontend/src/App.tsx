@@ -196,6 +196,12 @@ const AffiliateProductsVisibility = React.lazy(
 const CompanyAffiliateDashboard = React.lazy(
   () => import("./pages/affiliates/CompanyAffiliateDashboard"),
 );
+const CompanyConsumerDetail = React.lazy(
+  () => import("./pages/affiliates/CompanyConsumerDetail"),
+);
+const CompanyProviderDetail = React.lazy(
+  () => import("./pages/affiliates/CompanyProviderDetail"),
+);
 const MerchantsList = React.lazy(
   () => import("./pages/merchants/MerchantsList"),
 );
@@ -3883,6 +3889,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CompanyAffiliateDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-affiliates/consumer/:connectionId"
+                  element={
+                    <Layout>
+                      <CompanyConsumerDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-affiliates/provider/:connectionId"
+                  element={
+                    <Layout>
+                      <CompanyProviderDetail />
                     </Layout>
                   }
                 />
