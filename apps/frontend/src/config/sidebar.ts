@@ -544,7 +544,6 @@ export const getSidebarConfig = (
                 { to: '/sent-messages-stats', icon: ChartBarIcon, label: t('sidebar.sentMessagesStats') },
                 { to: '/settings/facebook-oauth', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookConnect') },
                 { to: '/settings/facebook-blocked', icon: NoSymbolIcon, label: t('sidebar.facebookBlocked') },
-                { to: '/settings/agent-inbox', icon: KeyIcon, label: t('sidebar.agentInboxApi') },
                 { to: '/settings/smart-replies', icon: ChatBubbleLeftRightIcon, label: t('sidebar.smartReplies') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
