@@ -45,17 +45,24 @@ const DEFAULT_SHIPPING_STATUSES = [
   { code: 'DELIVERED', name: 'تم التسليم', nameEn: 'Delivered', color: '#10B981', icon: 'CheckCircle', sortOrder: 5 },
   { code: 'RETURNED', name: 'تم الإرجاع', nameEn: 'Returned', color: '#EF4444', icon: 'RotateCcw', sortOrder: 6 },
   { code: 'LOST', name: 'مفقود', nameEn: 'Lost', color: '#DC2626', icon: 'AlertCircle', sortOrder: 7 },
-  // 🚀 حالات شحن تربو التلقائية (Turbo Shipping Statuses)
-  { code: 'TURBO_PROCESSING', name: 'تربو: جاري المعالجة والتجهيز', nameEn: 'Turbo: Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 8, mapsToSystem: 'PROCESSING' },
-  { code: 'TURBO_SHIPPED', name: 'تربو: تم الشحن', nameEn: 'Turbo: Shipped', color: '#3B82F6', icon: 'Truck', sortOrder: 9, mapsToSystem: 'SHIPPED' },
-  { code: 'TURBO_OUT_FOR_DELIVERY', name: 'تربو: قيد التوصيل مع الكابتن', nameEn: 'Turbo: Out for Delivery', color: '#06B6D4', icon: 'Truck', sortOrder: 10, mapsToSystem: 'OUT_FOR_DELIVERY' },
-  { code: 'TURBO_DELAYED', name: 'تربو: شحنة مؤجلة', nameEn: 'Turbo: Delayed', color: '#F97316', icon: 'Clock', sortOrder: 11, mapsToSystem: 'ON_HOLD' },
-  { code: 'TURBO_FAILED_DELIVERY', name: 'تربو: محاولة تسليم فاشلة', nameEn: 'Turbo: Failed Delivery', color: '#EF4444', icon: 'AlertCircle', sortOrder: 12, mapsToSystem: 'ON_HOLD' },
-  { code: 'TURBO_RESCHEDULED', name: 'تربو: إعادة جدولة التسليم', nameEn: 'Turbo: Rescheduled', color: '#EAB308', icon: 'Calendar', sortOrder: 13, mapsToSystem: 'ON_HOLD' },
-  { code: 'TURBO_ON_HOLD', name: 'تربو: شحنة معلقة', nameEn: 'Turbo: On Hold', color: '#F59E0B', icon: 'AlertCircle', sortOrder: 14, mapsToSystem: 'ON_HOLD' },
-  { code: 'TURBO_DELIVERED', name: 'تربو: تم التسليم والتحصيل', nameEn: 'Turbo: Delivered', color: '#10B981', icon: 'CheckCircle', sortOrder: 15, mapsToSystem: 'DELIVERED' },
-  { code: 'TURBO_CANCELLED', name: 'تربو: ملغي من الشحن', nameEn: 'Turbo: Cancelled', color: '#DC2626', icon: 'XCircle', sortOrder: 16, mapsToSystem: 'CANCELLED' },
-  { code: 'TURBO_RETURNED', name: 'تربو: شحنة مرتجعة', nameEn: 'Turbo: Returned', color: '#B91C1C', icon: 'RotateCcw', sortOrder: 17, mapsToSystem: 'RETURNED' }
+  // 🚀 حالات شحن تربو التلقائية (All 17 Turbo Shipping Statuses)
+  { code: 'TURBO_PENDING', name: 'تربو: قيد الانتظار', nameEn: 'Turbo: Pending', color: '#9CA3AF', icon: 'Clock', sortOrder: 8, mapsToSystem: 'PENDING' },
+  { code: 'TURBO_CONFIRMED', name: 'تربو: تم التأكيد', nameEn: 'Turbo: Confirmed', color: '#3B82F6', icon: 'CheckCircle', sortOrder: 9, mapsToSystem: 'CONFIRMED' },
+  { code: 'TURBO_PROCESSING', name: 'تربو: جاري المعالجة والتجهيز', nameEn: 'Turbo: Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 10, mapsToSystem: 'PROCESSING' },
+  { code: 'TURBO_SHIPPED', name: 'تربو: تم الشحن وفي الطريق', nameEn: 'Turbo: Shipped', color: '#3B82F6', icon: 'Truck', sortOrder: 11, mapsToSystem: 'SHIPPED' },
+  { code: 'TURBO_OUT_FOR_DELIVERY', name: 'تربو: قيد التوصيل مع الكابتن', nameEn: 'Turbo: Out for Delivery', color: '#06B6D4', icon: 'Truck', sortOrder: 12, mapsToSystem: 'OUT_FOR_DELIVERY' },
+  { code: 'TURBO_DELAYED', name: 'تربو: شحنة مؤجلة', nameEn: 'Turbo: Delayed', color: '#F97316', icon: 'Clock', sortOrder: 13, mapsToSystem: 'ON_HOLD' },
+  { code: 'TURBO_FAILED_DELIVERY', name: 'تربو: محاولة تسليم فاشلة', nameEn: 'Turbo: Failed Delivery', color: '#EF4444', icon: 'AlertCircle', sortOrder: 14, mapsToSystem: 'ON_HOLD' },
+  { code: 'TURBO_RESCHEDULED', name: 'تربو: إعادة جدولة التسليم', nameEn: 'Turbo: Rescheduled', color: '#EAB308', icon: 'Calendar', sortOrder: 15, mapsToSystem: 'ON_HOLD' },
+  { code: 'TURBO_ON_HOLD', name: 'تربو: شحنة معلقة بالفرع', nameEn: 'Turbo: On Hold', color: '#F59E0B', icon: 'AlertCircle', sortOrder: 16, mapsToSystem: 'ON_HOLD' },
+  { code: 'TURBO_DELIVERED', name: 'تربو: تم التسليم والتحصيل', nameEn: 'Turbo: Delivered', color: '#10B981', icon: 'CheckCircle', sortOrder: 17, mapsToSystem: 'DELIVERED' },
+  { code: 'TURBO_CANCELLED', name: 'تربو: ملغي من الشحن', nameEn: 'Turbo: Cancelled', color: '#DC2626', icon: 'XCircle', sortOrder: 18, mapsToSystem: 'CANCELLED' },
+  { code: 'TURBO_RETURNED', name: 'تربو: شحنة مرتجعة', nameEn: 'Turbo: Returned', color: '#B91C1C', icon: 'RotateCcw', sortOrder: 19, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_RETURNED_TO_COMPANY', name: 'تربو: مرتجع مُسلّم للشركة', nameEn: 'Turbo: Returned to Company', color: '#991B1B', icon: 'RotateCcw', sortOrder: 20, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_RETURNED_RESENT', name: 'تربو: مرتجع أعيد إرساله', nameEn: 'Turbo: Returned Resent', color: '#2563EB', icon: 'RotateCcw', sortOrder: 21, mapsToSystem: 'PROCESSING' },
+  { code: 'TURBO_RETURNED_MISSING', name: 'تربو: مرتجع مفقود', nameEn: 'Turbo: Returned Missing', color: '#7F1D1D', icon: 'AlertCircle', sortOrder: 22, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_RETURNED_DESTROYED', name: 'ترBO: مرتجع هالك', nameEn: 'Turbo: Returned Destroyed', color: '#451A03', icon: 'XCircle', sortOrder: 23, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_LOST', name: 'تربو: شحنة مفقودة', nameEn: 'Turbo: Lost', color: '#B91C1C', icon: 'AlertCircle', sortOrder: 24, mapsToSystem: 'RETURNED' }
 ];
 
 const DEFAULT_PREPARATION_STATUSES = [

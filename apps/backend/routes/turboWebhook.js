@@ -92,7 +92,7 @@ router.post('/webhook', async (req, res) => {
       return;
     }
 
-    // تحويل رقم الحالة إلى نص
+    // تحويل رقم أو نص الحالة إلى الاسم النمطي
     const statusMap = {
       '1': 'pending',
       '2': 'confirmed',
@@ -106,10 +106,15 @@ router.post('/webhook', async (req, res) => {
       '10': 'failed_delivery',
       '11': 'rescheduled',
       '12': 'on_hold',
-      '13': 'lost'
+      '13': 'lost',
+      '14': 'returned_to_company',
+      '15': 'returned_resent',
+      '16': 'returned_missing',
+      '17': 'returned_destroyed'
     };
-    
-    const status = statusMap[String(statusCode)] || `status_${statusCode}`;
+
+    const rawStatusStr = String(webhookData.status || '').toLowerCase().trim();
+    const status = statusMap[String(statusCode)] || statusMap[rawStatusStr] || rawStatusStr || `status_${statusCode}`;
 
     console.log(`📦 [TURBO-WEBHOOK] Processing webhook for order: ${orderNumber}, Turbo order: ${turboOrderNumber}, Status: ${status} (${statusCode})`);
 
