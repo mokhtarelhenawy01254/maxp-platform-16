@@ -237,6 +237,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         waTemplateName: selectedTemplate,
         waLanguageCode: languageCode,
         whatsAppSessionId: selectedSessionId,
+        manualPhones: JSON.stringify(recipients),
         sendNow: scheduleAt ? "false" : "true",
         scheduledAt: scheduleAt || undefined,
       };
@@ -255,7 +256,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         return;
       }
 
-      const sendRes = await broadcastService.sendCampaign(campaignId);
+      const sendRes = await broadcastService.sendCampaign(campaignId, recipients);
       setResult(sendRes);
       toast.success(sendRes.sentCount > 0 ? `تم إرسال ${sendRes.sentCount} رسالة` : "تم الإرسال");
       setActiveTab("campaigns");

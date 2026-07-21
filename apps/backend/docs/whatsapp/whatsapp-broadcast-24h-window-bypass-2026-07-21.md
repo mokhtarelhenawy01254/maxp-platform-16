@@ -33,6 +33,9 @@ This 24-hour activity condition is required for Facebook Messenger standard mess
 3. **Lead Category Filtering**:
    - Preserved and harmonized `leadCategoryId` filtering across both immediate and scheduled campaign execution paths for WhatsApp.
 
-4. **Duplicate Variable & Disk Space Fixes**:
+4. **Duplicate Variable, Template Parameter & Recipients Fixes**:
    - Removed duplicate `isWhatsApp` variable declaration in `sendScheduledCampaign`.
    - Added automatic cleanup of old deployment staging directories in `deploy.yml` and `deploy-remote.sh` to prevent `No space left on device` failures.
+   - Fixed Prisma relation name `recipients` -> `broadcastRecipients` in `getCampaign` and `getCampaignAnalytics` in `broadcastController.js`.
+   - Added template body parameter fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry without body parameters if Meta Cloud API returns parameter count mismatch for templates without parameters.
+   - Updated `WhatsAppTemplateBroadcast.tsx` to pass `manualPhones` in `createCampaign` FormData and `sendCampaign` call.

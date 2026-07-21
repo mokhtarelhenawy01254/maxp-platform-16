@@ -439,11 +439,25 @@ class BroadcastSchedulerService {
             ? [{ type: 'body', parameters: bodyParams }]
             : [];
 
-          const result = await WhatsAppMessageHandler.sendTemplateMessage(
-            waSessionId, to, campaign.waTemplateName,
-            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-            { metadata: { isBroadcast: true, campaignId: campaign.id } }
-          );
+          let result;
+          try {
+            result = await WhatsAppMessageHandler.sendTemplateMessage(
+              waSessionId, to, campaign.waTemplateName,
+              { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+              { metadata: { isBroadcast: true, campaignId: campaign.id } }
+            );
+          } catch (sendErr) {
+            if (components.length > 0) {
+              console.log(`⚠️ [BroadcastScheduler] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
+              result = await WhatsAppMessageHandler.sendTemplateMessage(
+                waSessionId, to, campaign.waTemplateName,
+                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+                { metadata: { isBroadcast: true, campaignId: campaign.id } }
+              );
+            } else {
+              throw sendErr;
+            }
+          }
 
           sentCount++;
           const waMessageId = result?.messages?.[0]?.id || result?.messageId || null;

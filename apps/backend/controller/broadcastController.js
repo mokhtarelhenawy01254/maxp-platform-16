@@ -292,7 +292,7 @@ exports.getCampaign = async (req, res) => {
             name: true
           }
         },
-        recipients: {
+        broadcastRecipients: {
           take: 10,
           orderBy: {
             createdAt: 'desc'
@@ -309,7 +309,7 @@ exports.getCampaign = async (req, res) => {
       });
     }
 
-    console.log(`✅ [GET CAMPAIGN] تم العثور على الحملة - الاسم: ${campaign.name}, الحالة: ${campaign.status}, المستلمين: ${campaign.recipients?.length || 0}`);
+    console.log(`✅ [GET CAMPAIGN] تم العثور على الحملة - الاسم: ${campaign.name}, الحالة: ${campaign.status}, المستلمين: ${campaign.broadcastRecipients?.length || 0}`);
 
     res.json({
       success: true,
@@ -662,6 +662,8 @@ exports.sendCampaign = async (req, res) => {
     let conversations = [];
     const isWhatsApp = campaign.channel === 'whatsapp';
 
+    const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
+
     if (isWhatsApp) {
       console.log('🌐 [SEND CAMPAIGN] جلب جميع محادثات الواتساب للشركة (بدون تقييد بـ 24 ساعة)');
       conversations = await getSharedPrismaClient().conversation.findMany({
@@ -742,6 +744,62 @@ exports.sendCampaign = async (req, res) => {
 
     console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة مستهدفة`);
 
+    // ==================== معالجة الأرقام اليدوية ====================
+    let manualPhones = req.body.manualPhones;
+    if (manualPhones) {
+      if (typeof manualPhones === 'string') {
+        try { manualPhones = JSON.parse(manualPhones); } catch { manualPhones = [manualPhones]; }
+      }
+      if (Array.isArray(manualPhones) && manualPhones.length > 0) {
+        console.log(`📱 [SEND CAMPAIGN] معالجة ${manualPhones.length} رقم يدوي`);
+        for (const phone of manualPhones) {
+          const cleanPhone = phone.replace(/[^0-9]/g, '');
+          if (!cleanPhone) continue;
+          const existingConv = conversations.find(c => c.customer?.phone?.replace(/[^0-9]/g, '') === cleanPhone);
+          if (existingConv) continue;
+          try {
+            let customer = await getSharedPrismaClient().customer.findFirst({
+              where: { companyId, phone: { contains: cleanPhone } }
+            });
+            if (!customer) {
+              customer = await getSharedPrismaClient().customer.create({
+                data: {
+                  id: generateId(),
+                  companyId,
+                  phone: cleanPhone,
+                  firstName: cleanPhone,
+                  lastName: '',
+                  source: 'manual'
+                }
+              });
+            }
+            const existingConvDb = await getSharedPrismaClient().conversation.findFirst({
+              where: { companyId, customerId: customer.id, channel: 'whatsapp' },
+              include: { customer: true }
+            });
+            if (existingConvDb) {
+              conversations.push(existingConvDb);
+            } else {
+              const newConv = await getSharedPrismaClient().conversation.create({
+                data: {
+                  id: generateId(),
+                  companyId,
+                  customerId: customer.id,
+                  status: 'ACTIVE',
+                  channel: 'whatsapp'
+                },
+                include: { customer: true }
+              });
+              conversations.push(newConv);
+            }
+          } catch (err) {
+            console.error(`❌ [SEND CAMPAIGN] خطأ في معالجة الرقم اليدوي ${phone}:`, err.message);
+          }
+        }
+        console.log(`📊 [SEND CAMPAIGN] بعد معالجة الأرقام اليدوية: ${conversations.length} محادثة`);
+      }
+    }
+
     // Filter by lead category if set on campaign
     if (isWhatsApp && campaign.leadCategoryId) {
       console.log(`🏷️ [SEND CAMPAIGN] تصفية حسب تصنيف العملاء: ${campaign.leadCategoryId}`);
@@ -755,8 +813,6 @@ exports.sendCampaign = async (req, res) => {
     }
 
     console.log('📝 [SEND CAMPAIGN] إنشاء سجلات المستلمين');
-    // Generate ID helper function
-    const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
 
     // إنشاء سجلات المستلمين
     const recipients = conversations.map(conv => ({
@@ -811,7 +867,11 @@ exports.sendCampaign = async (req, res) => {
     console.log('   Campaign ID:', campaign.id);
     console.log('   Total Recipients:', totalRecipients);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    io.emit('campaign:progress', startEvent);
+    if (io) {
+      io.emit('campaign:progress', startEvent);
+    } else {
+      console.warn('⚠️ [SOCKET] Skipped emit - Socket.IO not available');
+    }
 
     if (isWhatsApp) {
       // ==================== إرسال عبر WhatsApp Templates ====================
@@ -872,11 +932,25 @@ exports.sendCampaign = async (req, res) => {
             ? [{ type: 'body', parameters: bodyParams }]
             : [];
 
-          const result = await WhatsAppMessageHandler.sendTemplateMessage(
-            waSessionId, to, campaign.waTemplateName,
-            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-            { metadata: { isBroadcast: true, campaignId: campaign.id } }
-          );
+          let result;
+          try {
+            result = await WhatsAppMessageHandler.sendTemplateMessage(
+              waSessionId, to, campaign.waTemplateName,
+              { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+              { metadata: { isBroadcast: true, campaignId: campaign.id } }
+            );
+          } catch (sendErr) {
+            if (components.length > 0) {
+              console.log(`⚠️ [SEND CAMPAIGN] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
+              result = await WhatsAppMessageHandler.sendTemplateMessage(
+                waSessionId, to, campaign.waTemplateName,
+                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+                { metadata: { isBroadcast: true, campaignId: campaign.id } }
+              );
+            } else {
+              throw sendErr;
+            }
+          }
 
           sentCount++;
           const waMessageId = result?.messages?.[0]?.id || result?.messageId || null;
@@ -888,7 +962,9 @@ exports.sendCampaign = async (req, res) => {
           sendResults.push({ customerId: conv.customer.id, customerName: `${conv.customer.firstName} ${conv.customer.lastName}`, status: 'sent', success: true });
 
           const progress = Math.round(((i + 1) / totalRecipients) * 100);
-          io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
+          if (io) {
+            io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
+          }
           await new Promise(resolve => setTimeout(resolve, 50));
         } catch (err) {
           console.error(`❌ [SEND CAMPAIGN] فشل إرسال واتساب لـ ${conv.customer.firstName}:`, err.message);
@@ -1221,7 +1297,9 @@ exports.sendCampaign = async (req, res) => {
           currentRecipient: `${conv.customer.firstName} ${conv.customer.lastName}`
         };
         console.log(`📊 [PROGRESS] ${progress}% - Sent: ${sentCount}, Failed: ${failedCount}`);
-        io.emit('campaign:progress', progressEvent);
+        if (io) {
+          io.emit('campaign:progress', progressEvent);
+        }
 
         // Add a small delay between messages to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -1264,14 +1342,16 @@ exports.sendCampaign = async (req, res) => {
     console.log('   Sent:', sentCount);
     console.log('   Failed:', failedCount);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    io.emit('campaign:progress', {
-      campaignId: campaign.id,
-      status: 'completed',
-      total: totalRecipients,
-      sent: sentCount,
-      failed: failedCount,
-      progress: 100
-    });
+    if (io) {
+      io.emit('campaign:progress', {
+        campaignId: campaign.id,
+        status: 'completed',
+        total: totalRecipients,
+        sent: sentCount,
+        failed: failedCount,
+        progress: 100
+      });
+    }
 
     console.log('🔄 [SEND CAMPAIGN] تحديث إحصائيات الحملة');
     // تحديث عدد المرسل إليهم
@@ -1457,7 +1537,7 @@ exports.getCampaignAnalytics = async (req, res) => {
         companyId
       },
       include: {
-        recipients: {
+        broadcastRecipients: {
           select: {
             status: true,
             sentAt: true,
