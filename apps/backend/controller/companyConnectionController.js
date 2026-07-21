@@ -1753,6 +1753,93 @@ exports.resyncConsumerAffiliateBalance = async (req, res) => {
     }
 };
 
+/**
+ * إنشاء طلب + عمولة اختبارية للشركة المسوقة (لأغراض الاختبار)
+ * POST /api/v1/company-connections/:connectionId/consumer/create-test-commissions
+ */
+exports.createTestCommissions = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { connectionId } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        const connection = await prisma.companyConnection.findUnique({ where: { id: connectionId } });
+        if (!connection) return res.status(404).json({ success: false, message: 'الاتصال غير موجود' });
+        if (connection.consumerId !== companyId) return res.status(403).json({ success: false, message: 'لا تملك صلاحية' });
+
+        const myUserIds = (await prisma.user.findMany({ where: { companyId, isActive: true }, select: { id: true } })).map(u => u.id);
+        let affiliate = myUserIds.length > 0 ? await prisma.affiliate.findFirst({ where: { userId: { in: myUserIds }, companyId: connection.providerId } }) : null;
+        if (!affiliate) return res.status(404).json({ success: false, message: 'لا يوجد حساب مسوق' });
+
+        // نقاط البيع الافتراضية
+        const providerUser = await prisma.user.findFirst({ where: { companyId: connection.providerId, isActive: true } });
+        if (!providerUser) return res.status(400).json({ success: false, message: 'لا يوجد مستخدم نشط عند المورد' });
+
+        const providerDefaultPOS = await prisma.pointOfSale.findFirst({ where: { companyId: connection.providerId } });
+        if (!providerDefaultPOS) return res.status(400).json({ success: false, message: 'لا توجد نقاط بيع عند المورد' });
+
+        const testAmount = 500;
+        const orderTotal = 10000;
+
+        // إنشاء طلب وهمي عند المورد
+        const order = await prisma.order.create({
+            data: {
+                companyId: connection.providerId,
+                userId: providerUser.id,
+                affiliateId: affiliate.id,
+                pointOfSaleId: providerDefaultPOS.id,
+                status: 'CONFIRMED',
+                sourceType: 'internal_push',
+                total: orderTotal,
+                subtotal: orderTotal,
+                orderNumber: 'TEST-' + Date.now().toString(36).toUpperCase(),
+                shippingAddress: 'test',
+                shippingCity: 'test',
+                shippingGovernorate: 'test',
+            }
+        });
+
+        // إنشاء العمولة
+        const commission = await prisma.commission.create({
+            data: {
+                affiliateId: affiliate.id,
+                companyId: connection.providerId,
+                orderId: order.id,
+                type: 'AFFILIATE',
+                calculationType: 'PERCENTAGE',
+                amount: testAmount,
+                rate: 5,
+                status: 'CONFIRMED',
+                orderTotal: orderTotal,
+            }
+        });
+
+        // تحديث affiliate totals
+        affiliate = await prisma.affiliate.update({
+            where: { id: affiliate.id },
+            data: {
+                totalEarnings: { increment: testAmount },
+                pendingEarnings: { increment: testAmount }
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `تم إنشاء طلب تجريبي (#${order.orderNumber}) وعمولة ${testAmount} ج.م`,
+            data: {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                commissionId: commission.id,
+                amount: testAmount,
+                pendingEarnings: Number(affiliate.pendingEarnings)
+            }
+        });
+    } catch (error) {
+        console.error('Error in createTestCommissions:', error);
+        res.status(500).json({ success: false, message: error.message || 'خطأ' });
+    }
+};
+
 exports.cancelProviderPayout = async (req, res) => {
     try {
         const companyId = req.user.companyId;
