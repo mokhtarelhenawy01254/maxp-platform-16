@@ -2580,17 +2580,34 @@ const getRecords = async (req, res) => {
     const { page = '1', limit = '20', search, filterType, refresh } = req.query;
     const pageNum = parseInt(page), limitNum = parseInt(limit), skip = (pageNum - 1) * limitNum;
     const prisma = getSharedPrismaClient();
-    const where = { companyId };
-    if (filterType === 'shipped') {
-      where.turboShipmentId = { not: null };
-    } else if (filterType === 'unshipped') {
-      where.turboShipmentId = null;
-    } else if (filterType && filterType !== 'all') {
+    // 🚀 الأساس: فقط الأوردرات المرسلة لتربو (لديها turboShipmentId أو turboTrackingNumber)
+    const baseWhere = {
+      companyId,
+      OR: [
+        { turboShipmentId: { not: null } },
+        { turboTrackingNumber: { not: null } }
+      ]
+    };
+
+    let where = { ...baseWhere };
+
+    if (filterType && filterType !== 'all') {
       const ft = filterType.toLowerCase();
-      where.OR = [
-        { turboShipmentStatus: { equals: ft, mode: 'insensitive' } },
-        { status: { equals: filterType.toUpperCase() } }
-      ];
+      if (ft === 'unshipped') {
+        where = { companyId, turboShipmentId: null, turboTrackingNumber: null };
+      } else {
+        where = {
+          ...baseWhere,
+          AND: [
+            { OR: baseWhere.OR },
+            { OR: [
+              { turboShipmentStatus: { equals: ft, mode: 'insensitive' } },
+              { status: { equals: filterType.toUpperCase() } }
+            ]}
+          ]
+        };
+        delete where.OR;
+      }
     }
 
     if (search) {
@@ -2600,14 +2617,15 @@ const getRecords = async (req, res) => {
         { turboShipmentId: { contains: search, mode: 'insensitive' } },
         { customerName: { contains: search, mode: 'insensitive' } }
       ];
-      if (where.OR) {
+      if (where.AND) {
+        where.AND.push({ OR: searchCondition });
+      } else {
+        const existingOR = where.OR;
         where.AND = [
-          { OR: where.OR },
+          { OR: existingOR },
           { OR: searchCondition }
         ];
         delete where.OR;
-      } else {
-        where.OR = searchCondition;
       }
     }
     const [orders, total] = await Promise.all([
@@ -2685,17 +2703,17 @@ const getRecords = async (req, res) => {
         createdAt: o.createdAt
       };
     });
-    // جلب إحصائيات تفصيلية لجميع حالات الشحن للشركة
+    // 📊 إحصائيات الحالات - فقط الأوردرات المرسلة لتربو
     const statusCountsRaw = await safeQuery(() => prisma.order.groupBy({
       by: ['turboShipmentStatus'],
-      where: { companyId },
+      where: baseWhere,
       _count: { id: true }
     }), 2).catch(() => []);
 
     const statusCountsObj = {};
     if (Array.isArray(statusCountsRaw)) {
       for (const row of statusCountsRaw) {
-        const key = (row.turboShipmentStatus || 'unshipped').toLowerCase();
+        const key = (row.turboShipmentStatus || 'created').toLowerCase();
         statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
       }
     }

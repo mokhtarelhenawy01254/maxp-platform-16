@@ -285,32 +285,103 @@ const TurboRecords: React.FC = () => {
                 </div>
             </div>
 
-            {/* Status Summary Cards (Clickable to Filter) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-                {filterOptions.map(item => (
+            {/* Top Banner Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-600 text-white rounded-xl font-extrabold text-xl">
+                        {totalOrders}
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-blue-950 text-base">إجمالي الطلبات في شركة الشحن تربو</h3>
+                        <p className="text-xs text-blue-700">هذا الرقم يعكس فقط الشحنات التي تم تسليمها لتربو وبدأت رحلة الشحن والتوصيل.</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
                     <button
-                        key={item.key}
-                        onClick={() => handleFilterChange(item.key)}
-                        className={`rounded-xl border-2 ${item.color} p-3 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-blue-500 scale-105 font-bold' : 'opacity-80 hover:opacity-100'}`}
+                        onClick={() => handleFilterChange('all')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterType === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-800 border border-blue-300 hover:bg-blue-100'}`}
                     >
-                        <div className="text-xl font-bold">{getStatusCount(item.key)}</div>
-                        <div className="text-xs mt-1 font-medium truncate">{item.label}</div>
+                        عرض كل أوردرات الشحن ({totalOrders})
                     </button>
-                ))}
+                    <button
+                        onClick={() => handleFilterChange('unshipped')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterType === 'unshipped' ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'}`}
+                    >
+                        لم يُرسل لتربو بعد
+                    </button>
+                </div>
             </div>
 
-            {/* Filters & Search */}
+            {/* Structured Status Categories */}
+            <div className="space-y-4 mb-6">
+                {/* 1. الشحنات النشطة */}
+                <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <TruckIcon className="h-4 w-4 text-blue-500" />
+                        الشحنات النشطة (في الطريق والمعالجة)
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                        {filterOptions.filter(o => ['processing', 'shipped', 'out_for_delivery', 'delayed', 'rescheduled', 'on_hold', 'failed_delivery'].includes(o.key)).map(item => (
+                            <button
+                                key={item.key}
+                                onClick={() => handleFilterChange(item.key)}
+                                className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-blue-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
+                            >
+                                <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
+                                <div className="text-[11px] font-medium truncate">{item.label}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 2. الشحنات المكتملة والمحصلة */}
+                <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
+                        الشحنات المكتملة والمُحصّلة
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {filterOptions.filter(o => ['delivered', 'remitted'].includes(o.key)).map(item => (
+                            <button
+                                key={item.key}
+                                onClick={() => handleFilterChange(item.key)}
+                                className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-emerald-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
+                            >
+                                <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
+                                <div className="text-[11px] font-medium truncate">{item.label}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 3. دورة المرتجعات */}
+                <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <ArrowPathIcon className="h-4 w-4 text-rose-500" />
+                        دورة المرتجعات والتسليم للشركة/التاجر
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        {filterOptions.filter(o => ['returned_to_company', 'returned_received', 'returned_resent', 'returned_missing', 'returned_destroyed'].includes(o.key)).map(item => (
+                            <button
+                                key={item.key}
+                                onClick={() => handleFilterChange(item.key)}
+                                className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-rose-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
+                            >
+                                <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
+                                <div className="text-[11px] font-medium truncate">{item.label}</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Bar */}
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    {filterOptions.slice(0, 8).map(opt => (
-                        <button
-                            key={opt.key}
-                            onClick={() => handleFilterChange(opt.key)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${filterType === opt.key ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                        >
-                            {opt.label} ({getStatusCount(opt.key)})
-                        </button>
-                    ))}
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-600">الفلتر الحالي:</span>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
+                        {filterOptions.find(f => f.key === filterType)?.label || filterType}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-80">
