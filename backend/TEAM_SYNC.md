@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Nginx Cache-Control 404 Caching Fix (BUGFIX / COMPLETE)**:
+  1. **Fixed CDN/Cloudflare Immutable 404 Caching**: Removed `always` modifier from `add_header Cache-Control "public, max-age=31536000, immutable"` in asset and placeholder location blocks in `nginx_configs/maxp.online.conf` and on the production server (`/etc/nginx/sites-available/maxp.online.conf`). This prevents Nginx from attaching 1-year immutable cache headers to `404 Not Found` responses when assets are requested during deployment windows.
+  2. **Verified Nginx Reload**: Reloaded Nginx configuration safely on production.
+
 - **Turbo Webhook & Controller Order/Payment Status Alignment (BUGFIX / COMPLETE)**:
   1. **Fixed Webhook and Controller Status Mismatch**: Resolved a 500 database validation error when receiving Turbo webhook status updates or manually tracking shipment status. Changed order status update to `DELIVERED` (from `COMPLETED`) and paymentStatus to `COMPLETED` (from `PAID`) to align with `OrderStatus` and `PaymentStatus` Prisma enums.
   2. **Fixed Invoice Payment Sync**: Fixed `orderInvoiceService.js` to update the order's `paymentStatus` to `COMPLETED` instead of `PAID` to match the `PaymentStatus` enum.

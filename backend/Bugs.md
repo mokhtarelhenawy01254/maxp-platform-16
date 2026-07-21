@@ -1,5 +1,15 @@
 # Backend Bugs Log
 
+### [BUG FIX / NGINX] CDN / Cloudflare Caching 404 Responses as Immutable Assets
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Nginx Header Directive Misconfiguration**: In `nginx_configs/maxp.online.conf`, the static assets location blocks (`location ^~ /assets/` and `location ^~ /placeholders/`) specified `add_header Cache-Control "public, max-age=31536000, immutable" always;`.
+  2. **Immutable 404 Caching**: Using the `always` parameter instructs Nginx to append the `Cache-Control` header to ALL responses, including `404 Not Found`. When users accessed the site during a deployment window before assets finishes syncing, Cloudflare and browser caches cached the 404 response immutably for 1 year (`max-age=31536000`), breaking frontend asset loads permanently for affected clients.
+- **Resolution**:
+  1. **Removed `always` Modifier**: Removed `always` from `add_header Cache-Control` inside asset/placeholder location blocks in both server configuration files and deployed server configs (`/etc/nginx/sites-available/maxp.online.conf`), ensuring `Cache-Control: immutable` headers are only applied to successful (2xx/3xx) asset responses.
+- **Files Modified**:
+  - `nginx_configs/maxp.online.conf`
+
 ### [BUG FIX / WEBHOOK] Turbo Webhook OrderStatus & PaymentStatus Mismatch
 - **Date**: 2026-07-21
 - **Root Cause**:
