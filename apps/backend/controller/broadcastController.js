@@ -775,7 +775,7 @@ exports.sendCampaign = async (req, res) => {
       // التصفية للتأكد من وجود رقم هاتف غير فارغ
       conversations = conversations.filter(c => c.customer?.phone && c.customer.phone.trim() !== '');
 
-    } else {
+    } else if (!isWhatsApp && !hasManualPhones) {
       // Facebook Messenger: نافذة 24 ساعة للمحادثات النشطة
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       console.log(`⏰ [SEND CAMPAIGN] فلترة محادثات فيسبوك النشطة في آخر 24 ساعة: ${twentyFourHoursAgo.toISOString()}`);
@@ -802,6 +802,7 @@ exports.sendCampaign = async (req, res) => {
         }
       });
     }
+    // else: hasManualPhones is true — conversations already populated above
 
     console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة مستهدفة`);
 

@@ -39,3 +39,4 @@ This 24-hour activity condition is required for Facebook Messenger standard mess
    - Fixed Prisma relation name `recipients` -> `broadcastRecipients` in `getCampaign` and `getCampaignAnalytics` in `broadcastController.js`.
    - Added template body parameter fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry without body parameters if Meta Cloud API returns parameter count mismatch for templates without parameters.
    - Updated `WhatsAppTemplateBroadcast.tsx` to pass `manualPhones` in `createCampaign` FormData and `sendCampaign` call.
+   - **CRITICAL FIX**: Fixed `else` branch in `sendCampaign` that overwrote manual phone conversations with Facebook active chats. Changed `} else {` to `} else if (!isWhatsApp && !hasManualPhones) {` so manual phone recipients are preserved.
