@@ -1,3 +1,10 @@
+### [BUG FIX / TURBO UPDATE] Fixed Shipment Type Becoming "Partial Return" on Update
+- **Date**: 2026-07-22
+- **Root Cause**: In `updateShipment` (`turboService.js`), `return_amount` was mistakenly set to `formattedData.shipping` (70 EGP). In Turbo API's schema, passing a positive `return_amount` indicates a refund/exchange amount to pay to the customer, which caused Turbo API to convert the order's classification from regular delivery (`is_order: 1`) to partial return (`is_order: 0`).
+- **Fix**: Changed `return_amount` to `parseFloat(formattedData.returnAmount || 0)` (which defaults to 0 for regular delivery orders) and set `return_summary` default to `'لا يوجد مرتجع'` (required by Turbo API for `is_order: 1`).
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
 ### [BUG FIX / TURBO UPDATE] Fixed Price Resetting to 0 on Turbo Shipment Update
 - **Date**: 2026-07-22
 - **Root Cause**: In `updateShipment` (`turboService.js`), `amount_to_be_collected` was calculated using strict equality `paymentMethod === 'CASH'`. When paymentMethod was `'cod'` (lowercase), `'CASH_ON_DELIVERY'`, or `undefined`, the check evaluated to `false`, causing `amount_to_be_collected` to be sent as `0` to Turbo API `/edit-order`.

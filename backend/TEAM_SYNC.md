@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Fixed Shipment Type Becoming "Partial Return" on Update (BUG FIX / COMPLETE):**
+  1. Resolved issue where updating a shipment in Turbo changed its type from regular delivery ("تسليم عادياً") to partial return ("مرتجع جزئي").
+  2. Fixed `return_amount` in `turboService.js` to default to 0 instead of shipping fee, and set `return_summary` to `'لا يوجد مرتجع'`, guaranteeing Turbo API classifies updated orders as `is_order: 1` ("تسليم عادياً").
+  3. Verified on order `#ORD-638014-156` (Turbo Code `38125791`).
 - **Fixed Price Resetting to 0 on Turbo Shipment Update (BUG FIX / COMPLETE):**
   1. Resolved issue where updating a shipment in Turbo reset `amount_to_be_collected` to 0 EGP for orders with paymentMethod `'cod'` or `'cash_on_delivery'`.
   2. Updated `updateShipment` in `turboService.js` to preserve full order total (`619 EGP`) and `is_order: 1` for all Cash-on-Delivery payment variations.
