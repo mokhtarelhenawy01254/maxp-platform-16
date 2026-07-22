@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Unified Order Details Header Status Display (`OrderHeader.tsx`) (FEATURE / COMPLETE):**
+  1. Consolidated dual status badges into a single unified status badge in the order details header modal (`OrderHeader.tsx`).
+  2. When `turboShipmentStatus` is available, it now replaces the default status label in the primary badge (e.g. `🚚 شحن تربو: مرتجعات بالشركة (كود 5)`), eliminating redundant secondary badges and providing a unified status display across all views.
+
 - **Added Dedicated Merchant Preparing Card & Aligned Official Turbo 13 Status Codes (FEATURE / COMPLETE):**
   1. **Merchant Preparing Card (`merchant_preparing`)**: Added a dedicated top card for orders that received a Turbo tracking code (`turbo_saved` / `turbo_sent`) but are still being prepared by the merchant before pickup/reaching Turbo branch.
   2. **Top Metric Cards Grid**: Restructured `/orders/turbo-records` top section to present 4 key metrics: Active Shipments (`active`), Merchant Preparing (`merchant_preparing`), Branch Processing (`processing`), and Total Turbo Orders (`all`).

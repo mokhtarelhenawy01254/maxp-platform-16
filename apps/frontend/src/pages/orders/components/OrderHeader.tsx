@@ -161,9 +161,29 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     style={statusStyles}
                   >
                     <span>
-                      {t("orderDetails.statusLabel", {
-                        status: currentStatusConfig.name,
-                      })}
+                      {order.turboShipmentStatus ? (
+                        `🚚 شحن تربو: ${
+                          ({
+                            turbo_saved: 'محفوظة قبل الشحن (كود 1)',
+                            turbo_sent: 'مرسلة للشحن (كود 2)',
+                            processing: 'قيد التنفيذ بالفرع (كود 3)',
+                            out_for_delivery: 'مسلمة للمندوب (كود 4)',
+                            returned_to_company: 'مرتجعات بالشركة (كود 5)',
+                            cancelled: 'ملغي من الشحن (كود 6)',
+                            delivered: 'تم التسليم (كود 7)',
+                            remitted: 'تم التوريد وتحصيل المبلغ (كود 8)',
+                            archived: 'شحنة محذوفة (كود 9)',
+                            returned_resent: 'معاد إرسالها (كود 10)',
+                            returned_missing: 'مرتجع مفقود (كود 11)',
+                            returned_destroyed: 'مرتجع معدوم (كود 12)',
+                            delayed: 'مؤجلة مع المندوب (كود 13)'
+                          } as Record<string, string>)[order.turboShipmentStatus.toLowerCase()] || order.turboShipmentStatus
+                        }`
+                      ) : (
+                        t("orderDetails.statusLabel", {
+                          status: currentStatusConfig.name,
+                        })
+                      )}
                     </span>
                     {canQuickSelectStatus && (
                       <ChevronDownIcon
@@ -211,30 +231,6 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     </div>
                   )}
                 </div>
-
-                {/* 🚚 Turbo Shipping Status Live Badge */}
-                {order.turboShipmentStatus && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                    <TruckIcon className="h-3.5 w-3.5 text-blue-600" />
-                    شحن تربو: {
-                      ({
-                        turbo_saved: 'محفوظة قبل الشحن (كود 1)',
-                        turbo_sent: 'مرسلة للشحن (كود 2)',
-                        processing: 'قيد التنفيذ بالفرع (كود 3)',
-                        out_for_delivery: 'مسلمة للمندوب (كود 4)',
-                        returned_to_company: 'مرتجعات بالشركة (كود 5)',
-                        cancelled: 'ملغي من الشحن (كود 6)',
-                        delivered: 'تم التسليم (كود 7)',
-                        remitted: 'تم التوريد وتحصيل المبلغ (كود 8)',
-                        archived: 'شحنة محذوفة (كود 9)',
-                        returned_resent: 'معاد إرسالها (كود 10)',
-                        returned_missing: 'مرتجع مفقود (كود 11)',
-                        returned_destroyed: 'مرتجع معدوم (كود 12)',
-                        delayed: 'مؤجلة مع المندوب (كود 13)'
-                      } as Record<string, string>)[order.turboShipmentStatus.toLowerCase()] || order.turboShipmentStatus
-                    }
-                  </span>
-                )}
               </div>
             )}
           </div>
