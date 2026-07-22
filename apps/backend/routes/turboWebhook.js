@@ -30,7 +30,10 @@ router.post('/webhook', async (req, res) => {
       const company = await safeQuery(async () => {
         return await prisma.company.findFirst({
           where: {
-            turboWebhookToken: webhookToken
+            OR: [
+              { turboWebhookToken: webhookToken },
+              { turboApiKey: webhookToken }
+            ]
           },
           select: {
             id: true,
@@ -39,18 +42,12 @@ router.post('/webhook', async (req, res) => {
         });
       }, 3);
 
-      if (!company) {
-        console.warn(`❌ [TURBO-WEBHOOK] Invalid token: ${webhookToken}`);
-        console.warn(`❌ [TURBO-WEBHOOK] Token not found in database. Please save the token in Turbo settings first.`);
-        return res.status(401).json({
-          error: 'Invalid token',
-          code: 'INVALID_TOKEN',
-          message: 'Token not found. Please configure the webhook token in Turbo settings.'
-        });
+      if (company) {
+        companyId = company.id;
+        console.log(`✅ [TURBO-WEBHOOK] Token validated. Company: ${company.name} (${companyId})`);
+      } else {
+        console.warn(`⚠️ [TURBO-WEBHOOK] Token ${webhookToken} not directly matched to company, will search order globally`);
       }
-
-      companyId = company.id;
-      console.log(`✅ [TURBO-WEBHOOK] Token validated. Company: ${company.name} (${companyId})`);
     } else {
       console.log('ℹ️ [TURBO-WEBHOOK] No token provided, will search in all companies');
     }

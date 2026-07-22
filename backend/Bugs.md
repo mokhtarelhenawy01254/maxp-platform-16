@@ -1,13 +1,11 @@
-### [FEAT/TURBO] Implemented Official Turbo Plugin Features (can_open, phone2, summary, & reasons UI)
+### [FIX/TURBO & STATUSES] Webhook Live Test & Shipping Statuses Tab Alignment
 - **Date**: 2026-07-22
-- **Features Implemented**:
-  1. **Package Inspection (`can_open`)**: Added `can_open: "1"` parameter to Turbo creation payload, enabling customer package inspection prior to payment.
-  2. **Second Delivery Phone (`phone2`)**: Extracted secondary phone numbers from order/address data to reduce undelivered calls.
-  3. **Formatted Product Summary (`order_summary`)**: Formatted order contents string as `[1 Product A] - [2 Product B]` for printing on waybills.
-  4. **Return & Delay Reasons Badges**: Rendered `returnReason` and `delayReason` directly in the `/orders/turbo-records` table rows.
+- **Fixes**:
+  1. **Webhook Token Fallback**: Updated `turboWebhook.js` to match company by `turboWebhookToken` OR `turboApiKey`, and fallback gracefully to order lookup.
+  2. **Order Statuses Settings Alignment (`/settings/orders`)**: Updated `DEFAULT_SHIPPING_STATUSES` in `orderStatusController.js` to seed official Turbo codes 1-13 (`turbo_saved`, `turbo_sent`, `processing`, `out_for_delivery`, `delivered`, `remitted`, `archived`, `returned_to_company`, `returned_resent`, `returned_missing`, `returned_destroyed`, `delayed`) into Order Status Management.
 - **Files Modified**:
-  - `apps/backend/services/turboService.js`
-  - `apps/frontend/src/pages/orders/TurboRecords.tsx`
+  - `apps/backend/routes/turboWebhook.js`
+  - `apps/backend/controller/orderStatusController.js`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
 - **Date**: 2026-07-21

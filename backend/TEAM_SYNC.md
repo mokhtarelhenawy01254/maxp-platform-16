@@ -1,11 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
-- **Implemented Official Turbo Features (FEAT):**
-  1. **Package Inspection (`can_open`)**: Added `can_open: "1"` parameter to enable COD package inspection before payment.
-  2. **Secondary Phone (`phone2`)**: Extracted and sent `phone2` to decrease failed delivery attempts.
-  3. **Waybill Item Formatting (`order_summary`)**: Formatted product summary as `[Quantity Product]` for waybill labels.
-  4. **UI Reasons Display**: Displayed `returnReason` and `delayReason` directly in `/orders/turbo-records` table rows.
+- **Aligned Turbo Webhook & Order Statuses Settings (FIX):**
+  1. **Webhook Token Matching**: Allowed matching by `turboWebhookToken` OR `turboApiKey` in `turboWebhook.js`.
+  2. **Order Statuses Tab (`/settings/orders`)**: Updated `DEFAULT_SHIPPING_STATUSES` to seed all 13 official Turbo shipping statuses.
 
 
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:
