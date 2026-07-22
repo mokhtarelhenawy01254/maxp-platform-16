@@ -5,6 +5,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { saveIncomingMessage, updateMessageStatus } = require('../services/whatsapp/WhatsAppInboundService');
 const { verifyMetaWebhookSignature } = require('../utils/webhookSignature');
+const facebookAppConfig = require('../config/facebookAppConfig');
 
 const DELETED_METADATA_FILTERS = [
   { metadata: { contains: '"isDeleted":true' } },
@@ -43,10 +44,19 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
 
 async function isVerifyTokenValid(token) {
   if (!token) return false;
+  
+  // 1. Check global process environment variable
   if (process.env.META_WA_WEBHOOK_VERIFY_TOKEN && token === process.env.META_WA_WEBHOOK_VERIFY_TOKEN) {
     return true;
   }
 
+  // 2. Check token configured in super admin facebook config
+  const superAdminConfig = facebookAppConfig.getFacebookOAuthConfig();
+  if (superAdminConfig.whatsappWebhookVerifyToken && token === superAdminConfig.whatsappWebhookVerifyToken) {
+    return true;
+  }
+
+  // 3. Check session level token stored in DB
   const match = await getSharedPrismaClient().whatsAppSession.findFirst({
     where: {
       provider: 'META_CLOUD',

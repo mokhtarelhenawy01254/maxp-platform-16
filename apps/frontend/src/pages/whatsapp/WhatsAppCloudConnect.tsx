@@ -165,6 +165,15 @@ const WhatsAppCloudConnect: React.FC = () => {
   }, [loadFbConfig]);
 
   React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSessionName = params.get("sessionName");
+    if (urlSessionName) {
+      setSessionName(urlSessionName);
+      sessionStorage.setItem("wa_cloud_session_name", urlSessionName);
+    }
+  }, []);
+
+  React.useEffect(() => {
     if (!fbConfig?.appId || !fbConfig?.configId) return;
     if (window.FB) {
       window.FB.init({ appId: fbConfig.appId, version: "v25.0", autoLogAppEvents: true, xfbml: true });

@@ -547,6 +547,7 @@ router.post(
         whatsappAppId: req.body?.whatsappAppId,
         whatsappAppSecret: req.body?.whatsappAppSecret,
         whatsappConfigId: req.body?.whatsappConfigId,
+        whatsappWebhookVerifyToken: req.body?.whatsappWebhookVerifyToken,
       };
 
       if (

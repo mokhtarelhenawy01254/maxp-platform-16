@@ -2557,6 +2557,24 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             {/* Step 2: Meta Cloud API Settings */}
             {wizardStep === 2 && newSessionProvider === "META_CLOUD" && (
               <div className="space-y-5 animate-in fade-in-50 duration-200">
+                <Alert className="bg-primary/5 border-primary/20">
+                  <Globe className="size-4 text-[color:var(--color-primary)]" />
+                  <AlertTitle className="text-[color:var(--color-primary)] font-semibold flex items-center gap-1">
+                    هل تريد تسهيل الربط؟
+                  </AlertTitle>
+                  <AlertDescription className="text-xs leading-relaxed mt-1 text-[color:var(--color-foreground)]">
+                    يمكنك استخدام{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/whatsapp/cloud-connect?sessionName=${encodeURIComponent(newSessionName)}`)}
+                      className="underline font-semibold text-[color:var(--color-primary)] hover:opacity-80 inline bg-transparent p-0 border-0 cursor-pointer"
+                    >
+                      معالج ربط فيسبوك التلقائي (Embedded Sign-up)
+                    </button>{" "}
+                    لربط رقم الهاتف وحساب الأعمال بضغطة زر واحدة دون الحاجة لإدخال هذه المعرفات يدوياً.
+                  </AlertDescription>
+                </Alert>
+
                 {/* Auth Details Card */}
                 <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
                   <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
