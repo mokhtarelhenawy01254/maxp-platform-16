@@ -1382,11 +1382,10 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const axios = require('axios');
     const publicBaseUrl = `${req.protocol}://${req.get('host')}/api/v1/public`;
 
-    const createResponse = await axios.post(`${publicBaseUrl}/orders`, orderPayload, {
+    const createResponse = await axios.post(`${publicBaseUrl}/orders?companyId=${encodeURIComponent(companyId)}`, orderPayload, {
       headers: {
         'Content-Type': 'application/json',
         'x-cart-id': cartId,
-        'x-company-id': companyId,
       },
       timeout: 30000,
     });
