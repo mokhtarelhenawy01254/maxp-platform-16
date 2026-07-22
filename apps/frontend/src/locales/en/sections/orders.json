@@ -640,5 +640,17 @@
   "k_68": "Merchant processing (before receiving/branch)",
   "k_69": "Branch processing (before the delegate)",
   "k_70": "The supply was made and the amount was collected",
-  "k_71": "Deleted shipment"
+  "k_71": "Deleted shipment",
+  "justNow": "Just now",
+  "minutesAgo": "{{count}}m ago",
+  "minutesAgo_plural": "{{count}}m ago",
+  "hoursAgo": "{{count}}h ago",
+  "hoursAgo_plural": "{{count}}h ago",
+  "daysAgo": "{{count}}d ago",
+  "daysAgo_plural": "{{count}}d ago",
+  "incompleteConvertToOrder": "Convert to Order",
+  "incompleteConverting": "Converting...",
+  "incompleteConvertSuccess": "Order created successfully!",
+  "incompleteConvertFailed": "Failed to convert order",
+  "incompleteConvertNoPhone": "Cannot convert: no phone number"
 }

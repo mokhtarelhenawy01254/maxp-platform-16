@@ -1304,6 +1304,129 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
   }
 });
 
+// تحويل طلب غير مكتمل إلى طلب حقيقي
+router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    const cart = await getSharedPrismaClient().guestCart.findFirst({
+      where: { companyId, cartId }
+    });
+
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
+    }
+
+    let checkoutData = {};
+    try {
+      checkoutData = cart.checkoutData
+        ? (typeof cart.checkoutData === 'string' ? JSON.parse(cart.checkoutData) : cart.checkoutData)
+        : {};
+    } catch (e) {
+      checkoutData = {};
+    }
+
+    let items = [];
+    try {
+      items = cart.items
+        ? (typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items)
+        : [];
+    } catch (e) {
+      items = [];
+    }
+
+    const guestName = checkoutData.guestName || checkoutData.fullName || checkoutData.customerName || checkoutData.name || 'عميل';
+    const guestPhone = checkoutData.guestPhone || checkoutData.customerPhone || checkoutData.phoneNumber || checkoutData.mobileNumber || checkoutData.phone || checkoutData.mobile || '';
+    const guestEmail = checkoutData.guestEmail || checkoutData.customerEmail || checkoutData.emailAddress || checkoutData.email || '';
+    const governorate = checkoutData.governorate || checkoutData.city || checkoutData.gov || '';
+    const address = checkoutData.address || checkoutData.street || checkoutData.addressLine1 || '';
+    const notes = checkoutData.notes || '';
+
+    if (!guestPhone) {
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتحويل الطلب' });
+    }
+
+    const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
+
+    const orderPayload = {
+      guestName,
+      guestPhone,
+      guestEmail,
+      paymentMethod: checkoutData.paymentMethod || 'cod',
+      notes,
+      shippingAddress: {
+        governorate,
+        city: checkoutData.city || governorate,
+        street: address,
+        address,
+        addressLine1: address,
+      },
+      items: items.length ? items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId || undefined,
+        name: item.name || item.productName || item.title || '',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        image: item.image || item.imageUrl,
+        productImage: item.productImage || item.image || item.imageUrl,
+        attributes: item.attributes || {},
+      })) : undefined,
+      subtotal: checkoutData.subtotal || 0,
+      shippingCost: checkoutData.shippingCost || 0,
+      total,
+      couponCode: checkoutData.couponCode || undefined,
+      _skipPixel: true,
+      _adminConvert: true,
+    };
+
+    const axios = require('axios');
+    const publicBaseUrl = `${req.protocol}://${req.get('host')}/api/v1/public`;
+
+    const createResponse = await axios.post(`${publicBaseUrl}/orders`, orderPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-cart-id': cartId,
+        'x-company-id': companyId,
+        'x-admin-convert': 'true',
+      },
+      timeout: 30000,
+    });
+
+    const result = createResponse.data;
+
+    if (result?.success && result?.data) {
+      return res.json({
+        success: true,
+        message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
+        data: result.data,
+      });
+    }
+
+    throw new Error(result?.message || 'فشل إنشاء الطلب');
+  } catch (error) {
+    console.error('❌ Error converting incomplete order:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'خطأ في تحويل الطلب غير المكتمل',
+    });
+  }
+});
+
 // الحصول على الطلبات البسيطة
 // الحصول على الطلبات البسيطة (مع Pagination & Filtering)
 router.get('/simple', verifyToken.authenticateToken, async (req, res) => {

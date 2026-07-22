@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-import { Link, useParams } from "react-router-dom";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowRightIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
@@ -30,16 +31,52 @@ interface IncompleteOrderDetailsData {
   status?: "lost" | "incomplete";
 }
 
+const getRelativeTime = (dateStr: string, t: any) => {
+  if (!dateStr) return "";
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "";
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return t("orders.justNow");
+  if (minutes < 60) return t("orders.minutesAgo", { count: minutes });
+  if (hours < 24) return t("orders.hoursAgo", { count: hours });
+  if (days < 7) return t("orders.daysAgo", { count: days });
+  return dateStr;
+};
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    const d = date.toLocaleDateString("en-CA");
+    const t = date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `${d} ${t}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 const IncompleteOrderDetails: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { cartId } = useParams();
+  const navigate = useNavigate();
   const decodedCartId = cartId ? decodeURIComponent(cartId) : "";
 
   const [order, setOrder] = useState<IncompleteOrderDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -96,15 +133,9 @@ const IncompleteOrderDetails: React.FC = () => {
   const checkoutMetadata = useMemo(() => {
     if (!order?.checkoutData) return [] as Array<[string, any]>;
     const hiddenKeys = [
-      "guestName",
-      "name",
-      "customerName",
-      "guestPhone",
-      "phone",
-      "customerPhone",
-      "guestEmail",
-      "email",
-      "customerEmail",
+      "guestName", "name", "customerName",
+      "guestPhone", "phone", "customerPhone",
+      "guestEmail", "email", "customerEmail",
     ];
     return Object.entries(order.checkoutData).filter(
       ([key]) => !hiddenKeys.includes(key),
@@ -126,9 +157,36 @@ const IncompleteOrderDetails: React.FC = () => {
   const lastActivity =
     order?.checkoutUpdatedAt || order?.updatedAt || order?.checkoutStartedAt || "";
 
+  const handleConvertToOrder = async () => {
+    if (!decodedCartId) return;
+    setConverting(true);
+    try {
+      const response = await apiClient.post(`/orders-new/incomplete/${encodeURIComponent(decodedCartId)}/convert`);
+      const data = response.data;
+      if (data?.success) {
+        toast.success(t("orders.incompleteConvertSuccess"));
+        const orderNumber = data.data?.orderNumber || data.data?.id;
+        if (orderNumber) {
+          setTimeout(() => {
+            navigate(`/orders/${encodeURIComponent(String(orderNumber))}`);
+          }, 1000);
+        } else {
+          navigate("/orders/incomplete");
+        }
+      } else {
+        toast.error(data?.message || t("orders.incompleteConvertFailed"));
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || t("orders.incompleteConvertFailed");
+      toast.error(msg);
+    } finally {
+      setConverting(false);
+    }
+  };
+
   return (
     <div className="space-y-6" dir={getDirection()}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t("orders.incompleteDetailsTitle")}
@@ -137,13 +195,31 @@ const IncompleteOrderDetails: React.FC = () => {
             {t("orders.incompleteDetailsSubtitle")}
           </p>
         </div>
-        <Link
-          to="/orders/incomplete"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200"
-        >
-          <ArrowRightIcon className="h-4 w-4" />
-          {t("orders.incompleteBack")}
-        </Link>
+        <div className="flex items-center gap-2">
+          {order && (
+            <button
+              type="button"
+              onClick={handleConvertToOrder}
+              disabled={converting || !customerInfo.phone}
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
+              title={!customerInfo.phone ? t("orders.incompleteConvertNoPhone") : ""}
+            >
+              {converting ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRightIcon className="h-4 w-4" />
+              )}
+              {converting ? t("orders.incompleteConverting") : t("orders.incompleteConvertToOrder")}
+            </button>
+          )}
+          <Link
+            to="/orders/incomplete"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200"
+          >
+            <ArrowRightIcon className="h-4 w-4" />
+            {t("orders.incompleteBack")}
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -196,6 +272,11 @@ const IncompleteOrderDetails: React.FC = () => {
               <div className="mt-2 text-sm text-gray-900 dark:text-white">
                 {lastActivity ? formatDate(lastActivity) : t("orders.notSpecified")}
               </div>
+              {lastActivity && (
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  {getRelativeTime(lastActivity, t)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -262,7 +343,7 @@ const IncompleteOrderDetails: React.FC = () => {
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {t("orders.itemsCount")}:
-                            <span className="ml-1 font-medium">{quantity}</span>
+                            <span className="mr-1 font-medium">{quantity}</span>
                           </div>
                         </div>
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -295,6 +376,11 @@ const IncompleteOrderDetails: React.FC = () => {
                       ? formatDate(order.checkoutStartedAt)
                       : t("orders.notSpecified")}
                   </div>
+                  {order.checkoutStartedAt && (
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500">
+                      {formatDateTime(order.checkoutStartedAt)}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -305,6 +391,11 @@ const IncompleteOrderDetails: React.FC = () => {
                       ? formatDate(order.checkoutUpdatedAt)
                       : t("orders.notSpecified")}
                   </div>
+                  {order.checkoutUpdatedAt && (
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500">
+                      {getRelativeTime(order.checkoutUpdatedAt, t)}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
