@@ -1,3 +1,13 @@
+### [BUG FIX / TURBO RECORDS] Turbo Branch Processing Filter Over-counting Fix
+- **Date**: 2026-07-22
+- **Root Cause**: 
+  1. `ALIASES.processing` in `turboController.js` incorrectly included `'created'` status codes, causing orders in `created` / `turbo_saved` state to be included under `processing`.
+  2. Generic fallback logic in `getRecords` added `{ status: 'PROCESSING' }` for Turbo status filters, causing orders with internal status `PROCESSING` but Turbo status `created` to match.
+  3. `statusCountsRaw` defaulted null/empty `turboShipmentStatus` to `'processing'` instead of `'turbo_saved'`.
+- **Fix**: Removed `'created'` from `processing` aliases, mapped `created` strictly to `turbo_saved` & `merchant_preparing`, restricted generic internal status fallback for Turbo-specific filters, and updated default fallback status key to `'turbo_saved'`.
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+
 ### [FEATURE / TURBO & STATUSES] Dedicated Merchant Preparing Card & Official 13 Status Code Alignment
 - **Date**: 2026-07-22
 - **Requirement / Resolution**:
