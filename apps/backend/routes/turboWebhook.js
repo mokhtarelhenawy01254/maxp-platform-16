@@ -92,21 +92,35 @@ router.post('/webhook', async (req, res) => {
       return;
     }
 
-    // تحويل رقم أو نص الحالة إلى الاسم النمطي
+    // Official Turbo Status Code Mapping (1..13 as specified in official plugin):
+    // 1: Saved (محفوظة قبل الشحن) => pending
+    // 2: Sent (مرسلة للشحن) => pending
+    // 3: Underway (قيد التنفيذ) => processing
+    // 4: With Captain (مع الكابتن / مسلمة للمندوب) => out_for_delivery
+    // 5: Returned With Company (مرتجعة مع الشركة) => returned_to_company
+    // 6: Returned (مرتجعة) => returned
+    // 7: Delivered (تم التسليم) => delivered
+    // 8: Supplied (تم التوريد / تحصيل الأموال) => remitted
+    // 9: Archived (محذوفة) => cancelled
+    // 10: Returned Re-sent (مرتجعة معاد إرسالها) => returned_resent
+    // 11: Lost (مرتجع مفقود) => returned_missing
+    // 12: Absent Returned / Destroyed (مرتجع معدوم) => returned_destroyed
+    // 13: Delayed (مؤجلة مع المندوب) => delayed
     const statusMap = {
       '1': 'pending',
-      '2': 'confirmed',
+      '2': 'pending',
       '3': 'processing',
-      '4': 'shipped',
-      '5': 'delivered',
-      '6': 'cancelled',
-      '7': 'returned',
-      '8': 'delayed',
-      '9': 'out_for_delivery',
-      '10': 'failed_delivery',
-      '11': 'rescheduled',
-      '12': 'on_hold',
-      '13': 'lost',
+      '4': 'out_for_delivery',
+      '5': 'returned_to_company',
+      '6': 'returned',
+      '7': 'delivered',
+      '8': 'remitted',
+      '9': 'cancelled',
+      '10': 'returned_resent',
+      '11': 'returned_missing',
+      '12': 'returned_destroyed',
+      '13': 'delayed',
+      // Legacy / extended fallbacks:
       '14': 'returned_to_company',
       '15': 'returned_resent',
       '16': 'returned_missing',
@@ -114,20 +128,25 @@ router.post('/webhook', async (req, res) => {
       '18': 'incomplete',
       '19': 'remitted',
       '20': 'returned_received',
-      // Text string mappings from Turbo API
+      // Text string mappings:
       'under delivery': 'out_for_delivery',
+      'with captain': 'out_for_delivery',
       'in transit': 'shipped',
+      'underway': 'processing',
       'accepted': 'processing',
       'delivered': 'delivered',
+      'supplied': 'remitted',
       'remitted': 'remitted',
       'cancelled': 'cancelled',
+      'archived': 'cancelled',
       'returned': 'returned',
+      'returned with company': 'returned_to_company',
       'returned to sender': 'returned',
       'failed delivery': 'failed_delivery',
       'rescheduled': 'rescheduled',
       'on hold': 'on_hold',
       'delayed': 'delayed',
-      'lost': 'lost'
+      'lost': 'returned_missing'
     };
 
     const rawStatusStr = String(webhookData.status || '').toLowerCase().trim();
