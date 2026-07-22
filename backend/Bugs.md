@@ -1,3 +1,10 @@
+### [BUG FIX / TURBO API] Fixed 404 Error on `/api/v1/turbo/bulk/create-shipments`
+- **Date**: 2026-07-22
+- **Root Cause**: `checkAppAccess('order-shipping-turbo')` middleware returned HTTP 404 (`الأداة غير موجودة`) when `order-shipping-turbo` slug was missing from `MarketplaceApp` table, despite Turbo API key being configured for the company.
+- **Fix**: Added check in `checkAppAccess.js` to allow access immediately if `company.turboEnabled` or `company.turboApiKey` is set.
+- **Files Modified**:
+  - `apps/backend/middleware/checkAppAccess.js`
+
 ### [ARCHITECTURE / STATUSES] Central Single Source of Truth Status Registry
 - **Date**: 2026-07-22
 - **Requirement / Resolution**:

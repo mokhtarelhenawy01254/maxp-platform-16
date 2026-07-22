@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Fixed 404 Error on Turbo Bulk Create Shipments Endpoint (BUG FIX / COMPLETE):**
+  1. Resolved HTTP 404 error when sending bulk shipments to Turbo (`/api/v1/turbo/bulk/create-shipments`).
+  2. Updated `checkAppAccess.js` middleware to grant access if `company.turboEnabled` or `company.turboApiKey` is set.
+
 - **Central Single Source of Truth Status Registry (ARCHITECTURE / COMPLETE):**
   1. Built central frontend status registry (`statusRegistry.ts`) and backend normalizer (`statusNormalizer.js`).
   2. Integrated `getUnifiedOrderStatus` across `Orders.tsx` and `OrderHeader.tsx` to guarantee zero conflict between list view, order details header, and dropdown options.
