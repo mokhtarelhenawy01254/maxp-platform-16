@@ -808,12 +808,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
 
       // 2. Update Items
-      const itemsToUpdate =
-        editForm.items && editForm.items.length > 0
-          ? editForm.items
-          : order.items && order.items.length > 0
-            ? order.items
-            : [];
+      const itemsToUpdate = editForm.items || [];
 
       if (itemsToUpdate && itemsToUpdate.length > 0) {
         const newItems = itemsToUpdate.map((item: any) => {
