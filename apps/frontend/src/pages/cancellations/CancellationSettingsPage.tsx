@@ -17,33 +17,33 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const DEFAULT_DATA = [
-  {
-    name: t('cancellations.k_1'),
-    reasons: [
-      { reason: t('cancellations.k_2'), description: t('cancellations.k_3') },
-      { reason: t('cancellations.k_4'), description: t('cancellations.k_5') },
-      { reason: t('cancellations.k_6'), description: t('cancellations.k_7') },
-    ],
-  },
-  {
-    name: t('cancellations.k_8'),
-    reasons: [
-      { reason: t('cancellations.k_9'), description: t('cancellations.k_10') },
-      { reason: t('cancellations.k_11'), description: t('cancellations.k_12') },
-    ],
-  },
-  {
-    name: t('cancellations.k_13'),
-    reasons: [
-      { reason: t('cancellations.k_14'), description: t('cancellations.k_15') },
-      { reason: t('cancellations.k_16'), description: t('cancellations.k_17') },
-    ],
-  },
-];
-
 const CancellationSettingsPage: React.FC = () => {
   const { t } = useTranslation();
+
+  const DEFAULT_DATA = [
+    {
+      name: t('cancellations.k_1'),
+      reasons: [
+        { reason: t('cancellations.k_2'), description: t('cancellations.k_3') },
+        { reason: t('cancellations.k_4'), description: t('cancellations.k_5') },
+        { reason: t('cancellations.k_6'), description: t('cancellations.k_7') },
+      ],
+    },
+    {
+      name: t('cancellations.k_8'),
+      reasons: [
+        { reason: t('cancellations.k_9'), description: t('cancellations.k_10') },
+        { reason: t('cancellations.k_11'), description: t('cancellations.k_12') },
+      ],
+    },
+    {
+      name: t('cancellations.k_13'),
+      reasons: [
+        { reason: t('cancellations.k_14'), description: t('cancellations.k_15') },
+        { reason: t('cancellations.k_16'), description: t('cancellations.k_17') },
+      ],
+    },
+  ];
   const [categories, setCategories] = useState<CancellationReasonCategory[]>([]);
   const [reasons, setReasons] = useState<CancellationReason[]>([]);
   const [loading, setLoading] = useState(true);
