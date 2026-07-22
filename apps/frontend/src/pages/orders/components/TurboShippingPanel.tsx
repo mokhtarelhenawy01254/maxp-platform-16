@@ -48,7 +48,8 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
   const getTurboStatusText = (status?: string) => {
     if (!status) return "غير متاح";
     const statusMap: { [key: string]: string } = {
-      "1": "محفوظة قبل الشحن",
+      "0": "غير مكتمل",
+      "1": "غير مكتمل",
       "2": "مرسلة للشحن",
       "3": "قيد التنفيذ",
       "4": "مع الكابتن",
@@ -61,7 +62,11 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
       "11": "مرتجع مفقود",
       "12": "مرتجع معدوم",
       "13": "مؤجلة",
-      created: "تم الإنشاء",
+      created: "غير مكتمل",
+      saved: "غير مكتمل",
+      incomplete: "غير مكتمل",
+      uncompleted: "غير مكتمل",
+      draft: "غير مكتمل",
       confirmed: "مؤكدة",
       pending: "قيد الانتظار",
       processing: "قيد المعالجة",
@@ -72,7 +77,6 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
       delivered: "تم التسليم",
       cancelled: "ملغاة",
       returned: "مرتجعة",
-      saved: "محفوظة قبل الشحن",
       sent: "مرسلة للشحن",
       in_progress: "قيد التنفيذ",
       with_captain: "مع الكابتن",
@@ -125,6 +129,18 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
     }
 
     if (
+      statusLower === "0" ||
+      statusLower === "1" ||
+      statusLower === "created" ||
+      statusLower === "saved" ||
+      statusLower === "incomplete" ||
+      statusLower === "uncompleted" ||
+      statusLower === "draft"
+    ) {
+      return "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400";
+    }
+
+    if (
       statusLower === "2" ||
       statusLower === "3" ||
       statusLower === "4" ||
@@ -139,16 +155,6 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
       statusLower === "shipped"
     ) {
       return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400";
-    }
-
-    if (
-      statusLower === "1" ||
-      statusLower === "13" ||
-      statusLower === "created" ||
-      statusLower === "saved" ||
-      statusLower === "postponed"
-    ) {
-      return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
     }
 
     return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";

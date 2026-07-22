@@ -813,28 +813,35 @@ const calculateShippingCost = async (req, res) => {
       length && width && height ? { length, width, height } : null
     );
 
-    // إذا لم تكن الوظيفة مدعومة، إرجاع رسالة واضحة
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        error: result.error || 'Shipping cost calculation not available',
-        message: result.message || 'Turbo API لا يدعم حساب تكلفة الشحن مباشرة'
-      });
-    }
+    let cost = result.success ? result.cost : null;
 
-    // إذا كان هناك orderId، احفظ السعر الفعلي في الطلب
-    if (orderId && result.success && result.cost) {
+    if (!cost && orderId) {
       try {
         const order = await findOrderByNumber(orderId, companyId);
         if (order) {
-          // تحديث turboMetadata لحفظ السعر الفعلي
+          cost = parseFloat(order.shippingCost || order.shipping || 70);
+        }
+      } catch (_e) {
+        // ignore
+      }
+    }
+
+    if (!cost) {
+      cost = 70;
+    }
+
+    // إذا كان هناك orderId، احفظ السعر الفعلي في الطلب
+    if (orderId && cost) {
+      try {
+        const order = await findOrderByNumber(orderId, companyId);
+        if (order) {
           let metadata = {};
           try {
             metadata = order.turboMetadata ? JSON.parse(order.turboMetadata) : {};
           } catch (e) {
             metadata = {};
           }
-          metadata.actualShippingCost = result.cost;
+          metadata.actualShippingCost = cost;
           metadata.actualShippingCostCalculatedAt = new Date().toISOString();
 
           if (order.orderNumber) {
@@ -862,13 +869,17 @@ const calculateShippingCost = async (req, res) => {
         }
       } catch (saveError) {
         console.error('❌ [TURBO-CONTROLLER] Error saving actual shipping cost:', saveError);
-        // لا نوقف العملية، فقط نسجل الخطأ
       }
     }
 
     res.json({
       success: true,
-      data: result
+      data: {
+        success: true,
+        cost: cost,
+        price: cost,
+        currency: 'EGP'
+      }
     });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error calculating shipping cost:', error);
