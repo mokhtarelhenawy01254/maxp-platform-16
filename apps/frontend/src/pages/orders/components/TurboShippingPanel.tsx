@@ -18,6 +18,7 @@ interface TurboShippingPanelProps {
   loadingComparison: boolean;
   turboLoading: boolean;
   onCreateShipment: () => void;
+  onUpdateShipment?: () => void;
   onPrintWaybill: () => void;
   onCancelShipment: () => void;
   onUnlinkShipment: () => void;
@@ -33,6 +34,7 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
   loadingComparison,
   turboLoading,
   onCreateShipment,
+  onUpdateShipment,
   onPrintWaybill,
   onCancelShipment,
   onUnlinkShipment,
@@ -363,6 +365,19 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
+            {canManageShipments && onUpdateShipment && (
+              <button
+                onClick={onUpdateShipment}
+                disabled={turboLoading}
+                className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 text-sm font-medium transition-all shadow-sm hover:shadow"
+                title="تحديث بيانات الشحنة (الاسم والتليفون والعنوان) في سيستم تربو"
+              >
+                <ArrowPathIcon
+                  className={`w-4 h-4 ml-1 ${turboLoading ? "animate-spin" : ""}`}
+                />
+                تحديث الشحنة في Turbo
+              </button>
+            )}
             {canManageShipments && (
               <button
                 onClick={onPrintWaybill}

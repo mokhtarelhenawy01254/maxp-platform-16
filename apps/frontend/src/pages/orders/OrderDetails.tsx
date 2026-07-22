@@ -119,6 +119,7 @@ const OrderDetails: React.FC = () => {
     turboTrackingData,
     shippingComparison,
     createShipment,
+    updateShipment,
     getWaybill,
     cancelShipment,
     unlinkShipment,
@@ -977,6 +978,7 @@ const OrderDetails: React.FC = () => {
             loadingComparison={false}
             turboLoading={turboLoading}
             onCreateShipment={handleCreateShipment}
+            onUpdateShipment={updateShipment}
             onPrintWaybill={() => {
               void getWaybill();
             }}

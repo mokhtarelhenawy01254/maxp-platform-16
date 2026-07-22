@@ -2222,10 +2222,11 @@ const updateShipment = async (req, res) => {
       });
     }
 
-    if (!order.turboShipmentId) {
+    const shipmentCode = order.turboShipmentId || order.turboTrackingNumber;
+    if (!shipmentCode) {
       return res.status(400).json({
         success: false,
-        error: 'No shipment found for this order'
+        error: 'لم يتم إيجاد كود شحنة تربو لهذا الطلب'
       });
     }
 
@@ -2236,17 +2237,20 @@ const updateShipment = async (req, res) => {
     const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems || order.items);
 
     // تحديث الشحنة
-    const result = await turboService.updateShipment(order.turboShipmentId, orderData);
+    const result = await turboService.updateShipment(shipmentCode, orderData);
 
     res.json({
       success: true,
-      data: result
+      data: result,
+      message: 'تم تحديث بيانات الشحنة في تربو بنجاح'
     });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error updating shipment:', error);
-    res.status(500).json({
+    const arabicError = translateTurboErrorToArabic(error.message || 'فشل تحديث بيانات الشحنة في تربو');
+    res.status(400).json({
       success: false,
-      error: error.message || 'Failed to update shipment'
+      error: arabicError,
+      message: arabicError
     });
   }
 };

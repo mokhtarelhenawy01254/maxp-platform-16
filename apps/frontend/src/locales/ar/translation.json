@@ -5132,7 +5132,7 @@
     "unseen": "غير مقروءة",
     "showAll": "عرض الكل",
     "quickView": "عرض سريع",
-    "justNow": "منذ لحظات",
+    "justNow": "الآن",
     "fromDate": "من تاريخ",
     "toDate": "إلى تاريخ",
     "extractionMethod": "طريقة الاستخراج",
@@ -5722,7 +5722,16 @@
     "k_68": "تجهيز التاجر (قبل الاستلام/الفرع)",
     "k_69": "معالجة بالفرع (قبل المندوب)",
     "k_70": "تم التوريد وتحصيل المبلغ",
-    "k_71": "شحنة محذوفة"
+    "k_71": "شحنة محذوفة",
+    "minutesAgo_plural": "منذ {{count}} دقائق",
+    "hoursAgo_plural": "منذ {{count}} ساعات",
+    "daysAgo": "منذ {{count}} يوم",
+    "daysAgo_plural": "منذ {{count}} أيام",
+    "incompleteConvertToOrder": "تحويل لطلب",
+    "incompleteConverting": "جاري التحويل...",
+    "incompleteConvertSuccess": "تم إنشاء الطلب بنجاح!",
+    "incompleteConvertFailed": "فشل تحويل الطلب",
+    "incompleteConvertNoPhone": "لا يمكن التحويل: لا يوجد رقم تلفون"
   },
   "pageComments": {
     "pageTitle": "إدارة التعليقات حسب الصفحة",

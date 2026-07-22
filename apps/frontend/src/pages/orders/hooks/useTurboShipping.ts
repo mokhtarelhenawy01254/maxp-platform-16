@@ -364,11 +364,47 @@ export const useTurboShipping = (
     // Logic to fetch comparison if needed
   };
 
+  const updateShipment = async () => {
+    if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
+      toast.error("لا يوجد كود تتبع لشحنة تربو التابعة لهذا الطلب");
+      return false;
+    }
+
+    setTurboLoading(true);
+    try {
+      const response = await apiClient.put(`/turbo/orders/${order.id}/shipment`);
+      if (response.data?.success) {
+        toast.success(
+          `تم تحديث بيانات الشحنة في تربو بنجاح (كود: ${order.turboTrackingNumber || order.turboShipmentId})`
+        );
+        setOrder((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                updatedAt: new Date().toISOString(),
+              }
+            : null,
+        );
+        return true;
+      }
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل تحديث بيانات الشحنة في تربو";
+      toast.error(errorMsg);
+    } finally {
+      setTurboLoading(false);
+    }
+    return false;
+  };
+
   return {
     turboLoading,
     turboTrackingData,
     shippingComparison,
     createShipment,
+    updateShipment,
     getWaybill,
     cancelShipment,
     unlinkShipment,
