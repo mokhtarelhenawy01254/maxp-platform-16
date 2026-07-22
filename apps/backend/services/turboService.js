@@ -1390,8 +1390,10 @@ class TurboService {
         console.warn('⚠️ [TURBO] Failed to fetch governments for update:', error.message);
       }
 
-      // تحديد المحافظة
+      // تحديد المحافظة والمنطقة من قائمة Turbo الرسمية
       let cleanGovernorate = formattedData.governorate || '';
+      let matchedGovId = null;
+
       if (cleanGovernorate && governments.length > 0) {
         const foundGov = governments.find(g => {
           const govName = g.name.toLowerCase();
@@ -1401,12 +1403,33 @@ class TurboService {
         });
         if (foundGov) {
           cleanGovernorate = foundGov.name;
+          matchedGovId = foundGov.id;
         }
       } else if (!cleanGovernorate && formattedData.city) {
         cleanGovernorate = this.findGovernmentByCity(formattedData.city, governments);
       }
 
-      const cleanArea = this.cleanLocationName(formattedData.city || addressFields.city || '');
+      let cleanArea = this.cleanLocationName(formattedData.city || addressFields.city || '');
+
+      // 🎯 مطابقة اسم المنطقة مع قائمة مناطق تربو لضمان خروج الشحنة من حالة "غير مكتملة"
+      if (matchedGovId && cleanArea) {
+        try {
+          const areasResult = await this.getAreas(matchedGovId);
+          if (areasResult && areasResult.areas && areasResult.areas.length > 0) {
+            const cleanAreaLower = cleanArea.toLowerCase();
+            let matchedAreaObj = areasResult.areas.find(a => a.name.toLowerCase() === cleanAreaLower);
+            if (!matchedAreaObj) {
+              matchedAreaObj = areasResult.areas.find(a => a.name.toLowerCase().includes(cleanAreaLower) || cleanAreaLower.includes(a.name.toLowerCase()));
+            }
+            if (matchedAreaObj) {
+              cleanArea = matchedAreaObj.name;
+              console.log(`✅ [TURBO] Matched area with Turbo official areas list: "${cleanArea}"`);
+            }
+          }
+        } catch (areaErr) {
+          console.warn('⚠️ [TURBO] Failed area auto-matching:', areaErr.message);
+        }
+      }
 
       // حساب مبلغ التحصيل (COD) وحالة الشحنة بشكل صحيح لدعم كافة طرق الدفع (CASH, cod, CASH_ON_DELIVERY, إلخ)
       const methodStr = String(formattedData.paymentMethod || '').trim().toUpperCase();
