@@ -1502,13 +1502,50 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestWhereClause.isViewed = false;
     }
 
-    // 1. Filter by Status
+    // 1. Filter by Status (Safely handle Prisma OrderStatus enums and Turbo shipping aliases)
+    const TURBO_STATUS_ALIASES = {
+      'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
+      'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2'],
+      'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
+      'turbo_saved': ['turbo_saved', 'status_1', '1'],
+      'turbo_sent': ['turbo_sent', 'status_2', '2'],
+      'processing': ['processing', 'status_3', 'created', '3'],
+      'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
+      'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
+      'cancelled': ['cancelled', 'status_6', '6'],
+      'delivered': ['delivered', 'status_7', '7'],
+      'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
+      'archived': ['archived', 'status_9', '9'],
+      'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
+      'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
+      'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
+      'delayed': ['delayed', 'status_13', '13']
+    };
+
     if (status && status !== 'all') {
-      const normalizedStatus = String(status);
-      whereClause.status = normalizedStatus.toUpperCase();
-      guestWhereClause.status = {
-        in: [normalizedStatus.toUpperCase(), normalizedStatus.toLowerCase()]
-      };
+      const rawStatus = String(status).trim();
+      const upperStatus = rawStatus.toUpperCase();
+      const lowerStatus = rawStatus.toLowerCase();
+
+      const isValidPrismaEnum = [
+        'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+        'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
+        'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'DRAFT', 'TRASH',
+        'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
+        'PENDING_PREPARATION', 'PREPARING', 'READY'
+      ].includes(upperStatus);
+
+      if (isValidPrismaEnum) {
+        whereClause.status = upperStatus;
+        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
+      } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
+        const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
+        whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
+        guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
+      } else {
+        whereClause.status = upperStatus;
+        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
+      }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
