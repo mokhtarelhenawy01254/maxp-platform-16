@@ -1380,9 +1380,9 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     };
 
     const axios = require('axios');
-    const publicBaseUrl = `${req.protocol}://${req.get('host')}/api/v1/public`;
+    const internalPort = process.env.PORT || 3007;
 
-    const createResponse = await axios.post(`${publicBaseUrl}/orders?companyId=${encodeURIComponent(companyId)}`, orderPayload, {
+    const createResponse = await axios.post(`http://127.0.0.1:${internalPort}/api/v1/public/orders?companyId=${encodeURIComponent(companyId)}`, orderPayload, {
       headers: {
         'Content-Type': 'application/json',
         'x-cart-id': cartId,
