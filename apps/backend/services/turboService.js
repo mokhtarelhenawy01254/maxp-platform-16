@@ -609,6 +609,18 @@ class TurboService {
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ') 
         : (notes || `طلب #${orderNumber}`);
 
+      // تحديد نوع الطلب في تربو (0: تسليم عادي، 1: استبدال / شحنة مقابل، 2: مرتجع)
+      let isOrderVal = 0;
+      if (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '') {
+        isOrderVal = Number(orderData.isOrder);
+      } else if (orderData.orderType === 'EXCHANGE' || orderData.isExchange || orderData.type === 'EXCHANGE') {
+        isOrderVal = 1;
+      } else if (orderData.orderType === 'RETURN' || orderData.isReturn || orderData.type === 'RETURN') {
+        isOrderVal = 2;
+      } else {
+        isOrderVal = 0; // افتراضي: طلب تسليم عادي
+      }
+
       const shipmentData = {
         authentication_key: apiKey,
         main_client_code: mainClientCode || 37321,
@@ -624,10 +636,10 @@ class TurboService {
         notes: notes || `Order #${orderNumber}`,
         invoice_number: orderNumber,
         order_summary: formattedSummary,
-        return_summary: orderData.returnSummary || formattedSummary || 'لا يوجد',
+        return_summary: isOrderVal === 1 ? (orderData.returnSummary || formattedSummary || 'استبدال') : (orderData.returnSummary || ''),
         amount_to_be_collected: paymentMethod === 'CASH' ? (totalValue || 0) : 0,
         return_amount: parseFloat(shipping || 0),
-        is_order: paymentMethod === 'CASH' && (totalValue || 0) > 0 ? 1 : 0,
+        is_order: isOrderVal,
         can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1,
         delivery_type: 0,
