@@ -20,7 +20,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
-const FALLBACK_ORDER_STATUSES = [
+const getFallbackOrderStatuses = (t: any) => [
   { code: "PENDING", label: t('returns.k_1') },
   { code: "CONFIRMED", label: t('returns.k_2') },
   { code: "SCHEDULED", label: t('returns.k_3') },
@@ -37,6 +37,7 @@ const FALLBACK_ORDER_STATUSES = [
 
 const ReturnManagementPage: React.FC = () => {
   const { t } = useTranslation();
+  const FALLBACK_ORDER_STATUSES = React.useMemo(() => getFallbackOrderStatuses(t), [t]);
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(

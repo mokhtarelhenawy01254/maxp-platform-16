@@ -27,10 +27,10 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
-const ORDER_STATUS_FIELDS: {
+const getOrderStatusFields = (t: any): {
   code: string;
   label: string;
-}[] = [
+}[] => [
   { code: "PENDING", label: t('returns.k_1') },
   { code: "CONFIRMED", label: t('returns.k_2') },
   { code: "SCHEDULED", label: t('returns.k_3') },
@@ -45,33 +45,14 @@ const ORDER_STATUS_FIELDS: {
   { code: "PARTIALLY_DELIVERED", label: t('returns.k_12') },
 ];
 
-const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
-  showOrderColumn: true,
-  showCustomerColumn: true,
-  showCustomerRating: true,
-  showCustomerSuccessScore: true,
-  showCustomerPhone: true,
-  showReasonColumn: true,
-  showResponsiblePartyColumn: true,
-  showStatusColumn: true,
-  showReviewColumn: true,
-  showDateColumn: true,
-  showActionsColumn: true,
-  showFilterBar: true,
-  showCreateButton: true,
-  showPendingStatus: true,
-  showApprovedStatus: true,
-  showRejectedStatus: true,
-  showCompletedStatus: true,
-  visibleOrderStatuses: ORDER_STATUS_FIELDS.map((f) => f.code),
-};
 
-const DISPLAY_FIELDS: {
+
+const getDisplayFields = (t: any): {
   key: keyof ReviewDisplayConfig;
   label: string;
   description: string;
   section: "columns" | "controls";
-}[] = [
+}[] => [
   {
     key: "showOrderColumn",
     label: t('returns.k_47'),
@@ -152,12 +133,12 @@ const DISPLAY_FIELDS: {
   },
 ];
 
-const STATUS_FIELDS: {
+const getStatusFields = (t: any): {
   key: keyof ReviewDisplayConfig;
   label: string;
   description: string;
   statusValue: string;
-}[] = [
+}[] => [
   {
     key: "showPendingStatus",
     label: t('returns.k_1'),
@@ -184,7 +165,7 @@ const STATUS_FIELDS: {
   },
 ];
 
-const DEFAULT_DATA = [
+const getDefaultData = (t: any) => [
   {
     name: t('returns.k_77'),
     defaultRole: "STORE",
@@ -219,6 +200,30 @@ const DEFAULT_DATA = [
 
 const ReturnSettingsPage: React.FC = () => {
   const { t } = useTranslation();
+  const ORDER_STATUS_FIELDS = React.useMemo(() => getOrderStatusFields(t), [t]);
+  const DISPLAY_FIELDS = React.useMemo(() => getDisplayFields(t), [t]);
+  const STATUS_FIELDS = React.useMemo(() => getStatusFields(t), [t]);
+  const DEFAULT_DATA = React.useMemo(() => getDefaultData(t), [t]);
+  const DEFAULT_DISPLAY_CONFIG = React.useMemo(() => ({
+    showOrderColumn: true,
+    showCustomerColumn: true,
+    showCustomerRating: true,
+    showCustomerSuccessScore: true,
+    showCustomerPhone: true,
+    showReasonColumn: true,
+    showResponsiblePartyColumn: true,
+    showStatusColumn: true,
+    showReviewColumn: true,
+    showDateColumn: true,
+    showActionsColumn: true,
+    showFilterBar: true,
+    showCreateButton: true,
+    showPendingStatus: true,
+    showApprovedStatus: true,
+    showRejectedStatus: true,
+    showCompletedStatus: true,
+    visibleOrderStatuses: ORDER_STATUS_FIELDS.map((f) => f.code),
+  }), [ORDER_STATUS_FIELDS]);
   const [activeTab, setActiveTab] = useState<"display" | "reasons">("display");
 
   // Display settings state
