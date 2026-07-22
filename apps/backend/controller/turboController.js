@@ -2669,11 +2669,11 @@ const getRecords = async (req, res) => {
 
         const ALIASES = {
           'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
-          'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2', 'created'],
-          'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
-          'turbo_saved': ['turbo_saved', 'status_1', '1'],
+          'merchant_preparing': ['turbo_saved', 'turbo_sent', 'created', 'status_1', 'status_2', '1', '2'],
+          'preparing': ['turbo_saved', 'turbo_sent', 'created', 'status_1', 'status_2', '1', '2'],
+          'turbo_saved': ['turbo_saved', 'created', 'status_1', '1'],
           'turbo_sent': ['turbo_sent', 'status_2', '2'],
-          'processing': ['processing', 'status_3', 'created', '3'],
+          'processing': ['processing', 'status_3', '3'],
           'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
           'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
           'cancelled': ['cancelled', 'status_6', '6'],
@@ -2694,7 +2694,19 @@ const getRecords = async (req, res) => {
           { turboShipmentStatus: { in: targetList } }
         ];
 
-        if (VALID_ORDER_STATUSES.has(upperFilter)) {
+        // For merchant_preparing / turbo_saved: also include null/empty turboShipmentStatus for orders in Turbo
+        if (ft === 'merchant_preparing' || ft === 'turbo_saved' || ft === 'preparing') {
+          statusOrConditions.push({ turboShipmentStatus: null });
+        }
+
+        // Only add internal status match if filter is a generic system status and not a Turbo-specific code
+        const TURBO_SPECIFIC_FILTERS = new Set([
+          'merchant_preparing', 'preparing', 'turbo_saved', 'turbo_sent', 'processing',
+          'out_for_delivery', 'returned_to_company', 'remitted', 'archived',
+          'returned_resent', 'returned_missing', 'returned_destroyed', 'delayed'
+        ]);
+
+        if (VALID_ORDER_STATUSES.has(upperFilter) && !TURBO_SPECIFIC_FILTERS.has(ft)) {
           statusOrConditions.push({ status: { equals: upperFilter } });
         }
 
@@ -2845,7 +2857,7 @@ const getRecords = async (req, res) => {
     const statusCountsObj = {};
     if (Array.isArray(statusCountsRaw)) {
       for (const row of statusCountsRaw) {
-        const rawKey = (row.turboShipmentStatus || 'processing').toLowerCase();
+        const rawKey = (row.turboShipmentStatus || 'turbo_saved').toLowerCase();
         const key = STATUS_ALIAS_MAP[rawKey] || rawKey;
         statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
       }

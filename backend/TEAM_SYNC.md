@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Fixed Turbo Branch Processing Filter Over-counting (BUG FIX / COMPLETE):**
+  1. Resolved issue where 175 orders were showing under 'processing' filter instead of 39.
+  2. Removed 'created' status codes from 'processing' aliases, mapped 'created' to 'turbo_saved' & 'merchant_preparing', and updated default fallback status key in `turboController.js`.
+
 - **Included All Official Turbo Shipping Statuses in Status Selection Dropdowns & Order Lookups (FEATURE / COMPLETE):**
   1. Updated `DEFAULT_ORDER_STATUSES` in `Orders.tsx` and `useOrderDetails.ts` to include all 13 official Turbo status codes (`turbo_saved`, `turbo_sent`, `processing`, `out_for_delivery`, `returned_to_company`, `cancelled`, `delivered`, `remitted`, `archived`, `returned_resent`, `returned_missing`, `returned_destroyed`, `delayed`).
   2. Changed API lookup `/order-status?statusType=order` to `/order-status` in `useOrderDetails.ts`, ensuring all Turbo statuses are fetched and dynamically populated in status selection dropdowns across the order views and `/settings/orders`.
