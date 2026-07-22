@@ -1,8 +1,9 @@
-### [FIX / TURBO CONTROLLER] Prisma OrderStatus Enum Validation Fix on Status Filter
-- **Date**: 2026-07-21
-- **Bug Fixed**: 500 Server Error `Invalid value for argument equals. Expected OrderStatus` when filtering by custom Turbo status like `returned_resent`.
-- **Root Cause**: `status` field in Prisma is restricted to `OrderStatus` enum. Passing non-enum strings like `RETURNED_RESENT` caused Prisma schema validation to fail.
-- **Fix**: Validated `upperFilter` against `VALID_ORDER_STATUSES` set before building the Prisma `status` query branch.
+### [FIX / TURBO RECORDS] Automated Stale Active Orders Cleanup & Perfect Count Sync with Turbo
+- **Date**: 2026-07-22
+- **Issue**: DB had 173 orders marked as `processing` while Turbo's Live Dashboard only showed ~56 active shipments. Stale orders created days ago remained in `processing` status because Turbo's active `/get-status` API feed drops completed/delivered shipments.
+- **Fix**:
+  1. Ran clean database migration for Swan to sync 117 stale historical orders to `delivered`.
+  2. Enhanced `turboController.js` `getRecords` to automatically transition orders to `delivered` if they disappear from Turbo's active shipments feed upon `refresh=true`.
 - **Files Modified**:
   - `apps/backend/controller/turboController.js`
 

@@ -1,6 +1,11 @@
 # Team Sync Updates
 
-## 2026-07-21 / 2026-03-09
+## 2026-07-22 / 2026-03-09
+- **Perfect Status & Count Alignment with Turbo Dashboard (BUG FIX)**:
+  1. **Cleaned Stale Processing Orders**: Resolved discrepancy where DB showed 173 `processing` orders for Swan vs ~56 active on Turbo dashboard.
+  2. **Automated Active Feed Sync**: Enhanced `turboController.js` to automatically transition orders to `delivered` when missing from Turbo's active shipments feed on status refresh.
+
+
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:
   1. **Enum Validation**: Fixed a 500 error when clicking custom Turbo status filters (e.g. `returned_resent`) by validating `filterType` against standard `OrderStatus` enum values before passing to Prisma `status` query.
 
