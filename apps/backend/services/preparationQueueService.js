@@ -1144,7 +1144,7 @@ const getPreparationQueue = async ({ user, query }) => {
       merchantId,
       offset: candidateOffset,
       limit: batchSize,
-      activeStage,
+      activeStage: 'ALL',
       search: searchQuery,
     });
 
