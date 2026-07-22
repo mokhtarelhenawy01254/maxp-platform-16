@@ -567,5 +567,11 @@
   "showingFrom": "عرض {{count}} من {{total}}",
   "cancelFailedToast": "فشل إلغاء الطلب",
   "assignFailedToast": "فشل توزيع الطلب",
-  "selectEmployeeFirst": "اختر موظفاً للتوزيع أولاً"
+  "selectEmployeeFirst": "اختر موظفاً للتوزيع أولاً",
+  "total": "الإجمالي",
+  "totalValue": "إجمالي القيمة",
+  "items": "عناصر",
+  "valueHigh": "مرتفع",
+  "valueMedium": "متوسط",
+  "valueLow": "منخفض"
 }

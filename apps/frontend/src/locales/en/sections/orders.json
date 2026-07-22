@@ -565,5 +565,11 @@
   "showingFrom": "Showing {{count}} of {{total}}",
   "cancelFailedToast": "Failed to cancel order",
   "assignFailedToast": "Failed to assign order",
-  "selectEmployeeFirst": "Select an employee to assign first"
+  "selectEmployeeFirst": "Select an employee to assign first",
+  "total": "Total",
+  "totalValue": "Total Value",
+  "items": "items",
+  "valueHigh": "High",
+  "valueMedium": "Medium",
+  "valueLow": "Low"
 }
