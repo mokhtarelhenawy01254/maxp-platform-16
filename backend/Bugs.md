@@ -1,3 +1,10 @@
+### [BUG FIX / TURBO UPDATE] Fixed Price Resetting to 0 on Turbo Shipment Update
+- **Date**: 2026-07-22
+- **Root Cause**: In `updateShipment` (`turboService.js`), `amount_to_be_collected` was calculated using strict equality `paymentMethod === 'CASH'`. When paymentMethod was `'cod'` (lowercase), `'CASH_ON_DELIVERY'`, or `undefined`, the check evaluated to `false`, causing `amount_to_be_collected` to be sent as `0` to Turbo API `/edit-order`.
+- **Fix**: Updated `updateShipment` to check whether `paymentMethod` is explicitly an online prepaid method (`PAID`, `ONLINE`, `CARD`, `PAYMOB`, `FAWRY`, `VISA`). For all non-prepaid orders (including `cod`, `CASH`, `cash_on_delivery`), `amount_to_be_collected` is set to full order total (`619 EGP`) and `is_order` flag is set to `1`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
 ### [FEATURE / SEARCH] Full System Search Support for Turbo Tracking Codes
 - **Date**: 2026-07-22
 - **Requirement / Resolution**:

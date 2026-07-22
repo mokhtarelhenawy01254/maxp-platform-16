@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Fixed Price Resetting to 0 on Turbo Shipment Update (BUG FIX / COMPLETE):**
+  1. Resolved issue where updating a shipment in Turbo reset `amount_to_be_collected` to 0 EGP for orders with paymentMethod `'cod'` or `'cash_on_delivery'`.
+  2. Updated `updateShipment` in `turboService.js` to preserve full order total (`619 EGP`) and `is_order: 1` for all Cash-on-Delivery payment variations.
+  3. Tested and verified on Order `#ORD-638014-156` (Turbo Code `38125791`).
 - **Full System Search Support for Turbo Tracking Codes (FEATURE / COMPLETE):**
   1. Enabled searching by Turbo tracking code (`38124937`, `38069771`, etc.) across main orders page (`/orders`), preparation queue (`/orders/preparation`), and Turbo records (`/orders/turbo-records`).
   2. Updated `orders.js` and `preparationQueueService.js` to match `turboTrackingNumber` and `turboShipmentId` in search filters.
