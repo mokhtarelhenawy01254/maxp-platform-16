@@ -181,6 +181,40 @@ const IncompleteOrders: React.FC = () => {
     return order.checkoutUpdatedAt || order.updatedAt || order.checkoutStartedAt || "";
   };
 
+  const getRelativeTime = (dateStr: string) => {
+    if (!dateStr) return "";
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "";
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (seconds < 60) return t("orders.justNow");
+    if (minutes < 60) return t("orders.minutesAgo", { count: minutes });
+    if (hours < 24) return t("orders.hoursAgo", { count: hours });
+    if (days < 7) return t("orders.daysAgo", { count: days });
+    return formatDate(dateStr);
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      const d = date.toLocaleDateString("en-CA");
+      const t = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      return `${d} ${t}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const handleCopyCartId = async (cartId: string) => {
     if (!cartId) return;
     try {
@@ -464,13 +498,12 @@ const IncompleteOrders: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-300">
-                          {lastUpdated ? formatDate(lastUpdated) : "-"}
+                        <div className="text-sm text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTime(lastUpdated) : ""}>
+                          {lastUpdated ? getRelativeTime(lastUpdated) : "-"}
                         </div>
-                        {expiresIn && (
-                          <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                            <ClockIcon className="h-3 w-3" />
-                            <span>{expiresIn}</span>
+                        {lastUpdated && (
+                          <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                            {formatDateTime(lastUpdated)}
                           </div>
                         )}
                       </td>
