@@ -308,6 +308,7 @@ const CodDepositSettings: React.FC = () => {
 /* ───────────── Orders Report Tab ───────────── */
 
 const OrdersReport: React.FC = () => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<OrderDepositInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
