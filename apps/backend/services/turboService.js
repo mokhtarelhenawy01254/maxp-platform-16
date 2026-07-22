@@ -1432,7 +1432,7 @@ class TurboService {
         }
       }
 
-      // حساب مبلغ التحصيل (COD) وحالة الشحنة بشكل صحيح لدعم كافة طرق الدفع (CASH, cod, CASH_ON_DELIVERY, إلخ)
+      // 1. حساب مبلغ التحصيل (COD)
       const methodStr = String(formattedData.paymentMethod || '').trim().toUpperCase();
       const isPrepaid = (
         methodStr === 'PAID' ||
@@ -1445,29 +1445,59 @@ class TurboService {
       );
 
       const codAmount = isPrepaid ? 0 : parseFloat(formattedData.totalValue || formattedData.total || 0);
-      const isOrderFlag = (isPrepaid || codAmount <= 0) ? 0 : 1;
+
+      // 2. تحديد نوع الشحنة (0 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
+      let isOrderVal = 0;
+      if (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '') {
+        isOrderVal = Number(formattedData.isOrder);
+      } else if (formattedData.orderType === 'EXCHANGE' || formattedData.isExchange || formattedData.type === 'EXCHANGE') {
+        isOrderVal = 1;
+      } else if (formattedData.orderType === 'RETURN' || formattedData.isReturn || formattedData.type === 'RETURN') {
+        isOrderVal = 2;
+      } else {
+        isOrderVal = 0; // تسليم عادي 0
+      }
+
+      // 3. تنظيف وتأكيد رقم الهاتف المصرفي (11 رقماً يبدأ بـ 01)
+      let rawPhoneDigits = String(formattedData.customerPhone || '').replace(/\D/g, '');
+      let validPhone = rawPhoneDigits;
+      if (validPhone.startsWith('20') && validPhone.length === 12) {
+        validPhone = validPhone.slice(2);
+      } else if (validPhone.startsWith('1') && validPhone.length === 10) {
+        validPhone = '0' + validPhone;
+      }
+
+      // 4. تأكيد اسم المستلم وعدم تمرير قيمة فارغة
+      const finalReceiver = (formattedData.customerName || `عميل طلب #${formattedData.orderNumber || shipmentId}`).trim();
+
+      // 5. بناء ملخص الطلب مع الكميات بدقة
+      const items = formattedData.items || formattedData.orderItems || [];
+      const formattedSummary = Array.isArray(items) && items.length > 0
+        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
+        : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
 
       // بناء بيانات التحديث حسب Turbo API (/edit-order)
       const updateData = {
         authentication_key: apiKey,
         code: String(shipmentId),
         main_client_code: mainClientCode || 37321,
-        remote_order_id: formattedData.orderNumber || '',
+        remote_order_id: formattedData.orderNumber || `Order ${formattedData.orderNumber}`,
         remote_shipment_id: String(formattedData.orderId || ''),
-        receiver: formattedData.customerName || '',
-        phone1: formattedData.customerPhone || '',
+        receiver: finalReceiver,
+        phone1: validPhone,
         phone2: formattedData.alternativePhone || null,
-        api_followup_phone: senderNumber || formattedData.customerPhone || '',
+        api_followup_phone: senderNumber || validPhone,
         government: cleanGovernorate,
         area: cleanArea,
         address: cleanAddress,
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
         invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
-        order_summary: (formattedData.items || []).map(item => item.productName || item.name).join(', ') || 'طلب',
+        order_summary: formattedSummary,
         return_summary: formattedData.returnSummary || 'لا يوجد مرتجع',
         amount_to_be_collected: codAmount,
         return_amount: parseFloat(formattedData.returnAmount || 0),
-        is_order: isOrderFlag,
+        is_order: isOrderVal,
+        can_open: formattedData.canOpen !== undefined ? (formattedData.canOpen ? "1" : "0") : "1",
         weight: formattedData.totalWeight || 1,
         delivery_type: 0,
         is_fragile: 0
