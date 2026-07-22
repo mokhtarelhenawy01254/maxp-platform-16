@@ -53,6 +53,14 @@ const TurboRecords: React.FC = () => {
     const [refreshingStatuses, setRefreshingStatuses] = useState(false);
     const [creatingShipments, setCreatingShipments] = useState(false);
     const [serverStatusCounts, setServerStatusCounts] = useState<Record<string, number>>({});
+    const [financialSummary, setFinancialSummary] = useState<{
+        pendingRemittanceAmount: number;
+        pendingRemittanceCount: number;
+        activeInTransitAmount: number;
+        activeInTransitCount: number;
+        remittedAmount: number;
+        remittedCount: number;
+    } | null>(null);
 
     const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
     const [limit, setLimit] = useState(parseInt(searchParams.get("limit") || "20"));

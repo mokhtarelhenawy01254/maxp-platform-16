@@ -2852,12 +2852,49 @@ const getRecords = async (req, res) => {
     }
     statusCountsObj['merchant_preparing'] = (statusCountsObj['turbo_saved'] || 0) + (statusCountsObj['turbo_sent'] || 0);
     statusCountsObj['preparing'] = statusCountsObj['merchant_preparing'] + (statusCountsObj['processing'] || 0);
-    statusCountsObj['active'] = statusCountsObj['preparing'] + (statusCountsObj['out_for_delivery'] || 0) + (statusCountsObj['delayed'] || 0);
+    // 💰 حساب المستحقات المالية الحية لتربو للشركة
+    const financialOrders = await safeQuery(() => prisma.order.findMany({
+      where: baseWhere,
+      select: {
+        total: true,
+        turboShipmentStatus: true
+      }
+    }), 2).catch(() => []);
+
+    let pendingRemittanceAmount = 0;
+    let pendingRemittanceCount = 0;
+    let activeInTransitAmount = 0;
+    let activeInTransitCount = 0;
+    let remittedAmount = 0;
+    let remittedCount = 0;
+
+    for (const fo of financialOrders) {
+      const st = (fo.turboShipmentStatus || '').toLowerCase().trim();
+      const val = typeof fo.total === 'number' ? fo.total : parseFloat(fo.total || 0) || 0;
+      if (st === 'delivered' || st === '7') {
+        pendingRemittanceAmount += val;
+        pendingRemittanceCount++;
+      } else if (st === 'remitted' || st === '8' || st === '19') {
+        remittedAmount += val;
+        remittedCount++;
+      } else if (['out_for_delivery', 'processing', 'delayed', 'turbo_sent', 'turbo_saved', '3', '4', '13', '2', '1'].includes(st)) {
+        activeInTransitAmount += val;
+        activeInTransitCount++;
+      }
+    }
 
     res.json({ 
       success: true, 
       data: records, 
       statusCounts: statusCountsObj,
+      financialSummary: {
+        pendingRemittanceAmount,
+        pendingRemittanceCount,
+        activeInTransitAmount,
+        activeInTransitCount,
+        remittedAmount,
+        remittedCount
+      },
       pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) } 
     });
   } catch (error) {
