@@ -12,7 +12,7 @@ const DEFAULT_ORDER_STATUSES = [
   { code: 'SCHEDULED', name: 'طلب مجدول', nameEn: 'Scheduled', color: '#FFA500', icon: 'Calendar', sortOrder: 3, wooCommerceStatus: 'pending' },
   { code: 'CONFIRMED', name: 'مؤكد', nameEn: 'Confirmed', color: '#3B82F6', icon: 'CheckCircle', sortOrder: 4, wooCommerceStatus: 'processing' },
   { code: 'ON_HOLD', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 5, wooCommerceStatus: 'on-hold' },
-  { code: 'PROCESSING', name: 'قيد التجهيز', nameEn: 'Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 6, wooCommerceStatus: 'processing' },
+  { code: 'PROCESSING', name: 'قيد التنفيذ', nameEn: 'Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 6, wooCommerceStatus: 'processing' },
   { code: 'SHIPPED', name: 'تم الشحن', nameEn: 'Shipped', color: '#06B6D4', icon: 'Truck', sortOrder: 7, wooCommerceStatus: 'completed' },
   { code: 'DELIVERED', name: 'تم التسليم', nameEn: 'Delivered', color: '#10B981', icon: 'CheckCircle2', sortOrder: 8, wooCommerceStatus: 'completed' },
   { code: 'CANCELLED', name: 'ملغي', nameEn: 'Cancelled', color: '#EF4444', icon: 'XCircle', sortOrder: 9, wooCommerceStatus: 'cancelled' },

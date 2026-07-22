@@ -143,70 +143,96 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
               })}
             </p>
             {currentStatusConfig && (
-              <div className="relative" ref={statusMenuRef}>
-                <button
-                  type="button"
-                  onClick={handleStatusBadgeClick}
-                  disabled={!canQuickSelectStatus}
-                  title={
-                    canQuickSelectStatus
-                      ? t("orderDetails.updateStatus").toString()
-                      : undefined
-                  }
-                  aria-haspopup={canQuickSelectStatus ? "menu" : undefined}
-                  aria-expanded={canQuickSelectStatus ? isStatusMenuOpen : undefined}
-                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
-                  style={statusStyles}
-                >
-                  <span>
-                    {t("orderDetails.statusLabel", {
-                      status: currentStatusConfig.name,
-                    })}
-                  </span>
-                  {canQuickSelectStatus && (
-                    <ChevronDownIcon
-                      className={`h-4 w-4 transition-transform ${
-                        isStatusMenuOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
-                </button>
-
-                {canQuickSelectStatus && isStatusMenuOpen && (
-                  <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
-                    <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
-                      اختاري الحالة
-                    </div>
-                    <div className="max-h-72 overflow-y-auto py-2">
-                      {statusOptions.map((status) => {
-                        const isCurrent = status.code === currentStatusConfig.code;
-
-                        return (
-                          <button
-                            key={status.code}
-                            type="button"
-                            onClick={() => handleStatusSelect(status.code)}
-                            className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-right transition hover:bg-gray-50 dark:hover:bg-gray-700/60"
-                          >
-                            <span className="flex min-w-0 items-center gap-3">
-                              <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                style={{
-                                  backgroundColor: status.color || "#9CA3AF",
-                                }}
-                              />
-                              <span className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
-                                {status.name}
-                              </span>
-                            </span>
-                            {isCurrent && (
-                              <CheckIcon className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
-                            )}
-                          </button>
-                        );
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative" ref={statusMenuRef}>
+                  <button
+                    type="button"
+                    onClick={handleStatusBadgeClick}
+                    disabled={!canQuickSelectStatus}
+                    title={
+                      canQuickSelectStatus
+                        ? t("orderDetails.updateStatus").toString()
+                        : undefined
+                    }
+                    aria-haspopup={canQuickSelectStatus ? "menu" : undefined}
+                    aria-expanded={canQuickSelectStatus ? isStatusMenuOpen : undefined}
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
+                    style={statusStyles}
+                  >
+                    <span>
+                      {t("orderDetails.statusLabel", {
+                        status: currentStatusConfig.name,
                       })}
+                    </span>
+                    {canQuickSelectStatus && (
+                      <ChevronDownIcon
+                        className={`h-4 w-4 transition-transform ${
+                          isStatusMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    )}
+                  </button>
+
+                  {canQuickSelectStatus && isStatusMenuOpen && (
+                    <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+                      <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
+                        اختاري الحالة
+                      </div>
+                      <div className="max-h-72 overflow-y-auto py-2">
+                        {statusOptions.map((status) => {
+                          const isCurrent = status.code === currentStatusConfig.code;
+
+                          return (
+                            <button
+                              key={status.code}
+                              type="button"
+                              onClick={() => handleStatusSelect(status.code)}
+                              className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-right transition hover:bg-gray-50 dark:hover:bg-gray-700/60"
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: status.color || "#9CA3AF",
+                                  }}
+                                />
+                                <span className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+                                  {status.name}
+                                </span>
+                              </span>
+                              {isCurrent && (
+                                <CheckIcon className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+
+                {/* 🚚 Turbo Shipping Status Live Badge */}
+                {order.turboShipmentStatus && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                    <TruckIcon className="h-3.5 w-3.5 text-blue-600" />
+                    شحن تربو: {
+                      ({
+                        turbo_saved: 'محفوظة قبل الشحن (كود 1)',
+                        turbo_sent: 'مرسلة للشحن (كود 2)',
+                        processing: 'قيد التنفيذ بالفرع (كود 3)',
+                        out_for_delivery: 'مسلمة للمندوب (كود 4)',
+                        returned_to_company: 'مرتجعات بالشركة (كود 5)',
+                        cancelled: 'ملغي من الشحن (كود 6)',
+                        delivered: 'تم التسليم (كود 7)',
+                        remitted: 'تم التوريد وتحصيل المبلغ (كود 8)',
+                        archived: 'شحنة محذوفة (كود 9)',
+                        returned_resent: 'معاد إرسالها (كود 10)',
+                        returned_missing: 'مرتجع مفقود (كود 11)',
+                        returned_destroyed: 'مرتجع معدوم (كود 12)',
+                        delayed: 'مؤجلة مع المندوب (كود 13)'
+                      } as Record<string, string>)[order.turboShipmentStatus.toLowerCase()] || order.turboShipmentStatus
+                    }
+                  </span>
                 )}
               </div>
             )}
