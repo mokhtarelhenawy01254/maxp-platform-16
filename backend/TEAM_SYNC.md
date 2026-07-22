@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Added "Update Turbo Shipment" Button to Order Details Page (FEATURE / COMPLETE):**
+  1. Built interactive button `🔄 تحديث الشحنة في Turbo` in `TurboShippingPanel.tsx`.
+  2. Integrated `updateShipment` method in `useTurboShipping.ts` hook calling `PUT /api/v1/turbo/orders/:orderId/shipment`.
+  3. Added toast notifications for loading, success (`تم تحديث بيانات الشحنة في تربو بنجاح`), and error messages.
 - **Verified & Updated Turbo Edit Order API Integration (FEATURE / COMPLETE):**
   1. Verified Turbo API `/edit-order` endpoint support in `turboService.js` (`updateShipment`).
   2. Fixed `return_summary` requirement error when `is_order: 1` by setting `'لا يوجد مرتجع'` default.

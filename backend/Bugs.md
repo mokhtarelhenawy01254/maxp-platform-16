@@ -1,3 +1,14 @@
+### [FEATURE / ORDERS UI] Added "Update Turbo Shipment" Button to Order Details Page
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Interactive UI Button**: Added `🔄 تحديث الشحنة في Turbo` button inside `TurboShippingPanel.tsx` in Order Details modal (`OrderDetails.tsx`).
+  2. **Direct API Hook (`useTurboShipping.ts`)**: Added `updateShipment` method that calls `PUT /api/v1/turbo/orders/:orderId/shipment`.
+  3. **Real-time User Notifications**: Displays loading indicator during update and shows clear toast notification on success (`تم تحديث بيانات الشحنة في تربو بنجاح`) or translated Arabic error message if Turbo validation fails.
+- **Files Modified**:
+  - `apps/frontend/src/pages/orders/components/TurboShippingPanel.tsx`
+  - `apps/frontend/src/pages/orders/hooks/useTurboShipping.ts`
+  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
+
 ### [FEATURE / TURBO API EDIT ORDER] Integrated Turbo Edit Order API & Fixed `return_summary` Requirement
 - **Date**: 2026-07-22
 - **Requirement / Resolution**:
