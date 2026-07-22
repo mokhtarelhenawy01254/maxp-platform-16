@@ -898,8 +898,8 @@ class TurboService {
       const shipments = result.data || [];
       console.log(`✅ [TURBO] Fetched ${shipments.length} shipments statuses`);
       const statusMap = {
-        '1': 'pending',
-        '2': 'pending',
+        '1': 'turbo_saved',
+        '2': 'turbo_sent',
         '3': 'processing',
         '4': 'out_for_delivery',
         '5': 'returned_to_company',

@@ -187,10 +187,12 @@ const TurboRecords: React.FC = () => {
     };
 
     const TURBO_STATUS_LABELS: Record<string, string> = {
+        turbo_saved: 'محفوظة قبل الشحن (في تربو)',
+        turbo_sent: 'مرسلة لشركة تربو',
         incomplete: 'غير مكتملة',
         pending: 'قيد الانتظار',
         confirmed: 'تم التأكيد',
-        processing: 'قيد التنفيذ / جاري المعالجة',
+        processing: 'قيد التنفيذ (في فرع تربو)',
         shipped: 'تم الشحن وفي الطريق',
         out_for_delivery: 'مسلمة للمندوب / قيد التوصيل',
         delayed: 'مؤجلات مع المندوب',
@@ -222,7 +224,7 @@ const TurboRecords: React.FC = () => {
         if (s === 'out_for_delivery') return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
         if (s === 'cancelled') return 'bg-red-100 text-red-800 border border-red-200';
         if (s.startsWith('returned') || s === 'lost') return 'bg-rose-100 text-rose-800 border border-rose-200';
-        if (s === 'processing' || s === 'confirmed') return 'bg-purple-100 text-purple-800 border border-purple-200';
+        if (s === 'processing' || s === 'confirmed' || s === 'turbo_saved' || s === 'turbo_sent') return 'bg-purple-100 text-purple-800 border border-purple-200';
         if (s === 'delayed' || s === 'failed_delivery' || s === 'rescheduled' || s === 'on_hold') return 'bg-amber-100 text-amber-800 border border-amber-200';
         return 'bg-gray-100 text-gray-800 border border-gray-200';
     };
@@ -230,8 +232,8 @@ const TurboRecords: React.FC = () => {
     const filterOptions = [
         { key: 'all', label: 'الكل', color: 'border-blue-300 bg-blue-50 text-blue-800' },
         { key: 'unshipped', label: 'لم يُرسل لتربو', color: 'border-gray-300 bg-gray-50 text-gray-800' },
-        { key: 'incomplete', label: 'غير مكتملة', color: 'border-slate-300 bg-slate-50 text-slate-800' },
-        { key: 'pending', label: 'قيد الانتظار', color: 'border-gray-300 bg-gray-50 text-gray-800' },
+        { key: 'turbo_saved', label: 'محفوظة قبل الشحن', color: 'border-indigo-300 bg-indigo-50 text-indigo-800' },
+        { key: 'turbo_sent', label: 'مرسلة لتربو', color: 'border-blue-300 bg-blue-50 text-blue-800' },
         { key: 'processing', label: 'قيد التنفيذ', color: 'border-purple-300 bg-purple-50 text-purple-800' },
         { key: 'shipped', label: 'تم الشحن', color: 'border-blue-300 bg-blue-50 text-blue-800' },
         { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },

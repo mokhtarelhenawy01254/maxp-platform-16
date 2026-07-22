@@ -1,9 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
-- **Restored Order 38115119 & 98 Recent Shipments (BUG FIX)**:
-  1. **Fixed False Delivery Status**: Restored 99 recently created shipments (including order `38115119` for customer فريده) back to `processing` status in DB.
-  2. **Prevented Premature Delivery Transition**: Removed unlisted auto-delivery loop in `turboController.js` so orders are only transitioned via explicit Turbo webhooks or active status matches.
+- **Separated Turbo Logistics Statuses from Internal System Order Statuses (ARCH):**
+  1. **Logistics States**: Mapped Turbo code 1 to `turbo_saved` ("محفوظة قبل الشحن في تربو") and code 2 to `turbo_sent` ("مرسلة لشركة تربو").
+  2. **Preserved Internal Workflow**: Ensured internal system `Order.status` (e.g. `CONFIRMED`, `PROCESSING`) is NOT overwritten by initial Turbo logistics states, avoiding state collisions.
+  3. **UI Enhancements**: Added dedicated filters and status badges for `turbo_saved` and `turbo_sent` in `/orders/turbo-records`.
 
 
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:

@@ -2701,13 +2701,12 @@ const getRecords = async (req, res) => {
                 const internalStat = live.internalStatus || (live.status ? String(live.status).toLowerCase() : null);
                 const codeStr = String(live.statusCode || '');
                 let newMainStatus = undefined;
-                if (internalStat === 'delivered' || internalStat === 'remitted' || codeStr === '5' || codeStr === '19') newMainStatus = 'DELIVERED';
-                else if (internalStat === 'processing' || internalStat === 'returned_resent' || codeStr === '3' || codeStr === '15') newMainStatus = 'PROCESSING';
-                else if (internalStat === 'shipped' || internalStat === 'out_for_delivery' || codeStr === '4' || codeStr === '9') newMainStatus = 'SHIPPED';
-                else if (internalStat === 'cancelled' || codeStr === '6') newMainStatus = 'CANCELLED';
-                else if (internalStat === 'returned' || internalStat === 'returned_to_company' || internalStat === 'returned_received' || internalStat === 'returned_missing' || internalStat === 'returned_destroyed' || internalStat === 'lost' || codeStr === '7' || codeStr === '13' || codeStr === '14' || codeStr === '16' || codeStr === '17' || codeStr === '20') newMainStatus = 'RETURNED';
-                else if (internalStat === 'on_hold' || internalStat === 'delayed' || internalStat === 'failed_delivery' || internalStat === 'rescheduled' || codeStr === '8' || codeStr === '10' || codeStr === '11' || codeStr === '12') newMainStatus = 'ON_HOLD';
-                else if (internalStat === 'incomplete' || internalStat === 'pending' || codeStr === '18' || codeStr === '1') newMainStatus = 'PENDING';
+                if (internalStat === 'delivered' || internalStat === 'remitted' || codeStr === '7' || codeStr === '8' || codeStr === '19') newMainStatus = 'DELIVERED';
+                else if (internalStat === 'out_for_delivery' || codeStr === '4') newMainStatus = 'SHIPPED';
+                else if (internalStat === 'cancelled' || codeStr === '9') newMainStatus = 'CANCELLED';
+                else if (internalStat.startsWith('returned') || internalStat === 'lost' || ['5', '6', '10', '11', '12', '14', '15', '16', '17', '20'].includes(codeStr)) newMainStatus = 'RETURNED';
+                else if (internalStat === 'delayed' || internalStat === 'on_hold' || codeStr === '13') newMainStatus = 'ON_HOLD';
+                // For turbo_saved (1), turbo_sent (2), processing (3): do not overwrite internal system order status
 
                 const updatePayload = {
                   turboShipmentStatus: internalStat || o.turboShipmentStatus,

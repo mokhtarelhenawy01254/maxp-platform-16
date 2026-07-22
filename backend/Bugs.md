@@ -1,11 +1,15 @@
-### [FIX / TURBO RECORDS] Reverted Incorrect Auto-Delivered Logic & Restored 99 Active Shipments
+### [ARCH/TURBO] Explicit Separation Between Turbo Logistics Status & Internal Order Status
 - **Date**: 2026-07-22
-- **Bug Fixed**: Order `38115119` (and 98 other recently shipped orders) was mistakenly marked as `delivered` in DB because Turbo's active `/get-status` API payload only lists shipments accepted into branches, omitting newly created or pending shipments.
+- **Requirement**: Differentiate initial Turbo logistics statuses (`turbo_saved`, `turbo_sent`, `processing`) from internal system order status so internal workflow states are not overwritten.
 - **Fix**:
-  1. Reverted all 99 recent orders created since July 18 back to `processing` / `PROCESSING`.
-  2. Removed destructive unlisted-to-delivered loop in `turboController.js`.
+  1. Updated `turboWebhook.js` & `turboService.js` status mapping to map code 1 to `turbo_saved` and code 2 to `turbo_sent`.
+  2. Preserved internal system `Order.status` when Turbo logistics status is `turbo_saved`, `turbo_sent`, or `processing`.
+  3. Added `turbo_saved` ("محفوظة قبل الشحن في تربو") and `turbo_sent` ("مرسلة لشركة تربو") badges and filters to `/orders/turbo-records`.
 - **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+  - `apps/backend/services/turboService.js`
   - `apps/backend/controller/turboController.js`
+  - `apps/frontend/src/pages/orders/TurboRecords.tsx`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
 - **Date**: 2026-07-21

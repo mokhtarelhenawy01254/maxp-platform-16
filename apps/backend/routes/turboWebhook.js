@@ -93,22 +93,22 @@ router.post('/webhook', async (req, res) => {
     }
 
     // Official Turbo Status Code Mapping (1..13 as specified in official plugin):
-    // 1: Saved (محفوظة قبل الشحن) => pending
-    // 2: Sent (مرسلة للشحن) => pending
-    // 3: Underway (قيد التنفيذ) => processing
+    // 1: Saved (محفوظة قبل الشحن في تربو) => turbo_saved
+    // 2: Sent (مرسلة لتربو) => turbo_sent
+    // 3: Underway (قيد التنفيذ في الفرع) => processing
     // 4: With Captain (مع الكابتن / مسلمة للمندوب) => out_for_delivery
     // 5: Returned With Company (مرتجعة مع الشركة) => returned_to_company
     // 6: Returned (مرتجعة) => returned
     // 7: Delivered (تم التسليم) => delivered
     // 8: Supplied (تم التوريد / تحصيل الأموال) => remitted
-    // 9: Archived (محذوفة) => cancelled
+    // 9: Archived (محذوفة في تربو) => cancelled
     // 10: Returned Re-sent (مرتجعة معاد إرسالها) => returned_resent
     // 11: Lost (مرتجع مفقود) => returned_missing
     // 12: Absent Returned / Destroyed (مرتجع معدوم) => returned_destroyed
     // 13: Delayed (مؤجلة مع المندوب) => delayed
     const statusMap = {
-      '1': 'pending',
-      '2': 'pending',
+      '1': 'turbo_saved',
+      '2': 'turbo_sent',
       '3': 'processing',
       '4': 'out_for_delivery',
       '5': 'returned_to_company',
