@@ -1,3 +1,11 @@
+### [BUG FIX / TURBO VALIDATION] Strict Customer Phone Validation Before Turbo Shipment Creation
+- **Date**: 2026-07-22
+- **Requirement / Fix**:
+  1. **Strict Rejection**: Completely removed automatic fallback padding (`01000000000`) for incomplete customer phone numbers.
+  2. **Detailed Arabic Error Message**: If a customer phone number is not a valid 11-digit Egyptian mobile number starting with `01` (e.g. 10 digits instead of 11), the system strictly blocks sending the shipment to Turbo and throws an explicit error message detailing the exact issue (e.g. `رقم هاتف العميل غير صحيح: الرقم مكون من 10 أرقام بدلاً من 11 رقماً`).
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
 ### [BUG FIX / PREPARATION QUEUE & TURBO] Synchronized Guest Orders with Regular Orders & Fixed English Governorate Mapping
 - **Date**: 2026-07-22
 - **Root Cause**:

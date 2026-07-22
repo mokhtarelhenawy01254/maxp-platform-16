@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Strict Customer Phone Validation & Blocking Invalid Shipments to Turbo (BUG FIX / COMPLETE):**
+  1. Removed all automatic phone fallbacks (`01000000000`).
+  2. Implemented strict validation in `turboService.js`: Any order with an invalid phone (e.g. 10 digits instead of 11) is strictly blocked from being sent to Turbo.
+  3. Throws explicit detailed Arabic error message returned to user/UI: `رقم هاتف العميل غير صحيح: الرقم مكون من X أرقام بدلاً من 11 رقماً`.
 - **Synchronized Guest Orders with Regular Orders & Fixed English Governorate Mapping (BUG FIX / COMPLETE):**
   1. Resolved duplicate `guest_orders` appearing in Preparation Queue by updating `buildGuestSql` in `preparationQueueService.js` to exclude any guest row with a matching regular order.
   2. Synced all 684 `guest_orders` records with their matching `orders` records in DB, updating statuses and Turbo tracking numbers.
