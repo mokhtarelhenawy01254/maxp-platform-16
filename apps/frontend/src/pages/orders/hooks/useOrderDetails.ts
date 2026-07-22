@@ -153,17 +153,30 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
       { code: "PARTIALLY_DELIVERED", name: "تسليم جزئي", color: "#FBBF24" },
       { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
+      // 🚀 حالات شحن تربو (Turbo Shipping Statuses 1..13)
+      { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
+      { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
+      { code: "processing", name: "تربو: قيد التنفيذ بالفرع (كود 3)", color: "#8B5CF6" },
+      { code: "out_for_delivery", name: "تربو: مسلمة للمندوب (كود 4)", color: "#06B6D4" },
+      { code: "returned_to_company", name: "تربو: مرتجعات بالشركة (كود 5)", color: "#991B1B" },
+      { code: "cancelled", name: "تربو: ملغي من الشحن (كود 6)", color: "#DC2626" },
+      { code: "delivered", name: "تربو: تم التسليم (كود 7)", color: "#10B981" },
+      { code: "remitted", name: "تربو: تم التوريد وتحصيل المبلغ (كود 8)", color: "#047857" },
+      { code: "archived", name: "تربو: شحنة محذوفة (كود 9)", color: "#78716C" },
+      { code: "returned_resent", name: "تربو: معاد إرسالها (كود 10)", color: "#2563EB" },
+      { code: "returned_missing", name: "تربو: مرتجع مفقود (كود 11)", color: "#7F1D1D" },
+      { code: "returned_destroyed", name: "تربو: مرتجع معدوم (كود 12)", color: "#451A03" },
+      { code: "delayed", name: "تربو: مؤجلة مع المندوب (كود 13)", color: "#F97316" },
     ];
 
     try {
-      const response = await apiClient.get("/order-status?statusType=order");
+      const response = await apiClient.get("/order-status");
       console.log("📊 Order Statuses API Response:", response.data);
       if (response.data.success) {
         const apiStatuses = response.data.data || [];
         console.log("📊 Loaded statuses from API:", apiStatuses);
 
         // دمج الحالات من API مع الحالات الافتراضية
-        // الحالات من API لها الأولوية
         const statusMap = new Map();
 
         // أضف الحالات الافتراضية أولاً
@@ -171,8 +184,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           statusMap.set(status.code, status);
         });
 
-        // اكتب فوقها بالحالات من API (تشمل الحالات المخصصة)
-        apiStatuses.forEach((status) => {
+        // اكتب فوقها بالحالات من API
+        apiStatuses.forEach((status: any) => {
           statusMap.set(status.code, status);
         });
 

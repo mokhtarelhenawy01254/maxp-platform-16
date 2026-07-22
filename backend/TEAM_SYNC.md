@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Included All Official Turbo Shipping Statuses in Status Selection Dropdowns & Order Lookups (FEATURE / COMPLETE):**
+  1. Updated `DEFAULT_ORDER_STATUSES` in `Orders.tsx` and `useOrderDetails.ts` to include all 13 official Turbo status codes (`turbo_saved`, `turbo_sent`, `processing`, `out_for_delivery`, `returned_to_company`, `cancelled`, `delivered`, `remitted`, `archived`, `returned_resent`, `returned_missing`, `returned_destroyed`, `delayed`).
+  2. Changed API lookup `/order-status?statusType=order` to `/order-status` in `useOrderDetails.ts`, ensuring all Turbo statuses are fetched and dynamically populated in status selection dropdowns across the order views and `/settings/orders`.
+
 - **Unified Order Details Header Status Display (`OrderHeader.tsx`) (FEATURE / COMPLETE):**
   1. Consolidated dual status badges into a single unified status badge in the order details header modal (`OrderHeader.tsx`).
   2. When `turboShipmentStatus` is available, it now replaces the default status label in the primary badge (e.g. `🚚 شحن تربو: مرتجعات بالشركة (كود 5)`), eliminating redundant secondary badges and providing a unified status display across all views.
