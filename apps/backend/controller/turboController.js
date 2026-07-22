@@ -2703,10 +2703,10 @@ const getRecords = async (req, res) => {
                 let newMainStatus = undefined;
                 if (internalStat === 'delivered' || internalStat === 'remitted' || codeStr === '7' || codeStr === '8' || codeStr === '19') newMainStatus = 'DELIVERED';
                 else if (internalStat === 'out_for_delivery' || codeStr === '4') newMainStatus = 'SHIPPED';
-                else if (internalStat === 'cancelled' || codeStr === '9') newMainStatus = 'CANCELLED';
-                else if (internalStat.startsWith('returned') || internalStat === 'lost' || ['5', '6', '10', '11', '12', '14', '15', '16', '17', '20'].includes(codeStr)) newMainStatus = 'RETURNED';
+                else if (internalStat === 'cancelled' || codeStr === '6') newMainStatus = 'CANCELLED';
+                else if (internalStat.startsWith('returned') || internalStat === 'lost' || ['5', '10', '11', '12', '14', '15', '16', '17', '20'].includes(codeStr)) newMainStatus = 'RETURNED';
                 else if (internalStat === 'delayed' || internalStat === 'on_hold' || codeStr === '13') newMainStatus = 'ON_HOLD';
-                // For turbo_saved (1), turbo_sent (2), processing (3): do not overwrite internal system order status
+                // For turbo_saved (1), turbo_sent (2), processing (3), archived (9): do not overwrite internal system order status
 
                 const updatePayload = {
                   turboShipmentStatus: internalStat || o.turboShipmentStatus,
@@ -2751,20 +2751,20 @@ const getRecords = async (req, res) => {
     }), 2).catch(() => []);
 
     const STATUS_ALIAS_MAP = {
-      'status_1': 'pending',
-      'status_2': 'confirmed',
+      'status_1': 'turbo_saved',
+      'status_2': 'turbo_sent',
       'status_3': 'processing',
       'created': 'processing',
-      'status_4': 'shipped',
-      'status_5': 'delivered',
+      'status_4': 'out_for_delivery',
+      'status_5': 'returned_to_company',
       'status_6': 'cancelled',
-      'status_7': 'returned',
-      'status_8': 'delayed',
-      'status_9': 'out_for_delivery',
-      'status_10': 'failed_delivery',
-      'status_11': 'rescheduled',
-      'status_12': 'on_hold',
-      'status_13': 'lost',
+      'status_7': 'delivered',
+      'status_8': 'remitted',
+      'status_9': 'archived',
+      'status_10': 'returned_resent',
+      'status_11': 'returned_missing',
+      'status_12': 'returned_destroyed',
+      'status_13': 'delayed',
       'status_14': 'returned_to_company',
       'status_15': 'returned_resent',
       'status_16': 'returned_missing',

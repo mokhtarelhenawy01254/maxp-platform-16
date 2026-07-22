@@ -260,6 +260,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isStickySubmitVisible, setIsStickySubmitVisible] = useState(false);
   const trackedCheckoutFingerprintRef = useRef("");
+  const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fullNameField = pdpQuickOrderSettings.fields.fullName;
   const phoneField = pdpQuickOrderSettings.fields.phone;
@@ -368,6 +369,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     ? alternatePhone.trim()
     : "";
   const contactPhone = resolvedPhone || resolvedAlternatePhone;
+  const hasCheckoutDraftSignal = Boolean(
+    resolvedFullName ||
+    contactPhone ||
+    resolvedGovernorate ||
+    resolvedAddress,
+  );
   const fallbackCustomerName = prefersArabicCopy
     ? "عميل صفحة المنتج"
     : "Product page customer";
@@ -553,6 +560,92 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     resolvedSubtotal,
     shippingCost,
     storefrontSettings,
+  ]);
+
+  useEffect(() => {
+    if (checkoutDraftTimerRef.current) {
+      clearTimeout(checkoutDraftTimerRef.current);
+    }
+
+    if (!isSelectionReady || !companyId || !hasCheckoutDraftSignal) {
+      return undefined;
+    }
+
+    const draftItems: CartItem[] = [];
+
+    if (activeQuantityOffer) {
+      const builtOfferItems = buildQuantityOfferCartItems({
+        product,
+        quantityOfferSelection: activeQuantityOffer,
+      });
+
+      if (builtOfferItems?.items?.length) {
+        draftItems.push(...builtOfferItems.items);
+      }
+    } else if (trackingItem) {
+      draftItems.push(trackingItem);
+    }
+
+    if (!draftItems.length) {
+      return undefined;
+    }
+
+    checkoutDraftTimerRef.current = setTimeout(() => {
+      void storefrontApi.saveCheckoutDraft({
+        customerName: resolvedFullName || fallbackCustomerName,
+        email: "",
+        phone: contactPhone,
+        address: resolvedAddress,
+        city: resolvedGovernorate,
+        governorate: resolvedGovernorate,
+        notes: buildQuickOrderNote({
+          alternatePhone: resolvedAlternatePhone,
+          attributeSummary,
+          quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
+        }),
+        paymentMethod: "cod",
+        shippingCost,
+        subtotal: resolvedSubtotal,
+        total,
+        items: draftItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId || undefined,
+          name: item.name,
+          price: item.price,
+          basePrice: item.basePrice,
+          quantity: item.quantity,
+          attributes: item.attributes || {},
+          image: item.imageUrl,
+          productImage: item.imageUrl,
+          quantityOffer: item.quantityOffer || undefined,
+          volumeDiscount:
+            Array.isArray(item.volumeDiscounts) && item.volumeDiscounts[0]
+              ? item.volumeDiscounts[0]
+              : undefined,
+        })),
+      });
+    }, 1200);
+
+    return () => {
+      if (checkoutDraftTimerRef.current) {
+        clearTimeout(checkoutDraftTimerRef.current);
+      }
+    };
+  }, [
+    companyId,
+    hasCheckoutDraftSignal,
+    isSelectionReady,
+    activeQuantityOffer,
+    trackingItem,
+    resolvedFullName,
+    contactPhone,
+    resolvedGovernorate,
+    resolvedAddress,
+    resolvedAlternatePhone,
+    attributeSummary,
+    shippingCost,
+    resolvedSubtotal,
+    total,
   ]);
 
   const handleFieldChange = (

@@ -603,8 +603,12 @@ class TurboService {
 
       const cleanArea = this.cleanLocationName(city || addressFields.city || '');
 
-      // تحضير بيانات الشحنة حسب Turbo API الفعلي
-      // بناءً على الوثائق: https://backoffice.turbo-eg.com/external-api/add-order
+      // استخراج تليفون التسليم الثاني وعمل صياغة دقيقة لملخص المنتجات
+      const secondPhone = orderData.phone2 || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.secondPhone || addressFields.secondaryAddressPhone || null;
+      const formattedSummary = Array.isArray(items) && items.length > 0 
+        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ') 
+        : (notes || `طلب #${orderNumber}`);
+
       const shipmentData = {
         authentication_key: apiKey,
         main_client_code: mainClientCode || 37321,
@@ -612,17 +616,18 @@ class TurboService {
         remote_shipment_id: String(orderId || ''),
         receiver: customerName,
         phone1: customerPhone,
-        phone2: null,
+        phone2: secondPhone,
         api_followup_phone: senderNumber || customerPhone,
         government: cleanGovernorate,
         area: cleanArea,
         address: cleanAddress,
         notes: notes || `Order #${orderNumber}`,
         invoice_number: orderNumber,
-        order_summary: items.map(item => item.productName || item.name).join(', ') || 'طلب',
+        order_summary: formattedSummary,
         amount_to_be_collected: paymentMethod === 'CASH' ? (totalValue || 0) : 0,
         return_amount: parseFloat(shipping || 0),
         is_order: paymentMethod === 'CASH' && (totalValue || 0) > 0 ? 1 : 0,
+        can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1,
         delivery_type: 0,
         is_fragile: 0
@@ -903,10 +908,10 @@ class TurboService {
         '3': 'processing',
         '4': 'out_for_delivery',
         '5': 'returned_to_company',
-        '6': 'returned',
+        '6': 'cancelled',
         '7': 'delivered',
         '8': 'remitted',
-        '9': 'cancelled',
+        '9': 'archived',
         '10': 'returned_resent',
         '11': 'returned_missing',
         '12': 'returned_destroyed',

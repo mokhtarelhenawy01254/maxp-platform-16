@@ -1,14 +1,12 @@
-### [ARCH/TURBO] Explicit Separation Between Turbo Logistics Status & Internal Order Status
+### [FEAT/TURBO] Implemented Official Turbo Plugin Features (can_open, phone2, summary, & reasons UI)
 - **Date**: 2026-07-22
-- **Requirement**: Differentiate initial Turbo logistics statuses (`turbo_saved`, `turbo_sent`, `processing`) from internal system order status so internal workflow states are not overwritten.
-- **Fix**:
-  1. Updated `turboWebhook.js` & `turboService.js` status mapping to map code 1 to `turbo_saved` and code 2 to `turbo_sent`.
-  2. Preserved internal system `Order.status` when Turbo logistics status is `turbo_saved`, `turbo_sent`, or `processing`.
-  3. Added `turbo_saved` ("محفوظة قبل الشحن في تربو") and `turbo_sent` ("مرسلة لشركة تربو") badges and filters to `/orders/turbo-records`.
+- **Features Implemented**:
+  1. **Package Inspection (`can_open`)**: Added `can_open: "1"` parameter to Turbo creation payload, enabling customer package inspection prior to payment.
+  2. **Second Delivery Phone (`phone2`)**: Extracted secondary phone numbers from order/address data to reduce undelivered calls.
+  3. **Formatted Product Summary (`order_summary`)**: Formatted order contents string as `[1 Product A] - [2 Product B]` for printing on waybills.
+  4. **Return & Delay Reasons Badges**: Rendered `returnReason` and `delayReason` directly in the `/orders/turbo-records` table rows.
 - **Files Modified**:
-  - `apps/backend/routes/turboWebhook.js`
   - `apps/backend/services/turboService.js`
-  - `apps/backend/controller/turboController.js`
   - `apps/frontend/src/pages/orders/TurboRecords.tsx`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management

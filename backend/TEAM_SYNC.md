@@ -1,10 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
-- **Separated Turbo Logistics Statuses from Internal System Order Statuses (ARCH):**
-  1. **Logistics States**: Mapped Turbo code 1 to `turbo_saved` ("محفوظة قبل الشحن في تربو") and code 2 to `turbo_sent` ("مرسلة لشركة تربو").
-  2. **Preserved Internal Workflow**: Ensured internal system `Order.status` (e.g. `CONFIRMED`, `PROCESSING`) is NOT overwritten by initial Turbo logistics states, avoiding state collisions.
-  3. **UI Enhancements**: Added dedicated filters and status badges for `turbo_saved` and `turbo_sent` in `/orders/turbo-records`.
+- **Implemented Official Turbo Features (FEAT):**
+  1. **Package Inspection (`can_open`)**: Added `can_open: "1"` parameter to enable COD package inspection before payment.
+  2. **Secondary Phone (`phone2`)**: Extracted and sent `phone2` to decrease failed delivery attempts.
+  3. **Waybill Item Formatting (`order_summary`)**: Formatted product summary as `[Quantity Product]` for waybill labels.
+  4. **UI Reasons Display**: Displayed `returnReason` and `delayReason` directly in `/orders/turbo-records` table rows.
 
 
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:

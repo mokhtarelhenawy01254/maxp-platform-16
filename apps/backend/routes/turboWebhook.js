@@ -98,10 +98,10 @@ router.post('/webhook', async (req, res) => {
     // 3: Underway (قيد التنفيذ في الفرع) => processing
     // 4: With Captain (مع الكابتن / مسلمة للمندوب) => out_for_delivery
     // 5: Returned With Company (مرتجعة مع الشركة) => returned_to_company
-    // 6: Returned (مرتجعة) => returned
+    // 6: Returned / Cancelled (مرتجعة / ملغية) => cancelled
     // 7: Delivered (تم التسليم) => delivered
     // 8: Supplied (تم التوريد / تحصيل الأموال) => remitted
-    // 9: Archived (محذوفة في تربو) => cancelled
+    // 9: Archived (محذوفة في تربو) => archived
     // 10: Returned Re-sent (مرتجعة معاد إرسالها) => returned_resent
     // 11: Lost (مرتجع مفقود) => returned_missing
     // 12: Absent Returned / Destroyed (مرتجع معدوم) => returned_destroyed
@@ -112,10 +112,10 @@ router.post('/webhook', async (req, res) => {
       '3': 'processing',
       '4': 'out_for_delivery',
       '5': 'returned_to_company',
-      '6': 'returned',
+      '6': 'cancelled',
       '7': 'delivered',
       '8': 'remitted',
-      '9': 'cancelled',
+      '9': 'archived',
       '10': 'returned_resent',
       '11': 'returned_missing',
       '12': 'returned_destroyed',
@@ -416,32 +416,29 @@ router.post('/webhook', async (req, res) => {
 
     // actualShippingCost يتم حفظه في turboMetadata (غير موجود في schema مباشرة)
 
-    // تحديث حالة الطلب الرئيسية (OrderStatus) بناءً على جميع حالات Turbo العشرين
-    if (status === 'processing' || statusCode === '3') {
-      updateData.status = 'PROCESSING';
-    } else if (status === 'shipped' || statusCode === '4' || status === 'out_for_delivery' || statusCode === '9') {
+    // تحديث حالة الطلب الرئيسية (OrderStatus) بناءً على أكواد تربو الرسمية 1-13
+    // turbo_saved (1), turbo_sent (2), processing (3): لا نغير حالة الأوردر الداخلية
+    // archived (9): لا نلغي الأوردر - فقط حذف من تربو
+    if (status === 'out_for_delivery' || statusCode === '4') {
       updateData.status = 'SHIPPED';
-    } else if (status === 'delivered' || statusCode === '5' || status === 'remitted' || statusCode === '19') {
+    } else if (status === 'delivered' || statusCode === '7' || status === 'remitted' || statusCode === '8') {
       updateData.status = 'DELIVERED';
-      updateData.paymentStatus = 'COMPLETED'; // تم التحصيل / التوريد
+      updateData.paymentStatus = 'COMPLETED';
     } else if (status === 'cancelled' || statusCode === '6') {
       updateData.status = 'CANCELLED';
-    } else if (status === 'returned' || returnStatus === '1' || statusCode === '7' || status === 'returned_to_company' || statusCode === '14' || status === 'returned_received' || statusCode === '20' || status === 'returned_missing' || statusCode === '16' || status === 'returned_destroyed' || statusCode === '17' || status === 'lost' || statusCode === '13') {
+    } else if (status === 'returned_to_company' || statusCode === '5' || status === 'returned' || status === 'returned_received' || status === 'returned_missing' || statusCode === '11' || status === 'returned_destroyed' || statusCode === '12' || status === 'lost') {
       updateData.status = 'RETURNED';
       const shippingCost = parseFloat(order.shipping || 0);
       if (shippingCost > 0) {
         turboMetadataObj.return_amount = shippingCost;
         updateData.turboMetadata = JSON.stringify(turboMetadataObj);
       }
-    } else if (status === 'returned_resent' || statusCode === '15') {
+    } else if (status === 'returned_resent' || statusCode === '10') {
       updateData.status = 'PROCESSING';
-    } else if (status === 'on_hold' || statusCode === '12' || statusCode === '8' || statusCode === '10' || statusCode === '11') {
+    } else if (status === 'delayed' || statusCode === '13') {
       updateData.status = 'ON_HOLD';
-    } else if (status === 'incomplete' || statusCode === '18' || status === 'pending' || statusCode === '1') {
-      updateData.status = 'PENDING';
-    } else if (status === 'confirmed' || statusCode === '2') {
-      updateData.status = 'CONFIRMED';
     }
+    // For turbo_saved (1), turbo_sent (2), processing (3), archived (9): do NOT touch Order.status
 
     await safeQuery(async () => {
       return await prisma.order.update({

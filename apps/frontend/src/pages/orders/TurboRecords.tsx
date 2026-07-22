@@ -202,6 +202,7 @@ const TurboRecords: React.FC = () => {
         delivered: 'تم التسليم والتحصيل',
         remitted: 'تم التوريد',
         cancelled: 'ملغي من الشحن',
+        archived: 'شحنة محذوفة في تربو',
         returned: 'شحنة مرتجعة',
         returned_to_company: 'مرتجعات في الشركة',
         returned_received: 'مرتجعات وصلتني',
@@ -246,6 +247,7 @@ const TurboRecords: React.FC = () => {
         { key: 'returned_missing', label: 'مرتجعات مفقودة', color: 'border-rose-300 bg-rose-50 text-rose-800' },
         { key: 'returned_destroyed', label: 'مرتجعات معدومة', color: 'border-stone-300 bg-stone-50 text-stone-800' },
         { key: 'cancelled', label: 'ملغي', color: 'border-gray-400 bg-gray-100 text-gray-800' },
+        { key: 'archived', label: 'محذوفة في تربو', color: 'border-stone-400 bg-stone-100 text-stone-800' },
     ];
 
     const getStatusCount = (key: string) => {
@@ -493,6 +495,16 @@ const TurboRecords: React.FC = () => {
                                                     <span className="text-xs text-gray-400">
                                                         {order.turboLiveStatus.status}
                                                         {order.turboLiveStatus.captain && ` - ${order.turboLiveStatus.captain}`}
+                                                    </span>
+                                                )}
+                                                {order.turboLiveStatus?.returnReason && (
+                                                    <span className="text-xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 font-medium">
+                                                        سبب الارتجاع: {order.turboLiveStatus.returnReason}
+                                                    </span>
+                                                )}
+                                                {order.turboLiveStatus?.delayReason && (
+                                                    <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 font-medium">
+                                                        سبب التأخير: {order.turboLiveStatus.delayReason}
                                                     </span>
                                                 )}
                                             </div>
