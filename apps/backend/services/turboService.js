@@ -1439,6 +1439,7 @@ class TurboService {
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
         invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
         order_summary: (formattedData.items || []).map(item => item.productName || item.name).join(', ') || 'طلب',
+        return_summary: formattedData.returnSummary || 'لا يوجد مرتجع',
         amount_to_be_collected: formattedData.paymentMethod === 'CASH' ? (formattedData.totalValue || 0) : 0,
         return_amount: parseFloat(formattedData.shipping || 0),
         is_order: formattedData.paymentMethod === 'CASH' && (formattedData.totalValue || 0) > 0 ? 1 : 0,
