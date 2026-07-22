@@ -7,6 +7,7 @@ import {
   ShoppingBagIcon,
   PencilIcon,
   PrinterIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderDetailsType } from "../types";
