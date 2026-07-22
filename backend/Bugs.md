@@ -1,3 +1,16 @@
+### [ARCHITECTURE / STATUSES] Central Single Source of Truth Status Registry
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Frontend Status Registry (`statusRegistry.ts`)**: Built central status registry utility mapping all 13 official Turbo status codes with their aliases (`created`, `turbo_saved`, `status_1`, `1`, etc.) into a unified single source of truth (`getUnifiedOrderStatus`).
+  2. **Backend Status Normalizer (`statusNormalizer.js`)**: Created central normalizer module for backend controllers to eliminate duplicate inline dictionaries.
+  3. **Unified Display Across App**: Refactored `Orders.tsx` and `OrderHeader.tsx` to source all status labels and badge styling from `getUnifiedOrderStatus`, ensuring 100% consistency across table list, order details modal, and status dropdowns.
+- **Files Created/Modified**:
+  - `apps/frontend/src/utils/statusRegistry.ts`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/pages/orders/Orders.tsx`
+  - `apps/frontend/src/pages/orders/components/OrderHeader.tsx`
+  - `apps/backend/controller/turboController.js`
+
 ### [BUG FIX / TURBO RECORDS] Turbo Branch Processing Filter Over-counting Fix
 - **Date**: 2026-07-22
 - **Root Cause**: 
