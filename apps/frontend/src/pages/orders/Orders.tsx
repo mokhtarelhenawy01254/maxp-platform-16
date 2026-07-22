@@ -10,6 +10,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import { summarizeOrderDocumentItems } from "../../utils/orderDocumentQuantityOffers";
+import { getUnifiedOrderStatus } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
   MERCHANT_OPERATION_APP_SLUGS,
@@ -1928,38 +1929,13 @@ const Orders: React.FC = () => {
     }
   };
 
-  const TURBO_STATUS_MAP: Record<string, { label: string; color: string }> = {
-    turbo_saved: { label: "محفوظة قبل الشحن (كود 1)", color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300" },
-    turbo_sent: { label: "مرسلة للشحن (كود 2)", color: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300" },
-    processing: { label: "قيد التنفيذ بالفرع (كود 3)", color: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300" },
-    out_for_delivery: { label: "مسلمة للمندوب (كود 4)", color: "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300" },
-    returned_to_company: { label: "مرتجعات بالشركة (كود 5)", color: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300" },
-    cancelled: { label: "ملغي من الشحن (كود 6)", color: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300" },
-    delivered: { label: "تم التسليم (كود 7)", color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300" },
-    remitted: { label: "تم التوريد والتحصيل (كود 8)", color: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/40 dark:text-green-200" },
-    archived: { label: "شحنة محذوفة (كود 9)", color: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300" },
-    returned_resent: { label: "معاد إرسالها (كود 10)", color: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300" },
-    returned_missing: { label: "مرتجع مفقود (كود 11)", color: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300" },
-    returned_destroyed: { label: "مرتجع معدوم (كود 12)", color: "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/40 dark:text-rose-200" },
-    delayed: { label: "مؤجلة مع المندوب (كود 13)", color: "bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300" }
-  };
-
   const getUnifiedStatusDisplay = (order: Order) => {
-    const turboKey = (order.turboShipmentStatus || "").toLowerCase().trim();
-    const turboInfo = TURBO_STATUS_MAP[turboKey];
+    const unified = getUnifiedOrderStatus(order);
+    const customStyle = unified.source === 'system' ? getStatusBadgeStyle(order.status || "") : undefined;
 
-    if (turboInfo) {
-      return {
-        text: `🚚 ${turboInfo.label}`,
-        className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold border ${turboInfo.color}`,
-        style: undefined as React.CSSProperties | undefined
-      };
-    }
-
-    const customStyle = getStatusBadgeStyle(order.status || "");
     return {
-      text: getStatusText(order.status || ""),
-      className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${customStyle ? "" : getStatusColor(order.status || "")}`,
+      text: unified.source === 'turbo' ? `🚚 ${unified.label}` : unified.label,
+      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${unified.colorClass}`,
       style: customStyle
     };
   };

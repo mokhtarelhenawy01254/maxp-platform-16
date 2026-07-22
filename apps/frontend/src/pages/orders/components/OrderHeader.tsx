@@ -10,6 +10,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
+import { getUnifiedOrderStatus } from "../../../utils/statusRegistry";
 import { OrderDetailsType } from "../types";
 
 interface StatusOption {
@@ -161,29 +162,10 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     style={statusStyles}
                   >
                     <span>
-                      {order.turboShipmentStatus ? (
-                        `🚚 شحن تربو: ${
-                          ({
-                            turbo_saved: 'محفوظة قبل الشحن (كود 1)',
-                            turbo_sent: 'مرسلة للشحن (كود 2)',
-                            processing: 'قيد التنفيذ بالفرع (كود 3)',
-                            out_for_delivery: 'مسلمة للمندوب (كود 4)',
-                            returned_to_company: 'مرتجعات بالشركة (كود 5)',
-                            cancelled: 'ملغي من الشحن (كود 6)',
-                            delivered: 'تم التسليم (كود 7)',
-                            remitted: 'تم التوريد وتحصيل المبلغ (كود 8)',
-                            archived: 'شحنة محذوفة (كود 9)',
-                            returned_resent: 'معاد إرسالها (كود 10)',
-                            returned_missing: 'مرتجع مفقود (كود 11)',
-                            returned_destroyed: 'مرتجع معدوم (كود 12)',
-                            delayed: 'مؤجلة مع المندوب (كود 13)'
-                          } as Record<string, string>)[order.turboShipmentStatus.toLowerCase()] || order.turboShipmentStatus
-                        }`
-                      ) : (
-                        t("orderDetails.statusLabel", {
-                          status: currentStatusConfig.name,
-                        })
-                      )}
+                      {(() => {
+                        const unified = getUnifiedOrderStatus(order);
+                        return unified.source === 'turbo' ? `🚚 ${unified.label}` : unified.label;
+                      })()}
                     </span>
                     {canQuickSelectStatus && (
                       <ChevronDownIcon

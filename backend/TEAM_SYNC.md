@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Central Single Source of Truth Status Registry (ARCHITECTURE / COMPLETE):**
+  1. Built central frontend status registry (`statusRegistry.ts`) and backend normalizer (`statusNormalizer.js`).
+  2. Integrated `getUnifiedOrderStatus` across `Orders.tsx` and `OrderHeader.tsx` to guarantee zero conflict between list view, order details header, and dropdown options.
+
 - **Fixed Turbo Branch Processing Filter Over-counting (BUG FIX / COMPLETE):**
   1. Resolved issue where 175 orders were showing under 'processing' filter instead of 39.
   2. Removed 'created' status codes from 'processing' aliases, mapped 'created' to 'turbo_saved' & 'merchant_preparing', and updated default fallback status key in `turboController.js`.
