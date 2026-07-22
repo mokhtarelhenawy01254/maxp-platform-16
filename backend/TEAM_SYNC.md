@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Synchronized Guest Orders with Regular Orders & Fixed English Governorate Mapping (BUG FIX / COMPLETE):**
+  1. Resolved duplicate `guest_orders` appearing in Preparation Queue by updating `buildGuestSql` in `preparationQueueService.js` to exclude any guest row with a matching regular order.
+  2. Synced all 684 `guest_orders` records with their matching `orders` records in DB, updating statuses and Turbo tracking numbers.
+  3. Added full English governorate mappings (`cairo`, `giza`, `alexandria`, `dakahlia`, etc.) to `getTurboGovernorateName` in `turboService.js`.
+  4. Added phone sanitizer ensuring 11-digit Egyptian phone format for Turbo API.
 - **Resolved Turbo Incomplete Draft Shipments & Added Arabic Error Messages (BUG FIX / COMPLETE):**
   1. Updated `getShippingAddressFields` in `turboService.js` to parse `state`, `province`, `region`, and `town` from JSON shipping addresses, ensuring governorate is never lost.
   2. Added fallback defaults for `receiver`, `phone1`, `government`, `area`, and `address` so shipments never arrive as incomplete drafts in Turbo dashboard.

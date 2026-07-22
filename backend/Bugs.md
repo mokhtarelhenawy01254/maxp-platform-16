@@ -1,3 +1,18 @@
+### [BUG FIX / PREPARATION QUEUE & TURBO] Synchronized Guest Orders with Regular Orders & Fixed English Governorate Mapping
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. **Duplicate Guest Rows**: `guest_orders` records remained in `PENDING` state after being converted to regular orders. `buildGuestSql` in `preparationQueueService.js` only checked if regular orders were non-terminal, pulling stale guest orders into Preparation Queue without customer name/phone.
+  2. **Incomplete Drafts on English Locations**: WooCommerce and Storefront orders with English governorate names (e.g. `'Cairo'`, `'Giza'`, `'Alexandria'`, `'Dakahlia'`) were missing from `governorateMap`, preventing automatic translation to official Arabic governorate names required by Turbo API.
+  3. **Phone Sanitization**: Invalid phone formats were rejected by Turbo API instead of being formatted cleanly.
+- **Fix**:
+  1. Updated `buildGuestSql` in `preparationQueueService.js` to exclude any `guest_orders` row if a corresponding regular order exists in `orders` table.
+  2. Synced all 684 `guest_orders` records with their matching `orders` records to update their statuses and tracking numbers.
+  3. Added full English governorates map (`cairo`, `giza`, `alexandria`, `dakahlia`, etc.) to `getTurboGovernorateName` in `turboService.js`.
+  4. Added phone sanitizer ensuring 11-digit Egyptian phone format for Turbo API.
+- **Files Modified**:
+  - `apps/backend/services/preparationQueueService.js`
+  - `apps/backend/services/turboService.js`
+
 ### [BUG FIX / TURBO SHIPMENTS] Resolved Turbo Incomplete Drafts & Arabic Error Messages
 - **Date**: 2026-07-22
 - **Root Cause**:
