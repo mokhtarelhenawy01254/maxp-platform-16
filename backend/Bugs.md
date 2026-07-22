@@ -1,9 +1,9 @@
-### [FIX / TURBO RECORDS] Automated Stale Active Orders Cleanup & Perfect Count Sync with Turbo
+### [FIX / TURBO RECORDS] Reverted Incorrect Auto-Delivered Logic & Restored 99 Active Shipments
 - **Date**: 2026-07-22
-- **Issue**: DB had 173 orders marked as `processing` while Turbo's Live Dashboard only showed ~56 active shipments. Stale orders created days ago remained in `processing` status because Turbo's active `/get-status` API feed drops completed/delivered shipments.
+- **Bug Fixed**: Order `38115119` (and 98 other recently shipped orders) was mistakenly marked as `delivered` in DB because Turbo's active `/get-status` API payload only lists shipments accepted into branches, omitting newly created or pending shipments.
 - **Fix**:
-  1. Ran clean database migration for Swan to sync 117 stale historical orders to `delivered`.
-  2. Enhanced `turboController.js` `getRecords` to automatically transition orders to `delivered` if they disappear from Turbo's active shipments feed upon `refresh=true`.
+  1. Reverted all 99 recent orders created since July 18 back to `processing` / `PROCESSING`.
+  2. Removed destructive unlisted-to-delivered loop in `turboController.js`.
 - **Files Modified**:
   - `apps/backend/controller/turboController.js`
 

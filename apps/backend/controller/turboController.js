@@ -2721,22 +2721,6 @@ const getRecords = async (req, res) => {
                 }), 2).catch(() => {});
               }
             }
-
-            // 🔄 تحديث الأوردرات القديمة التي لم تعد في كشف الشحنات النشطة لتربو (تم تسليمها)
-            const activeShipmentIds = new Set(r.shipments.map(s => String(s.code)).concat(r.shipments.map(s => String(s.invoiceNumber || ''))));
-            for (const o of orders) {
-              const code1 = o.turboShipmentId ? String(o.turboShipmentId) : null;
-              const code2 = o.turboTrackingNumber ? String(o.turboTrackingNumber) : null;
-              const code3 = o.orderNumber ? o.orderNumber.replace('ORD-', '') : null;
-              const isLive = (code1 && activeShipmentIds.has(code1)) || (code2 && activeShipmentIds.has(code2)) || (code3 && activeShipmentIds.has(code3));
-
-              if (!isLive && ['processing', 'status_3', 'created'].includes(o.turboShipmentStatus)) {
-                await safeQuery(() => prisma.order.update({
-                  where: { id: o.id },
-                  data: { turboShipmentStatus: 'delivered', status: 'DELIVERED', updatedAt: new Date() }
-                })).catch(() => {});
-              }
-            }
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
       }

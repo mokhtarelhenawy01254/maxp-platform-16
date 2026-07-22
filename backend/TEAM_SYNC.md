@@ -1,9 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
-- **Perfect Status & Count Alignment with Turbo Dashboard (BUG FIX)**:
-  1. **Cleaned Stale Processing Orders**: Resolved discrepancy where DB showed 173 `processing` orders for Swan vs ~56 active on Turbo dashboard.
-  2. **Automated Active Feed Sync**: Enhanced `turboController.js` to automatically transition orders to `delivered` when missing from Turbo's active shipments feed on status refresh.
+- **Restored Order 38115119 & 98 Recent Shipments (BUG FIX)**:
+  1. **Fixed False Delivery Status**: Restored 99 recently created shipments (including order `38115119` for customer فريده) back to `processing` status in DB.
+  2. **Prevented Premature Delivery Transition**: Removed unlisted auto-delivery loop in `turboController.js` so orders are only transitioned via explicit Turbo webhooks or active status matches.
 
 
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:
