@@ -17,7 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const DEFAULT_DATA = [
+const getDefaultData = (t: any) => [
   {
     name: t('cancellations.k_1'),
     reasons: [
@@ -44,6 +44,7 @@ const DEFAULT_DATA = [
 
 const CancellationSettingsPage: React.FC = () => {
   const { t } = useTranslation();
+  const DEFAULT_DATA = React.useMemo(() => getDefaultData(t), [t]);
   const [categories, setCategories] = useState<CancellationReasonCategory[]>([]);
   const [reasons, setReasons] = useState<CancellationReason[]>([]);
   const [loading, setLoading] = useState(true);
