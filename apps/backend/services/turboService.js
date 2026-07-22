@@ -1362,6 +1362,7 @@ class TurboService {
       const headers = await this.getHeaders();
       const apiKey = await this.getApiKey();
       const mainClientCode = await this.getMainClientCode();
+      const senderNumber = await this.getSenderNumber();
 
       console.log('🔧 [TURBO] Updating shipment:', shipmentId);
 
@@ -1456,7 +1457,7 @@ class TurboService {
         receiver: formattedData.customerName || '',
         phone1: formattedData.customerPhone || '',
         phone2: formattedData.alternativePhone || null,
-        api_followup_phone: formattedData.customerPhone || '',
+        api_followup_phone: senderNumber || formattedData.customerPhone || '',
         government: cleanGovernorate,
         area: cleanArea,
         address: cleanAddress,
