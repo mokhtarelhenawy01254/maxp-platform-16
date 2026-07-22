@@ -449,11 +449,79 @@ const createShipment = async (req, res) => {
         }
       : null;
 
+/**
+ * 🛡️ Pre-validation Helper for Turbo Shipment Data
+ * يمنع إرسال أي أوردر ببيانات غير مكتملة لتجنب حدوث حالات غير مكتملة في تربو
+ */
+function validateOrderForTurbo(order, orderData) {
+  const missingFields = [];
+  const suggestions = [];
+
+  // 1. اسم العميل
+  const cleanName = (orderData.customerName || order.customerName || '').trim();
+  if (!cleanName || cleanName === 'Unknown' || cleanName.length < 2) {
+    missingFields.push('اسم العميل ناقص أو غير مكتمل');
+    suggestions.push('يرجى كتابة اسم العميل كاملاً في تفاصيل الطلب');
+  }
+
+  // 2. رقم التليفون
+  const cleanPhone = (orderData.customerPhone || order.customerPhone || '').replace(/\D/g, '');
+  if (!cleanPhone || cleanPhone.length < 10) {
+    missingFields.push('رقم تليفون العميل ناقص أو غير صحيح (يلزم 10-11 رقم)');
+    suggestions.push('يرجى إدخال رقم تليفون صحيح ومكتمل للعميل');
+  }
+
+  // 3. العنوان التفصيلي
+  const rawAddress = (orderData.shippingAddress || orderData.customerAddress || order.shippingAddress || order.customerAddress || '').toString().trim();
+  if (!rawAddress || rawAddress.length < 4 || rawAddress.toLowerCase().includes('undefined')) {
+    missingFields.push('عنوان الشحن ناقص أو غير تفصيلي');
+    suggestions.push('يرجى كتابة الشارع والمنطقة واسم المبنى تفصيلياً');
+  }
+
+  // 4. المحافظة / المدينة
+  const gov = (orderData.governorate || orderData.city || order.city || '').toString().trim();
+  if (!gov || gov.length < 2) {
+    missingFields.push('المحافظة أو المدينة غير محددة');
+    suggestions.push('يرجى اختيار المحافظة والمدينة المطلوبة لشحن تربو');
+  }
+
+  // 5. الأصناف والمنتجات
+  const items = orderData.items || order.orderItems || order.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    missingFields.push('قائمة أصناف المنتجات فارغة');
+    suggestions.push('أضف منتجاً واحداً على الأقل للطلب قبل إرساله للشحن');
+  }
+
+  if (missingFields.length > 0) {
+    return {
+      isValid: false,
+      missingFields,
+      suggestions,
+      message: `عفواً، لا يمكن إرسال الشحنة لتربو لأن بيانات الطلب غير مكتملة (${missingFields.length} أخطاء).`
+    };
+  }
+
+  return { isValid: true };
+}
+
     // إنشاء خدمة Turbo
     const turboService = new TurboService(order.company.turboApiKey, companyId);
 
     // تحضير بيانات الطلب
     const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems || order.items);
+
+    // 🛡️ فحص واختبار اكتمال البيانات قبل الإرسال لتربو
+    const validation = validateOrderForTurbo(order, orderData);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        validationError: true,
+        error: validation.message,
+        missingFields: validation.missingFields,
+        suggestions: validation.suggestions,
+        message: validation.message
+      });
+    }
 
     // إنشاء الشحنة
     const result = await turboService.createShipment(orderData);
