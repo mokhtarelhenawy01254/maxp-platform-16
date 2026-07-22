@@ -200,6 +200,8 @@ const TurboRecords: React.FC = () => {
         returned_missing: 'مرتجعات مفقودة (كود 11)',
         returned_destroyed: 'مرتجعات معدومة (كود 12)',
         delayed: 'مؤجلات مع المندوب (كود 13)',
+        preparing: 'تجهيز بالفرع (قبل المندوب)',
+        active: 'النشطة في تربو (غير الموردة/المرتجعة)'
     };
 
     const getTurboStatusText = (status: string | undefined | null) => {
@@ -215,26 +217,26 @@ const TurboRecords: React.FC = () => {
         if (s === 'out_for_delivery') return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
         if (s === 'cancelled') return 'bg-red-100 text-red-800 border border-red-200';
         if (s.startsWith('returned') || s === 'lost') return 'bg-rose-100 text-rose-800 border border-rose-200';
-        if (s === 'processing' || s === 'confirmed' || s === 'turbo_saved' || s === 'turbo_sent') return 'bg-purple-100 text-purple-800 border border-purple-200';
+        if (s === 'processing' || s === 'confirmed' || s === 'turbo_saved' || s === 'turbo_sent' || s === 'preparing') return 'bg-purple-100 text-purple-800 border border-purple-200';
         if (s === 'delayed' || s === 'failed_delivery' || s === 'rescheduled' || s === 'on_hold') return 'bg-amber-100 text-amber-800 border border-amber-200';
         return 'bg-gray-100 text-gray-800 border border-gray-200';
     };
 
     const filterOptions = [
-        { key: 'all', label: 'الكل', color: 'border-blue-300 bg-blue-50 text-blue-800' },
+        { key: 'all', label: 'إجمالي شحنات تربو', color: 'border-blue-300 bg-blue-50 text-blue-800' },
+        { key: 'active', label: 'النشطة في تربو (غير الموردة/المرتجعة)', color: 'border-amber-400 bg-amber-50 text-amber-900 font-bold' },
+        { key: 'preparing', label: 'تجهيز بالفرع (قبل المندوب)', color: 'border-purple-400 bg-purple-50 text-purple-900 font-semibold' },
         { key: 'processing', label: 'قيد التنفيذ', color: 'border-purple-300 bg-purple-50 text-purple-800' },
         { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
         { key: 'delayed', label: 'مؤجلات مع المندوب', color: 'border-amber-300 bg-amber-50 text-amber-800' },
         { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50 text-green-800' },
-        { key: 'remitted', label: 'تم التوريد', color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
+        { key: 'remitted', label: 'تم التوريد وتحصيل المبلغ', color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
         { key: 'returned_to_company', label: 'مرتجعات في الشركة', color: 'border-red-300 bg-red-50 text-red-800' },
         { key: 'returned_resent', label: 'معاد ارسالها', color: 'border-sky-300 bg-sky-50 text-sky-800' },
         { key: 'returned_missing', label: 'مرتجعات مفقودة', color: 'border-rose-300 bg-rose-50 text-rose-800' },
         { key: 'returned_destroyed', label: 'مرتجعات معدومة', color: 'border-stone-300 bg-stone-50 text-stone-800' },
         { key: 'cancelled', label: 'ملغي من الشحن', color: 'border-gray-400 bg-gray-100 text-gray-800' },
         { key: 'archived', label: 'شحنة محذوفة', color: 'border-stone-400 bg-stone-100 text-stone-800' },
-        { key: 'turbo_saved', label: 'محفوظة قبل الشحن', color: 'border-indigo-300 bg-indigo-50 text-indigo-800' },
-        { key: 'turbo_sent', label: 'مرسلة لتربو', color: 'border-blue-300 bg-blue-50 text-blue-800' },
     ];
 
     const getStatusCount = (key: string) => {
@@ -252,7 +254,7 @@ const TurboRecords: React.FC = () => {
                         {t("orders.turboRecordsTitle")}
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        {t("orders.turboRecordsSubtitle")}
+                        إدارة ومتابعة شحنات تربو اللحظية وتتبع الحالات الحية بالكامل
                     </p>
                 </div>
 
@@ -260,7 +262,7 @@ const TurboRecords: React.FC = () => {
                     <button
                         onClick={handleRefreshStatuses}
                         disabled={refreshingStatuses}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                     >
                         <ArrowPathIcon className={`h-4 w-4 ${refreshingStatuses ? 'animate-spin' : ''}`} />
                         {t("orders.turboRecordsUpdateStatus")}
@@ -269,7 +271,7 @@ const TurboRecords: React.FC = () => {
                     <button
                         onClick={handleBulkCreateShipments}
                         disabled={creatingShipments || selectedOrders.length === 0}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                     >
                         <TruckIcon className="h-4 w-4" />
                         {t("orders.turboRecordsSendToTurbo")}
@@ -277,87 +279,62 @@ const TurboRecords: React.FC = () => {
                 </div>
             </div>
 
-            {/* Top Banner Notice */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-600 text-white rounded-xl font-extrabold text-xl">
-                        {totalOrders}
+            {/* 🔥 الكروت الرئيسية المطلوبة (النشطة / تجهيز / الكل) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* كارت الشحنات النشطة في تربو */}
+                <button
+                    onClick={() => handleFilterChange('active')}
+                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'active' ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400 scale-[1.02]' : 'border-amber-200 bg-amber-50/60 hover:bg-amber-50'}`}
+                >
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-md">الشحنات النشطة</span>
+                        <TruckIcon className="h-5 w-5 text-amber-600" />
                     </div>
-                    <div>
-                        <h3 className="font-bold text-blue-950 text-base">إجمالي الطلبات في شركة الشحن تربو</h3>
-                        <p className="text-xs text-blue-700">هذا الرقم يعكس فقط الشحنات التي تم تسليمها لتربو وبدأت رحلة الشحن والتوصيل.</p>
+                    <div className="text-2xl font-black text-amber-900">{getStatusCount('active')} أوردر</div>
+                    <div className="text-xs text-amber-700 mt-1 font-medium">كل الأوردرات اللي في تربو ولسه مرجعتش لا فلوس ولا مرتجعات</div>
+                </button>
+
+                {/* كارت تجهيز الشحن بالفرع */}
+                <button
+                    onClick={() => handleFilterChange('preparing')}
+                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'preparing' ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-400 scale-[1.02]' : 'border-purple-200 bg-purple-50/60 hover:bg-purple-50'}`}
+                >
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-purple-800 bg-purple-200/80 px-2 py-0.5 rounded-md">تجهيز بالفرع</span>
+                        <InformationCircleIcon className="h-5 w-5 text-purple-600" />
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => handleFilterChange('all')}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterType === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-800 border border-blue-300 hover:bg-blue-100'}`}
-                    >
-                        عرض كل أوردرات الشحن ({totalOrders})
-                    </button>
-                    <button
-                        onClick={() => handleFilterChange('unshipped')}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterType === 'unshipped' ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'}`}
-                    >
-                        لم يُرسل لتربو بعد
-                    </button>
-                </div>
+                    <div className="text-2xl font-black text-purple-900">{getStatusCount('preparing')} أوردر</div>
+                    <div className="text-xs text-purple-700 mt-1 font-medium">وصلت تربو وقيد التنفيذ ولكن لم تخرج للمندوب بعد</div>
+                </button>
+
+                {/* كارت إجمالي أوردرات تربو */}
+                <button
+                    onClick={() => handleFilterChange('all')}
+                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'all' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400 scale-[1.02]' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                >
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">إجمالي الشحنات</span>
+                        <TruckIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-black text-gray-900">{totalOrders} أوردر</div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">عرض كافة الشحنات الموجهة لشركة تربو</div>
+                </button>
             </div>
 
             {/* Structured Status Categories */}
             <div className="space-y-4 mb-6">
-                {/* 1. الشحنات النشطة */}
+                {/* التقسيم التفصيلي لجميع حالات تربو */}
                 <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <TruckIcon className="h-4 w-4 text-blue-500" />
-                        الشحنات النشطة (في الطريق والمعالجة)
+                        التقسيم التفصيلي لحالات تربو (أكواد تربو الرسمية 1-13)
                     </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-                        {filterOptions.filter(o => ['processing', 'shipped', 'out_for_delivery', 'delayed', 'rescheduled', 'on_hold', 'failed_delivery'].includes(o.key)).map(item => (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                        {filterOptions.filter(o => !['all', 'active', 'preparing'].includes(o.key)).map(item => (
                             <button
                                 key={item.key}
                                 onClick={() => handleFilterChange(item.key)}
                                 className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-blue-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
-                            >
-                                <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
-                                <div className="text-[11px] font-medium truncate">{item.label}</div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 2. الشحنات المكتملة والمحصلة */}
-                <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-                        الشحنات المكتملة والمُحصّلة
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {filterOptions.filter(o => ['delivered', 'remitted'].includes(o.key)).map(item => (
-                            <button
-                                key={item.key}
-                                onClick={() => handleFilterChange(item.key)}
-                                className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-emerald-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
-                            >
-                                <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
-                                <div className="text-[11px] font-medium truncate">{item.label}</div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 3. دورة المرتجعات */}
-                <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <ArrowPathIcon className="h-4 w-4 text-rose-500" />
-                        دورة المرتجعات والتسليم للشركة/التاجر
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                        {filterOptions.filter(o => ['returned_to_company', 'returned_received', 'returned_resent', 'returned_missing', 'returned_destroyed'].includes(o.key)).map(item => (
-                            <button
-                                key={item.key}
-                                onClick={() => handleFilterChange(item.key)}
-                                className={`rounded-xl border-2 ${item.color} p-2.5 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-rose-500 scale-105 font-bold shadow-sm' : 'opacity-85 hover:opacity-100'}`}
                             >
                                 <div className="text-lg font-extrabold">{getStatusCount(item.key)}</div>
                                 <div className="text-[11px] font-medium truncate">{item.label}</div>

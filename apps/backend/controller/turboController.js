@@ -2600,6 +2600,8 @@ const getRecords = async (req, res) => {
         const upperFilter = filterType.toUpperCase();
 
         const ALIASES = {
+          'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
+          'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
           'turbo_saved': ['turbo_saved', 'status_1', '1'],
           'turbo_sent': ['turbo_sent', 'status_2', '2'],
           'processing': ['processing', 'status_3', 'created', '3'],
@@ -2779,6 +2781,8 @@ const getRecords = async (req, res) => {
         statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
       }
     }
+    statusCountsObj['preparing'] = (statusCountsObj['turbo_saved'] || 0) + (statusCountsObj['turbo_sent'] || 0) + (statusCountsObj['processing'] || 0);
+    statusCountsObj['active'] = statusCountsObj['preparing'] + (statusCountsObj['out_for_delivery'] || 0) + (statusCountsObj['delayed'] || 0);
 
     res.json({ 
       success: true, 
