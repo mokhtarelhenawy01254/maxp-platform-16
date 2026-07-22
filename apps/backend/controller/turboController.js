@@ -2687,12 +2687,16 @@ const getRecords = async (req, res) => {
             for (const s of r.shipments) { 
               if (s.code) turboStatuses[String(s.code)] = s; 
               if (s.barCode) turboStatuses[String(s.barCode)] = s; 
+              if (s.invoiceNumber) {
+                turboStatuses[String(s.invoiceNumber)] = s;
+                turboStatuses[`ORD-${s.invoiceNumber}`] = s;
+              }
             }
 
             // 🔄 التحديث المباشر للطلبات في قاعدة البيانات بالحالة الجديدة
             for (const o of orders) {
-              const key = o.turboShipmentId || o.turboTrackingNumber;
-              const live = key ? turboStatuses[String(key)] : null;
+              const key = o.turboShipmentId || o.turboTrackingNumber || o.orderNumber;
+              const live = key ? (turboStatuses[String(key)] || (o.orderNumber ? turboStatuses[o.orderNumber.replace('ORD-', '')] : null)) : null;
               if (live) {
                 const internalStat = live.internalStatus || (live.status ? String(live.status).toLowerCase() : null);
                 const codeStr = String(live.statusCode || '');
