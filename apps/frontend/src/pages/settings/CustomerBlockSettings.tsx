@@ -16,62 +16,62 @@ import {
 } from "../../services/customerBlocklistService";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-const reasonOptions: Array<{
-  value: CustomerBlockReasonCode;
-  label: string;
-}> = [
-  { value: "FAKE_ORDERS", label: t('customerBlocks.k_1') },
-  { value: "REPEATED_REFUSAL", label: t('customerBlocks.k_2') },
-  { value: "ABUSE", label: t('customerBlocks.k_3') },
-  { value: "FRAUD", label: t('customerBlocks.k_4') },
-  { value: "WRONG_DATA", label: t('customerBlocks.k_5') },
-  { value: "OTHER", label: t('customerBlocks.k_6') },
-];
-
-const actionOptions: Array<{
-  value: CustomerBlockAction;
-  label: string;
-}> = [
-  { value: "BLOCK_ORDERS", label: t('customerBlocks.k_7') },
-  { value: "REQUIRE_MANAGER_APPROVAL", label: t('customerBlocks.k_8') },
-  { value: "BLOCK_COD_ONLY", label: t('customerBlocks.k_9') },
-];
-
-const defaultSettings: CustomerBlockSettingsShape = {
-  enabled: true,
-  blockCheckout: true,
-  blockManualOrders: true,
-  blockAffiliateManualOrders: true,
-  blockAiOrderCreation: true,
-  matchPhone: true,
-  matchEmail: true,
-  matchFacebook: true,
-  matchWhatsapp: true,
-  allowManagerOverride: true,
-  defaultAction: "BLOCK_ORDERS",
-  checkoutMessage:
-    t('customerBlocks.k_10'),
-  internalWarningMessage:
-    t('customerBlocks.k_11'),
-};
-
-const getActionLabel = (action?: string | null) =>
-  actionOptions.find((item) => item.value === action)?.label || t('customerBlocks.k_7');
-
-const getReasonLabel = (reason?: string | null) =>
-  reasonOptions.find((item) => item.value === reason)?.label || t('customerBlocks.k_6');
-
-const formatDate = (value?: string | null) => {
-  if (!value) return t('customerBlocks.k_12');
-  try {
-    return new Date(value).toLocaleDateString("ar-EG");
-  } catch {
-    return value;
-  }
-};
-
 const CustomerBlockSettings: React.FC = () => {
   const { t } = useTranslation();
+
+  const reasonOptions: Array<{
+    value: CustomerBlockReasonCode;
+    label: string;
+  }> = useMemo(() => [
+    { value: "FAKE_ORDERS", label: t('customerBlocks.k_1', 'طلب وهمي') },
+    { value: "REPEATED_REFUSAL", label: t('customerBlocks.k_2', 'رفض الاستلام مكرر') },
+    { value: "ABUSE", label: t('customerBlocks.k_3', 'إساءة التعامل') },
+    { value: "FRAUD", label: t('customerBlocks.k_4', 'احتيال') },
+    { value: "WRONG_DATA", label: t('customerBlocks.k_5', 'بيانات خاطئة') },
+    { value: "OTHER", label: t('customerBlocks.k_6', 'سبب آخر') },
+  ], [t]);
+
+  const actionOptions: Array<{
+    value: CustomerBlockAction;
+    label: string;
+  }> = useMemo(() => [
+    { value: "BLOCK_ORDERS", label: t('customerBlocks.k_7', 'حظر إتاحة الطلبات') },
+    { value: "REQUIRE_MANAGER_APPROVAL", label: t('customerBlocks.k_8', 'يتطلب موافقة المدير') },
+    { value: "BLOCK_COD_ONLY", label: t('customerBlocks.k_9', 'حظر الدفع عند الاستلام فقط') },
+  ], [t]);
+
+  const defaultSettings: CustomerBlockSettingsShape = useMemo(() => ({
+    enabled: true,
+    blockCheckout: true,
+    blockManualOrders: true,
+    blockAffiliateManualOrders: true,
+    blockAiOrderCreation: true,
+    matchPhone: true,
+    matchEmail: true,
+    matchFacebook: true,
+    matchWhatsapp: true,
+    allowManagerOverride: true,
+    defaultAction: "BLOCK_ORDERS",
+    checkoutMessage:
+      t('customerBlocks.k_10', 'عذراً، لا يمكن إتمام الطلب بناءً على سياسات المتجر.'),
+    internalWarningMessage:
+      t('customerBlocks.k_11', 'تحذير: هذا العميل موجود في قائمة الحظر.'),
+  }), [t]);
+
+  const getActionLabel = (action?: string | null) =>
+    actionOptions.find((item) => item.value === action)?.label || t('customerBlocks.k_7', 'حظر الطلبات');
+
+  const getReasonLabel = (reason?: string | null) =>
+    reasonOptions.find((item) => item.value === reason)?.label || t('customerBlocks.k_6', 'آخر');
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return t('customerBlocks.k_12', 'غير محدد');
+    try {
+      return new Date(value).toLocaleDateString("ar-EG");
+    } catch {
+      return value;
+    }
+  };
   const [settings, setSettings] =
     useState<CustomerBlockSettingsShape>(defaultSettings);
   const [rules, setRules] = useState<CustomerBlockRule[]>([]);
