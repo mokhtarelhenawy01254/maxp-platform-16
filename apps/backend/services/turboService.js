@@ -1422,6 +1422,21 @@ class TurboService {
 
       const cleanArea = this.cleanLocationName(formattedData.city || addressFields.city || '');
 
+      // حساب مبلغ التحصيل (COD) وحالة الشحنة بشكل صحيح لدعم كافة طرق الدفع (CASH, cod, CASH_ON_DELIVERY, إلخ)
+      const methodStr = String(formattedData.paymentMethod || '').trim().toUpperCase();
+      const isPrepaid = (
+        methodStr === 'PAID' ||
+        methodStr === 'ONLINE' ||
+        methodStr === 'CARD' ||
+        methodStr === 'PAYMOB' ||
+        methodStr === 'FAWRY' ||
+        methodStr === 'CREDIT_CARD' ||
+        methodStr === 'VISA'
+      );
+
+      const codAmount = isPrepaid ? 0 : parseFloat(formattedData.totalValue || formattedData.total || 0);
+      const isOrderFlag = (isPrepaid || codAmount <= 0) ? 0 : 1;
+
       // بناء بيانات التحديث حسب Turbo API (/edit-order)
       const updateData = {
         authentication_key: apiKey,
@@ -1440,9 +1455,9 @@ class TurboService {
         invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
         order_summary: (formattedData.items || []).map(item => item.productName || item.name).join(', ') || 'طلب',
         return_summary: formattedData.returnSummary || 'لا يوجد مرتجع',
-        amount_to_be_collected: formattedData.paymentMethod === 'CASH' ? (formattedData.totalValue || 0) : 0,
+        amount_to_be_collected: codAmount,
         return_amount: parseFloat(formattedData.shipping || 0),
-        is_order: formattedData.paymentMethod === 'CASH' && (formattedData.totalValue || 0) > 0 ? 1 : 0,
+        is_order: isOrderFlag,
         weight: formattedData.totalWeight || 1,
         delivery_type: 0,
         is_fragile: 0
