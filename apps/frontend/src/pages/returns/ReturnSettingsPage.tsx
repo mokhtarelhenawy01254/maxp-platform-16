@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   returnService,
@@ -30,18 +31,18 @@ const ORDER_STATUS_FIELDS: {
   code: string;
   label: string;
 }[] = [
-  { code: "PENDING", label: "قيد الانتظار" },
-  { code: "CONFIRMED", label: "مؤكد" },
-  { code: "SCHEDULED", label: "مجدول" },
-  { code: "PROCESSING", label: "قيد التجهيز" },
-  { code: "SHIPPED", label: "تم الشحن" },
-  { code: "DELIVERED", label: "تم التسليم" },
-  { code: "CANCELLED", label: "ملغي" },
-  { code: "RETURNED", label: "مرتجع" },
-  { code: "REFUNDED", label: "مسترد" },
-  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
-  { code: "ON_HOLD", label: "معلق" },
-  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
+  { code: "PENDING", label: t('returns.k_1') },
+  { code: "CONFIRMED", label: t('returns.k_2') },
+  { code: "SCHEDULED", label: t('returns.k_3') },
+  { code: "PROCESSING", label: t('returns.k_4') },
+  { code: "SHIPPED", label: t('returns.k_5') },
+  { code: "DELIVERED", label: t('returns.k_6') },
+  { code: "CANCELLED", label: t('returns.k_7') },
+  { code: "RETURNED", label: t('returns.k_8') },
+  { code: "REFUNDED", label: t('returns.k_9') },
+  { code: "DUPLICATE_ORDER", label: t('returns.k_10') },
+  { code: "ON_HOLD", label: t('returns.k_11') },
+  { code: "PARTIALLY_DELIVERED", label: t('returns.k_12') },
 ];
 
 const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
@@ -73,80 +74,80 @@ const DISPLAY_FIELDS: {
 }[] = [
   {
     key: "showOrderColumn",
-    label: "رقم الطلب",
-    description: "رقم الطلب والمبلغ المسترد",
+    label: t('returns.k_47'),
+    description: t('returns.k_48'),
     section: "columns",
   },
   {
     key: "showCustomerColumn",
-    label: "العميل",
-    description: "اسم العميل",
+    label: t('returns.k_49'),
+    description: t('returns.k_50'),
     section: "columns",
   },
   {
     key: "showCustomerRating",
-    label: "تقييم العميل",
-    description: "شارة تقييم العميل (ممتاز، جيد، متوسط، سيء)",
+    label: t('returns.k_51'),
+    description: t('returns.k_52'),
     section: "columns",
   },
   {
     key: "showCustomerSuccessScore",
-    label: "معدل النجاح",
-    description: "نسبة نجاح العميل",
+    label: t('returns.k_53'),
+    description: t('returns.k_54'),
     section: "columns",
   },
   {
     key: "showCustomerPhone",
-    label: "رقم الهاتف",
-    description: "رقم هاتف العميل",
+    label: t('returns.k_55'),
+    description: t('returns.k_56'),
     section: "columns",
   },
   {
     key: "showReasonColumn",
-    label: "السبب",
-    description: "سبب الإرجاع وتصنيفه",
+    label: t('returns.k_57'),
+    description: t('returns.k_58'),
     section: "columns",
   },
   {
     key: "showResponsiblePartyColumn",
-    label: "المسؤول",
-    description: "الجهة المسؤولة عن الإرجاع",
+    label: t('returns.k_59'),
+    description: t('returns.k_60'),
     section: "columns",
   },
   {
     key: "showStatusColumn",
-    label: "الحالة",
-    description: "حالة الطلب (قيد الانتظار، تمت الموافقة، ...)",
+    label: t('returns.k_61'),
+    description: t('returns.k_62'),
     section: "columns",
   },
   {
     key: "showReviewColumn",
-    label: "المراجعة",
-    description: "حالة المراجعة (تمت المراجعة / لم تراجع)",
+    label: t('returns.k_63'),
+    description: t('returns.k_64'),
     section: "columns",
   },
   {
     key: "showDateColumn",
-    label: "التاريخ",
-    description: "تاريخ إنشاء الطلب",
+    label: t('returns.k_65'),
+    description: t('returns.k_66'),
     section: "columns",
   },
   {
     key: "showActionsColumn",
-    label: "الإجراءات",
-    description: "أزرار الموافقة والرفض وعرض التفاصيل",
+    label: t('returns.k_67'),
+    description: t('returns.k_68'),
     section: "columns",
   },
   {
     key: "showFilterBar",
-    label: "شريط التصفية",
-    description: "شريط تصفية الحالة والبحث",
+    label: t('returns.k_69'),
+    description: t('returns.k_70'),
     section: "controls",
   },
   {
     key: "showCreateButton",
-    label: "زر طلب جديد",
-    description: "زر إنشاء طلب إرجاع جديد",
+    label: t('returns.k_71'),
+    description: t('returns.k_72'),
     section: "controls",
   },
 ];
@@ -159,64 +160,65 @@ const STATUS_FIELDS: {
 }[] = [
   {
     key: "showPendingStatus",
-    label: "قيد الانتظار",
-    description: "عرض طلبات قيد الانتظار في شريط التصفية",
+    label: t('returns.k_1'),
+    description: t('returns.k_73'),
     statusValue: "PENDING",
   },
   {
     key: "showApprovedStatus",
-    label: "تمت الموافقة",
-    description: "عرض الطلبات الموافق عليها في شريط التصفية",
+    label: t('returns.k_14'),
+    description: t('returns.k_74'),
     statusValue: "APPROVED",
   },
   {
     key: "showRejectedStatus",
-    label: "مرفوض",
-    description: "عرض الطلبات المرفوضة في شريط التصفية",
+    label: t('returns.k_15'),
+    description: t('returns.k_75'),
     statusValue: "REJECTED",
   },
   {
     key: "showCompletedStatus",
-    label: "مكتمل",
-    description: "عرض الطلبات المكتملة في شريط التصفية",
+    label: t('returns.k_16'),
+    description: t('returns.k_76'),
     statusValue: "COMPLETED",
   },
 ];
 
 const DEFAULT_DATA = [
   {
-    name: "عيوب صناعة",
+    name: t('returns.k_77'),
     defaultRole: "STORE",
     reasons: [
-      { reason: "المنتج تالف", description: "المنتج وصل به كسر أو تلف واضح" },
-      { reason: "لا يعمل", description: "المنتج لا يعمل عند التجربة الأولى" },
+      { reason: t('returns.k_78'), description: t('returns.k_79') },
+      { reason: t('returns.k_80'), description: t('returns.k_81') },
     ],
   },
   {
-    name: "مشاكل الشحن",
+    name: t('returns.k_82'),
     defaultRole: "SHIPPING",
     reasons: [
       {
-        reason: "تلف أثناء الشحن",
-        description: "الكرتونة الخارجية ممزقة والمنتج متضرر",
+        reason: t('returns.k_83'),
+        description: t('returns.k_84'),
       },
       {
-        reason: "تأخير في التوصيل",
-        description: "وصل بعد الموعد المحدد بكثير",
+        reason: t('returns.k_85'),
+        description: t('returns.k_86'),
       },
     ],
   },
   {
-    name: "أسباب العميل",
+    name: t('returns.k_87'),
     defaultRole: "CUSTOMER",
     reasons: [
-      { reason: "غير مناسب", description: "المقاس أو اللون غير مناسب" },
-      { reason: "لم يعد بحاجة إليه", description: "العميل غير رأيه" },
+      { reason: t('returns.k_88'), description: t('returns.k_89') },
+      { reason: t('returns.k_90'), description: t('returns.k_91') },
     ],
   },
 ];
 
 const ReturnSettingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"display" | "reasons">("display");
 
   // Display settings state
@@ -293,9 +295,9 @@ const ReturnSettingsPage: React.FC = () => {
       await returnService.updateSettings({
         reviewDisplayConfig: displayConfig,
       });
-      toast.success("تم حفظ إعدادات العرض بنجاح");
+      toast.success(t('returns.k_92'));
     } catch (error) {
-      toast.error("فشل في حفظ الإعدادات");
+      toast.error(t('returns.k_93'));
     } finally {
       setSaving(false);
     }
@@ -321,7 +323,7 @@ const ReturnSettingsPage: React.FC = () => {
   };
 
   const addDefaults = async () => {
-    if (!confirm("سيتم إضافة بيانات افتراضية. هل أنت متأكد؟")) return;
+    if (!confirm(t('returns.k_94'))) return;
     setLoading(true);
     try {
       for (const catData of DEFAULT_DATA) {
@@ -338,11 +340,11 @@ const ReturnSettingsPage: React.FC = () => {
           });
         }
       }
-      toast.success("تم إضافة البيانات الافتراضية بنجاح");
+      toast.success(t('returns.k_95'));
       fetchReasonsData();
     } catch (error) {
       console.error(error);
-      toast.error("فشل في إضافة البيانات الافتراضية");
+      toast.error(t('returns.k_96'));
       setLoading(false);
     }
   };
@@ -355,17 +357,17 @@ const ReturnSettingsPage: React.FC = () => {
           name: categoryName,
           defaultRole,
         });
-        toast.success("تم تحديث التصنيف");
+        toast.success(t('returns.k_97'));
       } else {
         await returnService.createCategory({ name: categoryName, defaultRole });
-        toast.success("تم إنشاء التصنيف");
+        toast.success(t('returns.k_98'));
       }
       setIsCategoryModalOpen(false);
       setEditingCategory(null);
       setCategoryName("");
       fetchReasonsData();
     } catch (error) {
-      toast.error("فشل في الحفظ");
+      toast.error(t('returns.k_99'));
     }
   };
 
@@ -378,14 +380,14 @@ const ReturnSettingsPage: React.FC = () => {
           description: reasonDesc,
           categoryId: selectedCategoryId,
         });
-        toast.success("تم تحديث السبب");
+        toast.success(t('returns.k_100'));
       } else {
         await returnService.createReason({
           reason: reasonText,
           description: reasonDesc,
           categoryId: selectedCategoryId,
         });
-        toast.success("تم إنشاء السبب");
+        toast.success(t('returns.k_101'));
       }
       setIsReasonModalOpen(false);
       setEditingReason(null);
@@ -394,18 +396,18 @@ const ReturnSettingsPage: React.FC = () => {
       setSelectedCategoryId("");
       fetchReasonsData();
     } catch (error) {
-      toast.error("فشل في الحفظ");
+      toast.error(t('returns.k_99'));
     }
   };
 
   const deleteReason = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا السبب؟")) return;
+    if (!confirm(t('returns.k_102'))) return;
     try {
       await returnService.deleteReason(id);
-      toast.success("تم الحذف");
+      toast.success(t('returns.k_103'));
       fetchReasonsData();
     } catch (error) {
-      toast.error("فشل في الحذف");
+      toast.error(t('returns.k_104'));
     }
   };
 
@@ -417,10 +419,10 @@ const ReturnSettingsPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            إعدادات المرتجعات
+            {t('returns.k_160')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            إعدادات العرض وأسباب الإرجاع والتصنيفات
+            {t('returns.k_161')}
           </p>
         </div>
       </div>
@@ -435,7 +437,7 @@ const ReturnSettingsPage: React.FC = () => {
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           }`}
         >
-          <Eye size={16} /> إعدادات العرض
+          <Eye size={16} /> {t('returns.k_162')}
         </button>
         <button
           onClick={() => setActiveTab("reasons")}
@@ -445,7 +447,7 @@ const ReturnSettingsPage: React.FC = () => {
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           }`}
         >
-          <Tag size={16} /> أسباب المرتجعات
+          <Tag size={16} /> {t('returns.k_163')}
         </button>
       </div>
 
@@ -460,17 +462,17 @@ const ReturnSettingsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-                  أعمدة جدول المراجعة
+                  {t('returns.k_164')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  اختر الأعمدة التي تظهر في صفحة مراجعة المرتجعات
+                  {t('returns.k_165')}
                 </p>
               </div>
             </div>
 
             {settingsLoading ? (
               <div className="text-center py-8 text-gray-400">
-                جاري التحميل...
+                {t('returns.k_144')}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -522,10 +524,10 @@ const ReturnSettingsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-                  عناصر التحكم
+                  {t('returns.k_166')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  إظهار أو إخفاء عناصر التحكم في صفحة المراجعة
+                  {t('returns.k_167')}
                 </p>
               </div>
             </div>
@@ -578,10 +580,10 @@ const ReturnSettingsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-                  حالات التصفية
+                  {t('returns.k_168')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  اختر الحالات التي تظهر في شريط تصفية المرتجعات
+                  {t('returns.k_169')}
                 </p>
               </div>
             </div>
@@ -630,10 +632,10 @@ const ReturnSettingsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-800 dark:text-white">
-                    حالات الطلب الأصلي
+                    {t('returns.k_170')}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    اختر حالات الطلب التي تظهر في فلتر حالة الطلب
+                    {t('returns.k_171')}
                   </p>
                 </div>
               </div>
@@ -684,7 +686,7 @@ const ReturnSettingsPage: React.FC = () => {
               className="bg-blue-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium shadow-sm"
             >
               <Save size={18} />
-              {saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
+              {saving ? t('returns.k_105') : t('returns.k_106')}
             </button>
           </div>
         </div>
@@ -698,7 +700,7 @@ const ReturnSettingsPage: React.FC = () => {
               onClick={addDefaults}
               className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors"
             >
-              <Sparkles size={18} /> اقتراحات ذكية
+              <Sparkles size={18} /> {t('returns.k_172')}
             </button>
           </div>
 
@@ -707,7 +709,7 @@ const ReturnSettingsPage: React.FC = () => {
             <div className="lg:col-span-1">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                  <FolderPlus size={20} className="text-blue-500" /> التصنيفات
+                  <FolderPlus size={20} className="text-blue-500" /> {t('returns.k_173')}
                 </h2>
                 <button
                   onClick={() => {
@@ -718,17 +720,17 @@ const ReturnSettingsPage: React.FC = () => {
                   }}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  + إضافة
+                  {t('returns.k_174')}
                 </button>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
                 {loading ? (
                   <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                    جاري التحميل...
+                    {t('returns.k_144')}
                   </div>
                 ) : categories.length === 0 ? (
                   <div className="p-4 text-center text-gray-400">
-                    لا توجد تصنيفات
+                    {t('returns.k_175')}
                   </div>
                 ) : (
                   categories.map((cat) => (
@@ -741,7 +743,7 @@ const ReturnSettingsPage: React.FC = () => {
                           {cat.name}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
-                          <Shield size={12} /> المسؤول الافتراضي:{" "}
+                          <Shield size={12} />{t('returns.k_107')}{" "}
                           {cat.defaultRole}
                         </div>
                       </div>
@@ -766,7 +768,7 @@ const ReturnSettingsPage: React.FC = () => {
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                  <Tag size={20} className="text-green-500" /> أسباب الإرجاع
+                  <Tag size={20} className="text-green-500" /> {t('returns.k_176')}
                 </h2>
                 <button
                   onClick={() => {
@@ -778,7 +780,7 @@ const ReturnSettingsPage: React.FC = () => {
                   }}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  + إضافة سبب
+                  {t('returns.k_177')}
                 </button>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -786,16 +788,16 @@ const ReturnSettingsPage: React.FC = () => {
                   <thead className="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                        السبب
+                        {t('returns.k_57')}
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                        التصنيف
+                        {t('returns.k_178')}
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                        الحالة
+                        {t('returns.k_61')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase pl-6">
-                        الإجراءات
+                        {t('returns.k_67')}
                       </th>
                     </tr>
                   </thead>
@@ -806,7 +808,7 @@ const ReturnSettingsPage: React.FC = () => {
                           colSpan={4}
                           className="p-4 text-center text-gray-500 dark:text-gray-400"
                         >
-                          جاري التحميل...
+                          {t('returns.k_144')}
                         </td>
                       </tr>
                     ) : reasons.length === 0 ? (
@@ -815,7 +817,7 @@ const ReturnSettingsPage: React.FC = () => {
                           colSpan={4}
                           className="p-4 text-center text-gray-400"
                         >
-                          لا توجد أسباب
+                          {t('returns.k_179')}
                         </td>
                       </tr>
                     ) : (
@@ -834,17 +836,17 @@ const ReturnSettingsPage: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-900/30">
-                              {reason.category?.name || "غير مصنف"}
+                              {reason.category?.name || t('returns.k_108')}
                             </span>
                           </td>
                           <td className="px-6 py-4">
                             {reason.isActive ? (
                               <span className="text-green-600 dark:text-green-400 flex items-center gap-1 text-xs">
-                                <CheckCircle size={14} /> نشط
+                                <CheckCircle size={14} /> {t('returns.k_180')}
                               </span>
                             ) : (
                               <span className="text-gray-400 dark:text-gray-500 flex items-center gap-1 text-xs">
-                                <XCircle size={14} /> معطل
+                                <XCircle size={14} /> {t('returns.k_181')}
                               </span>
                             )}
                           </td>
@@ -886,13 +888,13 @@ const ReturnSettingsPage: React.FC = () => {
             <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
               <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
                 <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-                  {editingCategory ? "تعديل تصنيف" : "تصنيف جديد"}
+                  {editingCategory ? t('returns.k_109') : t('returns.k_110')}
                 </h3>
                 <form onSubmit={handleSaveCategory}>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        اسم التصنيف (مثال: عيب صناعة)
+                        {t('returns.k_182')}
                       </label>
                       <input
                         type="text"
@@ -904,7 +906,7 @@ const ReturnSettingsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        المسؤول الافتراضي عن هذا التصنيف
+                        {t('returns.k_183')}
                       </label>
                       <select
                         value={defaultRole}
@@ -912,13 +914,13 @@ const ReturnSettingsPage: React.FC = () => {
                         className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="CUSTOMER">
-                          العميل (يؤثر على تقييمه)
+                          {t('returns.k_184')}
                         </option>
-                        <option value="STORE">المتجر (عيب فني/تغليف)</option>
+                        <option value="STORE">{t('returns.k_111')}</option>
                         <option value="SHIPPING">
-                          شركة الشحن (تلف أثناء النقل)
+                          {t('returns.k_185')}
                         </option>
-                        <option value="OTHER">أخرى (بدون تأثير)</option>
+                        <option value="OTHER">{t('returns.k_112')}</option>
                       </select>
                     </div>
                   </div>
@@ -928,13 +930,13 @@ const ReturnSettingsPage: React.FC = () => {
                       onClick={() => setIsCategoryModalOpen(false)}
                       className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
-                      إلغاء
+                      {t('returns.k_158')}
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
-                      حفظ
+                      {t('returns.k_186')}
                     </button>
                   </div>
                 </form>
@@ -947,13 +949,13 @@ const ReturnSettingsPage: React.FC = () => {
             <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
               <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
                 <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-                  {editingReason ? "تعديل سبب" : "سبب جديد"}
+                  {editingReason ? t('returns.k_113') : t('returns.k_114')}
                 </h3>
                 <form onSubmit={handleSaveReason}>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        السبب (مثال: القياس غير مناسب)
+                        {t('returns.k_187')}
                       </label>
                       <input
                         type="text"
@@ -965,7 +967,7 @@ const ReturnSettingsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        التصنيف
+                        {t('returns.k_178')}
                       </label>
                       <select
                         required
@@ -973,7 +975,7 @@ const ReturnSettingsPage: React.FC = () => {
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
                         className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
-                        <option value="">اختر تصنيفاً...</option>
+                        <option value="">{t('returns.k_115')}</option>
                         {categories.map((cat) => (
                           <option key={cat.id} value={cat.id}>
                             {cat.name}
@@ -983,7 +985,7 @@ const ReturnSettingsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        وصف إضافي
+                        {t('returns.k_188')}
                       </label>
                       <textarea
                         value={reasonDesc}
@@ -999,13 +1001,13 @@ const ReturnSettingsPage: React.FC = () => {
                       onClick={() => setIsReasonModalOpen(false)}
                       className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
-                      إلغاء
+                      {t('returns.k_158')}
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
-                      حفظ
+                      {t('returns.k_186')}
                     </button>
                   </div>
                 </form>

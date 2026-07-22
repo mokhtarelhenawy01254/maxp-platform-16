@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   returnService,
@@ -20,21 +21,22 @@ import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
 const FALLBACK_ORDER_STATUSES = [
-  { code: "PENDING", label: "قيد الانتظار" },
-  { code: "CONFIRMED", label: "مؤكد" },
-  { code: "SCHEDULED", label: "مجدول" },
-  { code: "PROCESSING", label: "قيد التجهيز" },
-  { code: "SHIPPED", label: "تم الشحن" },
-  { code: "DELIVERED", label: "تم التسليم" },
-  { code: "CANCELLED", label: "ملغي" },
-  { code: "RETURNED", label: "مرتجع" },
-  { code: "REFUNDED", label: "مسترد" },
-  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
-  { code: "ON_HOLD", label: "معلق" },
-  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
+  { code: "PENDING", label: t('returns.k_1') },
+  { code: "CONFIRMED", label: t('returns.k_2') },
+  { code: "SCHEDULED", label: t('returns.k_3') },
+  { code: "PROCESSING", label: t('returns.k_4') },
+  { code: "SHIPPED", label: t('returns.k_5') },
+  { code: "DELIVERED", label: t('returns.k_6') },
+  { code: "CANCELLED", label: t('returns.k_7') },
+  { code: "RETURNED", label: t('returns.k_8') },
+  { code: "REFUNDED", label: t('returns.k_9') },
+  { code: "DUPLICATE_ORDER", label: t('returns.k_10') },
+  { code: "ON_HOLD", label: t('returns.k_11') },
+  { code: "PARTIALLY_DELIVERED", label: t('returns.k_12') },
 ];
 
 const ReturnManagementPage: React.FC = () => {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
@@ -155,18 +157,18 @@ const ReturnManagementPage: React.FC = () => {
 
   const visibleStatuses = useMemo(() => {
     return [
-      { value: "", label: "الكل" },
+      { value: "", label: t('returns.k_13') },
       ...(displayConfig?.showPendingStatus !== false
-        ? [{ value: "PENDING", label: "قيد الانتظار" }]
+        ? [{ value: "PENDING", label: t('returns.k_1') }]
         : []),
       ...(displayConfig?.showApprovedStatus !== false
-        ? [{ value: "APPROVED", label: "تمت الموافقة" }]
+        ? [{ value: "APPROVED", label: t('returns.k_14') }]
         : []),
       ...(displayConfig?.showRejectedStatus !== false
-        ? [{ value: "REJECTED", label: "مرفوض" }]
+        ? [{ value: "REJECTED", label: t('returns.k_15') }]
         : []),
       ...(displayConfig?.showCompletedStatus !== false
-        ? [{ value: "COMPLETED", label: "مكتمل" }]
+        ? [{ value: "COMPLETED", label: t('returns.k_16') }]
         : []),
     ];
   }, [displayConfig]);
@@ -186,25 +188,25 @@ const ReturnManagementPage: React.FC = () => {
       case "APPROVED":
         return (
           <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 flex items-center gap-1">
-            <CheckCircle size={12} /> تم الموافقة
+            <CheckCircle size={12} /> {t('returns.k_135')}
           </span>
         );
       case "REJECTED":
         return (
           <span className="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 flex items-center gap-1">
-            <XCircle size={12} /> مرفوض
+            <XCircle size={12} /> {t('returns.k_15')}
           </span>
         );
       case "COMPLETED":
         return (
           <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 flex items-center gap-1">
-            <CheckCircle size={12} /> مكتمل
+            <CheckCircle size={12} /> {t('returns.k_16')}
           </span>
         );
       default:
         return (
           <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 flex items-center gap-1">
-            <Clock size={12} /> قيد الانتظار
+            <Clock size={12} /> {t('returns.k_1')}
           </span>
         );
     }
@@ -216,25 +218,25 @@ const ReturnManagementPage: React.FC = () => {
       case "EXCELLENT":
         return (
           <span className="mr-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
-            💎 ممتاز
+            {t('returns.k_136')}
           </span>
         );
       case "GOOD":
         return (
           <span className="mr-2 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
-            ✅ جيد
+            {t('returns.k_137')}
           </span>
         );
       case "AVERAGE":
         return (
           <span className="mr-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
-            متوسط
+            {t('returns.k_138')}
           </span>
         );
       case "BAD":
         return (
           <span className="mr-2 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
-            ⛔ سيء
+            {t('returns.k_139')}
           </span>
         );
       default:
@@ -247,10 +249,10 @@ const ReturnManagementPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            إدارة المرتجعات
+            {t('returns.k_140')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            إدارة طلبات الإرجاع وتقييمات العملاء
+            {t('returns.k_141')}
           </p>
         </div>
         {displayConfig?.showCreateButton !== false && (
@@ -258,7 +260,7 @@ const ReturnManagementPage: React.FC = () => {
             onClick={() => setShowCreateModal(true)}
             className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 dark:bg-blue-600 dark:hover:bg-blue-700"
           >
-            <Plus size={18} /> طلب جديد
+            <Plus size={18} /> {t('returns.k_142')}
           </button>
         )}
       </div>
@@ -268,7 +270,7 @@ const ReturnManagementPage: React.FC = () => {
       <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 items-center">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Filter size={18} />
-          <span className="text-sm font-medium">تصفية:</span>
+          <span className="text-sm font-medium">{t('returns.k_17')}</span>
         </div>
         <div className="flex gap-2 flex-wrap">
           {visibleStatuses.map(({ value, label }) => (
@@ -296,7 +298,7 @@ const ReturnManagementPage: React.FC = () => {
                 <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                   <Package size={16} />
-                  <span className="text-xs font-medium whitespace-nowrap">حالة الطلب:</span>
+                  <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_18')}</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <button
@@ -307,7 +309,7 @@ const ReturnManagementPage: React.FC = () => {
                         : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                     }`}
                   >
-                    الكل
+                    {t('returns.k_13')}
                   </button>
                   {visibleOs.map((status) => (
                     <button
@@ -330,13 +332,13 @@ const ReturnManagementPage: React.FC = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="🔍 بحث برقم الطلب..."
+          placeholder={t('returns.k_19')}
           className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg max-w-xs mr-auto"
         />
         <button
           onClick={fetchData}
           className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-          title="تحديث"
+          title={t('returns.k_20')}
         >
           <RefreshCw size={18} />
         </button>
@@ -349,42 +351,42 @@ const ReturnManagementPage: React.FC = () => {
             <tr>
               {displayConfig?.showOrderColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الطلب
+                  {t('returns.k_143')}
                 </th>
               )}
               {displayConfig?.showCustomerColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  العميل
+                  {t('returns.k_49')}
                 </th>
               )}
               {displayConfig?.showReasonColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  السبب
+                  {t('returns.k_57')}
                 </th>
               )}
               {displayConfig?.showResponsiblePartyColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  المسؤول
+                  {t('returns.k_59')}
                 </th>
               )}
               {displayConfig?.showStatusColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الحالة
+                  {t('returns.k_61')}
                 </th>
               )}
               {displayConfig?.showReviewColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  المراجعة
+                  {t('returns.k_63')}
                 </th>
               )}
               {displayConfig?.showDateColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  التاريخ
+                  {t('returns.k_65')}
                 </th>
               )}
               {displayConfig?.showActionsColumn !== false && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-6">
-                  الإجراءات
+                  {t('returns.k_67')}
                 </th>
               )}
             </tr>
@@ -396,7 +398,7 @@ const ReturnManagementPage: React.FC = () => {
                   colSpan={99}
                   className="text-center py-8 text-gray-500 dark:text-gray-400"
                 >
-                  جاري التحميل...
+                  {t('returns.k_144')}
                 </td>
               </tr>
             ) : requests.length === 0 ? (
@@ -405,7 +407,7 @@ const ReturnManagementPage: React.FC = () => {
                   colSpan={99}
                   className="text-center py-8 text-gray-500 dark:text-gray-400"
                 >
-                  لا توجد طلبات إرجاع
+                  {t('returns.k_145')}
                 </td>
               </tr>
             ) : (
@@ -417,11 +419,11 @@ const ReturnManagementPage: React.FC = () => {
                   {displayConfig?.showOrderColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {request.order?.orderNumber || "غير متوفر"}
+                        {request.order?.orderNumber || t('returns.k_21')}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {request.refundAmount
-                          ? `${request.refundAmount} ${request.order?.currency || "ج.م"}`
+                          ? `${request.refundAmount} ${request.order?.currency || t('returns.k_22')}`
                           : "-"}
                       </div>
                     </td>
@@ -446,7 +448,7 @@ const ReturnManagementPage: React.FC = () => {
                           {displayConfig?.showCustomerSuccessScore !==
                             false && (
                             <div className="text-xs text-gray-400 dark:text-gray-500">
-                              معدل النجاح:{" "}
+                              {t('returns.k_146')}{" "}
                               {request.customer?.successScore?.toFixed(1)}%
                             </div>
                           )}
@@ -467,7 +469,7 @@ const ReturnManagementPage: React.FC = () => {
                         </>
                       ) : (
                         <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 flex items-center gap-1 w-fit">
-                          <Clock size={12} /> معلق
+                          <Clock size={12} /> {t('returns.k_11')}
                         </span>
                       )}
                     </td>
@@ -496,11 +498,11 @@ const ReturnManagementPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {request.isReviewed ? (
                         <span className="text-green-600 dark:text-green-400 text-xs flex items-center gap-1">
-                          <CheckCircle size={14} /> تمت المراجعة
+                          <CheckCircle size={14} /> {t('returns.k_147')}
                         </span>
                       ) : (
                         <span className="text-orange-500 dark:text-orange-400 text-xs flex items-center gap-1">
-                          <Clock size={14} /> لم تراجع
+                          <Clock size={14} /> {t('returns.k_148')}
                         </span>
                       )}
                     </td>
@@ -526,7 +528,7 @@ const ReturnManagementPage: React.FC = () => {
                             setShowEditReasonModal(true);
                           }}
                           className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300"
-                          title="تعديل السبب"
+                          title={t('returns.k_23')}
                         >
                           <Edit size={18} />
                         </button>
@@ -534,7 +536,7 @@ const ReturnManagementPage: React.FC = () => {
                         <button
                           onClick={() => setSelectedRequest(request)}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                          title="عرض التفاصيل"
+                          title={t('returns.k_24')}
                         >
                           <Eye size={18} />
                         </button>
@@ -546,7 +548,7 @@ const ReturnManagementPage: React.FC = () => {
                                 handleUpdateStatus(request.id, "APPROVED")
                               }
                               className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
-                              title="موافقة"
+                              title={t('returns.k_25')}
                             >
                               <CheckCircle size={18} />
                             </button>
@@ -555,7 +557,7 @@ const ReturnManagementPage: React.FC = () => {
                                 handleUpdateStatus(request.id, "REJECTED")
                               }
                               className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                              title="رفض"
+                              title={t('returns.k_26')}
                             >
                               <XCircle size={18} />
                             </button>
@@ -567,7 +569,7 @@ const ReturnManagementPage: React.FC = () => {
                               handleUpdateStatus(request.id, "COMPLETED")
                             }
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                            title="تحديد كمكتمل"
+                            title={t('returns.k_27')}
                           >
                             <CheckCircle size={18} />
                           </button>
@@ -586,7 +588,7 @@ const ReturnManagementPage: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            إجمالي {total} — صفحة {page} من {totalPages}
+            {t('returns.k_149')} {total}{t('returns.k_28')}{page}{t('returns.k_29')}{totalPages}
           </span>
           <div className="flex gap-2">
             <button
@@ -594,7 +596,7 @@ const ReturnManagementPage: React.FC = () => {
               disabled={page <= 1}
               className="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
             >
-              السابق
+              {t('returns.k_150')}
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter((p) => Math.abs(p - page) <= 2 || p === 1 || p === totalPages)
@@ -620,7 +622,7 @@ const ReturnManagementPage: React.FC = () => {
               disabled={page >= totalPages}
               className="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
             >
-              التالي
+              {t('returns.k_151')}
             </button>
           </div>
         </div>
@@ -638,7 +640,7 @@ const ReturnManagementPage: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                إنشاء طلب إرجاع جديد
+                {t('returns.k_152')}
               </h2>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -652,7 +654,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Order Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  رقم الطلب *
+                  {t('returns.k_153')}
                 </label>
                 <input
                   type="text"
@@ -668,7 +670,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Return Reason */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  سبب الإرجاع *
+                  {t('returns.k_154')}
                 </label>
                 <select
                   value={newReturn.reasonId}
@@ -685,7 +687,7 @@ const ReturnManagementPage: React.FC = () => {
                   }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
-                  <option value="">-- اختر السبب --</option>
+                  <option value="">{t('returns.k_30')}</option>
                   {categories.map((cat) => (
                     <optgroup key={cat.id} label={cat.name}>
                       {reasons
@@ -700,7 +702,7 @@ const ReturnManagementPage: React.FC = () => {
                   ))}
                   {/* Reasons without category */}
                   {reasons.filter((r) => !r.categoryId).length > 0 && (
-                    <optgroup label="أخرى">
+                    <optgroup label={t('returns.k_31')}>
                       {reasons
                         .filter((r) => !r.categoryId)
                         .map((reason) => (
@@ -717,7 +719,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Responsible Party */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  المسؤول
+                  {t('returns.k_59')}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
@@ -737,12 +739,12 @@ const ReturnManagementPage: React.FC = () => {
                       }`}
                     >
                       {party === "CUSTOMER"
-                        ? "عميل"
+                        ? t('returns.k_32')
                         : party === "STORE"
-                          ? "متجر"
+                          ? t('returns.k_33')
                           : party === "SHIPPING"
-                            ? "شحن"
-                            : "أخرى"}
+                            ? t('returns.k_34')
+                            : t('returns.k_31')}
                     </button>
                   ))}
                 </div>
@@ -751,7 +753,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Refund Amount */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  المبلغ المسترد
+                  {t('returns.k_155')}
                 </label>
                 <input
                   type="number"
@@ -767,7 +769,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Customer Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ملاحظات العميل
+                  {t('returns.k_156')}
                 </label>
                 <textarea
                   value={newReturn.customerNotes}
@@ -778,7 +780,7 @@ const ReturnManagementPage: React.FC = () => {
                     })
                   }
                   rows={3}
-                  placeholder="أي ملاحظات من العميل..."
+                  placeholder={t('returns.k_35')}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -786,7 +788,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Admin Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ملاحظات الإدارة
+                  {t('returns.k_157')}
                 </label>
                 <textarea
                   value={newReturn.adminNotes}
@@ -794,7 +796,7 @@ const ReturnManagementPage: React.FC = () => {
                     setNewReturn({ ...newReturn, adminNotes: e.target.value })
                   }
                   rows={3}
-                  placeholder="ملاحظات داخلية للإدارة..."
+                  placeholder={t('returns.k_36')}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -805,12 +807,12 @@ const ReturnManagementPage: React.FC = () => {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  إلغاء
+                  {t('returns.k_158')}
                 </button>
                 <button
                   onClick={async () => {
                     if (!newReturn.orderNumber || !newReturn.reasonId) {
-                      toast.error("رقم الطلب وسبب الإرجاع مطلوبان");
+                      toast.error(t('returns.k_37'));
                       return;
                     }
                     setCreating(true);
@@ -823,7 +825,7 @@ const ReturnManagementPage: React.FC = () => {
                         adminNotes: newReturn.adminNotes,
                         responsibleParty: newReturn.responsibleParty,
                       });
-                      toast.success("تم إنشاء طلب الإرجاع بنجاح");
+                      toast.success(t('returns.k_38'));
                       setShowCreateModal(false);
                       setNewReturn({
                         orderNumber: "",
@@ -838,7 +840,7 @@ const ReturnManagementPage: React.FC = () => {
                       console.error(error);
                       toast.error(
                         error.response?.data?.error ||
-                          "فشل في إنشاء طلب الإرجاع",
+                          t('returns.k_39'),
                       );
                     } finally {
                       setCreating(false);
@@ -847,7 +849,7 @@ const ReturnManagementPage: React.FC = () => {
                   disabled={creating}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {creating ? "جاري الإنشاء..." : "إنشاء الطلب"}
+                  {creating ? t('returns.k_40') : t('returns.k_41')}
                 </button>
               </div>
             </div>
@@ -867,7 +869,7 @@ const ReturnManagementPage: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                تعديل سبب الإرجاع
+                {t('returns.k_159')}
               </h2>
               <button
                 onClick={() => setShowEditReasonModal(false)}
@@ -881,7 +883,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Return Reason */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  سبب الإرجاع *
+                  {t('returns.k_154')}
                 </label>
                 <select
                   value={editForm.reasonId}
@@ -899,7 +901,7 @@ const ReturnManagementPage: React.FC = () => {
                   }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
-                  <option value="">-- اختر السبب --</option>
+                  <option value="">{t('returns.k_30')}</option>
                   {categories.map((cat) => (
                     <optgroup key={cat.id} label={cat.name}>
                       {reasons
@@ -914,7 +916,7 @@ const ReturnManagementPage: React.FC = () => {
                   ))}
                   {/* Reasons without category */}
                   {reasons.filter((r) => !r.categoryId).length > 0 && (
-                    <optgroup label="أخرى">
+                    <optgroup label={t('returns.k_31')}>
                       {reasons
                         .filter((r) => !r.categoryId)
                         .map((reason) => (
@@ -931,7 +933,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Responsible Party */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  المسؤول
+                  {t('returns.k_59')}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
@@ -951,12 +953,12 @@ const ReturnManagementPage: React.FC = () => {
                       }`}
                     >
                       {party === "CUSTOMER"
-                        ? "عميل"
+                        ? t('returns.k_32')
                         : party === "STORE"
-                          ? "متجر"
+                          ? t('returns.k_33')
                           : party === "SHIPPING"
-                            ? "شحن"
-                            : "أخرى"}
+                            ? t('returns.k_34')
+                            : t('returns.k_31')}
                     </button>
                   ))}
                 </div>
@@ -965,7 +967,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Customer Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ملاحظات العميل
+                  {t('returns.k_156')}
                 </label>
                 <textarea
                   value={editForm.customerNotes}
@@ -973,7 +975,7 @@ const ReturnManagementPage: React.FC = () => {
                     setEditForm({ ...editForm, customerNotes: e.target.value })
                   }
                   rows={3}
-                  placeholder="أي ملاحظات من العميل..."
+                  placeholder={t('returns.k_35')}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -981,7 +983,7 @@ const ReturnManagementPage: React.FC = () => {
               {/* Admin Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ملاحظات الإدارة
+                  {t('returns.k_157')}
                 </label>
                 <textarea
                   value={editForm.adminNotes}
@@ -989,7 +991,7 @@ const ReturnManagementPage: React.FC = () => {
                     setEditForm({ ...editForm, adminNotes: e.target.value })
                   }
                   rows={3}
-                  placeholder="ملاحظات داخلية للإدارة..."
+                  placeholder={t('returns.k_36')}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -1000,12 +1002,12 @@ const ReturnManagementPage: React.FC = () => {
                   onClick={() => setShowEditReasonModal(false)}
                   className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  إلغاء
+                  {t('returns.k_158')}
                 </button>
                 <button
                   onClick={async () => {
                     if (!editForm.reasonId) {
-                      toast.error("سبب الإرجاع مطلوب");
+                      toast.error(t('returns.k_42'));
                       return;
                     }
                     setCreating(true);
@@ -1016,14 +1018,14 @@ const ReturnManagementPage: React.FC = () => {
                         customerNotes: editForm.customerNotes,
                         adminNotes: editForm.adminNotes,
                       });
-                      toast.success("تم تحديث السبب بنجاح");
+                      toast.success(t('returns.k_43'));
                       setShowEditReasonModal(false);
                       setEditingRequest(null);
                       fetchData();
                     } catch (error: any) {
                       console.error(error);
                       toast.error(
-                        error.response?.data?.error || "فشل في تحديث السبب",
+                        error.response?.data?.error || t('returns.k_44'),
                       );
                     } finally {
                       setCreating(false);
@@ -1032,7 +1034,7 @@ const ReturnManagementPage: React.FC = () => {
                   disabled={creating}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {creating ? "جاري التحديث..." : "حفظ التعديلات"}
+                  {creating ? t('returns.k_45') : t('returns.k_46')}
                 </button>
               </div>
             </div>

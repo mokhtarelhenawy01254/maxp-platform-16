@@ -177,35 +177,35 @@ const TurboRecords: React.FC = () => {
                     setTotalPages(response.data.pagination.pages || 1);
                     setTotalOrders(response.data.pagination.total || 0);
                 }
-                toast.success(t("orders.statusUpdated", "تم تحديث الحالات الحية من تربو بنجاح"));
+                toast.success(t("orders.statusUpdated", t('orders.k_1')));
             }
         } catch (err) {
-            toast.error(t("orders.updateError", "فشل في تحديث الحالات"));
+            toast.error(t("orders.updateError", t('orders.k_2')));
         } finally {
             setRefreshingStatuses(false);
         }
     };
 
     const TURBO_STATUS_LABELS: Record<string, string> = {
-        turbo_saved: 'محفوظة قبل الشحن (كود 1)',
-        turbo_sent: 'مرسلة لشركة تربو (كود 2)',
-        processing: 'قيد التنفيذ (كود 3)',
-        out_for_delivery: 'مسلمة للمندوب (كود 4)',
-        returned_to_company: 'مرتجعات في الشركة (كود 5)',
-        cancelled: 'ملغي من الشحن (كود 6)',
-        delivered: 'تم التسليم (كود 7)',
-        remitted: 'تم التوريد وتحصيل المبلغ (كود 8)',
-        archived: 'شحنة محذوفة في تربو (كود 9)',
-        returned_resent: 'معاد ارسالها (كود 10)',
-        returned_missing: 'مرتجعات مفقودة (كود 11)',
-        returned_destroyed: 'مرتجعات معدومة (كود 12)',
-        delayed: 'مؤجلات مع المندوب (كود 13)',
-        preparing: 'تجهيز بالفرع (قبل المندوب)',
-        active: 'النشطة في تربو (غير الموردة/المرتجعة)'
+        turbo_saved: t('orders.k_52'),
+        turbo_sent: t('orders.k_53'),
+        processing: t('orders.k_54'),
+        out_for_delivery: t('orders.k_55'),
+        returned_to_company: t('orders.k_56'),
+        cancelled: t('orders.k_57'),
+        delivered: t('orders.k_58'),
+        remitted: t('orders.k_59'),
+        archived: t('orders.k_60'),
+        returned_resent: t('orders.k_61'),
+        returned_missing: t('orders.k_62'),
+        returned_destroyed: t('orders.k_63'),
+        delayed: t('orders.k_64'),
+        preparing: t('orders.k_65'),
+        active: t('orders.k_66')
     };
 
     const getTurboStatusText = (status: string | undefined | null) => {
-        if (!status) return "غير مرسلة";
+        if (!status) return t('orders.k_24');
         const key = status.toLowerCase().trim();
         return TURBO_STATUS_LABELS[key] || status;
     };
@@ -223,21 +223,21 @@ const TurboRecords: React.FC = () => {
     };
 
     const filterOptions = [
-        { key: 'all', label: 'إجمالي شحنات تربو', color: 'border-blue-300 bg-blue-50 text-blue-800' },
-        { key: 'active', label: 'النشطة في تربو (غير الموردة/المرتجعة)', color: 'border-amber-400 bg-amber-50 text-amber-900 font-bold' },
-        { key: 'merchant_preparing', label: 'تجهيز التاجر (قبل الاستلام/الفرع)', color: 'border-indigo-400 bg-indigo-50 text-indigo-900 font-bold' },
-        { key: 'preparing', label: 'معالجة بالفرع (قبل المندوب)', color: 'border-purple-400 bg-purple-50 text-purple-900 font-semibold' },
-        { key: 'processing', label: 'قيد التنفيذ بالفرع', color: 'border-purple-300 bg-purple-50 text-purple-800' },
-        { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
-        { key: 'delayed', label: 'مؤجلات مع المندوب', color: 'border-amber-300 bg-amber-50 text-amber-800' },
-        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50 text-green-800' },
-        { key: 'remitted', label: 'تم التوريد وتحصيل المبلغ', color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
-        { key: 'returned_to_company', label: 'مرتجعات في الشركة', color: 'border-red-300 bg-red-50 text-red-800' },
-        { key: 'returned_resent', label: 'معاد ارسالها', color: 'border-sky-300 bg-sky-50 text-sky-800' },
-        { key: 'returned_missing', label: 'مرتجعات مفقودة', color: 'border-rose-300 bg-rose-50 text-rose-800' },
-        { key: 'returned_destroyed', label: 'مرتجعات معدومة', color: 'border-stone-300 bg-stone-50 text-stone-800' },
-        { key: 'cancelled', label: 'ملغي من الشحن', color: 'border-gray-400 bg-gray-100 text-gray-800' },
-        { key: 'archived', label: 'شحنة محذوفة', color: 'border-stone-400 bg-stone-100 text-stone-800' },
+        { key: 'all', label: t('orders.k_67'), color: 'border-blue-300 bg-blue-50 text-blue-800' },
+        { key: 'active', label: t('orders.k_66'), color: 'border-amber-400 bg-amber-50 text-amber-900 font-bold' },
+        { key: 'merchant_preparing', label: t('orders.k_68'), color: 'border-indigo-400 bg-indigo-50 text-indigo-900 font-bold' },
+        { key: 'preparing', label: t('orders.k_69'), color: 'border-purple-400 bg-purple-50 text-purple-900 font-semibold' },
+        { key: 'processing', label: t('orders.k_47'), color: 'border-purple-300 bg-purple-50 text-purple-800' },
+        { key: 'out_for_delivery', label: t('orders.k_28'), color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
+        { key: 'delayed', label: t('orders.k_9'), color: 'border-amber-300 bg-amber-50 text-amber-800' },
+        { key: 'delivered', label: t('orders.deliveredOrders'), color: 'border-green-300 bg-green-50 text-green-800' },
+        { key: 'remitted', label: t('orders.k_70'), color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
+        { key: 'returned_to_company', label: t('orders.k_18'), color: 'border-red-300 bg-red-50 text-red-800' },
+        { key: 'returned_resent', label: t('orders.k_20'), color: 'border-sky-300 bg-sky-50 text-sky-800' },
+        { key: 'returned_missing', label: t('orders.k_21'), color: 'border-rose-300 bg-rose-50 text-rose-800' },
+        { key: 'returned_destroyed', label: t('orders.k_22'), color: 'border-stone-300 bg-stone-50 text-stone-800' },
+        { key: 'cancelled', label: t('orders.k_15'), color: 'border-gray-400 bg-gray-100 text-gray-800' },
+        { key: 'archived', label: t('orders.k_71'), color: 'border-stone-400 bg-stone-100 text-stone-800' },
     ];
 
     const getStatusCount = (key: string) => {
@@ -255,7 +255,7 @@ const TurboRecords: React.FC = () => {
                         {t("orders.turboRecordsTitle")}
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        إدارة ومتابعة شحنات تربو اللحظية وتتبع الحالات الحية بالكامل
+                        {t('orders.k_41')}
                     </p>
                 </div>
 
@@ -288,11 +288,11 @@ const TurboRecords: React.FC = () => {
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'active' ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400 scale-[1.02]' : 'border-amber-200 bg-amber-50/60 hover:bg-amber-50'}`}
                 >
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-md">الشحنات النشطة</span>
+                        <span className="text-xs font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-md">{t('orders.k_42')}</span>
                         <TruckIcon className="h-5 w-5 text-amber-600" />
                     </div>
-                    <div className="text-2xl font-black text-amber-900">{getStatusCount('active')} أوردر</div>
-                    <div className="text-xs text-amber-700 mt-1 font-medium">كل الأوردرات في تربو ولسه مرجعتش لا فلوس ولا مرتجعات</div>
+                    <div className="text-2xl font-black text-amber-900">{getStatusCount('active')} {t('orders.k_43')}</div>
+                    <div className="text-xs text-amber-700 mt-1 font-medium">{t('orders.k_44')}</div>
                 </button>
 
                 {/* 2. كارت تجهيز التاجر (قبل البيك أب والفرع) */}
@@ -301,11 +301,11 @@ const TurboRecords: React.FC = () => {
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'merchant_preparing' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-400 scale-[1.02]' : 'border-indigo-200 bg-indigo-50/60 hover:bg-indigo-50'}`}
                 >
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-indigo-800 bg-indigo-200/80 px-2 py-0.5 rounded-md">تجهيز التاجر</span>
+                        <span className="text-xs font-bold text-indigo-800 bg-indigo-200/80 px-2 py-0.5 rounded-md">{t('orders.k_45')}</span>
                         <InformationCircleIcon className="h-5 w-5 text-indigo-600" />
                     </div>
-                    <div className="text-2xl font-black text-indigo-900">{getStatusCount('merchant_preparing')} أوردر</div>
-                    <div className="text-xs text-indigo-700 mt-1 font-medium">أخذت كود تربو لكن لسه معملتش بيك أب ومرحتش للفرع</div>
+                    <div className="text-2xl font-black text-indigo-900">{getStatusCount('merchant_preparing')} {t('orders.k_43')}</div>
+                    <div className="text-xs text-indigo-700 mt-1 font-medium">{t('orders.k_46')}</div>
                 </button>
 
                 {/* 3. كارت معالجة الشحن بالفرع */}
@@ -314,11 +314,11 @@ const TurboRecords: React.FC = () => {
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'processing' ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-400 scale-[1.02]' : 'border-purple-200 bg-purple-50/60 hover:bg-purple-50'}`}
                 >
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-purple-800 bg-purple-200/80 px-2 py-0.5 rounded-md">قيد التنفيذ بالفرع</span>
+                        <span className="text-xs font-bold text-purple-800 bg-purple-200/80 px-2 py-0.5 rounded-md">{t('orders.k_47')}</span>
                         <InformationCircleIcon className="h-5 w-5 text-purple-600" />
                     </div>
-                    <div className="text-2xl font-black text-purple-900">{getStatusCount('processing')} أوردر</div>
-                    <div className="text-xs text-purple-700 mt-1 font-medium">وصلت فرع تربو وقيد المعالجة قبل المندوب</div>
+                    <div className="text-2xl font-black text-purple-900">{getStatusCount('processing')} {t('orders.k_43')}</div>
+                    <div className="text-xs text-purple-700 mt-1 font-medium">{t('orders.k_48')}</div>
                 </button>
 
                 {/* 4. كارت إجمالي أوردرات تربو */}
@@ -327,11 +327,11 @@ const TurboRecords: React.FC = () => {
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'all' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400 scale-[1.02]' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                 >
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">إجمالي الشحنات</span>
+                        <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">{t('orders.k_49')}</span>
                         <TruckIcon className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div className="text-2xl font-black text-gray-900">{totalOrders} أوردر</div>
-                    <div className="text-xs text-gray-500 mt-1 font-medium">عرض كافة الشحنات الموجهة لشركة تربو</div>
+                    <div className="text-2xl font-black text-gray-900">{totalOrders} {t('orders.k_43')}</div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">{t('orders.k_50')}</div>
                 </button>
             </div>
 
@@ -341,7 +341,7 @@ const TurboRecords: React.FC = () => {
                 <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <TruckIcon className="h-4 w-4 text-blue-500" />
-                        التقسيم التفصيلي لحالات تربو (أكواد تربو الرسمية 1-13)
+                        {t('orders.k_51')}
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
                         {filterOptions.filter(o => !['all', 'active', 'preparing'].includes(o.key)).map(item => (
@@ -361,7 +361,7 @@ const TurboRecords: React.FC = () => {
             {/* Search Bar */}
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-600">الفلتر الحالي:</span>
+                    <span className="text-xs font-semibold text-gray-600">{t('orders.k_32')}</span>
                     <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
                         {filterOptions.find(f => f.key === filterType)?.label || filterType}
                     </span>
@@ -406,7 +406,7 @@ const TurboRecords: React.FC = () => {
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.customer")}</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.total")}</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.trackingNumber")}</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">حالة الشحن</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('orders.k_33')}</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.date")}</th>
                                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{t("orders.actions")}</th>
                             </tr>
@@ -477,12 +477,12 @@ const TurboRecords: React.FC = () => {
                                                 )}
                                                 {order.turboLiveStatus?.returnReason && (
                                                     <span className="text-xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 font-medium">
-                                                        سبب الارتجاع: {order.turboLiveStatus.returnReason}
+                                                        {t('orders.k_39')} {order.turboLiveStatus.returnReason}
                                                     </span>
                                                 )}
                                                 {order.turboLiveStatus?.delayReason && (
                                                     <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 font-medium">
-                                                        سبب التأخير: {order.turboLiveStatus.delayReason}
+                                                        {t('orders.k_40')} {order.turboLiveStatus.delayReason}
                                                     </span>
                                                 )}
                                             </div>

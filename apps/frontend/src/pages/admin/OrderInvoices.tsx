@@ -217,6 +217,7 @@ const getErrorMessage = (error: unknown, t: (key: string) => string) => {
 };
 
 const OrderInvoices: React.FC = () => {
+  const { t } = useTranslation();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const paymentStatusMeta = useMemo(() => createPaymentStatusMeta(t), [t]);
@@ -377,8 +378,8 @@ const OrderInvoices: React.FC = () => {
   const paginationPages = getVisiblePages(currentPage, totalPages);
   const activeFilterLabels = [
     paymentStatus ? getPaymentStatusMeta(paymentStatus, paymentStatusMeta).label : null,
-    dateFrom ? `من ${formatDate(dateFrom)}` : null,
-    dateTo ? `إلى ${formatDate(dateTo)}` : null,
+    dateFrom ? t('orderInvoices.from_date', { date: formatDate(dateFrom) }) : null,
+    dateTo ? t('orderInvoices.to_date', { date: formatDate(dateTo) }) : null,
   ].filter((label): label is string => Boolean(label));
   const activeFiltersCount = activeFilterLabels.length;
   const metricItems = stats
@@ -439,7 +440,7 @@ const OrderInvoices: React.FC = () => {
               <RefreshCw
                 className={cn("size-4", loading ? "animate-spin" : "")}
               />
-              تحديث البيانات
+              {t('orderInvoices.k_48')}
             </Button>
           }
         />
@@ -462,7 +463,7 @@ const OrderInvoices: React.FC = () => {
             loading
               ? t('orderInvoices.k_42')
               : total > 0
-                ? `${currentFrom}-${currentTo} من ${total}`
+                ? `${currentFrom}-${currentTo} ${t('orderInvoices.k_45')} ${total}`
                 : t('orderInvoices.k_43')
           }
           activeFilters={activeFilterLabels}
@@ -552,7 +553,7 @@ const OrderInvoices: React.FC = () => {
                   className="h-11 w-full px-5 xl:w-auto"
                 >
                   <Search className="size-4" />
-                  بحث
+                  {t('orderInvoices.k_49')}
                 </Button>
               </div>
             </div>
@@ -570,13 +571,13 @@ const OrderInvoices: React.FC = () => {
           title={t('orderInvoices.k_12')}
           description={
             total > 0
-              ? `عرض ${currentFrom} - ${currentTo} من أصل ${total} فاتورة`
+              ? t('orderInvoices.showing_invoices', { 'from': currentFrom, 'to': currentTo, 'total': total })
               : t('orderInvoices.k_44')
           }
           headerAside={
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
               <Receipt className="size-3.5" />
-              {loading ? t('orderInvoices.k_42') : `عدد العناصر في الصفحة: ${rowsPerPage}`}
+              {loading ? t('orderInvoices.k_42') : t('orderInvoices.items_per_page', { count: rowsPerPage })}
             </div>
           }
           contentClassName="p-0"
@@ -592,7 +593,7 @@ const OrderInvoices: React.FC = () => {
                   <AlertCircle className="size-4" />
                   <AlertTitle>{t('orderInvoices.k_25')}</AlertTitle>
                   <AlertDescription>
-                    جرّب تغيير معايير البحث أو تحديث البيانات لمعرفة أحدث النتائج.
+                    {t('orderInvoices.k_50')}
                   </AlertDescription>
                 </Alert>
               </div>
@@ -612,7 +613,7 @@ const OrderInvoices: React.FC = () => {
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">
-                              رقم الفاتورة
+                              {t('orderInvoices.k_51')}
                             </p>
                             <p className="font-semibold text-foreground">
                               {invoice.invoiceNumber}
@@ -671,7 +672,7 @@ const OrderInvoices: React.FC = () => {
                             onClick={() => handleViewInvoice(invoice.id)}
                           >
                             <Eye className="size-4" />
-                            عرض
+                            {t('orderInvoices.k_52')}
                           </Button>
                           <Button
                             type="button"
@@ -680,7 +681,7 @@ const OrderInvoices: React.FC = () => {
                             onClick={() => handlePrintInvoice(invoice.id)}
                           >
                             <Printer className="size-4" />
-                            طباعة
+                            {t('orderInvoices.k_53')}
                           </Button>
                         </div>
                       </div>
@@ -693,25 +694,25 @@ const OrderInvoices: React.FC = () => {
                     <TableHeader>
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableHead className="text-right font-semibold text-foreground">
-                          رقم الفاتورة
+                          {t('orderInvoices.k_51')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          رقم الطلب
+                          {t('orderInvoices.k_54')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          العميل
+                          {t('orderInvoices.k_27')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          تاريخ الإصدار
+                          {t('orderInvoices.k_55')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          المبلغ
+                          {t('orderInvoices.k_29')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          حالة الدفع
+                          {t('orderInvoices.k_15')}
                         </TableHead>
                         <TableHead className="text-center font-semibold text-foreground">
-                          الإجراءات
+                          {t('orderInvoices.k_56')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -807,12 +808,12 @@ const OrderInvoices: React.FC = () => {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <p className="text-sm text-muted-foreground">
-                        عرض {currentFrom} - {currentTo} من أصل {total}
+                        {t('orderInvoices.k_52')} {currentFrom} - {currentTo}{t('orderInvoices.k_47')}{total}
                       </p>
 
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">
-                          عدد الصفوف
+                          {t('orderInvoices.k_57')}
                         </span>
                         <Select
                           value={rowsPerPage.toString()}
@@ -824,7 +825,7 @@ const OrderInvoices: React.FC = () => {
                           <SelectContent>
                             {PAGE_SIZE_OPTIONS.map((size) => (
                               <SelectItem key={size} value={size.toString()}>
-                                {size} / صفحة
+                                {size} {t('orderInvoices.k_58')}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -841,7 +842,7 @@ const OrderInvoices: React.FC = () => {
                         onClick={() => handlePageChange(0)}
                       >
                         <ChevronsRight className="size-4" />
-                        الأولى
+                        {t('orderInvoices.k_59')}
                       </Button>
 
                       {paginationPages.map((pageItem) => {
@@ -882,7 +883,7 @@ const OrderInvoices: React.FC = () => {
                         disabled={page >= totalPages - 1}
                         onClick={() => handlePageChange(totalPages - 1)}
                       >
-                        الأخيرة
+                        {t('orderInvoices.k_60')}
                         <ChevronsLeft className="size-4" />
                       </Button>
                     </div>

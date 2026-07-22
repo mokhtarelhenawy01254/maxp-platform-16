@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   Settings,
@@ -84,6 +85,7 @@ interface Tab {
 }
 
 const OrderSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>(
@@ -122,81 +124,81 @@ const OrderSettings: React.FC = () => {
   const tabs: Tab[] = [
     {
       id: "status",
-      label: "حالات الطلبات",
+      label: t('orderSettings.k_1'),
       icon: Tag,
-      description: "إدارة حالات الطلبات والدفع",
+      description: t('orderSettings.k_2'),
     },
     {
       id: "minimum",
-      label: "الحد الأدنى للطلبات",
+      label: t('orderSettings.k_3'),
       icon: CircleDollarSign,
-      description: "تحديد أقل قيمة لإتمام الطلبات",
+      description: t('orderSettings.k_4'),
     },
     {
       id: "scheduled",
-      label: "الطلبات المجدولة",
+      label: t('orderSettings.k_5'),
       icon: Calendar,
-      description: "إعدادات الطلبات المجدولة",
+      description: t('orderSettings.k_6'),
     },
     {
       id: "columns",
-      label: "أعمدة صفحة الطلبات",
+      label: t('orderSettings.k_7'),
       icon: LayoutGrid,
-      description: "تحديد الأعمدة الظاهرة في جدول الطلبات",
+      description: t('orderSettings.k_8'),
     },
     {
       id: "incomplete",
-      label: "الطلبات غير المكتملة",
+      label: t('orderSettings.k_9'),
       icon: Clock,
-      description: "تحديد مدة تحويل الطلبات إلى مفقود",
+      description: t('orderSettings.k_10'),
     },
     {
       id: "numbering",
-      label: "ترقيم الطلبات",
+      label: t('orderSettings.k_11'),
       icon: Hash,
-      description: "تخصيص تسلسل أرقام الطلبات",
+      description: t('orderSettings.k_12'),
     },
     {
       id: "duplicates",
-      label: "الطلبات المكررة",
+      label: t('orderSettings.k_13'),
       icon: Copy,
-      description: "إعدادات فلترة أو تجاهل الطلبات المكررة",
+      description: t('orderSettings.k_14'),
     },
     {
       id: "invoices",
-      label: "إعدادات الفواتير",
+      label: t('orderSettings.k_15'),
       icon: FileText,
-      description: "تخصيص وتوليد فواتير الطلبات",
+      description: t('orderSettings.k_16'),
     },
     {
       id: "ratings",
-      label: "تقييم العملاء",
+      label: t('orderSettings.k_17'),
       icon: Star,
-      description: "تصنيف العملاء ومعدل النجاح",
+      description: t('orderSettings.k_18'),
     },
     {
       id: "workflow",
-      label: "مسار الطلبات والصلاحيات",
+      label: t('orderSettings.k_19'),
       icon: LayoutDashboard,
-      description: "إدارة مسار الحالات والاعتمادات والرقابة",
+      description: t('orderSettings.k_20'),
     },
     {
       id: "confirmation",
-      label: "تأكيد وتوزيع الطلبات",
+      label: t('orderSettings.k_21'),
       icon: LayoutDashboard,
-      description: "قواعد التأكيد والتوزيع التلقائي",
+      description: t('orderSettings.k_22'),
     },
     {
       id: "preparation",
-      label: "تجهيز الطلبات",
+      label: t('orderSettings.k_23'),
       icon: Package,
-      description: "إعدادات المخزن، الجودة، والإجراءات الجماعية",
+      description: t('orderSettings.k_24'),
     },
     {
       id: "late_cancellation",
-      label: "الإلغاء المتأخر",
+      label: t('orderSettings.k_25'),
       icon: AlertOctagon,
-      description: "إعدادات اعتراض الإلغاء أثناء التجهيز",
+      description: t('orderSettings.k_26'),
     },
   ];
 
@@ -218,10 +220,10 @@ const OrderSettings: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  إعدادات الطلبات
+                  {t('orderSettings.title')}
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  إدارة إعدادات الطلبات
+                  {t('orderSettings.k_139')}
                 </p>
               </div>
             </div>
@@ -236,7 +238,7 @@ const OrderSettings: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-6">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="font-semibold text-gray-900 dark:text-white">
-                  الإعدادات
+                  {t('orderSettings.k_140')}
                 </h2>
               </div>
               <nav className="p-2">

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,6 +10,8 @@ import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
 const TurboTickets: React.FC = () => {
+  const { t: tVal } = useTranslation();
+  const t = tVal as any;
   const navigate = useNavigate();
   const [ticketDescription, setTicketDescription] = useState("");
   const [ticketType, setTicketType] = useState(1); // Default to inquiry type
@@ -84,9 +87,9 @@ const TurboTickets: React.FC = () => {
       } else {
         // Fallback to default types
         const defaultTypes = [
-          { id: 1, name: "شكوى" },
-          { id: 2, name: "استفسار" },
-          { id: 3, name: "شكر" },
+          { id: 1, name: t('tickets.k_1') },
+          { id: 2, name: t('tickets.k_2') },
+          { id: 3, name: t('tickets.k_3') },
         ];
         setInquiriesTypes(defaultTypes);
         setInquiryTypeId(defaultTypes[0].id || null);
@@ -95,9 +98,9 @@ const TurboTickets: React.FC = () => {
       console.error("Error loading inquiries types:", error);
       // Fallback to default types
       const defaultTypes = [
-        { id: 1, name: "شكوى" },
-        { id: 2, name: "استفسار" },
-        { id: 3, name: "شكر" },
+        { id: 1, name: t('tickets.k_1') },
+        { id: 2, name: t('tickets.k_2') },
+        { id: 3, name: t('tickets.k_3') },
       ];
       setInquiriesTypes(defaultTypes);
       setInquiryTypeId(defaultTypes[0].id || null);
@@ -127,7 +130,7 @@ const TurboTickets: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error loading tickets:", error);
-      toast.error("فشل تحميل التذاكر");
+      toast.error(t('tickets.k_4'));
       setTickets([]);
       setTicketsTotal(0);
     } finally {
@@ -156,12 +159,12 @@ const TurboTickets: React.FC = () => {
 
   const handleSendTicket = async () => {
     if (!ticketDescription.trim()) {
-      toast.error("يرجى إدخال وصف التذكرة");
+      toast.error(t('tickets.k_5'));
       return;
     }
 
     if (ticketType === 1 && !inquiryTypeId) {
-      toast.error("يرجى اختيار نوع الاستفسار");
+      toast.error(t('tickets.k_6'));
       return;
     }
 
@@ -180,21 +183,21 @@ const TurboTickets: React.FC = () => {
       const response = await apiClient.post("/turbo/tickets", requestData);
 
       if (response.data.success) {
-        toast.success("تم إرسال التذكرة بنجاح");
+        toast.success(t('tickets.k_7'));
         setTicketDescription("");
         setTicketType(1);
         setInquiryTypeId(null);
         loadTickets();
         loadUnreadCount();
       } else {
-        toast.error(response.data.message || "فشل إرسال التذكرة");
+        toast.error(response.data.message || t('tickets.k_8'));
       }
     } catch (error: any) {
       console.error("Error sending ticket:", error);
       const errorMessage =
         error.response?.data?.error ||
         error.response?.data?.message ||
-        "فشل إرسال التذكرة";
+        t('tickets.k_8');
       console.error("Ticket request data:", requestData);
       console.error("Error response:", error.response?.data);
       toast.error(errorMessage);
@@ -215,14 +218,14 @@ const TurboTickets: React.FC = () => {
           className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
         >
           <ArrowLeftIcon className="h-5 w-5 ml-2" />
-          العودة للطلبات
+          {t('tickets.k_27')}
         </button>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
           <TicketIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-          تذاكر Turbo
+          {t('tickets.k_28')}
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          إدارة تذاكر Turbo للشحن - إرسال ومتابعة التذاكر
+          {t('tickets.k_29')}
         </p>
       </div>
 
@@ -231,14 +234,14 @@ const TurboTickets: React.FC = () => {
         <div className="flex items-center mb-4">
           <TicketIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 ml-2" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            إرسال تذكرة جديدة
+            {t('tickets.k_30')}
           </h3>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              نوع التذكرة
+              {t('tickets.k_31')}
             </label>
             <select
               value={ticketType}
@@ -250,22 +253,22 @@ const TurboTickets: React.FC = () => {
               }}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
             >
-              <option value={1}>استفسار (Inquiry)</option>
-              <option value={2}>شكوى (Complain)</option>
-              <option value={3}>شكر (Gratitude)</option>
-              <option value={4}>اقتراح (Suggestion)</option>
+              <option value={1}>{t('tickets.k_9')}</option>
+              <option value={2}>{t('tickets.k_10')}</option>
+              <option value={3}>{t('tickets.k_11')}</option>
+              <option value={4}>{t('tickets.k_12')}</option>
             </select>
           </div>
 
           {ticketType === 1 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                نوع الاستفسار{" "}
+                {t('tickets.k_32')}{" "}
                 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               {loadingTypes ? (
                 <div className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
-                  جاري تحميل الأنواع...
+                  {t('tickets.k_33')}
                 </div>
               ) : (
                 <select
@@ -277,24 +280,24 @@ const TurboTickets: React.FC = () => {
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                 >
-                  <option value="">اختر نوع الاستفسار</option>
+                  <option value="">{t('tickets.k_13')}</option>
                   {Array.isArray(inquiriesTypes) &&
                   inquiriesTypes.length > 0 ? (
                     inquiriesTypes.map((type) => (
                       <option
-                        key={type.id || type.type}
-                        value={type.id || type.type}
+                        key={(type as any).id || (type as any).type}
+                        value={(type as any).id || (type as any).type}
                       >
                         {type.name ||
                           type.nameEn ||
-                          `نوع ${type.id || type.type}`}
+                          t('tickets.type_fallback', { type: (type as any).id || (type as any).type })}
                       </option>
                     ))
                   ) : (
                     <>
-                      <option value={1}>نوع 1</option>
-                      <option value={2}>نوع 2</option>
-                      <option value={3}>نوع 3</option>
+                      <option value={1}>{t('tickets.k_14')}</option>
+                      <option value={2}>{t('tickets.k_15')}</option>
+                      <option value={3}>{t('tickets.k_16')}</option>
                     </>
                   )}
                 </select>
@@ -304,17 +307,17 @@ const TurboTickets: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              وصف التذكرة
+              {t('tickets.k_34')}
             </label>
             <textarea
               value={ticketDescription}
               onChange={(e) => setTicketDescription(e.target.value)}
               rows={5}
-              placeholder="اكتب وصف التذكرة هنا..."
+              placeholder={t('tickets.k_17')}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 resize-none"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {ticketDescription.length} حرف
+              {ticketDescription.length} {t('tickets.k_35')}
             </p>
           </div>
 
@@ -326,17 +329,17 @@ const TurboTickets: React.FC = () => {
             className="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <PaperAirplaneIcon className="h-4 w-4 ml-1" />
-            {sendingTicket ? "جاري الإرسال..." : "إرسال التذكرة"}
+            {sendingTicket ? t('tickets.k_18') : t('tickets.k_19')}
           </button>
 
           {!turboEnabled && (
             <p className="text-xs text-red-500 dark:text-red-400">
-              يجب تفعيل Turbo أولاً لإرسال التذاكر. يرجى الذهاب إلى{" "}
+              {t('tickets.k_36')}{" "}
               <button
                 onClick={() => navigate("/settings/turbo")}
                 className="underline hover:text-red-700 dark:hover:text-red-300"
               >
-                إعدادات Turbo
+                {t('tickets.k_37')}
               </button>
             </p>
           )}
@@ -349,11 +352,11 @@ const TurboTickets: React.FC = () => {
           <div className="flex items-center">
             <TicketIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 ml-2" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              قائمة التذاكر
+              {t('tickets.k_38')}
             </h3>
             {unreadCount.tickets > 0 && (
               <span className="mr-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium rounded-full">
-                {unreadCount.tickets} غير مقروء
+                {unreadCount.tickets} {t('tickets.k_39')}
               </span>
             )}
           </div>
@@ -362,27 +365,27 @@ const TurboTickets: React.FC = () => {
             disabled={loadingTickets}
             className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
           >
-            {loadingTickets ? "جاري التحديث..." : "تحديث"}
+            {loadingTickets ? t('tickets.k_20') : t('tickets.k_21')}
           </button>
         </div>
 
         {!turboEnabled ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            يجب تفعيل Turbo أولاً لعرض التذاكر. يرجى الذهاب إلى{" "}
+            {t('tickets.k_40')}{" "}
             <button
               onClick={() => navigate("/settings/turbo")}
               className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300"
             >
-              إعدادات Turbo
+              {t('tickets.k_37')}
             </button>
           </div>
         ) : loadingTickets ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            جاري تحميل التذاكر...
+            {t('tickets.k_41')}
           </div>
         ) : tickets.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            لا توجد تذاكر
+            {t('tickets.k_42')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -409,14 +412,14 @@ const TurboTickets: React.FC = () => {
                           }`}
                         >
                           {ticket.status === 0
-                            ? "جديد"
+                            ? t('tickets.k_22')
                             : ticket.status === 1
-                              ? "قيد المعالجة"
-                              : "مغلق"}
+                              ? t('tickets.k_23')
+                              : t('tickets.k_24')}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                        {ticket.description || "لا يوجد وصف"}
+                        {ticket.description || t('tickets.k_25')}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         {new Date(
@@ -436,10 +439,10 @@ const TurboTickets: React.FC = () => {
                   disabled={ticketsPage === 1 || loadingTickets}
                   className="px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm disabled:opacity-50"
                 >
-                  السابق
+                  {t('tickets.k_43')}
                 </button>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  صفحة {ticketsPage} من{" "}
+                  {t('tickets.k_44')} {ticketsPage}{t('tickets.k_26')}{" "}
                   {Math.ceil(ticketsTotal / ticketsPerPage)}
                 </span>
                 <button
@@ -450,7 +453,7 @@ const TurboTickets: React.FC = () => {
                   }
                   className="px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm disabled:opacity-50"
                 >
-                  التالي
+                  {t('tickets.k_45')}
                 </button>
               </div>
             )}

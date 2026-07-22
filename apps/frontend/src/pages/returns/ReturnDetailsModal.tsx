@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   ReturnRequest,
@@ -28,6 +29,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   onClose,
   onUpdate,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<
     "details" | "contact" | "activity"
   >("details");
@@ -77,15 +79,15 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
 
   const handleSaveReview = async () => {
     if (!status) {
-      toast.error("يرجى اختيار حالة الطلب");
+      toast.error(t('returns.k_116'));
       return;
     }
     if (!responsibleParty) {
-      toast.error("يرجى تحديد الجهة المسؤولة");
+      toast.error(t('returns.k_117'));
       return;
     }
     if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error("يرجى كتابة سبب الرفض");
+      toast.error(t('returns.k_118'));
       return;
     }
     setSubmittingReview(true);
@@ -97,10 +99,10 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         rejectionReason,
         isReviewed,
       });
-      toast.success("تم حفظ المراجعة وتحديث تقييم العميل إذا لزم الأمر");
+      toast.success(t('returns.k_119'));
       onUpdate();
     } catch (error) {
-      toast.error("فشل في حفظ المراجعة");
+      toast.error(t('returns.k_120'));
     } finally {
       setSubmittingReview(false);
     }
@@ -114,13 +116,13 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         result: contactResult,
         notes: contactNotes,
       });
-      toast.success("تم تسجيل المحاوله بنجاح");
+      toast.success(t('returns.k_121'));
       setContactMethod("PHONE");
       setContactResult("NO_ANSWER");
       setContactNotes("");
       fetchLogs();
     } catch (error) {
-      toast.error("فشل في تسجيل المحاوله");
+      toast.error(t('returns.k_122'));
     }
   };
 
@@ -129,25 +131,25 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
       case "APPROVED":
         return (
           <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> تم الموافقة
+            <CheckCircle size={12} /> {t('returns.k_135')}
           </span>
         );
       case "REJECTED":
         return (
           <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <XCircle size={12} /> مرفوض
+            <XCircle size={12} /> {t('returns.k_15')}
           </span>
         );
       case "COMPLETED":
         return (
           <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> مكتمل
+            <CheckCircle size={12} /> {t('returns.k_16')}
           </span>
         );
       default:
         return (
           <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <Clock size={12} /> قيد الانتظار
+            <Clock size={12} /> {t('returns.k_1')}
           </span>
         );
     }
@@ -163,7 +165,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-lg">
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              طلب إرجاع #{request.order?.orderNumber}
+              {t('returns.k_189')}{request.order?.orderNumber}
               {getStatusBadge(request.status)}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -184,19 +186,19 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             onClick={() => setActiveTab("details")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "details" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            تفاصيل الطلب
+            {t('returns.k_190')}
           </button>
           <button
             onClick={() => setActiveTab("contact")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "contact" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            سجل التواصل
+            {t('returns.k_191')}
           </button>
           <button
             onClick={() => setActiveTab("activity")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "activity" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            سجل النشاط
+            {t('returns.k_192')}
           </button>
         </div>
 
@@ -207,12 +209,12 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    بيانات العميل
+                    {t('returns.k_193')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        الاسم:
+                        {t('returns.k_194')}
                       </span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {request.customer?.firstName}{" "}
@@ -221,7 +223,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        الهاتف:
+                        {t('returns.k_195')}
                       </span>
                       <span
                         className="font-medium text-gray-900 dark:text-white"
@@ -232,7 +234,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        التقييم:
+                        {t('returns.k_196')}
                       </span>
                       <span className="font-medium text-blue-600 dark:text-blue-400">
                         {request.customer?.customerRating} (
@@ -243,12 +245,12 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    تفاصيل الإرجاع
+                    {t('returns.k_197')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        السبب:
+                        {t('returns.k_198')}
                       </span>
                       <span className="font-medium text-red-600 dark:text-red-400 font-bold">
                         {request.reason?.reason}
@@ -256,7 +258,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        المبلغ المسترد:
+                        {t('returns.k_199')}
                       </span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {request.refundAmount || "-"}
@@ -265,7 +267,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     {request.isReviewed && (
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">
-                          تمت المراجعة في:
+                          {t('returns.k_200')}
                         </span>
                         <span className="font-medium text-xs text-gray-900 dark:text-white">
                           {request.reviewedAt
@@ -280,22 +282,22 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
 
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800/30">
                 <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-300 mb-2">
-                  ملاحظات العميل
+                  {t('returns.k_156')}
                 </h3>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {request.customerNotes || "لا توجد ملاحظات"}
+                  {request.customerNotes || t('returns.k_123')}
                 </p>
               </div>
 
               {/* Enhanced Review Form */}
               <div className="bg-white dark:bg-gray-900/50 border-2 border-blue-100 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
                 <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                  <Shield size={16} /> مراجعة الطلب وتحديد المسؤولية
+                  <Shield size={16} /> {t('returns.k_201')}
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      الجهة المسؤولة
+                      {t('returns.k_202')}
                     </label>
                     <select
                       value={responsibleParty}
@@ -305,48 +307,48 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     >
                       <option value="CUSTOMER">
-                        العميل (خطأ في القياس/تغيير رأي)
+                        {t('returns.k_203')}
                       </option>
                       <option value="STORE">
-                        المتجر (خطأ في التجهيز/عيب فني)
+                        {t('returns.k_204')}
                       </option>
-                      <option value="SHIPPING">شركة الشحن (تلف/تأخير)</option>
-                      <option value="OTHER">أخرى</option>
+                      <option value="SHIPPING">{t('returns.k_124')}</option>
+                      <option value="OTHER">{t('returns.k_31')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      قرار الحالة
+                      {t('returns.k_205')}
                     </label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value as any)}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     >
-                      <option value="PENDING">قيد الانتظار</option>
-                      <option value="APPROVED">موافقة</option>
-                      <option value="REJECTED">رفض</option>
-                      <option value="COMPLETED">مكتمل</option>
+                      <option value="PENDING">{t('returns.k_1')}</option>
+                      <option value="APPROVED">{t('returns.k_25')}</option>
+                      <option value="REJECTED">{t('returns.k_26')}</option>
+                      <option value="COMPLETED">{t('returns.k_16')}</option>
                     </select>
                   </div>
                 </div>
                 {status === "REJECTED" && (
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      سبب الرفض
+                      {t('returns.k_206')}
                     </label>
                     <input
                       type="text"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="اكتب سبب الرفض للعميل..."
+                      placeholder={t('returns.k_125')}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     />
                   </div>
                 )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    ملاحظات إدارية (داخلية)
+                    {t('returns.k_207')}
                   </label>
                   <textarea
                     value={adminNotes}
@@ -367,8 +369,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     htmlFor="isReviewed"
                     className="text-xs font-bold text-gray-700 dark:text-gray-300"
                   >
-                    تأكيد إتمام المراجعة (سيتم تحديث تقييم العميل بناءً على
-                    المسؤولية)
+                    {t('returns.k_208')}
                   </label>
                 </div>
               </div>
@@ -383,73 +384,73 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                  <Phone size={16} /> تسجيل محاولة تواصل
+                  <Phone size={16} /> {t('returns.k_209')}
                 </h3>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      طريقة التواصل
+                      {t('returns.k_210')}
                     </label>
                     <select
                       value={contactMethod}
                       onChange={(e) => setContactMethod(e.target.value)}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     >
-                      <option value="PHONE">📞 مكالمة هاتفية</option>
-                      <option value="WHATSAPP">💬 واتساب</option>
+                      <option value="PHONE">{t('returns.k_126')}</option>
+                      <option value="WHATSAPP">{t('returns.k_127')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      النتيجة
+                      {t('returns.k_211')}
                     </label>
                     <select
                       value={contactResult}
                       onChange={(e) => setContactResult(e.target.value)}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     >
-                      <option value="NO_ANSWER">لم يرد</option>
-                      <option value="ANSWERED">تم الرد</option>
-                      <option value="BUSY">مشغول</option>
-                      <option value="WRONG_NUMBER">رقم خاطئ</option>
+                      <option value="NO_ANSWER">{t('returns.k_128')}</option>
+                      <option value="ANSWERED">{t('returns.k_129')}</option>
+                      <option value="BUSY">{t('returns.k_130')}</option>
+                      <option value="WRONG_NUMBER">{t('returns.k_131')}</option>
                       <option value="CALL_BACK_LATER">
-                        طلب معاودة الاتصال
+                        {t('returns.k_212')}
                       </option>
                     </select>
                   </div>
                 </div>
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    ملاحظات
+                    {t('returns.k_213')}
                   </label>
                   <textarea
                     value={contactNotes}
                     onChange={(e) => setContactNotes(e.target.value)}
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     rows={2}
-                    placeholder="تفاصيل المكالمة..."
+                    placeholder={t('returns.k_132')}
                   />
                 </div>
                 <button
                   type="submit"
                   className="w-full bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
-                  تسجيل المحاولة
+                  {t('returns.k_214')}
                 </button>
               </form>
 
               {/* History List */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                  السجل السابق
+                  {t('returns.k_215')}
                 </h3>
                 {loadingLogs ? (
                   <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
-                    جاري التحميل...
+                    {t('returns.k_144')}
                   </p>
                 ) : contactHistory.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-400 dark:text-gray-500 text-sm">
-                    لا توجد محاولات تواصل مسجلة
+                    {t('returns.k_216')}
                   </div>
                 ) : (
                   contactHistory.map((attempt) => (
@@ -500,11 +501,11 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             <div className="space-y-4">
               {loadingLogs ? (
                 <p className="text-center text-gray-500 dark:text-gray-400">
-                  جاري التحميل...
+                  {t('returns.k_144')}
                 </p>
               ) : activityLog.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  لا يوجد نشاط مسجل
+                  {t('returns.k_217')}
                 </p>
               ) : (
                 <div className="relative border-r-2 border-gray-200 dark:border-gray-700 mr-4 space-y-8">
@@ -526,8 +527,8 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          قام <strong>{log.user?.firstName || "سيستم"}</strong>{" "}
-                          بهذا الإجراء.
+                          {t('returns.k_218')} <strong>{log.user?.firstName || t('returns.k_133')}</strong>{" "}
+                          {t('returns.k_219')}
                         </p>
                         {log.details && (
                           <div className="text-xs bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 font-mono text-gray-500 dark:text-gray-400 overflow-x-auto">
@@ -551,7 +552,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            إغلاق
+            {t('returns.k_220')}
           </button>
           {activeTab === "details" && (
             <button
@@ -559,7 +560,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
               disabled={submittingReview}
               className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md text-sm font-bold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
-              {submittingReview ? "جاري الحفظ..." : "حفظ قرار المراجعة"}
+              {submittingReview ? t('returns.k_105') : t('returns.k_134')}
             </button>
           )}
         </div>

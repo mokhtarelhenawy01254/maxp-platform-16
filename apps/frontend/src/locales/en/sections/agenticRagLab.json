@@ -123,7 +123,11 @@
     "proposalRejectUnexpected": "Error while rejecting proposal"
   },
   "embeddings": {
-    "tabs": ["Products", "FAQs", "Policies"],
+    "tabs": [
+      "Products",
+      "FAQs",
+      "Policies"
+    ],
     "products": {
       "total": "Total Products",
       "withText": "With Text Embedding",

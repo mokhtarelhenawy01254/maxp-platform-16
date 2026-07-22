@@ -1,7 +1,8 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TruckIcon, ArrowRightIcon, PencilIcon, TrashIcon, GlobeAltIcon, PhoneIcon, EnvelopeIcon, KeyIcon, LinkIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../hooks/useAuthSimple';
+// import { useAuth } from '../../hooks/useAuthSimple';
 import { envConfig } from '../../config/environment';
 
 interface ShippingCompany {
@@ -19,24 +20,26 @@ interface ShippingCompany {
   updatedAt: string;
 }
 
-const providerLabels: Record<string, string> = {
-  MANUAL: 'يدوي',
-  TURBO: 'Turbo',
-  BOSTA_DEMO: 'Bosta Demo',
-  MYLERZ_DEMO: 'Mylerz Demo',
-  ARAMEX_DEMO: 'Aramex Demo',
-};
-
-const integrationLabels: Record<string, string> = {
-  MANUAL: 'يدوي',
-  DEMO: 'ديمو',
-  LIVE: 'فعلي',
-};
-
 const ShippingCompanyDetail: React.FC = () => {
+  const { t: tVal } = useTranslation();
+  const t = tVal as any;
+
+  const providerLabels: Record<string, string> = {
+    MANUAL: t('shipping.k_1'),
+    TURBO: 'Turbo',
+    BOSTA_DEMO: 'Bosta Demo',
+    MYLERZ_DEMO: 'Mylerz Demo',
+    ARAMEX_DEMO: 'Aramex Demo',
+  };
+
+  const integrationLabels: Record<string, string> = {
+    MANUAL: t('shipping.k_1'),
+    DEMO: t('shipping.k_2'),
+    LIVE: t('shipping.k_3'),
+  };
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+
   const [company, setCompany] = useState<ShippingCompany | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,18 +60,18 @@ const ShippingCompanyDetail: React.FC = () => {
       if (data.success) {
         setCompany(data.data);
       } else {
-        setError(data.error || 'لم يتم العثور على الشركة');
+        setError(data.error || t('shipping.k_35'));
       }
     } catch (error) {
       console.error('Error fetching shipping company:', error);
-      setError('حدث خطأ أثناء تحميل البيانات');
+      setError(t('shipping.k_36'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('هل أنت متأكد من حذف شركة الشحن؟')) {
+    if (confirm(t('shipping.k_8'))) {
       try {
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${envConfig.backendUrl}/api/v1/shipping-companies/${id}`, {
@@ -81,11 +84,11 @@ const ShippingCompanyDetail: React.FC = () => {
         if (data.success) {
           navigate('/shipping-companies');
         } else {
-          alert(data.error || 'حدث خطأ أثناء الحذف');
+          alert(data.error || t('shipping.k_9'));
         }
       } catch (error) {
         console.error('Error deleting shipping company:', error);
-        alert('حدث خطأ أثناء الحذف');
+        alert(t('shipping.k_9'));
       }
     }
   };
@@ -95,7 +98,7 @@ const ShippingCompanyDetail: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">جاري التحميل...</p>
+          <p className="mt-4 text-gray-500">{t('shipping.k_17')}</p>
         </div>
       </div>
     );
@@ -106,9 +109,9 @@ const ShippingCompanyDetail: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <TruckIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{error || 'لم يتم العثور على الشركة'}</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{error || t('shipping.k_35')}</h3>
           <Link to="/shipping-companies" className="text-blue-600 hover:underline">
-            العودة لقائمة الشركات
+            {t('shipping.k_60')}
           </Link>
         </div>
       </div>
@@ -121,7 +124,7 @@ const ShippingCompanyDetail: React.FC = () => {
       <div className="flex items-center mb-6">
         <Link to="/shipping-companies" className="flex items-center text-gray-600 hover:text-gray-900 ml-4">
           <ArrowRightIcon className="h-5 w-5 ml-1" />
-          العودة للقائمة
+          {t('shipping.k_61')}
         </Link>
       </div>
 
@@ -141,7 +144,7 @@ const ShippingCompanyDetail: React.FC = () => {
                     ? 'bg-green-400 text-green-900' 
                     : 'bg-red-400 text-red-900'
                 }`}>
-                  {company.isActive ? 'نشطة' : 'غير نشطة'}
+                  {company.isActive ? t('shipping.k_37') : t('shipping.k_38')}
                 </span>
               </div>
             </div>
@@ -151,14 +154,14 @@ const ShippingCompanyDetail: React.FC = () => {
                 className="flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <PencilIcon className="h-5 w-5 ml-2" />
-                تعديل
+                {t('shipping.k_22')}
               </Link>
               <button
                 onClick={handleDelete}
                 className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
                 <TrashIcon className="h-5 w-5 ml-2" />
-                حذف
+                {t('shipping.k_23')}
               </button>
             </div>
           </div>
@@ -169,13 +172,13 @@ const ShippingCompanyDetail: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Contact Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">معلومات الاتصال</h3>
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">{t('shipping.k_39')}</h3>
               
               {company.phone && (
                 <div className="flex items-center">
                   <PhoneIcon className="h-5 w-5 text-gray-400 ml-3" />
                   <div>
-                    <p className="text-sm text-gray-500">رقم الهاتف</p>
+                    <p className="text-sm text-gray-500">{t('shipping.k_29')}</p>
                     <a href={`tel:${company.phone}`} className="text-blue-600 hover:underline">
                       {company.phone}
                     </a>
@@ -187,7 +190,7 @@ const ShippingCompanyDetail: React.FC = () => {
                 <div className="flex items-center">
                   <EnvelopeIcon className="h-5 w-5 text-gray-400 ml-3" />
                   <div>
-                    <p className="text-sm text-gray-500">البريد الإلكتروني</p>
+                    <p className="text-sm text-gray-500">{t('shipping.k_40')}</p>
                     <a href={`mailto:${company.email}`} className="text-blue-600 hover:underline">
                       {company.email}
                     </a>
@@ -199,7 +202,7 @@ const ShippingCompanyDetail: React.FC = () => {
                 <div className="flex items-center">
                   <GlobeAltIcon className="h-5 w-5 text-gray-400 ml-3" />
                   <div>
-                    <p className="text-sm text-gray-500">الموقع الإلكتروني</p>
+                    <p className="text-sm text-gray-500">{t('shipping.k_41')}</p>
                     <a 
                       href={company.website} 
                       target="_blank" 
@@ -216,13 +219,13 @@ const ShippingCompanyDetail: React.FC = () => {
 
             {/* API Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">إعدادات الربط (API)</h3>
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">{t('shipping.k_42')}</h3>
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">
-                  {providerLabels[company.providerKey || 'MANUAL'] || company.providerKey || 'يدوي'}
+                  {providerLabels[company.providerKey || 'MANUAL'] || company.providerKey || t('shipping.k_1')}
                 </span>
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800">
-                  {integrationLabels[company.integrationMode || 'MANUAL'] || company.integrationMode || 'يدوي'}
+                  {integrationLabels[company.integrationMode || 'MANUAL'] || company.integrationMode || t('shipping.k_1')}
                 </span>
               </div>
               
@@ -237,7 +240,7 @@ const ShippingCompanyDetail: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-400 italic">لم يتم إضافة API Key</p>
+                <p className="text-gray-400 italic">{t('shipping.k_43')}</p>
               )}
 
               {company.apiUrl && (
@@ -257,8 +260,8 @@ const ShippingCompanyDetail: React.FC = () => {
           {/* Metadata */}
           <div className="mt-8 pt-4 border-t border-gray-200">
             <div className="flex items-center text-sm text-gray-500 space-x-6">
-              <span>تم الإنشاء: {new Date(company.createdAt).toLocaleDateString('ar-EG')}</span>
-              <span>آخر تحديث: {new Date(company.updatedAt).toLocaleDateString('ar-EG')}</span>
+              <span>{t('shipping.k_44')}{new Date(company.createdAt).toLocaleDateString('ar-EG')}</span>
+              <span>{t('shipping.k_45')}{new Date(company.updatedAt).toLocaleDateString('ar-EG')}</span>
             </div>
           </div>
         </div>

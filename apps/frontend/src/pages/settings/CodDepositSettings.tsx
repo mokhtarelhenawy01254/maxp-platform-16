@@ -47,7 +47,7 @@ const CodDepositSettings: React.FC = () => {
         setSettings(response.data as StorefrontSettings);
       } catch (error) {
         console.error('Failed to fetch settings:', error);
-        toast.error('فشل تحميل الإعدادات');
+        toast.error(t('settings.k_1'));
       } finally {
         setLoading(false);
       }
@@ -71,11 +71,11 @@ const CodDepositSettings: React.FC = () => {
         maxAmount: settings.codDepositMaxAmount ? Number(settings.codDepositMaxAmount) : null,
       });
       if (response.data?.success) {
-        toast.success('تم حفظ الإعدادات بنجاح');
+        toast.success(t('settings.k_2'));
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
-      toast.error('حدث خطأ أثناء الحفظ');
+      toast.error(t('settings.k_3'));
     } finally {
       setSaving(false);
     }
@@ -95,10 +95,10 @@ const CodDepositSettings: React.FC = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <BanknotesIcon className="h-7 w-7 text-blue-500" />
-          الدفعة المقدمة للطلب (COD Deposit)
+          {t('settings.k_44')}
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
-          إعدادات الدفعة المقدمة لطلبات الدفع عند الاستلام — تقليل نسبة المرتجعات
+          {t('settings.k_45')}
         </p>
       </div>
 
@@ -113,7 +113,7 @@ const CodDepositSettings: React.FC = () => {
           }`}
         >
           <Cog6ToothIcon className="h-4 w-4 inline ml-1" />
-          الإعدادات
+          {t('settings.title')}
         </button>
         <button
           onClick={() => setActiveTab('orders')}
@@ -124,7 +124,7 @@ const CodDepositSettings: React.FC = () => {
           }`}
         >
           <DocumentMagnifyingGlassIcon className="h-4 w-4 inline ml-1" />
-          تقارير الدفعات
+          {t('settings.k_46')}
         </button>
       </div>
 
@@ -134,9 +134,9 @@ const CodDepositSettings: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">تفعيل الدفعة المقدمة</h3>
+                <h3 className="text-lg font-semibold">{t('settings.k_4')}</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  عند التفعيل، العميل هيطلب دفع نسبة/مبلغ مقدم قبل تأكيد الطلب
+                  {t('settings.k_47')}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -155,7 +155,7 @@ const CodDepositSettings: React.FC = () => {
             <>
               {/* Deposit Type */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold mb-4">نوع الدفعة المقدمة</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('settings.k_5')}</h3>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                     <input
@@ -166,8 +166,8 @@ const CodDepositSettings: React.FC = () => {
                       onChange={() => updateField('codDepositType', 'PERCENTAGE')}
                     />
                     <div>
-                      <p className="font-medium">نسبة مئوية (%)</p>
-                      <p className="text-sm text-gray-500">مثال: 25% من إجمالي الطلب</p>
+                      <p className="font-medium">{t('settings.k_6')}</p>
+                      <p className="text-sm text-gray-500">{t('settings.k_7')}</p>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -179,8 +179,8 @@ const CodDepositSettings: React.FC = () => {
                       onChange={() => updateField('codDepositType', 'FIXED')}
                     />
                     <div>
-                      <p className="font-medium">مبلغ ثابت</p>
-                      <p className="text-sm text-gray-500">مثال: 100 جنيه على كل طلب</p>
+                      <p className="font-medium">{t('settings.k_8')}</p>
+                      <p className="text-sm text-gray-500">{t('settings.k_9')}</p>
                     </div>
                   </label>
                 </div>
@@ -189,7 +189,7 @@ const CodDepositSettings: React.FC = () => {
               {/* Deposit Value */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
                 <h3 className="text-lg font-semibold mb-4">
-                  {depositType === 'PERCENTAGE' ? 'نسبة الدفعة المقدمة' : 'مبلغ الدفعة المقدمة'}
+                  {depositType === 'PERCENTAGE' ? t('settings.k_10') : t('settings.k_11')}
                 </h3>
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1 max-w-xs">
@@ -218,63 +218,63 @@ const CodDepositSettings: React.FC = () => {
                           onChange={e => updateField('codDepositValue', Number(e.target.value))}
                           className="w-32 px-3 py-2 border rounded-lg text-center"
                         />
-                        <span className="text-gray-500">جنيه</span>
+                        <span className="text-gray-500">{t('settings.k_12')}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  مثال: طلب بـ {depositType === 'PERCENTAGE' ? '500 جنيه → الدفعة المقدمة ' + (500 * depositValue / 100) + ' جنيه' : '500 جنيه → الدفعة المقدمة ' + depositValue + ' جنيه'}
+                  {t('settings.k_48')} {depositType === 'PERCENTAGE' ? t('settings.k_13') + (500 * depositValue / 100) + t('settings.k_12') : t('settings.k_13') + depositValue + t('settings.k_12')}
                 </p>
               </div>
 
               {/* Min/Max Caps */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold mb-4">حدود الدفعة (اختياري)</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('settings.k_14')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">الحد الأدنى</label>
+                    <label className="block text-sm font-medium mb-1">{t('settings.k_15')}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min="0"
                         value={minAmount ?? ''}
                         onChange={e => updateField('codDepositMinAmount', e.target.value ? Number(e.target.value) : null)}
-                        placeholder="بدون حد أدنى"
+                        placeholder={t('settings.k_16')}
                         className="w-full px-3 py-2 border rounded-lg"
                       />
-                      <span className="text-gray-500">جنيه</span>
+                      <span className="text-gray-500">{t('settings.k_12')}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">مثلاً: أقل دفعة 50 جنيه</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('settings.k_17')}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">الحد الأقصى</label>
+                    <label className="block text-sm font-medium mb-1">{t('settings.k_18')}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min="0"
                         value={maxAmount ?? ''}
                         onChange={e => updateField('codDepositMaxAmount', e.target.value ? Number(e.target.value) : null)}
-                        placeholder="بدون حد أقصى"
+                        placeholder={t('settings.k_19')}
                         className="w-full px-3 py-2 border rounded-lg"
                       />
-                      <span className="text-gray-500">جنيه</span>
+                      <span className="text-gray-500">{t('settings.k_12')}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">مثلاً: أقصى دفعة 500 جنيه</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('settings.k_20')}</p>
                   </div>
                 </div>
               </div>
 
               {/* Summary Box */}
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
-                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">ملخص الإعدادات</h4>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">{t('settings.k_21')}</h4>
                 <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                  <li>• الدفعة المقدمة: {enabled ? 'مفعلة' : 'غير مفعلة'}</li>
+                  <li>{t('settings.k_22')}{enabled ? t('settings.k_23') : t('settings.k_24')}</li>
                   {enabled && (
                     <>
-                      <li>• النوع: {depositType === 'PERCENTAGE' ? `${depositValue}% من الإجمالي` : `${depositValue} جنيه ثابت`}</li>
-                      {minAmount !== null && <li>• الحد الأدنى: {minAmount} جنيه</li>}
-                      {maxAmount !== null && <li>• الحد الأقصى: {maxAmount} جنيه</li>}
+                      <li>{t('settings.k_25')}{depositType === 'PERCENTAGE' ? t('settings.deposit_percentage_summary', { value: depositValue }) : t('settings.deposit_fixed_summary', { value: depositValue })}</li>
+                      {minAmount !== null && <li>{t('settings.k_26')}{minAmount}{t('settings.k_12')}</li>}
+                      {maxAmount !== null && <li>{t('settings.k_27')}{maxAmount}{t('settings.k_12')}</li>}
                     </>
                   )}
                 </ul>
@@ -289,10 +289,10 @@ const CodDepositSettings: React.FC = () => {
                 {saving ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    جاري الحفظ...
+                    {t('settings.saving')}
                   </span>
                 ) : (
-                  'حفظ الإعدادات'
+                  t('settings.k_28')
                 )}
               </button>
             </>
@@ -356,7 +356,7 @@ const OrdersReport: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">تقارير الدفعات المقدمة</h3>
+        <h3 className="text-lg font-semibold">{t('settings.k_29')}</h3>
         <div className="flex gap-2">
           {(['all', 'paid', 'unpaid'] as const).map(f => (
             <button
@@ -368,7 +368,7 @@ const OrdersReport: React.FC = () => {
                   : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              {f === 'all' ? 'الكل' : f === 'paid' ? 'مدفوع' : 'غير مدفوع'}
+              {f === 'all' ? t('settings.k_30') : f === 'paid' ? t('settings.k_31') : t('settings.k_32')}
             </button>
           ))}
         </div>
@@ -377,33 +377,33 @@ const OrdersReport: React.FC = () => {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <CurrencyDollarIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>لا توجد طلبات COD</p>
+          <p>{t('settings.k_33')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-3 text-right">رقم الطلب</th>
-                <th className="px-4 py-3 text-right">الإجمالي</th>
-                <th className="px-4 py-3 text-right">الدفعة المقدمة</th>
-                <th className="px-4 py-3 text-right">المتبقي</th>
-                <th className="px-4 py-3 text-right">طريقة الدفع</th>
-                <th className="px-4 py-3 text-right">حالة الأوردر</th>
-                <th className="px-4 py-3 text-right">حالة الدفعة</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_34')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_35')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_36')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_37')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_38')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_39')}</th>
+                <th className="px-4 py-3 text-right">{t('settings.k_40')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {filtered.map(o => (
                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-4 py-3 font-medium">{o.orderNumber}</td>
-                  <td className="px-4 py-3">{o.total} ج</td>
-                  <td className="px-4 py-3 font-semibold text-blue-600">{o.depositAmount} ج</td>
-                  <td className="px-4 py-3">{o.remainingAmount} ج</td>
+                  <td className="px-4 py-3">{o.total}{t('settings.k_41')}</td>
+                  <td className="px-4 py-3 font-semibold text-blue-600">{o.depositAmount}{t('settings.k_41')}</td>
+                  <td className="px-4 py-3">{o.remainingAmount}{t('settings.k_41')}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
                       <CreditCardIcon className="h-3 w-3" />
-                      {o.method === 'kashier_card' ? 'بطاقة' : o.method === 'manual_transfer' ? 'تحويل' : 'COD'}
+                      {o.method === 'kashier_card' ? t('settings.k_42') : o.method === 'manual_transfer' ? t('settings.k_43') : 'COD'}
                     </span>
                   </td>
                   <td className="px-4 py-3">{o.orderStatus}</td>
@@ -411,12 +411,12 @@ const OrdersReport: React.FC = () => {
                     {o.isPaid ? (
                       <span className="inline-flex items-center gap-1 text-green-600">
                         <CheckCircleIcon className="h-4 w-4" />
-                        مدفوع
+                        {t('settings.k_31')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-amber-600">
                         <ClockIcon className="h-4 w-4" />
-                        في الانتظار
+                        {t('settings.k_49')}
                       </span>
                     )}
                   </td>

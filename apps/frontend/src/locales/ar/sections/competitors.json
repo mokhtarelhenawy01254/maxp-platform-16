@@ -137,7 +137,7 @@
   "compare": "قارن",
   "cheaper": "أرخص منك",
   "yourPriceHigher": "أغلى منك",
-  "equal": "متساوٍ",
+  "equal": "متساويان",
   "gaps": "فجوات",
   "notInYourCatalog": "مش موجود في كتالوجك",
   "opportunity": "فرصة",
@@ -189,9 +189,9 @@
   "weekly": "أسبوعي",
   "comprehensive": "شامل",
   "metrics": {
-    "productCount": "عدد المنتجات",
-    "adCount": "عدد الإعلانات",
-    "reportCount": "عدد التقارير"
+    "followersGrowth": "نمو المتابعين",
+    "engagementTrend": "اتجاه التفاعل",
+    "noData": "لا توجد بيانات إحصائيات بعد"
   },
   "battlecard": {
     "title": "بطاقة المنافسة",
@@ -399,11 +399,6 @@
     "negative": "سلبي",
     "neutral": "محايد"
   },
-  "metrics": {
-    "followersGrowth": "نمو المتابعين",
-    "engagementTrend": "اتجاه التفاعل",
-    "noData": "لا توجد بيانات إحصائيات بعد"
-  },
   "notAvailable": "غير متاح",
   "errors": {
     "fetchFailed": "فشل في جلب المنافسين",
@@ -478,8 +473,6 @@
   "ourDescription": "الوصف عندنا",
   "easiestToUse": "من الأسهل استخداماً؟",
   "us": "نحن",
-  "competitor": "المنافس",
-  "equal": "متساويان",
   "whoIsStronger": "من الأقوى؟",
   "additionalNotes": "ملاحظات إضافية",
   "noComparisons": "لا توجد مقارنات بعد",
@@ -489,7 +482,7 @@
   "ideaTitle": "عنوان الفكرة",
   "ideaDescription": "وصف الفكرة",
   "noIdeas": "لا توجد أفكار تطويرية بعد",
-  "ideaImages": "صور الفكرة",
+  "ideaImages": "الصور المرجعية للأفكار",
   "monthlyPrice": "السعر الشهري",
   "yearlyPrice": "السعر السنوي",
   "pricingNotes": "ملاحظات التسعير",
@@ -518,7 +511,6 @@
   "additionalNotesPlaceholder": "أي ملاحظات إضافية...",
   "noDevIdeas": "لم تضف أي أفكار تطويرية بعد. أضف فكرة جديدة.",
   "ideaTitlePlaceholder": "عنوان الفكرة التطويرية",
-  "ideaImages": "الصور المرجعية للأفكار",
   "summary": "الملخص",
   "competitorNamePlaceholder": "مثال: نون, أمازون...",
   "founderNamePlaceholder": "مثال: محمد الأحمد",

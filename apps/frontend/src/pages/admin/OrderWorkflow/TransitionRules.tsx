@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
 import {
     PlusIcon,
@@ -20,6 +21,7 @@ interface Props {
 }
 
 const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
+  const { t } = useTranslation();
     const { user } = useAuth();
     const [transitions, setTransitions] = useState<OrderWorkflowTransition[]>([]);
     const [employees, setEmployees] = useState<{id: string, firstName: string, lastName: string}[]>([]);
@@ -34,11 +36,11 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
     });
 
     const availableRoles = [
-        { value: 'OWNER', label: 'مالك الشركة' },
-        { value: 'SUPER_ADMIN', label: 'مدير النظام' },
-        { value: 'COMPANY_ADMIN', label: 'مدير شركة' },
-        { value: 'MANAGER', label: 'مدير' },
-        { value: 'AGENT', label: 'موظف / عميل' },
+        { value: 'OWNER', label: t('orderSettings.k_70') },
+        { value: 'SUPER_ADMIN', label: t('orderSettings.k_71') },
+        { value: 'COMPANY_ADMIN', label: t('orderSettings.k_72') },
+        { value: 'MANAGER', label: t('orderSettings.k_73') },
+        { value: 'AGENT', label: t('orderSettings.k_74') },
     ];
 
     useEffect(() => {
@@ -70,12 +72,12 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
 
     const handleSave = async () => {
         if (!newRule.toStatusId) {
-            setSaveError('يرجى اختيار الحالة المستهدفة');
+            setSaveError(t('orderSettings.k_75'));
             return;
         }
         const roles = JSON.parse(newRule.allowedRoles || '[]');
         if (roles.length === 0) {
-            setSaveError('يرجى اختيار دور واحد على الأقل للسماح بهذا الانتقال');
+            setSaveError(t('orderSettings.k_76'));
             return;
         }
         try {
@@ -85,12 +87,12 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
             fetchTransitions();
             onUpdate();
         } catch (error) {
-            setSaveError(error.message || 'فشل حفظ قاعدة الانتقال');
+            setSaveError(error.message || t('orderSettings.k_77'));
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('هل أنت متأكد من حذف قاعدة الانتقال هذه؟')) return;
+        if (!window.confirm(t('orderSettings.k_78'))) return;
         try {
             await orderWorkflowService.deleteTransition(id);
             fetchTransitions();
@@ -101,23 +103,23 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
     };
 
     const getStatusName = (id: string | null) => {
-        if (!id) return 'بداية (New Order)';
-        return statuses.find(s => s.id === id)?.name || 'غير معروف';
+        if (!id) return t('orderSettings.k_79');
+        return statuses.find(s => s.id === id)?.name || t('orderSettings.k_80');
     };
 
     return (
         <div className="animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">مصفوفة قواعد الانتقال</h2>
-                    <p className="text-slate-500 text-sm">حدد التحولات المسموح بها بين الحالات والأدوار المخولة لكل تحول</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('orderSettings.k_81')}</h2>
+                    <p className="text-slate-500 text-sm">{t('orderSettings.k_82')}</p>
                 </div>
                 <button
                     onClick={() => setIsAdding(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
                 >
                     <PlusIcon className="w-5 h-5" />
-                    إضافة قاعدة انتقال
+                    {t('orderSettings.k_153')}
                 </button>
             </div>
 
@@ -125,7 +127,7 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                 {transitions.length === 0 && !isAdding && (
                     <div className="p-20 text-center bg-slate-50 dark:bg-slate-900/40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
                         <ArrowsRightLeftIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <p className="text-slate-400">لا يوجد قواعد انتقال معرفة حالياً</p>
+                        <p className="text-slate-400">{t('orderSettings.k_83')}</p>
                     </div>
                 )}
 
@@ -133,24 +135,24 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                     <div className="p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900 bg-indigo-50/30 dark:bg-indigo-900/10 animate-in slide-in-from-top-4 duration-300">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                                <label className="block text-sm font-medium mb-1">من حالة:</label>
+                                <label className="block text-sm font-medium mb-1">{t('orderSettings.k_84')}</label>
                                 <select
                                     value={newRule.fromStatusId}
                                     onChange={(e) => setNewRule({ ...newRule, fromStatusId: e.target.value })}
                                     className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                                 >
-                                    <option value="">بداية (New Order)</option>
+                                    <option value="">{t('orderSettings.k_79')}</option>
                                     {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">إلى حالة:</label>
+                                <label className="block text-sm font-medium mb-1">{t('orderSettings.k_85')}</label>
                                 <select
                                     value={newRule.toStatusId}
                                     onChange={(e) => setNewRule({ ...newRule, toStatusId: e.target.value })}
                                     className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                                 >
-                                    <option value="">اختر الحالة المستهدفة</option>
+                                    <option value="">{t('orderSettings.k_86')}</option>
                                     {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
@@ -158,7 +160,7 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                                <label className="block text-sm font-medium mb-1">الأدوار المسموح لها:</label>
+                                <label className="block text-sm font-medium mb-1">{t('orderSettings.k_87')}</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {availableRoles.map(role => (
                                         <label key={role.value} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 cursor-pointer">
@@ -177,7 +179,7 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </label>
                                     ))}
                                 </div>
-                                <label className="block text-sm font-medium mb-1 mt-4">الموظفين المسموح لهم (اختياري):</label>
+                                <label className="block text-sm font-medium mb-1 mt-4">{t('orderSettings.k_88')}</label>
                                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 dark:border-slate-700 rounded-lg">
                                     {employees.map(emp => (
                                         <label key={emp.id} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 cursor-pointer">
@@ -195,7 +197,7 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                             {emp.firstName} {emp.lastName}
                                         </label>
                                     ))}
-                                    {employees.length === 0 && <p className="text-xs text-slate-400 col-span-2">جاري تحميل الموظفين...</p>}
+                                    {employees.length === 0 && <p className="text-xs text-slate-400 col-span-2">{t('orderSettings.k_89')}</p>}
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -207,8 +209,8 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         className="w-5 h-5 rounded border-slate-300"
                                     />
                                     <div className="text-sm">
-                                        <p className="font-bold">يتطلب موافقة المدير</p>
-                                        <p className="text-slate-500 text-xs">سيتم تعليق الطلب حتى يوافق المسؤول.</p>
+                                        <p className="font-bold">{t('orderSettings.k_90')}</p>
+                                        <p className="text-slate-500 text-xs">{t('orderSettings.k_91')}</p>
                                     </div>
                                 </label>
                                 <label className="flex items-center gap-3 cursor-pointer">
@@ -219,8 +221,8 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         className="w-5 h-5 rounded border-slate-300"
                                     />
                                     <div className="text-sm">
-                                        <p className="font-bold">منع العودة للخلف (Restrict Backward)</p>
-                                        <p className="text-slate-500 text-xs">يمنع الرجوع من الحالة "المستهدفة" إلى "الحالية".</p>
+                                        <p className="font-bold">{t('orderSettings.k_92')}</p>
+                                        <p className="text-slate-500 text-xs">{t('orderSettings.k_93')}</p>
                                     </div>
                                 </label>
                             </div>
@@ -233,8 +235,8 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                         )}
 
                         <div className="flex gap-4">
-                            <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">حفظ القاعدة</button>
-                            <button onClick={() => { setIsAdding(false); setSaveError(null); }} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">إلغاء</button>
+                            <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">{t('orderSettings.k_94')}</button>
+                            <button onClick={() => { setIsAdding(false); setSaveError(null); }} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">{t('orderSettings.k_95')}</button>
                         </div>
                     </div>
                 )}
@@ -262,8 +264,8 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </span>
                                     );
                                 })}
-                                {t.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title="يتطلب موافقة" />}
-                                {t.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title="ممنوع العودة" />}
+                                {t.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title={t('orderSettings.k_96')} />}
+                                {t.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title={t('orderSettings.k_97')} />}
                             </div>
                         </div>
 
