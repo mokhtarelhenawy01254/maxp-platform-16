@@ -926,7 +926,6 @@ const fetchPreparationCandidateRows = async ({
 
     const duplicateConditions = [
       builder.equals('o_dup."companyId"', companyId),
-      builder.notInList('o_dup."status"::text', PREPARATION_DB_TERMINAL_STATUSES),
       'o_dup."orderNumber" = g."orderNumber"'
     ];
 

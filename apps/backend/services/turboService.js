@@ -715,7 +715,20 @@ class TurboService {
 
       // التأكد من اكتمال وجودة البيانات المنسقة حتى لا تصبح شحنة غير مكتملة في تربو
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
-      const finalPhone1 = (customerPhone || '01000000000').replace(/[^\d+]/g, '').trim();
+
+      // تنسيق رقم الهاتف ليطابق معايير تربو المصرية (11 رقم يبدأ بـ 01)
+      let rawPhoneDigits = String(customerPhone || '').replace(/\D/g, '');
+      if (rawPhoneDigits.startsWith('20') && rawPhoneDigits.length === 12) {
+        rawPhoneDigits = rawPhoneDigits.slice(2);
+      }
+      let finalPhone1 = rawPhoneDigits;
+      if (!finalPhone1.startsWith('01') || finalPhone1.length !== 11) {
+        if (finalPhone1.startsWith('1') && finalPhone1.length === 10) {
+          finalPhone1 = '0' + finalPhone1;
+        } else {
+          finalPhone1 = '01000000000';
+        }
+      }
       const finalGovernment = cleanGovernorate || 'القاهرة';
       const finalArea = cleanArea || finalGovernment || 'المركز الرئيسي';
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3)
