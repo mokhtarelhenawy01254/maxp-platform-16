@@ -890,14 +890,14 @@ const bulkCreateShipments = async (req, res) => {
     if (!companyId) {
       return res.status(403).json({
         success: false,
-        error: 'Company ID is required'
+        error: 'معرف الشركة مطلوب'
       });
     }
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Order IDs array is required'
+        error: 'يرجى تحديد طلب واحد على الأقل لإرساله لتربو'
       });
     }
 
@@ -917,7 +917,7 @@ const bulkCreateShipments = async (req, res) => {
     if (!company || !company.turboEnabled || !company.turboApiKey) {
       return res.status(400).json({
         success: false,
-        error: 'Turbo is not enabled or API key is not configured'
+        error: 'خدمة شحن تربو غير مفعلة في إعدادات الشركة أو لم يتم إدخال مفتاح API'
       });
     }
 
@@ -954,7 +954,7 @@ const bulkCreateShipments = async (req, res) => {
     if (orders.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'No orders found or all orders already have shipments'
+        error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو (أو الطلبات المحددة تحتوي على شحنات تربو بالفعل)'
       });
     }
 
@@ -974,7 +974,7 @@ const bulkCreateShipments = async (req, res) => {
         if (order.turboShipmentId) {
           results.skipped.push({
             orderNumber: order.orderNumber,
-            reason: 'Shipment already exists'
+            reason: 'يوجد شحنة تربو مسجلة بالفعل'
           });
           continue;
         }
@@ -1029,7 +1029,7 @@ const bulkCreateShipments = async (req, res) => {
         console.error(`❌ [TURBO-CONTROLLER] Error creating shipment for order ${order.orderNumber}:`, error);
         results.failed.push({
           orderNumber: order.orderNumber,
-          error: error.message || 'Failed to create shipment'
+          error: turboService.translateTurboErrorToArabic(error.message)
         });
       }
     }
@@ -1046,9 +1046,10 @@ const bulkCreateShipments = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error in bulk create shipments:', error);
+    const turboService = new TurboService('dummy');
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to create bulk shipments'
+      error: turboService.translateTurboErrorToArabic(error.message)
     });
   }
 };

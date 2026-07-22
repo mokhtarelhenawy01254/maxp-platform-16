@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Resolved Turbo Incomplete Draft Shipments & Added Arabic Error Messages (BUG FIX / COMPLETE):**
+  1. Updated `getShippingAddressFields` in `turboService.js` to parse `state`, `province`, `region`, and `town` from JSON shipping addresses, ensuring governorate is never lost.
+  2. Added fallback defaults for `receiver`, `phone1`, `government`, `area`, and `address` so shipments never arrive as incomplete drafts in Turbo dashboard.
+  3. Added `translateTurboErrorToArabic` utility in `turboService.js` and `turboController.js` to translate all raw Turbo errors into clear, friendly Arabic messages.
+
 - **Fixed 404 Error on Turbo Bulk Create Shipments Endpoint (BUG FIX / COMPLETE):**
   1. Resolved HTTP 404 error when sending bulk shipments to Turbo (`/api/v1/turbo/bulk/create-shipments`).
   2. Updated `checkAppAccess.js` middleware to grant access if `company.turboEnabled` or `company.turboApiKey` is set.

@@ -235,30 +235,49 @@ class TurboService {
   /**
    * معالجة الأخطاء من Turbo API
    */
+  translateTurboErrorToArabic(errorMsg) {
+    if (!errorMsg) return 'حدث خطأ غير متوقع أثناء التواصل مع تربو';
+    const str = String(errorMsg).trim();
+
+    if (/Company ID is required/i.test(str)) return 'معرف الشركة مطلوب';
+    if (/Order IDs array is required/i.test(str)) return 'يرجى اختيار طلب واحد على الأقل لإرساله لتربو';
+    if (/Turbo is not enabled/i.test(str)) return 'خدمة شحن تربو غير مفعّلة في الإعدادات أو لم يتم إدخال مفتاح API';
+    if (/No orders found or all orders already have shipments/i.test(str)) return 'لم يتم العثور على طلبات غير مشحونة (قد تكون الطلبات تحتوي على شحنات تربو بالفعل)';
+    if (/Shipment already exists/i.test(str)) return 'يوجد شحنة سابقة لهذا الطلب بالفعل';
+    if (/No response from Turbo API/i.test(str)) return 'تعذر الاتصال بسيرفر تربو، يرجى التحقق من اتصال الإنترنت';
+    if (/missing code or bar_code/i.test(str)) return 'لم يرجع سيرفر تربو رقم تتبع الشحنة';
+    if (/authentication_key|unauthorized|invalid key/i.test(str)) return 'مفتاح الـ API الخاص بشركة تربو غير صحيح أو منتهي الصلاحية';
+    if (/governorate|government/i.test(str)) return 'تعذر تحديد المحافظة بشكل صحيح للطلب';
+    if (/phone/i.test(str)) return 'رقم هاتف العميل غير صحيح أو مفقود';
+
+    if (/[\u0600-\u06FF]/.test(str)) {
+      return str.replace(/^Turbo API error:\s*/i, '');
+    }
+
+    return `خطأ في الشحن: ${str}`;
+  }
+
   handleError(error, operation) {
     if (error.response) {
-      // خطأ من Turbo API
       const status = error.response.status;
       const data = error.response.data;
-
-      // استخراج رسالة الخطأ من Turbo API
-      const errorMsg = data?.error_msg || data?.message || data?.error || `Turbo API error: ${status}`;
+      const rawError = data?.error_msg || data?.message || data?.error || `Turbo API error: ${status}`;
+      const translatedError = this.translateTurboErrorToArabic(rawError);
 
       console.error(`❌ [TURBO] ${operation} failed:`, {
         status,
         data,
-        error_msg: errorMsg
+        error_msg: rawError
       });
 
-      throw new Error(errorMsg);
+      throw new Error(translatedError);
     } else if (error.request) {
-      // لا يوجد رد من Turbo API
       console.error(`❌ [TURBO] ${operation} failed: No response from Turbo API`);
-      throw new Error('No response from Turbo API. Please check your connection.');
+      throw new Error('لم يتم تلقي استجابة من سيرفر تربو. يرجى التأكد من اتصال الإنترنت.');
     } else {
-      // خطأ في إعداد الطلب
       console.error(`❌ [TURBO] ${operation} failed:`, error.message);
-      throw error;
+      const translatedError = this.translateTurboErrorToArabic(error.message);
+      throw new Error(translatedError);
     }
   }
 
@@ -338,8 +357,8 @@ class TurboService {
       return isLocation ? this.cleanLocationName(normalizedValue) : normalizedValue;
     };
 
-    const city = normalizeText(parsedAddress.city, true);
-    const governorate = normalizeText(parsedAddress.governorate, true);
+    const city = normalizeText(parsedAddress.city || parsedAddress.town || parsedAddress.area, true);
+    const governorate = normalizeText(parsedAddress.governorate || parsedAddress.state || parsedAddress.province || parsedAddress.region, true);
     const parts = [
       normalizeText(parsedAddress.address),
       normalizeText(parsedAddress.street),
@@ -352,6 +371,7 @@ class TurboService {
       normalizeText(parsedAddress.area),
       normalizeText(parsedAddress.landmark),
       city,
+      governorate
     ].filter(Boolean);
 
     const uniqueParts = [];
@@ -621,18 +641,27 @@ class TurboService {
         isOrderVal = 0; // افتراضي: طلب تسليم عادي
       }
 
+      // التأكد من اكتمال وجودة البيانات المنسقة حتى لا تصبح شحنة غير مكتملة في تربو
+      const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
+      const finalPhone1 = (customerPhone || '01000000000').replace(/[^\d+]/g, '').trim();
+      const finalGovernment = cleanGovernorate || 'القاهرة';
+      const finalArea = cleanArea || finalGovernment || 'المركز الرئيسي';
+      const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3)
+        ? cleanAddress.trim()
+        : `${finalArea} - ${finalGovernment}`;
+
       const shipmentData = {
         authentication_key: apiKey,
         main_client_code: mainClientCode || 37321,
         remote_order_id: orderNumber || `Order ${orderNumber}`,
         remote_shipment_id: String(orderId || ''),
-        receiver: customerName,
-        phone1: customerPhone,
+        receiver: finalReceiver,
+        phone1: finalPhone1,
         phone2: secondPhone,
-        api_followup_phone: senderNumber || customerPhone,
-        government: cleanGovernorate,
-        area: cleanArea,
-        address: cleanAddress,
+        api_followup_phone: senderNumber || finalPhone1,
+        government: finalGovernment,
+        area: finalArea,
+        address: finalAddress,
         notes: notes || `Order #${orderNumber}`,
         invoice_number: orderNumber,
         order_summary: formattedSummary,

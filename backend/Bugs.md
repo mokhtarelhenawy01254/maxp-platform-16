@@ -1,3 +1,16 @@
+### [BUG FIX / TURBO SHIPMENTS] Resolved Turbo Incomplete Drafts & Arabic Error Messages
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. **Incomplete Drafts**: When `shippingAddress` was stored as a JSON string, `getShippingAddressFields` checked `parsedAddress.governorate` but ignored `parsedAddress.state` / `province`. This caused empty governorates to be sent to Turbo, marking shipments as "incomplete drafts" in Turbo dashboard.
+  2. **English Errors**: Bulk creation and single creation errors were returned in raw English strings.
+- **Fix**:
+  1. Updated `getShippingAddressFields` to parse `state`, `province`, `region`, and `town` from JSON shipping addresses.
+  2. Added complete fallback values for `receiver`, `phone1`, `government`, `area`, and `address` in `shipmentData` to guarantee non-empty payload to Turbo.
+  3. Added `translateTurboErrorToArabic` utility in `turboService.js` and `turboController.js` to translate all Turbo errors into clear, friendly Arabic.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/controller/turboController.js`
+
 ### [BUG FIX / TURBO API] Fixed 404 Error on `/api/v1/turbo/bulk/create-shipments`
 - **Date**: 2026-07-22
 - **Root Cause**: `checkAppAccess('order-shipping-turbo')` middleware returned HTTP 404 (`الأداة غير موجودة`) when `order-shipping-turbo` slug was missing from `MarketplaceApp` table, despite Turbo API key being configured for the company.
