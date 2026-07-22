@@ -716,21 +716,25 @@ class TurboService {
       // التأكد من اكتمال وجودة البيانات المنسقة حتى لا تصبح شحنة غير مكتملة في تربو
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
 
-      // تنسيق رقم الهاتف ليطابق معايير تربو المصرية (11 رقم يبدأ بـ 01)
-      let rawPhoneDigits = String(customerPhone || '').replace(/\D/g, '');
-      if (rawPhoneDigits.startsWith('20') && rawPhoneDigits.length === 12) {
-        rawPhoneDigits = rawPhoneDigits.slice(2);
-      }
-      let finalPhone1 = rawPhoneDigits;
-      if (finalPhone1.length === 10 && finalPhone1.startsWith('1')) {
-        finalPhone1 = '0' + finalPhone1;
-      } else if (finalPhone1.length === 10 && finalPhone1.startsWith('01')) {
-        finalPhone1 = finalPhone1 + '0';
+      // التحقق الصارم من رقم الهاتف: يمنع الإرسال لتربو ويرجع خطأ عربي مفصل إذا كان الرقم غير صحيح
+      let rawPhoneDigits = String(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
+      let validPhone = rawPhoneDigits;
+      if (validPhone.startsWith('20') && validPhone.length === 12) {
+        validPhone = validPhone.slice(2);
+      } else if (validPhone.startsWith('1') && validPhone.length === 10) {
+        validPhone = '0' + validPhone;
       }
 
-      if (!finalPhone1.startsWith('01') || finalPhone1.length !== 11) {
-        finalPhone1 = '01000000000';
+      if (!validPhone || !validPhone.startsWith('01') || validPhone.length !== 11) {
+        const currentLength = rawPhoneDigits.length;
+        const phoneErrorMsg = currentLength > 0
+          ? `رقم هاتف العميل غير صحيح: الرقم مكون من ${currentLength} أرقام بدلاً من 11 رقماً`
+          : 'رقم هاتف العميل غير صحيح أو مفقود';
+        console.error(`❌ [TURBO] Phone validation failed for order #${orderNumber}: ${phoneErrorMsg}`);
+        throw new Error(phoneErrorMsg);
       }
+
+      const finalPhone1 = validPhone;
       const finalGovernment = cleanGovernorate || 'القاهرة';
       const finalArea = cleanArea || finalGovernment || 'المركز الرئيسي';
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3)
