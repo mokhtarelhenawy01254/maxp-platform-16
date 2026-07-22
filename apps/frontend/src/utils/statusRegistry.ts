@@ -117,25 +117,27 @@ export const getUnifiedOrderStatus = (order: OrderLike): StatusDisplayInfo => {
   const rawTurboStatus = (order.turboShipmentStatus || '').toLowerCase().trim();
   
   // 1. Check Turbo status first if order has a Turbo status
-  if (rawTurboStatus && TURBO_ALIASES[rawTurboStatus]) {
-    const turboInfo = TURBO_ALIASES[rawTurboStatus];
+  const matchedTurboInfo = rawTurboStatus ? TURBO_ALIASES[rawTurboStatus] : undefined;
+  if (matchedTurboInfo) {
     return {
-      code: turboInfo.canonical,
-      label: turboInfo.label,
-      colorClass: turboInfo.colorClass,
+      code: matchedTurboInfo.canonical,
+      label: matchedTurboInfo.label,
+      colorClass: matchedTurboInfo.colorClass,
       source: 'turbo'
     };
   }
 
   // If order has a Turbo tracking number but status string is 'created' or unmapped
   if ((order.turboTrackingNumber || order.turboShipmentId) && (!rawTurboStatus || rawTurboStatus === 'created')) {
-    const turboInfo = TURBO_ALIASES['created'];
-    return {
-      code: turboInfo.canonical,
-      label: turboInfo.label,
-      colorClass: turboInfo.colorClass,
-      source: 'turbo'
-    };
+    const fallbackTurboInfo = TURBO_ALIASES['created'];
+    if (fallbackTurboInfo) {
+      return {
+        code: fallbackTurboInfo.canonical,
+        label: fallbackTurboInfo.label,
+        colorClass: fallbackTurboInfo.colorClass,
+        source: 'turbo'
+      };
+    }
   }
 
   // 2. Fall back to internal system order status
