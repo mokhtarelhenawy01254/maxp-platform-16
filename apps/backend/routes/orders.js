@@ -1095,11 +1095,26 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    const hasPhone = req.query.hasPhone === 'true';
+
     if (search) {
       andClauses.push({
         OR: [
           { cartId: { contains: search } },
           { checkoutData: { contains: search } }
+        ]
+      });
+    }
+
+    if (hasPhone) {
+      andClauses.push({
+        OR: [
+          { checkoutData: { contains: '"guestPhone"' } },
+          { checkoutData: { contains: '"customerPhone"' } },
+          { checkoutData: { contains: '"phoneNumber"' } },
+          { checkoutData: { contains: '"mobileNumber"' } },
+          { checkoutData: { contains: '"phone"' } },
+          { checkoutData: { contains: '"mobile"' } }
         ]
       });
     }

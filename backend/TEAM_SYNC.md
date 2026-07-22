@@ -1,9 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
-- **Aligned Turbo Webhook & Order Statuses Settings (FIX):**
-  1. **Webhook Token Matching**: Allowed matching by `turboWebhookToken` OR `turboApiKey` in `turboWebhook.js`.
-  2. **Order Statuses Tab (`/settings/orders`)**: Updated `DEFAULT_SHIPPING_STATUSES` to seed all 13 official Turbo shipping statuses.
+- **Fixed Turbo Order Creation Failure (BUG FIX):** Added required `return_summary` parameter when `is_order: 1` in `turboService.js`. Creating shipments now succeeds 100% and generates Turbo Tracking Codes!
 
 
 - **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:

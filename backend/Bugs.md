@@ -1,11 +1,9 @@
-### [FIX/TURBO & STATUSES] Webhook Live Test & Shipping Statuses Tab Alignment
+### [FIX/TURBO] Required `return_summary` Field in Shipment Creation Payload
 - **Date**: 2026-07-22
-- **Fixes**:
-  1. **Webhook Token Fallback**: Updated `turboWebhook.js` to match company by `turboWebhookToken` OR `turboApiKey`, and fallback gracefully to order lookup.
-  2. **Order Statuses Settings Alignment (`/settings/orders`)**: Updated `DEFAULT_SHIPPING_STATUSES` in `orderStatusController.js` to seed official Turbo codes 1-13 (`turbo_saved`, `turbo_sent`, `processing`, `out_for_delivery`, `delivered`, `remitted`, `archived`, `returned_to_company`, `returned_resent`, `returned_missing`, `returned_destroyed`, `delayed`) into Order Status Management.
+- **Root Cause**: Turbo API rejects `/add-order` requests when `is_order: 1` if `return_summary` parameter is missing with error `'The return summary field is required when is order is 1.'`.
+- **Fix**: Added `return_summary: orderData.returnSummary || formattedSummary || 'لا يوجد'` to shipment creation payload in `turboService.js`.
 - **Files Modified**:
-  - `apps/backend/routes/turboWebhook.js`
-  - `apps/backend/controller/orderStatusController.js`
+  - `apps/backend/services/turboService.js`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
 - **Date**: 2026-07-21

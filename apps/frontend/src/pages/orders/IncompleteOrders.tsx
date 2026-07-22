@@ -122,6 +122,7 @@ const IncompleteOrders: React.FC = () => {
         const params: Record<string, string | number> = { page, limit };
         if (search) params.search = search;
         if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+        params.hasPhone = true;
 
         const response = await apiClient.get("/orders-new/incomplete", { params });
         const data = response.data;
