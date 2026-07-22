@@ -1727,6 +1727,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Base fields that we search with "contains" for regular orders
       const regularOrFields = [
         { orderNumber: { contains: searchTerms, mode: 'insensitive' } },
+        { turboTrackingNumber: { contains: searchTerms, mode: 'insensitive' } },
+        { turboShipmentId: { contains: searchTerms, mode: 'insensitive' } },
         { customerEmail: { contains: searchTerms, mode: 'insensitive' } }
       ];
 
@@ -1781,6 +1783,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Base fields for guest orders
       const guestOrFields = [
         { orderNumber: { contains: searchTerms, mode: 'insensitive' } },
+        { turboTrackingNumber: { contains: searchTerms, mode: 'insensitive' } },
+        { turboShipmentId: { contains: searchTerms, mode: 'insensitive' } },
         { guestEmail: { contains: searchTerms, mode: 'insensitive' } }
       ];
 

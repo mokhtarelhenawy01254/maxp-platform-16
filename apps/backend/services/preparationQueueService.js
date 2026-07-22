@@ -684,6 +684,8 @@ const matchesPreparationHaystackSearch = (order, searchQuery) => {
 
   const haystack = [
     order.orderNumber,
+    order.turboTrackingNumber,
+    order.turboShipmentId,
     order.customerName,
     order.customerPhone,
     order.customerEmail,
@@ -817,13 +819,19 @@ const buildSearchSqlCondition = (builder, search, tableAlias, isRegular) => {
   if (isRegular) {
     return builder.orGroup([
       `${tableAlias}."orderNumber" ILIKE ${searchPattern}`,
+      `${tableAlias}."turboTrackingNumber" ILIKE ${searchPattern}`,
+      `${tableAlias}."turboShipmentId" ILIKE ${searchPattern}`,
       `c."firstName" ILIKE ${searchPattern}`,
       `c."lastName" ILIKE ${searchPattern}`,
       `c."phone" ILIKE ${searchPattern}`,
     ]);
   }
 
-  return `${tableAlias}."orderNumber" ILIKE ${searchPattern}`;
+  return builder.orGroup([
+    `${tableAlias}."orderNumber" ILIKE ${searchPattern}`,
+    `${tableAlias}."turboTrackingNumber" ILIKE ${searchPattern}`,
+    `${tableAlias}."turboShipmentId" ILIKE ${searchPattern}`,
+  ]);
 };
 
 const fetchPreparationCandidateRows = async ({
