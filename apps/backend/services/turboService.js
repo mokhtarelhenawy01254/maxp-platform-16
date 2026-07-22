@@ -722,12 +722,14 @@ class TurboService {
         rawPhoneDigits = rawPhoneDigits.slice(2);
       }
       let finalPhone1 = rawPhoneDigits;
+      if (finalPhone1.length === 10 && finalPhone1.startsWith('1')) {
+        finalPhone1 = '0' + finalPhone1;
+      } else if (finalPhone1.length === 10 && finalPhone1.startsWith('01')) {
+        finalPhone1 = finalPhone1 + '0';
+      }
+
       if (!finalPhone1.startsWith('01') || finalPhone1.length !== 11) {
-        if (finalPhone1.startsWith('1') && finalPhone1.length === 10) {
-          finalPhone1 = '0' + finalPhone1;
-        } else {
-          finalPhone1 = '01000000000';
-        }
+        finalPhone1 = '01000000000';
       }
       const finalGovernment = cleanGovernorate || 'القاهرة';
       const finalArea = cleanArea || finalGovernment || 'المركز الرئيسي';
