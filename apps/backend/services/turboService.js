@@ -456,9 +456,10 @@ class TurboService {
    * Mapping للمحافظات المصرية إلى الأسماء التي يتعرف عليها Turbo API
    */
   getTurboGovernorateName(governorate) {
-    if (!governorate) return 'القاهرة';
+    if (!governorate) return null;
 
     const govName = this.cleanLocationName(governorate).toLowerCase().trim();
+    if (!govName) return null;
 
     // Mapping للمحافظات الشائعة والمعرفات الرقمية (WooCommerce state IDs)
     const governorateMap = {
@@ -588,8 +589,8 @@ class TurboService {
       }
     }
 
-    // إذا لم نجد mapping، نعيد الاسم بعد تنظيفه
-    return cleanedGov || 'القاهرة';
+    // إذا لم نجد mapping، نعيد الاسم بعد تنظيفه إن كان غير فارغ
+    return cleanedGov || null;
   }
 
   /**
@@ -640,23 +641,15 @@ class TurboService {
       // استخدام governorate من orderData مباشرة إذا كان موجوداً
       let cleanGovernorate;
       if (governorate && governorate.trim()) {
-        // إذا كانت المحافظة موجودة في orderData، استخدمها مباشرة
         console.log(`📍 [TURBO] Using governorate from orderData: "${governorate}"`);
         const cleanedGov = this.cleanLocationName(governorate);
 
-        // التحقق من أن المحافظة موجودة في قائمة Turbo API
         if (governments.length > 0) {
           const cleanedLower = cleanedGov.toLowerCase();
-
-          // 1. Exact match first
           let foundGov = governments.find(g => g.name.toLowerCase() === cleanedLower);
-
-          // 2. Gov name contains search term
           if (!foundGov) {
             foundGov = governments.find(g => g.name.toLowerCase().includes(cleanedLower));
           }
-
-          // 3. Search term contains gov name (longer/specific names first)
           if (!foundGov) {
             foundGov = [...governments]
               .sort((a, b) => b.name.length - a.name.length)
@@ -667,17 +660,14 @@ class TurboService {
             cleanGovernorate = foundGov.name;
             console.log(`✅ [TURBO] Matched governorate in Turbo list: "${cleanGovernorate}"`);
           } else {
-            // إذا لم نجدها في القائمة، استخدم الـ mapping
             cleanGovernorate = this.getTurboGovernorateName(cleanedGov);
             console.log(`⚠️ [TURBO] Governorate not found in Turbo list, using mapping: "${cleanGovernorate}"`);
           }
         } else {
-          // إذا لم نتمكن من جلب القائمة، استخدم الـ mapping
           cleanGovernorate = this.getTurboGovernorateName(cleanedGov);
           console.log(`⚠️ [TURBO] No governments list, using mapping: "${cleanGovernorate}"`);
         }
       } else {
-        // إذا لم تكن المحافظة موجودة، استخدم city للبحث
         const orderCity = city || '';
         console.log(`📍 [TURBO] No governorate in orderData, searching by city: "${orderCity}"`);
 
@@ -685,9 +675,7 @@ class TurboService {
           cleanGovernorate = this.findGovernmentByCity(orderCity, governments);
           console.log(`✅ [TURBO] Selected government by city: "${cleanGovernorate}"`);
         } else {
-          // Fallback إلى الـ mapping القديم
-          console.log('⚠️ [TURBO] Using fallback mapping (no governments list)');
-          const rawGovernorate = this.cleanLocationName(city || 'القاهرة');
+          const rawGovernorate = this.cleanLocationName(city || '');
           cleanGovernorate = this.getTurboGovernorateName(rawGovernorate);
           console.log(`✅ [TURBO] Fallback government: "${cleanGovernorate}"`);
         }
@@ -695,13 +683,11 @@ class TurboService {
 
       const cleanArea = this.cleanLocationName(city || addressFields.city || '');
 
-      // استخراج تليفون التسليم الثاني وعمل صياغة دقيقة لملخص المنتجات
       const secondPhone = orderData.phone2 || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.secondPhone || addressFields.secondaryAddressPhone || null;
       const formattedSummary = Array.isArray(items) && items.length > 0 
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ') 
         : (notes || `طلب #${orderNumber}`);
 
-      // تحديد نوع الطلب في تربو (0: تسليم عادي، 1: استبدال / شحنة مقابل، 2: مرتجع)
       let isOrderVal = 0;
       if (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '') {
         isOrderVal = Number(orderData.isOrder);
@@ -710,13 +696,11 @@ class TurboService {
       } else if (orderData.orderType === 'RETURN' || orderData.isReturn || orderData.type === 'RETURN') {
         isOrderVal = 2;
       } else {
-        isOrderVal = 0; // افتراضي: طلب تسليم عادي
+        isOrderVal = 0;
       }
 
-      // التأكد من اكتمال وجودة البيانات المنسقة حتى لا تصبح شحنة غير مكتملة في تربو
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
 
-      // التحقق الصارم من رقم الهاتف: يمنع الإرسال لتربو ويرجع خطأ عربي مفصل إذا كان الرقم غير صحيح
       let rawPhoneDigits = String(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
       let validPhone = rawPhoneDigits;
       if (validPhone.startsWith('20') && validPhone.length === 12) {
@@ -735,7 +719,10 @@ class TurboService {
       }
 
       const finalPhone1 = validPhone;
-      const finalGovernment = cleanGovernorate || 'القاهرة';
+      const finalGovernment = cleanGovernorate;
+      if (!finalGovernment) {
+        throw new Error('المحافظة غير محددة أو غير مطابقة لقائمة المحافظات المعتمدة في تربو. يرجى اختيار وتعديل المحافظة في تفاصيل الطلب قبل الشحن.');
+      }
       const finalArea = cleanArea || finalGovernment || 'المركز الرئيسي';
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3)
         ? cleanAddress.trim()

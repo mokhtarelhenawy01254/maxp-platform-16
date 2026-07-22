@@ -1,6 +1,7 @@
 /**
  * 🚚 Central Backend Status Normalizer (Single Source of Truth)
  * Maps all raw statuses, webhook payloads, and API filters to canonical Turbo codes 1..13
+ * and valid system OrderStatus & PaymentStatus enums.
  */
 
 const CANONICAL_TURBO_MAP = {
@@ -18,16 +19,23 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 3: Branch Processing (قيد التنفيذ بالفرع)
   'processing': 'processing',
+  'underway': 'processing',
+  'accepted': 'processing',
   'status_3': 'processing',
   '3': 'processing',
 
   // Code 4: Out for delivery / Captain (مسلمة للمندوب)
   'out_for_delivery': 'out_for_delivery',
+  'under delivery': 'out_for_delivery',
+  'with captain': 'out_for_delivery',
+  'in transit': 'out_for_delivery',
+  'shipped': 'out_for_delivery',
   'status_4': 'out_for_delivery',
   '4': 'out_for_delivery',
 
   // Code 5: Returned to Company (مرتجعات بالشركة)
   'returned_to_company': 'returned_to_company',
+  'returned with company': 'returned_to_company',
   'status_5': 'returned_to_company',
   'status_14': 'returned_to_company',
   '5': 'returned_to_company',
@@ -45,6 +53,7 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 8: Remitted (تم التوريد والتحصيل)
   'remitted': 'remitted',
+  'supplied': 'remitted',
   'status_8': 'remitted',
   'status_19': 'remitted',
   '8': 'remitted',
@@ -64,6 +73,7 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 11: Returned Missing (مرتجع مفقود)
   'returned_missing': 'returned_missing',
+  'lost': 'returned_missing',
   'status_11': 'returned_missing',
   'status_16': 'returned_missing',
   '11': 'returned_missing',
@@ -78,8 +88,27 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 13: Delayed (مؤجلة مع المندوب)
   'delayed': 'delayed',
+  'on hold': 'delayed',
+  'failed delivery': 'delayed',
+  'rescheduled': 'delayed',
   'status_13': 'delayed',
   '13': 'delayed'
+};
+
+const SYSTEM_STATUS_MAPPING = {
+  'turbo_saved': { orderStatus: null, paymentStatus: null },
+  'turbo_sent': { orderStatus: null, paymentStatus: null },
+  'processing': { orderStatus: 'PROCESSING', paymentStatus: null },
+  'out_for_delivery': { orderStatus: 'SHIPPED', paymentStatus: null },
+  'delivered': { orderStatus: 'DELIVERED', paymentStatus: 'COMPLETED' },
+  'remitted': { orderStatus: 'DELIVERED', paymentStatus: 'COMPLETED' },
+  'returned_to_company': { orderStatus: 'RETURNED', paymentStatus: null },
+  'returned_resent': { orderStatus: 'PROCESSING', paymentStatus: null },
+  'returned_missing': { orderStatus: 'RETURNED', paymentStatus: null },
+  'returned_destroyed': { orderStatus: 'RETURNED', paymentStatus: null },
+  'cancelled': { orderStatus: 'CANCELLED', paymentStatus: null },
+  'delayed': { orderStatus: 'ON_HOLD', paymentStatus: null },
+  'archived': { orderStatus: null, paymentStatus: null }
 };
 
 const normalizeTurboStatus = (rawStatus) => {
@@ -88,7 +117,23 @@ const normalizeTurboStatus = (rawStatus) => {
   return CANONICAL_TURBO_MAP[key] || key;
 };
 
+/**
+ * Maps any raw Turbo status code/string to the canonical Turbo status string
+ * and valid system OrderStatus & PaymentStatus enums.
+ */
+const getSystemStatusFromTurbo = (rawStatus) => {
+  const canonical = normalizeTurboStatus(rawStatus);
+  const mapped = SYSTEM_STATUS_MAPPING[canonical] || { orderStatus: null, paymentStatus: null };
+  return {
+    canonicalTurboStatus: canonical,
+    orderStatus: mapped.orderStatus,
+    paymentStatus: mapped.paymentStatus
+  };
+};
+
 module.exports = {
   CANONICAL_TURBO_MAP,
-  normalizeTurboStatus
+  SYSTEM_STATUS_MAPPING,
+  normalizeTurboStatus,
+  getSystemStatusFromTurbo
 };

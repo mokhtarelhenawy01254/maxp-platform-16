@@ -1,6 +1,13 @@
 # Team Sync Updates
 
-## 2026-07-22 / 2026-03-09
+## 2026-07-23 / 2026-03-09
+- **Unified Turbo Status Engine & Fixed Prisma Enum Inconsistencies (BUG FIX / ARCHITECTURE):**
+  1. Built `turboStatusSyncService.js` to serve as a Single Source of Truth for updating `Order` and `GuestOrder` statuses from Turbo Express.
+  2. Fixed invalid Prisma Enum assignments (`COMPLETED`/`PAID`) in `turboTrackingScheduler.js` and unified them to standard `OrderStatus.DELIVERED` and `PaymentStatus.COMPLETED`.
+  3. Refactored `turboWebhook.js` and `turboTrackingScheduler.js` to use `syncTurboStatusToOrder()` consistently across `Order` and `GuestOrder`.
+  4. Updated `statusNormalizer.js` with `getSystemStatusFromTurbo` helper.
+  5. Hardened `turboService.js` by eliminating silent fallback to Cairo (`"القاهرة"`), returning clear Arabic errors if governorate is missing/unresolvable.
+
 - **Fixed Actual Shipping Cost & Updated Turbo Status Display to "غير مكتمل" (BUG FIX / COMPLETE):**
   1. Resolved issue where Turbo actual shipping cost showed "غير متوفر" by fixing endpoint URL `/turbo/calculate` and auto-populating shipping comparison upon opening order details.
   2. Updated `TurboShippingPanel.tsx` to display **"غير مكتمل"** for initial/saved Turbo shipment statuses (`1`, `0`, `created`, `saved`, `incomplete`), matching Turbo Dashboard.
