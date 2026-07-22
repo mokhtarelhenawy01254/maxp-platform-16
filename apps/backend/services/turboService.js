@@ -743,8 +743,8 @@ class TurboService {
         notes: notes || `Order #${orderNumber}`,
         order_summary: formattedSummary,
         return_summary: orderData.returnSummary || '',
-        amount_to_be_collected: (paymentMethod && paymentMethod.toUpperCase() === 'PAID') ? 0 : parseFloat(totalValue || orderData.total || 0),
-        return_amount: parseFloat(orderData.returnAmount || 0),
+        amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
+        return_amount: parseFloat(orderData.returnAmount || (isOrderVal === 2 ? totalValue : 0)),
         is_order: isOrderVal,
         can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1,
@@ -1432,7 +1432,19 @@ class TurboService {
         }
       }
 
-      // 1. حساب مبلغ التحصيل (COD)
+      // 1. تحديد نوع الشحنة (0 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
+      let isOrderVal = 0;
+      if (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '') {
+        isOrderVal = Number(formattedData.isOrder);
+      } else if (formattedData.orderType === 'EXCHANGE' || formattedData.isExchange || formattedData.type === 'EXCHANGE') {
+        isOrderVal = 1;
+      } else if (formattedData.orderType === 'RETURN' || formattedData.isReturn || formattedData.type === 'RETURN') {
+        isOrderVal = 2;
+      } else {
+        isOrderVal = 0; // تسليم عادي 0
+      }
+
+      // 2. حساب مبلغ التحصيل (COD)
       const methodStr = String(formattedData.paymentMethod || '').trim().toUpperCase();
       const isPrepaid = (
         methodStr === 'PAID' ||
@@ -1444,19 +1456,7 @@ class TurboService {
         methodStr === 'VISA'
       );
 
-      const codAmount = isPrepaid ? 0 : parseFloat(formattedData.totalValue || formattedData.total || 0);
-
-      // 2. تحديد نوع الشحنة (0 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
-      let isOrderVal = 0;
-      if (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '') {
-        isOrderVal = Number(formattedData.isOrder);
-      } else if (formattedData.orderType === 'EXCHANGE' || formattedData.isExchange || formattedData.type === 'EXCHANGE') {
-        isOrderVal = 1;
-      } else if (formattedData.orderType === 'RETURN' || formattedData.isReturn || formattedData.type === 'RETURN') {
-        isOrderVal = 2;
-      } else {
-        isOrderVal = 0; // تسليم عادي 0
-      }
+      const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : parseFloat(formattedData.totalValue || formattedData.total || 0);
 
       // 3. تنظيف وتأكيد رقم الهاتف المصرفي (11 رقماً يبدأ بـ 01)
       let rawPhoneDigits = String(formattedData.customerPhone || '').replace(/\D/g, '');
