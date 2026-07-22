@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Fixed Actual Shipping Cost & Updated Turbo Status Display to "غير مكتمل" (BUG FIX / COMPLETE):**
+  1. Resolved issue where Turbo actual shipping cost showed "غير متوفر" by fixing endpoint URL `/turbo/calculate` and auto-populating shipping comparison upon opening order details.
+  2. Updated `TurboShippingPanel.tsx` to display **"غير مكتمل"** for initial/saved Turbo shipment statuses (`1`, `0`, `created`, `saved`, `incomplete`), matching Turbo Dashboard.
 - **Fixed Shipment Type Becoming "Partial Return" on Update (BUG FIX / COMPLETE):**
   1. Resolved issue where updating a shipment in Turbo changed its type from regular delivery ("تسليم عادياً") to partial return ("مرتجع جزئي").
   2. Fixed `return_amount` in `turboService.js` to default to 0 instead of shipping fee, and set `return_summary` to `'لا يوجد مرتجع'`, guaranteeing Turbo API classifies updated orders as `is_order: 1` ("تسليم عادياً").

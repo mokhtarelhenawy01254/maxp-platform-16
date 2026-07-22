@@ -1,3 +1,17 @@
+### [BUG FIX / TURBO UI] Fixed Actual Shipping Cost Calculation and Updated Status Display to "غير مكتمل"
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. Frontend `useTurboShipping.ts` made requests to `/turbo/shipping/calculate` (which returned 404), while backend route was `/turbo/calculate`. Also, `shippingComparison` was initialized as null until manually triggered.
+  2. Status mapping in `TurboShippingPanel.tsx` mapped status `1` and `created` to "محفوظة قبل الشحن" and "تم الإنشاء" instead of matching Turbo Dashboard's status label "غير مكتمل".
+- **Fix**:
+  1. Corrected endpoint URL in `useTurboShipping.ts` to `/turbo/calculate` and added auto-initialization `useEffect` so actual shipping cost displays automatically upon opening order details.
+  2. Updated `turboController.js` `calculateShippingCost` to fallback gracefully to order shipping cost/zone rate if Turbo API external calculation endpoint is unavailable.
+  3. Updated `TurboShippingPanel.tsx` statusMap to display **"غير مكتمل"** with amber badge for status values `0`, `1`, `created`, `saved`, `incomplete`, matching Turbo Dashboard.
+- **Files Modified**:
+  - `apps/frontend/src/pages/orders/components/TurboShippingPanel.tsx`
+  - `apps/frontend/src/pages/orders/hooks/useTurboShipping.ts`
+  - `apps/backend/controller/turboController.js`
+
 ### [BUG FIX / TURBO UPDATE] Fixed Shipment Type Becoming "Partial Return" on Update
 - **Date**: 2026-07-22
 - **Root Cause**: In `updateShipment` (`turboService.js`), `return_amount` was mistakenly set to `formattedData.shipping` (70 EGP). In Turbo API's schema, passing a positive `return_amount` indicates a refund/exchange amount to pay to the customer, which caused Turbo API to convert the order's classification from regular delivery (`is_order: 1`) to partial return (`is_order: 0`).
