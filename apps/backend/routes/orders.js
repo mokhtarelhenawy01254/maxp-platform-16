@@ -1376,22 +1376,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         address,
         addressLine1: address,
       },
-      items: items.length ? items.map((item) => ({
-        productId: item.productId,
-        variantId: item.variantId || undefined,
-        name: item.name || item.productName || item.title || '',
-        quantity: item.quantity || 1,
-        price: item.price || 0,
-        image: item.image || item.imageUrl,
-        productImage: item.productImage || item.image || item.imageUrl,
-        attributes: item.attributes || {},
-      })) : undefined,
-      subtotal: checkoutData.subtotal || 0,
-      shippingCost: checkoutData.shippingCost || 0,
-      total,
-      couponCode: checkoutData.couponCode || undefined,
       _skipPixel: true,
-      _adminConvert: true,
     };
 
     const axios = require('axios');
@@ -1402,7 +1387,6 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         'Content-Type': 'application/json',
         'x-cart-id': cartId,
         'x-company-id': companyId,
-        'x-admin-convert': 'true',
       },
       timeout: 30000,
     });
@@ -1420,9 +1404,10 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     throw new Error(result?.message || 'فشل إنشاء الطلب');
   } catch (error) {
     console.error('❌ Error converting incomplete order:', error.message);
+    const detail = error.response?.data?.message || error.response?.data?.error || error.message;
     return res.status(500).json({
       success: false,
-      message: error.message || 'خطأ في تحويل الطلب غير المكتمل',
+      message: detail || 'خطأ في تحويل الطلب غير المكتمل',
     });
   }
 });
