@@ -2600,24 +2600,21 @@ const getRecords = async (req, res) => {
         const upperFilter = filterType.toUpperCase();
 
         const ALIASES = {
-          'processing': ['processing', 'status_3', 'created'],
-          'shipped': ['shipped', 'status_4'],
-          'out_for_delivery': ['out_for_delivery', 'status_9'],
-          'delivered': ['delivered', 'status_5'],
-          'cancelled': ['cancelled', 'status_6'],
-          'returned': ['returned', 'status_7'],
-          'delayed': ['delayed', 'status_8'],
-          'on_hold': ['on_hold', 'status_12'],
-          'failed_delivery': ['failed_delivery', 'status_10'],
-          'rescheduled': ['rescheduled', 'status_11'],
-          'returned_to_company': ['returned_to_company', 'status_14'],
-          'returned_resent': ['returned_resent', 'status_15'],
-          'returned_missing': ['returned_missing', 'status_16'],
-          'returned_destroyed': ['returned_destroyed', 'status_17'],
-          'incomplete': ['incomplete', 'status_18'],
-          'remitted': ['remitted', 'status_19'],
-          'returned_received': ['returned_received', 'status_20'],
-          'lost': ['lost', 'status_13']
+          'turbo_saved': ['turbo_saved', 'status_1', '1'],
+          'turbo_sent': ['turbo_sent', 'status_2', '2'],
+          'processing': ['processing', 'status_3', 'created', '3'],
+          'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
+          'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
+          'cancelled': ['cancelled', 'status_6', '6'],
+          'delivered': ['delivered', 'status_7', '7'],
+          'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
+          'archived': ['archived', 'status_9', '9'],
+          'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
+          'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
+          'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
+          'delayed': ['delayed', 'status_13', '13'],
+          'shipped': ['out_for_delivery', 'status_4', '4'],
+          'returned': ['returned_to_company', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12']
         };
 
         const targetList = ALIASES[ft] || [ft];
