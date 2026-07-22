@@ -19,7 +19,7 @@
   "triggerType": "نوع المحفز",
   "triggerValue": "قيمة المحفز",
   "keyword": "كلمة مفتاحية",
-  "regex": "Regex",
+  "regex": "تعبيرات نمطية (Regex)",
   "regexFull": "تعبير نمطي (Regex)",
   "all": "الكل",
   "allMessages": "جميع الرسائل",

@@ -1,8 +1,8 @@
 {
   "title": "المنتجات",
-  "productImage": "Product Image",
-  "inStock": "In Stock",
-  "outOfStock": "Out of Stock",
+  "productImage": "صورة المنتج",
+  "inStock": "متوفر في المخزن",
+  "outOfStock": "نفذ من المخزن",
   "slug": "الرابط المختصر (Slug)",
   "generate": "توليد تلقائي",
   "slug_description": "رابط فريد للمنتج يظهر في العنوان (URL)",

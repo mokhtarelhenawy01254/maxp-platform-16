@@ -6,7 +6,7 @@
   "noDescription": "لا يوجد وصف مختصر لهذه المهارة.",
   "noDescriptionDetail": "لا يوجد وصف.",
   "noToolDescription": "أداة غير موثقة.",
-  "noSkillMd": "No SKILL.md content available.",
+  "noSkillMd": "لا يوجد محتوى لملف SKILL.md متوفر.",
   "groups": {
     "sales": "المبيعات",
     "marketing": "التسويق",
@@ -33,7 +33,7 @@
   "dialogSaving": "جارٍ الحفظ...",
   "dialogSave": "حفظ",
   "toolsTitle": "الأدوات داخل المهارة",
-  "skillMdTitle": "SKILL.md",
+  "skillMdTitle": "ملف SKILL.md",
   "needsApproval": "تحتاج موافقة",
   "directExecution": "تشغيل مباشر",
   "readOnly": "قراءة",

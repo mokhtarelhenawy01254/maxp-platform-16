@@ -143,9 +143,9 @@
   "sourceLabels": {
     "ai_conversation": "محادثة ذكية",
     "storefront": "المتجر",
-    "woocommerce": "WooCommerce",
+    "woocommerce": "وو كومرس",
     "manual": "يدوي",
-    "api": "API",
+    "api": "برمجية الربط (API)",
     "import": "استيراد",
     "pos": "نقطة بيع",
     "unknown": "غير معروف"

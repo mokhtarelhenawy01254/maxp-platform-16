@@ -40,7 +40,7 @@
     "audit": "التدقيق",
     "management": "الإدارة",
     "system": "النظام",
-    "mcp": "MCP"
+    "mcp": "منصة MCP"
   },
   "autonomy": {
     "auto": "تلقائي",
@@ -52,8 +52,8 @@
     "write": "كتابة"
   },
   "sources": {
-    "mcp": "MCP",
-    "python": "Python"
+    "mcp": "منصة MCP",
+    "python": "بايثون"
   },
   "tool_lead_score": "تقييم العملاء المحتملين",
   "tool_lead_score_desc": "ترتيب العملاء حسب احتمالية الشراء بناءً على الحداثة والتكرار والقيمة",

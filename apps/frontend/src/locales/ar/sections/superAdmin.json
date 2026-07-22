@@ -99,7 +99,7 @@
   },
   "aiProviders": {
     "embedding": {
-      "title": "Embeddings",
+      "title": "التمثيل الرياضي للنصوص (Embeddings)",
       "modelLabel": "موديل الـ Embedding",
       "dimensionsLabel": "الأبعاد",
       "save": "حفظ",
@@ -120,7 +120,7 @@
       "health": {
         "title": "حالة Gemini Embedding 2",
         "statusChip": "الحالة: {{status}}",
-        "fallbackChip": "Fallback: {{fallback}}",
+        "fallbackChip": "الاحتياطي: {{fallback}}",
         "modelChip": "موديل التشغيل: {{model}}",
         "dimensionChip": "{{dimension}} بعد",
         "activeKeysChip": "{{count}} مفتاح Google نشط",
