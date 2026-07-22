@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Added Dedicated Merchant Preparing Card & Aligned Official Turbo 13 Status Codes (FEATURE / COMPLETE):**
+  1. **Merchant Preparing Card (`merchant_preparing`)**: Added a dedicated top card for orders that received a Turbo tracking code (`turbo_saved` / `turbo_sent`) but are still being prepared by the merchant before pickup/reaching Turbo branch.
+  2. **Top Metric Cards Grid**: Restructured `/orders/turbo-records` top section to present 4 key metrics: Active Shipments (`active`), Merchant Preparing (`merchant_preparing`), Branch Processing (`processing`), and Total Turbo Orders (`all`).
+  3. **Official 13 Status Code Realignment**: Corrected `ALIASES` & `STATUS_ALIAS_MAP` in `turboController.js` to match Turbo codes 1-13 cleanly across backend & frontend.
+
 - **Fixed Turbo Order Creation Failure (BUG FIX):** Added required `return_summary` parameter when `is_order: 1` in `turboService.js`. Creating shipments now succeeds 100% and generates Turbo Tracking Codes!
 
 

@@ -1,3 +1,13 @@
+### [FEATURE / TURBO & STATUSES] Dedicated Merchant Preparing Card & Official 13 Status Code Alignment
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Status Code Mapping Realignment**: Updated `ALIASES` and `STATUS_ALIAS_MAP` in `turboController.js` to strictly adhere to official Turbo status codes 1 through 13.
+  2. **Merchant Preparing Metric Card (`merchant_preparing`)**: Created a dedicated filter card for orders that have received a Turbo tracking code (`turbo_saved` / `turbo_sent`) but have not yet been picked up or reached Turbo's branch.
+  3. **Structured Top Cards Grid**: Re-architected `/orders/turbo-records` top section to feature Active Shipments (`active`), Merchant Preparing (`merchant_preparing`), Branch Processing (`processing`), and Total Turbo Orders (`all`).
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+  - `apps/frontend/src/pages/orders/TurboRecords.tsx`
+
 ### [FIX/TURBO] Required `return_summary` Field in Shipment Creation Payload
 - **Date**: 2026-07-22
 - **Root Cause**: Turbo API rejects `/add-order` requests when `is_order: 1` if `return_summary` parameter is missing with error `'The return summary field is required when is order is 1.'`.
