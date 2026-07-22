@@ -1386,6 +1386,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       headers: {
         'Content-Type': 'application/json',
         'x-cart-id': cartId,
+        'x-admin-convert': 'true',
       },
       timeout: 30000,
     });

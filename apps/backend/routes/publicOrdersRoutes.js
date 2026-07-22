@@ -1037,7 +1037,7 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity) {
+        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -1146,7 +1146,7 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity) {
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
