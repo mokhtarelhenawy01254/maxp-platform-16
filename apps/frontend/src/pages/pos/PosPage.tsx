@@ -203,7 +203,7 @@ const PosProductImage = ({
 };
 
 const PosPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { actualTheme, toggleTheme } = useTheme();
   const isDark = actualTheme === "dark";
   const [products, setProducts] = useState<Product[]>([]);
