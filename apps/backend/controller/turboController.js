@@ -2669,7 +2669,7 @@ const getRecords = async (req, res) => {
 
         const ALIASES = {
           'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
-          'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2'],
+          'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2', 'created'],
           'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
           'turbo_saved': ['turbo_saved', 'status_1', '1'],
           'turbo_sent': ['turbo_sent', 'status_2', '2'],
@@ -2822,7 +2822,7 @@ const getRecords = async (req, res) => {
       'status_1': 'turbo_saved',
       'status_2': 'turbo_sent',
       'status_3': 'processing',
-      'created': 'processing',
+      'created': 'turbo_saved',
       'status_4': 'out_for_delivery',
       'status_5': 'returned_to_company',
       'status_6': 'cancelled',
