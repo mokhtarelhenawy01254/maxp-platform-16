@@ -217,7 +217,6 @@ const getErrorMessage = (error: unknown, t: (key: string) => string) => {
 };
 
 const OrderInvoices: React.FC = () => {
-  const { t } = useTranslation();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const paymentStatusMeta = useMemo(() => createPaymentStatusMeta(t), [t]);
