@@ -225,8 +225,9 @@ const TurboRecords: React.FC = () => {
     const filterOptions = [
         { key: 'all', label: 'إجمالي شحنات تربو', color: 'border-blue-300 bg-blue-50 text-blue-800' },
         { key: 'active', label: 'النشطة في تربو (غير الموردة/المرتجعة)', color: 'border-amber-400 bg-amber-50 text-amber-900 font-bold' },
-        { key: 'preparing', label: 'تجهيز بالفرع (قبل المندوب)', color: 'border-purple-400 bg-purple-50 text-purple-900 font-semibold' },
-        { key: 'processing', label: 'قيد التنفيذ', color: 'border-purple-300 bg-purple-50 text-purple-800' },
+        { key: 'merchant_preparing', label: 'تجهيز التاجر (قبل الاستلام/الفرع)', color: 'border-indigo-400 bg-indigo-50 text-indigo-900 font-bold' },
+        { key: 'preparing', label: 'معالجة بالفرع (قبل المندوب)', color: 'border-purple-400 bg-purple-50 text-purple-900 font-semibold' },
+        { key: 'processing', label: 'قيد التنفيذ بالفرع', color: 'border-purple-300 bg-purple-50 text-purple-800' },
         { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
         { key: 'delayed', label: 'مؤجلات مع المندوب', color: 'border-amber-300 bg-amber-50 text-amber-800' },
         { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50 text-green-800' },
@@ -279,9 +280,9 @@ const TurboRecords: React.FC = () => {
                 </div>
             </div>
 
-            {/* 🔥 الكروت الرئيسية المطلوبة (النشطة / تجهيز / الكل) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* كارت الشحنات النشطة في تربو */}
+            {/* 🔥 الكروت الرئيسية المطلوبة (النشطة / تجهيز التاجر / معالجة الفرع / الكل) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* 1. كارت الشحنات النشطة في تربو */}
                 <button
                     onClick={() => handleFilterChange('active')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'active' ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400 scale-[1.02]' : 'border-amber-200 bg-amber-50/60 hover:bg-amber-50'}`}
@@ -291,23 +292,36 @@ const TurboRecords: React.FC = () => {
                         <TruckIcon className="h-5 w-5 text-amber-600" />
                     </div>
                     <div className="text-2xl font-black text-amber-900">{getStatusCount('active')} أوردر</div>
-                    <div className="text-xs text-amber-700 mt-1 font-medium">كل الأوردرات اللي في تربو ولسه مرجعتش لا فلوس ولا مرتجعات</div>
+                    <div className="text-xs text-amber-700 mt-1 font-medium">كل الأوردرات في تربو ولسه مرجعتش لا فلوس ولا مرتجعات</div>
                 </button>
 
-                {/* كارت تجهيز الشحن بالفرع */}
+                {/* 2. كارت تجهيز التاجر (قبل البيك أب والفرع) */}
                 <button
-                    onClick={() => handleFilterChange('preparing')}
-                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'preparing' ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-400 scale-[1.02]' : 'border-purple-200 bg-purple-50/60 hover:bg-purple-50'}`}
+                    onClick={() => handleFilterChange('merchant_preparing')}
+                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'merchant_preparing' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-400 scale-[1.02]' : 'border-indigo-200 bg-indigo-50/60 hover:bg-indigo-50'}`}
                 >
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-purple-800 bg-purple-200/80 px-2 py-0.5 rounded-md">تجهيز بالفرع</span>
-                        <InformationCircleIcon className="h-5 w-5 text-purple-600" />
+                        <span className="text-xs font-bold text-indigo-800 bg-indigo-200/80 px-2 py-0.5 rounded-md">تجهيز التاجر</span>
+                        <InformationCircleIcon className="h-5 w-5 text-indigo-600" />
                     </div>
-                    <div className="text-2xl font-black text-purple-900">{getStatusCount('preparing')} أوردر</div>
-                    <div className="text-xs text-purple-700 mt-1 font-medium">وصلت تربو وقيد التنفيذ ولكن لم تخرج للمندوب بعد</div>
+                    <div className="text-2xl font-black text-indigo-900">{getStatusCount('merchant_preparing')} أوردر</div>
+                    <div className="text-xs text-indigo-700 mt-1 font-medium">أخذت كود تربو لكن لسه معملتش بيك أب ومرحتش للفرع</div>
                 </button>
 
-                {/* كارت إجمالي أوردرات تربو */}
+                {/* 3. كارت معالجة الشحن بالفرع */}
+                <button
+                    onClick={() => handleFilterChange('processing')}
+                    className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'processing' ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-400 scale-[1.02]' : 'border-purple-200 bg-purple-50/60 hover:bg-purple-50'}`}
+                >
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-purple-800 bg-purple-200/80 px-2 py-0.5 rounded-md">قيد التنفيذ بالفرع</span>
+                        <InformationCircleIcon className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-black text-purple-900">{getStatusCount('processing')} أوردر</div>
+                    <div className="text-xs text-purple-700 mt-1 font-medium">وصلت فرع تربو وقيد المعالجة قبل المندوب</div>
+                </button>
+
+                {/* 4. كارت إجمالي أوردرات تربو */}
                 <button
                     onClick={() => handleFilterChange('all')}
                     className={`rounded-2xl border-2 p-4 text-right transition-all cursor-pointer shadow-sm hover:shadow-md ${filterType === 'all' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400 scale-[1.02]' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
