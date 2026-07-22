@@ -1491,7 +1491,7 @@ class TurboService {
         area: cleanArea,
         address: cleanAddress,
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
-        invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
+        invoice_number: formattedData.orderNumber || shipmentId,
         order_summary: formattedSummary,
         return_summary: formattedData.returnSummary || 'لا يوجد مرتجع',
         amount_to_be_collected: codAmount,
