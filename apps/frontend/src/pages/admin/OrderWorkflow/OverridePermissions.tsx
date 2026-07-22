@@ -11,7 +11,7 @@ import orderWorkflowService, { OrderWorkflowConfig } from '../../../services/ord
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
 
-const AVAILABLE_ROLES = [
+const getAvailableRoles = (t: any) => [
     { value: 'OWNER', label: t('orderSettings.k_70') },
     { value: 'SUPER_ADMIN', label: t('orderSettings.k_71') },
     { value: 'COMPANY_ADMIN', label: t('orderSettings.k_72') },
@@ -26,6 +26,7 @@ interface Props {
 
 const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
   const { t } = useTranslation();
+  const AVAILABLE_ROLES = React.useMemo(() => getAvailableRoles(t), [t]);
     const { user } = useAuth();
     const selectedRoles: string[] = config?.overrideRoles
         ? JSON.parse(config.overrideRoles)
