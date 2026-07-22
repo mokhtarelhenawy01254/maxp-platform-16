@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-22 / 2026-03-09
+- **Verified & Updated Turbo Edit Order API Integration (FEATURE / COMPLETE):**
+  1. Verified Turbo API `/edit-order` endpoint support in `turboService.js` (`updateShipment`).
+  2. Fixed `return_summary` requirement error when `is_order: 1` by setting `'لا يوجد مرتجع'` default.
+  3. Integrated with `orderDetailsUpdateService.js`: Editing customer details or address on our platform automatically syncs live to Turbo API.
+  4. Successfully tested and verified live on Order `#ORD-026429-146` (`38124937`), returning `{ success: true, message: 'success' }` from Turbo.
 - **Strict Customer Phone Validation & Blocking Invalid Shipments to Turbo (BUG FIX / COMPLETE):**
   1. Removed all automatic phone fallbacks (`01000000000`).
   2. Implemented strict validation in `turboService.js`: Any order with an invalid phone (e.g. 10 digits instead of 11) is strictly blocked from being sent to Turbo.

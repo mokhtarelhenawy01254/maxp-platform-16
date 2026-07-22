@@ -1,3 +1,13 @@
+### [FEATURE / TURBO API EDIT ORDER] Integrated Turbo Edit Order API & Fixed `return_summary` Requirement
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Turbo API `/edit-order` Integration**: Verified and tested `updateShipment` method in `turboService.js` calling Turbo API endpoint `POST https://backoffice.turbo-eg.com/external-api/edit-order`.
+  2. **Fixed `return_summary` Requirement**: Turbo API rejected edit requests with `The return summary field is required when is order is 1`. Added default non-empty fallback `'لا يوجد مرتجع'` for `return_summary` parameter in `updateData`.
+  3. **Automatic System Sync (`orderDetailsUpdateService.js`)**: Any update to customer details (name, phone, address) or order items on our platform automatically triggers `updateShipment`, syncing the changes live to Turbo system.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/services/orderDetailsUpdateService.js`
+
 ### [BUG FIX / TURBO VALIDATION] Strict Customer Phone Validation Before Turbo Shipment Creation
 - **Date**: 2026-07-22
 - **Requirement / Fix**:
