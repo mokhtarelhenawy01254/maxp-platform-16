@@ -39,7 +39,7 @@ interface Customer {
 }
 
 // Mock Data
-const MOCK_PRODUCTS: Product[] = [
+const getMockProducts = (t: any): Product[] => [
   {
     id: "1",
     name: t('pos.k_21'),
@@ -90,10 +90,12 @@ const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-const CATEGORIES = [t('pos.k_1'), t('pos.k_22'), t('pos.k_25'), t('pos.k_27'), t('pos.k_29')];
+const getCategories = (t: any) => [t('pos.k_1'), t('pos.k_22'), t('pos.k_25'), t('pos.k_27'), t('pos.k_29')];
 
 const POS = () => {
   const { t } = useTranslation();
+  const MOCK_PRODUCTS = React.useMemo(() => getMockProducts(t), [t]);
+  const CATEGORIES = React.useMemo(() => getCategories(t), [t]);
   // State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
