@@ -147,7 +147,7 @@ const normalizePreparationStage = (status) => {
   if (normalized === 'PENDING_CANCELLATION') {
     return 'PENDING_CANCELLATION';
   }
-  return normalized;
+  return null;
 };
 
 const isPreparationShortageFollowUpToday = (followUpDate, stage) => {

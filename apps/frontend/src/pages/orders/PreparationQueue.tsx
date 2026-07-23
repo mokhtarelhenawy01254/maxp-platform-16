@@ -1177,56 +1177,36 @@ const PreparationQueue: React.FC = () => {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowFilters((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-        >
-          <span className="flex items-center gap-2">
-            <FunnelIcon className="h-4 w-4 text-gray-400" />
-            {t('preparation.filtersToggle')}
-          </span>
-          <ChevronDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform ${
-              showFilters ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        {showFilters && (
-          <div className="border-t border-gray-100">
-            <PreparationFilters
-              activeFilter={activeStage}
-              statusCounts={statusCounts}
-              filterTabs={filterTabs}
-              visibleOrdersCount={visibleOrdersCount}
-              search={search}
-              selectedWarehouseId={selectedWarehouseId}
-              stockFilter={stockFilter}
-              shortageReasonFilter={shortageReasonFilter}
-              shortageOwnerFilter={shortageOwnerFilter}
-              shortageOwnerOptions={shortageOwnerOptions}
-              shortageFollowUpFilter={shortageFollowUpFilter}
-              productFilter={productFilter}
-              itemCountFilter={itemCountFilter}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              warehouses={warehouses}
-              onFilterChange={uiActions.setActiveStage}
-              onSearchChange={uiActions.setSearch}
-              onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-              onStockFilterChange={uiActions.setStockFilter}
-              onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-              onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-              onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-              onProductFilterChange={uiActions.setProductFilter}
-              onItemCountFilterChange={uiActions.setItemCountFilter}
-              onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
-            />
-          </div>
-        )}
+      <PreparationFilters
+        activeFilter={activeStage}
+        statusCounts={statusCounts}
+        filterTabs={filterTabs}
+        visibleOrdersCount={visibleOrdersCount}
+        search={search}
+        selectedWarehouseId={selectedWarehouseId}
+        stockFilter={stockFilter}
+        shortageReasonFilter={shortageReasonFilter}
+        shortageOwnerFilter={shortageOwnerFilter}
+        shortageOwnerOptions={shortageOwnerOptions}
+        shortageFollowUpFilter={shortageFollowUpFilter}
+        productFilter={productFilter}
+        itemCountFilter={itemCountFilter}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        warehouses={warehouses}
+        onFilterChange={uiActions.setActiveStage}
+        onSearchChange={uiActions.setSearch}
+        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+        onStockFilterChange={uiActions.setStockFilter}
+        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+        onProductFilterChange={uiActions.setProductFilter}
+        onItemCountFilterChange={uiActions.setItemCountFilter}
+        onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
+      />
 
-        <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-gray-100 px-4 py-3">
           <PreparationBulkActions
             compact
             selectedOrdersCount={selectedOrders.length}
@@ -1250,7 +1230,6 @@ const PreparationQueue: React.FC = () => {
             onPrintInvoices={() => void handlePrintInvoices()}
           />
         </div>
-      </div>
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
