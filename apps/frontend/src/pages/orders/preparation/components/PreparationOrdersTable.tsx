@@ -272,8 +272,8 @@ const PreparationOrdersTable = ({
                     {(() => {
                       const statusInfo = getStatusDisplay(order.normalizedStatus);
                       return (
-                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`}>
-                          {statusInfo.label}
+                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`} aria-label={statusInfo.labelKey}>
+                          {t(statusInfo.labelKey) || statusInfo.label}
                         </span>
                       );
                     })()}

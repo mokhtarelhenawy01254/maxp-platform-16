@@ -164,7 +164,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     <span>
                       {(() => {
                         const display = getOrderStatusDisplay(order);
-                        return display.primary.label;
+                        return t(display.primary.labelKey) || display.primary.label;
                       })()}
                     </span>
                     {canQuickSelectStatus && (

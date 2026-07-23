@@ -1903,12 +1903,13 @@ const Orders: React.FC = () => {
     }
   };
 
-  const getUnifiedStatusDisplay = (order: Order) => {
+  const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
 
     return {
-      text: display.primary.label,
+      text: translate(display.primary.labelKey) || display.primary.label,
+      labelKey: display.primary.labelKey,
       className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${display.primary.colorClass}`,
       style: customStyle,
     };
@@ -2993,9 +2994,9 @@ const Orders: React.FC = () => {
                     )}
                   </span>
                   {(() => {
-                    const unifiedStatus = getUnifiedStatusDisplay(order);
+                    const unifiedStatus = getUnifiedStatusDisplay(order, t);
                     return (
-                      <span className={unifiedStatus.className} style={unifiedStatus.style}>
+                      <span className={unifiedStatus.className} style={unifiedStatus.style} aria-label={unifiedStatus.labelKey}>
                         {unifiedStatus.text}
                       </span>
                     );
@@ -3286,11 +3287,12 @@ const Orders: React.FC = () => {
                         <td className="px-3 py-2.5 lg:px-4">
                           <div className="flex flex-col gap-1">
                             {(() => {
-                              const unifiedStatus = getUnifiedStatusDisplay(order);
+                              const unifiedStatus = getUnifiedStatusDisplay(order, t);
                               return (
                                 <span
                                   className={unifiedStatus.className}
                                   style={unifiedStatus.style}
+                                  aria-label={unifiedStatus.labelKey}
                                 >
                                   {unifiedStatus.text}
                                 </span>
