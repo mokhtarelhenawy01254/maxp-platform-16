@@ -1,6 +1,8 @@
 import { useMemo, useReducer } from "react";
 import type { PageSize } from "./constants";
 import type {
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SortBy,
@@ -19,6 +21,8 @@ export interface PreparationQueueUiState {
   shortageOwnerFilter: string;
   productFilter: string;
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -39,6 +43,8 @@ type PreparationQueueUiAction =
   | { type: "set_shortage_owner_filter"; value: string }
   | { type: "set_product_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
+  | { type: "set_not_printed_filter"; value: NotPrintedFilter }
+  | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
   | { type: "set_search"; value: string }
   | { type: "set_sort"; value: { sortBy: SortBy; sortOrder: SortOrder } }
   | { type: "set_page_size"; value: PageSize }
@@ -63,6 +69,8 @@ const initialState: PreparationQueueUiState = {
   shortageOwnerFilter: "",
   productFilter: "",
   itemCountFilter: "all",
+  notPrintedFilter: "all",
+  noShippingCodeFilter: "all",
   search: "",
   sortBy: "createdAt",
   sortOrder: "desc",
@@ -109,6 +117,10 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { productFilter: action.value });
     case "set_item_count_filter":
       return withPageReset(state, { itemCountFilter: action.value });
+    case "set_not_printed_filter":
+      return withPageReset(state, { notPrintedFilter: action.value });
+    case "set_no_shipping_code_filter":
+      return withPageReset(state, { noShippingCodeFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
     case "set_sort":
@@ -223,6 +235,10 @@ export const usePreparationQueueUiState = (
         dispatch({ type: "set_product_filter", value }),
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
+      setNotPrintedFilter: (value: NotPrintedFilter) =>
+        dispatch({ type: "set_not_printed_filter", value }),
+      setNoShippingCodeFilter: (value: NoShippingCodeFilter) =>
+        dispatch({ type: "set_no_shipping_code_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
       setSort: (value: { sortBy: SortBy; sortOrder: SortOrder }) =>
         dispatch({ type: "set_sort", value }),

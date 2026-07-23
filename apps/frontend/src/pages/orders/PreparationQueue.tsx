@@ -140,6 +140,8 @@ const PreparationQueue: React.FC = () => {
     shortageOwnerFilter: uiState.shortageOwnerFilter,
     productFilter: uiState.productFilter,
     itemCountFilter: uiState.itemCountFilter,
+    notPrintedFilter: uiState.notPrintedFilter,
+    noShippingCodeFilter: uiState.noShippingCodeFilter,
     search: deferredSearch,
     sortBy: uiState.sortBy,
     sortOrder: uiState.sortOrder,
@@ -171,6 +173,8 @@ const PreparationQueue: React.FC = () => {
     shortageOwnerFilter,
     productFilter,
     itemCountFilter,
+    notPrintedFilter,
+    noShippingCodeFilter,
     search,
     sortBy,
     sortOrder,
@@ -524,6 +528,8 @@ const PreparationQueue: React.FC = () => {
         shortageFollowUpFilter,
         shortageOwnerFilter.trim().toLowerCase(),
         deferredSearch.trim().toLowerCase(),
+        notPrintedFilter,
+        noShippingCodeFilter,
         sortBy,
         sortOrder,
       ].join("|"),
@@ -534,6 +540,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUpFilter,
       shortageOwnerFilter,
       shortageReasonFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
       sortBy,
       sortOrder,
       stockFilter,
@@ -1188,6 +1196,8 @@ const PreparationQueue: React.FC = () => {
         shortageFollowUpFilter={shortageFollowUpFilter}
         productFilter={productFilter}
         itemCountFilter={itemCountFilter}
+        notPrintedFilter={notPrintedFilter}
+        noShippingCodeFilter={noShippingCodeFilter}
         sortBy={sortBy}
         sortOrder={sortOrder}
         warehouses={warehouses}
@@ -1200,6 +1210,8 @@ const PreparationQueue: React.FC = () => {
         onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
         onProductFilterChange={uiActions.setProductFilter}
         onItemCountFilterChange={uiActions.setItemCountFilter}
+        onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
+        onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
         onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
       />
 

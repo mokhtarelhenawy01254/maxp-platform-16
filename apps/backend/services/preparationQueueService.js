@@ -710,6 +710,9 @@ const matchesPreparationHaystackSearch = (order, searchQuery) => {
   return haystack.includes(searchQuery);
 };
 
+const hasShipmentTracking = (order) =>
+  (order.shipments || []).some((s) => s.trackingNumber);
+
 const matchesPreparationFilters = ({
   order,
   stockFilter,
@@ -717,12 +720,17 @@ const matchesPreparationFilters = ({
   shortageOwnerQuery,
   shortageFollowUpFilter,
   itemCountFilter,
-  searchQuery
+  searchQuery,
+  notPrinted,
+  noShippingCode,
 }) => {
   if (!order.warehouseMatch) return false;
 
   if (itemCountFilter === 'single' && order.itemInsights.length !== 1) return false;
   if (itemCountFilter === 'multiple' && order.itemInsights.length <= 1) return false;
+
+  if (notPrinted && (order.printCount || 0) > 0) return false;
+  if (noShippingCode && (order.turboTrackingNumber || hasShipmentTracking(order))) return false;
 
   const hasShortageContext =
     order.missingItemsCount > 0 || order.stage === 'STOCK_SHORTAGE';
@@ -1107,6 +1115,8 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
   const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
   const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
   const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
@@ -1231,7 +1241,9 @@ const getPreparationQueue = async ({ user, query }) => {
         shortageOwnerQuery,
         shortageFollowUpFilter,
         itemCountFilter,
-        searchQuery
+        searchQuery,
+        notPrinted,
+        noShippingCode,
       });
 
       if (!matchesFilters) {

@@ -5,6 +5,8 @@ import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import type {
   ItemCountFilter,
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SortBy,
@@ -27,6 +29,8 @@ interface PreparationFiltersProps {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   productFilter: string;
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
   warehouses: WarehouseOption[];
@@ -39,6 +43,8 @@ interface PreparationFiltersProps {
   onShortageFollowUpFilterChange: (value: ShortageFollowUpFilter) => void;
   onProductFilterChange: (value: string) => void;
   onItemCountFilterChange: (value: ItemCountFilter) => void;
+  onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
+  onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
@@ -59,6 +65,8 @@ const PreparationFilters = ({
   shortageFollowUpFilter,
   productFilter,
   itemCountFilter,
+  notPrintedFilter,
+  noShippingCodeFilter,
   sortBy,
   sortOrder,
   warehouses,
@@ -71,6 +79,8 @@ const PreparationFilters = ({
   onShortageFollowUpFilterChange,
   onProductFilterChange,
   onItemCountFilterChange,
+  onNotPrintedFilterChange,
+  onNoShippingCodeFilterChange,
   onSortChange,
 }: PreparationFiltersProps) => {
   const { t } = useTranslation();
@@ -102,7 +112,9 @@ const PreparationFilters = ({
     shortageOwnerFilter !== "" ||
     shortageFollowUpFilter !== "all" ||
     productFilter !== "" ||
-    itemCountFilter !== "all";
+    itemCountFilter !== "all" ||
+    notPrintedFilter !== "all" ||
+    noShippingCodeFilter !== "all";
 
   const hasActiveFilters = activeFilter !== "ALL" || search !== "" || hasAdvancedFilters;
 
@@ -116,6 +128,8 @@ const PreparationFilters = ({
     onShortageFollowUpFilterChange("all");
     onProductFilterChange("");
     onItemCountFilterChange("all");
+    onNotPrintedFilterChange("all");
+    onNoShippingCodeFilterChange("all");
     onSortChange("createdAt", "desc");
     setLocalSearch("");
   };
@@ -212,6 +226,34 @@ const PreparationFilters = ({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Toggle filter buttons */}
+      <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-2.5">
+        <button
+          onClick={() =>
+            onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
+          }
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            notPrintedFilter === "not_printed"
+              ? "bg-amber-500 text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {t("preparation.filters.notPrinted")}
+        </button>
+        <button
+          onClick={() =>
+            onNoShippingCodeFilterChange(noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code")
+          }
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            noShippingCodeFilter === "no_shipping_code"
+              ? "bg-amber-500 text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {t("preparation.filters.noShippingCode")}
+        </button>
       </div>
 
       {/* Advanced filters (collapsible) */}

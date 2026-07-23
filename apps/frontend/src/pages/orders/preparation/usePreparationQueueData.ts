@@ -25,6 +25,8 @@ import type {
   ApiStatusResponse,
   ApiWarehouseResponse,
   InventoryRecord,
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   PreparationQueuePagination,
   PreparationQueueSettings,
   PreparationQueueSummary,
@@ -64,6 +66,8 @@ interface UsePreparationQueueDataParams {
   shortageOwnerFilter: string;
   productFilter: string;
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
@@ -151,6 +155,8 @@ const buildOrdersQueryKey = (
     params.shortageOwnerFilter.trim().toLowerCase(),
     params.productFilter.trim().toLowerCase(),
     params.itemCountFilter,
+    params.notPrintedFilter,
+    params.noShippingCodeFilter,
     params.search.trim().toLowerCase(),
     prioritizeShortageOrders ? "prioritized" : "chronological",
     params.sortBy,
@@ -175,6 +181,8 @@ const fetchOrdersData = async (
         shortageOwner: params.shortageOwnerFilter.trim() || undefined,
         productFilter: params.productFilter.trim() || undefined,
         itemCountFilter: params.itemCountFilter,
+        notPrinted: params.notPrintedFilter === "not_printed" || undefined,
+        noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
         search: params.search.trim() || undefined,
         prioritizeShortageOrders,
         sortBy: params.sortBy,
@@ -300,6 +308,8 @@ export const usePreparationQueueData = ({
   shortageOwnerFilter,
   productFilter,
   itemCountFilter,
+  notPrintedFilter,
+  noShippingCodeFilter,
   search,
   sortBy,
   sortOrder,
@@ -331,6 +341,8 @@ export const usePreparationQueueData = ({
       shortageOwnerFilter,
       productFilter,
       itemCountFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
       search,
       sortBy,
       sortOrder,
@@ -347,6 +359,8 @@ export const usePreparationQueueData = ({
       stockFilter,
       productFilter,
       itemCountFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
       sortBy,
       sortOrder,
     ],

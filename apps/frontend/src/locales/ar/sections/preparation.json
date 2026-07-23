@@ -69,7 +69,9 @@
     "allDates": "كل التواريخ",
     "today": "اليوم",
     "overdue": "متأخر",
-    "withoutDate": "بدون تاريخ"
+    "withoutDate": "بدون تاريخ",
+    "notPrinted": "غير مطبوعة",
+    "noShippingCode": "بدون كود شحن"
   },
   "stages": {
     "WAITING": "طلبات مؤكدة",
