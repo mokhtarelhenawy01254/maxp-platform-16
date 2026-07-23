@@ -349,8 +349,24 @@ class TurboService {
         return '';
       }
 
-      const normalizedValue = String(value).trim();
+      let normalizedValue = String(value).trim();
       if (!normalizedValue) {
+        return '';
+      }
+
+      // إذا كانت القيمة عبارة عن JSON string متداخلة، استخرج النص الداخلي
+      if (normalizedValue.startsWith('{')) {
+        try {
+          const innerObj = JSON.parse(normalizedValue);
+          if (innerObj && typeof innerObj === 'object') {
+            normalizedValue = innerObj.addressLine1 || innerObj.street || innerObj.address || innerObj.address1 || innerObj.address_1 || '';
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      if (normalizedValue.startsWith('{') || normalizedValue.startsWith('[')) {
         return '';
       }
 
@@ -623,8 +639,9 @@ class TurboService {
       const mainClientCode = await this.getMainClientCode();
       const senderNumber = await this.getSenderNumber();
 
-      const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress);
-      const cleanAddress = addressFields.formattedAddress || addressFields.sourceValue || shippingAddress || '';
+      let rawAddressStr = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.sourceValue || shippingAddress || '';
+      if (typeof rawAddressStr !== 'string') rawAddressStr = String(rawAddressStr);
+      const cleanAddress = rawAddressStr.substring(0, 350).trim();
 
       // جلب قائمة المحافظات من Turbo API
       let governments = [];
@@ -1378,7 +1395,10 @@ class TurboService {
         formattedData.shippingAddress,
         formattedData.customerAddress
       );
-      const cleanAddress = addressFields.formattedAddress || addressFields.sourceValue || formattedData.shippingAddress || '';
+      let rawAddressStr = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.sourceValue || formattedData.shippingAddress || '';
+      if (typeof rawAddressStr !== 'string') rawAddressStr = String(rawAddressStr);
+      // قص العنوان ليكون بحد أقصى 350 حرفاً لتفادي خطأ تربو 400 حرف
+      const cleanAddress = rawAddressStr.substring(0, 350).trim();
 
       // جلب قائمة المحافظات
       let governments = [];

@@ -2257,7 +2257,7 @@ const updateShipment = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error updating shipment:', error);
-    const arabicError = translateTurboErrorToArabic(error.message || 'فشل تحديث بيانات الشحنة في تربو');
+    const arabicError = turboService.translateTurboErrorToArabic(error.message || 'فشل تحديث بيانات الشحنة في تربو');
     res.status(400).json({
       success: false,
       error: arabicError,
