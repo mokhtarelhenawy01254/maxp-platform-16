@@ -82,6 +82,8 @@ const TURBO_ALIASES: Record<string, string> = {
   '11': 'returned_missing', 'returned_missing': 'returned_missing', 'lost': 'returned_missing', 'status_11': 'returned_missing',
   '12': 'returned_destroyed', 'returned_destroyed': 'returned_destroyed', 'status_12': 'returned_destroyed',
   '13': 'delayed', 'delayed': 'delayed', 'on hold': 'delayed', 'failed delivery': 'delayed', 'rescheduled': 'delayed', 'status_13': 'delayed',
+  'قيد الانتظار': 'delayed', 'قيد الانتظار مع المندوب': 'delayed', 'مؤجلة': 'delayed', 'مؤجله': 'delayed', 'مؤجل': 'delayed', 'تأجيل': 'delayed',
+  'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
 };
 
 export interface OrderLike {
