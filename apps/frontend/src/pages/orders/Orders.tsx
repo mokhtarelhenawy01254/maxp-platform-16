@@ -10,7 +10,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import { summarizeOrderDocumentItems } from "../../utils/orderDocumentQuantityOffers";
-import { getUnifiedOrderStatus } from "../../utils/statusRegistry";
+import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
   MERCHANT_OPERATION_APP_SLUGS,
@@ -1903,83 +1903,26 @@ const Orders: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (normalizeStatusCode(status)) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-      case "SCHEDULED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
-      case "PROCESSING":
-        return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400";
-      case "SHIPPED":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
-      case "DELIVERED":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
-      case "DUPLICATE_ORDER":
-        return "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400";
-      case "TRASH":
-      case "TRASH_ORDER":
-        return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
-    }
-  };
-
   const getUnifiedStatusDisplay = (order: Order) => {
-    const unified = getUnifiedOrderStatus(order);
-    const customStyle = unified.source === 'system' ? getStatusBadgeStyle(order.status || "") : undefined;
+    const display = getOrderStatusDisplay(order);
+    const primary = display.primary;
+    const secondary = display.secondary;
+    const customStyle = getStatusBadgeStyle(order.status || "");
 
-    return {
-      text: unified.source === 'turbo' ? `🚚 ${unified.label}` : unified.label,
-      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${unified.colorClass}`,
-      style: customStyle
+    const primaryBadge = {
+      text: primary.label,
+      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${primary.colorClass}`,
+      style: customStyle,
     };
-  };
 
-  const getStatusText = (status: string) => {
-    const normalizedStatus = normalizeStatusCode(status);
-    const configuredStatus = orderStatusMap.get(normalizedStatus);
-    if (configuredStatus?.name) {
-      return configuredStatus.name;
-    }
+    const secondaryBadge = secondary
+      ? {
+          text: secondary.label,
+          className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${secondary.colorClass}`,
+        }
+      : undefined;
 
-    switch (normalizedStatus) {
-      case "PENDING":
-        return t("orders.pending");
-      case "CONFIRMED":
-        return t("orders.confirmed");
-      case "SCHEDULED":
-        return t("orders.scheduled");
-      case "PROCESSING":
-        return t("orders.processing");
-      case "SHIPPED":
-        return t("orders.shipped");
-      case "DELIVERED":
-        return t("orders.delivered");
-      case "CANCELLED":
-        return t("orders.cancelled");
-      case "DUPLICATE_ORDER":
-        return t("orders.duplicate");
-      case "PARTIALLY_RETURNED":
-        return t("orders.partiallyReturned");
-      case "PARTIALLY_DELIVERED":
-        return t("orders.partiallyDelivered");
-      case "RETURNED":
-        return t("orders.returned");
-      case "REFUNDED":
-        return t("orders.refunded");
-      case "PARTIALLY_REFUNDED":
-        return t("orders.partiallyRefunded");
-      case "TRASH":
-      case "TRASH_ORDER":
-        return t("orders.trash");
-      default:
-        return status;
-    }
+    return { primary: primaryBadge, secondary: secondaryBadge };
   };
 
   const getStatusBadgeStyle = (status: string): React.CSSProperties | undefined => {
@@ -3063,9 +3006,16 @@ const Orders: React.FC = () => {
                   {(() => {
                     const unifiedStatus = getUnifiedStatusDisplay(order);
                     return (
-                      <span className={unifiedStatus.className} style={unifiedStatus.style}>
-                        {unifiedStatus.text}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className={unifiedStatus.primary.className} style={unifiedStatus.primary.style}>
+                          {unifiedStatus.primary.text}
+                        </span>
+                        {unifiedStatus.secondary && (
+                          <span className={unifiedStatus.secondary.className}>
+                            {unifiedStatus.secondary.text}
+                          </span>
+                        )}
+                      </div>
                     );
                   })()}
                 </div>
@@ -3356,12 +3306,19 @@ const Orders: React.FC = () => {
                             {(() => {
                               const unifiedStatus = getUnifiedStatusDisplay(order);
                               return (
-                                <span
-                                  className={unifiedStatus.className}
-                                  style={unifiedStatus.style}
-                                >
-                                  {unifiedStatus.text}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span
+                                    className={unifiedStatus.primary.className}
+                                    style={unifiedStatus.primary.style}
+                                  >
+                                    {unifiedStatus.primary.text}
+                                  </span>
+                                  {unifiedStatus.secondary && (
+                                    <span className={unifiedStatus.secondary.className}>
+                                      {unifiedStatus.secondary.text}
+                                    </span>
+                                  )}
+                                </div>
                               );
                             })()}
                             {order.isScheduled &&

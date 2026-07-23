@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
+import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface OrderItem {
   id: string;
@@ -77,46 +78,7 @@ interface OrdersResponse {
   };
 }
 
-const statusColors: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  PENDING: {
-    bg: "bg-yellow-100 dark:bg-yellow-900/30",
-    text: "text-yellow-800 dark:text-yellow-400",
-    label: "قيد الانتظار",
-  },
-  CONFIRMED: {
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-    text: "text-blue-800 dark:text-blue-400",
-    label: "مؤكد",
-  },
-  PROCESSING: {
-    bg: "bg-purple-100 dark:bg-purple-900/30",
-    text: "text-purple-800 dark:text-purple-400",
-    label: "جاري التجهيز",
-  },
-  SHIPPED: {
-    bg: "bg-indigo-100 dark:bg-indigo-900/30",
-    text: "text-indigo-800 dark:text-indigo-400",
-    label: "تم الشحن",
-  },
-  DELIVERED: {
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-800 dark:text-green-400",
-    label: "تم التوصيل",
-  },
-  CANCELLED: {
-    bg: "bg-red-100 dark:bg-red-900/30",
-    text: "text-red-800 dark:text-red-400",
-    label: "ملغي",
-  },
-  RETURNED: {
-    bg: "bg-gray-100 dark:bg-gray-900/30",
-    text: "text-gray-800 dark:text-gray-400",
-    label: "مرتجع",
-  },
-};
+const getStatusInfo = (statusCode: string) => getStatusDisplay(statusCode);
 
 const CompanyOrdersDetails: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
@@ -217,7 +179,7 @@ const CompanyOrdersDetails: React.FC = () => {
       order.customer.phone,
       order.customer.city,
       order.total,
-      statusColors[order.status]?.label || order.status,
+      getStatusInfo(order.status)?.label || order.status,
       order.items.map((i) => `${i.productName} (${i.quantity})`).join(" | "),
     ]);
 
@@ -457,9 +419,9 @@ const CompanyOrdersDetails: React.FC = () => {
                         </p>
                       </div>
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[order.status]?.bg} ${statusColors[order.status]?.text}`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusInfo(order.status)?.colorClass}`}
                       >
-                        {statusColors[order.status]?.label || order.status}
+                        {getStatusInfo(order.status)?.label || order.status}
                       </span>
                     </div>
 

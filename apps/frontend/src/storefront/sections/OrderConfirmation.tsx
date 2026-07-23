@@ -33,6 +33,7 @@ import {
   hasMarkedPurchaseTracked,
   markPurchaseTracked,
 } from '../utils/purchaseTrackingStorage';
+import { getStatusDisplay } from '../../utils/statusRegistry';
 
 interface PurchaseTrackingItem {
   id: string;
@@ -162,25 +163,15 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 const asTrimmedString = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
 
-const getOrderStatusText = (status?: string, prefersArabicCopy = false) =>
-  ({
-    PENDING: prefersArabicCopy ? 'قيد المراجعة' : 'Pending',
-    CONFIRMED: prefersArabicCopy ? 'تم التأكيد' : 'Confirmed',
-    PROCESSING: prefersArabicCopy ? 'قيد التجهيز' : 'Processing',
-    SHIPPED: prefersArabicCopy ? 'تم الشحن' : 'Shipped',
-    DELIVERED: prefersArabicCopy ? 'تم التسليم' : 'Delivered',
-    CANCELLED: prefersArabicCopy ? 'تم الإلغاء' : 'Cancelled',
-  }[String(status || '').trim().toUpperCase()] || status || (prefersArabicCopy ? 'قيد التجهيز' : 'Processing'));
+const getOrderStatusText = (status?: string, _prefersArabicCopy = false) => {
+  if (!status) return '';
+  return getStatusDisplay(status).label;
+};
 
-const getOrderStatusClassName = (status?: string) =>
-  ({
-    DELIVERED: 'border-emerald-500/30 bg-emerald-50 text-emerald-700',
-    SHIPPED: 'border-sky-500/30 bg-sky-50 text-sky-700',
-    CONFIRMED: 'border-blue-500/30 bg-blue-50 text-blue-700',
-    PROCESSING: 'border-blue-500/30 bg-blue-50 text-blue-700',
-    CANCELLED: 'border-rose-500/30 bg-rose-50 text-rose-700',
-  }[String(status || '').trim().toUpperCase()] ||
-  'border-amber-500/30 bg-amber-50 text-amber-700');
+const getOrderStatusClassName = (status?: string) => {
+  if (!status) return 'bg-gray-100 text-gray-800';
+  return getStatusDisplay(status).colorClass;
+};
 
 const getPaymentMethodText = (value?: string, prefersArabicCopy = false) =>
   ({

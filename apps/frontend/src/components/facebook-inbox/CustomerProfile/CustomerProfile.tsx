@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getStatusDisplay } from "../../../utils/statusRegistry";
 import {
   User,
   Phone,
@@ -205,50 +206,22 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
   );
 
   const getOrderStatusTheme = (status?: string) => {
-    if (
-      status === "completed" ||
-      status === "COMPLETED" ||
-      status === "DELIVERED"
-    ) {
-      return {
-        background: "color-mix(in srgb, var(--business-success) 12%, white)",
-        color: "var(--business-success)",
-      };
-    }
-    if (status === "cancelled" || status === "CANCELLED") {
-      return {
-        background: "color-mix(in srgb, var(--business-danger) 12%, white)",
-        color: "var(--business-danger)",
-      };
-    }
-    if (status === "PENDING") {
-      return {
-        background: "color-mix(in srgb, var(--business-warning) 12%, white)",
-        color: "var(--business-warning)",
-      };
-    }
-    if (status === "CONFIRMED") {
-      return {
-        background: "color-mix(in srgb, var(--color-primary) 12%, white)",
-        color: "var(--color-primary)",
-      };
-    }
-    if (status === "PROCESSING") {
-      return {
-        background: "color-mix(in srgb, var(--color-secondary) 12%, white)",
-        color: "var(--color-secondary)",
-      };
-    }
-    if (status === "SHIPPED") {
-      return {
-        background:
-          "color-mix(in srgb, var(--business-chart-tertiary) 12%, white)",
-        color: "var(--business-chart-tertiary)",
-      };
-    }
+    if (!status) return { background: '#f3f4f6', color: '#374151' };
+    const info = getStatusDisplay(status);
+    const colorMatch = info.colorClass.match(/text-([a-z]+)-(\d+)/);
+    const colorMap: Record<string, string> = {
+      'green': '#16a34a', 'red': '#dc2626', 'yellow': '#ca8a04',
+      'blue': '#2563eb', 'indigo': '#4f46e5', 'purple': '#9333ea',
+      'orange': '#ea580c', 'amber': '#d97706', 'gray': '#6b7280',
+      'cyan': '#06b6d4', 'teal': '#0d9488', 'rose': '#e11d48',
+      'sky': '#0284c7', 'emerald': '#059669', 'pink': '#db2777',
+      'stone': '#78716c',
+    };
+    const colorName = colorMatch ? colorMatch[1] : 'gray';
+    const color = colorMap[colorName] || '#6b7280';
     return {
-      background: "color-mix(in srgb, var(--color-border) 42%, white)",
-      color: "var(--color-muted-foreground)",
+      background: `color-mix(in srgb, ${color} 12%, white)`,
+      color,
     };
   };
 

@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import BulkOrderModal from "./components/BulkOrderModal";
 import BulkOrderView from "./components/BulkOrderView";
+import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface BulkOrder {
   id: string;
@@ -169,16 +170,9 @@ const BulkOrders = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-      PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200",
-      PROCESSING: "bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200",
-      COMPLETED: "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200",
-      FAILED: "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200",
-      CANCELLED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    };
+    const info = getStatusDisplay(status);
     return (
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status] || colors.DRAFT}`}>
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${info.colorClass}`}>
         {t(`orders.bulkStatus${status}`)}
       </span>
     );

@@ -10,7 +10,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
-import { getUnifiedOrderStatus } from "../../../utils/statusRegistry";
+import { getOrderStatusDisplay } from "../../../utils/statusRegistry";
 import { OrderDetailsType } from "../types";
 
 interface StatusOption {
@@ -161,10 +161,17 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
                     style={statusStyles}
                   >
-                    <span>
+                    <span className="flex items-center gap-1.5">
                       {(() => {
-                        const unified = getUnifiedOrderStatus(order);
-                        return unified.source === 'turbo' ? `🚚 ${unified.label}` : unified.label;
+                        const display = getOrderStatusDisplay(order);
+                        return (
+                          <>
+                            <span>{display.primary.label}</span>
+                            {display.secondary && (
+                              <span className="text-[10px] opacity-75">| {display.secondary.label}</span>
+                            )}
+                          </>
+                        );
                       })()}
                     </span>
                     {canQuickSelectStatus && (

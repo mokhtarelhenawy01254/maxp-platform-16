@@ -12,48 +12,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-
-const ORDER_STATUSES = [
-  "PENDING", "CONFIRMED", "SCHEDULED", "READY_FOR_PROCESSING",
-  "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED",
-  "DUPLICATE_ORDER", "REFUNDED", "RETURNED", "PARTIALLY_RETURNED",
-  "EXCHANGED", "PARTIALLY_REFUNDED", "WOO_TAGHEZ", "DRAFT",
-  "TRASH", "READY_TO_SHIP", "ON_HOLD", "NOT_SHIPPED",
-  "OUT_FOR_DELIVERY", "LOST", "PENDING_PREPARATION", "PREPARING",
-  "READY", "QUALITY_CHECK", "PACKAGED", "ON_HOLD_PREP", "PARTIALLY_DELIVERED",
-];
-
-const STATUS_CONFIG: Record<string, { labelAr: string; color: string }> = {
-  PENDING: { labelAr: "معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  CONFIRMED: { labelAr: "مؤكد", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-  SCHEDULED: { labelAr: "مجدول", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400" },
-  READY_FOR_PROCESSING: { labelAr: "جاهز للمعالجة", color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400" },
-  PROCESSING: { labelAr: "قيد المعالجة", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-  SHIPPED: { labelAr: "تم الشحن", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
-  DELIVERED: { labelAr: "تم التسليم", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  CANCELLED: { labelAr: "ملغي", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-  DUPLICATE_ORDER: { labelAr: "طلب مكرر", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
-  REFUNDED: { labelAr: "تم الاسترداد", color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400" },
-  RETURNED: { labelAr: "مرتجع", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-  PARTIALLY_RETURNED: { labelAr: "مرتجع جزئي", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
-  EXCHANGED: { labelAr: "مستبدل", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" },
-  PARTIALLY_REFUNDED: { labelAr: "مسترجع جزئي", color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400" },
-  WOO_TAGHEZ: { labelAr: "Woo Taghez", color: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" },
-  DRAFT: { labelAr: "مسودة", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
-  TRASH: { labelAr: "محذوف", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-  READY_TO_SHIP: { labelAr: "جاهز للشحن", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  ON_HOLD: { labelAr: "معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  NOT_SHIPPED: { labelAr: "لم يتم الشحن", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
-  OUT_FOR_DELIVERY: { labelAr: "خرج للتسليم", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
-  LOST: { labelAr: "مفقود", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-  PENDING_PREPARATION: { labelAr: "بانتظار التجهيز", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  PREPARING: { labelAr: "قيد التجهيز", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-  READY: { labelAr: "جاهز", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-  QUALITY_CHECK: { labelAr: "فحص الجودة", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400" },
-  PACKAGED: { labelAr: "تم التعبئة", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" },
-  ON_HOLD_PREP: { labelAr: "تجهيز معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  PARTIALLY_DELIVERED: { labelAr: "تسليم جزئي", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-};
+import { getStatusDisplay, getSystemStatusOptions } from "../../../utils/statusRegistry";
 
 interface OrderData {
   id: string;
@@ -74,13 +33,10 @@ interface ChangeLogEntry {
 }
 
 const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, label }) => {
-  const config = STATUS_CONFIG[status] || {
-    labelAr: label || status,
-    color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-  };
+  const info = getStatusDisplay(status);
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.color}`}>
-      {label || config.labelAr}
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${info.colorClass}`}>
+      {label || info.label}
     </span>
   );
 };
@@ -272,11 +228,9 @@ const QuickStatusChange: React.FC = () => {
   };
 
   const getStatusDisplayName = (statusValue: string) => {
-    // Check if it's a dynamic status ID or code
     const dynStatus = siteStatuses.find(s => s.id === statusValue || s.code === statusValue);
     if (dynStatus) return dynStatus.name;
-    // Fallback to static mapping
-    return STATUS_CONFIG[statusValue]?.labelAr || statusValue;
+    return getStatusDisplay(statusValue).label;
   };
 
   const hasChanges = changeLog.length > 0;
@@ -332,9 +286,9 @@ const QuickStatusChange: React.FC = () => {
               </option>
               {(siteStatuses.length > 0
                 ? siteStatuses
-                : ORDER_STATUSES.map((s) => ({
-                    id: s,
-                    name: STATUS_CONFIG[s]?.labelAr || s,
+                : getSystemStatusOptions().map((s) => ({
+                    id: s.code,
+                    name: s.label,
                   }))
               ).map((s) => (
                 <option key={s.id} value={s.id}>

@@ -8,6 +8,7 @@ import {
   ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
+import { getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { OrderDetailsType } from "../types";
 
@@ -46,122 +47,6 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
 }) => {
   const { formatDate } = useDateFormat();
   const { formatPrice } = useCurrency();
-
-  const getTurboStatusText = (status?: string) => {
-    if (!status) return "غير متاح";
-    const statusMap: { [key: string]: string } = {
-      "0": "قيد الانتظار",
-      "1": "قيد الانتظار",
-      "2": "مرسلة للشحن",
-      "3": "قيد التنفيذ",
-      "4": "مع الكابتن",
-      "5": "مرتجعة مع الشركة",
-      "6": "مرتجعة",
-      "7": "تم التسليم",
-      "8": "تم التوريد",
-      "9": "محذوفة",
-      "10": "مرتجعة معاد إرسالها",
-      "11": "مرتجع مفقود",
-      "12": "مرتجع معدوم",
-      "13": "مؤجلة",
-      "18": "غير مكتملة",
-      created: "قيد الانتظار",
-      saved: "قيد الانتظار",
-      incomplete: "قيد الانتظار",
-      uncompleted: "قيد الانتظار",
-      draft: "قيد الانتظار",
-      confirmed: "مؤكدة",
-      pending: "قيد الانتظار",
-      processing: "قيد المعالجة",
-      shipped: "تم الشحن",
-      picked_up: "تم الاستلام",
-      in_transit: "قيد النقل",
-      out_for_delivery: "في الطريق للتسليم",
-      delivered: "تم التسليم",
-      cancelled: "ملغاة",
-      returned: "مرتجعة",
-      sent: "مرسلة للشحن",
-      in_progress: "قيد التنفيذ",
-      with_captain: "مع الكابتن",
-      returned_to_company: "مرتجعة مع الشركة",
-      completed: "تم التوريد",
-      deleted: "محذوفة",
-      returned_resent: "مرتجعة معاد إرسالها",
-      returned_missing: "مرتجع مفقود",
-      returned_destroyed: "مرتجع معدوم",
-      postponed: "مؤجلة",
-    };
-    return statusMap[status.toLowerCase()] || statusMap[status] || status;
-  };
-
-  const getTurboStatusColor = (status?: string) => {
-    if (!status)
-      return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
-    const statusLower = status.toLowerCase();
-
-    if (
-      statusLower === "7" ||
-      statusLower === "8" ||
-      statusLower === "delivered" ||
-      statusLower === "completed"
-    ) {
-      return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400";
-    }
-
-    if (
-      statusLower === "9" ||
-      statusLower === "cancelled" ||
-      statusLower === "deleted"
-    ) {
-      return "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400";
-    }
-
-    if (
-      statusLower === "5" ||
-      statusLower === "6" ||
-      statusLower === "10" ||
-      statusLower === "11" ||
-      statusLower === "12" ||
-      statusLower === "returned" ||
-      statusLower === "returned_to_company" ||
-      statusLower === "returned_resent" ||
-      statusLower === "returned_missing" ||
-      statusLower === "returned_destroyed"
-    ) {
-      return "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400";
-    }
-
-    if (
-      statusLower === "0" ||
-      statusLower === "1" ||
-      statusLower === "created" ||
-      statusLower === "saved" ||
-      statusLower === "incomplete" ||
-      statusLower === "uncompleted" ||
-      statusLower === "draft"
-    ) {
-      return "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400";
-    }
-
-    if (
-      statusLower === "2" ||
-      statusLower === "3" ||
-      statusLower === "4" ||
-      statusLower === "sent" ||
-      statusLower === "in_progress" ||
-      statusLower === "with_captain" ||
-      statusLower === "in_transit" ||
-      statusLower === "out_for_delivery" ||
-      statusLower === "picked_up" ||
-      statusLower === "confirmed" ||
-      statusLower === "processing" ||
-      statusLower === "shipped"
-    ) {
-      return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400";
-    }
-
-    return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
-  };
 
   if (!order) return null;
 
@@ -221,9 +106,9 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
                   حالة الشحنة:
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getTurboStatusColor(order.turboShipmentStatus)}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${getTurboStatusDisplay(order.turboShipmentStatus).colorClass}`}
                 >
-                  {getTurboStatusText(order.turboShipmentStatus)}
+                  {getTurboStatusDisplay(order.turboShipmentStatus).label}
                 </span>
               </div>
               {turboTrackingData?.currentLocation && (

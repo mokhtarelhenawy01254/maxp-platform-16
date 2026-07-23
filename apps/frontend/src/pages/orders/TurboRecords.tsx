@@ -13,6 +13,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { getTurboStatusDisplay } from "../../../utils/statusRegistry";
 
 interface TurboLiveStatus {
     status: string;
@@ -194,40 +195,8 @@ const TurboRecords: React.FC = () => {
         }
     };
 
-    const TURBO_STATUS_LABELS: Record<string, string> = {
-        turbo_saved: t('orders.k_52'),
-        turbo_sent: t('orders.k_53'),
-        processing: t('orders.k_54'),
-        out_for_delivery: t('orders.k_55'),
-        returned_to_company: t('orders.k_56'),
-        cancelled: t('orders.k_57'),
-        delivered: t('orders.k_58'),
-        remitted: t('orders.k_59'),
-        archived: t('orders.k_60'),
-        returned_resent: t('orders.k_61'),
-        returned_missing: t('orders.k_62'),
-        returned_destroyed: t('orders.k_63'),
-        delayed: t('orders.k_64'),
-        preparing: t('orders.k_65'),
-        active: t('orders.k_66')
-    };
-
-    const getTurboStatusText = (status: string | undefined | null) => {
-        if (!status) return t('orders.k_24');
-        const key = status.toLowerCase().trim();
-        return TURBO_STATUS_LABELS[key] || status;
-    };
-
     const getTurboStatusColor = (status: string) => {
-        const s = status?.toLowerCase() || '';
-        if (s === 'delivered' || s === 'completed' || s === 'remitted') return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
-        if (s === 'shipped' || s === 'in_transit') return 'bg-blue-100 text-blue-800 border border-blue-200';
-        if (s === 'out_for_delivery') return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
-        if (s === 'cancelled') return 'bg-red-100 text-red-800 border border-red-200';
-        if (s.startsWith('returned') || s === 'lost') return 'bg-rose-100 text-rose-800 border border-rose-200';
-        if (s === 'processing' || s === 'confirmed' || s === 'turbo_saved' || s === 'turbo_sent' || s === 'preparing') return 'bg-purple-100 text-purple-800 border border-purple-200';
-        if (s === 'delayed' || s === 'failed_delivery' || s === 'rescheduled' || s === 'on_hold') return 'bg-amber-100 text-amber-800 border border-amber-200';
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return getTurboStatusDisplay(status).colorClass;
     };
 
     const filterOptions = [
@@ -475,7 +444,7 @@ const TurboRecords: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col gap-1">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTurboStatusColor(order.turboShipmentStatus || '')}`}>
-                                                    {getTurboStatusText(order.turboShipmentStatus)}
+                                                    {getTurboStatusDisplay(order.turboShipmentStatus || '').label}
                                                 </span>
                                                 {order.turboLiveStatus && (
                                                     <span className="text-xs text-gray-400">
