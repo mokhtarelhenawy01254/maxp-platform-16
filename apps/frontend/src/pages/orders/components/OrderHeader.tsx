@@ -161,14 +161,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
                     style={statusStyles}
                   >
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex flex-col items-start gap-0.5">
                       {(() => {
                         const display = getOrderStatusDisplay(order);
                         return (
                           <>
                             <span>{display.primary.label}</span>
                             {display.secondary && (
-                              <span className="text-[10px] opacity-75">| {display.secondary.label}</span>
+                              <span className="text-[10px] opacity-75">{display.secondary.label}</span>
                             )}
                           </>
                         );

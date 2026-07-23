@@ -3006,7 +3006,7 @@ const Orders: React.FC = () => {
                   {(() => {
                     const unifiedStatus = getUnifiedStatusDisplay(order);
                     return (
-                      <div className="flex flex-wrap items-center gap-1">
+                      <div className="flex flex-col gap-1">
                         <span className={unifiedStatus.primary.className} style={unifiedStatus.primary.style}>
                           {unifiedStatus.primary.text}
                         </span>
@@ -3306,7 +3306,7 @@ const Orders: React.FC = () => {
                             {(() => {
                               const unifiedStatus = getUnifiedStatusDisplay(order);
                               return (
-                                <div className="flex flex-wrap items-center gap-1">
+                                <>
                                   <span
                                     className={unifiedStatus.primary.className}
                                     style={unifiedStatus.primary.style}
@@ -3318,7 +3318,7 @@ const Orders: React.FC = () => {
                                       {unifiedStatus.secondary.text}
                                     </span>
                                   )}
-                                </div>
+                                </>
                               );
                             })()}
                             {order.isScheduled &&
