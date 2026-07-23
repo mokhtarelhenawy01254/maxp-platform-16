@@ -70,7 +70,7 @@ const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; color
 const TURBO_ALIASES: Record<string, string> = {
   '1': 'turbo_saved', 'created': 'turbo_saved', 'turbo_saved': 'turbo_saved', 'status_1': 'turbo_saved',
   '2': 'turbo_sent', 'sent': 'turbo_sent', 'turbo_sent': 'turbo_sent', 'status_2': 'turbo_sent',
-  '3': 'processing', 'processing': 'processing', 'underway': 'processing', 'accepted': 'processing', 'status_3': 'processing',
+  '3': 'processing', 'processing': 'processing', 'underway': 'processing', 'accepted': 'processing', 'status_3': 'processing', 'قيد الانتظار': 'processing', 'انتظار': 'processing',
   '4': 'out_for_delivery', 'out_for_delivery': 'out_for_delivery', 'under delivery': 'out_for_delivery',
   'with captain': 'out_for_delivery', 'in transit': 'out_for_delivery', 'shipped': 'out_for_delivery', 'status_4': 'out_for_delivery',
   '5': 'returned_to_company', 'returned_to_company': 'returned_to_company', 'returned with company': 'returned_to_company', 'status_5': 'returned_to_company',
@@ -82,7 +82,7 @@ const TURBO_ALIASES: Record<string, string> = {
   '11': 'returned_missing', 'returned_missing': 'returned_missing', 'lost': 'returned_missing', 'status_11': 'returned_missing',
   '12': 'returned_destroyed', 'returned_destroyed': 'returned_destroyed', 'status_12': 'returned_destroyed',
   '13': 'delayed', 'delayed': 'delayed', 'on hold': 'delayed', 'failed delivery': 'delayed', 'rescheduled': 'delayed', 'status_13': 'delayed',
-  'قيد الانتظار': 'delayed', 'قيد الانتظار مع المندوب': 'delayed', 'مؤجلة': 'delayed', 'مؤجله': 'delayed', 'مؤجل': 'delayed', 'تأجيل': 'delayed',
+  'مؤجلة': 'delayed', 'مؤجله': 'delayed', 'مؤجل': 'delayed', 'تأجيل': 'delayed', 'مؤجلة مع المندوب': 'delayed', 'قيد الانتظار مع المندوب': 'delayed',
   'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
 };
 

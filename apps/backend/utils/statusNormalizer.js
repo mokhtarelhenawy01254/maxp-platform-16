@@ -17,10 +17,13 @@ const CANONICAL_TURBO_MAP = {
   'status_2': 'turbo_sent',
   '2': 'turbo_sent',
 
-  // Code 3: Branch Processing (قيد التنفيذ بالفرع)
+  // Code 3: Branch Processing / Pending (قيد التنفيذ بالفرع / قيد الانتظار)
   'processing': 'processing',
   'underway': 'processing',
   'accepted': 'processing',
+  'قيد الانتظار': 'processing',
+  'انتظار': 'processing',
+  'قيد التنفيذ بالفرع': 'processing',
   'status_3': 'processing',
   '3': 'processing',
 
@@ -100,17 +103,17 @@ const CANONICAL_TURBO_MAP = {
   '12': 'returned_destroyed',
   '17': 'returned_destroyed',
 
-  // Code 13: Delayed (مؤجلة مع المندوب / قيد الانتظار)
+  // Code 13: Delayed (مؤجلة مع المندوب)
   'delayed': 'delayed',
   'on hold': 'delayed',
   'failed delivery': 'delayed',
   'rescheduled': 'delayed',
-  'قيد الانتظار': 'delayed',
-  'قيد الانتظار مع المندوب': 'delayed',
   'مؤجلة': 'delayed',
   'مؤجله': 'delayed',
   'مؤجل': 'delayed',
   'تأجيل': 'delayed',
+  'مؤجلة مع المندوب': 'delayed',
+  'قيد الانتظار مع المندوب': 'delayed',
   'status_13': 'delayed',
   '13': 'delayed'
 };
