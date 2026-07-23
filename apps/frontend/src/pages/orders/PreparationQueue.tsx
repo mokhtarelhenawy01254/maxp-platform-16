@@ -505,7 +505,7 @@ const PreparationQueue: React.FC = () => {
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
   const paginatedOrders = preparationOrders;
-  const visibleOrdersCount = summary.visibleTotal;
+  const visibleOrdersCount = summary.filteredTotal;
   const currentPageCount = paginatedOrders.length;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;

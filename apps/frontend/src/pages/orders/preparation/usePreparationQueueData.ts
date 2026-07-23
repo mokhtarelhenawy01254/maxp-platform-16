@@ -206,6 +206,7 @@ const fetchOrdersData = async (
         ...EMPTY_STAGE_COUNTS,
         ...(summary?.stageCounts || {}),
       },
+      statusCounts: { ...(summary?.statusCounts || {}) },
       readyCount: Number(summary?.readyCount || 0),
       shortageCount: Number(summary?.shortageCount || 0),
       shortageHoldCount: Number(summary?.shortageHoldCount || 0),
