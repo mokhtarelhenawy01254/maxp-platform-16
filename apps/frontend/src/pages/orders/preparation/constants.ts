@@ -70,6 +70,7 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
 export const FALLBACK_STATUS_LABELS: Record<string, string> = {
   CONFIRMED: "Confirmed",
   PENDING_PREPARATION: "Pending Preparation",
+  PENDING: "Pending",
   PREPARING: "Preparing",
   PROCESSING: "Processing",
   QUALITY_CHECK: "Quality Check",
@@ -93,7 +94,7 @@ export const FALLBACK_STATUS_LABEL_KEYS: Record<string, string> = {
 
 /** Order statuses that belong in the preparation pipeline */
 export const PREPARATION_STATUSES = new Set([
-  'CONFIRMED', 'PENDING', 'PENDING_PREPARATION',
+  'CONFIRMED', 'PENDING_PREPARATION',
   'PROCESSING', 'PREPARING',
   'QUALITY_CHECK',
   'PACKAGED', 'PACKED',

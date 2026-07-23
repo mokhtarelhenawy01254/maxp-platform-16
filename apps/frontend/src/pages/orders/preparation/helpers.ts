@@ -244,7 +244,7 @@ export const getShortageFollowUpVisual = (
 
 export const normalizeStage = (status: string): StageKey | null => {
   const normalized = toUpper(status);
-  if (["CONFIRMED", "PENDING", "PENDING_PREPARATION"].includes(normalized)) {
+  if (["CONFIRMED", "PENDING_PREPARATION"].includes(normalized)) {
     return "WAITING";
   }
   if (["PROCESSING", "PREPARING"].includes(normalized)) {
