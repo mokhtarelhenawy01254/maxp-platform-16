@@ -10,7 +10,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
-import { getOrderStatusDisplay } from "../../../utils/statusRegistry";
+import { getOrderStatusDisplay, getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { OrderDetailsType } from "../types";
 
 interface StatusOption {
@@ -176,6 +176,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     )}
                   </button>
 
+                  {order.turboShipmentStatus && (() => {
+                    const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
+                    return (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
+                        🚚 {turboInfo.label}
+                      </span>
+                    );
+                  })()}
                   {canQuickSelectStatus && isStatusMenuOpen && (
                     <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                       <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
