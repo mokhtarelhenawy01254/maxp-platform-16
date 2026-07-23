@@ -10,7 +10,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, type PageSize } from "./constants";
+import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, PREPARATION_STATUSES, type PageSize } from "./constants";
 import {
   normalizeInventoryRecord,
   normalizePreparationQueueSettings,
@@ -186,8 +186,13 @@ const fetchOrdersData = async (
   const pagination = response.data?.pagination;
   const summary = response.data?.summary;
 
+  const filteredPayload = payload.filter((o: { status?: string }) => {
+    const status = (o.status || '').toUpperCase().trim();
+    return PREPARATION_STATUSES.has(status);
+  });
+
   return {
-    orders: payload.map(normalizeSimpleOrder),
+    orders: filteredPayload.map(normalizeSimpleOrder),
     pagination: {
       total: Number(pagination?.total || 0),
       page: Number(pagination?.page || params.page || 1),

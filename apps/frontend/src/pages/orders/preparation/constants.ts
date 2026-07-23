@@ -91,6 +91,16 @@ export const FALLBACK_STATUS_LABEL_KEYS: Record<string, string> = {
   STOCK_SHORTAGE: "preparation.fallbackStatusLabels.STOCK_SHORTAGE",
 };
 
+/** Order statuses that belong in the preparation pipeline */
+export const PREPARATION_STATUSES = new Set([
+  'CONFIRMED', 'PENDING', 'PENDING_PREPARATION',
+  'PROCESSING', 'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED', 'PACKED',
+  'READY', 'READY_TO_SHIP',
+  'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
+]);
+
 export const STAGE_DEFINITIONS: Array<{
   key: StageKey;
   label: string;

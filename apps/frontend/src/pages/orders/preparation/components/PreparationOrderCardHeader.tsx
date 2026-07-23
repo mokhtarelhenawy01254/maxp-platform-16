@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SOURCE_LABELS, STAGE_DEFINITIONS } from "../constants";
 import { getAgeLabel } from "../helpers";
 import { summarizeOrderDocumentItems } from "../../../../utils/orderDocumentQuantityOffers";
+import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import type {
   PreparationOrder,
   ShortageFollowUpVisual,
@@ -63,16 +64,16 @@ const PreparationOrderCardHeader = ({
               </Link>
             )}
 
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                stageMeta?.colorClass || "bg-gray-100 text-gray-700 border-gray-200"
-              }`}
-            >
-              {t(stageMeta?.labelKey) ||
-                stageMeta?.label ||
-                statusLabelMap.get(order.normalizedStatus) ||
-                order.normalizedStatus}
-            </span>
+            {(() => {
+              const statusInfo = getStatusDisplay(order.normalizedStatus);
+              return (
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`}
+                >
+                  {statusInfo.label}
+                </span>
+              );
+            })()}
 
             <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-500">
               {SOURCE_LABELS[(order.sourceType || "unknown").toLowerCase()] ||

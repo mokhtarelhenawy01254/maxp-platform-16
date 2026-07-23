@@ -2,6 +2,7 @@ import { Fragment, memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   SHORTAGE_HOLD_STATUS,
   SOURCE_LABELS,
@@ -268,17 +269,14 @@ const PreparationOrdersTable = ({
 
                   {/* Status */}
                   <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                        stageMeta?.colorClass ||
-                        "bg-gray-100 text-gray-700 border-gray-200"
-                      }`}
-                    >
-                      {t(stageMeta?.labelKey) ||
-                        stageMeta?.label ||
-                        statusLabelMap.get(order.normalizedStatus) ||
-                        order.normalizedStatus}
-                    </span>
+                    {(() => {
+                      const statusInfo = getStatusDisplay(order.normalizedStatus);
+                      return (
+                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`}>
+                          {statusInfo.label}
+                        </span>
+                      );
+                    })()}
                   </td>
 
                   {/* Warehouse */}
