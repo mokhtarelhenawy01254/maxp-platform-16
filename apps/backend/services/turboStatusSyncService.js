@@ -41,10 +41,18 @@ async function syncTurboStatusToOrder({
   const prisma = getSharedPrismaClient();
 
   const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
-  const effectiveRaw = (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
-    ? locationText
-    : rawStatus;
-  const { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(effectiveRaw);
+  let { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(
+    (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
+      ? locationText
+      : rawStatus
+  );
+
+  // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
+  // إذا كانت الشحنة لم تدخل فرع تربو بعد (branch null/empty)، فإن حالتها في تربو هي "قيد الانتظار" (turbo_sent)
+  if (canonicalTurboStatus === 'processing' && (!payload?.branch || !String(payload.branch).trim())) {
+    canonicalTurboStatus = 'turbo_sent';
+    orderStatus = null;
+  }
 
   console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
 
