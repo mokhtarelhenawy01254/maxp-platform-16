@@ -463,6 +463,44 @@ class TurboService {
       || this.getShippingAddressFields('');
   }
 
+  extractCleanStreetAddress(addressFields, rawFallback = '') {
+    // 1. يفضل الشارع/العنوان الأساسي أولاً لمنع تكرار المدينة والمحافظة
+    let streetText = addressFields.primaryAddress || addressFields.parsedAddress?.street || addressFields.parsedAddress?.addressLine1 || addressFields.parsedAddress?.address || '';
+
+    if (typeof streetText !== 'string') {
+      streetText = String(streetText || '');
+    }
+
+    streetText = streetText.trim();
+
+    // إذا كانت القيمة عبارة عن JSON string، فككها للعنوان الصافي
+    if (streetText.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(streetText);
+        streetText = parsed.street || parsed.addressLine1 || parsed.address || parsed.address_1 || '';
+      } catch (e) {
+        streetText = '';
+      }
+    }
+
+    // إذا لم يجد شارع نقي، نأخذ formattedAddress
+    if (!streetText || streetText.length < 3) {
+      streetText = addressFields.formattedAddress || addressFields.sourceValue || rawFallback || '';
+    }
+
+    if (typeof streetText !== 'string') {
+      streetText = String(streetText || '');
+    }
+
+    // تصفية أية كائنات JSON متبقية
+    if (streetText.startsWith('{') || streetText.startsWith('[')) {
+      streetText = '';
+    }
+
+    // قص النص ليكون بحد أقصى 350 حرفاً لتفادي حد 400 حرف الخاص بتربو
+    return streetText.substring(0, 350).trim();
+  }
+
   getNumericInvoiceNumber(orderNumber, fallbackValue = '') {
     const numericText = String(orderNumber || fallbackValue || '').replace(/\D/g, '');
     return numericText ? Number(numericText) : 0;
@@ -639,9 +677,7 @@ class TurboService {
       const mainClientCode = await this.getMainClientCode();
       const senderNumber = await this.getSenderNumber();
 
-      let rawAddressStr = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.sourceValue || shippingAddress || '';
-      if (typeof rawAddressStr !== 'string') rawAddressStr = String(rawAddressStr);
-      const cleanAddress = rawAddressStr.substring(0, 350).trim();
+      const cleanAddress = this.extractCleanStreetAddress(addressFields, shippingAddress);
 
       // جلب قائمة المحافظات من Turbo API
       let governments = [];
@@ -1395,10 +1431,7 @@ class TurboService {
         formattedData.shippingAddress,
         formattedData.customerAddress
       );
-      let rawAddressStr = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.sourceValue || formattedData.shippingAddress || '';
-      if (typeof rawAddressStr !== 'string') rawAddressStr = String(rawAddressStr);
-      // قص العنوان ليكون بحد أقصى 350 حرفاً لتفادي خطأ تربو 400 حرف
-      const cleanAddress = rawAddressStr.substring(0, 350).trim();
+      const cleanAddress = this.extractCleanStreetAddress(addressFields, formattedData.shippingAddress);
 
       // جلب قائمة المحافظات
       let governments = [];
