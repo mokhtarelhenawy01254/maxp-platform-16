@@ -3002,11 +3002,28 @@ const syncShipmentStatus = async (req, res) => {
       });
     }
 
-    const matched = statusResult.shipments.find(s => String(s.code) === String(shipmentCode) || String(s.barCode) === String(shipmentCode));
+    // 🎯 تجميع كل المفاتيح المحتملة للشحنة (الكود، رقم التتبع، رقم الفاتورة، رقم الطلب)
+    const targetKeys = new Set([
+      shipmentCode,
+      order.turboShipmentId,
+      order.turboTrackingNumber,
+      order.orderNumber,
+      order.id
+    ].filter(Boolean).map(k => String(k).trim().toLowerCase()));
+
+    let matched = statusResult.shipments.find(s => {
+      const sCode = String(s.code || '').trim().toLowerCase();
+      const sBarCode = String(s.barCode || s.bar_code || '').trim().toLowerCase();
+      const sInvoice = String(s.invoice_number || s.invoiceNumber || '').trim().toLowerCase();
+      const sRemoteId = String(s.remote_order_id || s.remoteOrderId || '').trim().toLowerCase();
+
+      return targetKeys.has(sCode) || targetKeys.has(sBarCode) || targetKeys.has(sInvoice) || targetKeys.has(sRemoteId);
+    });
+
     if (!matched) {
       return res.status(404).json({
         success: false,
-        error: 'لم يتم العثور على الشحنة في كشوفات تربو المباشرة خلال 30 يوماً الماضية'
+        error: 'لم يتم العثور على الشحنة في كشوفات تربو المباشرة (يرجى التأكد من كود الشحنة أو رقم الطلب في تربو)'
       });
     }
 
