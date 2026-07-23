@@ -3020,33 +3020,48 @@ const syncShipmentStatus = async (req, res) => {
       return targetKeys.has(sCode) || targetKeys.has(sBarCode) || targetKeys.has(sInvoice) || targetKeys.has(sRemoteId);
     });
 
+    // 🎯 إذا لم تجد الشحنة في كشف الـ 30 يوماً، جرب الاستعلام المباشر الفردي عبر trackShipment
     if (!matched) {
-      return res.status(404).json({
-        success: false,
-        error: 'لم يتم العثور على الشحنة في كشوفات تربو المباشرة (يرجى التأكد من كود الشحنة أو رقم الطلب في تربو)'
-      });
+      try {
+        console.log(`🔍 [TURBO-SYNC] Shipment ${shipmentCode} not in bulk feed. Trying direct trackShipment...`);
+        const singleTrack = await turboService.trackShipment(shipmentCode);
+        if (singleTrack && singleTrack.success && singleTrack.data) {
+          matched = {
+            code: shipmentCode,
+            status: singleTrack.data.status || singleTrack.data.shipment_status || 'created',
+            internalStatus: singleTrack.data.internalStatus || 'created',
+            raw: singleTrack.data
+          };
+        }
+      } catch (trackErr) {
+        console.warn(`⚠️ [TURBO-SYNC] Direct track fallback for ${shipmentCode} failed:`, trackErr.message);
+      }
     }
+
+    // 🎯 اعتماد الحالة المكتشفة أو الحفاظ على الحالة المسجلة بالنظام لشحنات غير المكتملة
+    const finalStatus = matched ? (matched.internalStatus || matched.status) : (order.turboShipmentStatus || 'created');
+    const finalRaw = matched ? (matched.raw || matched) : { code: shipmentCode, status: finalStatus };
 
     // مزامنة الحالة وتحديث قاعدة البيانات مباشرة عبر خدمة المزامنة الموحدة
     const turboStatusSyncService = require('../services/turboStatusSyncService');
     const syncResult = await turboStatusSyncService.syncTurboStatusToOrder(
       order.id || order.orderNumber,
       companyId,
-      matched.internalStatus || matched.status,
-      matched.raw || matched
+      finalStatus,
+      finalRaw
     );
 
     res.json({
       success: true,
-      message: matched.status || matched.internalStatus,
+      message: matched ? (matched.status || matched.internalStatus) : (order.turboShipmentStatus || 'غير مكتملة'),
       data: {
-        status: matched.internalStatus || matched.status,
-        turboShipmentStatus: matched.internalStatus || matched.status,
+        status: finalStatus,
+        turboShipmentStatus: finalStatus,
         orderStatus: syncResult?.order?.status || order.status,
         systemStatus: syncResult?.order?.status || order.status,
-        currentLocation: matched.currentLocation || matched.raw?.location,
-        branch: matched.raw?.expected_branch || matched.branch,
-        raw: matched.raw || matched
+        currentLocation: matched ? (matched.currentLocation || matched.raw?.location) : 'في انتظاري التسليم لتربو',
+        branch: matched ? (matched.raw?.expected_branch || matched.branch) : null,
+        raw: finalRaw
       }
     });
   } catch (error) {
