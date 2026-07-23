@@ -1905,24 +1905,13 @@ const Orders: React.FC = () => {
 
   const getUnifiedStatusDisplay = (order: Order) => {
     const display = getOrderStatusDisplay(order);
-    const primary = display.primary;
-    const secondary = display.secondary;
     const customStyle = getStatusBadgeStyle(order.status || "");
 
-    const primaryBadge = {
-      text: primary.label,
-      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${primary.colorClass}`,
+    return {
+      text: display.primary.label,
+      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${display.primary.colorClass}`,
       style: customStyle,
     };
-
-    const secondaryBadge = secondary
-      ? {
-          text: secondary.label,
-          className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${secondary.colorClass}`,
-        }
-      : undefined;
-
-    return { primary: primaryBadge, secondary: secondaryBadge };
   };
 
   const getStatusBadgeStyle = (status: string): React.CSSProperties | undefined => {
@@ -3006,16 +2995,9 @@ const Orders: React.FC = () => {
                   {(() => {
                     const unifiedStatus = getUnifiedStatusDisplay(order);
                     return (
-                      <div className="flex flex-col gap-1">
-                        <span className={unifiedStatus.primary.className} style={unifiedStatus.primary.style}>
-                          {unifiedStatus.primary.text}
-                        </span>
-                        {unifiedStatus.secondary && (
-                          <span className={unifiedStatus.secondary.className}>
-                            {unifiedStatus.secondary.text}
-                          </span>
-                        )}
-                      </div>
+                      <span className={unifiedStatus.className} style={unifiedStatus.style}>
+                        {unifiedStatus.text}
+                      </span>
                     );
                   })()}
                 </div>
@@ -3306,19 +3288,12 @@ const Orders: React.FC = () => {
                             {(() => {
                               const unifiedStatus = getUnifiedStatusDisplay(order);
                               return (
-                                <>
-                                  <span
-                                    className={unifiedStatus.primary.className}
-                                    style={unifiedStatus.primary.style}
-                                  >
-                                    {unifiedStatus.primary.text}
-                                  </span>
-                                  {unifiedStatus.secondary && (
-                                    <span className={unifiedStatus.secondary.className}>
-                                      {unifiedStatus.secondary.text}
-                                    </span>
-                                  )}
-                                </>
+                                <span
+                                  className={unifiedStatus.className}
+                                  style={unifiedStatus.style}
+                                >
+                                  {unifiedStatus.text}
+                                </span>
                               );
                             })()}
                             {order.isScheduled &&
