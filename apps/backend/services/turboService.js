@@ -824,6 +824,11 @@ class TurboService {
         ? cleanAddress.trim()
         : `${finalArea} - ${finalGovernment}`;
 
+      const shippingFeeVal = parseFloat(shipping || orderData.shippingFee || orderData.shippingCost || 0);
+      const returnAmt = (isOrderVal === 2)
+        ? parseFloat(orderData.returnAmount || totalValue || 0)
+        : parseFloat(orderData.returnAmount || shippingFeeVal);
+
       const shipmentData = {
         authentication_key: apiKey,
         main_client_code: mainClientCode || 37321,
@@ -840,7 +845,7 @@ class TurboService {
         order_summary: formattedSummary,
         return_summary: orderData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
         amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
-        return_amount: (isOrderVal === 1) ? 0 : parseFloat(orderData.returnAmount || (isOrderVal === 2 ? totalValue : 0)),
+        return_amount: returnAmt,
         is_order: isOrderVal,
         can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1,
@@ -1594,6 +1599,11 @@ class TurboService {
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
         : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
 
+      const shippingFeeVal = parseFloat(formattedData.shipping || formattedData.shippingCost || formattedData.shippingFee || 0);
+      const returnAmt = (isOrderVal === 2)
+        ? parseFloat(formattedData.returnAmount || formattedData.totalValue || formattedData.total || 0)
+        : parseFloat(formattedData.returnAmount || shippingFeeVal);
+
       // بناء بيانات التحديث حسب Turbo API (/edit-order)
       const updateData = {
         authentication_key: apiKey,
@@ -1613,7 +1623,7 @@ class TurboService {
         order_summary: formattedSummary,
         return_summary: formattedData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
         amount_to_be_collected: codAmount,
-        return_amount: (isOrderVal === 1) ? 0 : parseFloat(formattedData.returnAmount || (isOrderVal === 2 ? (formattedData.totalValue || formattedData.total || 0) : 0)),
+        return_amount: returnAmt,
         is_order: isOrderVal,
         can_open: formattedData.canOpen !== undefined ? (formattedData.canOpen ? "1" : "0") : "1",
         weight: formattedData.totalWeight || 1,
@@ -2542,7 +2552,7 @@ class TurboService {
       createdAt: order.createdAt || new Date().toISOString(),
       alternativePhone: order.alternativePhone || addressFields.parsedAddress?.phone2 || null,
       turboShipmentStatus: order.turboShipmentStatus || null,
-      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? totalValue : 0)),
+      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? totalValue : shippingFee)),
       returnSummary: order.returnSummary || null,
       orderType: order.orderType || order.type || null,
       isOrder: order.isOrder !== undefined ? order.isOrder : null,

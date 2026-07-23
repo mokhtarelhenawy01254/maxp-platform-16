@@ -1,10 +1,12 @@
-### [BUG FIX / TURBO SHIPMENT UPDATE] Fixed Order Update Converting Shipment Type to Partial Return (تسليم جزئي)
+### [BUG FIX / TURBO SHIPMENT CREATION & UPDATE] Preserved Standard Delivery Type ("تسليم") while Sending Shipping Fee for Returns ("قيمة الشحن في حالة المرتجع")
 - **Date**: 2026-03-09 (2026-07-23)
-- **Root Cause**:
-  `formatOrderForTurbo` in `turboService.js` set `returnAmount` fallback to `shippingFee` (70 EGP) when `order.returnAmount` was undefined. When updating a shipment via `/edit-order`, Turbo API received `return_amount: 70`, causing Turbo's system to interpret the shipment as a partial refund/exchange and changing its type from Regular Delivery ("تسليم") to Partial Return ("تسليم جزئي").
+- **Root Cause & Requirements**:
+  1. For standard delivery orders (`is_order: 1`), Turbo Express API requires `return_amount` to equal the shipping fee (e.g. 70 EGP) to populate "قيمة الشحن في حالة المرتجع" on Turbo Dashboard.
+  2. Setting `return_amount: 0` caused Turbo Dashboard to leave "قيمة الشحن في حالة المرتجع" unpopulated / empty on both initial creation (`createShipment`) and updates (`updateShipment`).
+  3. Setting `return_amount: 70` without enforcing `return_summary: 'لا يوجد مرتجع'` caused Turbo API to classify shipments as "مرتجع جزئي" (Partial Return).
 - **Fix**:
-  1. Updated `formatOrderForTurbo` to default `returnAmount` to `0` for standard delivery orders (`isOrderVal === 1`).
-  2. Enforced `return_amount: (isOrderVal === 1) ? 0 : ...` in `updateShipment` and `createShipment` in `turboService.js`.
+  1. Unified `return_amount` calculation across `createShipment` and `updateShipment` in `turboService.js`: for regular delivery orders (`isOrderVal === 1`), `return_amount` sends `shippingFeeVal` (70 EGP).
+  2. Enforced explicit `is_order: 1` and `return_summary: 'لا يوجد مرتجع'` for all standard delivery orders, ensuring Turbo API preserves the shipment type as **"تسليم عادياً"** (Standard Delivery) and populates **"قيمة الشحن في حالة المرتجع"** with `70 EGP`.
 - **Files Modified**:
   - `apps/backend/services/turboService.js`
   - `backend/Bugs.md`
