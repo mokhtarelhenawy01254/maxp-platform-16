@@ -2468,54 +2468,72 @@ class TurboService {
     const rawShippingAddress = addressFields.sourceValue || order.shippingAddress || order.customerAddress;
 
     // استخراج المحافظة من shippingAddress
-    let governorate = addressFields.governorate || order.city; // Fallback
+    let governorate = addressFields.governorate || order.city || order.governorate;
 
-    console.log('🔍 [TURBO] formatOrderForTurbo - order.shippingAddress type:', typeof rawShippingAddress);
-    console.log('🔍 [TURBO] formatOrderForTurbo - order.city:', order.city);
-    console.log('🔍 [TURBO] formatOrderForTurbo - parsed shipping address fields:', addressFields);
+    // 🎯 استخراج اسم العميل بمرونة ليدعم Order و GuestOrder وحقول العنوان
+    const customerName = (
+      order.customerName ||
+      order.guestName ||
+      (customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : null) ||
+      customer?.name ||
+      customer?.fullName ||
+      addressFields.parsedAddress?.name ||
+      addressFields.parsedAddress?.customerName ||
+      ''
+    ).trim();
 
-    if (addressFields.governorate) {
-      console.log('✅ [TURBO] Found governorate in shippingAddress:', governorate);
-    } else {
-      console.log('⚠️ [TURBO] No governorate found in shippingAddress, using city as fallback:', order.city);
-    }
+    // 🎯 استخراج هاتف العميل بمرونة ليدعم Order و GuestOrder وحقول العنوان
+    const customerPhone = (
+      order.customerPhone ||
+      order.guestPhone ||
+      customer?.phone ||
+      customer?.mobile ||
+      addressFields.parsedAddress?.phone ||
+      addressFields.parsedAddress?.mobile ||
+      ''
+    ).trim();
 
-    console.log('✅ [TURBO] Final governorate for shipment:', governorate);
+    // 🎯 استخراج المبالغ المالية بكل الأسماء الممكنة في قاعدة البيانات (Order & GuestOrder)
+    const totalValue = parseFloat(order.total || order.finalTotal || order.totalAmount || order.grandTotal || 0);
+    const shippingFee = parseFloat(order.shipping || order.shippingCost || order.deliveryFee || 0);
+    const subtotalValue = parseFloat(order.subtotal || order.subTotal || (totalValue > 0 ? (totalValue - shippingFee) : 0));
+
+    // 🎯 استخراج قائمة المنتجات بمرونة
+    const rawItems = items || order.orderItems || order.items || [];
+    const formattedItems = Array.isArray(rawItems) ? rawItems.map(item => ({
+      productName: item.productName || item.name || item.product?.name || 'منتج',
+      quantity: item.quantity || 1,
+      price: parseFloat(item.price || item.unitPrice || 0),
+      total: parseFloat(item.total || ((item.price || 0) * (item.quantity || 1))),
+      weight: item.weight || 0.5
+    })) : [];
 
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
-      customerName: order.customerName || (customer?.firstName && customer?.lastName
-        ? `${customer.firstName} ${customer.lastName}`
-        : customer?.name || 'Unknown'),
-      customerPhone: order.customerPhone || customer?.phone,
-      customerEmail: order.customerEmail || customer?.email,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerEmail: order.customerEmail || order.guestEmail || customer?.email || '',
       shippingAddress: rawShippingAddress,
       customerAddress: order.customerAddress || null,
       city: order.city || addressFields.city,
-      governorate: governorate, // استخراج المحافظة من shippingAddress
-      items: items.map(item => ({
-        productName: item.productName,
-        quantity: item.quantity,
-        price: parseFloat(item.price),
-        total: parseFloat(item.total),
-        weight: item.weight || 0.5
-      })),
-      totalWeight: this.calculateTotalWeight(items),
-      subtotal: parseFloat(order.subtotal || 0), // قيمة المنتجات فقط
-      shipping: parseFloat(order.shipping || 0), // تكلفة الشحن
-      totalValue: parseFloat(order.total || 0), // الإجمالي (subtotal + shipping)
-      paymentMethod: order.paymentMethod,
-      notes: order.notes,
+      governorate: governorate,
+      items: formattedItems,
+      totalWeight: this.calculateTotalWeight(formattedItems),
+      subtotal: subtotalValue,
+      shipping: shippingFee,
+      totalValue: totalValue,
+      paymentMethod: order.paymentMethod || 'CASH',
+      notes: order.notes || '',
       createdAt: order.createdAt || new Date().toISOString(),
-      alternativePhone: order.alternativePhone || null,
+      alternativePhone: order.alternativePhone || addressFields.parsedAddress?.phone2 || null,
       turboShipmentStatus: order.turboShipmentStatus || null,
-      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? order.total : 0)),
+      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? totalValue : shippingFee)),
       returnSummary: order.returnSummary || null,
       orderType: order.orderType || order.type || null,
       isOrder: order.isOrder !== undefined ? order.isOrder : null,
       canOpen: order.canOpen !== undefined ? order.canOpen : true,
-      actualShippingCost: null // سيتم ملؤه لاحقاً من metadata
+      actualShippingCost: null
     };
   }
 
