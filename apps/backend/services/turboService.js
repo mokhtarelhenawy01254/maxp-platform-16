@@ -1513,9 +1513,9 @@ class TurboService {
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
         invoice_number: formattedData.orderNumber || shipmentId,
         order_summary: formattedSummary,
-        return_summary: formattedData.returnSummary || 'لا يوجد مرتجع',
+        return_summary: formattedData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
         amount_to_be_collected: codAmount,
-        return_amount: parseFloat(formattedData.returnAmount || 0),
+        return_amount: parseFloat(formattedData.returnAmount || (isOrderVal === 2 ? (formattedData.totalValue || formattedData.total || 0) : 0)),
         is_order: isOrderVal,
         can_open: formattedData.canOpen !== undefined ? (formattedData.canOpen ? "1" : "0") : "1",
         weight: formattedData.totalWeight || 1,
@@ -2426,6 +2426,11 @@ class TurboService {
       createdAt: order.createdAt || new Date().toISOString(),
       alternativePhone: order.alternativePhone || null,
       turboShipmentStatus: order.turboShipmentStatus || null,
+      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? order.total : 0)),
+      returnSummary: order.returnSummary || null,
+      orderType: order.orderType || order.type || null,
+      isOrder: order.isOrder !== undefined ? order.isOrder : null,
+      canOpen: order.canOpen !== undefined ? order.canOpen : true,
       actualShippingCost: null // سيتم ملؤه لاحقاً من metadata
     };
   }
