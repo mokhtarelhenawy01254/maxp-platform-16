@@ -2774,54 +2774,63 @@ const getRecords = async (req, res) => {
     ]);
     let turboStatuses = null;
     if (refresh === 'true') {
-      const first = orders.find(o => o.company?.turboEnabled && o.company?.turboApiKey)?.company;
-      if (first) {
+      const comp = await safeQuery(() => prisma.company.findUnique({
+        where: { id: companyId },
+        select: { turboEnabled: true, turboApiKey: true }
+      }), 2).catch(() => null);
+
+      if (comp && comp.turboApiKey) {
         try {
           const TurboService = require('../services/turboService');
-          const svc = new TurboService(first.turboApiKey, companyId);
+          const turboStatusSyncService = require('../services/turboStatusSyncService');
+          const svc = new TurboService(comp.turboApiKey, companyId);
           const now = new Date();
-          const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-          const r = await svc.fetchAllStatuses(
-            ninetyDaysAgo.toISOString().split('T')[0],
-            tomorrow.toISOString().split('T')[0]
-          );
-          if (r.success) { 
+          const startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const r = await svc.fetchAllStatuses(startDate, endDate);
+          if (r.success && Array.isArray(r.shipments)) { 
             turboStatuses = {}; 
             for (const s of r.shipments) { 
-              if (s.code) turboStatuses[String(s.code)] = s; 
-              if (s.barCode) turboStatuses[String(s.barCode)] = s; 
+              if (s.code) turboStatuses[String(s.code).toLowerCase()] = s; 
+              if (s.barCode) turboStatuses[String(s.barCode).toLowerCase()] = s; 
               if (s.invoiceNumber) {
-                turboStatuses[String(s.invoiceNumber)] = s;
-                turboStatuses[`ORD-${s.invoiceNumber}`] = s;
+                const inv = String(s.invoiceNumber).toLowerCase();
+                turboStatuses[inv] = s;
+                turboStatuses[`ord-${inv}`] = s;
               }
             }
 
-            // 🔄 التحديث المباشر للطلبات في قاعدة البيانات بالحالة الجديدة
-            for (const o of orders) {
-              const key = o.turboShipmentId || o.turboTrackingNumber || o.orderNumber;
-              const live = key ? (turboStatuses[String(key)] || (o.orderNumber ? turboStatuses[o.orderNumber.replace('ORD-', '')] : null)) : null;
+            // 🔄 جلب وتحديث جميع طلبات تربو للشركة لقاطبة الأوردرات (حتى تتطابق الإحصائيات مع API تربو 100%)
+            const allCompanyOrders = await safeQuery(() => prisma.order.findMany({
+              where: baseWhere,
+              select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
+            }), 2).catch(() => []);
+
+            for (const o of allCompanyOrders) {
+              const keys = [
+                o.turboShipmentId,
+                o.turboTrackingNumber,
+                o.orderNumber,
+                o.orderNumber ? o.orderNumber.replace('ORD-', '') : null
+              ].filter(Boolean).map(k => String(k).trim().toLowerCase());
+
+              let live = null;
+              for (const k of keys) {
+                if (turboStatuses[k]) {
+                  live = turboStatuses[k];
+                  break;
+                }
+              }
+
               if (live) {
-                const internalStat = live.internalStatus || (live.status ? String(live.status).toLowerCase() : null);
-                const codeStr = String(live.statusCode || '');
-                let newMainStatus = undefined;
-                if (internalStat === 'delivered' || internalStat === 'remitted' || codeStr === '7' || codeStr === '8' || codeStr === '19') newMainStatus = 'DELIVERED';
-                else if (internalStat === 'out_for_delivery' || codeStr === '4') newMainStatus = 'SHIPPED';
-                else if (internalStat === 'cancelled' || codeStr === '6') newMainStatus = 'CANCELLED';
-                else if (internalStat.startsWith('returned') || internalStat === 'lost' || ['5', '10', '11', '12', '14', '15', '16', '17', '20'].includes(codeStr)) newMainStatus = 'RETURNED';
-                else if (internalStat === 'delayed' || internalStat === 'on_hold' || codeStr === '13') newMainStatus = 'ON_HOLD';
-                // For turbo_saved (1), turbo_sent (2), processing (3), archived (9): do not overwrite internal system order status
-
-                const updatePayload = {
-                  turboShipmentStatus: internalStat || o.turboShipmentStatus,
-                  updatedAt: new Date()
-                };
-                if (newMainStatus) updatePayload.status = newMainStatus;
-
-                await safeQuery(() => prisma.order.update({
-                  where: { id: o.id },
-                  data: updatePayload
-                }), 2).catch(() => {});
+                const rawStat = live.internalStatus || live.status || live.statusCode;
+                await turboStatusSyncService.syncTurboStatusToOrder({
+                  orderId: o.id,
+                  orderNumber: o.orderNumber,
+                  companyId: companyId,
+                  rawStatus: rawStat,
+                  payload: live
+                }).catch(() => {});
               }
             }
           }
