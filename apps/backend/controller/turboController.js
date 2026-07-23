@@ -2704,7 +2704,7 @@ const getRecords = async (req, res) => {
           'turbo_sent': ['turbo_sent', 'status_2', '2'],
           'processing': ['processing', 'status_3', '3'],
           'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
-          'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
+          'returned_to_company': ['returned_to_company', 'returned', 'returned_with_company', 'returned with company', 'status_5', 'status_14', '5', '14', 'مرتجع مع الشركة', 'مرتجعات بالشركة', 'راجع بالشركة'],
           'cancelled': ['cancelled', 'status_6', '6'],
           'delivered': ['delivered', 'status_7', '7'],
           'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
@@ -2714,7 +2714,7 @@ const getRecords = async (req, res) => {
           'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
           'delayed': ['delayed', 'status_13', '13'],
           'shipped': ['out_for_delivery', 'status_4', '4'],
-          'returned': ['returned_to_company', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12']
+          'returned': ['returned_to_company', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12', '5', '10', '11', '12', '14', '15', '16', '17']
         };
 
         const targetList = ALIASES[ft] || [ft];
@@ -2722,6 +2722,11 @@ const getRecords = async (req, res) => {
         const statusOrConditions = [
           { turboShipmentStatus: { in: targetList } }
         ];
+
+        // For returned_to_company and returned: also match internal system Order status = 'RETURNED'
+        if (ft === 'returned_to_company' || ft === 'returned') {
+          statusOrConditions.push({ status: 'RETURNED' });
+        }
 
         // For merchant_preparing / turbo_saved: also include null/empty turboShipmentStatus for orders in Turbo
         if (ft === 'merchant_preparing' || ft === 'turbo_saved' || ft === 'preparing') {
@@ -2866,6 +2871,11 @@ const getRecords = async (req, res) => {
       'created': 'turbo_saved',
       'status_4': 'out_for_delivery',
       'status_5': 'returned_to_company',
+      'returned': 'returned_to_company',
+      'returned_with_company': 'returned_to_company',
+      'returned with company': 'returned_to_company',
+      '5': 'returned_to_company',
+      '14': 'returned_to_company',
       'status_6': 'cancelled',
       'status_7': 'delivered',
       'status_8': 'remitted',
