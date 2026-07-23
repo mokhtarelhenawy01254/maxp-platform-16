@@ -801,15 +801,15 @@ class TurboService {
       if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
         returnAmt = shippingFeeVal;
-        defaultReturnSummary = orderData.returnSummary || 'تسليم جزئي';
+        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || orderData.orderType === 'RETURN') {
         isOrderVal = 2;
         returnAmt = parseFloat(orderData.returnAmount || totalValue || 0);
-        defaultReturnSummary = orderData.returnSummary || formattedSummary;
+        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || orderData.orderType === 'EXCHANGE') {
         isOrderVal = 1;
         returnAmt = 0;
-        defaultReturnSummary = orderData.returnSummary || 'طلب استبدال';
+        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : 'طلب استبدال';
       } else {
         isOrderVal = (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '')
           ? Number(orderData.isOrder)
@@ -817,7 +817,7 @@ class TurboService {
         returnAmt = (isOrderVal === 2)
           ? parseFloat(orderData.returnAmount || totalValue || 0)
           : 0;
-        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
+        defaultReturnSummary = (isOrderVal === 2 && orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : (isOrderVal === 2 ? formattedSummary : '');
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
@@ -1598,15 +1598,15 @@ class TurboService {
       if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
         returnAmt = shippingFeeVal;
-        defaultReturnSummary = formattedData.returnSummary || 'تسليم جزئي';
+        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || formattedData.orderType === 'RETURN') {
         isOrderVal = 2;
         returnAmt = parseFloat(formattedData.returnAmount || totalValue || 0);
-        defaultReturnSummary = formattedData.returnSummary || formattedSummary;
+        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || formattedData.orderType === 'EXCHANGE') {
         isOrderVal = 1;
         returnAmt = 0;
-        defaultReturnSummary = formattedData.returnSummary || 'طلب استبدال';
+        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : 'طلب استبدال';
       } else {
         isOrderVal = (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '')
           ? Number(formattedData.isOrder)
@@ -1614,7 +1614,7 @@ class TurboService {
         returnAmt = (isOrderVal === 2)
           ? parseFloat(formattedData.returnAmount || totalValue || 0)
           : 0;
-        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
+        defaultReturnSummary = (isOrderVal === 2 && formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : (isOrderVal === 2 ? formattedSummary : '');
       }
 
       // 2. حساب مبلغ التحصيل (COD)
