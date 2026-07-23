@@ -348,8 +348,17 @@ const PreparationQueue: React.FC = () => {
       }
     });
 
+    const shortageCode = toUpper(SHORTAGE_HOLD_STATUS);
+    if (!seen.has(shortageCode)) {
+      seen.add(shortageCode);
+      tabs.push({
+        statusCode: shortageCode,
+        name: statusLabelMap.get(shortageCode) || t('preparation.k_9'),
+      });
+    }
+
     return tabs;
-  }, [preparationStatuses]);
+  }, [preparationStatuses, statusLabelMap, SHORTAGE_HOLD_STATUS]);
 
   const enabledQcChecks = useMemo(
     () =>
