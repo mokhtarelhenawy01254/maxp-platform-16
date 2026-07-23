@@ -17,8 +17,15 @@ const CANONICAL_TURBO_MAP = {
   'waiting': 'turbo_sent',
   'pending': 'turbo_sent',
   'قيد الانتظار': 'turbo_sent',
+  'قيد الإنتظار': 'turbo_sent',
   'انتظار': 'turbo_sent',
   'بانتظار الاستلام': 'turbo_sent',
+  'بانتظار المندوب': 'turbo_sent',
+  'في انتظاري التسليم لتربو': 'turbo_sent',
+  'في انتظار التسليم لتربو': 'turbo_sent',
+  'في انتظار التسليم': 'turbo_sent',
+  'في انتظار استلام مندوب تربو': 'turbo_sent',
+  'تسليم لتربو': 'turbo_sent',
   'status_2': 'turbo_sent',
   '2': 'turbo_sent',
 
@@ -143,7 +150,16 @@ const SYSTEM_STATUS_MAPPING = {
 const normalizeTurboStatus = (rawStatus) => {
   if (!rawStatus) return 'turbo_saved';
   const key = String(rawStatus).toLowerCase().trim();
-  return CANONICAL_TURBO_MAP[key] || key;
+  if (CANONICAL_TURBO_MAP[key]) return CANONICAL_TURBO_MAP[key];
+
+  // Substring fallback checks for Arabic phrases
+  if (key.includes('انتظار') || key.includes('بانتظار') || key.includes('التسليم لتربو')) return 'turbo_sent';
+  if (key.includes('تنفيذ')) return 'processing';
+  if (key.includes('مؤجل') || key.includes('تأجيل')) return 'delayed';
+  if (key.includes('مرتجع') || key.includes('مسترجع')) return 'returned_to_company';
+  if (key.includes('ملغي') || key.includes('إلغاء')) return 'cancelled';
+
+  return key;
 };
 
 /**

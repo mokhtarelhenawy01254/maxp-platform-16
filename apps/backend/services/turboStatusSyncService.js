@@ -40,7 +40,8 @@ async function syncTurboStatusToOrder({
 }) {
   const prisma = getSharedPrismaClient();
 
-  const { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(rawStatus);
+  const effectiveRaw = payload.currentLocation || payload.statusText || rawStatus;
+  const { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(effectiveRaw);
 
   console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
 
