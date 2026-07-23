@@ -2901,6 +2901,7 @@ const getRecords = async (req, res) => {
         statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
       }
     }
+    statusCountsObj['returned'] = statusCountsObj['returned_to_company'] || 0;
     statusCountsObj['merchant_preparing'] = (statusCountsObj['turbo_saved'] || 0) + (statusCountsObj['turbo_sent'] || 0);
     statusCountsObj['preparing'] = statusCountsObj['merchant_preparing'] + (statusCountsObj['processing'] || 0);
     // 💰 حساب المستحقات المالية الحية لتربو للشركة
