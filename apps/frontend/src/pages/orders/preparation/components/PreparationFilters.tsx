@@ -2,23 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
+import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import type {
   ItemCountFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SortBy,
   SortOrder,
-  StageCounts,
-  StageDefinition,
-  StageFilter,
   StockFilter,
   WarehouseOption,
 } from "../types";
 
 interface PreparationFiltersProps {
-  activeStage: StageFilter;
-  stageCounts: StageCounts;
-  stageDefinitions: StageDefinition[];
+  activeFilter: string;
+  statusCounts: Record<string, number>;
+  filterTabs: { statusCode: string; name: string }[];
   visibleOrdersCount: number;
   search: string;
   selectedWarehouseId: string;
@@ -32,7 +30,7 @@ interface PreparationFiltersProps {
   sortBy: SortBy;
   sortOrder: SortOrder;
   warehouses: WarehouseOption[];
-  onActiveStageChange: (stage: StageFilter) => void;
+  onFilterChange: (filter: string) => void;
   onSearchChange: (value: string) => void;
   onSelectedWarehouseChange: (value: string) => void;
   onStockFilterChange: (value: StockFilter) => void;
@@ -48,9 +46,9 @@ const selectClass =
   "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white";
 
 const PreparationFilters = ({
-  activeStage,
-  stageCounts,
-  stageDefinitions,
+  activeFilter,
+  statusCounts,
+  filterTabs,
   visibleOrdersCount,
   search,
   selectedWarehouseId,
@@ -64,7 +62,7 @@ const PreparationFilters = ({
   sortBy,
   sortOrder,
   warehouses,
-  onActiveStageChange,
+  onFilterChange,
   onSearchChange,
   onSelectedWarehouseChange,
   onStockFilterChange,
@@ -99,7 +97,7 @@ const PreparationFilters = ({
   const isDefaultSort = sortBy === "createdAt" && sortOrder === "desc";
 
   const hasActiveFilters =
-    activeStage !== "ALL" ||
+    activeFilter !== "ALL" ||
     selectedWarehouseId !== "" ||
     stockFilter !== "all" ||
     shortageReasonFilter !== "all" ||
@@ -111,7 +109,7 @@ const PreparationFilters = ({
     !isDefaultSort;
 
   const resetAll = () => {
-    onActiveStageChange("ALL");
+    onFilterChange("ALL");
     setLocalSearch("");
     onSearchChange("");
     onSelectedWarehouseChange("");
@@ -153,32 +151,35 @@ const PreparationFilters = ({
         </div>
       </div>
 
-      {/* Stage tabs */}
+      {/* Status tabs */}
       <div className="flex flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2.5">
         <button
-          onClick={() => onActiveStageChange("ALL")}
+          onClick={() => onFilterChange("ALL")}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-            activeStage === "ALL"
+            activeFilter === "ALL"
               ? "bg-gray-900 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
         >
-          {t("preparation.filters.allStages", { count: stageCounts.ALL })}
+          {t("preparation.filters.allStages", { count: visibleOrdersCount })}
         </button>
-        {stageDefinitions.map((stage) => (
-          <button
-            key={stage.key}
-            onClick={() => onActiveStageChange(stage.key)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              activeStage === stage.key
-                ? `${stage.colorClass} border border-current`
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-            title={t(stage.descriptionKey)}
-          >
-            {t(stage.labelKey)} ({stageCounts[stage.key] || 0})
-          </button>
-        ))}
+        {filterTabs.map((tab) => {
+          const display = getStatusDisplay(tab.statusCode);
+          return (
+            <button
+              key={tab.statusCode}
+              onClick={() => onFilterChange(tab.statusCode)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                activeFilter === tab.statusCode
+                  ? `${display.colorClass} border border-current`
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+              title={tab.name}
+            >
+              {tab.name} ({statusCounts[tab.statusCode] || 0})
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter fields */}

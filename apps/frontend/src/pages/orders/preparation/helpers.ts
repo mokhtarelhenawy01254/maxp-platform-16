@@ -242,30 +242,7 @@ export const getShortageFollowUpVisual = (
   }
 };
 
-export const normalizeStage = (status: string): StageKey | null => {
-  const normalized = toUpper(status);
-  if (["CONFIRMED", "PENDING_PREPARATION"].includes(normalized)) {
-    return "WAITING";
-  }
-  if (["PROCESSING", "PREPARING"].includes(normalized)) {
-    return "PREPARING";
-  }
-  if (normalized === "QUALITY_CHECK") {
-    return "QUALITY_CHECK";
-  }
-  if (["PACKAGED", "PACKED"].includes(normalized)) {
-    return "PACKAGED";
-  }
-  if (
-    ["STOCK_SHORTAGE", "PENDING_STOCK", "ON_HOLD_STOCK"].includes(normalized)
-  ) {
-    return "STOCK_SHORTAGE";
-  }
-  if (["READY", "READY_TO_SHIP"].includes(normalized)) {
-    return "READY_TO_SHIP";
-  }
-  return normalized;
-};
+
 
 export const getNextStatus = (
   stage: StageKey | null,

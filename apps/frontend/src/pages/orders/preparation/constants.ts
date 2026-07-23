@@ -2,7 +2,6 @@ import type {
   PreparationQueueSettings,
   ShortageHoldDetails,
   ShortageReason,
-  StageKey,
 } from "./types";
 
 export const FETCH_LIMIT = 200;
@@ -67,119 +66,7 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
   state: "held",
 };
 
-export const FALLBACK_STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: "Confirmed",
-  PENDING_PREPARATION: "Pending Preparation",
-  PENDING: "Pending",
-  PREPARING: "Preparing",
-  PROCESSING: "Processing",
-  QUALITY_CHECK: "Quality Check",
-  PACKAGED: "Packaged",
-  READY: "Ready",
-  READY_TO_SHIP: "Ready to Ship",
-  STOCK_SHORTAGE: "Stock Shortage",
-};
 
-export const FALLBACK_STATUS_LABEL_KEYS: Record<string, string> = {
-  CONFIRMED: "preparation.fallbackStatusLabels.CONFIRMED",
-  PENDING_PREPARATION: "preparation.fallbackStatusLabels.PENDING_PREPARATION",
-  PREPARING: "preparation.fallbackStatusLabels.PREPARING",
-  PROCESSING: "preparation.fallbackStatusLabels.PROCESSING",
-  QUALITY_CHECK: "preparation.fallbackStatusLabels.QUALITY_CHECK",
-  PACKAGED: "preparation.fallbackStatusLabels.PACKAGED",
-  READY: "preparation.fallbackStatusLabels.READY",
-  READY_TO_SHIP: "preparation.fallbackStatusLabels.READY_TO_SHIP",
-  STOCK_SHORTAGE: "preparation.fallbackStatusLabels.STOCK_SHORTAGE",
-};
-
-/** Order statuses that belong in the preparation pipeline */
-export const PREPARATION_STATUSES = new Set([
-  'CONFIRMED', 'PENDING_PREPARATION',
-  'PROCESSING', 'PREPARING',
-  'QUALITY_CHECK',
-  'PACKAGED', 'PACKED',
-  'READY', 'READY_TO_SHIP',
-  'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
-]);
-
-export const STAGE_DEFINITIONS: Array<{
-  key: StageKey;
-  label: string;
-  labelKey: string;
-  colorClass: string;
-  description: string;
-  descriptionKey: string;
-}> = [
-  {
-    key: "WAITING",
-    label: "Confirmed Orders",
-    labelKey: "preparation.stages.WAITING",
-    colorClass: "bg-amber-100 text-amber-800 border-amber-200",
-    description: "Confirmed orders not yet prepared",
-    descriptionKey: "preparation.stageDescriptions.WAITING",
-  },
-  {
-    key: "PREPARING",
-    label: "Preparing",
-    labelKey: "preparation.stages.PREPARING",
-    colorClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    description: "Picking and preparing products from warehouse",
-    descriptionKey: "preparation.stageDescriptions.PREPARING",
-  },
-  {
-    key: "QUALITY_CHECK",
-    label: "Quality Check",
-    labelKey: "preparation.stages.QUALITY_CHECK",
-    colorClass: "bg-cyan-100 text-cyan-800 border-cyan-200",
-    description: "Reviewing quantity and condition before packaging",
-    descriptionKey: "preparation.stageDescriptions.QUALITY_CHECK",
-  },
-  {
-    key: "PACKAGED",
-    label: "Packaged",
-    labelKey: "preparation.stages.PACKAGED",
-    colorClass: "bg-violet-100 text-violet-800 border-violet-200",
-    description: "Order is packaged and awaiting delivery to shipping",
-    descriptionKey: "preparation.stageDescriptions.PACKAGED",
-  },
-  {
-    key: "READY_TO_SHIP",
-    label: "Ready to Ship",
-    labelKey: "preparation.stages.READY_TO_SHIP",
-    colorClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    description: "Ready to hand over to shipping company or create shipment",
-    descriptionKey: "preparation.stageDescriptions.READY_TO_SHIP",
-  },
-  {
-    key: "STOCK_SHORTAGE",
-    label: "Stock Shortage",
-    labelKey: "preparation.stages.STOCK_SHORTAGE",
-    colorClass: "bg-rose-100 text-rose-800 border-rose-200",
-    description: "Orders on hold due to stock shortage or awaiting transfer",
-    descriptionKey: "preparation.stageDescriptions.STOCK_SHORTAGE",
-  },
-  {
-    key: "PENDING_CANCELLATION",
-    label: "Pending Cancellation",
-    labelKey: "preparation.stages.PENDING_CANCELLATION",
-    colorClass: "bg-red-100 text-red-800 border-red-300 shadow-sm shadow-red-200 animate-pulse",
-    description: "Orders the customer requested cancellation during preparation — must stop immediately",
-    descriptionKey: "preparation.stageDescriptions.PENDING_CANCELLATION",
-  },
-];
-
-export const DYNAMIC_STAGE_COLORS = [
-  "bg-blue-100 text-blue-800 border-blue-200",
-  "bg-teal-100 text-teal-800 border-teal-200",
-  "bg-orange-100 text-orange-800 border-orange-200",
-  "bg-pink-100 text-pink-800 border-pink-200",
-  "bg-gray-100 text-gray-800 border-gray-200",
-  "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "bg-lime-100 text-lime-800 border-lime-200",
-  "bg-sky-100 text-sky-800 border-sky-200",
-  "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
-  "bg-rose-100 text-rose-800 border-rose-200",
-] as const;
 
 export const SORT_OPTIONS = [
   { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },

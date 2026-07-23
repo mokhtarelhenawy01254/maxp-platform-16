@@ -6,7 +6,6 @@ import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   SHORTAGE_HOLD_STATUS,
   SOURCE_LABELS,
-  STAGE_DEFINITIONS,
 } from "../constants";
 import {
   buildShortageHoldDetails,
@@ -140,9 +139,6 @@ const PreparationOrdersTable = ({
         </thead>
         <tbody>
           {orders.map((order, index) => {
-            const stageMeta = STAGE_DEFINITIONS.find(
-              (s) => s.key === order.stage,
-            );
             const canPrepare = order.merchantFulfillment?.canPrepare !== false;
             const isExpanded = expandedOrders.has(order.orderNumber);
 
