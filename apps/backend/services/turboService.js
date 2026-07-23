@@ -817,7 +817,7 @@ class TurboService {
         returnAmt = (isOrderVal === 2)
           ? parseFloat(orderData.returnAmount || totalValue || 0)
           : 0;
-        defaultReturnSummary = (isOrderVal === 2 && orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : (isOrderVal === 2 ? formattedSummary : '');
+        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
@@ -1614,7 +1614,7 @@ class TurboService {
         returnAmt = (isOrderVal === 2)
           ? parseFloat(formattedData.returnAmount || totalValue || 0)
           : 0;
-        defaultReturnSummary = (isOrderVal === 2 && formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : (isOrderVal === 2 ? formattedSummary : '');
+        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
       }
 
       // 2. حساب مبلغ التحصيل (COD)
