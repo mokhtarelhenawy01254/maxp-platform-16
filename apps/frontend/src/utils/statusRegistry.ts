@@ -118,7 +118,7 @@ function getTurboDef(canonical: string): { label: string; labelKey: string; colo
  * This is the main function for all pages to use.
  */
 export function getOrderStatusDisplay(order: OrderLike): OrderStatusDisplay {
-  const systemDef = getSystemDef(order.status);
+  const systemDef = getSystemDef(order.status || 'PENDING');
   const primary: StatusDisplayInfo = {
     code: (order.status || 'PENDING').toUpperCase().trim(),
     label: systemDef.label,
