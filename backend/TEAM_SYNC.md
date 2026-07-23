@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+- **Turbo Status Reconciliation & Unbound Bulk Refresh (BUG FIX & ENHANCEMENT / COMPLETE - 2026-03-09 / 2026-07-23):**
+  1. Extended `refresh=true` on `/orders/turbo-records` (`turboController.js`) to sync all company orders across 180 days via `turboStatusSyncService`, resolving discrepancy where only page 1 (20 items) updated.
+  2. Fixed status normalizers in `turboService.js` and `statusNormalizer.js` to map Arabic location phrases like `"في انتظاري التسليم لتربو"` to `turbo_sent` ("قيد الانتظار") instead of defaulting to `processing`.
+  3. Added branch-presence detection: shipments with status `processing` but without assigned branch warehouse (`branch` null/empty) are automatically classified as `turbo_sent` (waiting merchant pickup).
+  4. Added fallback update logic in `turboController.js` to convert legacy `processing` shipments to `turbo_sent` when absent from active branch feeds.
+  5. Redesigned Preparation Queue status tabs (`PreparationFilters.tsx`) with smooth horizontal scrolling, count bubbles for every status pill, and responsive toolbar.
+
 - **Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction (FEATURE & BUG FIX / COMPLETE):**
   1. Implemented `ensureShippingReturnRequestsSynced` in `returnController.js` to automatically sync all shipping returned orders (`returned_to_company` / `status_5`) into `ReturnRequest` records so they display seamlessly on `https://maxp.online/returns` without manual steps.
   2. Fixed invocation signature of `syncTurboStatusToOrder` in `turboController.js` from positional args to structured object parameter.

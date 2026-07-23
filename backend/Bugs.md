@@ -1,3 +1,22 @@
+### [BUG FIX / TURBO RECONCILIATION] Resolved Turbo vs MaxP Status Discrepancies and Unbound Bulk Refresh Scope
+- **Date**: 2026-03-09 (2026-07-23)
+- **Root Cause & Issues**:
+  1. Bulk status refresh (`refresh=true`) on `/orders/turbo-records` only updated the paginated slice of 20 orders instead of all company orders, keeping older orders stuck on out-of-date statuses (`processing: 122` vs Turbo live `37`).
+  2. Substring & status code normalizers in `turboService.js` mapped missing/unmapped raw status strings to `'processing'` by default instead of matching Arabic location phrases like `"في انتظاري التسليم لتربو"` to `turbo_sent` ("قيد الانتظار").
+  3. Legacy orders created before status system updates retained stored `turboShipmentStatus = 'processing'` in DB.
+- **Fix**:
+  1. Updated `refresh === 'true'` in `getRecords` (`turboController.js`) to query and update all company orders across 180 days via `turboStatusSyncService`.
+  2. Extended `CANONICAL_TURBO_MAP` and `normalizeTurboStatus` in `statusNormalizer.js` with Arabic location phrases ("في انتظاري التسليم لتربو", "في انتظار التسليم", "بانتظار المندوب") mapping to `turbo_sent`.
+  3. Added branch-presence heuristic in `turboStatusSyncService.js`: if a shipment status is `processing` but has no assigned branch warehouse (`branch` is null/empty), it is mapped to `turbo_sent` (waiting merchant pickup).
+  4. Added fallback update logic in `turboController.js` to automatically convert legacy `processing` shipments to `turbo_sent` when absent from branch active feeds.
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/services/turboStatusSyncService.js`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/pages/orders/preparation/components/PreparationFilters.tsx`
+  - `apps/frontend/src/utils/statusRegistry.ts`
+
 ### [BUG FIX & ENHANCEMENT / RETURNS & TURBO] Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction
 - **Date**: 2026-07-23 / 2026-03-09
 - **Context & Requirement**:
