@@ -91,7 +91,9 @@ export interface OrderLike {
 }
 
 function getSystemDef(code: string): { label: string; labelKey: string; colorClass: string } {
-  const key = (code || 'PENDING').toUpperCase().trim();
+  let key = (code || 'PENDING').toUpperCase().trim();
+  // Normalize: spaces → underscores, lowercase → uppercase (e.g. "Stock Shortage" → "STOCK_SHORTAGE")
+  key = key.replace(/\s+/g, '_');
   return SYSTEM_STATUS_DEFS[key] || {
     label: key.replace(/_/g, ' '),
     labelKey: '',
