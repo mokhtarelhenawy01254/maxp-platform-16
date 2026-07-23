@@ -11,19 +11,25 @@ const CANONICAL_TURBO_MAP = {
   'status_1': 'turbo_saved',
   '1': 'turbo_saved',
 
-  // Code 2: Sent to Turbo (مرسلة لتربو)
+  // Code 2: Sent / Waiting Pickup (قيد الانتظار / مرسلة لتربو)
   'turbo_sent': 'turbo_sent',
   'sent': 'turbo_sent',
+  'waiting': 'turbo_sent',
+  'pending': 'turbo_sent',
+  'قيد الانتظار': 'turbo_sent',
+  'انتظار': 'turbo_sent',
+  'بانتظار الاستلام': 'turbo_sent',
   'status_2': 'turbo_sent',
   '2': 'turbo_sent',
 
-  // Code 3: Branch Processing / Pending (قيد التنفيذ بالفرع / قيد الانتظار)
+  // Code 3: Branch Processing (قيد التنفيذ بالفرع)
   'processing': 'processing',
+  'preparing': 'processing',
   'underway': 'processing',
   'accepted': 'processing',
-  'قيد الانتظار': 'processing',
-  'انتظار': 'processing',
+  'قيد التنفيذ': 'processing',
   'قيد التنفيذ بالفرع': 'processing',
+  'تنفيذ': 'processing',
   'status_3': 'processing',
   '3': 'processing',
 

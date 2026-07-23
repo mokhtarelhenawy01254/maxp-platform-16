@@ -52,8 +52,8 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
 /** Canonical turbo statuses with display info */
 const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; colorClass: string }> = {
   turbo_saved:           { label: 'محفوظة قبل الشحن',       labelKey: 'orders.turboSaved',          colorClass: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' },
-  turbo_sent:            { label: 'مرسلة للشحن',            labelKey: 'orders.turboSent',           colorClass: 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' },
-  processing:            { label: 'قيد التنفيذ بالفرع',     labelKey: 'orders.turboProcessing',     colorClass: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300' },
+  turbo_sent:            { label: 'قيد الانتظار (تربو)',     labelKey: 'orders.turboSent',           colorClass: 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' },
+  processing:            { label: 'قيد التنفيذ (بالفرع)',    labelKey: 'orders.turboProcessing',     colorClass: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300' },
   out_for_delivery:      { label: 'مسلمة للمندوب',          labelKey: 'orders.turboOutForDelivery', colorClass: 'bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300' },
   returned_to_company:   { label: 'مرتجعات بالشركة',        labelKey: 'orders.turboReturnedToCompany', colorClass: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' },
   cancelled:             { label: 'ملغي من الشحن',          labelKey: 'orders.turboCancelled',      colorClass: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300' },
@@ -69,8 +69,8 @@ const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; color
 /** Map any raw turbo alias → canonical code */
 const TURBO_ALIASES: Record<string, string> = {
   '1': 'turbo_saved', 'created': 'turbo_saved', 'turbo_saved': 'turbo_saved', 'status_1': 'turbo_saved',
-  '2': 'turbo_sent', 'sent': 'turbo_sent', 'turbo_sent': 'turbo_sent', 'status_2': 'turbo_sent',
-  '3': 'processing', 'processing': 'processing', 'underway': 'processing', 'accepted': 'processing', 'status_3': 'processing', 'قيد الانتظار': 'processing', 'انتظار': 'processing',
+  '2': 'turbo_sent', 'sent': 'turbo_sent', 'turbo_sent': 'turbo_sent', 'status_2': 'turbo_sent', 'waiting': 'turbo_sent', 'pending': 'turbo_sent', 'قيد الانتظار': 'turbo_sent', 'انتظار': 'turbo_sent', 'بانتظار الاستلام': 'turbo_sent',
+  '3': 'processing', 'processing': 'processing', 'underway': 'processing', 'accepted': 'processing', 'status_3': 'processing', 'preparing': 'processing', 'قيد التنفيذ': 'processing', 'تنفيذ': 'processing', 'قيد التنفيذ بالفرع': 'processing',
   '4': 'out_for_delivery', 'out_for_delivery': 'out_for_delivery', 'under delivery': 'out_for_delivery',
   'with captain': 'out_for_delivery', 'in transit': 'out_for_delivery', 'shipped': 'out_for_delivery', 'status_4': 'out_for_delivery',
   '5': 'returned_to_company', 'returned_to_company': 'returned_to_company', 'returned with company': 'returned_to_company', 'status_5': 'returned_to_company',
