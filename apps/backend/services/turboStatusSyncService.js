@@ -40,7 +40,10 @@ async function syncTurboStatusToOrder({
 }) {
   const prisma = getSharedPrismaClient();
 
-  const effectiveRaw = payload.currentLocation || payload.statusText || rawStatus;
+  const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
+  const effectiveRaw = (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
+    ? locationText
+    : rawStatus;
   const { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(effectiveRaw);
 
   console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
