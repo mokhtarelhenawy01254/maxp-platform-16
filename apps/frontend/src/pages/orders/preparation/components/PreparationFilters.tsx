@@ -121,71 +121,94 @@ const PreparationFilters = ({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-      {/* Top bar: tabs + search */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2">
-        <button
-          onClick={() => onFilterChange("ALL")}
-          className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-            activeFilter === "ALL"
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          {t("preparation.filters.allStages", { count: visibleOrdersCount })}
-        </button>
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      {/* Top bar: Tabs & Search Controls */}
+      <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+        
+        {/* Horizontal Scrollable Tabs */}
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => onFilterChange("ALL")}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+              activeFilter === "ALL"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <span>{t("preparation.filters.allStages", { count: "" }).replace(/\(\s*\)/, "").trim()}</span>
+            <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              activeFilter === "ALL" ? "bg-white/20 text-white" : "bg-gray-200/80 text-gray-700"
+            }`}>
+              {visibleOrdersCount}
+            </span>
+          </button>
 
-        <div className="flex flex-1 flex-wrap gap-1">
           {filterTabs.map((tab) => {
             const display = getStatusDisplay(tab.statusCode);
+            const count = statusCounts[tab.statusCode] ?? 0;
+            const isActive = activeFilter === tab.statusCode;
+
             return (
               <button
                 key={tab.statusCode}
                 onClick={() => onFilterChange(tab.statusCode)}
-                className={`rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap transition ${
-                  activeFilter === tab.statusCode
-                    ? `${display.colorClass} border border-current`
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                  isActive
+                    ? `${display.colorClass} border border-current shadow-sm`
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
                 title={tab.name}
               >
-                {tab.name}
-                {(statusCounts[tab.statusCode] ?? 0) > 0 && (
-                  <span className="mr-1 opacity-60">({statusCounts[tab.statusCode]})</span>
-                )}
+                <span>{tab.name}</span>
+                <span
+                  className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    isActive
+                      ? "bg-white/25 text-current"
+                      : count > 0
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-gray-200/70 text-gray-500"
+                  }`}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+        {/* Search & Advanced Filters Trigger */}
+        <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
+          <div className="relative flex-1 sm:w-48">
+            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             <input
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder={t("preparation.filters.quickSearchPlaceholder")}
-              className="h-8 w-40 rounded-lg border border-gray-200 bg-gray-50 pl-2 pr-7 text-xs text-gray-800 outline-none transition focus:w-56 focus:border-amber-400"
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
             />
           </div>
 
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
-            className={`flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium transition ${
+            className={`flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition ${
               showAdvanced || hasAdvancedFilters
-                ? "bg-amber-100 text-amber-800"
-                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                ? "bg-amber-100 text-amber-800 font-semibold"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             <FunnelIcon className="h-3.5 w-3.5" />
-            {t("preparation.filters.advanced")}
+            <span>{t("preparation.filters.advanced")}</span>
             <ChevronDownIcon className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
           </button>
 
           {hasActiveFilters && (
-            <button onClick={resetAll} className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-gray-400 hover:text-gray-600">
-              <XMarkIcon className="h-3.5 w-3.5" />
+            <button
+              onClick={resetAll}
+              title={t("common.reset", "إعادة ضبط")}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition"
+            >
+              <XMarkIcon className="h-4 w-4" />
             </button>
           )}
         </div>
