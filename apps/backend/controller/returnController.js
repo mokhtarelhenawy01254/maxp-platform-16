@@ -143,11 +143,94 @@ exports.deleteReturnReason = async (req, res) => {
     }
 };
 
+// Helper to auto-sync returned orders from shipping into returnRequest table
+async function ensureShippingReturnRequestsSynced(companyId) {
+    try {
+        const prisma = getPrisma();
+        const returnedOrders = await prisma.order.findMany({
+            where: {
+                companyId,
+                OR: [
+                    { status: 'RETURNED' },
+                    { turboShipmentStatus: { in: ['returned_to_company', 'status_5', '5', 'status_14', '14', 'returned'] } }
+                ]
+            },
+            select: { id: true, customerId: true, createdAt: true }
+        });
+
+        if (!returnedOrders.length) return;
+
+        const existingReqs = await prisma.returnRequest.findMany({
+            where: {
+                companyId,
+                orderId: { in: returnedOrders.map(o => o.id) }
+            },
+            select: { orderId: true }
+        });
+        const existingOrderIds = new Set(existingReqs.map(r => r.orderId));
+        const missingOrders = returnedOrders.filter(o => !existingOrderIds.has(o.id));
+
+        if (!missingOrders.length) return;
+
+        let defaultReason = await prisma.returnReason.findFirst({
+            where: { companyId, isActive: true }
+        });
+
+        if (!defaultReason) {
+            let cat = await prisma.returnReasonCategory.findFirst({
+                where: { companyId }
+            });
+            if (!cat) {
+                cat = await prisma.returnReasonCategory.create({
+                    data: { companyId, name: 'مرتجعات الشحن', defaultRole: 'SHIPPING' }
+                });
+            }
+            defaultReason = await prisma.returnReason.create({
+                data: {
+                    companyId,
+                    categoryId: cat.id,
+                    reason: 'مرتجع شحن (شركة الشحن)',
+                    description: 'مرتجع تلقائي تم استلامه من شركة الشحن'
+                }
+            });
+        }
+
+        for (const o of missingOrders) {
+            let customerId = o.customerId;
+            if (!customerId) {
+                const anyCustomer = await prisma.customer.findFirst({ where: { companyId } });
+                if (anyCustomer) customerId = anyCustomer.id;
+            }
+
+            if (customerId && defaultReason) {
+                await prisma.returnRequest.create({
+                    data: {
+                        companyId,
+                        orderId: o.id,
+                        customerId,
+                        reasonId: defaultReason.id,
+                        status: 'PENDING',
+                        responsibleParty: 'SHIPPING',
+                        adminNotes: 'مرتجع تلقائي من شركة الشحن',
+                        createdAt: o.createdAt
+                    }
+                }).catch(() => {});
+            }
+        }
+    } catch (e) {
+        console.error('⚠️ [RETURN-AUTO-SYNC] Error auto-syncing shipping returns:', e.message);
+    }
+}
+
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
         const { status, orderId, customerId, isReviewed, search, orderStatus, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        // Auto-sync any returned shipping orders for company
+        await ensureShippingReturnRequestsSynced(effectiveCompanyId);
+
         const where = { companyId: effectiveCompanyId };
 
         if (status) where.status = status;

@@ -3,12 +3,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredVa
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
-  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -155,7 +153,6 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
