@@ -316,10 +316,30 @@ const PreparationQueue: React.FC = () => {
   }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
 
   const filterTabs = useMemo(() => {
-    return preparationStatuses.map((status) => {
+    const seen = new Set<string>();
+    const tabs: { statusCode: string; name: string }[] = [];
+
+    preparationStatuses.forEach((status) => {
       const code = toUpper(status.code);
-      return { statusCode: code, name: status.name };
+      if (!seen.has(code)) {
+        seen.add(code);
+        tabs.push({ statusCode: code, name: status.name });
+      }
     });
+
+    const forcedStatuses: { code: string; name: string }[] = [
+      { code: "CONFIRMED", name: t("orders.confirmed") },
+    ];
+
+    forcedStatuses.forEach((s) => {
+      const code = toUpper(s.code);
+      if (!seen.has(code)) {
+        seen.add(code);
+        tabs.push({ statusCode: code, name: s.name });
+      }
+    });
+
+    return tabs;
   }, [preparationStatuses]);
 
   const enabledQcChecks = useMemo(
