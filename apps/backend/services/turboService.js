@@ -464,7 +464,7 @@ class TurboService {
   }
 
   extractCleanStreetAddress(addressFields, rawFallback = '', options = {}) {
-    let streetText = addressFields.primaryAddress || addressFields.parsedAddress?.street || addressFields.parsedAddress?.addressLine1 || addressFields.parsedAddress?.address || '';
+    let streetText = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.parsedAddress?.street || addressFields.parsedAddress?.addressLine1 || addressFields.parsedAddress?.address || '';
 
     if (typeof streetText !== 'string') {
       streetText = String(streetText || '');
@@ -716,7 +716,11 @@ class TurboService {
       const mainClientCode = await this.getMainClientCode();
       const senderNumber = await this.getSenderNumber();
 
-      const cleanAddress = this.extractCleanStreetAddress(addressFields, shippingAddress);
+      const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress);
+      const cleanAddress = this.extractCleanStreetAddress(addressFields, shippingAddress, {
+        customerName: customerName,
+        city: city
+      });
 
       // جلب قائمة المحافظات من Turbo API
       let governments = [];
@@ -780,7 +784,7 @@ class TurboService {
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ') 
         : (notes || `طلب #${orderNumber}`);
 
-      let isOrderVal = 0;
+      let isOrderVal = 1;
       if (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '') {
         isOrderVal = Number(orderData.isOrder);
       } else if (orderData.orderType === 'EXCHANGE' || orderData.isExchange || orderData.type === 'EXCHANGE') {
@@ -788,7 +792,7 @@ class TurboService {
       } else if (orderData.orderType === 'RETURN' || orderData.isReturn || orderData.type === 'RETURN') {
         isOrderVal = 2;
       } else {
-        isOrderVal = 0;
+        isOrderVal = 1;
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
@@ -834,9 +838,9 @@ class TurboService {
         address: finalAddress,
         notes: notes || `Order #${orderNumber}`,
         order_summary: formattedSummary,
-        return_summary: orderData.returnSummary || '',
+        return_summary: orderData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
         amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
-        return_amount: parseFloat(orderData.returnAmount || (isOrderVal === 2 ? totalValue : (shipping || 0))),
+        return_amount: parseFloat(orderData.returnAmount || (isOrderVal === 2 ? totalValue : 0)),
         is_order: isOrderVal,
         can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1,
@@ -1536,8 +1540,8 @@ class TurboService {
         }
       }
 
-      // 1. تحديد نوع الشحنة (0 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
-      let isOrderVal = 0;
+      // 1. تحديد نوع الشحنة (1 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
+      let isOrderVal = 1;
       if (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '') {
         isOrderVal = Number(formattedData.isOrder);
       } else if (formattedData.orderType === 'EXCHANGE' || formattedData.isExchange || formattedData.type === 'EXCHANGE') {
@@ -1545,7 +1549,7 @@ class TurboService {
       } else if (formattedData.orderType === 'RETURN' || formattedData.isReturn || formattedData.type === 'RETURN') {
         isOrderVal = 2;
       } else {
-        isOrderVal = 0; // تسليم عادي 0
+        isOrderVal = 1; // تسليم عادي 1
       }
 
       // 2. حساب مبلغ التحصيل (COD)
@@ -1595,11 +1599,11 @@ class TurboService {
         area: cleanArea,
         address: cleanAddress,
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
-        invoice_number: formattedData.orderNumber || shipmentId,
+        invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
         order_summary: formattedSummary,
         return_summary: formattedData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
         amount_to_be_collected: codAmount,
-        return_amount: parseFloat(formattedData.returnAmount || (isOrderVal === 2 ? (formattedData.totalValue || formattedData.total || 0) : (formattedData.shipping || 0))),
+        return_amount: parseFloat(formattedData.returnAmount || (isOrderVal === 2 ? (formattedData.totalValue || formattedData.total || 0) : 0)),
         is_order: isOrderVal,
         can_open: formattedData.canOpen !== undefined ? (formattedData.canOpen ? "1" : "0") : "1",
         weight: formattedData.totalWeight || 1,

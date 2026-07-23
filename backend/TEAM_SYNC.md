@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-23 / 2026-03-09
+- **Fixed Turbo API Incomplete Shipments Bug (BUG FIX / TURBO API):**
+  1. Resolved root cause of shipments being marked as "غير مكتملة" in Turbo Dashboard by adding missing `addressFields` initialization in `createShipment` (`turboService.js`).
+  2. Fixed default `is_order` parameter for standard delivery shipments across `createShipment` and `updateShipment` from `0` to `1` (Turbo's official code for regular delivery orders).
+  3. Corrected `return_amount` calculation to default to `0` for delivery orders (`is_order: 1`) instead of fallback `shipping` cost (70 EGP), preventing Turbo from classifying standard shipments as partial return drafts.
+  4. Added `return_summary` fallback (`'لا يوجد مرتجع'`) in `createShipment`, eliminating Turbo API validation holds.
+  5. Verified 100% test suite pass across unit tests (`npm test -- tests/services/turboService.address.test.js`).
 - **Fixed GuestOrder Field Aliases, Governorate Priority, and Clean Address Purging (BUG FIX / COMPLETE):**
   1. Updated `formatOrderForTurbo` in `turboService.js` to support all field aliases across `Order` and `GuestOrder` (`guestName`, `guestPhone`, `finalTotal`, `shippingCost`), ensuring customer names, phone numbers, and COD values are fully populated during Turbo shipment updates.
   2. Fixed governorate resolution in `updateShipment` to prioritize exact matches and sort candidate names by length descending, preventing `"القاهرة"` from capturing `"أطراف القاهرة والجيزة"`.

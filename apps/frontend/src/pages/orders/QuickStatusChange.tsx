@@ -36,7 +36,7 @@ const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, lab
   const info = getStatusDisplay(status);
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${info.colorClass}`}>
-      {label || info.label}
+      {label || t(info.labelKey) || info.label}
     </span>
   );
 };

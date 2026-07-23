@@ -107,7 +107,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     [superAdminMode, companyId],
   );
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const copy = useMemo(() => getWhatsAppInboxWorkspaceCopy(i18n.language), [i18n.language]);
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -795,7 +795,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                           </div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ ...theme }}>
-                          {order.status}
+                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">

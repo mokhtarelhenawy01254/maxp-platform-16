@@ -33,6 +33,7 @@ import {
   hasMarkedPurchaseTracked,
   markPurchaseTracked,
 } from '../utils/purchaseTrackingStorage';
+import { useTranslation } from 'react-i18next';
 import { getStatusDisplay } from '../../utils/statusRegistry';
 
 interface PurchaseTrackingItem {
@@ -163,9 +164,10 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 const asTrimmedString = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
 
-const getOrderStatusText = (status?: string, _prefersArabicCopy = false) => {
+const getOrderStatusText = (status?: string, t?: (key: string) => string, _prefersArabicCopy = false) => {
   if (!status) return '';
-  return getStatusDisplay(status).label;
+  const info = getStatusDisplay(status);
+  return t?.(info.labelKey) || info.label;
 };
 
 const getOrderStatusClassName = (status?: string) => {
@@ -419,6 +421,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
     settings: storefrontSettings,
     isLoading: storefrontSettingsLoading,
   } = useStorefrontSettings();
+  const { t } = useTranslation();
   const prefersArabicCopy = theme.direction === 'rtl';
   const isBiteRush = theme.id === 'restaurant-demo';
   const variant = normalizeOrderConfirmationVariant(section?.variant);
@@ -1641,7 +1644,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
                           effectiveTrackedOrder.status,
                         )}`}
                       >
-                        {getOrderStatusText(effectiveTrackedOrder.status, prefersArabicCopy)}
+                        {getOrderStatusText(effectiveTrackedOrder.status, t, prefersArabicCopy)}
                       </span>
                     </div>
 

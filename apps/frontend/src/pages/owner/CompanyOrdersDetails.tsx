@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
+import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface OrderItem {
@@ -81,6 +82,7 @@ interface OrdersResponse {
 const getStatusInfo = (statusCode: string) => getStatusDisplay(statusCode);
 
 const CompanyOrdersDetails: React.FC = () => {
+  const { t } = useTranslation();
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
 
@@ -179,7 +181,7 @@ const CompanyOrdersDetails: React.FC = () => {
       order.customer.phone,
       order.customer.city,
       order.total,
-      getStatusInfo(order.status)?.label || order.status,
+      (() => { const info = getStatusInfo(order.status); return t(info?.labelKey || '') || info?.label || order.status; })(),
       order.items.map((i) => `${i.productName} (${i.quantity})`).join(" | "),
     ]);
 
@@ -421,7 +423,7 @@ const CompanyOrdersDetails: React.FC = () => {
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusInfo(order.status)?.colorClass}`}
                       >
-                        {getStatusInfo(order.status)?.label || order.status}
+                        {(() => { const info = getStatusInfo(order.status); return t(info?.labelKey || '') || info?.label || order.status; })()}
                       </span>
                     </div>
 

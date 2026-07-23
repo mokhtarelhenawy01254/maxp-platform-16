@@ -1,3 +1,19 @@
+### [BUG FIX / TURBO API] Fixed Turbo Shipments Becoming "Incomplete" (غير مكتملة) Due to Missing addressFields, Incorrect `is_order`, and `return_amount` Defaults
+- **Date**: 2026-03-09
+- **Root Cause**:
+  1. `createShipment` in `turboService.js` referenced `addressFields` on lines 719, 776, 778, 796 without initializing `const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress)`, causing runtime failures during address sanitization.
+  2. Standard delivery orders sent `is_order: 0` instead of `is_order: 1` by default when creating or updating shipments. Turbo API classifies `is_order: 0` as a partial return / exchange request, flagging shipments as "غير مكتملة" in Turbo Dashboard.
+  3. `return_amount` defaulted to `shipping` cost (e.g. 70 EGP) instead of `0` for regular delivery orders when `returnAmount` was undefined. Passing a positive `return_amount` to Turbo API signals a customer refund/exchange, converting regular shipments to incomplete return drafts.
+  4. `return_summary` in `createShipment` sent `''` (empty string) instead of fallback `'لا يوجد مرتجع'`, triggering Turbo API validation holds.
+- **Fix**:
+  1. Added `const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress)` at the top of `createShipment`.
+  2. Corrected default `is_order` value for standard delivery orders to `1` across `createShipment` and `updateShipment`.
+  3. Set `return_amount` default to `0` for regular delivery orders (`is_order: 1`), passing positive amounts only for return orders (`is_order: 2`).
+  4. Set `return_summary` fallback to `'لا يوجد مرتجع'` for standard delivery shipments in `createShipment`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/tests/services/turboService.address.test.js`
+
 ### [BUG FIX / TURBO] Fixed GuestOrder Field Aliases, Governorate Priority, and Clean Address Purging
 - **Date**: 2026-03-09
 - **Root Cause**:

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
 import {
   User,
@@ -114,6 +115,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
   onCreateOrder,
   compactHeader = false,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("timeline");
   const [syncingMessages, setSyncingMessages] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -724,22 +726,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                           className="px-2 py-1 text-xs rounded-full"
                           style={getOrderStatusTheme(order.status)}
                         >
-                          {order.status === "PENDING"
-                            ? "جديد"
-                            : order.status === "CONFIRMED"
-                              ? "مؤكد"
-                              : order.status === "PROCESSING"
-                                ? "جاري التجهيز"
-                                : order.status === "SHIPPED"
-                                  ? "تم الشحن"
-                                  : order.status === "DELIVERED" ||
-                                      order.status === "COMPLETED" ||
-                                      order.status === "completed"
-                                    ? "تم التسليم"
-                                    : order.status === "CANCELLED" ||
-                                        order.status === "cancelled"
-                                      ? "ملغي"
-                                      : order.status}
+                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
                         </span>
                       </div>
                       <div
