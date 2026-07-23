@@ -2678,7 +2678,7 @@ const getRecords = async (req, res) => {
     const settings = await prisma.returnSettings.findUnique({
       where: { companyId }
     });
-    const ordersStartDate = settings?.reviewDisplayConfig?.ordersStartDate;
+    const ordersStartDate = req.query.ignoreStartDate === 'true' ? null : settings?.reviewDisplayConfig?.ordersStartDate;
     if (ordersStartDate) {
       const startDate = new Date(ordersStartDate);
       if (!isNaN(startDate.getTime())) {
