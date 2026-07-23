@@ -12,7 +12,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-import { getStatusDisplay, getSystemStatusOptions } from "../../../utils/statusRegistry";
+import { getStatusDisplay, getSystemStatusOptions } from "../../utils/statusRegistry";
 
 interface OrderData {
   id: string;

@@ -13,7 +13,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import { getTurboStatusDisplay } from "../../../utils/statusRegistry";
+import { getTurboStatusDisplay } from "../../utils/statusRegistry";
 
 interface TurboLiveStatus {
     status: string;
