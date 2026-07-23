@@ -100,10 +100,13 @@ interface PreparationSettingsState {
 }
 
 const FALLBACK_PREPARATION_STATUSES: StatusOption[] = [
+  { code: "CONFIRMED", name: "مؤكد" },
   { code: "PENDING_PREPARATION", name: "في انتظار التجهيز" },
   { code: "PREPARING", name: "قيد التجهيز" },
   { code: "QUALITY_CHECK", name: "فحص الجودة" },
   { code: "PACKAGED", name: "تم التغليف" },
+  { code: "READY_TO_SHIP", name: "جاهز للشحن" },
+  { code: "STOCK_SHORTAGE", name: "عجز مخزون" },
 ];
 
 const FALLBACK_HANDOFF_STATUSES: StatusOption[] = [

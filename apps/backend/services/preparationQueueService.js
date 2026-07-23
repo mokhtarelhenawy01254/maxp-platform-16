@@ -654,16 +654,20 @@ const comparePreparationOrders = (left, right, prioritizeShortageOrders, sortByF
         return leftPriority - rightPriority;
       }
     }
-
-    if (prioritizeShortageOrders && left.missingItemsCount !== right.missingItemsCount) {
-      return right.missingItemsCount - left.missingItemsCount;
-    }
   }
 
   const leftValue = sortByField === 'totalUnits' ? left.totalUnits : sortByField === 'totalValue' ? left.totalValue : left.createdAtMs;
   const rightValue = sortByField === 'totalUnits' ? right.totalUnits : sortByField === 'totalValue' ? right.totalValue : right.createdAtMs;
 
-  return sortOrderDir === 'asc' ? leftValue - rightValue : rightValue - leftValue;
+  if (leftValue !== rightValue) {
+    return sortOrderDir === 'asc' ? leftValue - rightValue : rightValue - leftValue;
+  }
+
+  if (prioritizeShortageOrders && left.missingItemsCount !== right.missingItemsCount) {
+    return right.missingItemsCount - left.missingItemsCount;
+  }
+
+  return left.createdAtMs - right.createdAtMs;
 };
 
 const stripPreparationTransientFields = ({
