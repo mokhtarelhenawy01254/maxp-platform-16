@@ -36,7 +36,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   LOST:                 { label: 'مفقود',                labelKey: 'orders.lost',              colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
   PENDING_PREPARATION:  { label: 'بانتظار التجهيز',      labelKey: 'orders.pendingPreparation',colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
   PREPARING:            { label: 'قيد التجهيز',          labelKey: 'orders.preparing',         colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' },
-  READY:                { label: 'جاهز',                 labelKey: 'orders.ready',              colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
+  READY:                { label: 'جاهز للشحن',           labelKey: 'orders.ready',              colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
   QUALITY_CHECK:        { label: 'فحص الجودة',           labelKey: 'orders.qualityCheck',      colorClass: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-400' },
   PACKAGED:             { label: 'تم التعبئة',           labelKey: 'orders.packaged',          colorClass: 'bg-teal-100 text-teal-800 dark:bg-teal-900/20 dark:text-teal-400' },
   ON_HOLD_PREP:         { label: 'تجهيز معلق',           labelKey: 'orders.onHoldPrep',        colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
