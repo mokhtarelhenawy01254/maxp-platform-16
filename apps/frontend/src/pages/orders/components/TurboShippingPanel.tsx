@@ -50,8 +50,8 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
   const getTurboStatusText = (status?: string) => {
     if (!status) return "غير متاح";
     const statusMap: { [key: string]: string } = {
-      "0": "غير مكتمل",
-      "1": "غير مكتمل",
+      "0": "قيد الانتظار",
+      "1": "قيد الانتظار",
       "2": "مرسلة للشحن",
       "3": "قيد التنفيذ",
       "4": "مع الكابتن",
@@ -64,11 +64,12 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
       "11": "مرتجع مفقود",
       "12": "مرتجع معدوم",
       "13": "مؤجلة",
-      created: "غير مكتمل",
-      saved: "غير مكتمل",
-      incomplete: "غير مكتمل",
-      uncompleted: "غير مكتمل",
-      draft: "غير مكتمل",
+      "18": "غير مكتملة",
+      created: "قيد الانتظار",
+      saved: "قيد الانتظار",
+      incomplete: "قيد الانتظار",
+      uncompleted: "قيد الانتظار",
+      draft: "قيد الانتظار",
       confirmed: "مؤكدة",
       pending: "قيد الانتظار",
       processing: "قيد المعالجة",

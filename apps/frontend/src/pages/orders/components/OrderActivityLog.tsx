@@ -10,7 +10,7 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
-import { OrderDetailsType, OrderNote } from "../types";
+import { OrderDetailsType } from "../types";
 
 interface OrderActivityLogProps {
   order: OrderDetailsType;
