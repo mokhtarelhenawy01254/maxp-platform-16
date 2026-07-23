@@ -147,6 +147,9 @@ const normalizePreparationStage = (status) => {
   if (normalized === 'PENDING_CANCELLATION') {
     return 'PENDING_CANCELLATION';
   }
+  if (normalized === 'ON_HOLD_PREP') {
+    return 'ON_HOLD_PREP';
+  }
   return null;
 };
 
@@ -187,7 +190,8 @@ const createPreparationStageCounts = () => ({
   PACKAGED: 0,
   READY_TO_SHIP: 0,
   STOCK_SHORTAGE: 0,
-  PENDING_CANCELLATION: 0
+  PENDING_CANCELLATION: 0,
+  ON_HOLD_PREP: 0
 });
 
 const dedupePreparationWarehouseName = (names) => {
@@ -1094,6 +1098,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const page = Math.max(1, parseInt(query.page, 10) || 1);
   const limit = Math.max(1, parseInt(query.limit, 10) || 12);
   const activeStage = toPreparationUpper(query.stage || 'ALL');
+  const resolvedStage = activeStage === 'ALL' ? 'ALL' : normalizePreparationStage(activeStage) || activeStage;
   const searchTerm = String(query.search || '').trim();
   const searchQuery = searchTerm.toLowerCase();
   const selectedWarehouseId = String(query.warehouseId || '').trim();
@@ -1266,7 +1271,7 @@ const getPreparationQueue = async ({ user, query }) => {
         readyToShipCount += 1;
       }
 
-      if (activeStage === 'ALL' || order.stage === activeStage) {
+      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
         visibleTotal += 1;
         collectTopPreparationOrders({
           buffer: topVisibleOrders,
