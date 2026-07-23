@@ -4285,17 +4285,35 @@ async function facebookConnect(req, res) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
         }
 
-        // Step 1: Exchange auth code for access token
+        // Step 1: Exchange auth code for access token (try without redirect_uri first, fallback if needed)
         const axios = require('axios');
-        const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
-            params: {
-                client_id: appId,
-                redirect_uri: redirectUri,
-                client_secret: appSecret,
-                code
-            },
-            timeout: 15000
-        });
+        let tokenResponse;
+        try {
+            console.log('🔑 [facebookConnect] Attempting token exchange without redirect_uri...');
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: appId,
+                    client_secret: appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookConnect] Token exchange succeeded without redirect_uri');
+        } catch (exchangeErr) {
+            console.warn('⚠️ [facebookConnect] Exchange without redirect_uri failed:', exchangeErr.response?.data || exchangeErr.message);
+            console.log('🔄 [facebookConnect] Retrying token exchange with redirect_uri:', redirectUri);
+            
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: appId,
+                    redirect_uri: redirectUri,
+                    client_secret: appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookConnect] Token exchange succeeded with redirect_uri');
+        }
 
         const shortLivedToken = tokenResponse.data?.access_token;
         if (!shortLivedToken) {
