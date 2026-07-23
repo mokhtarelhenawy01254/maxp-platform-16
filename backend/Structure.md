@@ -5,7 +5,9 @@
 2. Extracted `NavLink` into a standalone, file-scoped component within `ClassicSidebar.tsx` to optimize React rendering performance and avoid reconciliation re-mount loops.
 
 ### API Endpoints
-1. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
+1. Extended `/api/v1/returns/requests` endpoint (`getReturnRequests` in `returnController.js`):
+   - Supports filtering return requests by company `ordersStartDate` setting stored in `returnSettings.reviewDisplayConfig` (`createdAt >= ordersStartDate`) or explicit `startDate` query parameter, ensuring only orders/returns on or after the system start date appear.
+2. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
    - `GET /api/v1/ai-admin/logs` — Extended response payload to include global aggregated stats (`success_count`, `failed_count`, and `avg_latency`) for the filtered keys and providers, computed across both PostgreSQL tables: `ai.provider_logs` (ORM) and `public.ai_provider_logs` (Raw SQL).
 2. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
    - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.

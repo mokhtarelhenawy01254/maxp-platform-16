@@ -156,6 +156,18 @@ exports.getReturnRequests = async (req, res) => {
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
         if (orderStatus) where.order = { status: orderStatus };
 
+        // Apply ordersStartDate filter from settings or query
+        const settings = await getPrisma().returnSettings.findUnique({
+            where: { companyId: effectiveCompanyId }
+        });
+        const ordersStartDate = req.query.startDate || settings?.reviewDisplayConfig?.ordersStartDate;
+        if (ordersStartDate) {
+            const startDate = new Date(ordersStartDate);
+            if (!isNaN(startDate.getTime())) {
+                where.createdAt = { gte: startDate };
+            }
+        }
+
         if (search) {
             const orders = await getPrisma().order.findMany({
                 where: {

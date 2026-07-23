@@ -92,6 +92,7 @@ const ReturnManagementPage: React.FC = () => {
       if (statusFilter) params.status = statusFilter;
       if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
+      if (displayConfig?.ordersStartDate) params.startDate = displayConfig.ordersStartDate;
       const reqRes = await returnService.getRequests(params);
       setRequests(reqRes.data.data);
       setTotal(reqRes.data.total);
@@ -122,7 +123,7 @@ const ReturnManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter, searchTerm, orderStatusFilter, page]);
+  }, [statusFilter, searchTerm, orderStatusFilter, page, displayConfig]);
 
   useEffect(() => {
     fetchCategoriesAndReasons();

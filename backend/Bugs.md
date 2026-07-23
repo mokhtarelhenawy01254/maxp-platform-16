@@ -1,3 +1,18 @@
+### [FEATURE & ENHANCEMENT / RETURNS] Added Orders & Returns Start Date Filter Setting
+- **Date**: 2026-07-23 / 2026-03-09
+- **Context & Requirement**:
+  1. Stores starting fresh on MaxP platform needed a setting to filter out old historical orders/returns prior to their system setup date.
+  2. Implemented `ordersStartDate` inside `reviewDisplayConfig` stored in `ReturnSettings`.
+  3. Added Date Picker UI in `ReturnSettingsPage.tsx` and updated `getReturnRequests` in `returnController.js` to filter requests (`createdAt >= ordersStartDate`).
+- **Files Modified**:
+  - `apps/frontend/src/services/returnService.ts`
+  - `apps/frontend/src/pages/returns/ReturnSettingsPage.tsx`
+  - `apps/frontend/src/pages/returns/ReturnManagementPage.tsx`
+  - `apps/backend/controller/returnController.js`
+  - `backend/Structure.md`
+  - `backend/TEAM_SYNC.md`
+  - `backend/Bugs.md`
+
 ### [BUG FIX / TURBO API] Fixed Turbo Shipments Becoming "Incomplete" (غير مكتملة) Due to Missing addressFields, Incorrect `is_order`, and `return_amount` Defaults
 - **Date**: 2026-03-09
 - **Root Cause**:

@@ -153,6 +153,7 @@ export interface ReviewDisplayConfig {
   showRejectedStatus?: boolean;
   showCompletedStatus?: boolean;
   visibleOrderStatuses?: string[];
+  ordersStartDate?: string;
 }
 
 export interface ReturnSettingsData {

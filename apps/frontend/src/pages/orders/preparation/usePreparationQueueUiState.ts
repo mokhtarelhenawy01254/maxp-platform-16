@@ -10,7 +10,7 @@ import type {
   ItemCountFilter,
 } from "./types";
 
-interface PreparationQueueUiState {
+export interface PreparationQueueUiState {
   activeStage: StageFilter;
   selectedWarehouseId: string;
   stockFilter: StockFilter;
@@ -195,8 +195,13 @@ const preparationQueueUiReducer = (
   }
 };
 
-export const usePreparationQueueUiState = () => {
-  const [state, dispatch] = useReducer(preparationQueueUiReducer, initialState);
+export const usePreparationQueueUiState = (
+  overrides?: Partial<PreparationQueueUiState>,
+) => {
+  const [state, dispatch] = useReducer(preparationQueueUiReducer, {
+    ...initialState,
+    ...overrides,
+  });
 
   const actions = useMemo(
     () => ({

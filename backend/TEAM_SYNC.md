@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-23 / 2026-03-09
+- **Added Orders/Returns Start Date Filter Setting (`/returns/settings` & `/returns`):**
+  1. Added `ordersStartDate` property to `ReviewDisplayConfig` interface in `returnService.ts`.
+  2. Implemented Date Picker UI in `ReturnSettingsPage.tsx` under Display Settings allowing merchants to define a system start date.
+  3. Updated `getReturnRequests` in `returnController.js` to automatically filter return requests/orders by `ordersStartDate` (`createdAt >= ordersStartDate`).
+  4. Integrated automatic date parameter passing in `ReturnManagementPage.tsx`.
 - **Fixed Turbo API Incomplete Shipments Bug (BUG FIX / TURBO API):**
   1. Resolved root cause of shipments being marked as "غير مكتملة" in Turbo Dashboard by adding missing `addressFields` initialization in `createShipment` (`turboService.js`).
   2. Fixed default `is_order` parameter for standard delivery shipments across `createShipment` and `updateShipment` from `0` to `1` (Turbo's official code for regular delivery orders).

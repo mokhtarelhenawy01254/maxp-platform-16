@@ -24,6 +24,7 @@ import {
   Settings2,
   Filter,
   Package,
+  Calendar,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -680,6 +681,51 @@ const ReturnSettingsPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Start Date Filter Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+                <Calendar size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+                  تاريخ بدء ظهور الطلبات والمرتجعات
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  تحديد تاريخ بداية الشغل على النظام بحيث تظهر فقط الطلبات والمرتجعات المنشأة من هذا التاريخ وما بعده
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-md">
+              <input
+                type="date"
+                value={displayConfig.ordersStartDate ? displayConfig.ordersStartDate.split('T')[0] : ""}
+                onChange={(e) =>
+                  setDisplayConfig((prev) => ({
+                    ...prev,
+                    ordersStartDate: e.target.value || undefined,
+                  }))
+                }
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {displayConfig.ordersStartDate && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDisplayConfig((prev) => ({
+                      ...prev,
+                      ordersStartDate: undefined,
+                    }))
+                  }
+                  className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 underline font-medium"
+                >
+                  إلغاء تاريخ البدء (عرض جميع البيانات القديمة)
+                </button>
+              )}
             </div>
           </div>
 
