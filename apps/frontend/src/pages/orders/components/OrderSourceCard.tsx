@@ -297,14 +297,16 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
         )}
 
         {/* Request Type Badge */}
-        {parsedMetadata?.requestType && parsedMetadata.requestType !== "delivery" && (
-          <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
-            <SparklesIcon className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+        {parsedMetadata?.requestType && (
+          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+            <SparklesIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                 نوع الطلب
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {parsedMetadata.requestType === "delivery" && "📦 طلب تسليم (عادي)"}
+                {parsedMetadata.requestType === "partial_delivery" && "📦 طلب تسليم جزئي"}
                 {parsedMetadata.requestType === "return" && "🔄 طلب مرتجع"}
                 {parsedMetadata.requestType === "exchange" && "🔀 طلب استبدال"}
               </div>

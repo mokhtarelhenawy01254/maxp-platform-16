@@ -784,15 +784,40 @@ class TurboService {
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ') 
         : (notes || `طلب #${orderNumber}`);
 
+      // 1. تحديد نوع الشحنة والمبالغ التابعة لها
+      const rawReqType = String(
+        orderData.requestType ||
+        orderData.orderType ||
+        orderData.type ||
+        ''
+      ).trim().toLowerCase();
+
+      const shippingFeeVal = parseFloat(shipping || orderData.shipping || orderData.shippingFee || orderData.shippingCost || 0);
+
       let isOrderVal = 1;
-      if (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '') {
-        isOrderVal = Number(orderData.isOrder);
-      } else if (orderData.orderType === 'EXCHANGE' || orderData.isExchange || orderData.type === 'EXCHANGE') {
+      let returnAmt = 0;
+      let defaultReturnSummary = 'لا يوجد مرتجع';
+
+      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
-      } else if (orderData.orderType === 'RETURN' || orderData.isReturn || orderData.type === 'RETURN') {
+        returnAmt = shippingFeeVal;
+        defaultReturnSummary = orderData.returnSummary || 'تسليم جزئي';
+      } else if (rawReqType === 'return' || rawReqType === 'returned' || orderData.orderType === 'RETURN') {
         isOrderVal = 2;
-      } else {
+        returnAmt = parseFloat(orderData.returnAmount || totalValue || 0);
+        defaultReturnSummary = orderData.returnSummary || formattedSummary;
+      } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || orderData.orderType === 'EXCHANGE') {
         isOrderVal = 1;
+        returnAmt = 0;
+        defaultReturnSummary = orderData.returnSummary || 'طلب استبدال';
+      } else {
+        isOrderVal = (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '')
+          ? Number(orderData.isOrder)
+          : 1;
+        returnAmt = (isOrderVal === 2)
+          ? parseFloat(orderData.returnAmount || totalValue || 0)
+          : 0;
+        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
@@ -824,11 +849,6 @@ class TurboService {
         ? cleanAddress.trim()
         : `${finalArea} - ${finalGovernment}`;
 
-      const shippingFeeVal = parseFloat(shipping || orderData.shippingFee || orderData.shippingCost || 0);
-      const returnAmt = (isOrderVal === 2)
-        ? parseFloat(orderData.returnAmount || totalValue || 0)
-        : parseFloat(orderData.returnAmount || shippingFeeVal);
-
       const shipmentData = {
         authentication_key: apiKey,
         main_client_code: mainClientCode || 37321,
@@ -843,7 +863,7 @@ class TurboService {
         address: finalAddress,
         notes: notes || `Order #${orderNumber}`,
         order_summary: formattedSummary,
-        return_summary: orderData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
+        return_summary: orderData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
         return_amount: returnAmt,
         is_order: isOrderVal,
@@ -1555,16 +1575,46 @@ class TurboService {
         }
       }
 
-      // 1. تحديد نوع الشحنة (1 = تسليم عادي, 1 = مقابل/استبدال, 2 = مرتجع)
+      // 1. تحديد نوع الشحنة والمبالغ التابعة لها
+      const rawReqType = String(
+        formattedData.requestType ||
+        formattedData.orderType ||
+        formattedData.type ||
+        ''
+      ).trim().toLowerCase();
+
+      const shippingFeeVal = parseFloat(formattedData.shipping || formattedData.shippingCost || formattedData.shippingFee || 0);
+      const totalValue = parseFloat(formattedData.totalValue || formattedData.total || 0);
+
+      const items = formattedData.items || formattedData.orderItems || [];
+      const formattedSummary = Array.isArray(items) && items.length > 0
+        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
+        : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
+
       let isOrderVal = 1;
-      if (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '') {
-        isOrderVal = Number(formattedData.isOrder);
-      } else if (formattedData.orderType === 'EXCHANGE' || formattedData.isExchange || formattedData.type === 'EXCHANGE') {
+      let returnAmt = 0;
+      let defaultReturnSummary = 'لا يوجد مرتجع';
+
+      if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
-      } else if (formattedData.orderType === 'RETURN' || formattedData.isReturn || formattedData.type === 'RETURN') {
+        returnAmt = shippingFeeVal;
+        defaultReturnSummary = formattedData.returnSummary || 'تسليم جزئي';
+      } else if (rawReqType === 'return' || rawReqType === 'returned' || formattedData.orderType === 'RETURN') {
         isOrderVal = 2;
+        returnAmt = parseFloat(formattedData.returnAmount || totalValue || 0);
+        defaultReturnSummary = formattedData.returnSummary || formattedSummary;
+      } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || formattedData.orderType === 'EXCHANGE') {
+        isOrderVal = 1;
+        returnAmt = 0;
+        defaultReturnSummary = formattedData.returnSummary || 'طلب استبدال';
       } else {
-        isOrderVal = 1; // تسليم عادي 1
+        isOrderVal = (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '')
+          ? Number(formattedData.isOrder)
+          : 1;
+        returnAmt = (isOrderVal === 2)
+          ? parseFloat(formattedData.returnAmount || totalValue || 0)
+          : 0;
+        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
       }
 
       // 2. حساب مبلغ التحصيل (COD)
@@ -1579,7 +1629,7 @@ class TurboService {
         methodStr === 'VISA'
       );
 
-      const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : parseFloat(formattedData.totalValue || formattedData.total || 0);
+      const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : totalValue;
 
       // 3. تنظيف وتأكيد رقم الهاتف المصرفي (11 رقماً يبدأ بـ 01)
       let rawPhoneDigits = String(formattedData.customerPhone || '').replace(/\D/g, '');
@@ -1592,17 +1642,6 @@ class TurboService {
 
       // 4. تأكيد اسم المستلم وعدم تمرير قيمة فارغة
       const finalReceiver = (formattedData.customerName || `عميل طلب #${formattedData.orderNumber || shipmentId}`).trim();
-
-      // 5. بناء ملخص الطلب مع الكميات بدقة
-      const items = formattedData.items || formattedData.orderItems || [];
-      const formattedSummary = Array.isArray(items) && items.length > 0
-        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
-        : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
-
-      const shippingFeeVal = parseFloat(formattedData.shipping || formattedData.shippingCost || formattedData.shippingFee || 0);
-      const returnAmt = (isOrderVal === 2)
-        ? parseFloat(formattedData.returnAmount || formattedData.totalValue || formattedData.total || 0)
-        : parseFloat(formattedData.returnAmount || shippingFeeVal);
 
       // بناء بيانات التحديث حسب Turbo API (/edit-order)
       const updateData = {
@@ -1621,7 +1660,7 @@ class TurboService {
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
         invoice_number: this.getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
         order_summary: formattedSummary,
-        return_summary: formattedData.returnSummary || (isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع'),
+        return_summary: formattedData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: codAmount,
         return_amount: returnAmt,
         is_order: isOrderVal,
@@ -2532,6 +2571,15 @@ class TurboService {
       weight: item.weight || 0.5
     })) : [];
 
+    let parsedMetadata = {};
+    if (typeof order.metadata === 'string') {
+      try { parsedMetadata = JSON.parse(order.metadata); } catch (e) {}
+    } else if (order.metadata && typeof order.metadata === 'object') {
+      parsedMetadata = order.metadata;
+    }
+
+    const requestType = order.requestType || parsedMetadata.requestType || order.orderType || order.type || null;
+
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -2552,9 +2600,10 @@ class TurboService {
       createdAt: order.createdAt || new Date().toISOString(),
       alternativePhone: order.alternativePhone || addressFields.parsedAddress?.phone2 || null,
       turboShipmentStatus: order.turboShipmentStatus || null,
-      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' ? totalValue : shippingFee)),
+      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' || requestType === 'return' ? totalValue : (requestType === 'partial_delivery' ? shippingFee : 0))),
       returnSummary: order.returnSummary || null,
-      orderType: order.orderType || order.type || null,
+      requestType: requestType,
+      orderType: order.orderType || order.type || requestType || null,
       isOrder: order.isOrder !== undefined ? order.isOrder : null,
       canOpen: order.canOpen !== undefined ? order.canOpen : true,
       actualShippingCost: null

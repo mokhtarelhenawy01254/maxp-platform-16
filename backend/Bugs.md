@@ -1,14 +1,20 @@
-### [BUG FIX / TURBO SHIPMENT CREATION & UPDATE] Preserved Standard Delivery Type ("تسليم") while Sending Shipping Fee for Returns ("قيمة الشحن في حالة المرتجع")
+### [FEATURE & BUG FIX / TURBO API] Added Partial Delivery ("تسليم جزئي") Support & Integrated Dynamic Request Type Mapping
 - **Date**: 2026-03-09 (2026-07-23)
 - **Root Cause & Requirements**:
-  1. For standard delivery orders (`is_order: 1`), Turbo Express API requires `return_amount` to equal the shipping fee (e.g. 70 EGP) to populate "قيمة الشحن في حالة المرتجع" on Turbo Dashboard.
-  2. Setting `return_amount: 0` caused Turbo Dashboard to leave "قيمة الشحن في حالة المرتجع" unpopulated / empty on both initial creation (`createShipment`) and updates (`updateShipment`).
-  3. Setting `return_amount: 70` without enforcing `return_summary: 'لا يوجد مرتجع'` caused Turbo API to classify shipments as "مرتجع جزئي" (Partial Return).
+  1. Previously, `return_amount` in `turboService.js` was statically set to shipping fee for standard orders, causing Turbo API to auto-classify standard delivery orders as "مرتجع جزئي" (Partial Return).
+  2. Merchants needed explicit control over shipment types directly from the Manual Order creation page (`/orders/manual`) and Order Details page (`/orders/:id`).
 - **Fix**:
-  1. Unified `return_amount` calculation across `createShipment` and `updateShipment` in `turboService.js`: for regular delivery orders (`isOrderVal === 1`), `return_amount` sends `shippingFeeVal` (70 EGP).
-  2. Enforced explicit `is_order: 1` and `return_summary: 'لا يوجد مرتجع'` for all standard delivery orders, ensuring Turbo API preserves the shipment type as **"تسليم عادياً"** (Standard Delivery) and populates **"قيمة الشحن في حالة المرتجع"** with `70 EGP`.
+  1. Added **"طلب تسليم جزئي"** (`partial_delivery`) to the Order Type dropdown in `CheckoutColumn.tsx` and enabled Request Type badge on `OrderDetails.tsx` / `OrderSourceCard.tsx`.
+  2. Dynamically mapped `requestType` in `turboService.js`:
+     - **Delivery ("تسليم عادي")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'لا يوجد مرتجع'` -> Turbo Dashboard shows **"تسليم"**.
+     - **Partial Delivery ("تسليم جزئي")**: `is_order: 1`, `return_amount: shippingFeeVal` (70 EGP), `return_summary: 'تسليم جزئي'` -> Turbo Dashboard shows **"مرتجع جزئي"** with shipping fee populated.
+     - **Return ("طلب مرتجع")**: `is_order: 2`, `return_amount: totalValue` -> Turbo Dashboard shows **"مرتجع"**.
+     - **Exchange ("طلب استبدال")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'طلب استبدال'`.
 - **Files Modified**:
   - `apps/backend/services/turboService.js`
+  - `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`
+  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
+  - `apps/frontend/src/pages/orders/components/OrderSourceCard.tsx`
   - `backend/Bugs.md`
   - `backend/TEAM_SYNC.md`
 

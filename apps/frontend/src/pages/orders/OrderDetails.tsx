@@ -210,7 +210,7 @@ const OrderDetails: React.FC = () => {
     ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS,
   );
   const showPartnerOperationsCard = !isMerchant;
-  const showOrderSourceCard = !isMerchant && hasOrderSourceTrackingApp;
+  const showOrderSourceCard = !isMerchant;
   const showOrderAttributionCard = !isMerchant && hasOrderCampaignAttributionApp;
   const showConfirmationDistributionCard =
     !isMerchant && hasOrderConfirmationDistributionApp;

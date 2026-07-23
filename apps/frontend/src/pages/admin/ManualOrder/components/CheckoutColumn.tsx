@@ -979,6 +979,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="delivery">{t('manualOrder.k_19')}</option>
+                <option value="partial_delivery">طلب تسليم جزئي</option>
                 <option value="return">{t('manualOrder.k_20')}</option>
                 <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
