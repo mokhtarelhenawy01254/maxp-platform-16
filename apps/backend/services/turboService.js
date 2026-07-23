@@ -1491,15 +1491,24 @@ class TurboService {
       let matchedGovId = null;
 
       if (cleanGovernorate && governments.length > 0) {
-        const foundGov = governments.find(g => {
-          const govName = g.name.toLowerCase();
-          return govName === cleanGovernorate.toLowerCase() ||
-            govName.includes(cleanGovernorate.toLowerCase()) ||
-            cleanGovernorate.toLowerCase().includes(govName);
-        });
+        const cleanedLower = cleanGovernorate.toLowerCase().trim();
+        // 1. المطابقة الدقيقة أولاً (Exact match)
+        let foundGov = governments.find(g => g.name.toLowerCase().trim() === cleanedLower);
+
+        // 2. المطابقة بالأطول أولاً لمنع مطابقة "القاهرة" بدلاً من "أطراف القاهرة والجيزة"
+        if (!foundGov) {
+          foundGov = [...governments]
+            .sort((a, b) => b.name.length - a.name.length)
+            .find(g => {
+              const govName = g.name.toLowerCase().trim();
+              return cleanedLower.includes(govName) || govName.includes(cleanedLower);
+            });
+        }
+
         if (foundGov) {
           cleanGovernorate = foundGov.name;
           matchedGovId = foundGov.id;
+          console.log(`✅ [TURBO] Matched exact/longest governorate: "${cleanGovernorate}" (ID: ${matchedGovId})`);
         }
       } else if (!cleanGovernorate && formattedData.city) {
         cleanGovernorate = this.findGovernmentByCity(formattedData.city, governments);
