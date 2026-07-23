@@ -1,3 +1,21 @@
+### [BUG FIX & ENHANCEMENT / RETURNS & TURBO] Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction
+- **Date**: 2026-07-23 / 2026-03-09
+- **Context & Requirement**:
+  1. Shipping return orders (`returned_to_company` / `status_5`) from Turbo Express were not automatically appearing on `https://maxp.online/returns` because they lacked explicit `ReturnRequest` records.
+  2. Positional argument invocation of `syncTurboStatusToOrder` in `turboController.js` caused status updates to pass `undefined` `rawStatus`.
+  3. Status normalizer conflated "قيد الانتظار", "قيد التنفيذ", and "مؤجلة".
+- **Fix**:
+  1. Implemented `ensureShippingReturnRequestsSynced` in `returnController.js` to automatically create/sync `ReturnRequest` records for all returned shipping orders.
+  2. Fixed `syncTurboStatusToOrder` call signature in `turboController.js` to use a structured object argument.
+  3. Established clean 3-way status distinction in `statusNormalizer.js` and `statusRegistry.ts` (`قيد الانتظار` -> `turbo_sent`, `قيد التنفيذ` -> `processing`, `مؤجلة` -> `delayed`).
+- **Files Modified**:
+  - `apps/backend/controller/returnController.js`
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/utils/statusRegistry.ts`
+  - `backend/Bugs.md`
+  - `backend/TEAM_SYNC.md`
+
 ### [FEATURE & ENHANCEMENT / RETURNS] Added Orders & Returns Start Date Filter Setting
 - **Date**: 2026-07-23 / 2026-03-09
 - **Context & Requirement**:
