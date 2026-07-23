@@ -672,11 +672,12 @@
   "lost": "Lost",
   "pendingPreparation": "Pending Preparation",
   "preparing": "Preparing",
-  "ready": "Ready",
+  "ready": "Ready to Ship",
   "qualityCheck": "Quality Check",
   "packaged": "Packaged",
   "onHoldPrep": "Prep On Hold",
   "notShipped": "Not Shipped",
   "pendingCancellation": "Pending Cancellation",
-  "wooTaghez": "Woo Taghez"
+  "wooTaghez": "Woo Taghez",
+  "stockShortage": "Stock Shortage"
 }
