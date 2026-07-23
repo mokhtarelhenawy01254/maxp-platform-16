@@ -19,6 +19,7 @@ interface TurboShippingPanelProps {
   turboLoading: boolean;
   onCreateShipment: () => void;
   onUpdateShipment?: () => void;
+  onSyncStatus?: () => void;
   onPrintWaybill: () => void;
   onCancelShipment: () => void;
   onUnlinkShipment: () => void;
@@ -35,6 +36,7 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
   turboLoading,
   onCreateShipment,
   onUpdateShipment,
+  onSyncStatus,
   onPrintWaybill,
   onCancelShipment,
   onUnlinkShipment,
@@ -382,6 +384,19 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
                   className={`w-4 h-4 ml-1 ${turboLoading ? "animate-spin" : ""}`}
                 />
                 تحديث الشحنة في Turbo
+              </button>
+            )}
+            {canManageShipments && onSyncStatus && (
+              <button
+                onClick={onSyncStatus}
+                disabled={turboLoading}
+                className="flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 text-sm font-medium transition-all shadow-sm hover:shadow"
+                title="سحب ومزامنة حالة الشحنة المباشرة من سيرفر تربو وتحديث الطلب بالنظام"
+              >
+                <ArrowPathIcon
+                  className={`w-4 h-4 ml-1 ${turboLoading ? "animate-spin" : ""}`}
+                />
+                سحب ومزامنة حالة Turbo
               </button>
             )}
             {canManageShipments && (

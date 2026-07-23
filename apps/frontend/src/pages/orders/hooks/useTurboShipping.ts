@@ -427,12 +427,67 @@ export const useTurboShipping = (
     return false;
   };
 
+  const syncStatus = async () => {
+    if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
+      toast.error("لا توجد شحنة تربو مربوطة بهذا الطلب لمزامنتها");
+      return false;
+    }
+
+    setTurboLoading(true);
+    try {
+      const orderIdentifier = order.id || order.orderNumber;
+      const response = await apiClient.post(`/turbo/orders/${orderIdentifier}/sync-status`);
+      if (response.data?.success) {
+        const syncedStatus = response.data.data?.status || response.data.data?.turboShipmentStatus;
+        const syncedTrackingData = response.data.data;
+        const orderStatus = response.data.data?.orderStatus || response.data.data?.systemStatus;
+
+        toast.success(
+          `تم سحب ومزامنة حالة الشحنة من تربو بنجاح! (${response.data.message || syncedStatus || 'محدثة'})`
+        );
+
+        setOrder((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                status: orderStatus || prev.status,
+                turboShipmentStatus: syncedStatus || prev.turboShipmentStatus,
+                updatedAt: new Date().toISOString(),
+              }
+            : null,
+        );
+
+        if (syncedTrackingData) {
+          setTurboTrackingData({
+            status: syncedStatus,
+            currentLocation: syncedTrackingData.currentLocation || syncedTrackingData.raw?.location,
+            estimatedDelivery: syncedTrackingData.estimatedDelivery,
+            deliveredAt: syncedTrackingData.deliveredAt,
+            branch: syncedTrackingData.branch || syncedTrackingData.raw?.expected_branch,
+            history: syncedTrackingData.history || syncedTrackingData.raw?.history || [],
+          });
+        }
+        return true;
+      }
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل سحب ومزامنة حالة الشحنة من تربو";
+      toast.error(errorMsg);
+    } finally {
+      setTurboLoading(false);
+    }
+    return false;
+  };
+
   return {
     turboLoading,
     turboTrackingData,
     shippingComparison,
     createShipment,
     updateShipment,
+    syncStatus,
     getWaybill,
     cancelShipment,
     unlinkShipment,

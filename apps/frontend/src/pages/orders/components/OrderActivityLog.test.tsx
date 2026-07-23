@@ -52,6 +52,7 @@ describe("OrderActivityLog", () => {
           ...baseOrder,
           statusHistory: [
             {
+              id: "sh-1",
               status: "CANCELLED",
               reason: "Customer requested cancellation",
               createdAt: "2026-05-03T10:05:00.000Z",
@@ -60,7 +61,11 @@ describe("OrderActivityLog", () => {
           ],
         }}
         onAddNote={jest.fn()}
+        onUpdateNote={jest.fn()}
+        onDeleteNote={jest.fn()}
         addingNote={false}
+        updatingNote={false}
+        deletingNote={false}
       />,
     );
 

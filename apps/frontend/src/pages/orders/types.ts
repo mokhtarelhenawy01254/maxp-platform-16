@@ -29,7 +29,9 @@ export interface OrderNote {
 }
 
 export interface OrderStatusHistory {
+  id: string;
   status: string;
+  oldStatus?: string;
   notes?: string;
   reason?: string;
   createdAt: string;

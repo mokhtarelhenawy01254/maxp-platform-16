@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-23 / 2026-03-09
+- **Fixed GuestOrder Field Aliases, Governorate Priority, and Clean Address Purging (BUG FIX / COMPLETE):**
+  1. Updated `formatOrderForTurbo` in `turboService.js` to support all field aliases across `Order` and `GuestOrder` (`guestName`, `guestPhone`, `finalTotal`, `shippingCost`), ensuring customer names, phone numbers, and COD values are fully populated during Turbo shipment updates.
+  2. Fixed governorate resolution in `updateShipment` to prioritize exact matches and sort candidate names by length descending, preventing `"القاهرة"` from capturing `"أطراف القاهرة والجيزة"`.
+  3. Built `extractCleanStreetAddress` helper to purge phone numbers, customer names, and duplicated governorates/cities from the `address` parameter, ensuring clean street routing.
+  4. Executed live real-time API verification on shipment `38070179` (Order `ORD-705293-178` / Swan) and confirmed 100% successful response from Turbo API.
 - **Unified Turbo Status Engine & Fixed Prisma Enum Inconsistencies (BUG FIX / ARCHITECTURE):**
   1. Built `turboStatusSyncService.js` to serve as a Single Source of Truth for updating `Order` and `GuestOrder` statuses from Turbo Express.
   2. Fixed invalid Prisma Enum assignments (`COMPLETED`/`PAID`) in `turboTrackingScheduler.js` and unified them to standard `OrderStatus.DELIVERED` and `PaymentStatus.COMPLETED`.

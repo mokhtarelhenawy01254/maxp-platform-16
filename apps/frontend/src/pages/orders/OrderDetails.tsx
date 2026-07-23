@@ -120,6 +120,7 @@ const OrderDetails: React.FC = () => {
     shippingComparison,
     createShipment,
     updateShipment,
+    syncStatus,
     getWaybill,
     cancelShipment,
     unlinkShipment,
@@ -979,6 +980,7 @@ const OrderDetails: React.FC = () => {
             turboLoading={turboLoading}
             onCreateShipment={handleCreateShipment}
             onUpdateShipment={updateShipment}
+            onSyncStatus={syncStatus}
             onPrintWaybill={() => {
               void getWaybill();
             }}

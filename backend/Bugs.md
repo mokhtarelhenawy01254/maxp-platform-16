@@ -1,3 +1,18 @@
+### [BUG FIX / TURBO] Fixed GuestOrder Field Aliases, Governorate Priority, and Clean Address Purging
+- **Date**: 2026-03-09
+- **Root Cause**:
+  1. `formatOrderForTurbo` in `turboService.js` read `order.customerName`, `order.customerPhone`, and `order.total`. For `GuestOrder` records, customer data is stored in `guestName`, `guestPhone`, and `finalTotal`. When updating a `GuestOrder`, fields defaulted to fallback placeholders (`عميل طلب #...`, `01000000000`, `0.00 EGP`).
+  2. Governorate matching in `updateShipment` evaluated substring matching without prioritizing exact match or sorting candidate names by length descending, causing `"القاهرة"` to match before `"أطراف القاهرة والجيزة"`.
+  3. `address` parameter contained concatenated customer names, phone numbers, and duplicated city/governorate text, causing Turbo automated routing algorithms to flag shipments as incomplete.
+- **Fix**:
+  1. Updated `formatOrderForTurbo` to dynamically fall back across `Order` and `GuestOrder` field aliases (`guestName`, `guestPhone`, `finalTotal`, `shippingCost`, `orderItems`).
+  2. Updated governorate resolution in `updateShipment` to prioritize exact matches and sort candidate names by length descending.
+  3. Added `extractCleanStreetAddress` helper to purge phone numbers, customer names, and duplicated governorate/city names from `address`.
+  4. Updated `return_amount` default for standard delivery orders (`is_order: 0`) to `shipping` cost so shipping fees are collected if shipment is rejected at door.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/controller/turboController.js`
+
 ### [BUG FIX / TURBO UI] Fixed Actual Shipping Cost Calculation and Updated Status Display to "غير مكتمل"
 - **Date**: 2026-07-22
 - **Root Cause**:

@@ -2932,11 +2932,121 @@ const getRecords = async (req, res) => {
   }
 };
 
+/**
+ * سحب ومزامنة حالة الشحنة حياً ومباشرة من تربو وتحديث الطلب بالنظام
+ */
+const syncShipmentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Company ID is required'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    let order = await findOrderByNumber(orderId, companyId);
+    if (!order) {
+      order = await safeQuery(async () => {
+        return await prisma.order.findUnique({
+          where: { id: orderId },
+          include: {
+            company: {
+              select: {
+                id: true,
+                turboApiKey: true,
+                turboEnabled: true
+              }
+            }
+          }
+        });
+      }, 3);
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found',
+        searchedValue: orderId
+      });
+    }
+
+    const shipmentCode = order.turboShipmentId || order.turboTrackingNumber;
+    if (!shipmentCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'لم يتم إيجاد كود شحنة تربو لهذا الطلب'
+      });
+    }
+
+    const turboApiKey = order.company?.turboApiKey;
+    if (!turboApiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'مفتاح API الخاص بشركة تربو غير مضبوط للشركة'
+      });
+    }
+
+    const turboService = new TurboService(turboApiKey, companyId);
+    
+    // جلب أحدث الحالات حياً من API تربو
+    const statusResult = await turboService.fetchAllStatuses();
+    if (!statusResult?.success || !statusResult.shipments || !statusResult.shipments.length) {
+      return res.status(400).json({
+        success: false,
+        error: 'لم يتم العثور على بيانات تتبع أو تحديثات شحن من تربو في آخر 30 يوماً'
+      });
+    }
+
+    const matched = statusResult.shipments.find(s => String(s.code) === String(shipmentCode) || String(s.barCode) === String(shipmentCode));
+    if (!matched) {
+      return res.status(404).json({
+        success: false,
+        error: 'لم يتم العثور على الشحنة في كشوفات تربو المباشرة خلال 30 يوماً الماضية'
+      });
+    }
+
+    // مزامنة الحالة وتحديث قاعدة البيانات مباشرة عبر خدمة المزامنة الموحدة
+    const turboStatusSyncService = require('../services/turboStatusSyncService');
+    const syncResult = await turboStatusSyncService.syncTurboStatusToOrder(
+      order.id || order.orderNumber,
+      companyId,
+      matched.internalStatus || matched.status,
+      matched.raw || matched
+    );
+
+    res.json({
+      success: true,
+      message: matched.status || matched.internalStatus,
+      data: {
+        status: matched.internalStatus || matched.status,
+        turboShipmentStatus: matched.internalStatus || matched.status,
+        orderStatus: syncResult?.order?.status || order.status,
+        systemStatus: syncResult?.order?.status || order.status,
+        currentLocation: matched.currentLocation || matched.raw?.location,
+        branch: matched.raw?.expected_branch || matched.branch,
+        raw: matched.raw || matched
+      }
+    });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error syncing shipment status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'فشل سحب ومزامنة حالة الشحنة من تربو'
+    });
+  }
+};
+
 module.exports = {
   getRecords,
   createShipment,
   bulkCreateShipments,
   trackShipment,
+  syncShipmentStatus,
   calculateShippingCost,
   getShippingComparison,
   cancelShipment,

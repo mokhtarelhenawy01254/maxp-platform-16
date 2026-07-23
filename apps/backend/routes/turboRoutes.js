@@ -59,6 +59,12 @@ router.post('/bulk/create-shipments', verifyToken.authenticateToken, checkAppAcc
 router.get('/orders/:orderId/track', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.trackShipment);
 
 /**
+ * POST /api/turbo/orders/:orderId/sync-status
+ * سحب ومزامنة حالة الشحنة المباشرة من تربو وتحديث الطلب
+ */
+router.post('/orders/:orderId/sync-status', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.syncShipmentStatus);
+
+/**
  * POST /api/turbo/calculate
  * حساب تكلفة الشحن
  */
