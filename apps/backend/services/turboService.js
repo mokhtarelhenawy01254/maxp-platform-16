@@ -463,8 +463,7 @@ class TurboService {
       || this.getShippingAddressFields('');
   }
 
-  extractCleanStreetAddress(addressFields, rawFallback = '') {
-    // 1. يفضل الشارع/العنوان الأساسي أولاً لمنع تكرار المدينة والمحافظة
+  extractCleanStreetAddress(addressFields, rawFallback = '', options = {}) {
     let streetText = addressFields.primaryAddress || addressFields.parsedAddress?.street || addressFields.parsedAddress?.addressLine1 || addressFields.parsedAddress?.address || '';
 
     if (typeof streetText !== 'string') {
@@ -492,12 +491,52 @@ class TurboService {
       streetText = String(streetText || '');
     }
 
-    // تصفية أية كائنات JSON متبقية
     if (streetText.startsWith('{') || streetText.startsWith('[')) {
       streetText = '';
     }
 
-    // قص النص ليكون بحد أقصى 350 حرفاً لتفادي حد 400 حرف الخاص بتربو
+    // 🎯 تنظيف صريح لبيانات الهاتف والاسم والمحافظات المكررة من نص الشارع
+    // 1. إزالة أرقام الهواتف المصرية (01XXXXXXXXX)
+    streetText = streetText.replace(/01[0-9]{9}/g, '');
+
+    // 2. إزالة اسم العميل إذا كان مكتوباً في بداية العنوان
+    if (options.customerName) {
+      const nameParts = String(options.customerName).trim().split(/\s+/).filter(p => p.length > 2);
+      if (nameParts.length > 0) {
+        const nameRegex = new RegExp(nameParts.join('|'), 'gi');
+        streetText = streetText.replace(nameRegex, '');
+      }
+    }
+
+    // 3. إزالة كلمات المحافظات الشائعة المكررة
+    const commonGovWords = ['محافظة القاهره', 'محافظة القاهرة', 'محافظة الجيزة', 'محافظة الاسكندرية', 'أطراف القاهرة والجيزة', 'القاهرة', 'الجيزة', 'الإسكندرية', 'Cairo', 'Giza', 'Alexandria'];
+    for (const govWord of commonGovWords) {
+      const gRegex = new RegExp(govWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+      streetText = streetText.replace(gRegex, '');
+    }
+
+    // 4. إزالة كلمة المدينة/المنطقة إذا كانت تسبق الشارع
+    if (addressFields.city || options.city) {
+      const cityName = String(addressFields.city || options.city).trim();
+      if (cityName && cityName.length > 2) {
+        const cityRegex = new RegExp(`(مدينة\\s+)?${cityName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`, 'gi');
+        streetText = streetText.replace(cityRegex, '');
+      }
+    }
+
+    // تنظيف الفواصل والسطور والمسافات الزائدة
+    streetText = streetText
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/^[,\s\-\:\.\t]+|[,\s\-\:\.\t]+$/g, '')
+      .replace(/,\s*,/g, ',')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // إذا اصبح الشارع قصير جداً، نستخدم الجزء المتبقي الصافي
+    if (streetText.length < 3) {
+      streetText = String(rawFallback || '').replace(/01[0-9]{9}/g, '').trim();
+    }
+
     return streetText.substring(0, 350).trim();
   }
 
@@ -1431,7 +1470,10 @@ class TurboService {
         formattedData.shippingAddress,
         formattedData.customerAddress
       );
-      const cleanAddress = this.extractCleanStreetAddress(addressFields, formattedData.shippingAddress);
+      const cleanAddress = this.extractCleanStreetAddress(addressFields, formattedData.shippingAddress, {
+        customerName: formattedData.customerName,
+        city: formattedData.city
+      });
 
       // جلب قائمة المحافظات
       let governments = [];
