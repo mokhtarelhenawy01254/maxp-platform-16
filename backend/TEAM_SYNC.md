@@ -1,5 +1,9 @@
 # Team Sync Updates
 
+- **Fixed Order Update Converting Shipment Type to Partial Return / تسليم جزئي (BUG FIX / COMPLETE - 2026-03-09 / 2026-07-23):**
+  1. Resolved issue where updating order details sent `return_amount: 70` (shipping fee) to Turbo API `/edit-order`, causing Turbo to convert standard delivery shipments ("تسليم") to partial returns ("تسليم جزئي").
+  2. Fixed `formatOrderForTurbo` and `updateShipment` in `turboService.js` to strictly enforce `return_amount: 0` for all regular delivery orders (`isOrderVal === 1`).
+
 - **Turbo Status Reconciliation & Unbound Bulk Refresh (BUG FIX & ENHANCEMENT / COMPLETE - 2026-03-09 / 2026-07-23):**
   1. Extended `refresh=true` on `/orders/turbo-records` (`turboController.js`) to sync all company orders across 180 days via `turboStatusSyncService`, resolving discrepancy where only page 1 (20 items) updated.
   2. Fixed status normalizers in `turboService.js` and `statusNormalizer.js` to map Arabic location phrases like `"في انتظاري التسليم لتربو"` to `turbo_sent` ("قيد الانتظار") instead of defaulting to `processing`.

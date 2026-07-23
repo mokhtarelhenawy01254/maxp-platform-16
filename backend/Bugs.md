@@ -1,3 +1,15 @@
+### [BUG FIX / TURBO SHIPMENT UPDATE] Fixed Order Update Converting Shipment Type to Partial Return (تسليم جزئي)
+- **Date**: 2026-03-09 (2026-07-23)
+- **Root Cause**:
+  `formatOrderForTurbo` in `turboService.js` set `returnAmount` fallback to `shippingFee` (70 EGP) when `order.returnAmount` was undefined. When updating a shipment via `/edit-order`, Turbo API received `return_amount: 70`, causing Turbo's system to interpret the shipment as a partial refund/exchange and changing its type from Regular Delivery ("تسليم") to Partial Return ("تسليم جزئي").
+- **Fix**:
+  1. Updated `formatOrderForTurbo` to default `returnAmount` to `0` for standard delivery orders (`isOrderVal === 1`).
+  2. Enforced `return_amount: (isOrderVal === 1) ? 0 : ...` in `updateShipment` and `createShipment` in `turboService.js`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `backend/Bugs.md`
+  - `backend/TEAM_SYNC.md`
+
 ### [BUG FIX / TURBO RECONCILIATION] Resolved Turbo vs MaxP Status Discrepancies and Unbound Bulk Refresh Scope
 - **Date**: 2026-03-09 (2026-07-23)
 - **Root Cause & Issues**:
