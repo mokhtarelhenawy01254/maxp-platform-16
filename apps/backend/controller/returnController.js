@@ -164,7 +164,10 @@ exports.getReturnRequests = async (req, res) => {
         if (ordersStartDate) {
             const startDate = new Date(ordersStartDate);
             if (!isNaN(startDate.getTime())) {
-                where.createdAt = { gte: startDate };
+                where.OR = [
+                    { createdAt: { gte: startDate } },
+                    { order: { createdAt: { gte: startDate } } }
+                ];
             }
         }
 
