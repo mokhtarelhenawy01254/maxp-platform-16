@@ -1419,9 +1419,8 @@ class OrderService {
     try {
       const prisma = this.getPrisma();
 
-      // التحقق من عدم وجود طلب إرجاع مسبق
       const existingRequest = await prisma.returnRequest.findFirst({
-        where: { orderId: order.id }
+        where: { companyId: order.companyId, orderId: order.id }
       });
 
       if (existingRequest) {
@@ -1429,7 +1428,6 @@ class OrderService {
         return;
       }
 
-      // البحث عن سبب افتراضي أو إنشاء واحد
       let reason = await prisma.returnReason.findFirst({
         where: { companyId: order.companyId, isActive: true }
       });
@@ -1445,7 +1443,6 @@ class OrderService {
         });
       }
 
-      // إنشاء طلب الإرجاع
       const request = await prisma.returnRequest.create({
         data: {
           orderId: order.id,
@@ -1460,7 +1457,6 @@ class OrderService {
         }
       });
 
-      // تسجيل هذا الإجراء في سجل نشاط المرتجع
       await prisma.returnActivityLog.create({
         data: {
           returnRequestId: request.id,
@@ -1472,6 +1468,10 @@ class OrderService {
 
       console.log(`✅ [RETURNS-AUTO] Return request ${request.id} created automatically for order ${order.orderNumber}`);
     } catch (error) {
+      if (error.code === 'P2002') {
+        console.log(`ℹ️ [RETURNS-AUTO] Return request already exists (concurrent creation) for order ${order.orderNumber}`);
+        return;
+      }
       console.error('❌ [RETURNS-AUTO] Error in autoCreateReturnRequest:', error);
       throw error;
     }

@@ -195,27 +195,37 @@ async function ensureShippingReturnRequestsSynced(companyId) {
             });
         }
 
+        let globalFallbackCustomerId = null;
+        const records = [];
         for (const o of missingOrders) {
             let customerId = o.customerId;
             if (!customerId) {
-                const anyCustomer = await prisma.customer.findFirst({ where: { companyId } });
-                if (anyCustomer) customerId = anyCustomer.id;
+                if (!globalFallbackCustomerId) {
+                    const anyCustomer = await prisma.customer.findFirst({ where: { companyId } });
+                    globalFallbackCustomerId = anyCustomer?.id || null;
+                }
+                customerId = globalFallbackCustomerId;
             }
 
             if (customerId && defaultReason) {
-                await prisma.returnRequest.create({
-                    data: {
-                        companyId,
-                        orderId: o.id,
-                        customerId,
-                        reasonId: defaultReason.id,
-                        status: 'PENDING',
-                        responsibleParty: 'SHIPPING',
-                        adminNotes: 'مرتجع تلقائي من شركة الشحن',
-                        createdAt: o.createdAt
-                    }
-                }).catch(() => {});
+                records.push({
+                    companyId,
+                    orderId: o.id,
+                    customerId,
+                    reasonId: defaultReason.id,
+                    status: 'PENDING',
+                    responsibleParty: 'SHIPPING',
+                    adminNotes: 'مرتجع تلقائي من شركة الشحن',
+                    createdAt: o.createdAt
+                });
             }
+        }
+
+        if (records.length) {
+            await prisma.returnRequest.createMany({
+                data: records,
+                skipDuplicates: true
+            });
         }
     } catch (e) {
         console.error('⚠️ [RETURN-AUTO-SYNC] Error auto-syncing shipping returns:', e.message);
@@ -357,6 +367,17 @@ exports.createReturnRequest = async (req, res) => {
             }
         }
 
+        // التحقق من عدم وجود طلب إرجاع مسبق لنفس الطلب
+        const existing = await getPrisma().returnRequest.findFirst({
+            where: {
+                companyId: req.user.effectiveCompanyId || req.user.companyId,
+                orderId: finalOrderId
+            }
+        });
+        if (existing) {
+            return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
+        }
+
         const request = await getPrisma().returnRequest.create({
             data: {
                 orderId: finalOrderId,
@@ -378,6 +399,9 @@ exports.createReturnRequest = async (req, res) => {
 
         res.json(request);
     } catch (error) {
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Failed to create return request' });
     }
@@ -483,6 +507,14 @@ exports.createPublicReturnRequest = async (req, res) => {
             return res.status(403).json({ error: 'Verification failed' });
         }
 
+        // التحقق من عدم وجود طلب إرجاع مسبق
+        const existing = await getPrisma().returnRequest.findFirst({
+            where: { companyId: order.companyId, orderId: order.id }
+        });
+        if (existing) {
+            return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
+        }
+
         const request = await getPrisma().returnRequest.create({
             data: {
                 orderId: order.id,
@@ -496,6 +528,9 @@ exports.createPublicReturnRequest = async (req, res) => {
 
         res.json({ success: true, request });
     } catch (error) {
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
+        }
         console.error('Public return error:', error);
         res.status(500).json({ error: 'Failed to create request' });
     }
