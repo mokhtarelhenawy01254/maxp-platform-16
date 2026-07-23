@@ -36,6 +36,9 @@ const CANONICAL_TURBO_MAP = {
   // Code 5: Returned to Company (مرتجعات بالشركة)
   'returned_to_company': 'returned_to_company',
   'returned with company': 'returned_to_company',
+  'مرتجع مع الشركة': 'returned_to_company',
+  'مرتجعات بالشركة': 'returned_to_company',
+  'راجع بالشركة': 'returned_to_company',
   'status_5': 'returned_to_company',
   'status_14': 'returned_to_company',
   '5': 'returned_to_company',
@@ -43,17 +46,25 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 6: Cancelled (ملغي من الشحن)
   'cancelled': 'cancelled',
+  'ملغي من الشحن': 'cancelled',
+  'ملغي': 'cancelled',
+  'ملغية': 'cancelled',
   'status_6': 'cancelled',
   '6': 'cancelled',
 
   // Code 7: Delivered (تم التسليم)
   'delivered': 'delivered',
+  'تم التسليم': 'delivered',
+  'تسليم': 'delivered',
+  'تم الاستلام': 'delivered',
   'status_7': 'delivered',
   '7': 'delivered',
 
   // Code 8: Remitted (تم التوريد والتحصيل)
   'remitted': 'remitted',
   'supplied': 'remitted',
+  'تم التوريد والتحصيل': 'remitted',
+  'موردة': 'remitted',
   'status_8': 'remitted',
   'status_19': 'remitted',
   '8': 'remitted',
@@ -66,6 +77,7 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 10: Returned Resent (معاد إرسالها)
   'returned_resent': 'returned_resent',
+  'معاد إرسالها': 'returned_resent',
   'status_10': 'returned_resent',
   'status_15': 'returned_resent',
   '10': 'returned_resent',
@@ -74,6 +86,7 @@ const CANONICAL_TURBO_MAP = {
   // Code 11: Returned Missing (مرتجع مفقود)
   'returned_missing': 'returned_missing',
   'lost': 'returned_missing',
+  'مرتجع مفقود': 'returned_missing',
   'status_11': 'returned_missing',
   'status_16': 'returned_missing',
   '11': 'returned_missing',
@@ -81,16 +94,23 @@ const CANONICAL_TURBO_MAP = {
 
   // Code 12: Returned Destroyed (مرتجع معدوم)
   'returned_destroyed': 'returned_destroyed',
+  'مرتجع معدوم': 'returned_destroyed',
   'status_12': 'returned_destroyed',
   'status_17': 'returned_destroyed',
   '12': 'returned_destroyed',
   '17': 'returned_destroyed',
 
-  // Code 13: Delayed (مؤجلة مع المندوب)
+  // Code 13: Delayed (مؤجلة مع المندوب / قيد الانتظار)
   'delayed': 'delayed',
   'on hold': 'delayed',
   'failed delivery': 'delayed',
   'rescheduled': 'delayed',
+  'قيد الانتظار': 'delayed',
+  'قيد الانتظار مع المندوب': 'delayed',
+  'مؤجلة': 'delayed',
+  'مؤجله': 'delayed',
+  'مؤجل': 'delayed',
+  'تأجيل': 'delayed',
   'status_13': 'delayed',
   '13': 'delayed'
 };

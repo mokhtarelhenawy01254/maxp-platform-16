@@ -3056,12 +3056,14 @@ const syncShipmentStatus = async (req, res) => {
 
     // مزامنة الحالة وتحديث قاعدة البيانات مباشرة عبر خدمة المزامنة الموحدة
     const turboStatusSyncService = require('../services/turboStatusSyncService');
-    const syncResult = await turboStatusSyncService.syncTurboStatusToOrder(
-      order.id || order.orderNumber,
-      companyId,
-      finalStatus,
-      finalRaw
-    );
+    const syncResult = await turboStatusSyncService.syncTurboStatusToOrder({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      companyId: companyId,
+      rawStatus: finalStatus,
+      payload: finalRaw,
+      isGuestOrder: order.tableType === 'GuestOrder'
+    });
 
     res.json({
       success: true,
