@@ -128,7 +128,7 @@ class EnhancedOrderService {
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
       // توحيد الحالات
-      data.status = (data.status || 'PENDING').toUpperCase();
+      data.status = (data.status || 'CONFIRMED').toUpperCase();
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
 
@@ -694,7 +694,7 @@ class EnhancedOrderService {
       companyId: data.companyId,
 
       // حالة الطلب
-      status: data.status || 'PENDING',
+      status: data.status || 'CONFIRMED',
       paymentStatus: data.paymentStatus || 'PENDING',
       paymentMethod: data.paymentMethod || 'CASH',
 

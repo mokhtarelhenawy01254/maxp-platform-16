@@ -169,7 +169,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const [loadingAreas, setLoadingAreas] = useState(false);
 
   // Order Settings
-  const [status, setStatus] = useState("PENDING"); // PENDING, CONFIRMED
+  const [status, setStatus] = useState("CONFIRMED"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [requestType, setRequestType] = useState("delivery");
 
@@ -973,7 +973,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   } else if (val === "exchange") {
                     setStatus("EXCHANGED");
                   } else {
-                    setStatus("PENDING");
+                    setStatus("CONFIRMED");
                   }
                 }}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
