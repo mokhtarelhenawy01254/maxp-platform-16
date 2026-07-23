@@ -1185,6 +1185,7 @@ const PreparationQueue: React.FC = () => {
       <PreparationFilters
         activeFilter={activeStage}
         statusCounts={statusCounts}
+        stageCounts={summary.stageCounts}
         filterTabs={filterTabs}
         visibleOrdersCount={visibleOrdersCount}
         search={search}

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
+import { normalizeStatusToStage } from "../helpers";
 import type {
   ItemCountFilter,
   NoShippingCodeFilter,
@@ -11,6 +12,7 @@ import type {
   ShortageReasonFilter,
   SortBy,
   SortOrder,
+  StageCounts,
   StockFilter,
   WarehouseOption,
 } from "../types";
@@ -18,6 +20,7 @@ import type {
 interface PreparationFiltersProps {
   activeFilter: string;
   statusCounts: Record<string, number>;
+  stageCounts: StageCounts;
   filterTabs: { statusCode: string; name: string }[];
   visibleOrdersCount: number;
   search: string;
@@ -54,6 +57,7 @@ const selectClass =
 const PreparationFilters = ({
   activeFilter,
   statusCounts,
+  stageCounts,
   filterTabs,
   visibleOrdersCount,
   search,
@@ -159,7 +163,10 @@ const PreparationFilters = ({
 
           {filterTabs.map((tab) => {
             const display = getStatusDisplay(tab.statusCode);
-            const count = statusCounts[tab.statusCode] ?? 0;
+            const mappedStage = normalizeStatusToStage(tab.statusCode);
+            const count = mappedStage && stageCounts[mappedStage] !== undefined
+              ? stageCounts[mappedStage]
+              : statusCounts[tab.statusCode] ?? 0;
             const isActive = activeFilter === tab.statusCode;
 
             return (

@@ -242,7 +242,27 @@ export const getShortageFollowUpVisual = (
   }
 };
 
+const STAGE_BY_STATUS: Record<string, string> = {
+  PENDING: "WAITING",
+  CONFIRMED: "WAITING",
+  PENDING_PREPARATION: "WAITING",
+  PROCESSING: "PREPARING",
+  PREPARING: "PREPARING",
+  QUALITY_CHECK: "QUALITY_CHECK",
+  PACKAGED: "PACKAGED",
+  PACKED: "PACKAGED",
+  STOCK_SHORTAGE: "STOCK_SHORTAGE",
+  PENDING_STOCK: "STOCK_SHORTAGE",
+  ON_HOLD_STOCK: "STOCK_SHORTAGE",
+  READY: "READY_TO_SHIP",
+  READY_TO_SHIP: "READY_TO_SHIP",
+  PENDING_CANCELLATION: "PENDING_CANCELLATION",
+  ON_HOLD_PREP: "ON_HOLD_PREP",
+};
 
+export const normalizeStatusToStage = (status: string): string | null => {
+  return STAGE_BY_STATUS[toUpper(status)] || null;
+};
 
 export const getNextStatus = (
   stage: StageKey | null,
