@@ -5802,7 +5802,8 @@
     "onHoldPrep": "Prep On Hold",
     "notShipped": "Not Shipped",
     "pendingCancellation": "Pending Cancellation",
-    "wooTaghez": "Woo Taghez"
+    "wooTaghez": "Woo Taghez",
+    "stockShortage": "Stock Shortage"
   },
   "pageComments": {
     "pageTitle": "Manage comments by page",

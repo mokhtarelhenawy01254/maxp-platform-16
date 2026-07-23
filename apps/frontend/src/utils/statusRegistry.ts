@@ -44,6 +44,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   REFUNDED_PARTIALLY:   { label: 'مسترجع جزئي',          labelKey: 'orders.partiallyRefunded', colorClass: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   COMPLETED:            { label: 'مكتمل',                labelKey: 'orders.completed',         colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
   FAILED:               { label: 'فشل',                  labelKey: 'orders.failed',            colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
+  STOCK_SHORTAGE:       { label: 'عجز مخزون',            labelKey: 'orders.stockShortage',     colorClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400' },
   WOO_TAGHEZ:           { label: 'Woo Taghez',           labelKey: 'orders.wooTaghez',         colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   PENDING_CANCELLATION: { label: 'بانتظار الإلغاء',      labelKey: 'orders.pendingCancellation',colorClass: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' },
 };

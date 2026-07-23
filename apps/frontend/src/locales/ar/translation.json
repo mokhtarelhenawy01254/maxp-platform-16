@@ -5811,7 +5811,8 @@
     "onHoldPrep": "تجهيز معلق",
     "notShipped": "لم يتم الشحن",
     "pendingCancellation": "بانتظار الإلغاء",
-    "wooTaghez": "Woo Taghez"
+    "wooTaghez": "Woo Taghez",
+    "stockShortage": "عجز مخزون"
   },
   "pageComments": {
     "pageTitle": "إدارة التعليقات حسب الصفحة",
