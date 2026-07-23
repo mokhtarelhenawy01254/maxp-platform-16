@@ -2674,17 +2674,7 @@ const getRecords = async (req, res) => {
       ]
     };
 
-    // Apply ordersStartDate filter from ReturnSettings if configured
-    const settings = await prisma.returnSettings.findUnique({
-      where: { companyId }
-    });
-    const ordersStartDate = req.query.ignoreStartDate === 'true' ? null : settings?.reviewDisplayConfig?.ordersStartDate;
-    if (ordersStartDate) {
-      const startDate = new Date(ordersStartDate);
-      if (!isNaN(startDate.getTime())) {
-        baseWhere.createdAt = { gte: startDate };
-      }
-    }
+
 
     let where = { ...baseWhere };
 
