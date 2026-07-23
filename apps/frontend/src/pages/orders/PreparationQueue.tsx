@@ -69,7 +69,7 @@ const readStoredPreparationState = (): Partial<PreparationQueueUiState> | null =
 };
 
 const getInitialPreparationState = (searchParams: URLSearchParams): Partial<PreparationQueueUiState> => {
-  const hasQueryKeys = ["page", "pageSize", "activeStage", "warehouseId", "stockFilter", "shortageReason", "shortageFollowUp", "shortageOwner", "productFilter", "itemCountFilter", "search", "sortBy", "sortOrder"].some((k) => searchParams.has(k));
+  const hasQueryKeys = ["page", "pageSize", "activeStage", "warehouseId", "stockFilter", "shortageReason", "shortageFollowUp", "shortageOwner", "productFilter", "itemCountFilter", "search", "sortBy", "sortOrder", "notPrinted", "noShippingCode"].some((k) => searchParams.has(k));
 
   if (hasQueryKeys) {
     const pageSizeRaw = parsePositiveInt(searchParams.get("pageSize"), 12);
@@ -88,6 +88,8 @@ const getInitialPreparationState = (searchParams: URLSearchParams): Partial<Prep
       search: searchParams.get("search") || "",
       sortBy: (searchParams.get("sortBy") as "createdAt" | "totalUnits" | "totalValue") || "createdAt",
       sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      notPrintedFilter: (searchParams.get("notPrinted") as "all" | "not_printed") || "all",
+      noShippingCodeFilter: (searchParams.get("noShippingCode") as "all" | "no_shipping_code") || "all",
     };
   }
 
@@ -224,6 +226,8 @@ const PreparationQueue: React.FC = () => {
       search: uiState.search,
       sortBy: uiState.sortBy,
       sortOrder: uiState.sortOrder,
+      notPrintedFilter: uiState.notPrintedFilter,
+      noShippingCodeFilter: uiState.noShippingCodeFilter,
     };
 
     const params: Record<string, string> = {};
@@ -237,6 +241,8 @@ const PreparationQueue: React.FC = () => {
     if (nextState.shortageOwnerFilter) params.shortageOwner = String(nextState.shortageOwnerFilter);
     if (nextState.productFilter) params.productFilter = String(nextState.productFilter);
     if (nextState.itemCountFilter !== "all") params.itemCountFilter = String(nextState.itemCountFilter);
+    if (nextState.notPrintedFilter !== "all") params.notPrinted = String(nextState.notPrintedFilter);
+    if (nextState.noShippingCodeFilter !== "all") params.noShippingCode = String(nextState.noShippingCodeFilter);
     if (nextState.search) params.search = String(nextState.search);
     if (nextState.sortBy !== "createdAt") params.sortBy = String(nextState.sortBy);
     if (nextState.sortOrder !== "desc") params.sortOrder = String(nextState.sortOrder);
@@ -264,6 +270,8 @@ const PreparationQueue: React.FC = () => {
     uiState.search,
     uiState.sortBy,
     uiState.sortOrder,
+    uiState.notPrintedFilter,
+    uiState.noShippingCodeFilter,
     setSearchParams,
   ]);
 
@@ -897,56 +905,58 @@ const PreparationQueue: React.FC = () => {
   ]);
 
   const handleBulkUpdateAll = useCallback(async () => {
-    if (!bulkStatus || paginatedOrders.length === 0) return;
+    if (!bulkStatus) return;
 
-    const validOrders: PreparationOrder[] = [];
-    const invalidOrders: PreparationOrder[] = [];
-
-    paginatedOrders.forEach((order) => {
-      const validation = validateTransition(order, bulkStatus);
-      if (validation.valid) {
-        validOrders.push(order);
-      } else {
-        invalidOrders.push(order);
-      }
-    });
-
-    if (validOrders.length === 0) {
+    const totalMatching = pagination.total;
+    if (totalMatching === 0) {
       toast.error(t('preparation.k_26'));
       return;
     }
 
     const confirmed = window.confirm(
-      `تحديث ${validOrders.length} طلب إلى مرحلة ${
+      `تحديث ${totalMatching} طلب إلى مرحلة ${
         statusLabelMap.get(bulkStatus) || bulkStatus
-      }${invalidOrders.length > 0 ? ` مع استبعاد ${invalidOrders.length} طلب غير مطابق` : ""}؟`,
+      } (جميع الطلبات المطابقة للفلتر)؟`,
     );
 
     if (!confirmed) return;
 
+    const filters = {
+      stage: activeStage,
+      warehouseId: selectedWarehouseId,
+      stockFilter,
+      shortageReason: shortageReasonFilter,
+      shortageFollowUp: shortageFollowUpFilter,
+      shortageOwner: shortageOwnerFilter,
+      productFilter,
+      itemCountFilter,
+      notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
+      noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
+      search: deferredSearch,
+      sortBy,
+      sortOrder,
+    };
+
     try {
       setBulkUpdating(true);
-      const response = await apiClient.post("/orders-new/bulk/status", {
-        orderIds: validOrders.map((order) => order.orderNumber),
+      const response = await apiClient.post("/orders-new/bulk/status/by-filters", {
         status: bulkStatus,
+        filters,
       });
 
-      const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
-        ? response.data.data.results
-        : [];
-      const successIds = results
-        .filter((result) => result.success)
-        .map((result) => String(result.id));
+      const result = response.data?.data;
+      const successCount = result?.successCount ?? 0;
+      const totalRequested = result?.totalRequested ?? 0;
 
-      if (successIds.length > 0) {
-        updateLocalStatuses(successIds, bulkStatus);
+      if (totalRequested === 0) {
+        toast.error(t('preparation.k_26'));
+        return;
       }
 
-      const failedCount = results.filter((result) => !result.success).length;
       toast.success(
-        failedCount > 0
-          ? `تم تحديث ${successIds.length} طلب وفشل ${failedCount} طلب`
-          : `تم تحديث ${successIds.length} طلب بنجاح`,
+        successCount < totalRequested
+          ? `تم تحديث ${successCount} طلب وفشل ${totalRequested - successCount} طلب`
+          : `تم تحديث ${successCount} طلب بنجاح`,
       );
 
       uiActions.clearBulkControls();
@@ -961,12 +971,23 @@ const PreparationQueue: React.FC = () => {
     }
   }, [
     bulkStatus,
-    paginatedOrders,
+    activeStage,
+    selectedWarehouseId,
+    stockFilter,
+    shortageReasonFilter,
+    shortageFollowUpFilter,
+    shortageOwnerFilter,
+    productFilter,
+    itemCountFilter,
+    notPrintedFilter,
+    noShippingCodeFilter,
+    deferredSearch,
+    sortBy,
+    sortOrder,
+    pagination.total,
     statusLabelMap,
-    updateLocalStatuses,
     uiActions,
     fetchAll,
-    validateTransition,
   ]);
 
   const handleQuickTransfer = useCallback(
@@ -1227,7 +1248,7 @@ const PreparationQueue: React.FC = () => {
             preparationEnabled={preparationSettings.enabled}
             bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
             allVisibleSelected={allVisibleSelected}
-            totalVisibleOrders={paginatedOrders.length}
+            totalVisibleOrders={pagination.total}
             sendingToTurbo={sendingToTurbo}
             printingInvoices={printingInvoices}
             onBulkStatusChange={uiActions.setBulkStatus}

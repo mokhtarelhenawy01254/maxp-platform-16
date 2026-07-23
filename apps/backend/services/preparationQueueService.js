@@ -51,6 +51,143 @@ const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES].filt
 const PREPARATION_BATCH_SIZE = 150;
 
 const toPreparationUpper = (value) => String(value || '').trim().toUpperCase();
+
+const PREPARATION_ONLY_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK'
+]);
+
+const getMappedRegularOrderStatus = (preparationStatus) =>
+  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
+    ? 'CONFIRMED'
+    : 'PROCESSING';
+
+const updatePreparationOrderStatus = async ({
+  orderIdentifier,
+  companyId,
+  status,
+  notes,
+  userId,
+  userName,
+}) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (!PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
+    const error = new Error(`الحالة "${normalizedStatus}" غير مسموح بها في قائمة التجهيز`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const prisma = getSharedPrismaClient();
+
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    }
+  });
+
+  if (order) {
+    const currentMetadata = parsePreparationJsonObject(order.metadata);
+    const previousPreparationStatus =
+      typeof currentMetadata.preparationStatus === 'string'
+        ? currentMetadata.preparationStatus
+        : order.status;
+    const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: mappedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        statusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: previousPreparationStatus,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'regular', order: updatedOrder };
+  }
+
+  const guestOrder = await prisma.guestOrder.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    },
+    select: { id: true, status: true, metadata: true }
+  });
+
+  if (guestOrder) {
+    const currentMetadata = parsePreparationJsonObject(guestOrder.metadata);
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedGuestOrder = await prisma.guestOrder.update({
+      where: { id: guestOrder.id },
+      data: {
+        status: normalizedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        OrderStatusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: guestOrder.status,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'guest', order: updatedGuestOrder };
+  }
+
+  const notFoundError = new Error('الطلب غير موجود');
+  notFoundError.statusCode = 404;
+  throw notFoundError;
+};
+
+const getBulkStatusNote = (status) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (normalizedStatus === 'TRASH') {
+    return 'Bulk trash';
+  }
+
+  if (normalizedStatus === 'RESTORE') {
+    return 'Bulk restore';
+  }
+
+  return 'Bulk status update';
+};
 const toPreparationNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -1333,6 +1470,174 @@ const getPreparationQueue = async ({ user, query }) => {
   };
 };
 
+const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, userName }) => {
+  if (!user) {
+    const error = new Error('غير مصرح - يجب تسجيل الدخول');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  let companyId = user.companyId || user.effectiveCompanyId;
+  if (!companyId) {
+    const error = new Error('غير مصرح - معرف الشركة مطلوب');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const activeStage = toPreparationUpper(query.stage || 'ALL');
+  const resolvedStage = activeStage === 'ALL' ? 'ALL' : normalizePreparationStage(activeStage) || activeStage;
+  const searchTerm = String(query.search || '').trim();
+  const searchQuery = searchTerm.toLowerCase();
+  const selectedWarehouseId = String(query.warehouseId || '').trim();
+  const stockFilter = String(query.stockFilter || 'all').trim().toLowerCase();
+  const shortageReasonFilter = String(query.shortageReason || 'all').trim();
+  const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
+  const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
+  const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
+
+  const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
+  if (!normalizedStatus) {
+    const error = new Error('حالة الطلب مطلوبة');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let affiliateId = query.affiliateId;
+  let merchantId = null;
+
+  if (isMerchantUser(user)) {
+    const merchant = await requireMerchantAccountForUser(user);
+    merchantId = merchant.id;
+    companyId = merchant.companyId;
+  }
+
+  if (user.role === 'AFFILIATE') {
+    const affiliate = await getSharedPrismaClient().affiliate.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!affiliate) {
+      return { totalRequested: 0, successCount: 0, results: [] };
+    }
+    affiliateId = affiliate.id;
+  }
+
+  if (affiliateId) {
+    affiliateId = String(affiliateId).trim();
+  }
+
+  const batchSize = PREPARATION_BATCH_SIZE;
+  let candidateOffset = 0;
+  const matchingOrderNumbers = [];
+
+  while (true) {
+    const candidateRows = await fetchPreparationCandidateRows({
+      companyId,
+      affiliateId,
+      merchantId,
+      offset: candidateOffset,
+      limit: batchSize,
+      activeStage: 'ALL',
+      search: searchQuery,
+    });
+
+    if (!candidateRows.length) {
+      break;
+    }
+
+    candidateOffset += candidateRows.length;
+
+    const batchOrders = await fetchPreparationBatchOrders(candidateRows, { merchantId });
+    if (!batchOrders.length) {
+      continue;
+    }
+
+    const inventoryProductIds = [...new Set(
+      batchOrders
+        .flatMap((order) => (Array.isArray(order.items) ? order.items : []))
+        .map((item) => String(item.productId || '').trim())
+        .filter(Boolean)
+    )];
+
+    const inventoryRecords = inventoryProductIds.length > 0
+      ? await getSharedPrismaClient().inventory.findMany({
+        where: {
+          productId: { in: inventoryProductIds },
+          warehouse: {
+            companyId,
+            ...(merchantId ? { merchantId } : {})
+          }
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, sku: true } }
+        }
+      })
+      : [];
+
+    const inventorySummaryByProduct = buildPreparationInventorySummary(inventoryRecords);
+    const batchPreparationOrders = batchOrders
+      .map((order) =>
+        buildPreparationOrderSummary(order, inventorySummaryByProduct, selectedWarehouseId)
+      )
+      .filter(Boolean);
+
+    batchPreparationOrders.forEach((order) => {
+      const matchesFilters = matchesPreparationFilters({
+        order,
+        stockFilter,
+        shortageReasonFilter,
+        shortageOwnerQuery,
+        shortageFollowUpFilter,
+        itemCountFilter,
+        searchQuery,
+        notPrinted,
+        noShippingCode,
+      });
+
+      if (!matchesFilters) return;
+
+      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
+        matchingOrderNumbers.push(order.orderNumber);
+      }
+    });
+  }
+
+  if (matchingOrderNumbers.length === 0) {
+    return { totalRequested: 0, successCount: 0, results: [] };
+  }
+
+  const bulkNote = notes || getBulkStatusNote(normalizedStatus);
+  const results = [];
+
+  for (const orderNumber of matchingOrderNumbers) {
+    try {
+      const updateResult = await updatePreparationOrderStatus({
+        orderIdentifier: orderNumber,
+        companyId,
+        status: normalizedStatus,
+        notes: bulkNote,
+        userId,
+        userName,
+      });
+      results.push({ id: orderNumber, success: true, orderType: updateResult.orderType });
+    } catch (err) {
+      results.push({ id: orderNumber, success: false, error: err.message });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+
+  return {
+    totalRequested: matchingOrderNumbers.length,
+    successCount,
+    results
+  };
+};
+
 module.exports = {
-  getPreparationQueue
+  getPreparationQueue,
+  bulkUpdateByFilters
 };

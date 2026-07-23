@@ -4704,6 +4704,47 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
+// Bulk Status Update by Filters (apply to all matching filters)
+router.post('/bulk/status/by-filters', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { status, notes, filters } = req.body;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status required' });
+    }
+
+    const userId = req.user?.id;
+    const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
+
+    const result = await preparationQueueService.bulkUpdateByFilters({
+      user: req.user,
+      query: filters || {},
+      targetStatus: status,
+      notes,
+      userId,
+      userName,
+    });
+
+    res.json({
+      success: true,
+      message: `تم تحديث ${result.successCount} طلب بنجاح`,
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ Error bulk updating orders by filters:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode ? error.message : 'Failed to update orders by filters',
+      error: error.message
+    });
+  }
+});
+
 // Bulk Delete
 router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), async (req, res) => {
   try {
