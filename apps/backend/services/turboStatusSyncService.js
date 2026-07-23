@@ -89,6 +89,8 @@ async function syncTurboStatusToOrder({
       existingMeta = {};
     }
 
+    const extractedGuestCost = payload.actual_shipping_cost ?? payload.shipping_cost ?? payload.delivery_cost ?? payload.shipping_fee ?? payload.total_shipping_cost ?? payload.delivery_fee ?? payload.cost;
+
     const updatedMetadata = {
       ...existingMeta,
       turboWebhook: payload,
@@ -96,6 +98,14 @@ async function syncTurboStatusToOrder({
       turboStatusCode: rawStatus,
       updatedAt: new Date().toISOString()
     };
+
+    if (extractedGuestCost !== undefined && extractedGuestCost !== null && !isNaN(parseFloat(extractedGuestCost))) {
+      const realCost = parseFloat(extractedGuestCost);
+      if (realCost > 0) {
+        updatedMetadata.actualShippingCost = realCost;
+        updatedMetadata.actualShippingCostSource = 'turbo-live-api';
+      }
+    }
 
     const updateData = {
       turboShipmentStatus: canonicalTurboStatus,
@@ -167,6 +177,8 @@ async function syncTurboStatusToOrder({
     turboMetaObj = {};
   }
 
+  const extractedCost = payload.actual_shipping_cost ?? payload.shipping_cost ?? payload.delivery_cost ?? payload.shipping_fee ?? payload.total_shipping_cost ?? payload.delivery_fee ?? payload.cost;
+
   turboMetaObj = {
     ...turboMetaObj,
     ...payload,
@@ -174,6 +186,14 @@ async function syncTurboStatusToOrder({
     statusText: canonicalTurboStatus,
     updatedAt: new Date().toISOString()
   };
+
+  if (extractedCost !== undefined && extractedCost !== null && !isNaN(parseFloat(extractedCost))) {
+    const realCost = parseFloat(extractedCost);
+    if (realCost > 0) {
+      turboMetaObj.actualShippingCost = realCost;
+      turboMetaObj.actualShippingCostSource = 'turbo-live-api';
+    }
+  }
 
   const updateData = {
     turboShipmentStatus: canonicalTurboStatus,
