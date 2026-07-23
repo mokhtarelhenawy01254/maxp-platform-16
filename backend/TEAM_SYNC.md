@@ -3,10 +3,8 @@
 - **Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction (FEATURE & BUG FIX / COMPLETE):**
   1. Implemented `ensureShippingReturnRequestsSynced` in `returnController.js` to automatically sync all shipping returned orders (`returned_to_company` / `status_5`) into `ReturnRequest` records so they display seamlessly on `https://maxp.online/returns` without manual steps.
   2. Fixed invocation signature of `syncTurboStatusToOrder` in `turboController.js` from positional args to structured object parameter.
-  3. Established clean 3-way status distinction between Turbo states in `statusNormalizer.js` and `statusRegistry.ts`:
-     - **قيد الانتظار (`turbo_sent` / `waiting`):** Waiting pickup from merchant (Indigo badge).
-     - **قيد التنفيذ (`processing` / `preparing`):** In progress at branch warehouse (Purple badge).
-     - **مؤجلة (`delayed` / `on_hold`):** Postponed with delivery captain (Yellow badge).
+  3. Established clean 3-way status distinction between Turbo states in `statusNormalizer.js` and `statusRegistry.ts` (`قيد الانتظار` -> `turbo_sent`, `قيد التنفيذ` -> `processing`, `مؤجلة` -> `delayed`).
+  4. Conducted live reconciliation of Swan Turbo returns: Explained 22 count vs 72 Turbo dashboard count (22 from `ordersStartDate: 2026-07-17`, 66 all-time in MaxP, remaining 6 created directly on Turbo platform).
 - **Added Orders/Returns Start Date Filter Setting (`/returns/settings` & `/returns`):**
   1. Added `ordersStartDate` property to `ReviewDisplayConfig` interface in `returnService.ts`.
   2. Implemented Date Picker UI in `ReturnSettingsPage.tsx` under Display Settings allowing merchants to define a system start date.
