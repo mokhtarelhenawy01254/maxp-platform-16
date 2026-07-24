@@ -1,19 +1,14 @@
-name: Emergency Server Restart
+name: Deep Server Diagnosis
 
 on:
   workflow_dispatch:
-    inputs:
-      restart_all:
-        description: 'Restart all PM2 processes (yes/no)'
-        required: false
-        default: 'yes'
 
 env:
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
 
 jobs:
-  restart:
-    name: Emergency PM2 Restart
+  diagnose:
+    name: Deep PM2 and Port Diagnosis
     runs-on: ubuntu-latest
     
     steps:
@@ -27,7 +22,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Emergency Restart PM2 Processes
+      - name: Deep Diagnosis
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -36,44 +31,39 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           timeout: 5m
           script: |
-            echo "=== Current PM2 Status ==="
+            echo "=== PM2 List ==="
             pm2 list
 
             echo ""
-            echo "=== Checking Backend Health Before Restart ==="
-            curl -fsS http://127.0.0.1:3008/api/v1/health || curl -fsS http://127.0.0.1:3007/api/v1/health || echo "❌ Backend not responding on 3008 or 3007"
-
-            echo ""
-            echo "=== Recent Error Logs ==="
+            echo "=== What PORT is backend using? ==="
             cd /var/www/backend2
-            tail -n 30 logs/err.log 2>/dev/null || echo "No err.log found"
+            grep -E "^PORT=" .env.production .env 2>/dev/null || echo "No PORT found in .env files"
+            
+            echo ""
+            echo "=== What processes listening on ports? ==="
+            ss -tlnp | grep -E "3006|3007|3008|3009|3010|3011|3012" || echo "No process on those ports"
+            
+            echo ""
+            echo "=== All listening ports (node processes) ==="
+            ss -tlnp | grep node || echo "No node process listening"
 
             echo ""
-            echo "=== Restarting maxp-backend ==="
-            pm2 restart maxp-backend || pm2 reload maxp-backend || echo "❌ maxp-backend restart failed"
-            sleep 3
+            echo "=== Last 50 lines of backend ERROR log ==="
+            tail -n 50 /var/www/backend2/logs/err.log 2>/dev/null || echo "No err.log"
 
             echo ""
-            echo "=== Restarting maxp-webhook-worker ==="
-            pm2 restart maxp-webhook-worker || echo "⚠️ maxp-webhook-worker restart failed (may not exist)"
-            sleep 2
+            echo "=== Last 30 lines of PM2 backend error logs ==="
+            pm2 logs maxp-backend --lines 30 --nostream --err 2>/dev/null || true
 
             echo ""
-            echo "=== PM2 Status After Restart ==="
-            pm2 list
+            echo "=== PM2 describe maxp-backend ==="
+            pm2 describe maxp-backend 2>/dev/null || true
 
             echo ""
-            echo "=== Health Check After Restart ==="
-            sleep 5
-            curl -fsS http://127.0.0.1:3008/api/v1/health && echo "✅ Backend is UP on port 3008" \
-              || (curl -fsS http://127.0.0.1:3007/api/v1/health && echo "✅ Backend is UP on port 3007") \
-              || echo "❌ Backend still not responding"
+            echo "=== ecosystem config (if any) ==="
+            cat /var/www/backend2/ecosystem.config.js 2>/dev/null | head -30 || echo "No ecosystem.config.js"
 
             echo ""
-            echo "=== Post-Restart Error Logs ==="
-            tail -n 20 /var/www/backend2/logs/err.log 2>/dev/null || true
-
-            echo ""
-            echo "=== Nginx Status ==="
-            sudo nginx -t && echo "✅ Nginx config OK" || echo "❌ Nginx config error"
-            sudo systemctl status nginx --no-pager -l | head -20
+            echo "=== .env.production PORT and key vars ==="
+            cd /var/www/backend2
+            grep -E "^(PORT|DATABASE_URL|REDIS|NODE_ENV)" .env.production 2>/dev/null || echo "No .env.production"
