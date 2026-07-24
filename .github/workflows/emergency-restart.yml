@@ -1,9 +1,15 @@
 name: Deep Server Diagnosis
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/emergency-restart.yml'
   workflow_dispatch:
 
 env:
+  NODE_VERSION: '20'
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
 
 jobs:
@@ -22,48 +28,117 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Deep Diagnosis
+      - name: Fix SyntaxError + Restart Backend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ env.SERVER_SSH_PORT }}
-          timeout: 5m
+          timeout: 10m
+          script_stop: false
           script: |
-            echo "=== PM2 List ==="
+            TARGET="/var/www/backend2/services/turboService.js"
+            
+            echo "=== Step 1: Check syntax ==="
+            node --check "$TARGET" 2>&1 && echo "Already clean" || {
+              echo "SyntaxError found - applying Python patch"
+              
+              cp "$TARGET" "${TARGET}.bak.$(date +%Y%m%d_%H%M%S)"
+              
+              python3 - << 'PYEOF'
+filepath = '/var/www/backend2/services/turboService.js'
+with open(filepath, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+new_lines = []
+i = 0
+skip = False
+brace_depth = 0
+
+while i < len(lines):
+    line = lines[i]
+    stripped = line.strip()
+    
+    # Detect start of broken dead code block
+    if 'if (false) {' in stripped and i+1 < len(lines) and 'dead code' in lines[i+1]:
+        skip = True
+        brace_depth = 1
+        print(f"Skipping dead code block starting at line {i+1}")
+        i += 1
+        continue
+    
+    if skip:
+        brace_depth += stripped.count('{') - stripped.count('}')
+        if brace_depth <= 0:
+            skip = False
+            print(f"Dead code block ended at line {i+1}")
+        i += 1
+        continue
+    
+    new_lines.append(line)
+    i += 1
+
+# Also fix duplicate catch blocks
+content = ''.join(new_lines)
+
+# Remove legacy placeholder vars from outerErr catch
+import re
+old = """    } catch (outerErr) {
+      console.error('\\u274c [TURBO] trackShipment fatal error:', outerErr.message);
+      // legacy placeholders kept for parse continuity
+      const possibleEndpoints = [];
+      let response;
+      let lastError = outerErr;
+      const apiKey = null;"""
+
+new = """    } catch (outerErr) {
+      console.error('\\u274c [TURBO] trackShipment fatal error:', outerErr.message);"""
+
+content = content.replace(old, new)
+
+# Remove the second orphan catch block if it exists
+# Pattern: two consecutive catch blocks
+content = re.sub(
+    r'(\s*\}\s*catch\s*\(outerErr\)\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\})\s*\}\s*catch\s*\(error\)\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}\s*this\.handleError[^;]*;\s*\}',
+    r'\1\n    }',
+    content,
+    flags=re.DOTALL
+)
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(content)
+print("File patched")
+PYEOF
+            }
+
+            echo ""
+            echo "=== Step 2: Verify syntax ==="
+            node --check "$TARGET" 2>&1 && echo "SYNTAX OK" || echo "STILL HAS ERROR"
+
+            echo ""
+            echo "=== Step 3: PM2 list before ==="
             pm2 list
 
             echo ""
-            echo "=== What PORT is backend using? ==="
-            cd /var/www/backend2
-            grep -E "^PORT=" .env.production .env 2>/dev/null || echo "No PORT found in .env files"
-            
-            echo ""
-            echo "=== What processes listening on ports? ==="
-            ss -tlnp | grep -E "3006|3007|3008|3009|3010|3011|3012" || echo "No process on those ports"
-            
-            echo ""
-            echo "=== All listening ports (node processes) ==="
-            ss -tlnp | grep node || echo "No node process listening"
+            echo "=== Step 4: Restart maxp-backend ==="
+            pm2 restart maxp-backend 2>/dev/null || pm2 start /var/www/backend2/server.js --name maxp-backend 2>/dev/null || pm2 start /var/www/backend2/ecosystem.config.js 2>/dev/null || echo "Start attempt done"
+            sleep 8
 
             echo ""
-            echo "=== Last 50 lines of backend ERROR log ==="
-            tail -n 50 /var/www/backend2/logs/err.log 2>/dev/null || echo "No err.log"
+            echo "=== Step 5: PM2 list after ==="
+            pm2 list
 
             echo ""
-            echo "=== Last 30 lines of PM2 backend error logs ==="
-            pm2 logs maxp-backend --lines 30 --nostream --err 2>/dev/null || true
+            echo "=== Step 6: Health check ==="
+            PORT=$(grep -E "^PORT=" /var/www/backend2/.env.production /var/www/backend2/.env 2>/dev/null | head -1 | cut -d= -f2 | tr -d '\r' || echo "3007")
+            PORT=${PORT:-3007}
+            sleep 5
+            curl -fsS http://127.0.0.1:${PORT}/api/v1/health && echo "BACKEND UP on port $PORT" \
+              || (curl -fsS http://127.0.0.1:3008/api/v1/health && echo "UP on 3008") \
+              || (curl -fsS http://127.0.0.1:3007/api/v1/health && echo "UP on 3007") \
+              || echo "BACKEND STILL DOWN"
 
             echo ""
-            echo "=== PM2 describe maxp-backend ==="
-            pm2 describe maxp-backend 2>/dev/null || true
-
-            echo ""
-            echo "=== ecosystem config (if any) ==="
-            cat /var/www/backend2/ecosystem.config.js 2>/dev/null | head -30 || echo "No ecosystem.config.js"
-
-            echo ""
-            echo "=== .env.production PORT and key vars ==="
-            cd /var/www/backend2
-            grep -E "^(PORT|DATABASE_URL|REDIS|NODE_ENV)" .env.production 2>/dev/null || echo "No .env.production"
+            echo "=== Step 7: Recent error log ==="
+            tail -n 20 /var/www/backend2/logs/err-0.log 2>/dev/null || tail -n 20 /var/www/backend2/logs/err.log 2>/dev/null || true
