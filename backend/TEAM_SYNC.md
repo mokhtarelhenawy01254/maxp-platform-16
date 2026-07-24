@@ -1,5 +1,13 @@
 # Team Sync Updates
 
+- **[🔴 CRITICAL FIX] Production 502 Outage — turboService.js SyntaxError in Dead Code Block (2026-07-24):**
+  1. **Incident**: Full production outage — ALL API endpoints returned 502 Bad Gateway. PM2 crash-looped 38+ times. Backend never started.
+  2. **Root Cause**: A broken `if (false) { ... }` dead-code block in `turboService.js:1039` had `SyntaxError: Unexpected token '}'` — Node.js parses entire file before execution, causing module load failure.
+  3. **Detection**: GitHub Actions `Deep Server Diagnosis` workflow → `pm2 logs maxp-backend --err` revealed exact error location.
+  4. **Fix**: Removed the entire dead-code block, merged duplicate catch blocks, verified with `node --check` → clean.
+  5. **Deploy**: Pushed to `main` via commit `b5aaf12f`, triggered full production deploy.
+  6. **Prevention Rule Added**: Must run `node --check <file>` after every JS edit before pushing to main.
+
 - **[BUG FIX] Turbo get-status "returned" vs Dashboard "delivered" — search-order Fix (2026-07-24):**
   1. **Root Cause Discovered**: Turbo's `get-status` bulk API returns `"returned"` for shipments sent with `is_order: 1` even when they are actually delivered. Confirmed via Turbo dashboard (shipment 38088117 = "تم التسليم" 2026-07-21).
   2. **Fix**: `trackShipment()` in `turboService.js` now uses Turbo's documented `/search-order` endpoint as primary — it returns the real delivery status, not the type-based status.

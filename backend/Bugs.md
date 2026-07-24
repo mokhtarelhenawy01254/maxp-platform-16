@@ -1,3 +1,21 @@
+### [CRITICAL / PRODUCTION OUTAGE] 502 Bad Gateway — SyntaxError in turboService.js Dead Code Block (2026-07-24)
+
+- **Severity**: 🔴 CRITICAL — Full production outage. All API endpoints returned 502.
+- **Root Cause**:
+  - A broken `if (false) { ... }` dead-code block in `trackShipment()` inside `turboService.js` (around line 1039) contained a `SyntaxError: Unexpected token '}'`.
+  - Despite being unreachable at runtime, Node.js parses the entire file before execution — the syntax error prevented the module from loading at all.
+  - `turboTrackingScheduler.js` requires `turboService.js` on startup → crash on boot → PM2 entered a crash loop (38+ restarts) → backend never bound to port 3008/3007 → Nginx returned 502 for every request.
+- **Symptoms**: `GET https://maxp.online/api/v1/... 502 Bad Gateway` on all endpoints, WebSocket reconnection loops, PM2 showing `status: waiting restart` with 38 restarts.
+- **Detection**: Via GitHub Actions `Deep Server Diagnosis` workflow → `pm2 logs maxp-backend --err` showed the exact SyntaxError.
+- **Fix**:
+  1. Removed the entire broken `if (false)` dead-code block (lines ~1025–1063).
+  2. Merged duplicate `catch (outerErr)` / `catch (error)` blocks that were left behind into a single unified catch handler.
+  3. Verified with `node --check services/turboService.js` → clean.
+- **Files Modified**: `apps/backend/services/turboService.js`
+- **Prevention**: Always run `node --check <file>` (or `npm run check:syntax`) after editing JS files before pushing to main.
+
+---
+
 ### [BUG FIX / TURBO SYNC] Turbo get-status Returns "returned" for Delivered Shipments (is_order type mismatch)
 - **Date**: 2026-07-24
 - **Shipment**: 38088117 / ORD-656470-832
