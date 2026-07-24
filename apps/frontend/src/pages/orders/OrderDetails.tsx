@@ -1011,6 +1011,30 @@ const OrderDetails: React.FC = () => {
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
 
+          {/* نوع الطلب */}
+          {(() => {
+            const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
+            const reqType = meta.requestType || order.orderType || 'delivery';
+            const typeMap: Record<string, { label: string; color: string; icon: string }> = {
+              'delivery': { label: 'تسليم عادي', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: '📦' },
+              'partial_delivery': { label: 'تسليم جزئي', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: '📦↩️' },
+              'return': { label: 'مرتجع', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: '🔄' },
+              'exchange': { label: 'استبدال', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: '🔁' },
+            };
+            const info = typeMap[reqType] || typeMap['delivery'];
+            return (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">نوع الطلب</span>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${info.color}`}>
+                    <span>{info.icon}</span>
+                    {info.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
           {isCancellationStatus(order.status) && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/50 dark:bg-red-950/20">
               <h3 className="text-base font-semibold text-red-900 dark:text-red-100">

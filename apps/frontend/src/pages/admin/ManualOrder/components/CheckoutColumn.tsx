@@ -172,6 +172,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const [status, setStatus] = useState("CONFIRMED"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [requestType, setRequestType] = useState("delivery");
+  const [returnAmount, setReturnAmount] = useState<string>("");
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -562,6 +563,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         platform: "manual",
         source: "manual_entry",
         requestType: requestType,
+        returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
         // New fields for shipping and discount
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
@@ -984,6 +986,28 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
             </div>
+          </div>
+
+          {/* قيمة المرتجع الافتراضية */}
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={returnAmount}
+                onChange={(e) => setReturnAmount(e.target.value)}
+                placeholder={shippingInfo ? `${shippingInfo.price} (مصاريف الشحن)` : 'سيتم استخدام مصاريف الشحن تلقائياً'}
+                className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 pe-16"
+                min="0"
+                step="1"
+              />
+              <span className="absolute start-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">ج.م</span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              هذا المبلغ يظهر في شركة الشحن كـ "مبلغ التحصيل في حالة المرتجع"
+            </p>
           </div>
 
           <div>

@@ -770,6 +770,7 @@ class EnhancedOrderService {
         conversationId: data.conversationId,
         source: data.source,
         requestType: data.requestType || 'delivery',
+        returnAmount: data.returnAmount || null,
         originalData: {
           productName: data.productName,
           productColor: data.productColor,

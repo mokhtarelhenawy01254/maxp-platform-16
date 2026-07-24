@@ -812,9 +812,9 @@ class TurboService {
         returnAmt = 0;
         defaultReturnSummary = 'طلب استبدال';
       } else {
-        // تسليم عادي - is_order: 0
+        // تسليم عادي - is_order: 0 - return_amount = قيمة مخصصة أو مصاريف الشحن
         isOrderVal = 0;
-        returnAmt = 0;
+        returnAmt = parseFloat(orderData.returnAmount || shippingFeeVal || 0);
         defaultReturnSummary = 'لا يوجد مرتجع';
       }
 
@@ -1607,9 +1607,9 @@ class TurboService {
         returnAmt = 0;
         defaultReturnSummary = 'طلب استبدال';
       } else {
-        // تسليم عادي - is_order: 0
+        // تسليم عادي - is_order: 0 - return_amount = قيمة مخصصة أو مصاريف الشحن
         isOrderVal = 0;
-        returnAmt = 0;
+        returnAmt = parseFloat(formattedData.returnAmount || shippingFeeVal || 0);
         defaultReturnSummary = 'لا يوجد مرتجع';
       }
 
@@ -2596,7 +2596,12 @@ class TurboService {
       createdAt: order.createdAt || new Date().toISOString(),
       alternativePhone: order.alternativePhone || addressFields.parsedAddress?.phone2 || null,
       turboShipmentStatus: order.turboShipmentStatus || null,
-      returnAmount: parseFloat(order.returnAmount || (order.orderType === 'RETURN' || requestType === 'return' ? totalValue : (requestType === 'partial_delivery' ? shippingFee : 0))),
+      returnAmount: (() => {
+        const metaRetAmt = parsedMetadata.returnAmount || order.returnAmount || null;
+        if (metaRetAmt) return parseFloat(metaRetAmt);
+        if (requestType === 'return' || order.orderType === 'RETURN') return totalValue;
+        return shippingFee; // افتراضي = مصاريف الشحن
+      })(),
       returnSummary: order.returnSummary || null,
       requestType: requestType,
       orderType: order.orderType || order.type || requestType || null,
