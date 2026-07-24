@@ -1017,97 +1017,10 @@ class TurboService {
 
     } catch (outerErr) {
       console.error('❌ [TURBO] trackShipment fatal error:', outerErr.message);
-      // legacy placeholders kept for parse continuity
-      const possibleEndpoints = [];
-      let response;
-      let lastError = outerErr;
-      const apiKey = null;
-      if (false) {
-        // dead code block to preserve file structure
-        const mainClientCode = null;
-        const trackingNumberStr = null;
-        for (const endpoint of possibleEndpoints) {
-          try {
-            response = await axios.post(endpoint, {}, {});
-            const responseData = response?.data;
-            if (responseData?.success) break;
-            else if (!responseData?.success) continue;
-          } catch (postError) {
-            lastError = postError;
-            if (postError.response?.status === 405 || postError.response?.status === 404) {
-              try {
-                response = await axios.get(`${endpoint}?main_client_code=${mainClientCode}&authentication_key=${encodeURIComponent(apiKey || '')}&search_Key=${trackingNumberStr}`,
-                }
-              );
-
-              const responseData = response.data;
-              if (responseData.success === 1 || responseData.success === true || responseData.feed) {
-                console.log(`✅ [TURBO] Success with GET: ${endpoint}`);
-                break;
-              } else {
-                console.log(`⚠️ [TURBO] GET returned success=0 for ${endpoint}`);
-                continue;
-              }
-            } catch (getError) {
-              console.log(`❌ [TURBO] GET also failed for: ${endpoint}`);
-              continue;
-            }
-          } else if (postError.response?.status === 404) {
-            console.log(`❌ [TURBO] Endpoint not found: ${endpoint}`);
-            continue;
-          } else {
-            // خطأ آخر - قد يكون خطأ في البيانات
-            throw postError;
-          }
-        }
-      }
-
-      if (!response) {
-        // إذا فشل جميع الـ endpoints، إرجاع رسالة واضحة
-        console.warn('⚠️ [TURBO] All tracking endpoints failed. Turbo API may use webhooks for status updates.');
-        return {
-          success: false,
-          error: 'Tracking endpoint not available',
-          message: 'Turbo API قد لا يدعم تتبع الشحنة مباشرة. يتم تحديث الحالة تلقائياً عبر webhooks.',
-          trackingNumber: trackingNumberStr,
-          status: null,
-          currentLocation: null,
-          estimatedDelivery: null,
-          history: [],
-          data: null
-        };
-      }
-
-      const tracking = response.data;
-
-      // معالجة البيانات بناءً على هيكل Turbo API
-      // قد يكون في feed array أو مباشرة في response
-      const trackingData = tracking.feed?.[0] || tracking.result || tracking.data || tracking;
-
-      console.log('✅ [TURBO] Tracking retrieved:', {
-        status: trackingData.status || trackingData.order_status || 'unknown',
-        trackingNumber: trackingNumberStr
-      });
-
-      return {
-        success: true,
-        trackingNumber: trackingData.tracking_number || trackingData.bar_code || trackingData.code || trackingNumberStr,
-        status: trackingData.status || trackingData.order_status || trackingData.current_status || 'unknown',
-        currentLocation: trackingData.current_location || trackingData.location || null,
-        estimatedDelivery: trackingData.estimated_delivery || trackingData.expected_delivery || null,
-        deliveredAt: trackingData.delivered_at || trackingData.delivery_date || null,
-        history: trackingData.history || trackingData.tracking_history || [],
-        notes: trackingData.notes || trackingData.comments || null,
-        branch: trackingData.branch || trackingData.expected_branch || null,
-        data: trackingData,
-        rawResponse: tracking
-      };
-    } catch (error) {
-      // إذا كان الخطأ بسبب عدم توفر الـ endpoint، إرجاع رسالة واضحة
-      if (error.message?.includes('All endpoints failed') ||
-        error.response?.status === 404 ||
-        error.response?.status === 405) {
-        console.warn('⚠️ [TURBO] Tracking endpoint not available:', error.message);
+      if (outerErr.message?.includes('All endpoints failed') ||
+        outerErr.response?.status === 404 ||
+        outerErr.response?.status === 405) {
+        console.warn('⚠️ [TURBO] Tracking endpoint not available:', outerErr.message);
         return {
           success: false,
           error: 'Tracking endpoint not available',
@@ -1120,7 +1033,16 @@ class TurboService {
           data: null
         };
       }
-      this.handleError(error, 'Track Shipment');
+      return {
+        success: false,
+        error: outerErr.message || 'Unknown error',
+        trackingNumber: String(trackingNumber || ''),
+        status: null,
+        currentLocation: null,
+        estimatedDelivery: null,
+        history: [],
+        data: null
+      };
     }
   }
 
