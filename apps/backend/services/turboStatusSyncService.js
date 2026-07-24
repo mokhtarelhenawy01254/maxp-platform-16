@@ -47,6 +47,32 @@ async function syncTurboStatusToOrder({
       : rawStatus
   );
 
+  // 🚨 CRITICAL GUARD: "returned" text alone (without status_code 5/14/20) is AMBIGUOUS in Turbo API.
+  // Turbo returns "returned" text for is_order=1 shipments even when they are actually DELIVERED.
+  // Only trust "returned_to_company" when:
+  //   - status_code is explicitly 5, 14, or 20 (official Turbo return codes), OR
+  //   - Arabic return phrase is confirmed in locationText/statusText
+  // Without this, delivered orders with is_order=1 get wrongly marked as RETURNED.
+  const statusCode = payload?.status_code || payload?.statusCode || payload?.internal_status;
+  const rawStatusStr = String(rawStatus || '').toLowerCase().trim();
+  const TURBO_RETURN_CODES = new Set(['5', '14', '20', 5, 14, 20]);
+  const hasReturnCode = statusCode && TURBO_RETURN_CODES.has(String(statusCode));
+  const hasArabicReturnPhrase = locationText && (locationText.includes('مرتجع') || locationText.includes('مرتجعات') || locationText.includes('مسترجع'));
+
+  if (
+    canonicalTurboStatus === 'returned_to_company' &&
+    rawStatusStr === 'returned' &&        // ambiguous English text (not Arabic 'مرتجع')
+    !hasReturnCode &&                      // no explicit return status_code
+    !hasArabicReturnPhrase                 // no Arabic confirmation
+  ) {
+    // Cannot confirm this is a genuine return — keep it as a non-final status
+    // so it can be corrected later when more info arrives (webhook/manual)
+    console.warn(`⚠️ [TURBO-SYNC] Ambiguous "returned" status for order (no status_code 5/14/20 and no Arabic phrase). Skipping RETURNED update to avoid is_order=1 misclassification.`);
+    canonicalTurboStatus = 'processing'; // treat as still in progress
+    orderStatus = null;
+    paymentStatus = null;
+  }
+
   // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
   // إذا كانت الشحنة لم تدخل فرع تربو بعد (branch null/empty)، فإن حالتها في تربو هي "قيد الانتظار" (turbo_sent)
   if (canonicalTurboStatus === 'processing' && (!payload?.branch || !String(payload.branch).trim())) {
