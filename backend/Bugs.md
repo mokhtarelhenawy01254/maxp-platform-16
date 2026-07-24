@@ -1,15 +1,21 @@
-### [FEATURE & BUG FIX / TURBO API] Added Partial Delivery ("تسليم جزئي") Support & Integrated Dynamic Request Type Mapping
-- **Date**: 2026-03-09 (2026-07-23)
-- **Root Cause & Requirements**:
-  1. Previously, `return_amount` in `turboService.js` was statically set to shipping fee for standard orders, causing Turbo API to auto-classify standard delivery orders as "مرتجع جزئي" (Partial Return).
-  2. Merchants needed explicit control over shipment types directly from the Manual Order creation page (`/orders/manual`) and Order Details page (`/orders/:id`).
+### [CRITICAL BUG FIX / TURBO API] Fixed is_order Values - Root Cause of "مرتجع جزئي" Misclassification
+- **Date**: 2026-03-09 (2026-07-24)
+- **Root Cause**:
+  1. **CRITICAL**: We were sending `is_order: 1` for ALL standard delivery orders. In Turbo API, `is_order: 1` means **مرتجع جزئي (Partial Return)**, NOT standard delivery!
+  2. The correct Turbo API values are: `is_order: 0` = تسليم عادي, `is_order: 1` = مرتجع جزئي/استبدال, `is_order: 2` = مرتجع كامل.
+  3. Additionally, `return_amount` was set to `0` for standard delivery, but should be set to the **shipping fee** (مصاريف الشحن) as this represents "مبلغ التحصيل في حالة المرتجع".
+  4. The `turboService` variable was used in a catch block in `turboController.js` but was scoped inside the try block, causing `turboService is not defined` runtime errors.
 - **Fix**:
-  1. Added **"طلب تسليم جزئي"** (`partial_delivery`) to the Order Type dropdown in `CheckoutColumn.tsx` and enabled Request Type badge on `OrderDetails.tsx` / `OrderSourceCard.tsx`.
-  2. Dynamically mapped `requestType` in `turboService.js`:
-     - **Delivery ("تسليم عادي")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'لا يوجد مرتجع'` -> Turbo Dashboard shows **"تسليم"**.
-     - **Partial Delivery ("تسليم جزئي")**: `is_order: 1`, `return_amount: shippingFeeVal` (70 EGP), `return_summary: 'تسليم جزئي'` -> Turbo Dashboard shows **"مرتجع جزئي"** with shipping fee populated.
-     - **Return ("طلب مرتجع")**: `is_order: 2`, `return_amount: totalValue` -> Turbo Dashboard shows **"مرتجع"**.
-     - **Exchange ("طلب استبدال")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'طلب استبدال'`.
+  1. Changed standard delivery from `is_order: 1` to `is_order: 0` in both `createShipment` and `updateShipment`.
+  2. Set `return_amount` to shipping fee (not 0) for standard delivery orders.
+  3. Added custom `returnAmount` field in Manual Order page so merchants can override the default.
+  4. Added "نوع الطلب" badge display in Order Details page.
+  5. Fixed `turboService is not defined` in catch block of `turboController.js`.
+  6. Correct mapping now:
+     - **Delivery (تسليم عادي)**: `is_order: 0`, `return_amount: shippingFee` → Turbo shows **"تسليم"**
+     - **Partial Delivery (تسليم جزئي)**: `is_order: 1`, `return_amount: shippingFee` → Turbo shows **"مرتجع جزئي"**
+     - **Return (مرتجع)**: `is_order: 2`, `return_amount: totalValue` → Turbo shows **"مرتجع"**
+     - **Exchange (استبدال)**: `is_order: 1`, `return_amount: 0` → Turbo shows **"مرتجع جزئي"**
 - **Files Modified**:
   - `apps/backend/services/turboService.js`
   - `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`

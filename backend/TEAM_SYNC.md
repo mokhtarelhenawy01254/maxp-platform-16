@@ -1,13 +1,12 @@
 # Team Sync Updates
 
-- **Added Partial Delivery ("تسليم جزئي") Support & Request Type Integration for Turbo API (FEATURE & BUG FIX - 2026-07-23):**
-  1. Added **"تسليم جزئي"** (Partial Delivery) option to the Manual Order creation page (`CheckoutColumn.tsx`) and displayed Request Type badge on Order Details page (`OrderSourceCard.tsx` / `OrderDetails.tsx`).
-  2. Dynamically mapped `requestType` in `turboService.js`:
-     - **Delivery ("تسليم عادي")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'لا يوجد مرتجع'` -> Turbo Dashboard shows **"تسليم"**.
-     - **Partial Delivery ("تسليم جزئي")**: `is_order: 1`, `return_amount: shippingFee` (70 EGP), `return_summary: 'تسليم جزئي'` -> Turbo Dashboard shows **"مرتجع جزئي"** with shipping fee populated.
-     - **Return ("طلب مرتجع")**: `is_order: 2`, `return_amount: totalValue` -> Turbo Dashboard shows **"مرتجع"**.
-     - **Exchange ("طلب استبدال")**: `is_order: 1`, `return_amount: 0`, `return_summary: 'طلب استبدال'`.
-  3. Corrected standard delivery `return_amount` to strictly `0` so Turbo never auto-converts standard delivery orders into partial returns.
+- **[CRITICAL FIX] Turbo API is_order Misclassification + Return Amount + Order Type UI (2026-07-24):**
+  1. **Root Cause Found**: `is_order: 1` means "مرتجع جزئي" in Turbo API, NOT standard delivery. We were sending `1` for ALL standard orders → every order showed as "مرتجع جزئي" on Turbo dashboard.
+  2. **Fixed is_order mapping**: `0` = تسليم عادي, `1` = مرتجع جزئي/استبدال, `2` = مرتجع كامل.
+  3. **return_amount now defaults to shipping fee** for standard delivery (مبلغ التحصيل في حالة المرتجع).
+  4. **New Feature**: Added "مبلغ التحصيل في حالة المرتجع" input in Manual Order page with shipping fee as default.
+  5. **New Feature**: Added "نوع الطلب" badge in Order Details page showing delivery/partial/return/exchange type.
+  6. **Bug Fix**: Fixed `turboService is not defined` crash in catch block of `turboController.js`.
 
 - **Turbo Status Reconciliation & Unbound Bulk Refresh (BUG FIX & ENHANCEMENT / COMPLETE - 2026-03-09 / 2026-07-23):**
   1. Extended `refresh=true` on `/orders/turbo-records` (`turboController.js`) to sync all company orders across 180 days via `turboStatusSyncService`, resolving discrepancy where only page 1 (20 items) updated.
