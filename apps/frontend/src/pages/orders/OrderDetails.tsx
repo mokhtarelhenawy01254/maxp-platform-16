@@ -1011,28 +1011,25 @@ const OrderDetails: React.FC = () => {
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
 
-          {/* نوع الطلب */}
+          {/* مبلغ التحصيل في حالة المرتجع */}
           {(() => {
             const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
-            const reqType = meta.requestType || order.orderType || 'delivery';
-            const typeMap: Record<string, { label: string; color: string; icon: string }> = {
-              'delivery': { label: 'تسليم عادي', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: '📦' },
-              'partial_delivery': { label: 'تسليم جزئي', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: '📦↩️' },
-              'return': { label: 'مرتجع', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: '🔄' },
-              'exchange': { label: 'استبدال', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: '🔁' },
-            };
-            const info = typeMap[reqType] || typeMap['delivery'];
-            return (
+            const returnAmt = meta.returnAmount || null;
+            const shippingCost = parseFloat(order.shipping || order.shippingCost || '0');
+            const displayAmount = returnAmt ? parseFloat(returnAmt) : shippingCost;
+            return displayAmount > 0 ? (
               <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">نوع الطلب</span>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${info.color}`}>
-                    <span>{info.icon}</span>
-                    {info.label}
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">💰 مبلغ التحصيل في حالة المرتجع</span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    {displayAmount.toFixed(2)} ج.م
                   </span>
                 </div>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
+                  {returnAmt ? 'قيمة مخصصة' : 'افتراضي: مصاريف الشحن'} — يظهر في شركة الشحن كمبلغ التحصيل عند الإرجاع
+                </p>
               </div>
-            );
+            ) : null;
           })()}
 
           {isCancellationStatus(order.status) && (
