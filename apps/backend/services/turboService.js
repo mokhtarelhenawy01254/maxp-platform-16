@@ -794,30 +794,28 @@ class TurboService {
 
       const shippingFeeVal = parseFloat(shipping || orderData.shipping || orderData.shippingFee || orderData.shippingCost || 0);
 
-      let isOrderVal = 1;
+      // Turbo API: is_order=0 تسليم عادي, is_order=1 مرتجع جزئي/استبدال, is_order=2 مرتجع كامل
+      let isOrderVal = 0;
       let returnAmt = 0;
       let defaultReturnSummary = 'لا يوجد مرتجع';
 
       if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
         returnAmt = shippingFeeVal;
-        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : 'تسليم جزئي';
+        defaultReturnSummary = 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || orderData.orderType === 'RETURN') {
         isOrderVal = 2;
         returnAmt = parseFloat(orderData.returnAmount || totalValue || 0);
-        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : formattedSummary;
+        defaultReturnSummary = formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || orderData.orderType === 'EXCHANGE') {
         isOrderVal = 1;
         returnAmt = 0;
-        defaultReturnSummary = (orderData.returnSummary && orderData.returnSummary !== 'لا يوجد مرتجع') ? orderData.returnSummary : 'طلب استبدال';
+        defaultReturnSummary = 'طلب استبدال';
       } else {
-        isOrderVal = (orderData.isOrder !== undefined && orderData.isOrder !== null && orderData.isOrder !== '')
-          ? Number(orderData.isOrder)
-          : 1;
-        returnAmt = (isOrderVal === 2)
-          ? parseFloat(orderData.returnAmount || totalValue || 0)
-          : 0;
-        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
+        // تسليم عادي - is_order: 0
+        isOrderVal = 0;
+        returnAmt = 0;
+        defaultReturnSummary = 'لا يوجد مرتجع';
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
@@ -1591,30 +1589,28 @@ class TurboService {
         ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
         : (formattedData.notes || `طلب #${formattedData.orderNumber || shipmentId}`);
 
-      let isOrderVal = 1;
+      // Turbo API: is_order=0 تسليم عادي, is_order=1 مرتجع جزئي/استبدال, is_order=2 مرتجع كامل
+      let isOrderVal = 0;
       let returnAmt = 0;
       let defaultReturnSummary = 'لا يوجد مرتجع';
 
       if (rawReqType === 'partial_delivery' || rawReqType === 'partial' || rawReqType === 'تسليم جزئي') {
         isOrderVal = 1;
         returnAmt = shippingFeeVal;
-        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : 'تسليم جزئي';
+        defaultReturnSummary = 'تسليم جزئي';
       } else if (rawReqType === 'return' || rawReqType === 'returned' || formattedData.orderType === 'RETURN') {
         isOrderVal = 2;
         returnAmt = parseFloat(formattedData.returnAmount || totalValue || 0);
-        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : formattedSummary;
+        defaultReturnSummary = formattedSummary;
       } else if (rawReqType === 'exchange' || rawReqType === 'exchanged' || formattedData.orderType === 'EXCHANGE') {
         isOrderVal = 1;
         returnAmt = 0;
-        defaultReturnSummary = (formattedData.returnSummary && formattedData.returnSummary !== 'لا يوجد مرتجع') ? formattedData.returnSummary : 'طلب استبدال';
+        defaultReturnSummary = 'طلب استبدال';
       } else {
-        isOrderVal = (formattedData.isOrder !== undefined && formattedData.isOrder !== null && formattedData.isOrder !== '')
-          ? Number(formattedData.isOrder)
-          : 1;
-        returnAmt = (isOrderVal === 2)
-          ? parseFloat(formattedData.returnAmount || totalValue || 0)
-          : 0;
-        defaultReturnSummary = isOrderVal === 2 ? formattedSummary : 'لا يوجد مرتجع';
+        // تسليم عادي - is_order: 0
+        isOrderVal = 0;
+        returnAmt = 0;
+        defaultReturnSummary = 'لا يوجد مرتجع';
       }
 
       // 2. حساب مبلغ التحصيل (COD)
