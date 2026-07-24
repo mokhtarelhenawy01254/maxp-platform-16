@@ -3021,50 +3021,56 @@ const syncShipmentStatus = async (req, res) => {
     }
 
     const turboService = new TurboService(turboApiKey, companyId);
-    
-    // جلب أحدث الحالات حياً من API تربو
-    const statusResult = await turboService.fetchAllStatuses();
-    if (!statusResult?.success || !statusResult.shipments || !statusResult.shipments.length) {
-      return res.status(400).json({
-        success: false,
-        error: 'لم يتم العثور على بيانات تتبع أو تحديثات شحن من تربو في آخر 30 يوماً'
-      });
+
+    let matched = null;
+
+    // 🥇 الخطوة 1: search-order أولاً (الأدق — يعطي الحالة الفعلية بغض النظر عن is_order)
+    try {
+      console.log(`🔍 [TURBO-SYNC] Step 1: search-order for ${shipmentCode}...`);
+      const searchResult = await turboService.trackShipment(shipmentCode);
+      if (searchResult?.success && searchResult.data) {
+        const rawS = searchResult.data.status || searchResult.data.status_text || 'created';
+        const sc   = searchResult.data.status_code || null;
+        console.log(`✅ [TURBO-SYNC] search-order result: status="${rawS}", status_code=${sc}`);
+        matched = {
+          code: shipmentCode,
+          status: rawS,
+          statusCode: sc,
+          internalStatus: rawS,
+          raw: searchResult.data
+        };
+      }
+    } catch (searchErr) {
+      console.warn(`⚠️ [TURBO-SYNC] search-order failed for ${shipmentCode}:`, searchErr.message);
     }
 
-    // 🎯 تجميع كل المفاتيح المحتملة للشحنة (الكود، رقم التتبع، رقم الفاتورة، رقم الطلب)
-    const targetKeys = new Set([
-      shipmentCode,
-      order.turboShipmentId,
-      order.turboTrackingNumber,
-      order.orderNumber,
-      order.id
-    ].filter(Boolean).map(k => String(k).trim().toLowerCase()));
-
-    let matched = statusResult.shipments.find(s => {
-      const sCode = String(s.code || '').trim().toLowerCase();
-      const sBarCode = String(s.barCode || s.bar_code || '').trim().toLowerCase();
-      const sInvoice = String(s.invoice_number || s.invoiceNumber || '').trim().toLowerCase();
-      const sRemoteId = String(s.remote_order_id || s.remoteOrderId || '').trim().toLowerCase();
-
-      return targetKeys.has(sCode) || targetKeys.has(sBarCode) || targetKeys.has(sInvoice) || targetKeys.has(sRemoteId);
-    });
-
-    // 🎯 إذا لم تجد الشحنة في كشف الـ 30 يوماً، جرب الاستعلام المباشر الفردي عبر trackShipment
+    // 🥈 الخطوة 2: إذا فشل search-order، ابحث في fetchAllStatuses (90 يوم)
     if (!matched) {
-      try {
-        console.log(`🔍 [TURBO-SYNC] Shipment ${shipmentCode} not in bulk feed. Trying direct trackShipment...`);
-        const singleTrack = await turboService.trackShipment(shipmentCode);
-        if (singleTrack && singleTrack.success && singleTrack.data) {
-          matched = {
-            code: shipmentCode,
-            status: singleTrack.data.status || singleTrack.data.shipment_status || 'created',
-            internalStatus: singleTrack.data.internalStatus || 'created',
-            raw: singleTrack.data
-          };
-        }
-      } catch (trackErr) {
-        console.warn(`⚠️ [TURBO-SYNC] Direct track fallback for ${shipmentCode} failed:`, trackErr.message);
+      console.log(`🔄 [TURBO-SYNC] Step 2: fetchAllStatuses (90-day bulk) for ${shipmentCode}...`);
+      const statusResult = await turboService.fetchAllStatuses();
+      if (!statusResult?.success || !statusResult.shipments?.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'لم يتم العثور على بيانات تتبع أو تحديثات شحن من تربو في آخر 90 يوماً'
+        });
       }
+
+      // 🎯 تجميع كل المفاتيح المحتملة للشحنة
+      const targetKeys = new Set([
+        shipmentCode,
+        order.turboShipmentId,
+        order.turboTrackingNumber,
+        order.orderNumber,
+        order.id
+      ].filter(Boolean).map(k => String(k).trim().toLowerCase()));
+
+      matched = statusResult.shipments.find(s => {
+        const sCode    = String(s.code || '').trim().toLowerCase();
+        const sBarCode = String(s.barCode || s.bar_code || '').trim().toLowerCase();
+        const sInvoice = String(s.invoice_number || s.invoiceNumber || '').trim().toLowerCase();
+        const sRemote  = String(s.remote_order_id || s.remoteOrderId || '').trim().toLowerCase();
+        return targetKeys.has(sCode) || targetKeys.has(sBarCode) || targetKeys.has(sInvoice) || targetKeys.has(sRemote);
+      }) || null;
     }
 
     // 🎯 اعتماد الحالة المكتشفة أو الحفاظ على الحالة المسجلة بالنظام لشحنات غير المكتملة

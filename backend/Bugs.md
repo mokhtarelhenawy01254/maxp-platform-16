@@ -1,4 +1,21 @@
+### [BUG FIX / TURBO SYNC] Turbo get-status Returns "returned" for Delivered Shipments (is_order type mismatch)
+- **Date**: 2026-07-24
+- **Shipment**: 38088117 / ORD-656470-832
+- **Root Cause**:
+  - Turbo's `get-status` (bulk feed) API returns `status: "returned"` for shipments that were originally created with `is_order: 1` (partial return/exchange), **even if they were actually delivered**. This is a quirk in Turbo's API — the bulk `get-status` seems to reflect the shipment *type* (`is_order`) instead of the real delivery outcome.
+  - The Turbo Dashboard correctly showed **"تم التسليم"** (delivered on 2026-07-21 21:40:46), while `get-status` API returned `"returned"`.
+  - Additionally, `fetchAllStatuses` had a 30-day default window, causing older shipments to fall outside the search range.
+- **Fix**:
+  1. Added `search-order` endpoint (`/external-api/search-order`) as the **primary** status source in `trackShipment()` — it returns the real operational status, not the type-based status.
+  2. In `syncShipmentStatus` (turboController), `search-order` is now tried **first** before `fetchAllStatuses`. This ensures the correct delivered/returned status is synced.
+  3. Extended `fetchAllStatuses` default range from **30 → 90 days**.
+  4. Manually corrected ORD-656470-832 status to `DELIVERED` after confirming from Turbo dashboard.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js` — trackShipment rewritten to use search-order, fetchAllStatuses range extended
+  - `apps/backend/controller/turboController.js` — syncShipmentStatus now tries search-order first
+
 ### [CRITICAL BUG FIX / TURBO API] Fixed is_order Values - Root Cause of "مرتجع جزئي" Misclassification
+
 - **Date**: 2026-03-09 (2026-07-24)
 - **Root Cause**:
   1. **CRITICAL**: We were sending `is_order: 1` for ALL standard delivery orders. In Turbo API, `is_order: 1` means **مرتجع جزئي (Partial Return)**, NOT standard delivery!

@@ -1,6 +1,14 @@
 # Team Sync Updates
 
+- **[BUG FIX] Turbo get-status "returned" vs Dashboard "delivered" — search-order Fix (2026-07-24):**
+  1. **Root Cause Discovered**: Turbo's `get-status` bulk API returns `"returned"` for shipments sent with `is_order: 1` even when they are actually delivered. Confirmed via Turbo dashboard (shipment 38088117 = "تم التسليم" 2026-07-21).
+  2. **Fix**: `trackShipment()` in `turboService.js` now uses Turbo's documented `/search-order` endpoint as primary — it returns the real delivery status, not the type-based status.
+  3. **Fix**: `syncShipmentStatus` in `turboController.js` now tries `search-order` **first**, falls back to `fetchAllStatuses` (90-day bulk) only if needed.
+  4. **Fix**: Extended `fetchAllStatuses` default window from 30 → **90 days** to cover older shipments.
+  5. **Manual Correction**: ORD-656470-832 (38088117) updated to `DELIVERED` after dashboard confirmation.
+
 - **[CRITICAL FIX] Turbo API is_order Misclassification + Return Amount + Order Type UI (2026-07-24):**
+
   1. **Root Cause Found**: `is_order: 1` means "مرتجع جزئي" in Turbo API, NOT standard delivery. We were sending `1` for ALL standard orders → every order showed as "مرتجع جزئي" on Turbo dashboard.
   2. **Fixed is_order mapping**: `0` = تسليم عادي, `1` = مرتجع جزئي/استبدال, `2` = مرتجع كامل.
   3. **return_amount now defaults to shipping fee** for standard delivery (مبلغ التحصيل في حالة المرتجع).
