@@ -939,65 +939,104 @@ class TurboService {
     try {
       const apiKey = await this.getApiKey();
       const headers = await this.getHeaders();
+      const mainClientCode = await this.getMainClientCode();
       const trackingNumberStr = String(trackingNumber || '');
 
-      console.log('🔍 [TURBO] Tracking shipment:', trackingNumberStr);
+      console.log('🔍 [TURBO] Tracking shipment via search-order:', trackingNumberStr);
 
-      // بناءً على نمط Turbo API (مثل /delete-order)، endpoint التتبع قد يكون:
-      // /get-order-status أو /order-status أو /track أو /get-order
-      const possibleEndpoints = [
-        `${this.baseUrl}/get-order-status`,
-        `${this.baseUrl}/order-status`,
-        `${this.baseUrl}/get-order`,
-        `${this.baseUrl}/track`,
-        `${this.baseUrl}/track-order`
-      ];
+      // ✅ Use the documented /search-order endpoint from Turbo API
+      try {
+        const searchResponse = await axios.post(
+          `${this.baseUrl}/search-order`,
+          {
+            authentication_key: apiKey,
+            main_client_code: mainClientCode || 37321,
+            search_key: trackingNumberStr
+          },
+          { headers, timeout: this.timeout }
+        );
 
-      let response;
-      let lastError = null;
+        const searchData = searchResponse.data;
+        console.log(`🔍 [TURBO] search-order response for ${trackingNumberStr}:`, JSON.stringify(searchData).slice(0, 300));
 
-      // محاولة POST أولاً (الأكثر شيوعاً في Turbo API)
-      for (const endpoint of possibleEndpoints) {
-        try {
-          console.log(`🔄 [TURBO] Trying POST: ${endpoint}`);
-          const mainClientCode = await this.getMainClientCode();
-          response = await axios.post(
-            endpoint,
-            {
-              authentication_key: apiKey,
-              main_client_code: mainClientCode || 37321,
-              search_Key: trackingNumberStr
-            },
-            {
-              headers,
-              timeout: this.timeout
-            }
-          );
-
-          const responseData = response.data;
-
-          // التحقق من نجاح الطلب
-          if (responseData.success === 1 || responseData.success === true || responseData.feed) {
-            console.log(`✅ [TURBO] Success with POST: ${endpoint}`);
-            break;
-          } else if (responseData.success === 0 || responseData.success === false) {
-            // إذا كان success = 0، جرب endpoint آخر
-            const errorMsg = responseData.error_msg || responseData.message || 'Unknown error';
-            console.log(`⚠️ [TURBO] POST returned success=0 for ${endpoint}: ${errorMsg}`);
-            continue;
+        if (searchData && (searchData.success === 1 || searchData.success === true) && searchData.data) {
+          const shipment = Array.isArray(searchData.data) ? searchData.data[0] : searchData.data;
+          if (shipment) {
+            const rawStatus = shipment.status || shipment.status_text || shipment.statusText || 'created';
+            const statusCode = shipment.status_code || shipment.statusCode || null;
+            return {
+              success: true,
+              data: {
+                code: trackingNumberStr,
+                status: rawStatus,
+                status_code: statusCode,
+                internalStatus: rawStatus,
+                raw: shipment
+              }
+            };
           }
-        } catch (postError) {
-          lastError = postError;
-          if (postError.response?.status === 405 || postError.response?.status === 404) {
-            // إذا فشل POST، جرب GET
-            try {
-              console.log(`🔄 [TURBO] Trying GET: ${endpoint}`);
-              const mainClientCode = await this.getMainClientCode();
-              response = await axios.get(
-                `${endpoint}?main_client_code=${mainClientCode || 37321}&authentication_key=${encodeURIComponent(apiKey)}&search_Key=${trackingNumberStr}`,
-                {
-                  headers,
-                  timeout: this.timeout
+        }
+        console.warn(`⚠️ [TURBO] search-order found no result for ${trackingNumberStr}`);
+        return { success: false, error: 'Shipment not found in Turbo' };
+      } catch (searchErr) {
+        console.warn(`⚠️ [TURBO] search-order failed for ${trackingNumberStr}:`, searchErr.response?.data?.message || searchErr.message);
+      }
+
+      // Fallback: try get-status with wider range (90 days) and search
+      console.log('🔄 [TURBO] Falling back to get-status search...');
+      const today = new Date().toISOString().split('T')[0];
+      const from90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      try {
+        const statusResp = await axios.post(`${this.baseUrl}/get-status`,
+          { authentication_key: apiKey, main_client_code: mainClientCode || 37321, from: from90, to: today },
+          { headers, timeout: this.timeout }
+        );
+        const allShipments = statusResp.data?.data || [];
+        const found = allShipments.find(s =>
+          String(s.code) === trackingNumberStr ||
+          String(s.bar_code) === trackingNumberStr ||
+          String(s.invoice_number) === trackingNumberStr
+        );
+        if (found) {
+          return {
+            success: true,
+            data: {
+              code: found.code,
+              status: found.status,
+              status_code: found.status_code,
+              internalStatus: found.status,
+              raw: found
+            }
+          };
+        }
+      } catch (statusErr) {
+        console.warn('⚠️ [TURBO] Fallback get-status also failed:', statusErr.message);
+      }
+
+      return { success: false, error: 'Shipment not found in Turbo خلال آخر 90 يوم' };
+
+    } catch (outerErr) {
+      console.error('❌ [TURBO] trackShipment fatal error:', outerErr.message);
+      // legacy placeholders kept for parse continuity
+      const possibleEndpoints = [];
+      let response;
+      let lastError = outerErr;
+      const apiKey = null;
+      if (false) {
+        // dead code block to preserve file structure
+        const mainClientCode = null;
+        const trackingNumberStr = null;
+        for (const endpoint of possibleEndpoints) {
+          try {
+            response = await axios.post(endpoint, {}, {});
+            const responseData = response?.data;
+            if (responseData?.success) break;
+            else if (!responseData?.success) continue;
+          } catch (postError) {
+            lastError = postError;
+            if (postError.response?.status === 405 || postError.response?.status === 404) {
+              try {
+                response = await axios.get(`${endpoint}?main_client_code=${mainClientCode}&authentication_key=${encodeURIComponent(apiKey || '')}&search_Key=${trackingNumberStr}`,
                 }
               );
 
@@ -1127,9 +1166,9 @@ class TurboService {
       const headers = await this.getHeaders();
       const mainClientCode = await this.getMainClientCode();
       const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const from = fromDate || thirtyDaysAgo.toISOString().split('T')[0];
+      const ninetyDaysAgo = new Date(today);
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const from = fromDate || ninetyDaysAgo.toISOString().split('T')[0];
       const to = toDate || today.toISOString().split('T')[0];
       const requestData = { authentication_key: apiKey, main_client_code: mainClientCode || 37321, from, to };
       console.log(`📊 [TURBO] Fetching all statuses from ${from} to ${to}`);
