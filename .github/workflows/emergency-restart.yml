@@ -1,0 +1,79 @@
+name: Emergency Server Restart
+
+on:
+  workflow_dispatch:
+    inputs:
+      restart_all:
+        description: 'Restart all PM2 processes (yes/no)'
+        required: false
+        default: 'yes'
+
+env:
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  restart:
+    name: Emergency PM2 Restart
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Emergency Restart PM2 Processes
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          timeout: 5m
+          script: |
+            echo "=== Current PM2 Status ==="
+            pm2 list
+
+            echo ""
+            echo "=== Checking Backend Health Before Restart ==="
+            curl -fsS http://127.0.0.1:3008/api/v1/health || curl -fsS http://127.0.0.1:3007/api/v1/health || echo "❌ Backend not responding on 3008 or 3007"
+
+            echo ""
+            echo "=== Recent Error Logs ==="
+            cd /var/www/backend2
+            tail -n 30 logs/err.log 2>/dev/null || echo "No err.log found"
+
+            echo ""
+            echo "=== Restarting maxp-backend ==="
+            pm2 restart maxp-backend || pm2 reload maxp-backend || echo "❌ maxp-backend restart failed"
+            sleep 3
+
+            echo ""
+            echo "=== Restarting maxp-webhook-worker ==="
+            pm2 restart maxp-webhook-worker || echo "⚠️ maxp-webhook-worker restart failed (may not exist)"
+            sleep 2
+
+            echo ""
+            echo "=== PM2 Status After Restart ==="
+            pm2 list
+
+            echo ""
+            echo "=== Health Check After Restart ==="
+            sleep 5
+            curl -fsS http://127.0.0.1:3008/api/v1/health && echo "✅ Backend is UP on port 3008" \
+              || (curl -fsS http://127.0.0.1:3007/api/v1/health && echo "✅ Backend is UP on port 3007") \
+              || echo "❌ Backend still not responding"
+
+            echo ""
+            echo "=== Post-Restart Error Logs ==="
+            tail -n 20 /var/www/backend2/logs/err.log 2>/dev/null || true
+
+            echo ""
+            echo "=== Nginx Status ==="
+            sudo nginx -t && echo "✅ Nginx config OK" || echo "❌ Nginx config error"
+            sudo systemctl status nginx --no-pager -l | head -20
