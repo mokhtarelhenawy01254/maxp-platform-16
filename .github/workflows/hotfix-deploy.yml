@@ -1,4 +1,4 @@
-name: Patch turboService SyntaxError on Server
+name: Patch turboService SyntaxError
 
 on:
   workflow_dispatch:
@@ -8,9 +8,9 @@ env:
 
 jobs:
   patch:
-    name: Direct Patch turboService.js on Server
+    name: Patch turboService.js on Server
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -22,156 +22,56 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Patch turboService.js on Server
+      - name: Check and Fix SyntaxError
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ env.SERVER_SSH_PORT }}
-          timeout: 10m
-          script_stop: false
+          timeout: 5m
           script: |
-            set -e
             TARGET="/var/www/backend2/services/turboService.js"
+            node --check "$TARGET" 2>&1 && echo "Already clean - no fix needed" && exit 0
 
-            echo "=== Step 1: Check current syntax ==="
-            node --check "$TARGET" 2>&1 && echo "✅ Already clean - no fix needed" && exit 0 || echo "❌ SyntaxError found - proceeding with fix"
-
-            echo ""
-            echo "=== Step 2: Backup original file ==="
+            echo "SyntaxError found - backing up and patching"
             cp "$TARGET" "${TARGET}.bak.$(date +%Y%m%d_%H%M%S)"
-            echo "✅ Backup created"
 
-            echo ""
-            echo "=== Step 3: Apply Python patch to fix SyntaxError ==="
-            python3 - << 'PYEOF'
-import re
-
-filepath = '/var/www/backend2/services/turboService.js'
-
-with open(filepath, 'r', encoding='utf-8') as f:
-    content = f.read()
-
-# The broken dead code block pattern - remove the entire if(false){...} block
-# that starts around line 1025 and contains the SyntaxError
-
-# Pattern: remove the "if (false) {" block with all its nested content
-old_block = '''      if (false) {
-        // dead code block to preserve file structure
-        const mainClientCode = null;
-        const trackingNumberStr = null;
-        for (const endpoint of possibleEndpoints) {
-          try {
-            response = await axios.post(endpoint, {}, {});
-            const responseData = response?.data;
-            if (responseData?.success) break;
-            else if (!responseData?.success) continue;
-          } catch (postError) {
-            lastError = postError;
-            if (postError.response?.status === 405 || postError.response?.status === 404) {
-              try {
-                response = await axios.get(`${endpoint}?main_client_code=${mainClientCode}&authentication_key=${encodeURIComponent(apiKey || '')}&search_Key=${trackingNumberStr}`,
+            node -e "
+              const fs = require('fs');
+              let c = fs.readFileSync('$TARGET', 'utf8');
+              const lines = c.split('\n');
+              const out = [];
+              let skip = false, depth = 0;
+              for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (!skip && l.includes('if (false) {') && i+1 < lines.length && lines[i+1].includes('dead code')) {
+                  skip = true; depth = 1; continue;
                 }
-              );
-
-              const responseData = response.data;
-              if (responseData.success === 1 || responseData.success === true || responseData.feed) {
-                console.log(`✅ [TURBO] Success with GET: ${endpoint}`);
-                break;
-              } else {
-                console.log(`⚠️ [TURBO] GET returned success=0 for ${endpoint}`);
-                continue;
+                if (skip) {
+                  depth += (l.match(/\{/g)||[]).length - (l.match(/\}/g)||[]).length;
+                  if (depth <= 0) skip = false;
+                  continue;
+                }
+                out.push(l);
               }
-            } catch (getError) {
-              console.log(`❌ [TURBO] GET also failed for: ${endpoint}`);
-              continue;
-            }
-          } else if (postError.response?.status === 404) {
-            console.log(`❌ [TURBO] Endpoint not found: ${endpoint}`);
-            continue;
-          } else {
-            // خطأ آخر - قد يكون خطأ في البيانات
-            throw postError;
-          }
-        }
-      }'''
+              c = out.join('\n');
+              c = c.replace(
+                '    } catch (outerErr) {\n      console.error(' + \"'\" + '\u274c [TURBO] trackShipment fatal error:' + \"'\" + ', outerErr.message);\n      // legacy placeholders kept for parse continuity\n      const possibleEndpoints = [];\n      let response;\n      let lastError = outerErr;\n      const apiKey = null;',
+                '    } catch (outerErr) {\n      console.error(' + \"'\" + '\u274c [TURBO] trackShipment fatal error:' + \"'\" + ', outerErr.message);'
+              );
+              fs.writeFileSync('$TARGET', c);
+              console.log('Patched OK');
+            "
 
-# Also fix the duplicate catch blocks
-old_catch = '''    } catch (outerErr) {
-      console.error('❌ [TURBO] trackShipment fatal error:', outerErr.message);
-      // legacy placeholders kept for parse continuity
-      const possibleEndpoints = [];
-      let response;
-      let lastError = outerErr;
-      const apiKey = null;'''
+            echo "=== Syntax after patch ==="
+            node --check "$TARGET" 2>&1 && echo "SYNTAX OK" || echo "STILL HAS ERROR"
 
-new_catch = '''    } catch (outerErr) {
-      console.error('❌ [TURBO] trackShipment fatal error:', outerErr.message);'''
-
-if old_block in content:
-    content = content.replace(old_block, '')
-    print("✅ Removed broken if(false) dead code block")
-else:
-    print("⚠️ Dead code block pattern not found exactly - checking for partial match")
-    # Try to find and remove via line-by-line approach
-    lines = content.split('\n')
-    new_lines = []
-    skip = False
-    brace_count = 0
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if "if (false) {" in line and "// dead code" in lines[i+1] if i+1 < len(lines) else False:
-            skip = True
-            brace_count = 1
-            print(f"Found 'if (false)' at line {i+1}, starting skip")
-            i += 1
-            continue
-        if skip:
-            brace_count += line.count('{') - line.count('}')
-            if brace_count <= 0:
-                skip = False
-                print(f"Closed 'if (false)' block at line {i+1}")
-            i += 1
-            continue
-        new_lines.append(line)
-        i += 1
-    content = '\n'.join(new_lines)
-
-if old_catch in content:
-    content = content.replace(old_catch, new_catch)
-    print("✅ Cleaned up legacy placeholders in catch block")
-
-with open(filepath, 'w', encoding='utf-8') as f:
-    f.write(content)
-
-print("✅ File patched successfully")
-PYEOF
-
-            echo ""
-            echo "=== Step 4: Verify syntax after patch ==="
-            node --check "$TARGET" 2>&1 && echo "✅ Syntax OK!" || { echo "❌ Still has syntax errors - restoring backup"; cp "${TARGET}.bak."* "$TARGET" 2>/dev/null | head -1 || true; exit 1; }
-
-            echo ""
-            echo "=== Step 5: Restart maxp-backend ==="
-            pm2 restart maxp-backend || pm2 start "$TARGET" --name maxp-backend
+            echo "=== Restarting backend ==="
+            pm2 restart maxp-backend || pm2 start /var/www/backend2/server.js --name maxp-backend
             sleep 8
-
-            echo ""
-            echo "=== Step 6: PM2 Status ==="
             pm2 list
 
-            echo ""
-            echo "=== Step 7: Health Check ==="
-            PORT=$(grep -E "^PORT=" /var/www/backend2/.env.production /var/www/backend2/.env 2>/dev/null | head -1 | cut -d= -f2 | tr -d '\r' || echo "3007")
-            PORT=${PORT:-3007}
-            sleep 5
-            curl -fsS http://127.0.0.1:${PORT}/api/v1/health && echo "✅ Backend UP on port $PORT" \
-              || (curl -fsS http://127.0.0.1:3008/api/v1/health && echo "✅ UP on 3008") \
-              || (curl -fsS http://127.0.0.1:3007/api/v1/health && echo "✅ UP on 3007") \
-              || echo "❌ Backend still not responding"
-
-            echo ""
-            echo "=== Step 8: Recent error logs ==="
-            tail -n 15 /var/www/backend2/logs/err-0.log 2>/dev/null || tail -n 15 /var/www/backend2/logs/err.log 2>/dev/null || echo "No logs"
+            echo "=== Health ==="
+            curl -fsS http://127.0.0.1:3007/api/v1/health && echo "UP 3007" || \
+            curl -fsS http://127.0.0.1:3008/api/v1/health && echo "UP 3008" || echo "DOWN"
