@@ -68,7 +68,8 @@
     "overdue": "Overdue",
     "withoutDate": "Without Date",
     "notPrinted": "Not Printed",
-    "noShippingCode": "No Shipping Code"
+    "noShippingCode": "No Shipping Code",
+    "noProductResults": "No matching products"
   },
   "stages": {
     "WAITING": "Confirmed Orders",

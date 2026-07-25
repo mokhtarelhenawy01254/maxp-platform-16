@@ -17,6 +17,12 @@ import type {
   WarehouseOption,
 } from "../types";
 
+interface ProductSuggestion {
+  displayName: string;
+  color: string;
+  size: string;
+}
+
 interface PreparationFiltersProps {
   activeFilter: string;
   statusCounts: Record<string, number>;
@@ -31,6 +37,7 @@ interface PreparationFiltersProps {
   shortageOwnerOptions: string[];
   shortageFollowUpFilter: ShortageFollowUpFilter;
   productFilter: string;
+  productSuggestions: ProductSuggestion[];
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
@@ -68,6 +75,7 @@ const PreparationFilters = ({
   shortageOwnerOptions,
   shortageFollowUpFilter,
   productFilter,
+  productSuggestions,
   itemCountFilter,
   notPrintedFilter,
   noShippingCodeFilter,
@@ -90,6 +98,10 @@ const PreparationFilters = ({
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const productSuggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isInitialMount = useRef(true);
@@ -108,6 +120,42 @@ const PreparationFilters = ({
     }, 300);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setLocalProductFilter(productFilter);
+  }, [productFilter]);
+
+  const filteredProductSuggestions = localProductFilter
+    ? productSuggestions.filter((s) => {
+        const query = localProductFilter.toLowerCase();
+        return (
+          s.displayName.toLowerCase().includes(query) ||
+          s.color.toLowerCase().includes(query) ||
+          s.size.toLowerCase().includes(query)
+        );
+      })
+    : productSuggestions;
+
+  const handleProductSuggestionSelect = (suggestion: ProductSuggestion) => {
+    setLocalProductFilter(suggestion.displayName);
+    onProductFilterChange(suggestion.displayName);
+    setShowProductSuggestions(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        productSuggestionsRef.current &&
+        !productSuggestionsRef.current.contains(e.target as Node) &&
+        productInputRef.current &&
+        !productInputRef.current.contains(e.target as Node)
+      ) {
+        setShowProductSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const hasAdvancedFilters =
     selectedWarehouseId !== "" ||
@@ -136,6 +184,8 @@ const PreparationFilters = ({
     onNoShippingCodeFilterChange("all");
     onSortChange("createdAt", "desc");
     setLocalSearch("");
+    setLocalProductFilter("");
+    setShowProductSuggestions(false);
   };
 
   return (
@@ -322,14 +372,53 @@ const PreparationFilters = ({
             </select>
           </div>
 
-          <div className="space-y-1">
+          <div className="relative space-y-1">
             <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.product")}</label>
             <input
-              value={productFilter}
-              onChange={(e) => onProductFilterChange(e.target.value)}
+              ref={productInputRef}
+              value={localProductFilter}
+              onChange={(e) => {
+                setLocalProductFilter(e.target.value);
+                onProductFilterChange(e.target.value);
+                setShowProductSuggestions(true);
+              }}
+              onFocus={() => setShowProductSuggestions(true)}
               placeholder={t("preparation.filters.productPlaceholder")}
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs text-gray-800 outline-none transition focus:border-amber-400"
             />
+            {showProductSuggestions && (
+              <div
+                ref={productSuggestionsRef}
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+              >
+                {filteredProductSuggestions.length > 0 ? (
+                  filteredProductSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleProductSuggestionSelect(suggestion)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-right text-xs transition hover:bg-amber-50"
+                    >
+                      <span className="font-medium text-gray-800">{suggestion.displayName}</span>
+                      {suggestion.color && (
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                          {suggestion.color}
+                        </span>
+                      )}
+                      {suggestion.size && (
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                          {suggestion.size}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-3 text-center text-xs text-gray-400">
+                    {t("preparation.filters.noProductResults") || "لا توجد منتجات مطابقة"}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">

@@ -12,6 +12,8 @@ export interface SimpleOrderItem {
   productId: string;
   name?: string;
   productName?: string;
+  color?: string;
+  size?: string;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
@@ -207,11 +209,15 @@ export interface PreparationQueueSettings {
 
 export type QcCheckKey = keyof PreparationQueueSettings["qcChecks"];
 
+
+
 export interface ApiOrderItemResponse {
   id?: string | number | null;
   productId?: string | number | null;
   name?: string | null;
   productName?: string | null;
+  color?: string | null;
+  size?: string | null;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;

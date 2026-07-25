@@ -63,6 +63,20 @@ const PreparationOrderItemsList = ({
                     <p className="text-sm font-semibold text-gray-900 truncate">
                       {item.displayName}
                     </p>
+                    {item.color || item.size ? (
+                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {item.color ? (
+                          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                            {item.color}
+                          </span>
+                        ) : null}
+                        {item.size ? (
+                          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                            {item.size}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {quantityOffer ? (
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                         {t("preparation.itemsList.quantityOffer")}

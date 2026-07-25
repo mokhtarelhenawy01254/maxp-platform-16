@@ -6,6 +6,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
+  Cog6ToothIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
@@ -16,9 +17,13 @@ import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
+  PREPARATION_COLUMN_LABELS,
+  PREPARATION_TABLE_COLUMNS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
+  VISIBLE_COLUMNS_STORAGE_KEY,
   type PageSize,
+  type PreparationTableColumn,
 } from "./preparation/constants";
 import {
   getApiErrorMessage,
@@ -165,6 +170,27 @@ const PreparationQueue: React.FC = () => {
   >(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
+    if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
+    try {
+      const raw = window.localStorage.getItem(VISIBLE_COLUMNS_STORAGE_KEY);
+      if (!raw) return [...PREPARATION_TABLE_COLUMNS];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every((c: string) => PREPARATION_TABLE_COLUMNS.includes(c as PreparationTableColumn))) {
+        return parsed as PreparationTableColumn[];
+      }
+    } catch { /* ignore */ }
+    return [...PREPARATION_TABLE_COLUMNS];
+  });
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
+
+  const toggleColumn = (col: PreparationTableColumn) => {
+    setVisibleColumns((prev) =>
+      prev.includes(col)
+        ? prev.filter((c) => c !== col)
+        : [...prev, col],
+    );
+  };
 
   const {
     activeStage,
@@ -274,6 +300,25 @@ const PreparationQueue: React.FC = () => {
     uiState.noShippingCodeFilter,
     setSearchParams,
   ]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(VISIBLE_COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
+      } catch { /* ignore */ }
+    }
+  }, [visibleColumns]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (columnSettingsOpen && !target.closest("[data-column-settings]")) {
+        setColumnSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [columnSettingsOpen]);
 
   const statusLabelMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -522,6 +567,22 @@ const PreparationQueue: React.FC = () => {
 
     return [...uniqueOwners].sort((left, right) => left.localeCompare(right, "ar"));
   }, [preparationOrders, serverShortageOwnerOptions, shortageHoldDrafts]);
+
+  const productSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    return preparationOrders.flatMap((order) =>
+      order.itemInsights.map((item) => {
+        const key = `${item.displayName}|${item.color || ""}|${item.size || ""}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        return {
+          displayName: item.displayName,
+          color: item.color || "",
+          size: item.size || "",
+        };
+      }),
+    ).filter((s): s is NonNullable<typeof s> => s !== null);
+  }, [preparationOrders]);
 
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
@@ -1226,6 +1287,7 @@ const PreparationQueue: React.FC = () => {
         shortageOwnerOptions={shortageOwnerOptions}
         shortageFollowUpFilter={shortageFollowUpFilter}
         productFilter={productFilter}
+        productSuggestions={productSuggestions}
         itemCountFilter={itemCountFilter}
         notPrintedFilter={notPrintedFilter}
         noShippingCodeFilter={noShippingCodeFilter}
@@ -1292,6 +1354,38 @@ const PreparationQueue: React.FC = () => {
           {!inventoryLoading && loading && (
             <div className="mr-auto h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
           )}
+
+          <div className="relative" data-column-settings>
+            <button
+              type="button"
+              onClick={() => setColumnSettingsOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+              title="إعدادات الأعمدة"
+            >
+              <Cog6ToothIcon className="h-3.5 w-3.5" />
+            </button>
+            {columnSettingsOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+                  الأعمدة الظاهرة
+                </div>
+                {PREPARATION_TABLE_COLUMNS.map((col) => (
+                  <label
+                    key={col}
+                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.includes(col)}
+                      onChange={() => toggleColumn(col)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    {PREPARATION_COLUMN_LABELS[col]}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -1335,6 +1429,7 @@ const PreparationQueue: React.FC = () => {
               transferingItemKey={transferingItemKey}
               printingOrderNumber={printingOrderNumber}
               preparationSettings={preparationSettings}
+              visibleColumns={visibleColumns}
               formatPrice={formatPrice}
               formatDate={formatDate}
               onToggleSelection={toggleOrderSelection}

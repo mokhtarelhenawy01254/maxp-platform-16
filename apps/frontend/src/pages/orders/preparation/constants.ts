@@ -66,6 +66,32 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
 
 
 
+export const PREPARATION_TABLE_COLUMNS = [
+  "customer",
+  "units",
+  "value",
+  "status",
+  "warehouse",
+  "readiness",
+  "printStatus",
+  "shippingCode",
+] as const;
+
+export type PreparationTableColumn = (typeof PREPARATION_TABLE_COLUMNS)[number];
+
+export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> = {
+  customer: "العميل",
+  units: "القطع",
+  value: "القيمة",
+  status: "الحالة",
+  warehouse: "المخزن",
+  readiness: "التجهيز",
+  printStatus: "الطباعة",
+  shippingCode: "كود الشحن",
+};
+
+export const VISIBLE_COLUMNS_STORAGE_KEY = "preparation:queue:visible-columns-v1";
+
 export const SORT_OPTIONS = [
   { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },
   { value: "createdAt_asc", label: "Oldest First", labelKey: "preparation.sortOptions.createdAt_asc" },

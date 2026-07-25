@@ -16,16 +16,21 @@ import type {
   MerchantFulfillmentView,
 } from "./types";
 
-const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => ({
-  id: String(item.id || item.productId || Math.random()),
-  productId: String(item.productId || ""),
-  name: item.name || item.productName || "",
-  productName: item.productName || item.name || "",
-  price: toNumber(item.price),
-  quantity: toNumber(item.quantity),
-  total: toNumber(item.total),
-  metadata: parseMaybeJsonObject(item.metadata),
-});
+const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => {
+  const metadata = parseMaybeJsonObject(item.metadata);
+  return {
+    id: String(item.id || item.productId || Math.random()),
+    productId: String(item.productId || ""),
+    name: item.name || item.productName || "",
+    productName: item.productName || item.name || "",
+    color: item.color || (metadata?.color as string) || (metadata?.productColor as string) || "",
+    size: item.size || (metadata?.size as string) || (metadata?.productSize as string) || "",
+    price: toNumber(item.price),
+    quantity: toNumber(item.quantity),
+    total: toNumber(item.total),
+    metadata,
+  };
+};
 
 const normalizeMerchantFulfillment = (
   metadata: Record<string, unknown>,

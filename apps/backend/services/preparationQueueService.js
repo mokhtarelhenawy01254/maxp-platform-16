@@ -699,9 +699,14 @@ const buildPreparationOrderSummary = (
         typeof item.metadata.productName === 'string'
         ? item.metadata.productName
         : '';
+    const itemMetadata = typeof item.metadata === 'object' && item.metadata && !Array.isArray(item.metadata) ? item.metadata : {};
+    const color = item.color || itemMetadata.color || itemMetadata.productColor || '';
+    const size = item.size || itemMetadata.size || itemMetadata.productSize || '';
 
     return {
       displayName: item.productName || item.name || metadataProductName || 'منتج غير محدد',
+      color,
+      size,
       quantityNumber,
       availableInScope,
       reservedInScope,
@@ -914,7 +919,10 @@ const matchesPreparationFilters = ({
 
   if (productFilter) {
     const matchesProduct = (order.itemInsights || []).some(
-      (item) => item.displayName && item.displayName.toLowerCase().includes(productFilter)
+      (item) =>
+        (item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
+        (item.color && item.color.toLowerCase().includes(productFilter)) ||
+        (item.size && item.size.toLowerCase().includes(productFilter))
     );
     if (!matchesProduct) return false;
   }

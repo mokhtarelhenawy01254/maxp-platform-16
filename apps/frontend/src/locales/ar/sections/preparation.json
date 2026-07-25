@@ -71,7 +71,8 @@
     "overdue": "متأخر",
     "withoutDate": "بدون تاريخ",
     "notPrinted": "غير مطبوعة",
-    "noShippingCode": "بدون كود شحن"
+    "noShippingCode": "بدون كود شحن",
+    "noProductResults": "لا توجد منتجات مطابقة"
   },
   "stages": {
     "WAITING": "طلبات مؤكدة",
