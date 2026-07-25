@@ -9,7 +9,7 @@ let queue = null;
 
 function getQueue() {
   if (!queue && redisConfig) {
-    queue = new Queue('turbo-webhook-processing', {
+    queue = new Queue('webhook-processing', {
       connection: redisConfig,
       defaultJobOptions: {
         attempts: 3,
