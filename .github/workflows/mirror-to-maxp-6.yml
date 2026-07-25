@@ -1,0 +1,38 @@
+name: Mirror to maxp-platform-6
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'What to mirror'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - main
+          - staging
+          - all
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git remote add target https://x-access-token:${{ secrets.MIRROR_PAT_6 }}@github.com/mokhtar267/maxp-platform-6.git
+
+      - run: |
+          case "${{ github.event.inputs.scope }}" in
+            main)
+              git push --force --tags target 'refs/remotes/origin/main:refs/heads/main'
+              ;;
+            staging)
+              git push --force --tags target 'refs/remotes/origin/staging:refs/heads/staging'
+              ;;
+            all)
+              git push --force --prune --tags target 'refs/remotes/origin/*:refs/heads/*'
+              ;;
+          esac
