@@ -3755,8 +3755,8 @@ select {
   [data-theme="business-os-enterprise"]
     .business-shell-header[data-mobile="true"]
     .business-shell-header-primary {
-    flex: 1 1 100%;
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
     min-width: 0;
     gap: 0.5rem;
   }
@@ -3765,9 +3765,8 @@ select {
     .business-shell-header[data-mobile="true"]
     .business-shell-heading-row {
     align-items: center;
-    justify-content: space-between;
     gap: 0.55rem;
-    width: 100%;
+    width: auto;
   }
 
   [data-theme="business-os-enterprise"]
@@ -3794,11 +3793,11 @@ select {
   [data-theme="business-os-enterprise"]
     .business-shell-header[data-mobile="true"]
     .business-shell-actions {
-    flex: 1 1 100%;
-    width: 100%;
+    flex: 1 1 auto;
+    width: auto;
     gap: 0.45rem;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     flex-wrap: nowrap;
   }
 
