@@ -47,6 +47,7 @@ const CANONICAL_TURBO_MAP = {
   'with captain': 'out_for_delivery',
   'in transit': 'out_for_delivery',
   'shipped': 'out_for_delivery',
+  'مسلمة للمندوب': 'out_for_delivery',
   'status_4': 'out_for_delivery',
   '4': 'out_for_delivery',
 
@@ -135,7 +136,13 @@ const CANONICAL_TURBO_MAP = {
   'مؤجلة مع المندوب': 'delayed',
   'قيد الانتظار مع المندوب': 'delayed',
   'status_13': 'delayed',
-  '13': 'delayed'
+  '13': 'delayed',
+
+  // Code 18: Incomplete (غير مكتملة)
+  'incomplete': 'incomplete',
+  'غير مكتملة': 'incomplete',
+  'status_18': 'incomplete',
+  '18': 'incomplete',
 };
 
 const SYSTEM_STATUS_MAPPING = {
@@ -152,6 +159,7 @@ const SYSTEM_STATUS_MAPPING = {
   'returned_destroyed': { orderStatus: 'RETURNED', paymentStatus: null },
   'cancelled': { orderStatus: 'CANCELLED', paymentStatus: null },
   'delayed': { orderStatus: 'ON_HOLD', paymentStatus: null },
+  'incomplete': { orderStatus: null, paymentStatus: null },
   'archived': { orderStatus: null, paymentStatus: null }
 };
 
