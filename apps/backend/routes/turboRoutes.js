@@ -259,27 +259,44 @@ router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res
     const ghostOrders = activeOrders.filter(o => !activeInTurbo.has(String(o.turboShipmentId)));
     const trueActive = activeOrders.filter(o => activeInTurbo.has(String(o.turboShipmentId)));
 
-    // 4. For ghost processing orders (not ghost turbo_sent which are likely status_code=2),
-    //    try platform search to find their final status
+    // 4. Handle fix actions
     const fix = req.query.fix === 'true';
+    const action = req.query.action; // 'mark_delivered' | 'mark_returned'
     const fixResults = [];
     const ghostProcessing = ghostOrders.filter(o => o.turboShipmentStatus === 'processing');
     
+    // Action: mark_delivered or mark_returned — bulk update ghost processing orders
+    if ((action === 'mark_delivered' || action === 'mark_returned') && ghostProcessing.length > 0) {
+      const newStatus = action === 'mark_delivered' ? 'delivered' : 'returned_to_company';
+      const turboStatus = action === 'mark_delivered' ? '7' : '5';
+      let updated = 0;
+      for (const o of ghostProcessing) {
+        try {
+          await syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: turboStatus, payload: { source: 'ghost_bulk_fix', action } }).catch(() => {});
+          fixResults.push({ orderNumber: o.orderNumber, turboCode: o.turboShipmentId, action: `→ ${newStatus}` });
+          updated++;
+        } catch(e) { fixResults.push({ orderNumber: o.orderNumber, error: e.message }); }
+      }
+      fixResults.unshift({ __summary: `${updated}/${ghostProcessing.length} ghost processing orders marked as ${newStatus}` });
+    }
+    
+    // Action: try platform API for each ghost processing order
     if (fix && ghostProcessing.length > 0) {
-      for (const o of ghostProcessing.slice(0, 20)) { // max 20 at a time
+      for (const o of ghostProcessing.slice(0, 20)) {
         try {
           const sr = await axios.post('https://platform.turbo.info/external-api/search-order', { authentication_key: apiKey, main_client_code: clientCode, search_Key: o.turboShipmentId }, { timeout: 10000 });
-          const d = sr.data?.data?.[0];
-          if (d && d.status_code) {
-            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: true, status_code: d.status_code, status: d.status });
-            await syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: String(d.status_code), payload: { ...d, isWebhook: false, source: 'ghost_fix' } }).catch(() => {});
+          const d2 = sr.data?.data?.[0];
+          if (d2 && d2.status_code) {
+            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: true, status_code: d2.status_code, status: d2.status });
+            await syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: String(d2.status_code), payload: { ...d2, source: 'ghost_fix' } }).catch(() => {});
           } else {
-            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: false, note: '404 from platform' });
+            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: false, note: '404' });
           }
-        } catch(e) { fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, error: e.message }); }
+        } catch(e) { fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: false, note: e.message }); }
         await new Promise(r => setTimeout(r, 200));
       }
     }
+
 
     res.json({
       summary: {
