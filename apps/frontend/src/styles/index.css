@@ -3748,10 +3748,8 @@ select {
     .business-shell-header-main {
     flex-wrap: nowrap;
     align-items: center;
-    gap: 0.4rem;
-    padding-block: 0.55rem;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    gap: 0.3rem;
+    padding-block: 0.45rem;
   }
 
   [data-theme="business-os-enterprise"]
