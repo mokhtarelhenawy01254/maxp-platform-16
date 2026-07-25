@@ -3901,16 +3901,17 @@ const getStatusSummaryReport = async (req, res) => {
       }
     }
 
-    // Build per-status rows
-    const statusRows = filteredStatusCodes
-      .filter(code => statusMap[code])
-      .map(code => ({
+    // Build per-status rows (include all selected statuses, even with 0 orders)
+    const statusRows = filteredStatusCodes.map(code => {
+      const data = statusMap[code];
+      return {
         status: code,
-        ordersCount: statusMap[code].ordersCount,
-        itemsCount: statusMap[code].itemsCount,
-        productsValue: Number(statusMap[code].productsValue.toFixed(2)),
-        shippingValue: Number(statusMap[code].shippingValue.toFixed(2))
-      }));
+        ordersCount: data ? data.ordersCount : 0,
+        itemsCount: data ? data.itemsCount : 0,
+        productsValue: data ? Number(data.productsValue.toFixed(2)) : 0,
+        shippingValue: data ? Number(data.shippingValue.toFixed(2)) : 0
+      };
+    });
 
     // Grand totals
     const grandTotal = {
