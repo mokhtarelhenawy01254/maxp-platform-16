@@ -416,7 +416,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       className="app-header-theme business-shell-header"
       data-mobile={isMobile ? "true" : "false"}
     >
-      <div className="business-shell-header-main px-4 py-2 md:py-2.5 lg:px-6">
+      <div className={`business-shell-header-main ${location.pathname === '/apps' ? 'px-3 py-1.5' : 'px-4 py-2'} md:py-2.5 lg:px-6`}>
         <div className="business-shell-header-primary">
           <div className="business-shell-heading-row">
             <button

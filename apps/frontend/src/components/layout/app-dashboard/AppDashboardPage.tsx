@@ -153,11 +153,11 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="hidden sm:block mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t('appDashboard.title')}
           </h1>
-          <p className="hidden sm:block mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {t('appDashboard.subtitle')}
           </p>
         </div>
@@ -167,7 +167,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
             <label htmlFor="app-dashboard-search" className="sr-only">
               {t('appDashboard.searchLabel')}
             </label>
-            <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-2.5 sm:right-3' : 'left-2.5 sm:left-3'} top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-gray-400`} />
+            <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-2.5 sm:right-3' : 'left-2.5 sm:left-3'} top-1/2 -translate-y-1/2 h-3.5 sm:h-5 w-3.5 sm:w-5 text-gray-400`} />
             <input
               ref={searchInputRef}
               id="app-dashboard-search"
@@ -178,8 +178,8 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               placeholder={String(t('appDashboard.searchPlaceholder'))}
               autoComplete="off"
               className={`
-                w-full ${isRtl ? 'pr-9 pl-7' : 'pl-9 pr-7'} sm:${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-2 sm:py-2.5
-                rounded-xl
+                w-full ${isRtl ? 'pr-8 pl-6' : 'pl-8 pr-6'} sm:${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-1.5 sm:py-2.5 text-sm sm:text-base
+                rounded-lg sm:rounded-xl
                 border border-gray-200 dark:border-gray-700
                 bg-white dark:bg-gray-800
                 text-gray-900 dark:text-white
@@ -192,10 +192,10 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               type="button"
               popovertarget="shortcuts-popover"
               popovertargetaction="toggle"
-              className={`inline-flex absolute ${isRtl ? 'left-2.5 sm:left-3' : 'right-2.5 sm:right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
+              className={`hidden sm:inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
               title={String(t('appDashboard.shortcuts'))}
             >
-              <span className="text-[10px] sm:text-xs">⌘</span>K
+              <span className="text-xs">⌘</span>K
             </button>
 
             <div
@@ -220,13 +220,13 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           </div>
         </div>
 
-        <nav className="mb-3 sm:mb-6 flex flex-wrap gap-1.5 sm:gap-2" aria-label={String(t('appDashboard.categoryFilterLabel'))}>
+        <nav className="mb-3 sm:mb-6 flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:flex-wrap scrollbar-none" aria-label={String(t('appDashboard.categoryFilterLabel'))}>
           <button
             type="button"
             aria-pressed={selectedCategory === 'all'}
             onClick={() => updateDashboardParams({ category: 'all' })}
             className={`
-              px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
+              shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
               ${selectedCategory === 'all'
                 ? 'bg-indigo-500 text-white shadow-sm'
@@ -243,7 +243,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               aria-pressed={selectedCategory === 'favorites'}
               onClick={() => updateDashboardParams({ category: 'favorites' })}
               className={`
-                px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 flex items-center gap-1 sm:gap-1.5
+                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 flex items-center gap-1 sm:gap-1.5
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
                 ${selectedCategory === 'favorites'
                   ? 'bg-yellow-500 text-white shadow-sm'
@@ -251,7 +251,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
                 }
               `}
             >
-              <StarIcon aria-hidden="true" className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+              <StarIcon aria-hidden="true" className="h-3 sm:h-4 w-3 sm:w-4" />
               {t('appDashboard.category.favorites')}
             </button>
           )}
@@ -263,7 +263,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               aria-pressed={selectedCategory === cat}
               onClick={() => updateDashboardParams({ category: cat })}
               className={`
-                px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
+                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
                 ${selectedCategory === cat
                   ? 'bg-indigo-500 text-white shadow-sm'
