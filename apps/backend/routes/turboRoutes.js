@@ -177,6 +177,50 @@ router.get('/tickets/:id', verifyToken.authenticateToken, checkAppAccess('order-
  */
 router.get('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTickets);
 
+/**
+ * GET /api/turbo/debug/search/:code
+ * DEBUG: Test search-order directly and return raw Turbo API response
+ * TEMP - Remove after debugging
+ */
+router.get('/debug/search/:code', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { code } = req.params;
+    const companyId = req.user?.companyId;
+    const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
+    const axios = require('axios');
+    const prisma = getSharedPrismaClient();
+    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboMainClientCode: true } }), 2);
+    if (!company?.turboApiKey) return res.json({ error: 'No turbo API key' });
+    
+    const baseUrl = process.env.TURBO_API_URL || 'https://backoffice.turbo-eg.com/external-api';
+    const results = {};
+
+    // Test 1: search-order with search_Key (capital K)
+    try {
+      const r1 = await axios.post(`${baseUrl}/search-order`, { authentication_key: company.turboApiKey, main_client_code: company.turboMainClientCode || 37321, search_Key: code }, { timeout: 15000 });
+      results['search_Key'] = { status: r1.status, success: r1.data?.success, hasData: !!r1.data?.data, raw: r1.data };
+    } catch (e) { results['search_Key'] = { error: e.response?.status + ': ' + (e.response?.data?.message || e.message) }; }
+
+    // Test 2: search-order with search_key (lowercase k)
+    try {
+      const r2 = await axios.post(`${baseUrl}/search-order`, { authentication_key: company.turboApiKey, main_client_code: company.turboMainClientCode || 37321, search_key: code }, { timeout: 15000 });
+      results['search_key'] = { status: r2.status, success: r2.data?.success, hasData: !!r2.data?.data, raw: r2.data };
+    } catch (e) { results['search_key'] = { error: e.response?.status + ': ' + (e.response?.data?.message || e.message) }; }
+
+    // Test 3: get-status for recent 30 days
+    try {
+      const from = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+      const to = new Date().toISOString().split('T')[0];
+      const r3 = await axios.post(`${baseUrl}/get-status`, { authentication_key: company.turboApiKey, main_client_code: company.turboMainClientCode || 37321, from, to }, { timeout: 15000 });
+      const data = r3.data?.data || [];
+      const found = data.find(s => String(s.code) === code || String(s.bar_code) === code);
+      results['get-status'] = { totalReturned: data.length, foundThisCode: !!found, foundData: found || null };
+    } catch (e) { results['get-status'] = { error: e.response?.status + ': ' + (e.response?.data?.message || e.message) }; }
+
+    res.json({ code, mainClientCode: company.turboMainClientCode, results });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
 
 
