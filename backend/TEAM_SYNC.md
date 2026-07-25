@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+- **[INVESTIGATION] Turbo "قيد التنفيذ" 92 vs MaxP 24 Processing — Root Cause Found (2026-07-25):**
+  1. **Confirmed**: Turbo's `get-status` external API returns ONLY finalized orders. Active status_code=2 (قيد الانتظار) and status_code=3 (قيد التنفيذ) are NEVER included in API responses.
+  2. **Confirmed**: Turbo `search-order` returns HTTP 404 for ALL recent orders (Jul 22-25). The `backoffice.turbo-eg.com` API cannot find orders that are in `business.turbo.info` dashboard (platform migration issue).
+  3. **Root**: Turbo dashboard "قيد التنفيذ" shows ALL active orders (status_code=2+3=92). MaxP "processing" only shows webhook-confirmed status_code=3 orders (24). The 68 gap = missed webhooks.
+  4. **Fix Applied**: Changed blocking 50-order search to background async for ALL 140 turbo_sent orders → refresh time 2s (was 44s).
+  5. **Next**: Test `platform.turbo.info/external-api` vs `backoffice.turbo-eg.com`. Verify webhook URL in Turbo portal configuration.
+
 - **[🔴 CRITICAL FIX] Production 502 Outage — turboService.js SyntaxError in Dead Code Block (2026-07-24):**
   1. **Incident**: Full production outage — ALL API endpoints returned 502 Bad Gateway. PM2 crash-looped 38+ times. Backend never started.
   2. **Root Cause**: A broken `if (false) { ... }` dead-code block in `turboService.js:1039` had `SyntaxError: Unexpected token '}'` — Node.js parses entire file before execution, causing module load failure.

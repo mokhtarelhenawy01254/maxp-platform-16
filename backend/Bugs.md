@@ -1,4 +1,25 @@
+### [INVESTIGATION / TURBO SYNC] Processing Count Discrepancy: MaxP 24 vs Turbo Dashboard 92 (2026-07-25)
+
+- **Severity**: 🟡 MEDIUM — Cosmetic/UX issue, data not wrong but counts mismatch with Turbo dashboard
+- **Root Cause (Confirmed via debug endpoint)**:
+  1. **`get-status` API only returns FINALIZED orders** (delivered/returned/cancelled). Active orders (status_code=2 قيد الانتظار, status_code=3 قيد التنفيذ) are NEVER returned by get-status.
+  2. **`search-order` returns HTTP 404** for all turbo_sent orders. Turbo dashboard at `business.turbo.info` shows these orders but `backoffice.turbo-eg.com/external-api` cannot find them (platform migration issue).
+  3. **Turbo dashboard "قيد التنفيذ"** includes ALL active orders (status_code=2+3), while MaxP "processing" only shows webhook-confirmed status_code=3 orders.
+  4. **Webhooks are the ONLY mechanism** for catching status transitions. 24 of 92 received webhooks; 68 webhooks were missed or undelivered.
+- **Key Technical Findings**:
+  - `mainClientCode = 34425` (correct for Swan company)
+  - `get-status` (180-day): 172 finalized orders | (15-day): 20 orders — neither includes turbo_sent orders
+  - Background async search-order runs for all 140 turbo_sent after each refresh, but all return 404
+- **Partial Fixes**:
+  - Background async search (non-blocking, all orders, 2s refresh vs 44s)
+  - Enhanced debug endpoint: compares `backoffice.turbo-eg.com` vs `platform.turbo.info`
+- **Next Steps**: Test `platform.turbo.info/external-api`, verify webhook URL config in Turbo portal
+- **Files**: `recordsHandler.js`, `turboRoutes.js`, `trackingService.js`
+
+---
+
 ### [CRITICAL / PRODUCTION OUTAGE] 502 Bad Gateway — SyntaxError in turboService.js Dead Code Block (2026-07-24)
+
 
 - **Severity**: 🔴 CRITICAL — Full production outage. All API endpoints returned 502.
 - **Root Cause**:
