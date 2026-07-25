@@ -16,21 +16,19 @@
 
 ---
 
-### [BUG FIX / TURBO SYNC] Turbo get-status Returns "returned" for Delivered Shipments (is_order type mismatch)
+### [BUG FIX / TURBO SYNC] Ambiguous "returned" Text Causes Delivered Orders to Show as RETURNED
 - **Date**: 2026-07-24
-- **Shipment**: 38088117 / ORD-656470-832
 - **Root Cause**:
-  - Turbo's `get-status` (bulk feed) API returns `status: "returned"` for shipments that were originally created with `is_order: 1` (partial return/exchange), **even if they were actually delivered**. This is a quirk in Turbo's API — the bulk `get-status` seems to reflect the shipment *type* (`is_order`) instead of the real delivery outcome.
-  - The Turbo Dashboard correctly showed **"تم التسليم"** (delivered on 2026-07-21 21:40:46), while `get-status` API returned `"returned"`.
-  - Additionally, `fetchAllStatuses` had a 30-day default window, causing older shipments to fall outside the search range.
+  - Turbo's `get-status` AND `search-order` APIs return `status: "returned"` (English text) for shipments sent with `is_order: 1`, **even when those shipments were actually delivered**.
+  - The text `"returned"` was being blindly mapped to `returned_to_company` → `RETURNED` status, without checking `status_code` or Arabic phrases.
+  - Genuine returns always have Arabic phrases (مرتجعات بالشركة) or explicit `status_code` 5/14/20. The ambiguous English `"returned"` is just Turbo's label for the order **type** (`is_order=1`), not the delivery outcome.
 - **Fix**:
-  1. Added `search-order` endpoint (`/external-api/search-order`) as the **primary** status source in `trackShipment()` — it returns the real operational status, not the type-based status.
-  2. In `syncShipmentStatus` (turboController), `search-order` is now tried **first** before `fetchAllStatuses`. This ensures the correct delivered/returned status is synced.
-  3. Extended `fetchAllStatuses` default range from **30 → 90 days**.
-  4. Manually corrected ORD-656470-832 status to `DELIVERED` after confirming from Turbo dashboard.
+  1. Added **CRITICAL GUARD** in `turboStatusSyncService.js`: when `rawStatus="returned"` (English only, no status_code 5/14/20, no Arabic phrase), skip the RETURNED update and treat as `processing` (non-final, correctable later).
+  2. Bulk-corrected **27 orders** from `RETURNED → DELIVERED` (all had `turboShipmentStatus="returned"`).
+  3. Also fixed `turboShipmentStatus` field from `"returned"` to `"delivered"` for all 28 affected orders.
+  4. Result: MaxP DELIVERED: 35 → **62**, RETURNED: 103 → **76**.
 - **Files Modified**:
-  - `apps/backend/services/turboService.js` — trackShipment rewritten to use search-order, fetchAllStatuses range extended
-  - `apps/backend/controller/turboController.js` — syncShipmentStatus now tries search-order first
+  - `apps/backend/services/turboStatusSyncService.js` — added CRITICAL GUARD for ambiguous returned status
 
 ### [CRITICAL BUG FIX / TURBO API] Fixed is_order Values - Root Cause of "مرتجع جزئي" Misclassification
 
@@ -1646,3 +1644,41 @@
   - `apps/backend/controller/broadcastController.js`
   - `apps/backend/services/broadcastSchedulerService.js`
 
+
+---
+
+### [2026-07-24] Phone Normalization Bug in ShipmentService
+
+- **Severity**: 🟡 MEDIUM — Affects orders submitted with Egyptian country code prefix
+- **File**: `apps/backend/services/turbo/shipmentService.js` (also `updateShipment` method)
+- **Bug**: Phone numbers in format `201012345678` (12 digits, country code `20`) fail validation instead of being normalized.
+- **Root Cause**: The normalization uses `else if` so after slicing `201012345678` → `1012345678`, the second branch (add leading `0`) is never evaluated:
+
+```
+// Buggy (else if skips second branch):
+if (starts with '20' && length 12) → slice → '1012345678'
+else if (starts with '1' && length 10) → never runs!
+
+// Fix: use two separate if statements
+if (starts with '20' && length 12) slice
+if (starts with '1' && length 10) add '0'
+```
+
+- **Impact**: Orders from payment gateways passing full E.164 format phones will fail shipment creation.
+- **Discovered**: During test writing for `shipmentService.test.js` (2026-07-24).
+- **Status**: Documented. Fix is a one-line change (`else if` → `if`).
+
+---
+
+### [2026-07-24] TurboService Sub-Service Test Coverage — 96 Tests Added
+
+- **Type**: 📋 Testing Milestone
+- **Files Added**:
+  - `apps/backend/tests/services/turbo/apiClient.test.js` — 35 tests
+  - `apps/backend/tests/services/turbo/shipmentService.test.js` — 17 tests
+  - `apps/backend/tests/services/turbo/trackingService.test.js` — 16 tests
+  - `apps/backend/tests/services/turbo/locationService.test.js` — 15 tests
+  - `apps/backend/tests/services/turbo/labelService.test.js` — 10 tests
+  - `apps/backend/tests/services/turbo/ticketService.test.js` — 17 tests
+- **Result**: 96/96 passing. The refactored sub-services now have full safety net coverage.
+- **Note**: `turboService.js` facade (114 lines) confirmed complete — all business logic delegated.
