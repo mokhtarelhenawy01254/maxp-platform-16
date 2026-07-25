@@ -69,6 +69,7 @@ const CANONICAL_TURBO_MAP = {
   'ملغية': 'cancelled',
   'status_6': 'cancelled',
   '6': 'cancelled',
+  'مرتجعة': 'returned_to_customer',
 
   // Code 7: Delivered (تم التسليم)
   'delivered': 'delivered',
@@ -154,6 +155,7 @@ const SYSTEM_STATUS_MAPPING = {
   'remitted': { orderStatus: 'DELIVERED', paymentStatus: 'COMPLETED' },
   'returned_to_company': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_received': { orderStatus: 'RETURNED', paymentStatus: null },
+  'returned_to_customer': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_resent': { orderStatus: 'PROCESSING', paymentStatus: null },
   'returned_missing': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_destroyed': { orderStatus: 'RETURNED', paymentStatus: null },

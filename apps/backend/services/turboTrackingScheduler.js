@@ -33,12 +33,12 @@ class TurboTrackingScheduler {
 
     console.log('🚀 [TURBO-TRACKING] Starting tracking scheduler...');
 
-    // فحص كل 6 ساعات
-    this.cronJob = cron.schedule('0 */6 * * *', async () => {
+    // فحص كل 30 دقيقة
+    this.cronJob = cron.schedule('*/30 * * * *', async () => {
       await this.updateAllShipments();
     });
 
-    console.log('✅ [TURBO-TRACKING] Scheduler started - checking every 6 hours');
+    console.log('✅ [TURBO-TRACKING] Scheduler started - checking every 30 minutes');
     
     // تشغيل فحص أولي بعد 5 دقائق من بدء السيرفر
     setTimeout(() => {

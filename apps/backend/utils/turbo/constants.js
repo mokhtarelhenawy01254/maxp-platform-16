@@ -224,6 +224,7 @@ const TURBO_STATUS_CODE_MAP = {
   'شحنة مرتجعة': 'returned_to_company',
   'مرتجعات في الشركة': 'returned_to_company',
   'مرتجعات وصلتني': 'returned_received',
+  'مرتجعة': 'returned_to_customer',
   'معاد ارسالها': 'returned_resent',
   'مرتجعات مفقودة': 'returned_missing',
   'مرتجعات معدومة': 'returned_destroyed',
@@ -261,7 +262,9 @@ const STATUS_ALIAS_MAP = {
   'status_17': 'returned_destroyed',
   'status_18': 'incomplete',
   'status_19': 'remitted',
-  'status_20': 'returned_received'
+  'status_20': 'returned_received',
+  'returned_received': 'returned_received',
+  'returned_to_customer': 'returned_to_customer',
 };
 
 const STATUS_FILTER_ALIASES = {
@@ -280,14 +283,15 @@ const STATUS_FILTER_ALIASES = {
   'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
   'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
   'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
+  'returned_to_customer': ['returned_to_customer', 'مرتجعة'],
   'delayed': ['delayed', 'status_13', '13'],
   'shipped': ['out_for_delivery', 'status_4', '4'],
-  'returned': ['returned_to_company', 'returned_received', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12', 'status_20', '5', '10', '11', '12', '14', '15', '16', '17', '20']
+  'returned': ['returned_to_company', 'returned_received', 'returned_to_customer', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12', 'status_20', '5', '10', '11', '12', '14', '15', '16', '17', '20']
 };
 
 const TURBO_SPECIFIC_FILTERS = new Set([
   'merchant_preparing', 'preparing', 'turbo_saved', 'turbo_sent', 'processing',
-  'out_for_delivery', 'returned_to_company', 'returned_received', 'remitted', 'archived',
+  'out_for_delivery', 'returned_to_company', 'returned_received', 'returned_to_customer', 'remitted', 'archived',
   'returned_resent', 'returned_missing', 'returned_destroyed', 'delayed'
 ]);
 

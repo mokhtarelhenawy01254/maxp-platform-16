@@ -211,6 +211,7 @@ const TurboRecords: React.FC = () => {
         { key: 'remitted', label: t('orders.k_70'), color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
         { key: 'returned_to_company', label: t('orders.k_18'), color: 'border-red-300 bg-red-50 text-red-800' },
         { key: 'returned_received', label: t('orders.k_72'), color: 'border-violet-300 bg-violet-50 text-violet-800' },
+        { key: 'returned_to_customer', label: t('orders.k_73'), color: 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800' },
         { key: 'returned_resent', label: t('orders.k_20'), color: 'border-sky-300 bg-sky-50 text-sky-800' },
         { key: 'returned_missing', label: t('orders.k_21'), color: 'border-rose-300 bg-rose-50 text-rose-800' },
         { key: 'returned_destroyed', label: t('orders.k_22'), color: 'border-stone-300 bg-stone-50 text-stone-800' },
