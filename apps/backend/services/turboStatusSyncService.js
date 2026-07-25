@@ -253,7 +253,7 @@ async function syncTurboStatusToOrder({
   // 🔒 FINAL STATUS PROTECTION: Never downgrade an already-DELIVERED order
   // If the order is already DELIVERED, turboShipmentStatus must stay 'delivered'
   // Turbo API may return 'returned' for is_order=1 shipments even after delivery — ignore it.
-  const DOWNGRADE_STATUSES = new Set(['returned', 'returned_to_company', 'processing', 'turbo_sent', 'turbo_saved', 'created', 'delayed']);
+  const DOWNGRADE_STATUSES = new Set(['returned', 'returned_to_company', 'turbo_sent', 'turbo_saved', 'created', 'delayed']);
   if (existingOrder.status === 'DELIVERED' && DOWNGRADE_STATUSES.has(canonicalTurboStatus)) {
     console.warn(`🔒 [TURBO-SYNC] PROTECTED: Order ${existingOrder.orderNumber} is DELIVERED — refusing to set turboShipmentStatus to "${canonicalTurboStatus}". Keeping as "delivered".`);
     canonicalTurboStatus = 'delivered';
