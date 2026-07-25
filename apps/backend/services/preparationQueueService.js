@@ -860,6 +860,7 @@ const matchesPreparationFilters = ({
   searchQuery,
   notPrinted,
   noShippingCode,
+  productFilter,
 }) => {
   if (!order.warehouseMatch) return false;
 
@@ -909,6 +910,13 @@ const matchesPreparationFilters = ({
         return false;
       }
     }
+  }
+
+  if (productFilter) {
+    const matchesProduct = (order.itemInsights || []).some(
+      (item) => item.displayName && item.displayName.toLowerCase().includes(productFilter)
+    );
+    if (!matchesProduct) return false;
   }
 
   return matchesPreparationHaystackSearch(order, searchQuery);
@@ -1257,6 +1265,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
   const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
   const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1381,6 +1390,7 @@ const getPreparationQueue = async ({ user, query }) => {
         searchQuery,
         notPrinted,
         noShippingCode,
+        productFilter,
       });
 
       if (!matchesFilters) {
@@ -1496,6 +1506,7 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
   const notPrinted = query.notPrinted === 'true';
   const noShippingCode = query.noShippingCode === 'true';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
 
   const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
   if (!normalizedStatus) {
@@ -1595,6 +1606,7 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
         searchQuery,
         notPrinted,
         noShippingCode,
+        productFilter,
       });
 
       if (!matchesFilters) return;
