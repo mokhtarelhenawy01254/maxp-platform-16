@@ -346,24 +346,29 @@ const PreparationFilters = ({
                       key={idx}
                       type="button"
                       onClick={() => handleProductSuggestionSelect(suggestion)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-right text-xs transition hover:bg-amber-50"
+                      className="flex w-full items-center gap-2 border-b border-gray-50 px-3 py-2.5 text-right text-xs transition last:border-0 hover:bg-amber-50"
                     >
-                      <span className="font-medium text-gray-800">{suggestion.displayName}</span>
-                      {suggestion.color && (
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                          {suggestion.color}
-                        </span>
-                      )}
-                      {suggestion.size && (
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                          {suggestion.size}
-                        </span>
-                      )}
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-semibold text-gray-900">{suggestion.displayName}</span>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          {suggestion.color && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700">
+                              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: suggestion.color.toLowerCase() === 'احمر' ? '#ef4444' : suggestion.color.toLowerCase() === 'ازرق' ? '#3b82f6' : suggestion.color.toLowerCase() === 'اخضر' ? '#22c55e' : suggestion.color.toLowerCase() === 'اسود' ? '#111827' : suggestion.color.toLowerCase() === 'ابيض' ? '#f9fafb' : suggestion.color.toLowerCase() === 'اصفر' ? '#eab308' : suggestion.color.toLowerCase() === 'بنى' ? '#92400e' : suggestion.color.toLowerCase() === 'رمادى' ? '#6b7280' : suggestion.color.toLowerCase() === 'فضى' ? '#9ca3af' : suggestion.color.toLowerCase() === 'ذهبى' ? '#d97706' : '#e5e7eb' }} />
+                              {suggestion.color}
+                            </span>
+                          )}
+                          {suggestion.size && (
+                            <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                              {suggestion.size}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </button>
                   ))
                 ) : (
-                  <div className="px-3 py-3 text-center text-xs text-gray-400">
-                    {t("preparation.filters.noProductResults") || "لا توجد منتجات مطابقة"}
+                  <div className="px-3 py-4 text-center text-xs text-gray-400">
+                    لا توجد منتجات مطابقة
                   </div>
                 )}
               </div>

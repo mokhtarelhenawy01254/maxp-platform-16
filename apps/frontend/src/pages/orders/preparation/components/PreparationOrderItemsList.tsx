@@ -64,14 +64,27 @@ const PreparationOrderItemsList = ({
                       {item.displayName}
                     </p>
                     {item.color || item.size ? (
-                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         {item.color ? (
-                          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-rose-50/60 px-1.5 py-0.5 text-[11px] font-medium text-rose-700">
+                            <span className="inline-block h-2 w-2 rounded-full border border-rose-200" style={{
+                              backgroundColor: ['احمر','red'].includes(item.color.toLowerCase()) ? '#ef4444' :
+                                ['ازرق','blue'].includes(item.color.toLowerCase()) ? '#3b82f6' :
+                                ['اخضر','green'].includes(item.color.toLowerCase()) ? '#22c55e' :
+                                ['اسود','black'].includes(item.color.toLowerCase()) ? '#111827' :
+                                ['ابيض','white'].includes(item.color.toLowerCase()) ? '#f9fafb' :
+                                ['اصفر','yellow'].includes(item.color.toLowerCase()) ? '#eab308' :
+                                ['بنى','brown'].includes(item.color.toLowerCase()) ? '#92400e' :
+                                ['رمادى','gray','grey'].includes(item.color.toLowerCase()) ? '#6b7280' :
+                                ['فضى','silver'].includes(item.color.toLowerCase()) ? '#9ca3af' :
+                                ['ذهبى','golden','gold'].includes(item.color.toLowerCase()) ? '#d97706' :
+                                '#e5e7eb'
+                            }} />
                             {item.color}
                           </span>
                         ) : null}
                         {item.size ? (
-                          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                          <span className="rounded-md bg-blue-50/60 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
                             {item.size}
                           </span>
                         ) : null}
