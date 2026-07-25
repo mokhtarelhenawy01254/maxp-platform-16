@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-const { syncTurboStatusToOrder } = require('../services/turboStatusSyncService');
+const { addTurboWebhook } = require('../services/turboWebhookQueue');
 
 /**
  * POST /api/turbo/webhook
@@ -70,20 +70,35 @@ router.post('/webhook', async (req, res) => {
 
     console.log(`📦 [TURBO-WEBHOOK] Processing webhook for order: ${searchOrderNumber}, Turbo order: ${turboOrderNumber}, Status: ${statusCode}`);
 
-    // البحث والتحديث باستخدام الخدمة الموحدة syncTurboStatusToOrder
-    const result = await syncTurboStatusToOrder({
+    // إضافة الـ webhook إلى Queue مع Retry (يحاول 3 مرات لو فشل)
+    const job = await addTurboWebhook({
       orderId: searchOrderNumber,
       orderNumber: searchOrderNumber,
       companyId: companyId,
+      turboShipmentId: turboOrderNumber,
       rawStatus: statusCode,
       payload: { ...webhookData, isWebhook: true, source: 'webhook' },
       isGuestOrder: false
     });
 
-    if (result.success) {
-      console.log(`✅ [TURBO-WEBHOOK] Successfully synced order ${searchOrderNumber}`);
+    if (job) {
+      console.log(`✅ [TURBO-WEBHOOK] Queued job ${job.id} for order ${searchOrderNumber}`);
     } else {
-      console.warn(`⚠️ [TURBO-WEBHOOK] Could not find order to sync: ${searchOrderNumber}`);
+      console.warn(`⚠️ [TURBO-WEBHOOK] Queue not available, processing synchronously`);
+      const { syncTurboStatusToOrder } = require('../services/turboStatusSyncService');
+      const result = await syncTurboStatusToOrder({
+        orderId: searchOrderNumber,
+        orderNumber: searchOrderNumber,
+        companyId: companyId,
+        rawStatus: statusCode,
+        payload: { ...webhookData, isWebhook: true, source: 'webhook' },
+        isGuestOrder: false
+      });
+      if (result.success) {
+        console.log(`✅ [TURBO-WEBHOOK] Successfully synced order ${searchOrderNumber}`);
+      } else {
+        console.warn(`⚠️ [TURBO-WEBHOOK] Could not find order to sync: ${searchOrderNumber}`);
+      }
     }
 
   } catch (error) {
