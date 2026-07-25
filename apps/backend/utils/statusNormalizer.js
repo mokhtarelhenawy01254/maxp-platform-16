@@ -37,6 +37,7 @@ const CANONICAL_TURBO_MAP = {
   'قيد التنفيذ': 'processing',
   'قيد التنفيذ بالفرع': 'processing',
   'تنفيذ': 'processing',
+  'المقبوله': 'processing',
   'status_3': 'processing',
   '3': 'processing',
 

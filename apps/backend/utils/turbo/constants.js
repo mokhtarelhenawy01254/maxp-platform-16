@@ -202,6 +202,7 @@ const TURBO_STATUS_CODE_MAP = {
   'قيد التنفيذ': 'processing',
   'قيد التنفيذ بالفرع': 'processing',
   'تنفيذ': 'processing',
+  'المقبوله': 'processing',
   'تم الشحن': 'out_for_delivery',
   'في الطريق': 'out_for_delivery',
   'مسلمة للمندوب': 'out_for_delivery',
