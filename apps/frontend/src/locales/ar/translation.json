@@ -5778,6 +5778,7 @@
     "k_69": "معالجة بالفرع (قبل المندوب)",
     "k_70": "تم التوريد وتحصيل المبلغ",
     "k_71": "شحنة محذوفة",
+    "k_72": "مرتجعات وصلتني",
     "minutesAgo_plural": "منذ {{count}} دقائق",
     "hoursAgo_plural": "منذ {{count}} ساعات",
     "daysAgo": "منذ {{count}} يوم",
@@ -5799,6 +5800,7 @@
     "turboReturnedResent": "معاد إرسالها",
     "turboReturnedMissing": "مرتجع مفقود",
     "turboReturnedDestroyed": "مرتجع معدوم",
+    "turboReturnedReceived": "مرتجعات وصلتني",
     "turboDelayed": "مؤجلة مع المندوب",
     "readyToShip": "جاهز للشحن",
     "outForDelivery": "خرج للتسليم",
@@ -6413,7 +6415,10 @@
       "allDates": "كل التواريخ",
       "today": "اليوم",
       "overdue": "متأخر",
-      "withoutDate": "بدون تاريخ"
+      "withoutDate": "بدون تاريخ",
+      "notPrinted": "غير مطبوعة",
+      "noShippingCode": "بدون كود شحن",
+      "noProductResults": "لا توجد منتجات مطابقة"
     },
     "stages": {
       "WAITING": "طلبات مؤكدة",
@@ -10385,6 +10390,7 @@
   },
   "unifiedInbox": {
     "title": "صندوق الوارد الموحد",
+    "pageTitle": "صندوق الوارد الموحد",
     "refresh": "تحديث",
     "searchPlaceholder": "البحث في المحادثات...",
     "filters": {
@@ -10412,7 +10418,9 @@
       "main": "رئيسي",
       "general": "عام",
       "requests": "طلبات",
-      "spam": "سبام"
+      "spam": "سبام",
+      "fbComments": "تعليقات فيسبوك",
+      "igComments": "تعليقات إنستجرام"
     },
     "loading": "جاري التحميل…",
     "noConversations": "لا توجد محادثات",
@@ -10449,16 +10457,22 @@
     "orderValue": "القيمة",
     "products": "منتجات",
     "viewOrder": "عرض الطلب",
+    "viewAllOrders": "عرض كل الطلبات",
     "noActivity": "لا يوجد نشاط مسجل",
     "contact": "التواصل",
     "categories": "التصنيفات",
     "notAvailable": "غير متوفر",
     "egp": "ج.م",
+    "backToList": "رجوع للقائمة",
     "markAsResolved": "تحديد كمحلول",
+    "markUnread": "تحديد كغير مقروء",
+    "archive": "أرشفة",
+    "block": "حظر",
     "hideProfile": "إخفاء البروفايل",
     "showProfile": "عرض البروفايل",
     "deleteConversation": "حذف المحادثة",
     "deleteConfirm": "هل أنت متأكد من حذف هذه المحادثة؟",
+    "blockConfirm": "هل أنت متأكد من حظر هذا العميل؟",
     "sendFailed": "فشل إرسال الرسالة، حاول مرة أخرى",
     "uploadFailed": "فشل رفع الملف، حاول مرة أخرى",
     "fileTooLarge": "حجم الملف كبير جداً (الحد الأقصى 20 ميجا)",
@@ -10482,6 +10496,8 @@
     "notePlaceholder": "اكتب ملاحظة عن هذا العميل...",
     "save": "حفظ",
     "cancel": "إلغاء",
+    "chooseExistingFile": "اختيار ملف موجود",
+    "upload": "رفع",
     "noNotes": "لا توجد ملاحظات بعد",
     "stats": "الإحصائيات",
     "quickOrder": "إنشاء طلب",
@@ -10562,13 +10578,15 @@
     "customer": {
       "contactInfo": "معلومات الاتصال",
       "customerSince": "عميل منذ {{date}}",
+      "ltv": "القيمة الدائمة",
       "stats": "إحصائيات",
       "orders": "الطلبات",
       "conversations": "المحادثات",
       "recentOrders": "آخر الطلبات",
       "orderStatus": {
         "completed": "مكتمل",
-        "pending": "معلق"
+        "pending": "معلق",
+        "cancelled": "ملغي"
       },
       "tags": "التصنيفات",
       "notes": "ملاحظات",

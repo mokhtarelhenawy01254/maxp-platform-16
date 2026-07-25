@@ -1,5 +1,6 @@
 {
   "title": "Unified Inbox",
+  "pageTitle": "Unified Inbox",
   "refresh": "Refresh",
   "searchPlaceholder": "Search conversations...",
   "filters": {
@@ -27,7 +28,9 @@
     "main": "Main",
     "general": "General",
     "requests": "Requests",
-    "spam": "Spam"
+    "spam": "Spam",
+    "fbComments": "Facebook Comments",
+    "igComments": "Instagram Comments"
   },
   "loading": "Loading…",
   "noConversations": "No conversations",
@@ -64,16 +67,22 @@
   "orderValue": "Value",
   "products": "Products",
   "viewOrder": "View Order",
+  "viewAllOrders": "View All Orders",
   "noActivity": "No activity recorded",
   "contact": "Contact",
   "categories": "Categories",
   "notAvailable": "Not available",
   "egp": "EGP",
+  "backToList": "Back to list",
   "markAsResolved": "Mark as Resolved",
+  "markUnread": "Mark as Unread",
+  "archive": "Archive",
+  "block": "Block",
   "hideProfile": "Hide Profile",
   "showProfile": "Show Profile",
   "deleteConversation": "Delete Conversation",
   "deleteConfirm": "Are you sure you want to delete this conversation?",
+  "blockConfirm": "Are you sure you want to block this customer?",
   "sendFailed": "Failed to send message, please try again",
   "uploadFailed": "Failed to upload file, please try again",
   "fileTooLarge": "File is too large (max 20 MB)",
@@ -97,6 +106,8 @@
   "notePlaceholder": "Write a note about this customer...",
   "save": "Save",
   "cancel": "Cancel",
+  "chooseExistingFile": "Choose existing file",
+  "upload": "Upload",
   "noNotes": "No notes yet",
   "stats": "Stats",
   "quickOrder": "Create Order",
@@ -177,13 +188,15 @@
   "customer": {
     "contactInfo": "Contact Information",
     "customerSince": "Customer since {{date}}",
+    "ltv": "LTV",
     "stats": "Statistics",
     "orders": "Orders",
     "conversations": "Conversations",
     "recentOrders": "Recent Orders",
     "orderStatus": {
       "completed": "Completed",
-      "pending": "Pending"
+      "pending": "Pending",
+      "cancelled": "Cancelled"
     },
     "tags": "Tags",
     "notes": "Notes",
