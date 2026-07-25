@@ -5,18 +5,7 @@
 
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { getSystemStatusFromTurbo } = require('../utils/statusNormalizer');
-
-/**
- * Mappings for GuestOrder string statuses
- */
-const GUEST_ORDER_STATUS_MAP = {
-  'DELIVERED': 'DELIVERED',
-  'SHIPPED': 'SHIPPED',
-  'PROCESSING': 'PROCESSING',
-  'CANCELLED': 'CANCELLED',
-  'RETURNED': 'RETURNED',
-  'ON_HOLD': 'ON_HOLD'
-};
+const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
 
 /**
  * Synchronize Turbo shipment status update across Order / GuestOrder tables
@@ -74,8 +63,12 @@ async function syncTurboStatusToOrder({
   }
 
   // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
-  // إذا كانت الشحنة لم تدخل فرع تربو بعد (branch null/empty)، فإن حالتها في تربو هي "قيد الانتظار" (turbo_sent)
-  if (canonicalTurboStatus === 'processing' && (!payload?.branch || !String(payload.branch).trim())) {
+  // ⚠️ ONLY apply branch-presence check when branch info is EXPLICITLY available in the payload
+  // (e.g., from Webhook which always includes branch field). During manual sync/API calls,
+  // branch is often missing from the response — absence of branch ≠ "not in branch".
+  // Without this guard, all processing orders get wrongly downgraded to turbo_sent during sync.
+  const hasBranchFieldInPayload = payload && ('branch' in payload || 'expected_branch' in payload);
+  if (canonicalTurboStatus === 'processing' && hasBranchFieldInPayload && (!payload?.branch || !String(payload.branch).trim())) {
     canonicalTurboStatus = 'turbo_sent';
     orderStatus = null;
   }

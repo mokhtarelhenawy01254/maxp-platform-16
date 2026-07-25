@@ -1,0 +1,263 @@
+jest.mock('axios', () => ({
+  post: jest.fn(),
+  get: jest.fn(),
+}));
+
+jest.mock('../../../utils/turbo/errorHandler', () => ({
+  handleError: jest.fn((error) => { throw error; }),
+}));
+
+const axios = require('axios');
+const { FALLBACK_GOVERNMENTS } = require('../../../utils/turbo/constants');
+
+// LocationService has module-level cache — we reset it between tests by
+// clearing the module registry so each describe block gets a fresh cache.
+let LocationService;
+
+function createMockClient(overrides = {}) {
+  return {
+    getApiKey: jest.fn().mockResolvedValue('test-api-key'),
+    getHeaders: jest.fn().mockResolvedValue({ Accept: 'application/json', 'Content-Type': 'application/json' }),
+    getMainClientCode: jest.fn().mockResolvedValue('37321'),
+    baseUrl: 'https://backoffice.turbo-eg.com/external-api',
+    timeout: 30000,
+    ...overrides,
+  };
+}
+
+describe('LocationService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Re-require to get a fresh module-level cache each time
+    jest.resetModules();
+    // Re-apply mocks after resetModules
+    jest.mock('axios', () => ({ post: jest.fn(), get: jest.fn() }));
+    jest.mock('../../../utils/turbo/errorHandler', () => ({
+      handleError: jest.fn((error) => { throw error; }),
+    }));
+    LocationService = require('../../../services/turbo/locationService');
+  });
+
+  describe('getGovernments', () => {
+    test('fetches from API and returns cleaned governments (feed format)', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: {
+          success: 1,
+          feed: [
+            { id: '1', name: 'القاهرة' },
+            { id: '2', name: 'الجيزة' },
+          ],
+        },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+
+      expect(result.success).toBe(true);
+      expect(result.governments).toHaveLength(2);
+      expect(result.governments[0]).toEqual({ id: '1', name: 'القاهرة' });
+      expect(result.count).toBe(2);
+    });
+
+    test('returns cached data on second call within TTL', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }] },
+      });
+
+      const service = new LocationService(client);
+      await service.getGovernments(); // first call — fills cache
+      await service.getGovernments(); // second call — should use cache
+
+      expect(axiosMock.get).toHaveBeenCalledTimes(1);
+      const second = await service.getGovernments();
+      expect(second.fromCache).toBe(true);
+    });
+
+    test('falls back to FALLBACK_GOVERNMENTS when getApiKey throws', async () => {
+      const client = createMockClient({
+        getApiKey: jest.fn().mockRejectedValue(new Error('Turbo not enabled')),
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+
+      expect(result.success).toBe(true);
+      expect(result.isFallback).toBe(true);
+      expect(result.governments).toEqual(FALLBACK_GOVERNMENTS);
+      expect(result.count).toBe(27);
+    });
+
+    test('falls back to FALLBACK_GOVERNMENTS when API call throws', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockRejectedValue(new Error('network error'));
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+
+      expect(result.success).toBe(true);
+      expect(result.isFallback).toBe(true);
+      expect(result.governments).toEqual(FALLBACK_GOVERNMENTS);
+    });
+
+    test('handles governorates format in response', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: { governorates: [{ id: '3', name: 'الإسكندرية' }] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+      expect(result.governments[0].name).toBe('الإسكندرية');
+    });
+
+    test('handles plain array format in response', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: [{ id: '4', name: 'الدقهلية' }, { id: '5', name: 'الشرقية' }],
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+      expect(result.governments).toHaveLength(2);
+      expect(result.governments[0].name).toBe('الدقهلية');
+    });
+
+    test('normalizes string-only entries', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: { success: 1, feed: ['القاهرة', 'الجيزة'] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getGovernments();
+      expect(result.governments[0]).toEqual({ id: 'القاهرة', name: 'القاهرة' });
+    });
+  });
+
+  describe('getAreas', () => {
+    test('returns areas for valid governmentId (feed format)', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: {
+          success: 1,
+          feed: [{ id: 'a1', name: 'المعادي' }, { id: 'a2', name: 'حلوان' }],
+        },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getAreas('1');
+
+      expect(result.success).toBe(true);
+      expect(result.areas).toHaveLength(2);
+      expect(result.areas[0].name).toBe('المعادي');
+      expect(result.count).toBe(2);
+    });
+
+    test('returns empty array when no governmentId provided', async () => {
+      const client = createMockClient();
+      const service = new LocationService(client);
+      const result = await service.getAreas(null);
+
+      expect(result.success).toBe(true);
+      expect(result.areas).toEqual([]);
+    });
+
+    test('caches areas by governmentId', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }] },
+      });
+
+      const service = new LocationService(client);
+      await service.getAreas('1');
+      const second = await service.getAreas('1');
+
+      expect(axiosMock.get).toHaveBeenCalledTimes(1);
+      expect(second.fromCache).toBe(true);
+    });
+
+    test('returns empty on API error', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockRejectedValue(new Error('API error'));
+
+      const service = new LocationService(client);
+      const result = await service.getAreas('99');
+
+      expect(result.success).toBe(true);
+      expect(result.areas).toEqual([]);
+      expect(result.count).toBe(0);
+    });
+  });
+
+  describe('getBranches', () => {
+    test('returns formatted branches list', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({
+        data: {
+          branches: [
+            {
+              id: 'b1', name: 'فرع القاهرة', address: 'شارع 10',
+              city: 'القاهرة', governorate: 'القاهرة', phone: '0225000000',
+              working_hours: '9am-5pm', is_active: true,
+            },
+          ],
+        },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.getBranches('القاهرة', 'القاهرة');
+
+      expect(result.success).toBe(true);
+      expect(result.branches).toHaveLength(1);
+      expect(result.branches[0]).toMatchObject({
+        id: 'b1',
+        name: 'فرع القاهرة',
+        city: 'القاهرة',
+        workingHours: '9am-5pm',
+        isActive: true,
+      });
+    });
+
+    test('passes city and governorate as query params', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({ data: { branches: [] } });
+
+      const service = new LocationService(client);
+      await service.getBranches('الجيزة', 'الجيزة');
+
+      expect(axiosMock.get).toHaveBeenCalledWith(
+        expect.stringContaining('/branches'),
+        expect.objectContaining({
+          params: { city: 'الجيزة', governorate: 'الجيزة' },
+        })
+      );
+    });
+
+    test('omits params when city and governorate are null', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValue({ data: [] });
+
+      const service = new LocationService(client);
+      await service.getBranches(null, null);
+
+      expect(axiosMock.get).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ params: {} })
+      );
+    });
+  });
+});

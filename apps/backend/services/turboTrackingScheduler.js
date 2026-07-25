@@ -8,6 +8,8 @@ const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const TurboService = require('./turboService');
 const { syncTurboStatusToOrder } = require('./turboStatusSyncService');
 
+const TERMINAL_TURBO_STATUSES = ['delivered', 'cancelled', 'returned', 'remitted'];
+
 class TurboTrackingScheduler {
   constructor() {
     this.isRunning = false;
@@ -93,7 +95,7 @@ class TurboTrackingScheduler {
           const orders = await safeQuery(() => prisma.order.findMany({
             where: {
               companyId: company.id,
-              turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted'] },
+              turboShipmentStatus: { notIn: TERMINAL_TURBO_STATUSES },
               OR: [{ turboShipmentId: { in: codes } }, { turboTrackingNumber: { in: codes } }]
             },
             select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
@@ -124,7 +126,7 @@ class TurboTrackingScheduler {
           const guestOrders = await safeQuery(() => prisma.guestOrder.findMany({
             where: {
               companyId: company.id,
-              turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted'] },
+              turboShipmentStatus: { notIn: TERMINAL_TURBO_STATUSES },
               OR: [{ turboShipmentId: { in: codes } }, { turboTrackingNumber: { in: codes } }]
             },
             select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
