@@ -55,7 +55,9 @@ router.post('/webhook', async (req, res) => {
     // الرد فوراً لـ Turbo (يجب أن يكون خلال 5 ثوان)
     res.status(200).json({ success: true, received: true });
 
-    const orderNumber = webhookData.remote_order_id || webhookData.order_number;
+    const orderNumber = (webhookData.remote_order_id && webhookData.remote_order_id !== '0' && webhookData.remote_order_id !== 0)
+      ? webhookData.remote_order_id
+      : webhookData.order_number;
     const turboOrderNumber = webhookData.order_number;
     const statusCode = webhookData.status;
 
