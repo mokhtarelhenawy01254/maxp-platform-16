@@ -224,6 +224,79 @@ router.get('/debug/search/:code', verifyToken.authenticateToken, async (req, res
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/**
+ * GET /api/turbo/debug/ghost-orders
+ * Find processing orders NOT in current Turbo get-status (likely delivered/returned without webhook)
+ */
+router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
+    const { syncTurboStatusToOrder } = require('../services/turboStatusSyncService');
+    const axios = require('axios');
+    const prisma = getSharedPrismaClient();
+    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboMainClientCode: true } }), 2);
+    if (!company?.turboApiKey) return res.json({ error: 'No turbo API key' });
+
+    const apiKey = company.turboApiKey;
+    const clientCode = company.turboMainClientCode || 37321;
+    const from = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
+    const to = new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0];
+
+    // 1. Get current active orders from Turbo API
+    const getstatus = await axios.post('https://backoffice.turbo-eg.com/external-api/get-status', { authentication_key: apiKey, main_client_code: clientCode, from, to }, { timeout: 20000 });
+    const activeInTurbo = new Set((getstatus.data?.data || []).map(s => String(s.code)));
+    const activeDistribution = {};
+    (getstatus.data?.data || []).forEach(s => { const k = `${s.status_code}(${s.status})`; activeDistribution[k] = (activeDistribution[k]||0)+1; });
+
+    // 2. Get ALL active orders in MaxP
+    const activeOrders = await safeQuery(() => prisma.order.findMany({
+      where: { companyId, turboShipmentStatus: { in: ['processing', 'out_for_delivery', 'turbo_sent'] }, turboShipmentId: { not: null } },
+      select: { id: true, orderNumber: true, turboShipmentId: true, turboShipmentStatus: true, createdAt: true }
+    }), 2);
+
+    // 3. Identify ghost orders = in MaxP as active but NOT in Turbo get-status
+    const ghostOrders = activeOrders.filter(o => !activeInTurbo.has(String(o.turboShipmentId)));
+    const trueActive = activeOrders.filter(o => activeInTurbo.has(String(o.turboShipmentId)));
+
+    // 4. For ghost processing orders (not ghost turbo_sent which are likely status_code=2),
+    //    try platform search to find their final status
+    const fix = req.query.fix === 'true';
+    const fixResults = [];
+    const ghostProcessing = ghostOrders.filter(o => o.turboShipmentStatus === 'processing');
+    
+    if (fix && ghostProcessing.length > 0) {
+      for (const o of ghostProcessing.slice(0, 20)) { // max 20 at a time
+        try {
+          const sr = await axios.post('https://platform.turbo.info/external-api/search-order', { authentication_key: apiKey, main_client_code: clientCode, search_Key: o.turboShipmentId }, { timeout: 10000 });
+          const d = sr.data?.data?.[0];
+          if (d && d.status_code) {
+            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: true, status_code: d.status_code, status: d.status });
+            await syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: String(d.status_code), payload: { ...d, isWebhook: false, source: 'ghost_fix' } }).catch(() => {});
+          } else {
+            fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: false, note: '404 from platform' });
+          }
+        } catch(e) { fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, error: e.message }); }
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    res.json({
+      summary: {
+        turboActiveCount: activeInTurbo.size,
+        turboDistribution: activeDistribution,
+        maxpActiveCount: activeOrders.length,
+        ghostCount: ghostOrders.length,
+        ghostProcessing: ghostProcessing.length,
+        ghostTurboSent: ghostOrders.filter(o=>o.turboShipmentStatus==='turbo_sent').length,
+        trueActiveCount: trueActive.length,
+      },
+      ghostOrders: ghostOrders.map(o => ({ orderNumber: o.orderNumber, turboCode: o.turboShipmentId, status: o.turboShipmentStatus, createdAt: o.createdAt })),
+      fixResults: fix ? fixResults : 'Pass ?fix=true to attempt fixing ghost processing orders'
+    });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
 
 

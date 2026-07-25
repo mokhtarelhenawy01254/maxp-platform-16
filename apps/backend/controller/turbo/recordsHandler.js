@@ -123,6 +123,9 @@ const getRecords = async (req, res) => {
     statusCountsObj['returned'] = statusCountsObj['returned_to_company'] || 0;
     statusCountsObj['merchant_preparing'] = (statusCountsObj['turbo_saved'] || 0) + (statusCountsObj['turbo_sent'] || 0);
     statusCountsObj['preparing'] = statusCountsObj['merchant_preparing'] + (statusCountsObj['processing'] || 0);
+    // Combined "in Turbo pipeline" = what Turbo dashboard calls "قيد التنفيذ" (status_code 2+3+4)
+    statusCountsObj['in_turbo_pipeline'] = (statusCountsObj['turbo_sent'] || 0) + (statusCountsObj['processing'] || 0) + (statusCountsObj['out_for_delivery'] || 0);
+
 
     const financialOrders = await safeQuery(() => prisma.order.findMany({ where: baseWhere, select: { total: true, turboShipmentStatus: true } }), 2).catch(() => []);
     let pendingRemittanceAmount = 0, pendingRemittanceCount = 0, activeInTransitAmount = 0, activeInTransitCount = 0, remittedAmount = 0, remittedCount = 0;
