@@ -92,6 +92,22 @@ export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> =
 
 export const VISIBLE_COLUMNS_STORAGE_KEY = "preparation:queue:visible-columns-v1";
 
+export const PREPARATION_FILTER_SECTIONS = [
+  "tabs",
+  "search",
+  "toggleButtons",
+  "advanced",
+] as const;
+
+export type PreparationFilterSection = (typeof PREPARATION_FILTER_SECTIONS)[number];
+
+export const PREPARATION_FILTER_SECTION_LABELS: Record<PreparationFilterSection, string> = {
+  tabs: "شريط التبويبات",
+  search: "البحث",
+  toggleButtons: "أزرار التبديل",
+  advanced: "الفلاتر المتقدمة",
+};
+
 export const SORT_OPTIONS = [
   { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },
   { value: "createdAt_asc", label: "Oldest First", labelKey: "preparation.sortOptions.createdAt_asc" },

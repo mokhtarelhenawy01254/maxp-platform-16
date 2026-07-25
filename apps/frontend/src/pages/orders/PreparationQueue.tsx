@@ -18,11 +18,14 @@ import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
   PREPARATION_COLUMN_LABELS,
+  PREPARATION_FILTER_SECTION_LABELS,
+  PREPARATION_FILTER_SECTIONS,
   PREPARATION_TABLE_COLUMNS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
   VISIBLE_COLUMNS_STORAGE_KEY,
   type PageSize,
+  type PreparationFilterSection,
   type PreparationTableColumn,
 } from "./preparation/constants";
 import {
@@ -192,6 +195,28 @@ const PreparationQueue: React.FC = () => {
     );
   };
 
+  const [visibleFilterSections, setVisibleFilterSections] = useState<PreparationFilterSection[]>(() => {
+    if (typeof window === "undefined") return [...PREPARATION_FILTER_SECTIONS];
+    try {
+      const raw = window.localStorage.getItem("preparation:queue:visible-filters-v1");
+      if (!raw) return [...PREPARATION_FILTER_SECTIONS];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every((s: string) => PREPARATION_FILTER_SECTIONS.includes(s as PreparationFilterSection))) {
+        return parsed as PreparationFilterSection[];
+      }
+    } catch { /* ignore */ }
+    return [...PREPARATION_FILTER_SECTIONS];
+  });
+  const [showFilters, setShowFilters] = useState(true);
+
+  const toggleFilterSection = (section: PreparationFilterSection) => {
+    setVisibleFilterSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section],
+    );
+  };
+
   const {
     activeStage,
     selectedWarehouseId,
@@ -305,9 +330,10 @@ const PreparationQueue: React.FC = () => {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(VISIBLE_COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
+        window.localStorage.setItem("preparation:queue:visible-filters-v1", JSON.stringify(visibleFilterSections));
       } catch { /* ignore */ }
     }
-  }, [visibleColumns]);
+  }, [visibleColumns, visibleFilterSections]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1273,40 +1299,43 @@ const PreparationQueue: React.FC = () => {
         </div>
       ) : null}
 
-      <PreparationFilters
-        activeFilter={activeStage}
-        statusCounts={statusCounts}
-        stageCounts={summary.stageCounts}
-        filterTabs={filterTabs}
-        visibleOrdersCount={visibleOrdersCount}
-        search={search}
-        selectedWarehouseId={selectedWarehouseId}
-        stockFilter={stockFilter}
-        shortageReasonFilter={shortageReasonFilter}
-        shortageOwnerFilter={shortageOwnerFilter}
-        shortageOwnerOptions={shortageOwnerOptions}
-        shortageFollowUpFilter={shortageFollowUpFilter}
-        productFilter={productFilter}
-        productSuggestions={productSuggestions}
-        itemCountFilter={itemCountFilter}
-        notPrintedFilter={notPrintedFilter}
-        noShippingCodeFilter={noShippingCodeFilter}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        warehouses={warehouses}
-        onFilterChange={uiActions.setActiveStage}
-        onSearchChange={uiActions.setSearch}
-        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-        onStockFilterChange={uiActions.setStockFilter}
-        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-        onProductFilterChange={uiActions.setProductFilter}
-        onItemCountFilterChange={uiActions.setItemCountFilter}
-        onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
-        onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
-        onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
-      />
+      {showFilters && (
+        <PreparationFilters
+          activeFilter={activeStage}
+          statusCounts={statusCounts}
+          stageCounts={summary.stageCounts}
+          filterTabs={filterTabs}
+          visibleOrdersCount={visibleOrdersCount}
+          search={search}
+          selectedWarehouseId={selectedWarehouseId}
+          stockFilter={stockFilter}
+          shortageReasonFilter={shortageReasonFilter}
+          shortageOwnerFilter={shortageOwnerFilter}
+          shortageOwnerOptions={shortageOwnerOptions}
+          shortageFollowUpFilter={shortageFollowUpFilter}
+          productFilter={productFilter}
+          productSuggestions={productSuggestions}
+          itemCountFilter={itemCountFilter}
+          notPrintedFilter={notPrintedFilter}
+          noShippingCodeFilter={noShippingCodeFilter}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          warehouses={warehouses}
+          visibleFilterSections={visibleFilterSections}
+          onFilterChange={uiActions.setActiveStage}
+          onSearchChange={uiActions.setSearch}
+          onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+          onStockFilterChange={uiActions.setStockFilter}
+          onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+          onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+          onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+          onProductFilterChange={uiActions.setProductFilter}
+          onItemCountFilterChange={uiActions.setItemCountFilter}
+          onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
+          onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
+          onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
+        />
+      )}
 
       <div className="border-t border-gray-100 px-4 py-3">
           <PreparationBulkActions
@@ -1365,7 +1394,7 @@ const PreparationQueue: React.FC = () => {
               <Cog6ToothIcon className="h-3.5 w-3.5" />
             </button>
             {columnSettingsOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
                 <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
                   الأعمدة الظاهرة
                 </div>
@@ -1381,6 +1410,36 @@ const PreparationQueue: React.FC = () => {
                       className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                     />
                     {PREPARATION_COLUMN_LABELS[col]}
+                  </label>
+                ))}
+
+                <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+                  إظهار/إخفاء الفلاتر
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={showFilters}
+                    onChange={() => setShowFilters((prev) => !prev)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  إظهار شريط الفلاتر
+                </label>
+                {PREPARATION_FILTER_SECTIONS.map((section) => (
+                  <label
+                    key={section}
+                    className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-gray-50 ${
+                      showFilters ? "text-gray-700" : "text-gray-300 pointer-events-none"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showFilters && visibleFilterSections.includes(section)}
+                      onChange={() => toggleFilterSection(section)}
+                      disabled={!showFilters}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    {PREPARATION_FILTER_SECTION_LABELS[section]}
                   </label>
                 ))}
               </div>
