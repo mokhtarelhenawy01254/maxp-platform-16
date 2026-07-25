@@ -81,7 +81,7 @@ class TrackingService {
       console.log(`📊 [TURBO-GETSTATUS] Returned ${shipments.length} orders. Distribution:`, JSON.stringify(statusDist));
 
       // 🚨 Turbo API /get-status returns only ~20 records (first page, no pagination).
-      // Fetch remaining non-terminal orders individually via /search-order.
+      // Fetch remaining non-terminal orders in CONCURRENT batches via /search-order.
       if (this.companyId && shipments.length > 0) {
         const batchCodes = new Set(shipments.map(s => s.code).filter(Boolean));
         try {
@@ -98,27 +98,37 @@ class TrackingService {
             }), 3
           );
 
-          let fetchedCount = 0;
-          for (const dbOrder of dbOrders) {
-            const code = dbOrder.turboShipmentId || dbOrder.turboTrackingNumber;
-            if (!code || batchCodes.has(code) || fetchedCount >= 50) continue;
-            try {
-              await new Promise(r => setTimeout(r, 200));
-              const sr = await axios.post(`${this._client.baseUrl}/search-order`, {
-                authentication_key: apiKey,
-                main_client_code: mainClientCode || 37321,
-                search_key: String(code)
-              }, { headers, timeout: this._client.timeout });
-              const item = sr.data?.result?.[0];
-              if (item) {
-                shipments.push(item);
-                batchCodes.add(code);
-                fetchedCount++;
+          const codesToFetch = dbOrders
+            .map(o => o.turboShipmentId || o.turboTrackingNumber)
+            .filter(c => c && !batchCodes.has(c))
+            .slice(0, 100);
+
+          if (codesToFetch.length > 0) {
+            const CONCURRENCY = 5;
+            const results = [];
+            for (let i = 0; i < codesToFetch.length; i += CONCURRENCY) {
+              const batch = codesToFetch.slice(i, i + CONCURRENCY);
+              const settled = await Promise.allSettled(batch.map(code =>
+                axios.post(`${this._client.baseUrl}/search-order`, {
+                  authentication_key: apiKey,
+                  main_client_code: mainClientCode || 37321,
+                  search_key: String(code)
+                }, { headers, timeout: this._client.timeout })
+              ));
+              for (let j = 0; j < settled.length; j++) {
+                const s = settled[j];
+                if (s.status === 'fulfilled') {
+                  const item = s.value.data?.result?.[0];
+                  if (item) {
+                    shipments.push(item);
+                    results.push(batch[j]);
+                  }
+                }
               }
-            } catch (_) { /* skip individual failures */ }
-          }
-          if (fetchedCount > 0) {
-            console.log(`📊 [TURBO-GETSTATUS] Fetched ${fetchedCount} additional orders individually via /search-order. Total: ${shipments.length}`);
+            }
+            if (results.length > 0) {
+              console.log(`📊 [TURBO-GETSTATUS] Fetched ${results.length} additional orders concurrently via /search-order. Total: ${shipments.length}`);
+            }
           }
         } catch (_) { /* DB fallback: continue with batch results only */ }
       }
