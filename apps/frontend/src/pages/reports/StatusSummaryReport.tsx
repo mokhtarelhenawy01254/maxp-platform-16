@@ -152,7 +152,7 @@ const StatusSummaryReport: React.FC = () => {
     const loadStatuses = async () => {
       setFetchingStatuses(true);
       try {
-        const res = await apiClient.get("/analytics/statuses", { params: { statusType: "order" } });
+        const res = await apiClient.get("/analytics/statuses", { params: { statusType: "order,preparation" } });
         const statuses: { code: string; name: string }[] = res.data?.data || [];
         setStatusOptions(statuses.map((s) => ({ value: s.code, label: s.name })));
       } catch (err) {

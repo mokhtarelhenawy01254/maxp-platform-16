@@ -11,7 +11,8 @@ const ORDER_STATUS_VALUES = new Set([
   'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
   'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
   'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
-  'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
+  'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED',
+  'STOCK_SHORTAGE'
 ]);
 
 const normalizeAnalyticsDateInput = (value, { endOfDay = false } = {}) => {
@@ -3752,21 +3753,26 @@ const getAvailableStatuses = async (req, res) => {
 
     let finalStatuses = [];
 
-    if (statusType === 'order' || !statusType) {
-      const { DEFAULT_ORDER_STATUSES } = require('./orderStatusController');
+    if (statusType === 'order' || statusType === 'order,preparation' || !statusType) {
+      const { DEFAULT_ORDER_STATUSES, DEFAULT_PREPARATION_STATUSES } = require('./orderStatusController');
       
-      // 1. Get standard statuses
+      // 1. Get standard order statuses
       const standardMap = new Map();
       if (DEFAULT_ORDER_STATUSES) {
         DEFAULT_ORDER_STATUSES.forEach(s => standardMap.set(s.code, s));
       }
 
-      // 2. Get statuses configured in the DB for this company
+      // 1b. Get standard preparation statuses (for status-summary to include Stock Shortage etc.)
+      if (DEFAULT_PREPARATION_STATUSES) {
+        DEFAULT_PREPARATION_STATUSES.forEach(s => standardMap.set(s.code, s));
+      }
+
+      // 2. Get statuses configured in the DB for this company (both order and preparation)
       const dbStatuses = await prisma.orderStatusConfig.findMany({
         where: {
           companyId: String(companyId),
           isActive: true,
-          statusType: 'order'
+          statusType: { in: ['order', 'preparation'] }
         },
         select: {
           code: true,
