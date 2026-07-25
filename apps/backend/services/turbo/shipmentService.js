@@ -2,7 +2,7 @@ const axios = require('axios');
 const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName } = require('../../utils/turbo/addressParser');
 const { getTurboGovernorateName, findGovernmentByCity } = require('../../utils/turbo/governorateMapper');
 const { handleError } = require('../../utils/turbo/errorHandler');
-const { getNumericInvoiceNumber } = require('../../utils/turbo/orderFormatter');
+
 
 class ShipmentService {
   constructor(apiClient) {
@@ -236,7 +236,7 @@ class ShipmentService {
         phone2: formattedData.alternativePhone || null, api_followup_phone: senderNumber || validPhone,
         government: cleanGovernorate, area: cleanArea, address: cleanAddress,
         notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
-        invoice_number: getNumericInvoiceNumber(formattedData.orderNumber, shipmentId),
+        invoice_number: String(formattedData.orderNumber || ''),
         order_summary: formattedSummary, return_summary: formattedData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: codAmount, return_amount: returnAmt, is_order: isOrderVal,
         can_open: formattedData.canOpen !== undefined ? (formattedData.canOpen ? "1" : "0") : "1",
