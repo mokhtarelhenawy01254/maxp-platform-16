@@ -15,14 +15,17 @@ class TrackingService {
       const trackingNumberStr = String(trackingNumber || '');
 
       try {
-        const searchResponse = await axios.post(`${this._client.baseUrl}/search-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_key: trackingNumberStr }, { headers, timeout: this._client.timeout });
+        const searchResponse = await axios.post(`${this._client.baseUrl}/search-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_Key: trackingNumberStr }, { headers, timeout: this._client.timeout });
         const searchData = searchResponse.data;
+        console.log(`🔍 [TURBO-TRACK] search-order for ${trackingNumberStr}: success=${searchData?.success}, hasData=${!!searchData?.data}`);
         if (searchData && (searchData.success === 1 || searchData.success === true) && searchData.data) {
           const shipment = Array.isArray(searchData.data) ? searchData.data[0] : searchData.data;
           if (shipment) return { success: true, data: { code: trackingNumberStr, status: shipment.status || shipment.status_text || 'created', status_code: shipment.status_code || null, internalStatus: shipment.status || shipment.status_text || 'created', raw: shipment } };
         }
         return { success: false, error: 'Shipment not found in Turbo' };
-      } catch (searchErr) {}
+      } catch (searchErr) {
+        console.warn(`⚠️ [TURBO-TRACK] search-order failed for ${trackingNumberStr}:`, searchErr.response?.status, searchErr.response?.data?.message || searchErr.message);
+      }
 
       const today = new Date().toISOString().split('T')[0];
       const from90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -30,7 +33,9 @@ class TrackingService {
         const statusResp = await axios.post(`${this._client.baseUrl}/get-status`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, from: from90, to: today }, { headers, timeout: this._client.timeout });
         const found = (statusResp.data?.data || []).find(s => String(s.code) === trackingNumberStr || String(s.bar_code) === trackingNumberStr || String(s.invoice_number) === trackingNumberStr);
         if (found) return { success: true, data: { code: found.code, status: found.status, status_code: found.status_code, internalStatus: found.status, raw: found } };
-      } catch (statusErr) {}
+      } catch (statusErr) {
+        console.warn(`⚠️ [TURBO-TRACK] get-status fallback failed for ${trackingNumberStr}:`, statusErr.response?.status, statusErr.response?.data?.message || statusErr.message);
+      }
 
       return { success: false, error: 'Shipment not found in Turbo خلال آخر 90 يوم' };
     } catch (outerErr) {

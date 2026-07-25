@@ -63,6 +63,36 @@ const getRecords = async (req, res) => {
               for (const k of keys) { if (turboStatuses[k]) { live = turboStatuses[k]; break; } }
               if (live) { const rawStat = live.internalStatus || live.status || live.statusCode; await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: live }).catch(() => {}); }
             }
+
+            // 🔄 FALLBACK: For turbo_sent orders NOT found in get-status, try individual search-order
+            // Turbo's get-status API doesn't return all orders (e.g., some قيد التنفيذ orders).
+            // search-order can find them individually.
+            const missingOrders = allCompanyOrders.filter(o => {
+              if (!o.turboShipmentId || o.turboShipmentStatus !== 'turbo_sent') return false;
+              const keys = [o.turboShipmentId, o.turboTrackingNumber].filter(Boolean).map(k => String(k).trim().toLowerCase());
+              return !keys.some(k => turboStatuses[k]);
+            });
+            if (missingOrders.length > 0) {
+              console.log(`🔄 [TURBO-REFRESH] ${missingOrders.length} turbo_sent orders not in get-status, trying search-order individually (max 50)...`);
+              const batch = missingOrders.slice(0, 50);
+              let fixed = 0;
+              for (const o of batch) {
+                try {
+                  const shipmentCode = o.turboShipmentId || o.turboTrackingNumber;
+                  const searchResult = await svc.trackShipment(shipmentCode);
+                  if (searchResult?.success && searchResult.data) {
+                    const rawStat = searchResult.data.internalStatus || searchResult.data.status || 'turbo_sent';
+                    if (rawStat !== 'turbo_sent') {
+                      await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: searchResult.data.raw || searchResult.data }).catch(() => {});
+                      fixed++;
+                    }
+                  }
+                } catch (e) { /* individual search-order failed, skip */ }
+                // Small delay to avoid rate limiting
+                await new Promise(r => setTimeout(r, 200));
+              }
+              console.log(`🔄 [TURBO-REFRESH] Fixed ${fixed}/${batch.length} orders via individual search-order`);
+            }
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
       }
