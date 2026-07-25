@@ -117,6 +117,12 @@ const CANONICAL_TURBO_MAP = {
   '12': 'returned_destroyed',
   '17': 'returned_destroyed',
 
+  // Code 20: Returned Received (مرتجعات وصلتني)
+  'returned_received': 'returned_received',
+  'مرتجعات وصلتني': 'returned_received',
+  'status_20': 'returned_received',
+  '20': 'returned_received',
+
   // Code 13: Delayed (مؤجلة مع المندوب)
   'delayed': 'delayed',
   'on hold': 'delayed',
@@ -140,6 +146,7 @@ const SYSTEM_STATUS_MAPPING = {
   'delivered': { orderStatus: 'DELIVERED', paymentStatus: 'COMPLETED' },
   'remitted': { orderStatus: 'DELIVERED', paymentStatus: 'COMPLETED' },
   'returned_to_company': { orderStatus: 'RETURNED', paymentStatus: null },
+  'returned_received': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_resent': { orderStatus: 'PROCESSING', paymentStatus: null },
   'returned_missing': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_destroyed': { orderStatus: 'RETURNED', paymentStatus: null },
