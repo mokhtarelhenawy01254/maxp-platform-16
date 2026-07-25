@@ -282,12 +282,12 @@ const STATUS_FILTER_ALIASES = {
   'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
   'delayed': ['delayed', 'status_13', '13'],
   'shipped': ['out_for_delivery', 'status_4', '4'],
-  'returned': ['returned_to_company', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12', '5', '10', '11', '12', '14', '15', '16', '17']
+  'returned': ['returned_to_company', 'returned_received', 'returned_resent', 'returned_missing', 'returned_destroyed', 'returned', 'status_5', 'status_10', 'status_11', 'status_12', 'status_20', '5', '10', '11', '12', '14', '15', '16', '17', '20']
 };
 
 const TURBO_SPECIFIC_FILTERS = new Set([
   'merchant_preparing', 'preparing', 'turbo_saved', 'turbo_sent', 'processing',
-  'out_for_delivery', 'returned_to_company', 'remitted', 'archived',
+  'out_for_delivery', 'returned_to_company', 'returned_received', 'remitted', 'archived',
   'returned_resent', 'returned_missing', 'returned_destroyed', 'delayed'
 ]);
 

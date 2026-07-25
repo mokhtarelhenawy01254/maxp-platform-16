@@ -139,7 +139,7 @@ class TrackingService {
         shipments: shipments.map(s => {
           const rawStatus = (s.status || '').trim();
           const statusCodeStr = String(s.status_code || '');
-          const mapped = TURBO_STATUS_CODE_MAP[statusCodeStr] || TURBO_STATUS_CODE_MAP[rawStatus] || TURBO_STATUS_CODE_MAP[rawStatus.toLowerCase()] || (rawStatus ? rawStatus.toLowerCase() : 'turbo_saved');
+          const mapped = TURBO_STATUS_CODE_MAP[rawStatus] || TURBO_STATUS_CODE_MAP[rawStatus.toLowerCase()] || TURBO_STATUS_CODE_MAP[statusCodeStr] || (rawStatus ? rawStatus.toLowerCase() : 'turbo_saved');
           return { code: s.code, barCode: s.bar_code, status: s.status, statusCode: s.status_code, internalStatus: mapped, returnReason: s.return_reason, delayReason: s.delay_reason, branch: s.branch, captain: s.captain, captainNumber1: s.captain_number1, captainNumber2: s.captain_number2, receivedAmount: s.received_amount, expectedBranch: s.expected_branch, invoiceNumber: s.invoice_number, returnedInventoryStatus: s.returned_inventory_status, raw: s };
         }),
         count: shipments.length,
