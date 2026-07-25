@@ -1,10 +1,12 @@
 const axios = require('axios');
 const { handleError, getTurboErrorMessage } = require('../../utils/turbo/errorHandler');
 const { TURBO_STATUS_CODE_MAP } = require('../../utils/turbo/constants');
+const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
 
 class TrackingService {
-  constructor(apiClient) {
+  constructor(apiClient, companyId = null) {
     this._client = apiClient;
+    this.companyId = companyId;
   }
 
   async trackShipment(trackingNumber) {
@@ -66,7 +68,7 @@ class TrackingService {
       const response = await axios.post(`${this._client.baseUrl}/get-status`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, from, to }, { headers, timeout: this._client.timeout });
       const result = response.data;
       if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
-      const shipments = result.data || [];
+      const shipments = Array.isArray(result.data) ? [...result.data] : [];
 
       // 📊 DIAGNOSTIC: Log status distribution from get-status
       const statusDist = {};
@@ -77,6 +79,49 @@ class TrackingService {
         statusDist[key] = (statusDist[key] || 0) + 1;
       });
       console.log(`📊 [TURBO-GETSTATUS] Returned ${shipments.length} orders. Distribution:`, JSON.stringify(statusDist));
+
+      // 🚨 Turbo API /get-status returns only ~20 records (first page, no pagination).
+      // Fetch remaining non-terminal orders individually via /search-order.
+      if (this.companyId && shipments.length > 0) {
+        const batchCodes = new Set(shipments.map(s => s.code).filter(Boolean));
+        try {
+          const prisma = getSharedPrismaClient();
+          const dbOrders = await safeQuery(() =>
+            prisma.order.findMany({
+              where: {
+                companyId: this.companyId,
+                turboShipmentId: { not: null },
+                turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
+              },
+              select: { turboShipmentId: true, turboTrackingNumber: true },
+              take: 200
+            }), 3
+          );
+
+          let fetchedCount = 0;
+          for (const dbOrder of dbOrders) {
+            const code = dbOrder.turboShipmentId || dbOrder.turboTrackingNumber;
+            if (!code || batchCodes.has(code) || fetchedCount >= 50) continue;
+            try {
+              await new Promise(r => setTimeout(r, 200));
+              const sr = await axios.post(`${this._client.baseUrl}/search-order`, {
+                authentication_key: apiKey,
+                main_client_code: mainClientCode || 37321,
+                search_key: String(code)
+              }, { headers, timeout: this._client.timeout });
+              const item = sr.data?.result?.[0];
+              if (item) {
+                shipments.push(item);
+                batchCodes.add(code);
+                fetchedCount++;
+              }
+            } catch (_) { /* skip individual failures */ }
+          }
+          if (fetchedCount > 0) {
+            console.log(`📊 [TURBO-GETSTATUS] Fetched ${fetchedCount} additional orders individually via /search-order. Total: ${shipments.length}`);
+          }
+        } catch (_) { /* DB fallback: continue with batch results only */ }
+      }
 
       return {
         success: true,

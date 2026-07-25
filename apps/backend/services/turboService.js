@@ -16,7 +16,7 @@ class TurboService {
   constructor(apiKey = null, companyId = null) {
     this._client = new TurboApiClient(apiKey, companyId);
     this._shipment = new ShipmentService(this._client);
-    this._tracking = new TrackingService(this._client);
+    this._tracking = new TrackingService(this._client, companyId);
     this._location = new LocationService(this._client);
     this._label = new LabelService(this._client);
     this._ticket = new TicketService(this._client);
