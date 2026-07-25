@@ -46,7 +46,7 @@ const getRecords = async (req, res) => {
           const turboStatusSyncService = require('../../services/turboStatusSyncService');
           const svc = new TurboService(comp.turboApiKey, companyId);
           const now = new Date();
-          const startDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Last 15 days - within Turbo's pagination limit
+          const startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 180 days - captures all finalized orders
           const endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           const r = await svc.fetchAllStatuses(startDate, endDate);
           if (r.success && Array.isArray(r.shipments)) {
