@@ -64,34 +64,41 @@ const getRecords = async (req, res) => {
               if (live) { const rawStat = live.internalStatus || live.status || live.statusCode; await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: live }).catch(() => {}); }
             }
 
-            // 🔄 FALLBACK: For turbo_sent orders NOT found in get-status, try individual search-order
-            // Turbo's get-status API doesn't return all orders (e.g., some قيد التنفيذ orders).
-            // search-order can find them individually.
+            // 🔄 FALLBACK: For turbo_sent orders NOT found in get-status, search ALL individually in BACKGROUND
+            // Turbo's get-status API doesn't return status_code=2 (قيد الانتظار) orders,
+            // so we use search-order to check if any have moved to status_code=3 (قيد التنفيذ).
+            // Runs asynchronously so the API response isn't blocked.
             const missingOrders = allCompanyOrders.filter(o => {
               if (!o.turboShipmentId || o.turboShipmentStatus !== 'turbo_sent') return false;
               const keys = [o.turboShipmentId, o.turboTrackingNumber].filter(Boolean).map(k => String(k).trim().toLowerCase());
               return !keys.some(k => turboStatuses[k]);
             });
             if (missingOrders.length > 0) {
-              console.log(`🔄 [TURBO-REFRESH] ${missingOrders.length} turbo_sent orders not in get-status, trying search-order individually (max 50)...`);
-              const batch = missingOrders.slice(0, 50);
-              let fixed = 0;
-              for (const o of batch) {
-                try {
-                  const shipmentCode = o.turboShipmentId || o.turboTrackingNumber;
-                  const searchResult = await svc.trackShipment(shipmentCode);
-                  if (searchResult?.success && searchResult.data) {
-                    const rawStat = searchResult.data.internalStatus || searchResult.data.status || 'turbo_sent';
-                    if (rawStat !== 'turbo_sent') {
-                      await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: searchResult.data.raw || searchResult.data }).catch(() => {});
-                      fixed++;
+              console.log(`🔄 [TURBO-REFRESH] ${missingOrders.length} turbo_sent orders not in get-status — launching background search-order for ALL...`);
+              // Fire-and-forget: update in background so API responds immediately
+              setImmediate(async () => {
+                let fixed = 0, checked = 0;
+                for (const o of missingOrders) {
+                  try {
+                    const shipmentCode = o.turboShipmentId || o.turboTrackingNumber;
+                    const searchResult = await svc.trackShipment(shipmentCode);
+                    checked++;
+                    if (searchResult?.success && searchResult.data) {
+                      const rawStat = searchResult.data.internalStatus || searchResult.data.status || 'turbo_sent';
+                      console.log(`🔍 [TURBO-BG] ${shipmentCode}: success=true, status="${rawStat}"`);
+                      if (rawStat !== 'turbo_sent') {
+                        await turboStatusSyncService.syncTurboStatusToOrder({ orderId: o.id, orderNumber: o.orderNumber, companyId, rawStatus: rawStat, payload: searchResult.data.raw || searchResult.data }).catch(() => {});
+                        fixed++;
+                      }
+                    } else {
+                      // Log first 5 failures for diagnostics
+                      if (checked <= 5) console.log(`🔍 [TURBO-BG] ${shipmentCode}: success=false, error="${searchResult?.error || 'unknown'}"`);
                     }
-                  }
-                } catch (e) { /* individual search-order failed, skip */ }
-                // Small delay to avoid rate limiting
-                await new Promise(r => setTimeout(r, 200));
-              }
-              console.log(`🔄 [TURBO-REFRESH] Fixed ${fixed}/${batch.length} orders via individual search-order`);
+                  } catch (e) { /* individual search-order failed, skip */ }
+                  await new Promise(r => setTimeout(r, 150)); // 150ms delay between calls
+                }
+                console.log(`✅ [TURBO-BG] Background search-order complete: ${fixed}/${checked} orders updated from turbo_sent`);
+              });
             }
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
