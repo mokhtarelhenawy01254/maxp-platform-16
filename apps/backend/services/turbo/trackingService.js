@@ -68,6 +68,16 @@ class TrackingService {
       if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
       const shipments = result.data || [];
 
+      // 📊 DIAGNOSTIC: Log status distribution from get-status
+      const statusDist = {};
+      shipments.forEach(s => {
+        const code = String(s.status_code || '?');
+        const text = s.status || '?';
+        const key = `${code}(${text})`;
+        statusDist[key] = (statusDist[key] || 0) + 1;
+      });
+      console.log(`📊 [TURBO-GETSTATUS] Returned ${shipments.length} orders. Distribution:`, JSON.stringify(statusDist));
+
       return {
         success: true,
         shipments: shipments.map(s => {
