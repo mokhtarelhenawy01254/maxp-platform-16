@@ -92,6 +92,7 @@ enum MessageType {
   PACKAGED
   ON_HOLD_PREP
   PARTIALLY_DELIVERED
+  STOCK_SHORTAGE
 }
 
 enum PaymentStatus {
