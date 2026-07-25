@@ -3890,7 +3890,7 @@ const getStatusSummaryReport = async (req, res) => {
     const orders = await prisma.$queryRawUnsafe(`
       SELECT o.id, o.status, o.metadata, o.shipping, o."createdAt",
              oi.oi_quantity, oi.oi_total
-      FROM "Order" o
+      FROM "orders" o
       LEFT JOIN LATERAL (
         SELECT COALESCE(SUM(oi_inner.quantity), 0)::int AS oi_quantity,
                COALESCE(SUM(oi_inner.total), 0)::numeric AS oi_total
@@ -4017,7 +4017,7 @@ const getStatusSummaryOrders = async (req, res) => {
     const oCountQueryParams = [...oQueryParams];
     const oCountSql = `
       SELECT COUNT(*)::int AS total
-      FROM "Order" o
+      FROM "orders" o
       WHERE o."companyId" = $1
         AND ${oDateClause}
         AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
@@ -4032,7 +4032,7 @@ const getStatusSummaryOrders = async (req, res) => {
              o.subtotal, o."customerId", o.governorate, o.city, o."paymentMethod",
              o."sourceType", o."createdAt",
              c."firstName", c."lastName", c.phone
-      FROM "Order" o
+      FROM "orders" o
       LEFT JOIN "Customer" c ON c.id = o."customerId"
       WHERE o."companyId" = $1
         AND ${oDateClause}
@@ -4166,7 +4166,7 @@ const getStatusSummaryItems = async (req, res) => {
              o.id AS o_id, o."orderNumber", o.status, o.metadata, o."createdAt",
              p.name AS p_name, p.sku AS p_sku
       FROM "order_items" oi
-      JOIN "Order" o ON o.id = oi."orderId"
+      JOIN "orders" o ON o.id = oi."orderId"
       LEFT JOIN "Product" p ON p.id = oi."productId"
       WHERE o."companyId" = $1
         AND ${iDateClause}
@@ -4203,7 +4203,7 @@ const getStatusSummaryItems = async (req, res) => {
     const countItemsSql = `
       SELECT COUNT(*)::int AS total
       FROM "order_items" oi
-      JOIN "Order" o ON o.id = oi."orderId"
+      JOIN "orders" o ON o.id = oi."orderId"
       WHERE o."companyId" = $1
         AND ${iDateClause}
         AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
