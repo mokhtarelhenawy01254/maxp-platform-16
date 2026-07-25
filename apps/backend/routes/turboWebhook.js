@@ -74,7 +74,7 @@ router.post('/webhook', async (req, res) => {
       orderNumber: searchOrderNumber,
       companyId: companyId,
       rawStatus: statusCode,
-      payload: webhookData,
+      payload: { ...webhookData, isWebhook: true, source: 'webhook' },
       isGuestOrder: false
     });
 

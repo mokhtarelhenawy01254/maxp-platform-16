@@ -63,14 +63,24 @@ async function syncTurboStatusToOrder({
   }
 
   // 🎯 التمييز الجوهري بين (قيد الانتظار) و (قيد التنفيذ بالفرع):
-  // ⚠️ ONLY apply branch-presence check when branch info is EXPLICITLY available in the payload
-  // (e.g., from Webhook which always includes branch field). During manual sync/API calls,
-  // branch is often missing from the response — absence of branch ≠ "not in branch".
-  // Without this guard, all processing orders get wrongly downgraded to turbo_sent during sync.
+  // ⚠️ ONLY downgrade processing→turbo_sent when we have CONFIRMED branch info from Webhook.
+  // During API sync (fetchAllStatuses), branch=null does NOT mean "not in branch" —
+  // Turbo's get-status API often omits branch even for status_code=3 orders.
+  // Guard: only fire if payload has explicit 'isWebhook' marker OR branch has a non-null VALUE.
   const hasBranchFieldInPayload = payload && ('branch' in payload || 'expected_branch' in payload);
-  if (canonicalTurboStatus === 'processing' && hasBranchFieldInPayload && (!payload?.branch || !String(payload.branch).trim())) {
-    canonicalTurboStatus = 'turbo_sent';
-    orderStatus = null;
+  const isWebhookPayload = payload?.isWebhook === true || payload?.source === 'webhook';
+  const branchValue = payload?.branch || payload?.expected_branch;
+  const hasExplicitBranch = branchValue && String(branchValue).trim().length > 0;
+  if (
+    canonicalTurboStatus === 'processing' &&
+    hasBranchFieldInPayload &&
+    !hasExplicitBranch &&      // branch is null/empty
+    !isWebhookPayload          // AND not from a trusted Webhook source
+  ) {
+    // API sync with null branch — do NOT downgrade processing to turbo_sent.
+    // The absence of branch in get-status API doesn't mean the order left the branch.
+    console.warn(`⚠️ [TURBO-SYNC] Skipping processing→turbo_sent downgrade (null branch from API sync, not webhook).`);
+    // Keep canonicalTurboStatus as 'processing'
   }
 
   console.log(`📦 [TURBO-SYNC] Syncing order ${orderNumber || orderId}: rawStatus="${rawStatus}" -> canonical="${canonicalTurboStatus}", systemOrderStatus="${orderStatus}", systemPaymentStatus="${paymentStatus}", companyId=${companyId || 'global'}`);
