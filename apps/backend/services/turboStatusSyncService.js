@@ -87,14 +87,28 @@ async function syncTurboStatusToOrder({
 
   // Helper to build flexible lookup filters
   const buildLookupWhere = () => {
-    const searchValues = Array.from(new Set([
+    const rawValues = [
       orderId,
       orderNumber,
       payload.remote_order_id,
       payload.order_number
-    ].filter(Boolean).map(v => String(v).trim())));
+    ];
 
-    const orConditions = searchValues.flatMap(val => [
+    const searchValues = Array.from(new Set(
+      rawValues
+        .filter(v => v !== null && v !== undefined && v !== '' && v !== '0' && v !== 0 && v !== 'undefined' && v !== 'null')
+        .map(v => String(v).trim())
+    ));
+
+    // Also try without 'R' suffix for each value
+    const rSuffixValues = searchValues.flatMap(val => [
+      val,
+      val.replace(/R$/i, ''),
+      val + 'R'
+    ]);
+    const allValues = Array.from(new Set(rSuffixValues));
+
+    const orConditions = allValues.flatMap(val => [
       { id: val },
       { orderNumber: val },
       { turboTrackingNumber: val },
