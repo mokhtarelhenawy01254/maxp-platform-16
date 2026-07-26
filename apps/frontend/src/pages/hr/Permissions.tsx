@@ -54,6 +54,7 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import { toast } from "sonner";
 
@@ -138,6 +139,7 @@ const statusConfig: Record<
 };
 
 const Permissions: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isMyPermissions = location.pathname === "/my-permissions";
 
@@ -394,11 +396,11 @@ const Permissions: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              أذونات الحضور والانصراف
+              {t("employee.permissions.title")}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
               <History className="h-4 w-4" />
-              {pagination.total} إذن مسجل في النظام
+              {t("employee.permissions.totalRecords", { count: pagination.total })}
             </p>
           </div>
         </div>

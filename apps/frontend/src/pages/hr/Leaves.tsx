@@ -54,6 +54,7 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import { toast } from "sonner";
 
@@ -134,6 +135,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 const Leaves: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isMyLeaves = location.pathname === "/my-leaves";
   const [loading, setLoading] = useState(true);
@@ -539,10 +541,10 @@ const Leaves: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {isMyLeaves ? "إجازاتي" : "إدارة الإجازات"}
+            {isMyLeaves ? t("employee.leaves.myLeaves") : t("employee.leaves.manageLeaves")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {pagination.total} طلب إجازة
+            {t("employee.leaves.totalRequests", { count: pagination.total })}
           </p>
         </div>
         <div className="flex gap-3">

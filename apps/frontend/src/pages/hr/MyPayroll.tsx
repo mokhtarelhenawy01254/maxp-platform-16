@@ -19,6 +19,7 @@ import {
 import api from "../../services/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useCompany } from "../../contexts/CompanyContext";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -82,6 +83,7 @@ interface PayrollData {
 }
 
 const MyPayroll: React.FC = () => {
+  const { t } = useTranslation();
   const { company } = useCompany();
   const [loading, setLoading] = useState<boolean>(true);
   const [payrollData, setPayrollData] = useState<PayrollData | null>(null);
@@ -299,12 +301,12 @@ const MyPayroll: React.FC = () => {
             className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-emerald-400 uppercase bg-emerald-500/5 px-5 py-2 rounded-full border border-emerald-500/20 w-fit backdrop-blur-md"
           >
             <ShieldCheck className="h-4 w-4" />
-            بيانات مالية معتمدة وآمنة
+            {t("employee.payroll.subtitle")}
           </motion.div>
 
           <div className="space-y-4">
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight">
-              أهلاً بك، <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-emerald-500 to-indigo-500">{payrollData?.employee?.firstName}</span>
+              {t("employee.payroll.welcome", { name: payrollData?.employee?.firstName })}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-2xl leading-relaxed">
               إليك التفاصيل الكاملة لراتبك لشهر <span className="text-slate-900 dark:text-white font-bold">{months.find(m => m.value === month)?.label} {year}</span>. تم تحديث البيانات بنجاح.

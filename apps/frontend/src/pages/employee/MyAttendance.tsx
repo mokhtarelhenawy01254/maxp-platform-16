@@ -44,6 +44,7 @@ import {
 import api from "../../services/api";
 import { toast } from "sonner";
 import { envConfig } from "../../config/environment";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 
 interface TodayAttendance {
@@ -110,6 +111,7 @@ const statusConfig: Record<
 };
 
 const MyAttendance: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const timezone = user?.timezone || "Africa/Cairo";
   const [loading, setLoading] = useState(true);
@@ -689,10 +691,10 @@ const MyAttendance: React.FC = () => {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            حضوري وانصرافي
+            {t("employee.attendance.myAttendance")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            إدارة أوقات الحضور والانصراف
+            {t("employee.attendance.myAttendanceDesc")}
           </p>
           {user && (
             <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">

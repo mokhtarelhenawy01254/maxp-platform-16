@@ -25,6 +25,7 @@ import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { useTranslation } from "react-i18next";
 
 interface Warning {
     id: string;
@@ -62,6 +63,7 @@ const severityConfig: Record<string, { label: string; color: string; icon: any }
 };
 
 const MyWarnings: React.FC = () => {
+    const { t } = useTranslation();
     const { formatDate } = useDateFormat();
     const [warnings, setWarnings] = useState<Warning[]>([]);
     const [loading, setLoading] = useState(true);
@@ -137,10 +139,10 @@ const MyWarnings: React.FC = () => {
                     <div className="space-y-2">
                         <h1 className="text-3xl font-extrabold flex items-center gap-3">
                             <ShieldAlert className="h-10 w-10 text-white/90" />
-                            إنذاراتي وتنبيهاتي
+                            {t("employee.warnings.title")}
                         </h1>
                         <p className="text-white/80 text-lg max-w-xl">
-                            هنا تجد سجل الإنذارات والتنبيهات الرسمية المسجلة بحسابك. يرجى مراجعة كل إنذار وتأكيد العلم به.
+                            {t("employee.warnings.subtitle")}
                         </p>
                     </div>
                     <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
