@@ -6,17 +6,15 @@ const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 
 async function ensureReturnOrder(originalOrder, rCode, turboStatus) {
   const prisma = getSharedPrismaClient();
+  const returnOrderNum = `R-${originalOrder.orderNumber}`;
 
-  // Check if return order already exists for this R code
+  // Check if return order already exists by order number
   const existing = await safeQuery(() =>
     prisma.order.findFirst({
-      where: { companyId: originalOrder.companyId, turboShipmentId: rCode }
+      where: { companyId: originalOrder.companyId, orderNumber: returnOrderNum }
     }), 2
   );
   if (existing) return existing;
-
-  // Create new return order
-  const returnOrderNum = `R-${originalOrder.orderNumber}`;
 
   const newOrder = await safeQuery(() =>
     prisma.order.create({
