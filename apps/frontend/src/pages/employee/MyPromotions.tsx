@@ -104,10 +104,10 @@ const MyPromotions: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                         <Award className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-                        ترقياتي ومساري الوظيفي
+                        {t("employee.promotions.title")}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        سجل الترقيات والتغييرات في المنصب والمستوى الوظيفي
+                        {t("employee.promotions.subtitle")}
                     </p>
                 </div>
             </div>
