@@ -496,9 +496,9 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                   {item.productName}
                 </h4>
 
-                {typeof itemMetadata.sku === "string" && itemMetadata.sku.trim() && (
+                {(item.productSku || (typeof itemMetadata.sku === "string" && itemMetadata.sku.trim())) && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-1.5">
-                    {itemMetadata.sku}
+                    {item.productSku || itemMetadata.sku}
                   </p>
                 )}
 

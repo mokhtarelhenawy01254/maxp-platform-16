@@ -482,6 +482,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
                 resolveOrderImageSrc(itemMetadata.images) ||
                 resolveOrderImageSrc(item.product?.images) ||
                 "",
+              productSku: item.sku || item.productSku || itemMetadata.sku || "",
               price: validPrice,
               quantity: validQuantity,
               total: parseFloat(item.total) || validPrice * validQuantity,

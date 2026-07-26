@@ -691,6 +691,8 @@ const OrderDetails: React.FC = () => {
       getFirstImage(product.image) ||
       "";
 
+    const itemSku = variant?.sku || product.sku;
+
     const newItem = {
       productId: variant?.id || product.id,
       productName: product.name,
@@ -700,11 +702,12 @@ const OrderDetails: React.FC = () => {
       productColor,
       productSize,
       productImage, // ✅ ADDED: Image field
+      productSku: itemSku,
       metadata: {
         ...metadata,
         image: productImage, // Add to metadata as backup
         variantId: variant?.id,
-        sku: variant?.sku || product.sku,
+        sku: itemSku,
         originalProductId: product.id,
       },
     };
