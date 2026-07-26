@@ -581,7 +581,7 @@ const PreparationQueue: React.FC = () => {
     const uniqueOwners = new Set<string>();
 
     serverShortageOwnerOptions.forEach((owner) => {
-      const normalizedOwner = owner.trim();
+      const normalizedOwner = (owner || "").trim();
       if (normalizedOwner) {
         uniqueOwners.add(normalizedOwner);
       }
@@ -635,8 +635,8 @@ const PreparationQueue: React.FC = () => {
         stockFilter,
         shortageReasonFilter,
         shortageFollowUpFilter,
-        shortageOwnerFilter.trim().toLowerCase(),
-        deferredSearch.trim().toLowerCase(),
+        (shortageOwnerFilter || "").trim().toLowerCase(),
+        (deferredSearch || "").trim().toLowerCase(),
         notPrintedFilter,
         noShippingCodeFilter,
         sortBy,
