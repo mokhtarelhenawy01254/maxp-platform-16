@@ -741,7 +741,7 @@ async function updateCustomerPreferences(req, res) {
 
 function getCategoryForEvent(eventType) {
   if (eventType.startsWith('TASK_')) return 'TASKS';
-  if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDER';
+  if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDERS';
   if (eventType === 'NEW_SIGNUP_WELCOME') return 'CUSTOMER';
   if (
     eventType === 'NEW_SIGNUP_ADMIN_ALERT' ||
@@ -751,8 +751,8 @@ function getCategoryForEvent(eventType) {
     return 'SYSTEM';
   }
   if (eventType === 'NEWSLETTER_SUBSCRIBED') return 'MARKETING';
-  if (eventType.startsWith('CART_')) return 'MARKETING';
-  if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT')) return 'MARKETING';
+  if (eventType.startsWith('CART_')) return 'ABANDONED_CART';
+  if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT') || eventType === 'LOW_STOCK_ALERT') return 'PRODUCTS';
   if (eventType.startsWith('ATTENDANCE_') || eventType.startsWith('LEAVE_') || eventType.startsWith('PAYROLL') || eventType.startsWith('BIRTHDAY_EMPLOYEE') || eventType.startsWith('WARNING_') || eventType.startsWith('ANNOUNCEMENT')) return 'HR';
   if (eventType === 'OTP') return 'SYSTEM';
   return 'MARKETING';
