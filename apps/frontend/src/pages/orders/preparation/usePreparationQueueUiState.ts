@@ -20,6 +20,8 @@ export interface PreparationQueueUiState {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
@@ -42,6 +44,8 @@ type PreparationQueueUiAction =
   | { type: "set_shortage_follow_up_filter"; value: ShortageFollowUpFilter }
   | { type: "set_shortage_owner_filter"; value: string }
   | { type: "set_product_filter"; value: string }
+  | { type: "set_product_color_filter"; value: string }
+  | { type: "set_product_size_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_not_printed_filter"; value: NotPrintedFilter }
   | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
@@ -68,6 +72,8 @@ const initialState: PreparationQueueUiState = {
   shortageFollowUpFilter: "all",
   shortageOwnerFilter: "",
   productFilter: "",
+  productColorFilter: "",
+  productSizeFilter: "",
   itemCountFilter: "all",
   notPrintedFilter: "all",
   noShippingCodeFilter: "all",
@@ -115,6 +121,10 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { shortageOwnerFilter: action.value });
     case "set_product_filter":
       return withPageReset(state, { productFilter: action.value });
+    case "set_product_color_filter":
+      return withPageReset(state, { productColorFilter: action.value });
+    case "set_product_size_filter":
+      return withPageReset(state, { productSizeFilter: action.value });
     case "set_item_count_filter":
       return withPageReset(state, { itemCountFilter: action.value });
     case "set_not_printed_filter":
@@ -233,6 +243,10 @@ export const usePreparationQueueUiState = (
         dispatch({ type: "set_shortage_owner_filter", value }),
       setProductFilter: (value: string) =>
         dispatch({ type: "set_product_filter", value }),
+      setProductColorFilter: (value: string) =>
+        dispatch({ type: "set_product_color_filter", value }),
+      setProductSizeFilter: (value: string) =>
+        dispatch({ type: "set_product_size_filter", value }),
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
       setNotPrintedFilter: (value: NotPrintedFilter) =>

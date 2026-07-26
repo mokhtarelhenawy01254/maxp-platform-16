@@ -65,6 +65,8 @@ interface UsePreparationQueueDataParams {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
@@ -154,6 +156,8 @@ const buildOrdersQueryKey = (
     params.shortageFollowUpFilter,
     params.shortageOwnerFilter.trim().toLowerCase(),
     params.productFilter.trim().toLowerCase(),
+    params.productColorFilter.trim().toLowerCase(),
+    params.productSizeFilter.trim().toLowerCase(),
     params.itemCountFilter,
     params.notPrintedFilter,
     params.noShippingCodeFilter,
@@ -180,6 +184,8 @@ const fetchOrdersData = async (
         shortageFollowUp: params.shortageFollowUpFilter,
         shortageOwner: params.shortageOwnerFilter.trim() || undefined,
         productFilter: params.productFilter.trim() || undefined,
+        colorFilter: params.productColorFilter.trim() || undefined,
+        sizeFilter: params.productSizeFilter.trim() || undefined,
         itemCountFilter: params.itemCountFilter,
         notPrinted: params.notPrintedFilter === "not_printed" || undefined,
         noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
@@ -307,6 +313,8 @@ export const usePreparationQueueData = ({
   shortageFollowUpFilter,
   shortageOwnerFilter,
   productFilter,
+  productColorFilter,
+  productSizeFilter,
   itemCountFilter,
   notPrintedFilter,
   noShippingCodeFilter,
@@ -340,6 +348,8 @@ export const usePreparationQueueData = ({
       shortageFollowUpFilter,
       shortageOwnerFilter,
       productFilter,
+      productColorFilter,
+      productSizeFilter,
       itemCountFilter,
       notPrintedFilter,
       noShippingCodeFilter,
@@ -358,6 +368,8 @@ export const usePreparationQueueData = ({
       shortageReasonFilter,
       stockFilter,
       productFilter,
+      productColorFilter,
+      productSizeFilter,
       itemCountFilter,
       notPrintedFilter,
       noShippingCodeFilter,

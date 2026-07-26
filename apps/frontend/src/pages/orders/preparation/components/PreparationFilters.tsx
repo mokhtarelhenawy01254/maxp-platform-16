@@ -40,6 +40,8 @@ interface PreparationFiltersProps {
   shortageOwnerOptions: string[];
   shortageFollowUpFilter: ShortageFollowUpFilter;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
   productSuggestions: ProductSuggestion[];
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
@@ -56,6 +58,8 @@ interface PreparationFiltersProps {
   onShortageOwnerFilterChange: (value: string) => void;
   onShortageFollowUpFilterChange: (value: ShortageFollowUpFilter) => void;
   onProductFilterChange: (value: string) => void;
+  onProductColorFilterChange: (value: string) => void;
+  onProductSizeFilterChange: (value: string) => void;
   onItemCountFilterChange: (value: ItemCountFilter) => void;
   onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
   onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
@@ -79,6 +83,8 @@ const PreparationFilters = ({
   shortageOwnerOptions,
   shortageFollowUpFilter,
   productFilter,
+  productColorFilter,
+  productSizeFilter,
   productSuggestions,
   itemCountFilter,
   notPrintedFilter,
@@ -95,6 +101,8 @@ const PreparationFilters = ({
   onShortageOwnerFilterChange,
   onShortageFollowUpFilterChange,
   onProductFilterChange,
+  onProductColorFilterChange,
+  onProductSizeFilterChange,
   onItemCountFilterChange,
   onNotPrintedFilterChange,
   onNoShippingCodeFilterChange,
@@ -183,6 +191,8 @@ const PreparationFilters = ({
     onShortageOwnerFilterChange("");
     onShortageFollowUpFilterChange("all");
     onProductFilterChange("");
+    onProductColorFilterChange("");
+    onProductSizeFilterChange("");
     onItemCountFilterChange("all");
     onNotPrintedFilterChange("all");
     onNoShippingCodeFilterChange("all");
@@ -373,6 +383,32 @@ const PreparationFilters = ({
                 )}
               </div>
             )}
+          </div>
+          
+          <div className="relative min-w-[120px]">
+            <select
+              value={productColorFilter}
+              onChange={(e) => onProductColorFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">اللون (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.color).filter(Boolean))).map((color, idx) => (
+                <option key={idx} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative min-w-[120px]">
+            <select
+              value={productSizeFilter}
+              onChange={(e) => onProductSizeFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">المقاس (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.size).filter(Boolean))).map((size, idx) => (
+                <option key={idx} value={size}>{size}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}

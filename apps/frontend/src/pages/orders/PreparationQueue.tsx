@@ -1314,6 +1314,8 @@ const PreparationQueue: React.FC = () => {
           shortageOwnerOptions={shortageOwnerOptions}
           shortageFollowUpFilter={shortageFollowUpFilter}
           productFilter={productFilter}
+          productColorFilter={uiState.productColorFilter}
+          productSizeFilter={uiState.productSizeFilter}
           productSuggestions={productSuggestions}
           itemCountFilter={itemCountFilter}
           notPrintedFilter={notPrintedFilter}
@@ -1330,6 +1332,8 @@ const PreparationQueue: React.FC = () => {
           onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
           onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
           onProductFilterChange={uiActions.setProductFilter}
+          onProductColorFilterChange={uiActions.setProductColorFilter}
+          onProductSizeFilterChange={uiActions.setProductSizeFilter}
           onItemCountFilterChange={uiActions.setItemCountFilter}
           onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
           onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}

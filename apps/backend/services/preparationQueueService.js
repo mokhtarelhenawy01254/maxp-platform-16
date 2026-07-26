@@ -866,6 +866,8 @@ const matchesPreparationFilters = ({
   notPrinted,
   noShippingCode,
   productFilter,
+  colorFilter,
+  sizeFilter,
 }) => {
   if (!order.warehouseMatch) return false;
 
@@ -917,12 +919,23 @@ const matchesPreparationFilters = ({
     }
   }
 
-  if (productFilter) {
+  if (productFilter || colorFilter || sizeFilter) {
     const matchesProduct = (order.itemInsights || []).some(
-      (item) =>
-        (item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
-        (item.color && item.color.toLowerCase().includes(productFilter)) ||
-        (item.size && item.size.toLowerCase().includes(productFilter))
+      (item) => {
+        let match = true;
+        if (productFilter) {
+          match = match && ((item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
+          (item.color && item.color.toLowerCase().includes(productFilter)) ||
+          (item.size && item.size.toLowerCase().includes(productFilter)));
+        }
+        if (colorFilter) {
+          match = match && (item.color && item.color.toLowerCase() === colorFilter);
+        }
+        if (sizeFilter) {
+          match = match && (item.size && item.size.toLowerCase() === sizeFilter);
+        }
+        return match;
+      }
     );
     if (!matchesProduct) return false;
   }
@@ -1274,6 +1287,8 @@ const getPreparationQueue = async ({ user, query }) => {
   const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
   const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
   const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1399,6 +1414,8 @@ const getPreparationQueue = async ({ user, query }) => {
         notPrinted,
         noShippingCode,
         productFilter,
+        colorFilter,
+        sizeFilter,
       });
 
       if (!matchesFilters) {
@@ -1515,6 +1532,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   const notPrinted = query.notPrinted === 'true';
   const noShippingCode = query.noShippingCode === 'true';
   const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
 
   const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
   if (!normalizedStatus) {
@@ -1615,6 +1634,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
         notPrinted,
         noShippingCode,
         productFilter,
+        colorFilter,
+        sizeFilter,
       });
 
       if (!matchesFilters) return;
