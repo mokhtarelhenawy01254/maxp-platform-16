@@ -72,6 +72,7 @@ import {
     HeartIcon,
     EyeIcon,
 } from '@heroicons/react/24/outline';
+import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
@@ -534,9 +535,9 @@ export const getSidebarConfig = (
 
         // 2️⃣ فيسبوك
         {
-            id: 'facebook',
-            title: t('sidebar.facebookSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'facebook',
+          title: t('sidebar.facebookSection'),
+          icon: FacebookIcon,
             items: [
                 { to: '/facebook-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookInbox') },
                 { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
@@ -552,9 +553,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.1 إنستجرام
         {
-            id: 'instagram',
-            title: t('sidebar.instagramSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'instagram',
+          title: t('sidebar.instagramSection'),
+          icon: InstagramIcon,
             items: [
                 { to: '/instagram-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.instagramInbox') },
                 { to: '/settings/instagram', icon: CogIcon, label: t('sidebar.instagramSettings') },
@@ -565,9 +566,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.5 واتساب
         {
-            id: 'whatsapp',
-            title: t('sidebar.whatsappSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'whatsapp',
+          title: t('sidebar.whatsappSection'),
+          icon: WhatsAppIcon,
             items: [
                 { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
                 { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
@@ -597,9 +598,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.6 تليجرام
         {
-            id: 'telegram',
-            title: t('sidebar.telegramSection'),
-            icon: PaperAirplaneIcon,
+          id: 'telegram',
+          title: t('sidebar.telegramSection'),
+          icon: TelegramIcon,
             items: [
                 { to: '/telegram/pro', icon: PaperAirplaneIcon, label: t('sidebar.telegramPro') },
                 { to: '/telegram-userbot', icon: UserCircleIcon, label: t('sidebar.telegramUserbot') },
