@@ -4,8 +4,29 @@
  */
 
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
-const { getSystemStatusFromTurbo } = require('../utils/statusNormalizer');
+const { getSystemStatusFromTurbo, getSystemStatusFromTurboWithCustomMapping } = require('../utils/statusNormalizer');
 const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
+
+/**
+ * Fetch per-company turboStatusMapping from company settings.
+ * Returns null if no custom mapping is configured.
+ */
+async function getCompanyTurboMapping(companyId) {
+  if (!companyId) return null;
+  try {
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+    if (!company?.settings) return null;
+    const parsed = typeof company.settings === 'string' ? JSON.parse(company.settings) : company.settings;
+    return parsed.turboStatusMapping || null;
+  } catch (e) {
+    console.warn(`⚠️ [TURBO-SYNC] Failed to fetch company turbo mapping for ${companyId}:`, e.message);
+    return null;
+  }
+}
 
 /**
  * Synchronize Turbo shipment status update across Order / GuestOrder tables
@@ -30,11 +51,16 @@ async function syncTurboStatusToOrder({
   const prisma = getSharedPrismaClient();
 
   const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
-  let { canonicalTurboStatus, orderStatus, paymentStatus } = getSystemStatusFromTurbo(
-    (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
-      ? locationText
-      : rawStatus
-  );
+  const rawStatusInput = (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
+    ? locationText
+    : rawStatus;
+
+  // Fetch per-company custom mapping if companyId is available
+  const customMapping = companyId ? await getCompanyTurboMapping(companyId) : null;
+
+  let { canonicalTurboStatus, orderStatus, paymentStatus } = customMapping
+    ? getSystemStatusFromTurboWithCustomMapping(rawStatusInput, customMapping)
+    : getSystemStatusFromTurbo(rawStatusInput);
 
   // 🚨 CRITICAL GUARD: "returned" text alone (without status_code 5/14/20) is AMBIGUOUS in Turbo API.
   // Turbo returns "returned" text for is_order=1 shipments even when they are actually DELIVERED.

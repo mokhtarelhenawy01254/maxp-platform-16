@@ -194,9 +194,54 @@ const getSystemStatusFromTurbo = (rawStatus) => {
   };
 };
 
+/**
+ * Maps a raw Turbo status using per-company custom mapping, falling back to the hard-coded defaults.
+ * @param {string} rawStatus - Raw status from Turbo API/webhook
+ * @param {Object|null} customMapping - Per-company mapping { turboStatus: { orderStatus: 'STATUS' } }
+ */
+const getSystemStatusFromTurboWithCustomMapping = (rawStatus, customMapping) => {
+  const canonical = normalizeTurboStatus(rawStatus);
+  const defaultResult = getSystemStatusFromTurbo(rawStatus);
+
+  if (customMapping && customMapping[canonical] && customMapping[canonical].orderStatus) {
+    const mappedOrderStatus = customMapping[canonical].orderStatus;
+    return {
+      canonicalTurboStatus: canonical,
+      orderStatus: mappedOrderStatus,
+      paymentStatus: mappedOrderStatus === 'DELIVERED' ? 'COMPLETED' : null
+    };
+  }
+
+  return defaultResult;
+};
+
+/**
+ * Returns the list of canonical Turbo statuses with Arabic labels for the UI.
+ */
+const TURBO_STATUS_DEFINITIONS = {
+  turbo_saved: { labelAr: 'تم الحفظ (بانتظار الإرسال)', labelEn: 'Saved (Pending Send)' },
+  turbo_sent: { labelAr: 'مرسلة لتربو', labelEn: 'Sent to Turbo' },
+  processing: { labelAr: 'قيد التنفيذ بالفرع', labelEn: 'Branch Processing' },
+  out_for_delivery: { labelAr: 'خرجت للتوصيل', labelEn: 'Out for Delivery' },
+  delivered: { labelAr: 'تم التسليم', labelEn: 'Delivered' },
+  remitted: { labelAr: 'تم التوريد والتحصيل', labelEn: 'Remitted' },
+  returned_to_company: { labelAr: 'مرتجعات بالشركة', labelEn: 'Returned to Company' },
+  returned_received: { labelAr: 'مرتجعات وصلتني', labelEn: 'Returned Received' },
+  returned_to_customer: { labelAr: 'مرتجعة للعميل', labelEn: 'Returned to Customer' },
+  returned_resent: { labelAr: 'معاد إرسالها', labelEn: 'Returned Resent' },
+  returned_missing: { labelAr: 'مرتجع مفقود', labelEn: 'Returned Missing' },
+  returned_destroyed: { labelAr: 'مرتجع معدوم', labelEn: 'Returned Destroyed' },
+  cancelled: { labelAr: 'ملغي', labelEn: 'Cancelled' },
+  delayed: { labelAr: 'مؤجلة', labelEn: 'Delayed' },
+  incomplete: { labelAr: 'غير مكتملة', labelEn: 'Incomplete' },
+  archived: { labelAr: 'مؤرشفة', labelEn: 'Archived' }
+};
+
 module.exports = {
   CANONICAL_TURBO_MAP,
   SYSTEM_STATUS_MAPPING,
+  TURBO_STATUS_DEFINITIONS,
   normalizeTurboStatus,
-  getSystemStatusFromTurbo
+  getSystemStatusFromTurbo,
+  getSystemStatusFromTurboWithCustomMapping
 };

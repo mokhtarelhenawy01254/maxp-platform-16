@@ -352,6 +352,9 @@ const CodDepositSettings = React.lazy(
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
 );
+const TurboStatusMapping = React.lazy(
+  () => import("./pages/settings/TurboStatusMapping"),
+);
 const TurboTicketDetails = React.lazy(
   () => import("./pages/settings/TicketDetails"),
 );
@@ -5442,6 +5445,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TurboSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/turbo/status-mapping"
+                  element={
+                    <Layout>
+                      <TurboStatusMapping />
                     </Layout>
                   }
                 />
