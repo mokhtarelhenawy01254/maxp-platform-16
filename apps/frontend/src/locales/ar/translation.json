@@ -3642,6 +3642,7 @@
       "noPermissions": "لا توجد طلبات أذونات",
       "recentLeaves": "الإجازات الأخيرة",
       "performanceBonus": "مكافأة أداء",
+      "additionalReward": "مكافأة إضافية",
       "earnFirstReward": "اجتهد لتحصل على مكافأتك الأولى!",
       "activeAdvances": "السلف النشطة",
       "totalAdvance": "إجمالي السلفة",
@@ -4022,6 +4023,12 @@
       "restOfMonth": "فرق عمل بقية الشهر",
       "statementTotal": "الإجمالي",
       "netAmount": "صافي المبلغ",
+      "statusDraft": "مسودة",
+      "statusPending": "بانتظار الاعتماد",
+      "statusApproved": "معتمد",
+      "statusPaid": "مدفوع",
+      "statusCancelled": "ملغي",
+      "statusProjection": "تقديري",
       "fetchError": "حدث خطأ أثناء جلب بيانات الراتب"
     },
     "deductions": {
@@ -4385,6 +4392,7 @@
       "approvedBy": "تمت الموافقة من قبل: {name}",
       "rejectionReason": "سبب الرفض",
       "egp": "جم",
+      "statsRequestSuffix": "طلب",
       "fetchError": "حدث خطأ أثناء جلب سجل السلف",
       "maxExceeded": "المبلغ يتجاوز الحد المسموح: {max} جم",
       "submitSuccess": "✅ تم تقديم طلب السلفة بنجاح، سيتم مراجعته قريباً",

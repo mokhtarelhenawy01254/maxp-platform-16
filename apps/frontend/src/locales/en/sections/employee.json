@@ -59,6 +59,7 @@
     "noPermissions": "No permission requests",
     "recentLeaves": "Recent Leaves",
     "performanceBonus": "Performance Bonus",
+    "additionalReward": "Additional Bonus",
     "earnFirstReward": "Keep excelling to earn your first reward!",
     "activeAdvances": "Active Advances",
     "totalAdvance": "Total Advance",
@@ -439,6 +440,12 @@
     "restOfMonth": "Remaining Month Adjustment",
     "statementTotal": "Total",
     "netAmount": "Net Amount",
+    "statusDraft": "Draft",
+    "statusPending": "Pending Approval",
+    "statusApproved": "Approved",
+    "statusPaid": "Paid",
+    "statusCancelled": "Cancelled",
+    "statusProjection": "Projection",
     "fetchError": "Error fetching salary data"
   },
   "deductions": {
@@ -802,6 +809,7 @@
     "approvedBy": "Approved by: {name}",
     "rejectionReason": "Rejection Reason",
     "egp": "EGP",
+    "statsRequestSuffix": "request(s)",
     "fetchError": "Error fetching advance records",
     "maxExceeded": "Amount exceeds the maximum allowed: {max} EGP",
     "submitSuccess": "Advance request submitted successfully! It will be reviewed shortly.",

@@ -22,17 +22,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useCompany } from "../../contexts/CompanyContext";
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'مسودة', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-  PENDING: { label: 'بانتظار الاعتماد', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  PENDING_APPROVAL: { label: 'بانتظار الاعتماد', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  APPROVED: { label: 'معتمد', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  PROCESSED: { label: 'معتمد', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  PAID: { label: 'مدفوع', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  CANCELLED: { label: 'ملغي', color: 'bg-rose-50 text-rose-700 border-rose-200' },
-  PROJECTION: { label: 'تقديري', color: 'bg-violet-50 text-violet-700 border-violet-200' },
-};
-
 interface SalaryComponent {
   name: string;
   amount: number;
@@ -85,18 +74,29 @@ interface PayrollData {
 const MyPayroll: React.FC = () => {
   const { t } = useTranslation();
   const { company } = useCompany();
+
+  const statusConfig: Record<string, { label: string; color: string }> = {
+    DRAFT: { label: t("employee.payroll.statusDraft"), color: 'bg-slate-100 text-slate-700 border-slate-200' },
+    PENDING: { label: t("employee.payroll.statusPending"), color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    PENDING_APPROVAL: { label: t("employee.payroll.statusPending"), color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    APPROVED: { label: t("employee.payroll.statusApproved"), color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    PROCESSED: { label: t("employee.payroll.statusApproved"), color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    PAID: { label: t("employee.payroll.statusPaid"), color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    CANCELLED: { label: t("employee.payroll.statusCancelled"), color: 'bg-rose-50 text-rose-700 border-rose-200' },
+    PROJECTION: { label: t("employee.payroll.statusProjection"), color: 'bg-violet-50 text-violet-700 border-violet-200' },
+  };
   const [loading, setLoading] = useState<boolean>(true);
   const [payrollData, setPayrollData] = useState<PayrollData | null>(null);
   const [month, setMonth] = useState<string>(new Date().getMonth() + 1 + "");
   const [year, setYear] = useState<string>(new Date().getFullYear() + "");
 
   const months = [
-    { value: "1", label: "يناير" }, { value: "2", label: "فبراير" },
-    { value: "3", label: "مارس" }, { value: "4", label: "أبريل" },
-    { value: "5", label: "مايو" }, { value: "6", label: "يونيو" },
-    { value: "7", label: "يوليو" }, { value: "8", label: "أغسطس" },
-    { value: "9", label: "سبتمبر" }, { value: "10", label: "أكتوبر" },
-    { value: "11", label: "نوفمبر" }, { value: "12", label: "ديسمبر" },
+    { value: "1", label: t("employee.payroll.january") }, { value: "2", label: t("employee.payroll.february") },
+    { value: "3", label: t("employee.payroll.march") }, { value: "4", label: t("employee.payroll.april") },
+    { value: "5", label: t("employee.payroll.may") }, { value: "6", label: t("employee.payroll.june") },
+    { value: "7", label: t("employee.payroll.july") }, { value: "8", label: t("employee.payroll.august") },
+    { value: "9", label: t("employee.payroll.september") }, { value: "10", label: t("employee.payroll.october") },
+    { value: "11", label: t("employee.payroll.november") }, { value: "12", label: t("employee.payroll.december") },
   ];
 
   const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
@@ -108,7 +108,7 @@ const MyPayroll: React.FC = () => {
       setPayrollData(response.data?.payroll || null);
     } catch (error) {
       console.error("Error fetching payroll data:", error);
-      toast.error("حدث خطأ أثناء جلب بيانات الراتب");
+      toast.error(t("employee.payroll.fetchError"));
       setPayrollData(null);
     } finally {
       setLoading(false);
@@ -140,9 +140,9 @@ const MyPayroll: React.FC = () => {
   const partialMonthDeduction = originalBaseSalary > earnedBaseSalary ? originalBaseSalary - earnedBaseSalary : 0;
 
   const groupedDeductions = [
-    ...(payrollData?.attendanceDeduction ? [{ name: 'خصم غياب', amount: Number(payrollData.attendanceDeduction) }] : []),
-    ...(payrollData?.latePenalty ? [{ name: 'جزاء تأخير', amount: Number(payrollData.latePenalty) }] : []),
-    ...(partialMonthDeduction > 0 ? [{ name: 'فرق عمل بقية الشهر', amount: partialMonthDeduction }] : []),
+    ...(payrollData?.attendanceDeduction ? [{ name: t("employee.payroll.absenceDeduction"), amount: Number(payrollData.attendanceDeduction) }] : []),
+    ...(payrollData?.latePenalty ? [{ name: t("employee.payroll.latePenalty"), amount: Number(payrollData.latePenalty) }] : []),
+    ...(partialMonthDeduction > 0 ? [{ name: t("employee.payroll.restOfMonth"), amount: partialMonthDeduction }] : []),
     ...deductionsRaw
   ];
 
@@ -166,9 +166,9 @@ const MyPayroll: React.FC = () => {
 
     const escapedFirstName = escapeHTML(payrollData.employee?.firstName || '');
     const escapedLastName = escapeHTML(payrollData.employee?.lastName || '');
-    const escapedCompanyName = escapeHTML(company?.name || 'اسم الشركة');
+    const escapedCompanyName = escapeHTML(company?.name || t("employee.payroll.companyName"));
     const escapedEmployeeNumber = escapeHTML(payrollData.employee?.employeeNumber || '000');
-    const escapedPositionTitle = escapeHTML(payrollData.employee?.position?.title || 'موظف');
+    const escapedPositionTitle = escapeHTML(payrollData.employee?.position?.title || t("employee.payroll.distinguished"));
 
     const qrData = `Company: ${escapedCompanyName} | Payroll ID: ${payrollData.id} | Employee: ${escapedFirstName} ${escapedLastName} | Month: ${payrollData.month}/${payrollData.year} | Net: ${payrollData.netSalary} EGP`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(qrData)}`;
@@ -176,7 +176,7 @@ const MyPayroll: React.FC = () => {
     const htmlContent = `
       <html dir="rtl">
         <head>
-          <title>كشف راتب - ${escapedFirstName} ${escapedLastName}</title>
+          <title>${t("employee.payroll.salaryStatement", { name: `${escapedFirstName} ${escapedLastName}` })}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
             @page { size: A4; margin: 0; }
@@ -214,40 +214,40 @@ const MyPayroll: React.FC = () => {
             <div class="top-bar"></div>
             <header class="header">
               <div class="company-info"><div class="name">${escapedCompanyName}</div></div>
-              <div class="slip-badge"><span class="title">كشف الراتب الشهري</span><span class="period">${months.find(m => m.value === month)?.label} ${year}</span></div>
+              <div class="slip-badge"><span class="title">${t("employee.payroll.monthlySalaryStatement")}</span><span class="period">${months.find(m => m.value === month)?.label} ${year}</span></div>
             </header>
             <section class="info-grid">
-              <div class="info-item"><span class="label">الموظف</span><span class="value">${escapedFirstName} ${escapedLastName}</span></div>
-              <div class="info-item"><span class="label">الرقم الوظيفي</span><span class="value">#${escapedEmployeeNumber}</span></div>
-              <div class="info-item"><span class="label">المسمى الوظيفي</span><span class="value">${escapedPositionTitle}</span></div>
-              <div class="info-item"><span class="label">تاريخ الإصدار</span><span class="value">${new Date().toLocaleDateString('ar-EG')}</span></div>
-              <div class="info-item"><span class="label">الحالة</span><span class="value">${statusConfig[payrollData.status]?.label || 'معتمد'}</span></div>
+              <div class="info-item"><span class="label">${t("employee.payroll.employeeLabel")}</span><span class="value">${escapedFirstName} ${escapedLastName}</span></div>
+              <div class="info-item"><span class="label">${t("employee.payroll.employeeId")}</span><span class="value">#${escapedEmployeeNumber}</span></div>
+              <div class="info-item"><span class="label">${t("employee.payroll.jobTitle")}</span><span class="value">${escapedPositionTitle}</span></div>
+              <div class="info-item"><span class="label">${t("employee.payroll.issueDate")}</span><span class="value">${new Date().toLocaleDateString('ar-EG')}</span></div>
+              <div class="info-item"><span class="label">${t("employee.payroll.status")}</span><span class="value">${statusConfig[payrollData.status]?.label || t("employee.payroll.statusApproved")}</span></div>
             </section>
             <main class="payroll-body">
               <div class="section">
-                <h2 class="section-title earnings">الاستحقاقات</h2>
+                <h2 class="section-title earnings">${t("employee.payroll.statementEarnings")}</h2>
                 <table>
-                  <tr><td>الراتب الأساسي</td><td class="amount">${formatCurrency(payrollData.baseSalary)}</td></tr>
+                  <tr><td>${t("employee.payroll.baseSalary")}</td><td class="amount">${formatCurrency(payrollData.baseSalary)}</td></tr>
                   ${Object.entries(detailedAllowances).map(([k, v]) => `<tr><td>${escapeHTML(k)}</td><td class="amount">${formatCurrency(v)}</td></tr>`).join('')}
-                  ${payrollData.overtimeAmount > 0 ? `<tr><td>العمل الإضافي</td><td class="amount">${formatCurrency(payrollData.overtimeAmount)}</td></tr>` : ''}
-                  ${payrollData.bonuses > 0 ? `<tr><td>المكافآت</td><td class="amount">${formatCurrency(payrollData.bonuses)}</td></tr>` : ''}
-                  <tr style="border-top: 2px solid #ecfdf5;"><td style="font-weight: 800; color: #059669;">الإجمالي</td><td class="amount" style="color: #059669;">${formatCurrency(payrollData.grossSalary)}</td></tr>
+                  ${payrollData.overtimeAmount > 0 ? `<tr><td>${t("employee.payroll.statementOvertime")}</td><td class="amount">${formatCurrency(payrollData.overtimeAmount)}</td></tr>` : ''}
+                  ${payrollData.bonuses > 0 ? `<tr><td>${t("employee.payroll.statementBonuses")}</td><td class="amount">${formatCurrency(payrollData.bonuses)}</td></tr>` : ''}
+                  <tr style="border-top: 2px solid #ecfdf5;"><td style="font-weight: 800; color: #059669;">${t("employee.payroll.statementSubtotal")}</td><td class="amount" style="color: #059669;">${formatCurrency(payrollData.grossSalary)}</td></tr>
                 </table>
               </div>
               <div class="section">
-                <h2 class="section-title deductions">الاستقطاعات</h2>
+                <h2 class="section-title deductions">${t("employee.payroll.statementDeductions")}</h2>
                 <table>
-                  ${payrollData.attendanceDeduction > 0 ? `<tr><td>خصم الغياب</td><td class="amount">${formatCurrency(payrollData.attendanceDeduction)}</td></tr>` : ''}
-                  ${payrollData.socialInsurance > 0 ? `<tr><td>التأمينات</td><td class="amount">${formatCurrency(payrollData.socialInsurance)}</td></tr>` : ''}
-                  ${payrollData.taxAmount > 0 ? `<tr><td>الضرائب</td><td class="amount">${formatCurrency(payrollData.taxAmount)}</td></tr>` : ''}
+                  ${payrollData.attendanceDeduction > 0 ? `<tr><td>${t("employee.payroll.absenceDeduction")}</td><td class="amount">${formatCurrency(payrollData.attendanceDeduction)}</td></tr>` : ''}
+                  ${payrollData.socialInsurance > 0 ? `<tr><td>${t("employee.payroll.insurance")}</td><td class="amount">${formatCurrency(payrollData.socialInsurance)}</td></tr>` : ''}
+                  ${payrollData.taxAmount > 0 ? `<tr><td>${t("employee.payroll.tax")}</td><td class="amount">${formatCurrency(payrollData.taxAmount)}</td></tr>` : ''}
                   ${Object.entries(detailedDeductions).map(([k, v]) => { if (['details', 'manualDetails', 'capNotes', 'advanceDetails'].includes(k)) return ''; return `<tr><td>${escapeHTML(k)}</td><td class="amount">${formatCurrency(v)}</td></tr>`; }).join('')}
-                  <tr style="border-top: 2px solid #fef2f2;"><td style="font-weight: 800; color: #dc2626;">الإجمالي</td><td class="amount" style="color: #dc2626;">${formatCurrency(payrollData.totalDeductions)}</td></tr>
+                  <tr style="border-top: 2px solid #fef2f2;"><td style="font-weight: 800; color: #dc2626;">${t("employee.payroll.statementTotal")}</td><td class="amount" style="color: #dc2626;">${formatCurrency(payrollData.totalDeductions)}</td></tr>
                 </table>
               </div>
             </main>
             <footer class="totals">
               <div class="qr-wrapper"><img src="${qrCodeUrl}" alt="QR" /></div>
-              <div class="net-card"><div class="label-group"><span>صافي المبلغ</span><div class="v">${formatCurrency(payrollData.netSalary)}</div></div></div>
+              <div class="net-card"><div class="label-group"><span>${t("employee.payroll.netAmount")}</span><div class="v">${formatCurrency(payrollData.netSalary)}</div></div></div>
             </footer>
           </div>
         </body>
@@ -309,7 +309,7 @@ const MyPayroll: React.FC = () => {
               {t("employee.payroll.welcome", { name: payrollData?.employee?.firstName })}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-2xl leading-relaxed">
-              إليك التفاصيل الكاملة لراتبك لشهر <span className="text-slate-900 dark:text-white font-bold">{months.find(m => m.value === month)?.label} {year}</span>. تم تحديث البيانات بنجاح.
+              {t("employee.payroll.detail", { month: months.find(m => m.value === month)?.label, year })}
             </p>
           </div>
         </div>
@@ -318,7 +318,7 @@ const MyPayroll: React.FC = () => {
           <div className="flex bg-slate-200/50 dark:bg-white/5 backdrop-blur-3xl p-1.5 rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-2xl relative">
             <Select value={month} onValueChange={setMonth}>
               <SelectTrigger className="border-none w-36 shadow-none focus:ring-0 text-slate-800 dark:text-white font-black hover:bg-slate-300/30 dark:hover:bg-white/10 transition-all rounded-[1.5rem] h-12 text-base bg-transparent">
-                <SelectValue placeholder="الشهر" />
+                <SelectValue placeholder={t("employee.payroll.monthPlaceholder")} />
               </SelectTrigger>
               <SelectContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/90 text-slate-800 dark:text-white backdrop-blur-3xl">
                 {months.map((m) => <SelectItem key={m.value} value={m.value} className="font-bold py-2 focus:bg-emerald-500/20">{m.label}</SelectItem>)}
@@ -327,7 +327,7 @@ const MyPayroll: React.FC = () => {
             <div className="w-px bg-slate-300 dark:bg-white/10 my-3 mx-1"></div>
             <Select value={year} onValueChange={setYear}>
               <SelectTrigger className="border-none w-28 shadow-none focus:ring-0 text-slate-800 dark:text-white font-black hover:bg-slate-300/30 dark:hover:bg-white/10 transition-all rounded-[1.5rem] h-12 text-base bg-transparent">
-                <SelectValue placeholder="السنة" />
+                <SelectValue placeholder={t("employee.payroll.yearPlaceholder")} />
               </SelectTrigger>
               <SelectContent className="rounded-3xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/90 text-slate-800 dark:text-white backdrop-blur-3xl">
                 {years.map((y) => <SelectItem key={y} value={y} className="font-bold py-2 focus:bg-emerald-500/20">{y}</SelectItem>)}
@@ -342,7 +342,7 @@ const MyPayroll: React.FC = () => {
               className="rounded-[2rem] bg-emerald-500 text-white px-8 h-14 font-black text-base flex items-center justify-center gap-3 shadow-lg transition-all cursor-pointer border-none"
               onClick={handlePrint}
             >
-              <Printer className="w-5 h-5" /> طباعة الكشف
+              <Printer className="w-5 h-5" /> {t("employee.payroll.printStatement")}
             </motion.button>
           )}
         </div>
@@ -364,9 +364,9 @@ const MyPayroll: React.FC = () => {
                 <History className="h-20 w-20 text-emerald-500" />
               </div>
             </div>
-            <h3 className="text-5xl font-black text-white mb-6 tracking-tight">لا تتوفر بيانات حالياً</h3>
+            <h3 className="text-5xl font-black text-white mb-6 tracking-tight">{t("employee.payroll.noData")}</h3>
             <p className="text-slate-400 max-w-lg text-xl font-medium leading-relaxed">
-              تحت المعالجة: جاري تجهيز كشوف الرواتب لهذه الفترة من قبل الإدارة المالية. يرجى التحقق لاحقاً.
+              {t("employee.payroll.processing")}
             </p>
           </motion.div>
         ) : (
@@ -408,18 +408,18 @@ const MyPayroll: React.FC = () => {
                       </h2>
                       <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
                         <Badge className="bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/20 px-4 py-1 rounded-xl font-bold text-[10px] tracking-widest uppercase">ID: {payrollData.employee?.employeeNumber}</Badge>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1 rounded-xl font-bold text-[10px]">{payrollData.employee?.position?.title || "موظف متميز"}</Badge>
+                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1 rounded-xl font-bold text-[10px]">{payrollData.employee?.position?.title || t("employee.payroll.distinguished")}</Badge>
                       </div>
                     </div>
                   </div>
 
                   <div className="text-center lg:text-left space-y-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-white/10 pt-10 lg:pt-0 lg:pr-10 w-full lg:w-auto">
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em] mb-1 opacity-80 uppercase">الراتب الأساسي التعاقدي</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em] mb-1 opacity-80 uppercase">{t("employee.payroll.baseContractSalary")}</p>
                     <div className="flex items-baseline justify-center lg:justify-end gap-2">
                       <span className="text-4xl lg:text-6xl font-bold tracking-tight tabular-nums bg-gradient-to-b from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:to-slate-500 bg-clip-text text-transparent drop-shadow-lg">
                         {formatCurrency(originalBaseSalary)}
                       </span>
-                      <span className="text-lg font-bold text-slate-400">ج.م</span>
+                      <span className="text-lg font-bold text-slate-400">{t("employee.payroll.egp")}</span>
                     </div>
                   </div>
                 </div>
@@ -432,7 +432,7 @@ const MyPayroll: React.FC = () => {
                   <div className="flex items-center justify-between px-6">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-4">
                       <div className="h-9 w-9 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400"><TrendingUp className="h-5 w-5" /></div>
-                      المستحقات
+                      {t("employee.payroll.earnings")}
                     </h3>
                     <div className="text-emerald-400 font-black text-lg">+{formatCurrency(totalEarningsDisplay)}</div>
                   </div>
@@ -441,7 +441,7 @@ const MyPayroll: React.FC = () => {
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-white/5 p-5 rounded-3xl border border-slate-100 dark:border-white/5 group hover:border-emerald-500/30 transition-all">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 dark:text-blue-400"><FileText className="h-5 w-5" /></div>
-                        <span className="font-bold text-slate-600 dark:text-slate-300 text-base">الراتب الأساسي</span>
+                        <span className="font-bold text-slate-600 dark:text-slate-300 text-base">{t("employee.payroll.baseSalary")}</span>
                       </div>
                       <span className="font-black text-slate-900 dark:text-white text-lg">{formatCurrency(payrollData.employee?.baseSalary || payrollData.baseSalary)}</span>
                     </div>
@@ -456,7 +456,7 @@ const MyPayroll: React.FC = () => {
                       {payrollData.overtimeAmount > 0 && (
                         <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-white/5">
                           <div>
-                            <span className="text-slate-500 dark:text-slate-400 font-bold block leading-none mb-1 text-sm">الساعات الإضافية</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-bold block leading-none mb-1 text-sm">{t("employee.payroll.overtime")}</span>
                             <span className="text-[9px] text-emerald-500/80 font-black uppercase">({payrollData.overtimeHours}H APPROVED)</span>
                           </div>
                           <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">+{formatCurrency(payrollData.overtimeAmount)}</span>
@@ -465,7 +465,7 @@ const MyPayroll: React.FC = () => {
                     </div>
 
                     <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
-                      <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">الإجمالي الإجمالي</span>
+                      <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">{t("employee.payroll.totalEarnings")}</span>
                       <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(totalEarningsDisplay)}</span>
                     </div>
                   </div>
@@ -476,7 +476,7 @@ const MyPayroll: React.FC = () => {
                   <div className="flex items-center justify-between px-6">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-4">
                       <div className="h-9 w-9 bg-red-500/20 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400"><AlertCircle className="h-5 w-5" /></div>
-                      الاستقطاعات
+                      {t("employee.payroll.deductions")}
                     </h3>
                     <div className="text-red-400 font-black text-lg">-{formatCurrency(totalDeductionsDisplay)}</div>
                   </div>
@@ -485,14 +485,14 @@ const MyPayroll: React.FC = () => {
                     <div className="flex justify-between items-center bg-slate-50 dark:bg-white/5 p-5 rounded-3xl border border-slate-100 dark:border-white/5 group hover:border-red-500/30 transition-all">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-500 dark:text-indigo-400"><ShieldCheck className="h-5 w-5" /></div>
-                        <span className="font-bold text-slate-600 dark:text-slate-300 text-base">التأمينات</span>
+                        <span className="font-bold text-slate-600 dark:text-slate-300 text-base">{t("employee.payroll.insurance")}</span>
                       </div>
                       <span className="font-black text-red-600 dark:text-red-400 text-lg">-{formatCurrency(payrollData.socialInsurance)}</span>
                     </div>
 
                     <div className="space-y-4 px-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500 dark:text-slate-400 font-bold text-sm">الضرائب المقتطعة</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-bold text-sm">{t("employee.payroll.tax")}</span>
                         <span className="font-black text-red-600 dark:text-red-400 text-base">-{formatCurrency(payrollData.taxAmount)}</span>
                       </div>
                       {groupedDeductions.map((de, idx) => (
@@ -504,7 +504,7 @@ const MyPayroll: React.FC = () => {
                     </div>
 
                     <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
-                      <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">إجمالي الاستقطاع</span>
+                      <span className="font-black text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-[0.2em]">{t("employee.payroll.totalDeductions")}</span>
                       <span className="text-3xl font-black text-red-600 dark:text-red-400">{formatCurrency(totalDeductionsDisplay)}</span>
                     </div>
                   </div>
@@ -520,26 +520,26 @@ const MyPayroll: React.FC = () => {
 
                 <div className="space-y-8 relative z-10">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white">بيانات الدفع</h3>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white">{t("employee.payroll.paymentDetails")}</h3>
                     <CreditCard className="text-blue-500 dark:text-emerald-400" />
                   </div>
 
                   <div className="space-y-6">
                     <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-5 border border-slate-100 dark:border-white/10 hover:border-emerald-500/20 transition-all">
-                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">المسار البنكي</p>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{t("employee.payroll.bankTransfer")}</p>
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-blue-100 dark:bg-white/10 rounded-xl flex items-center justify-center font-black text-blue-600 dark:text-white italic text-lg">
                           {payrollData.employee?.bankName?.substring(0, 1) || "B"}
                         </div>
                         <div>
-                          <p className="text-base font-black text-slate-800 dark:text-white leading-none">{payrollData.employee?.bankName || "البنك الوطني"}</p>
-                          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-500 mt-1">حساب نشط - جاري</p>
+                          <p className="text-base font-black text-slate-800 dark:text-white leading-none">{payrollData.employee?.bankName || t("employee.payroll.bankName")}</p>
+                          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-500 mt-1">{t("employee.payroll.accountActive")}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-5 border border-slate-100 dark:border-white/10 hover:border-emerald-500/20 transition-all">
-                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">رقم الحساب الدولي</p>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{t("employee.payroll.iban")}</p>
                       <p className="text-base font-black text-slate-800 dark:text-white tabular-nums tracking-wider truncate">
                         {payrollData.employee?.bankAccountNumber ? `**** **** ${payrollData.employee.bankAccountNumber.slice(-4)}` : "EG82 0003 4827 1019 3828"}
                       </p>
@@ -548,7 +548,7 @@ const MyPayroll: React.FC = () => {
 
                   <div className="pt-2 space-y-4">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-                      <span className="text-slate-400 dark:text-slate-500">نسبة التحفيز الشهري</span>
+                      <span className="text-slate-400 dark:text-slate-500">{t("employee.payroll.monthlyIncentive")}</span>
                       <span className="text-emerald-600 dark:text-emerald-400">{((payrollData.bonuses / (originalBaseSalary || 1)) * 100).toFixed(1)}%</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
@@ -571,14 +571,14 @@ const MyPayroll: React.FC = () => {
 
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="h-9 w-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white"><Zap className="h-5 w-5" /></div>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white">إشعار الأمان</h3>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white">{t("employee.payroll.securityNotice")}</h3>
                 </div>
 
                 <div className="space-y-4 relative z-10">
                   {[
-                    "يتم تشفير كافة البيانات المالية طبقاً للمعايير العالمية.",
-                    "بصمة الإصدار الرقمية معتمدة من قبل النظام المركزي.",
-                    "برجاء الاحتفاظ بهذا الكشف كوثيقة رسمية للضرائب."
+                    t("employee.payroll.encryptedData"),
+                    t("employee.payroll.digitalSignature"),
+                    t("employee.payroll.keepStatement")
                   ].map((text, i) => (
                     <div key={i} className="flex gap-4 group">
                       <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full mt-2 group-hover:scale-150 transition-all"></div>
@@ -588,7 +588,7 @@ const MyPayroll: React.FC = () => {
                 </div>
 
                 <Button className="w-full rounded-2xl h-14 bg-white dark:bg-emerald-500 text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] shadow-xl border border-slate-200 dark:border-none">
-                  عرض سياسة الخصوصية
+                  {t("employee.payroll.privacyPolicy")}
                 </Button>
               </motion.div>
             </div>

@@ -113,7 +113,7 @@ const MyCustody: React.FC = () => {
   const handleSubmitRequest = async () => {
     try {
       if (!requestForm.assetType || !requestForm.reason) {
-        alert("الرجاء ملء جميع الحقول المطلوبة");
+        alert(t("employee.custody.validationError"));
         return;
       }
 
@@ -133,9 +133,7 @@ const MyCustody: React.FC = () => {
       });
 
       if (response.data.success) {
-        alert(
-          "✅ تم إرسال طلب العهدة بنجاح! سيتم مراجعته من قبل قسم الموارد البشرية.",
-        );
+        alert(t("employee.custody.submitSuccess"));
         setShowRequestModal(false);
         setRequestForm({
           assetType: "",
@@ -148,7 +146,7 @@ const MyCustody: React.FC = () => {
       }
     } catch (error) {
       console.error("Error submitting request:", error);
-      alert("حدث خطأ أثناء إرسال الطلب. الرجاء المحاولة مرة أخرى.");
+      alert(t("employee.custody.submitError"));
     }
   };
 
@@ -205,7 +203,7 @@ const MyCustody: React.FC = () => {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              طلب عهدة جديدة
+              {t("employee.custody.newRequest")}
             </button>
           </div>
 
@@ -225,11 +223,10 @@ const MyCustody: React.FC = () => {
               </svg>
               <div>
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                  💡 ملاحظة مهمة
+                  {t("employee.custody.importantNote")}
                 </p>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  لا يمكنك إضافة عهدة لنفسك مباشرة. يمكنك طلب عهدة جديدة وسيتم
-                  مراجعتها من قبل قسم الموارد البشرية أو المدير المباشر.
+                   {t("employee.custody.noteText")}
                 </p>
               </div>
             </div>
@@ -249,7 +246,7 @@ const MyCustody: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm font-medium mb-1">
-                    إجمالي العهدة
+                    {t("employee.custody.totalCustody")}
                   </p>
                   <p className="text-3xl font-bold">{stats.total}</p>
                 </div>
@@ -264,7 +261,7 @@ const MyCustody: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-sm font-medium mb-1">
-                    حالة ممتازة
+                    {t("employee.custody.excellentCondition")}
                   </p>
                   <p className="text-3xl font-bold">{stats.newItems}</p>
                 </div>
@@ -279,7 +276,7 @@ const MyCustody: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-sm font-medium mb-1">
-                    حالة جيدة
+                    {t("employee.custody.goodCondition")}
                   </p>
                   <p className="text-3xl font-bold">{stats.goodItems}</p>
                 </div>
@@ -294,7 +291,7 @@ const MyCustody: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-orange-100 text-sm font-medium mb-1">
-                    تحتاج صيانة
+                    {t("employee.custody.needsMaintenance")}
                   </p>
                   <p className="text-3xl font-bold">{stats.needsMaintenance}</p>
                 </div>
@@ -319,7 +316,7 @@ const MyCustody: React.FC = () => {
                   <MagnifyingGlassIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="ابحث عن أصل..."
+                    placeholder={t("employee.custody.searchPlaceholder")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pr-10 pl-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -334,7 +331,7 @@ const MyCustody: React.FC = () => {
                     onChange={(e) => setFilterCategory(e.target.value)}
                     className="w-full pr-10 pl-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none"
                   >
-                    <option value="all">جميع الفئات</option>
+                    <option value="all">{t("employee.custody.allCategories")}</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
@@ -351,11 +348,11 @@ const MyCustody: React.FC = () => {
                     onChange={(e) => setFilterCondition(e.target.value)}
                     className="w-full pr-10 pl-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none"
                   >
-                    <option value="all">جميع الحالات</option>
-                    <option value="NEW">جديد</option>
-                    <option value="GOOD">جيد</option>
-                    <option value="FAIR">مقبول</option>
-                    <option value="NEEDS_REPAIR">يحتاج صيانة</option>
+                    <option value="all">{t("employee.custody.allConditions")}</option>
+                    <option value="NEW">{t("employee.custody.new")}</option>
+                    <option value="GOOD">{t("employee.custody.good")}</option>
+                    <option value="FAIR">{t("employee.custody.acceptable")}</option>
+                    <option value="NEEDS_REPAIR">{t("employee.custody.needsMaintenanceLabel")}</option>
                   </select>
                 </div>
               </div>
@@ -380,15 +377,15 @@ const MyCustody: React.FC = () => {
                     {searchQuery ||
                     filterCategory !== "all" ||
                     filterCondition !== "all"
-                      ? "لا توجد نتائج"
-                      : "لا توجد عهدة مسلمة لك"}
+                      ? t("employee.custody.noResults")
+                      : t("employee.custody.noCustody")}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     {searchQuery ||
                     filterCategory !== "all" ||
                     filterCondition !== "all"
-                      ? "جرب تغيير معايير البحث أو الفلاتر"
-                      : "لم يتم تسليمك أي أصول أو معدات من الشركة حتى الآن"}
+                      ? t("employee.custody.changeSearch")
+                      : t("employee.custody.noCustodyHint")}
                   </p>
                 </div>
               </CardContent>
@@ -397,7 +394,7 @@ const MyCustody: React.FC = () => {
             <>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  عرض {filteredAssets.length} من {myCustody.length} أصل
+                  {t("employee.custody.showing", { count: filteredAssets.length, total: myCustody.length })}
                 </p>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -417,7 +414,7 @@ const MyCustody: React.FC = () => {
                             <ComputerDesktopIcon className="w-7 h-7 text-white" />
                           </div>
                           <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-0">
-                            مُسلّم
+                            {t("employee.custody.delivered")}
                           </Badge>
                         </div>
 
@@ -429,7 +426,7 @@ const MyCustody: React.FC = () => {
                           <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                             <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                               <TagIcon className="w-4 h-4" />
-                              الكود
+                              {t("employee.custody.code")}
                             </span>
                             <span className="font-semibold text-gray-900 dark:text-white">
                               {asset.code}
@@ -439,7 +436,7 @@ const MyCustody: React.FC = () => {
                           <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                             <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                               <CubeIcon className="w-4 h-4" />
-                              التصنيف
+                              {t("employee.custody.category")}
                             </span>
                             <span className="font-semibold text-gray-900 dark:text-white">
                               {asset.category?.name || "-"}
@@ -448,7 +445,7 @@ const MyCustody: React.FC = () => {
 
                           <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              الرقم التسلسلي
+                              {t("employee.custody.serialNumber")}
                             </span>
                             <span className="font-mono text-xs font-semibold text-gray-900 dark:text-white">
                               {asset.serialNumber || "-"}
@@ -457,7 +454,7 @@ const MyCustody: React.FC = () => {
 
                           <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              الحالة
+                              {t("employee.custody.condition")}
                             </span>
                             <Badge
                               className={`${
@@ -471,12 +468,12 @@ const MyCustody: React.FC = () => {
                               } border-0 font-semibold`}
                             >
                               {asset.condition === "NEW"
-                                ? "✨ جديد"
+                                ? "✨ " + t("employee.custody.new")
                                 : asset.condition === "GOOD"
-                                  ? "✓ جيد"
+                                  ? "✓ " + t("employee.custody.good")
                                   : asset.condition === "FAIR"
-                                    ? "⚠ مقبول"
-                                    : "🔧 يحتاج صيانة"}
+                                    ? "⚠ " + t("employee.custody.acceptable")
+                                    : "🔧 " + t("employee.custody.needsMaintenanceLabel")}
                             </Badge>
                           </div>
 
@@ -484,7 +481,7 @@ const MyCustody: React.FC = () => {
                             <div className="flex items-center justify-between pt-3 mt-3 border-t-2 border-gray-200 dark:border-gray-700">
                               <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                 <CalendarIcon className="w-4 h-4" />
-                                تاريخ الاستلام
+                                {t("employee.custody.receiveDate")}
                               </span>
                               <span className="font-semibold text-blue-600 dark:text-blue-400">
                                 {formatDate(asset.assignedDate)}
@@ -512,7 +509,7 @@ const MyCustody: React.FC = () => {
              <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
                <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
              </div>
-             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">طلبات العهدة السابقة</h2>
+             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("employee.custody.previousRequests")}</h2>
           </div>
 
           <Card className="border-0 shadow-lg dark:bg-gray-800">
@@ -520,17 +517,17 @@ const MyCustody: React.FC = () => {
                <table className="w-full text-right min-w-[700px]">
                  <thead>
                    <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm font-semibold border-b border-gray-100 dark:border-gray-700">
-                     <th className="px-6 py-4">تاريخ الطلب</th>
-                     <th className="px-6 py-4">النوع</th>
-                     <th className="px-6 py-4">الحالة</th>
-                     <th className="px-6 py-4">سبب الطلب</th>
+                     <th className="px-6 py-4">{t("employee.custody.colRequestDate")}</th>
+                     <th className="px-6 py-4">{t("employee.custody.colType")}</th>
+                     <th className="px-6 py-4">{t("employee.custody.colStatus")}</th>
+                     <th className="px-6 py-4">{t("employee.custody.colReason")}</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                    {myRequests.length === 0 ? (
                      <tr>
                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                         لم تقم بتقديم أي طلبات عهدة بعد.
+                          {t("employee.custody.noPreviousRequests")}
                        </td>
                      </tr>
                    ) : (
@@ -549,38 +546,38 @@ const MyCustody: React.FC = () => {
                             {req.status === 'PENDING' && (
                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-0 flex w-max items-center gap-1.5 px-3 py-1">
                                 <ClockIcon className="w-4 h-4" />
-                                قيد الانتظار
+                                {t("employee.custody.pendingStatus")}
                               </Badge>
                             )}
                             {req.status === 'APPROVED' && (
                               <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 flex w-max items-center gap-1.5 px-3 py-1">
                                 <CheckCircleIcon className="w-4 h-4" />
-                                تمت الموافقة
+                                {t("employee.custody.approvedStatus")}
                               </Badge>
                             )}
                             {req.status === 'FULFILLED' && (
                               <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0 flex w-max items-center gap-1.5 px-3 py-1">
                                 <CheckCircleIcon className="w-4 h-4" />
-                                تم التسليم
+                                {t("employee.custody.deliveredStatus")}
                               </Badge>
                             )}
                             {req.status === 'REJECTED' && (
                               <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-0 flex w-max items-center gap-1.5 px-3 py-1">
                                 <XCircleIcon className="w-4 h-4" />
-                                مرفوض
+                                {t("employee.custody.rejectedStatus")}
                               </Badge>
                             )}
                             {req.status === 'CANCELLED' && (
                               <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-0 flex w-max items-center gap-1.5 px-3 py-1">
                                 <XCircleIcon className="w-4 h-4" />
-                                ملغى
+                                {t("employee.custody.cancelledStatus")}
                               </Badge>
                             )}
                          </td>
                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                            <p className="truncate max-w-xs" title={req.reason}>{req.reason}</p>
                            {req.rejectionReason && (
-                             <p className="text-xs text-red-500 mt-1">سبب الرفض: {req.rejectionReason}</p>
+                              <p className="text-xs text-red-500 mt-1">{t("employee.custody.rejectionReason", { reason: req.rejectionReason })}</p>
                            )}
                          </td>
                        </tr>
@@ -611,7 +608,7 @@ const MyCustody: React.FC = () => {
                       <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white">
-                      طلب عهدة جديدة
+                      {t("employee.custody.requestDialogTitle")}
                     </h2>
                   </div>
                   <button
@@ -639,7 +636,7 @@ const MyCustody: React.FC = () => {
                 {/* Asset Type */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    نوع العهدة المطلوبة <span className="text-red-500">*</span>
+                    {t("employee.custody.requestTypeLabel")} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={requestForm.assetType}
@@ -651,24 +648,24 @@ const MyCustody: React.FC = () => {
                     }
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    <option value="">اختر نوع العهدة</option>
-                    <option value="laptop">جهاز حاسوب محمول (Laptop)</option>
-                    <option value="desktop">جهاز حاسوب مكتبي (Desktop)</option>
-                    <option value="phone">هاتف محمول</option>
-                    <option value="tablet">جهاز لوحي (Tablet)</option>
-                    <option value="monitor">شاشة عرض</option>
-                    <option value="keyboard">لوحة مفاتيح</option>
-                    <option value="mouse">فأرة</option>
-                    <option value="headset">سماعة رأس</option>
-                    <option value="printer">طابعة</option>
-                    <option value="other">أخرى</option>
+                    <option value="">{t("employee.custody.requestTypePlaceholder")}</option>
+                    <option value="laptop">{t("employee.custody.laptop")}</option>
+                    <option value="desktop">{t("employee.custody.desktop")}</option>
+                    <option value="phone">{t("employee.custody.mobile")}</option>
+                    <option value="tablet">{t("employee.custody.tablet")}</option>
+                    <option value="monitor">{t("employee.custody.monitor")}</option>
+                    <option value="keyboard">{t("employee.custody.keyboard")}</option>
+                    <option value="mouse">{t("employee.custody.mouse")}</option>
+                    <option value="headset">{t("employee.custody.headset")}</option>
+                    <option value="printer">{t("employee.custody.printer")}</option>
+                    <option value="other">{t("employee.custody.otherType")}</option>
                   </select>
                 </div>
 
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    الفئة
+                    {t("employee.custody.categoryLabel")}
                   </label>
                   <input
                     type="text"
@@ -679,7 +676,7 @@ const MyCustody: React.FC = () => {
                         category: e.target.value,
                       })
                     }
-                    placeholder="مثال: أجهزة تقنية، أثاث مكتبي، إلخ"
+                    placeholder={t("employee.custody.categoryPlaceholder")}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -687,14 +684,14 @@ const MyCustody: React.FC = () => {
                 {/* Reason */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    سبب الطلب <span className="text-red-500">*</span>
+                    {t("employee.custody.reasonLabel")} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={requestForm.reason}
                     onChange={(e) =>
                       setRequestForm({ ...requestForm, reason: e.target.value })
                     }
-                    placeholder="اشرح سبب حاجتك لهذه العهدة..."
+                    placeholder={t("employee.custody.reasonPlaceholder")}
                     rows={4}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                   />
@@ -703,7 +700,7 @@ const MyCustody: React.FC = () => {
                 {/* Urgency */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    مستوى الأولوية
+                    {t("employee.custody.priorityLabel")}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
@@ -717,7 +714,7 @@ const MyCustody: React.FC = () => {
                           : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
-                      🟢 عادي
+                      {t("employee.custody.normalPriority")}
                     </button>
                     <button
                       type="button"
@@ -730,7 +727,7 @@ const MyCustody: React.FC = () => {
                           : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
-                      🟡 متوسط
+                      {t("employee.custody.mediumPriority")}
                     </button>
                     <button
                       type="button"
@@ -743,7 +740,7 @@ const MyCustody: React.FC = () => {
                           : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       }`}
                     >
-                      🔴 عاجل
+                      {t("employee.custody.highPriority")}
                     </button>
                   </div>
                 </div>
@@ -751,14 +748,14 @@ const MyCustody: React.FC = () => {
                 {/* Notes */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    ملاحظات إضافية
+                    {t("employee.custody.notesLabel")}
                   </label>
                   <textarea
                     value={requestForm.notes}
                     onChange={(e) =>
                       setRequestForm({ ...requestForm, notes: e.target.value })
                     }
-                    placeholder="أي ملاحظات أو متطلبات خاصة..."
+                    placeholder={t("employee.custody.notesPlaceholder")}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                   />
@@ -779,10 +776,9 @@ const MyCustody: React.FC = () => {
                       />
                     </svg>
                     <div className="text-sm text-blue-700 dark:text-blue-300">
-                      <p className="font-semibold mb-1">📝 ملاحظة</p>
+                      <p className="font-semibold mb-1">{t("employee.custody.noteHeader")}</p>
                       <p>
-                        سيتم إرسال طلبك إلى قسم الموارد البشرية للمراجعة. ستتلقى
-                        إشعاراً عند الموافقة أو الرفض.
+                        {t("employee.custody.noteDesc")}
                       </p>
                     </div>
                   </div>
@@ -794,13 +790,13 @@ const MyCustody: React.FC = () => {
                     onClick={handleSubmitRequest}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl font-semibold"
                   >
-                    إرسال الطلب
+                    {t("employee.custody.submitButton")}
                   </button>
                   <button
                     onClick={() => setShowRequestModal(false)}
                     className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all font-semibold"
                   >
-                    إلغاء
+                    {t("employee.custody.cancelButton")}
                   </button>
                 </div>
               </div>
