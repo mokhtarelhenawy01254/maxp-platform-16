@@ -196,16 +196,21 @@ const PreparationQueue: React.FC = () => {
   };
 
   const [visibleFilterSections, setVisibleFilterSections] = useState<PreparationFilterSection[]>(() => {
-    if (typeof window === "undefined") return [...PREPARATION_FILTER_SECTIONS];
+    const defaults = [...PREPARATION_FILTER_SECTIONS];
+    if (typeof window === "undefined") return defaults;
     try {
       const raw = window.localStorage.getItem("preparation:queue:visible-filters-v1");
-      if (!raw) return [...PREPARATION_FILTER_SECTIONS];
+      if (!raw) return defaults;
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.every((s: string) => PREPARATION_FILTER_SECTIONS.includes(s as PreparationFilterSection))) {
-        return parsed as PreparationFilterSection[];
+      if (Array.isArray(parsed)) {
+        const stored = parsed.filter((s): s is PreparationFilterSection =>
+          PREPARATION_FILTER_SECTIONS.includes(s as PreparationFilterSection),
+        );
+        const merged = [...new Set([...defaults, ...stored])];
+        return merged;
       }
     } catch { /* ignore */ }
-    return [...PREPARATION_FILTER_SECTIONS];
+    return defaults;
   });
   const [showFilters, setShowFilters] = useState(true);
 
