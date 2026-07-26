@@ -3852,8 +3852,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             price: item.price || 0,
             quantity: item.quantity || 1,
             total: (item.price || 0) * (item.quantity || 1),
+            productSku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
             metadata: {
               ...(item.metadata || {}),
+              sku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
               color: color,
               size: size,
               details: details,
@@ -3984,8 +3986,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             price: item.price,
             quantity: item.quantity,
             total: item.total,
+            productSku: item.productSku || parsedMetadata.sku || item.productVariant?.sku || '',
             metadata: {
               ...parsedMetadata,
+              sku: item.productSku || parsedMetadata.sku || item.productVariant?.sku || '',
               color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
               size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
               details: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails,

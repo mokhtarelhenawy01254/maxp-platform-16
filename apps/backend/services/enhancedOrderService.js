@@ -2319,6 +2319,7 @@ class EnhancedOrderService {
               productName: item.name || item.productName || '',
               productColor: item.color || '',
               productSize: item.size || '',
+              productSku: item.sku || item.productSku || '',
               price: parseFloat(item.price || 0),
               quantity: parseInt(item.quantity || 1),
               total: parseFloat(item.total || (item.price * item.quantity) || 0),
@@ -2375,6 +2376,7 @@ class EnhancedOrderService {
           productName: item.productName,
           productColor: item.productColor,
           productSize: item.productSize,
+          productSku: item.productSku || '',
           productImage: (() => {
             if (item.product?.images) {
               try {
@@ -2470,9 +2472,11 @@ class EnhancedOrderService {
         price: parseFloat(item.price) || 0,
         quantity: item.quantity || 1,
         total: parseFloat(item.total) || 0,
+        productSku: item.productSku || '',
         metadata: {
           color: item.productColor,
           size: item.productSize,
+          sku: item.productSku || '',
           conversationId: order.conversationId,
           source: 'ai_agent',
           confidence: order.confidence,
