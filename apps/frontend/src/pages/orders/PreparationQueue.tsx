@@ -149,6 +149,8 @@ const PreparationQueue: React.FC = () => {
     shortageFollowUpFilter: uiState.shortageFollowUpFilter,
     shortageOwnerFilter: uiState.shortageOwnerFilter,
     productFilter: uiState.productFilter,
+    productColorFilter: uiState.productColorFilter,
+    productSizeFilter: uiState.productSizeFilter,
     itemCountFilter: uiState.itemCountFilter,
     notPrintedFilter: uiState.notPrintedFilter,
     noShippingCodeFilter: uiState.noShippingCodeFilter,

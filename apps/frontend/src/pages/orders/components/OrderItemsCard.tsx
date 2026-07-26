@@ -492,35 +492,33 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1">
-                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-0.5">
                   {item.productName}
                 </h4>
 
+                {typeof itemMetadata.sku === "string" && itemMetadata.sku.trim() && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-1.5">
+                    {itemMetadata.sku}
+                  </p>
+                )}
+
                 <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {typeof itemMetadata.sku === "string" && itemMetadata.sku.trim() && (
-                    <span className="font-mono">
-                      SKU: {itemMetadata.sku}
-                    </span>
-                  )}
                   {stockInfo.stock > 0 && (
-                    <>
-                      <span>•</span>
-                      <span
-                        className={`font-semibold ${
-                          stockInfo.status === "available"
-                            ? "text-green-600 dark:text-green-400"
-                            : stockInfo.status === "low"
-                              ? "text-orange-600 dark:text-orange-400"
-                              : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {stockInfo.status === "available"
-                          ? "🟢 متوفر"
+                    <span
+                      className={`font-semibold ${
+                        stockInfo.status === "available"
+                          ? "text-green-600 dark:text-green-400"
                           : stockInfo.status === "low"
-                            ? `🟡 متبقي ${stockInfo.stock}`
-                            : "🔴 نفذ"}
-                      </span>
-                    </>
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {stockInfo.status === "available"
+                        ? "🟢 متوفر"
+                        : stockInfo.status === "low"
+                          ? `🟡 متبقي ${stockInfo.stock}`
+                          : "🔴 نفذ"}
+                    </span>
                   )}
                 </div>
 
