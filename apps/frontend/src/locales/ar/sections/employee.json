@@ -512,7 +512,8 @@
     "severityCritical": "إنذار خطير جداً",
     "fetchError": "فشل في تحميل سجل الإنذارات",
     "acknowledgeSuccess": "تم تأكيد الاستلام بنجاح",
-    "acknowledgeError": "فشل في تأكيد الاستلام"
+    "acknowledgeError": "فشل في تأكيد الاستلام",
+    "viewDetails": "عرض التفاصيل"
   },
   "promotions": {
     "title": "ترقياتي ومساري الوظيفي",
@@ -529,6 +530,8 @@
     "detailsTitle": "تفاصيل الترقية",
     "previousSalary": "الراتب السابق",
     "promotionDate": "تاريخ الترقية",
+    "effectiveDateLabel": "تاريخ السريان الفعلي",
+    "viewDetails": "عرض التفاصيل",
     "notes": "ملاحظات إضافية",
     "close": "إغلاق",
     "pendingStatus": "في الانتظار",

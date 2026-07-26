@@ -4095,7 +4095,8 @@
       "severityCritical": "Critical Warning",
       "fetchError": "Failed to load warning records",
       "acknowledgeSuccess": "Receipt acknowledged successfully",
-      "acknowledgeError": "Failed to acknowledge receipt"
+      "acknowledgeError": "Failed to acknowledge receipt",
+      "viewDetails": "View Details"
     },
     "promotions": {
       "title": "My Promotions",
@@ -4112,6 +4113,8 @@
       "detailsTitle": "Promotion Details",
       "previousSalary": "Previous Salary",
       "promotionDate": "Promotion Date",
+      "effectiveDateLabel": "Effective Date",
+      "viewDetails": "View Details",
       "notes": "Additional Notes",
       "close": "Close",
       "pendingStatus": "Pending",

@@ -33,52 +33,53 @@ interface Deduction {
   createdAt: string;
 }
 
-const DEDUCTION_TYPES = {
-  PENALTY: "غرامة",
-  VIOLATION: "مخالفة",
-  DAMAGE: "تعويض عن ضرر",
-  INSURANCE: "تأمين",
-  LOAN_REPAYMENT: "سداد قرض",
-  ADVANCE_REPAYMENT: "سداد سلفة",
-  TAX: "ضريبة",
-  SOCIAL_INSURANCE: "تأمينات اجتماعية",
-  ABSENCE: "غياب",
-  LATE: "تأخير",
-  EARLY_LEAVE: "خروج مبكر",
-  OTHER: "أخرى",
+const DEDUCTION_TYPES: Record<string, string> = {
+  PENALTY: "employee.deductions.typeFine",
+  VIOLATION: "employee.deductions.typeViolation",
+  DAMAGE: "employee.deductions.typeCompensation",
+  INSURANCE: "employee.deductions.typeInsurance",
+  LOAN_REPAYMENT: "employee.deductions.typeLoan",
+  ADVANCE_REPAYMENT: "employee.deductions.typeAdvance",
+  TAX: "employee.deductions.typeTax",
+  SOCIAL_INSURANCE: "employee.deductions.typeSocialInsurance",
+  ABSENCE: "employee.deductions.typeAbsence",
+  LATE: "employee.deductions.typeLate",
+  EARLY_LEAVE: "employee.deductions.typeEarlyLeave",
+  OTHER: "employee.deductions.typeOther",
 };
 
-const DEDUCTION_STATUS = {
+const DEDUCTION_STATUS: Record<string, { labelKey: string; color: string; icon: React.ElementType }> = {
   PENDING: {
-    label: "في الانتظار",
+    labelKey: "employee.deductions.pendingStatus",
     color:
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
     icon: Clock,
   },
   APPROVED: {
-    label: "موافق عليه",
+    labelKey: "employee.deductions.approvedStatus",
     color:
       "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
     icon: CheckCircle,
   },
   REJECTED: {
-    label: "مرفوض",
+    labelKey: "employee.deductions.rejectedStatus",
     color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     icon: XCircle,
   },
   APPLIED: {
-    label: "تم التطبيق",
+    labelKey: "employee.deductions.appliedStatus",
     color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     icon: CheckCircle,
   },
   CANCELLED: {
-    label: "ملغي",
+    labelKey: "employee.deductions.cancelledStatus",
     color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
     icon: XCircle,
   },
 };
 
 const MyDeductions: React.FC = () => {
+  const { t } = useTranslation();
   const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [filteredDeductions, setFilteredDeductions] = useState<Deduction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,10 +165,10 @@ const MyDeductions: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
           <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400 ml-3" />
-          خصوماتي
+          {t("employee.deductions.title")}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          عرض وتتبع الخصومات المطبقة على راتبك
+          {t("employee.deductions.subtitle")}
         </p>
       </div>
 
@@ -178,7 +179,7 @@ const MyDeductions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  إجمالي الخصومات
+                  {t("employee.deductions.totalDeductions")}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.total}
@@ -192,7 +193,7 @@ const MyDeductions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  إجمالي المبلغ
+                  {t("employee.deductions.totalAmount")}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {formatCurrency(parseFloat(stats.totalAmount))}
@@ -206,7 +207,7 @@ const MyDeductions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  في الانتظار
+                  {t("employee.deductions.pending")}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.byStatus.find((s: any) => s.status === "PENDING")
@@ -221,7 +222,7 @@ const MyDeductions: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  تم التطبيق
+                  {t("employee.deductions.applied")}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.byStatus.find((s: any) => s.status === "APPLIED")
@@ -239,31 +240,31 @@ const MyDeductions: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              الحالة
+              {t("employee.deductions.status")}
             </label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="">الكل</option>
-              <option value="PENDING">في الانتظار</option>
-              <option value="APPROVED">موافق عليه</option>
-              <option value="REJECTED">مرفوض</option>
-              <option value="APPLIED">تم التطبيق</option>
+              <option value="">{t("employee.deductions.all")}</option>
+              <option value="PENDING">{t("employee.deductions.pendingStatus")}</option>
+              <option value="APPROVED">{t("employee.deductions.approvedStatus")}</option>
+              <option value="REJECTED">{t("employee.deductions.rejectedStatus")}</option>
+              <option value="APPLIED">{t("employee.deductions.appliedStatus")}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              الشهر
+              {t("employee.deductions.month")}
             </label>
             <select
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="">الكل</option>
+              <option value="">{t("employee.deductions.all")}</option>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                 <option key={month} value={month}>
                   {month}
@@ -274,14 +275,14 @@ const MyDeductions: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              السنة
+              {t("employee.deductions.year")}
             </label>
             <select
               value={filterYear}
               onChange={(e) => setFilterYear(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="">الكل</option>
+              <option value="">{t("employee.deductions.all")}</option>
               {Array.from(
                 { length: 5 },
                 (_, i) => new Date().getFullYear() - i,
@@ -301,10 +302,10 @@ const MyDeductions: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              لا توجد خصومات
+              {t("employee.deductions.noDeductions")}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              لم يتم تسجيل أي خصومات حتى الآن
+              {t("employee.deductions.noDeductionsDesc")}
             </p>
           </div>
         ) : (
@@ -324,21 +325,17 @@ const MyDeductions: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 space-x-reverse mb-2">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                          {
-                            DEDUCTION_TYPES[
-                              deduction.type as keyof typeof DEDUCTION_TYPES
-                            ]
-                          }
+                          {t(DEDUCTION_TYPES[
+                            deduction.type as keyof typeof DEDUCTION_TYPES
+                          ] || "employee.deductions.typeOther")}
                         </h3>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${DEDUCTION_STATUS[deduction.status as keyof typeof DEDUCTION_STATUS]?.color}`}
                         >
                           <StatusIcon className="h-3 w-3 inline ml-1" />
-                          {
-                            DEDUCTION_STATUS[
-                              deduction.status as keyof typeof DEDUCTION_STATUS
-                            ]?.label
-                          }
+                          {t(DEDUCTION_STATUS[
+                            deduction.status as keyof typeof DEDUCTION_STATUS
+                          ]?.labelKey || "employee.deductions.pendingStatus")}
                         </span>
                         {deduction.category && (
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
@@ -373,7 +370,7 @@ const MyDeductions: React.FC = () => {
                       {deduction.rejectionReason && (
                         <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                           <p className="text-sm text-red-800 dark:text-red-400">
-                            <strong>سبب الرفض:</strong>{" "}
+                            <strong>{t("employee.deductions.rejectionReason")}</strong>{" "}
                             {deduction.rejectionReason}
                           </p>
                         </div>
@@ -383,7 +380,7 @@ const MyDeductions: React.FC = () => {
                         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                           <p className="text-sm text-blue-800 dark:text-blue-400">
                             <CheckCircle className="h-4 w-4 inline ml-1" />
-                            تم تطبيق هذا الخصم على الراتب
+                            {t("employee.deductions.appliedToSalary")}
                           </p>
                         </div>
                       )}
@@ -396,7 +393,7 @@ const MyDeductions: React.FC = () => {
                       }}
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm font-medium"
                     >
-                      عرض التفاصيل
+                      {t("employee.deductions.viewDetails")}
                     </button>
                   </div>
                 </div>
@@ -413,7 +410,7 @@ const MyDeductions: React.FC = () => {
             <div className="mt-3">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  تفاصيل الخصم
+                  {t("employee.deductions.detailsTitle")}
                 </h3>
                 <button
                   onClick={() => setShowDetailsModal(false)}
@@ -427,20 +424,18 @@ const MyDeductions: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      النوع
+                      {t("employee.deductions.type")}
                     </p>
                     <p className="text-base font-medium text-gray-900 dark:text-white">
-                      {
-                        DEDUCTION_TYPES[
-                          selectedDeduction.type as keyof typeof DEDUCTION_TYPES
-                        ]
-                      }
+                      {t(DEDUCTION_TYPES[
+                        selectedDeduction.type as keyof typeof DEDUCTION_TYPES
+                      ] || "employee.deductions.typeOther")}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      المبلغ
+                      {t("employee.deductions.amount")}
                     </p>
                     <p className="text-base font-medium text-red-600 dark:text-red-400">
                       {formatCurrency(selectedDeduction.amount)}
@@ -450,7 +445,7 @@ const MyDeductions: React.FC = () => {
                   {selectedDeduction.category && (
                     <div className="col-span-2">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        التصنيف
+                        {t("employee.deductions.category")}
                       </p>
                       <p className="text-base font-medium text-gray-900 dark:text-white">
                         {selectedDeduction.category}
@@ -460,7 +455,7 @@ const MyDeductions: React.FC = () => {
 
                   <div className="col-span-2">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      السبب
+                      {t("employee.deductions.reason")}
                     </p>
                     <p className="text-base font-medium text-gray-900 dark:text-white">
                       {selectedDeduction.reason}
@@ -470,7 +465,7 @@ const MyDeductions: React.FC = () => {
                   {selectedDeduction.description && (
                     <div className="col-span-2">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        الوصف
+                        {t("employee.deductions.description")}
                       </p>
                       <p className="text-base text-gray-900 dark:text-white">
                         {selectedDeduction.description}
@@ -480,7 +475,7 @@ const MyDeductions: React.FC = () => {
 
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      التاريخ
+                      {t("employee.deductions.date")}
                     </p>
                     <p className="text-base font-medium text-gray-900 dark:text-white">
                       {formatDate(selectedDeduction.date)}
@@ -489,7 +484,7 @@ const MyDeductions: React.FC = () => {
 
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      التاريخ الفعلي
+                      {t("employee.deductions.effectiveDate")}
                     </p>
                     <p className="text-base font-medium text-gray-900 dark:text-white">
                       {selectedDeduction.effectiveMonth}/
@@ -499,23 +494,21 @@ const MyDeductions: React.FC = () => {
 
                   <div className="col-span-2">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      الحالة
+                      {t("employee.deductions.statusLabel")}
                     </p>
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${DEDUCTION_STATUS[selectedDeduction.status as keyof typeof DEDUCTION_STATUS]?.color}`}
                     >
-                      {
-                        DEDUCTION_STATUS[
-                          selectedDeduction.status as keyof typeof DEDUCTION_STATUS
-                        ]?.label
-                      }
+                      {t(DEDUCTION_STATUS[
+                        selectedDeduction.status as keyof typeof DEDUCTION_STATUS
+                      ]?.labelKey || "employee.deductions.pendingStatus")}
                     </span>
                   </div>
 
                   {selectedDeduction.approvedAt && (
                     <div className="col-span-2">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        تاريخ الموافقة
+                        {t("employee.deductions.approvalDate")}
                       </p>
                       <p className="text-base text-green-600 dark:text-green-400">
                         {formatDate(selectedDeduction.approvedAt)}
@@ -526,7 +519,7 @@ const MyDeductions: React.FC = () => {
                   {selectedDeduction.rejectionReason && (
                     <div className="col-span-2">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        سبب الرفض
+                        {t("employee.deductions.rejectionReason")}
                       </p>
                       <p className="text-base text-red-600 dark:text-red-400">
                         {selectedDeduction.rejectionReason}
@@ -539,7 +532,7 @@ const MyDeductions: React.FC = () => {
                       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                         <p className="text-sm text-blue-800 dark:text-blue-400">
                           <CheckCircle className="h-4 w-4 inline ml-1" />
-                          تم تطبيق هذا الخصم على الراتب
+                          {t("employee.deductions.appliedToSalary")}
                         </p>
                       </div>
                     </div>
@@ -552,7 +545,7 @@ const MyDeductions: React.FC = () => {
                   onClick={() => setShowDetailsModal(false)}
                   className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
                 >
-                  إغلاق
+                  {t("employee.common.close")}
                 </button>
               </div>
             </div>
