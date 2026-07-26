@@ -1003,6 +1003,28 @@
       }
     }
   },
+  "billing": {
+    "payments": {
+      "title": "المدفوعات",
+      "walletBalance": "رصيد المحفظة",
+      "recharge": "شحن",
+      "transactionHistory": "سجل الحركات",
+      "noTransactions": "لا توجد حركات حالياً",
+      "description": "الوصف",
+      "amount": "المبلغ",
+      "date": "التاريخ",
+      "notSpecified": "غير محدد",
+      "rechargeWallet": "شحن المحفظة",
+      "amountPlaceholder": "المبلغ (جنيه)",
+      "recharging": "جاري الشحن...",
+      "confirmRecharge": "تأكيد الشحن",
+      "enterValidAmount": "أدخل مبلغاً صحيحاً",
+      "sessionFailed": "فشل إنشاء جلسة الدفع",
+      "gatewayError": "خطأ في الاتصال ببوابة الدفع",
+      "serverError": "خطأ في الاتصال بالخادم",
+      "currency": "ج.م"
+    }
+  },
   "appPricing": {
     "pageTitle": "جدول تسعير التطبيقات",
     "pageDescription": "لوحة بيانات تفاعلية لاستكشاف ومقارنة خطط وأسعار جميع أدوات المنصة.",
@@ -12797,5 +12819,58 @@
     "errorPause": "خطأ في إيقاف الاستيراد",
     "errorResume": "خطأ في استئناف الاستيراد",
     "errorCancel": "خطأ في إلغاء الاستيراد"
+  },
+  "storefrontThemes": {
+    "filterAll": "الكل",
+    "filterOwned": "مملوكة",
+    "filterFree": "مجانية",
+    "filterPaid": "مدفوعة",
+    "categoryGeneral": "عام",
+    "categoryGeneralStore": "متجر عام",
+    "freePrice": "مجاني",
+    "customize": "تخصيص",
+    "purchase": "شراء",
+    "freeActivate": "تفعيل مجاني",
+    "apply": "تطبيق",
+    "copyPreviewLink": "نسخ رابط المعاينة",
+    "resultsSummary": "عرض {{count}} قالب من أصل {{total}}",
+    "loadError": "تعذر تحميل قوالب المتجر",
+    "purchaseSuccess": "تم شراء القالب بنجاح ويمكنك تطبيقه الآن على متجرك",
+    "purchaseError": "تعذر شراء القالب",
+    "applySuccess": "تم تطبيق القالب على المتجر بنجاح",
+    "applyError": "تعذر تطبيق القالب",
+    "copyLinkError": "تعذر تحديد الشركة لنسخ الرابط",
+    "copyLinkSuccess": "✅ تم نسخ رابط المعاينة",
+    "copyLinkFailed": "تعذر نسخ الرابط — جرّب مرة أخرى",
+    "previewBlocked": "المتصفح منع فتح تبويب المعاينة. اسمح بالنوافذ المنبثقة ثم جرّب مرة أخرى.",
+    "previewError": "تعذر تحديد الشركة لفتح المعاينة"
+  },
+  "billing": {
+    "bundles": {
+      "title": "الباقات المتكاملة",
+      "subtitle": "احصل على مجموعة متكاملة من الأدوات بسعر مميز — وفّر الوقت والمال",
+      "fetchError": "خطأ في جلب الباقات",
+      "errorTitle": "حدث خطأ",
+      "retry": "إعادة المحاولة",
+      "emptyTitle": "لا توجد باقات متاحة حالياً",
+      "emptySubtitle": "تابعنا للحصول على أفضل العروض قريباً",
+      "avgSavings": "متوسط التوفير",
+      "bestDeal": "أفضل عرض",
+      "bundleLabel": "باقة",
+      "savePercent": "وفّر {{percent}}%",
+      "currencyPerMonth": "ج/شهر",
+      "currencySymbol": "ج",
+      "saveAmount": "وفّر {{amount}} ج",
+      "includedTools": "الأدوات المتضمنة:",
+      "viewDetails": "عرض التفاصيل",
+      "startSubscription": "ابدأ الاشتراك",
+      "whyBundles": "لماذا تختار الباقات؟",
+      "guaranteedSavings": "توفير مضمون",
+      "guaranteedSavingsDesc": "وفّر حتى 69% من تكلفة الأدوات الفردية",
+      "instantActivation": "تفعيل فوري",
+      "instantActivationDesc": "جميع الأدوات تُفعّل مباشرة بعد الاشتراك",
+      "fullIntegration": "تكامل كامل",
+      "fullIntegrationDesc": "الأدوات تعمل معاً بتناغم لتحقيق أقصى إنتاجية"
+    }
   }
 }

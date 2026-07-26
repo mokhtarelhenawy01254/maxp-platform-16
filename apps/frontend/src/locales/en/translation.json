@@ -1003,6 +1003,28 @@
       }
     }
   },
+  "billing": {
+    "payments": {
+      "title": "Payments",
+      "walletBalance": "Wallet Balance",
+      "recharge": "Recharge",
+      "transactionHistory": "Transaction History",
+      "noTransactions": "No transactions yet",
+      "description": "Description",
+      "amount": "Amount",
+      "date": "Date",
+      "notSpecified": "Not specified",
+      "rechargeWallet": "Recharge Wallet",
+      "amountPlaceholder": "Amount (EGP)",
+      "recharging": "Recharging...",
+      "confirmRecharge": "Confirm Recharge",
+      "enterValidAmount": "Enter a valid amount",
+      "sessionFailed": "Failed to create payment session",
+      "gatewayError": "Error connecting to payment gateway",
+      "serverError": "Server connection error",
+      "currency": "EGP"
+    }
+  },
   "appPricing": {
     "pageTitle": "Apps Pricing Sheet",
     "pageDescription": "Interactive dashboard to explore and compare pricing metrics of all platform tools.",
@@ -12773,5 +12795,58 @@
     "errorPause": "Error pausing import",
     "errorResume": "Error resuming import",
     "errorCancel": "Error cancelling import"
+  },
+  "storefrontThemes": {
+    "filterAll": "All",
+    "filterOwned": "Owned",
+    "filterFree": "Free",
+    "filterPaid": "Paid",
+    "categoryGeneral": "General",
+    "categoryGeneralStore": "General Store",
+    "freePrice": "Free",
+    "customize": "Customize",
+    "purchase": "Purchase",
+    "freeActivate": "Free Activation",
+    "apply": "Apply",
+    "copyPreviewLink": "Copy preview link",
+    "resultsSummary": "Showing {{count}} of {{total}} themes",
+    "loadError": "Failed to load store themes",
+    "purchaseSuccess": "Theme purchased successfully! You can now apply it to your store.",
+    "purchaseError": "Failed to purchase theme",
+    "applySuccess": "Theme applied to store successfully",
+    "applyError": "Failed to apply theme",
+    "copyLinkError": "Could not determine company to copy link",
+    "copyLinkSuccess": "Preview link copied",
+    "copyLinkFailed": "Failed to copy link — try again",
+    "previewBlocked": "Browser blocked the preview tab. Allow popups and try again.",
+    "previewError": "Could not determine company to open preview"
+  },
+  "billing": {
+    "bundles": {
+      "title": "Integrated Bundles",
+      "subtitle": "Get an integrated set of tools at a special price — save time and money",
+      "fetchError": "Error fetching bundles",
+      "errorTitle": "An error occurred",
+      "retry": "Retry",
+      "emptyTitle": "No bundles available",
+      "emptySubtitle": "Follow us for the best offers soon",
+      "avgSavings": "Average Savings",
+      "bestDeal": "Best Deal",
+      "bundleLabel": "Bundle",
+      "savePercent": "Save {{percent}}%",
+      "currencyPerMonth": "EGP/month",
+      "currencySymbol": "EGP",
+      "saveAmount": "Save {{amount}} EGP",
+      "includedTools": "Included Tools:",
+      "viewDetails": "View Details",
+      "startSubscription": "Start Subscription",
+      "whyBundles": "Why Choose Bundles?",
+      "guaranteedSavings": "Guaranteed Savings",
+      "guaranteedSavingsDesc": "Save up to 69% on individual tool costs",
+      "instantActivation": "Instant Activation",
+      "instantActivationDesc": "All tools activate immediately after subscription",
+      "fullIntegration": "Full Integration",
+      "fullIntegrationDesc": "Tools work together in harmony for maximum productivity"
+    }
   }
 }

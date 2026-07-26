@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Package, Check, Star, TrendingUp, Zap, Gift, MessageSquare, Bot, Sparkles, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface Bundle {
   id: string;
@@ -57,6 +58,7 @@ const bundleThemes: Record<string, { gradient: string; badge: string; icon: type
 };
 
 export default function Bundles() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function Bundles() {
       if (error.response?.status === 401) {
         navigate("/auth/login");
       } else {
-        setError(error.response?.data?.message || "خطأ في جلب الباقات");
+        setError(error.response?.data?.message || t("billing.bundles.fetchError"));
       }
     } finally {
       setLoading(false);
@@ -101,9 +103,9 @@ export default function Bundles() {
             <div className="flex items-center justify-center mb-4">
               <Gift size={48} className="text-amber-400" />
             </div>
-            <h1 className="text-4xl font-bold mb-4">الباقات المتكاملة</h1>
+            <h1 className="text-4xl font-bold mb-4">{t("billing.bundles.title")}</h1>
             <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              احصل على مجموعة متكاملة من الأدوات بسعر مميز — وفّر الوقت والمال
+              {t("billing.bundles.subtitle")}
             </p>
           </div>
         </div>
@@ -122,14 +124,14 @@ export default function Bundles() {
             <div className="bg-red-100 dark:bg-red-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package size={40} className="text-red-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">حدث خطأ</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t("billing.bundles.errorTitle")}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
             <button
               onClick={fetchBundles}
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <RefreshCw size={18} />
-              إعادة المحاولة
+              {t("billing.bundles.retry")}
             </button>
           </div>
         )}
@@ -137,8 +139,8 @@ export default function Bundles() {
         {!loading && !error && bundles.length === 0 && (
           <div className="text-center py-16">
             <Package size={64} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">لا توجد باقات متاحة حالياً</h3>
-            <p className="text-gray-600 dark:text-gray-400">تابعنا للحصول على أفضل العروض قريباً</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t("billing.bundles.emptyTitle")}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t("billing.bundles.emptySubtitle")}</p>
           </div>
         )}
 
@@ -149,7 +151,7 @@ export default function Bundles() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">متوسط التوفير</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">{t("billing.bundles.avgSavings")}</p>
                       <p className="text-3xl font-bold text-green-600 mt-2">
                         {Math.round(bundles.reduce((s, b) => s + parseFloat(b.discount.toString()), 0) / bundles.length)}%
                       </p>
@@ -162,7 +164,7 @@ export default function Bundles() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">أفضل عرض</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">{t("billing.bundles.bestDeal")}</p>
                       <p className="text-3xl font-bold text-amber-600 mt-2">
                         {Math.max(...bundles.map((b) => parseFloat(b.discount.toString())))}%
                       </p>
@@ -194,11 +196,11 @@ export default function Bundles() {
                           <div className="bg-white/20 p-2 rounded-lg">
                             <BundleIcon size={24} />
                           </div>
-                          <span className="font-bold text-lg">باقة</span>
+                          <span className="font-bold text-lg">{t("billing.bundles.bundleLabel")}</span>
                         </div>
                         {parseFloat(bundle.discount.toString()) > 0 && (
                           <div className={`${theme.badge} px-3 py-1 rounded-full text-sm font-bold`}>
-                            وفّر {bundle.discount}%
+                            {t("billing.bundles.savePercent", { percent: bundle.discount })}
                           </div>
                         )}
                       </div>
@@ -211,12 +213,12 @@ export default function Bundles() {
                       <div className="mb-6">
                         <div className="flex items-baseline gap-2 mb-2">
                           <span className={`text-4xl font-bold ${theme.priceClass}`}>{bundlePrice.toFixed(0)}</span>
-                          <span className="text-gray-600 dark:text-gray-400">ج/شهر</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t("billing.bundles.currencyPerMonth")}</span>
                         </div>
                         {savings > 0 && (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-400 line-through">{originalPrice.toFixed(0)} ج</span>
-                            <span className="text-green-600 font-semibold">وفّر {savings.toFixed(0)} ج</span>
+                            <span className="text-gray-400 line-through">{originalPrice.toFixed(0)} {t("billing.bundles.currencySymbol")}</span>
+                            <span className="text-green-600 font-semibold">{t("billing.bundles.saveAmount", { amount: savings.toFixed(0) })}</span>
                           </div>
                         )}
                       </div>
@@ -224,7 +226,7 @@ export default function Bundles() {
                       <div className="mb-6">
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                           <Zap size={18} className="text-amber-500" />
-                          الأدوات المتضمنة:
+                          {t("billing.bundles.includedTools")}
                         </h4>
                         <div className="space-y-2">
                           {bundle.apps.map((app) => (
@@ -241,14 +243,14 @@ export default function Bundles() {
                           onClick={() => navigate(`/marketplace/bundle/${bundle.slug}`)}
                           className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 text-sm"
                         >
-                          عرض التفاصيل
+                          {t("billing.bundles.viewDetails")}
                         </button>
                         <button
                           onClick={() => navigate("/checkout/messaging")}
                           className={`flex-1 bg-gradient-to-r ${theme.gradient} text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2`}
                         >
                           <Sparkles size={18} />
-                          ابدأ الاشتراك
+                          {t("billing.bundles.startSubscription")}
                         </button>
                       </div>
                     </div>
@@ -258,28 +260,28 @@ export default function Bundles() {
             </div>
 
             <div className="mt-16 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 rounded-2xl p-8 max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">لماذا تختار الباقات؟</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{t("billing.bundles.whyBundles")}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="bg-emerald-600 text-white w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
                     <TrendingUp size={28} />
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">توفير مضمون</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">وفّر حتى 69% من تكلفة الأدوات الفردية</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{t("billing.bundles.guaranteedSavings")}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t("billing.bundles.guaranteedSavingsDesc")}</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-violet-600 text-white w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Zap size={28} />
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">تفعيل فوري</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">جميع الأدوات تُفعّل مباشرة بعد الاشتراك</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{t("billing.bundles.instantActivation")}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t("billing.bundles.instantActivationDesc")}</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-amber-600 text-white w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Star size={28} />
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">تكامل كامل</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">الأدوات تعمل معاً بتناغم لتحقيق أقصى إنتاجية</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{t("billing.bundles.fullIntegration")}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t("billing.bundles.fullIntegrationDesc")}</p>
                 </div>
               </div>
             </div>

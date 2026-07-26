@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   CheckCircle2,
@@ -87,21 +88,16 @@ const STOREFRONT_READY_MARKETPLACE_PREVIEWS = new Set([
   "pharmacy-demo",
 ]);
 
-const FILTER_TYPE_LABELS: Record<ThemeFilterType, string> = {
-  all: "الكل",
-  owned: "مملوكة",
-  free: "مجانية",
-  paid: "مدفوعة",
-};
+const THEME_FILTER_TYPES: ThemeFilterType[] = ["all", "owned", "free", "paid"];
 
 const FALLBACK_THEME_CATEGORY: StorefrontThemeCatalogItem["category"] = {
   primary: {
     id: "general",
-    label: "عام",
+    label: "General",
   },
   secondary: {
     id: "general-store",
-    label: "متجر عام",
+    label: "General Store",
   },
 };
 
@@ -141,11 +137,11 @@ const getThemeCategory = (
   },
 });
 
-const formatThemePrice = (theme: StorefrontThemeCatalogItem): string => {
+const formatThemePrice = (theme: StorefrontThemeCatalogItem, t: (key: string) => string): string => {
   if (theme.pricingModel === "ONE_TIME" && theme.monthlyPrice > 0) {
     return `${theme.monthlyPrice.toLocaleString("en-US")} ${theme.currency}`;
   }
-  return "مجاني";
+  return t("storefrontThemes.freePrice");
 };
 
 
@@ -304,6 +300,7 @@ function StorefrontThemeCard({
   onCopyLink: (themeId: string) => void;
   onCustomize: (themeId: string) => void;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopyClick = () => {
@@ -317,21 +314,21 @@ function StorefrontThemeCard({
   
   const primaryAction = themeItem.isCurrentTheme
     ? {
-        label: "تخصيص",
+        label: t("storefrontThemes.customize"),
         icon: Palette,
         onClick: () => onCustomize(themeItem.themeId),
         className: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
       }
     : themeItem.canPurchase
       ? {
-          label: "شراء",
+          label: t("storefrontThemes.purchase"),
           icon: ShoppingCart,
           onClick: () => onPurchase(themeItem),
           className: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
         }
       : canApplyNow
         ? {
-            label: isFreeActivation ? "تفعيل مجاني" : "تطبيق",
+            label: isFreeActivation ? t("storefrontThemes.freeActivate") : t("storefrontThemes.apply"),
             icon: CheckCircle2,
             onClick: () => onApply(themeItem),
             className: isFreeActivation
@@ -339,7 +336,7 @@ function StorefrontThemeCard({
               : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-sm",
           }
         : {
-            label: "تخصيص",
+            label: t("storefrontThemes.customize"),
             icon: Palette,
             onClick: () => onCustomize(themeItem.themeId),
             className: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
@@ -385,7 +382,7 @@ function StorefrontThemeCard({
         {/* PRICE OVERLAY */}
         <div className="absolute bottom-2 left-2">
            <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-md border border-white/10">
-              {formatThemePrice(themeItem)}
+              {formatThemePrice(themeItem, t)}
            </span>
         </div>
       </div>
@@ -434,7 +431,7 @@ function StorefrontThemeCard({
           </button>
           <button
             onClick={handleCopyClick}
-            title="نسخ رابط المعاينة"
+            title={t("storefrontThemes.copyPreviewLink")}
             className={cn(
               "flex items-center justify-center w-8 h-8 rounded-lg border transition-all",
               copied
@@ -463,6 +460,7 @@ function StorefrontThemeCard({
 }
 
 export default function StorefrontThemes() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const auth = useOptionalAuth();
@@ -543,7 +541,7 @@ export default function StorefrontThemes() {
         }
       } catch (error) {
         console.error("Error loading storefront themes marketplace:", error);
-        toast.error(getErrorMessage(error, "تعذر تحميل قوالب المتجر"));
+        toast.error(getErrorMessage(error, t("storefrontThemes.loadError")));
       } finally {
         setLoading(false);
       }
@@ -769,7 +767,7 @@ export default function StorefrontThemes() {
     const labels: string[] = [];
 
     if (filterType !== "all") {
-      labels.push(FILTER_TYPE_LABELS[filterType]);
+      labels.push(t("storefrontThemes.filter" + filterType.charAt(0).toUpperCase() + filterType.slice(1)));
     }
 
     if (selectedPrimaryCategory) {
@@ -781,10 +779,10 @@ export default function StorefrontThemes() {
     }
 
     return labels;
-  }, [filterType, selectedPrimaryCategory, selectedSecondaryCategory]);
+  }, [t, filterType, selectedPrimaryCategory, selectedSecondaryCategory]);
 
   const filterCount = activeFilterLabels.length;
-  const resultsSummaryLabel = `عرض ${filteredThemes.length} قالب من أصل ${themes.length}`;
+  const resultsSummaryLabel = t("storefrontThemes.resultsSummary", { count: filteredThemes.length, total: themes.length });
 
   const updateCategorySearchParams = (
     primaryCategoryId: string,
@@ -853,10 +851,10 @@ export default function StorefrontThemes() {
         setWallet(purchase.wallet);
       }
 
-      toast.success("تم شراء القالب بنجاح ويمكنك تطبيقه الآن على متجرك");
+      toast.success(t("storefrontThemes.purchaseSuccess"));
     } catch (error) {
       console.error("Theme purchase error:", error);
-      toast.error(getErrorMessage(error, "تعذر شراء القالب"));
+      toast.error(getErrorMessage(error, t("storefrontThemes.purchaseError")));
     } finally {
       setProcessingThemeId("");
     }
@@ -876,10 +874,10 @@ export default function StorefrontThemes() {
         activation.catalog.length > 0 ? activation.catalog : currentThemes,
       );
 
-      toast.success("تم تطبيق القالب على المتجر بنجاح");
+      toast.success(t("storefrontThemes.applySuccess"));
     } catch (error) {
       console.error("Theme apply error:", error);
-      toast.error(getErrorMessage(error, "تعذر تطبيق القالب"));
+      toast.error(getErrorMessage(error, t("storefrontThemes.applyError")));
     } finally {
       setProcessingThemeId("");
     }
@@ -906,12 +904,12 @@ export default function StorefrontThemes() {
   const handleCopyLink = (themeId: string) => {
     const url = buildPreviewUrl(themeId);
     if (!url) {
-      toast.error("تعذر تحديد الشركة لنسخ الرابط");
+      toast.error(t("storefrontThemes.copyLinkError"));
       return;
     }
     navigator.clipboard.writeText(url).then(
-      () => toast.success("✅ تم نسخ رابط المعاينة"),
-      () => toast.error("تعذر نسخ الرابط — جرّب مرة أخرى"),
+      () => toast.success(t("storefrontThemes.copyLinkSuccess")),
+      () => toast.error(t("storefrontThemes.copyLinkFailed")),
     );
   };
 
@@ -921,9 +919,7 @@ export default function StorefrontThemes() {
         return;
       }
 
-      toast.error(
-        "المتصفح منع فتح تبويب المعاينة. اسمح بالنوافذ المنبثقة ثم جرّب مرة أخرى.",
-      );
+      toast.error(t("storefrontThemes.previewBlocked"));
     };
 
     if (
@@ -938,7 +934,7 @@ export default function StorefrontThemes() {
     const previewUrl = buildPreviewUrl(themeId);
 
     if (!previewUrl) {
-      toast.error("تعذر تحديد الشركة لفتح المعاينة");
+      toast.error(t("storefrontThemes.previewError"));
       return;
     }
 
@@ -952,7 +948,7 @@ export default function StorefrontThemes() {
         className,
       )}
     >
-      {(Object.keys(FILTER_TYPE_LABELS) as ThemeFilterType[]).map((value) => {
+      {THEME_FILTER_TYPES.map((value) => {
         const isActive = filterType === value;
         return (
           <button
@@ -962,7 +958,7 @@ export default function StorefrontThemes() {
             data-active={isActive}
             onClick={() => setFilterType(value)}
           >
-            {FILTER_TYPE_LABELS[value]}
+            {t("storefrontThemes.filter" + value.charAt(0).toUpperCase() + value.slice(1))}
           </button>
         );
       })}
@@ -1044,20 +1040,20 @@ export default function StorefrontThemes() {
            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden md:block" />
 
            <div className="flex items-center gap-1">
-              {(Object.keys(FILTER_TYPE_LABELS) as ThemeFilterType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setFilterType(type)}
-                  className={cn(
-                    "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
-                    filterType === type 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
-                      : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-indigo-500/50"
-                  )}
-                >
-                  {FILTER_TYPE_LABELS[type]}
-                </button>
-              ))}
+               {THEME_FILTER_TYPES.map((type) => (
+                 <button
+                   key={type}
+                   onClick={() => setFilterType(type)}
+                   className={cn(
+                     "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
+                     filterType === type 
+                       ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                       : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-indigo-500/50"
+                   )}
+                 >
+                   {t("storefrontThemes.filter" + type.charAt(0).toUpperCase() + type.slice(1))}
+                 </button>
+               ))}
            </div>
         </div>
 
