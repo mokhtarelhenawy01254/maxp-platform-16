@@ -6,6 +6,7 @@
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { getSystemStatusFromTurbo, getSystemStatusFromTurboWithCustomMapping } = require('../utils/statusNormalizer');
 const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
+const { ensureReturnOrder } = require('./partialReturnService');
 
 /**
  * Fetch per-company turboStatusMapping from company settings.
@@ -281,6 +282,31 @@ async function syncTurboStatusToOrder({
   // Turbo API may return 'returned' for is_order=1 shipments even after delivery — ignore it.
   const DOWNGRADE_STATUSES = new Set(['returned', 'returned_to_company', 'turbo_sent', 'turbo_saved', 'created', 'delayed']);
   if (existingOrder.status === 'DELIVERED' && DOWNGRADE_STATUSES.has(canonicalTurboStatus)) {
+    // 🔁 Check if this is a partial return (R suffix shipment)
+    const turboCode = payload?.code || payload?.order_number || '';
+    const isPartialReturn = /R$/i.test(turboCode);
+
+    if (isPartialReturn) {
+      console.log(`🔁 [TURBO-SYNC] Partial return detected for ${existingOrder.orderNumber} via ${turboCode} — creating return order`);
+      try {
+        const returnOrder = await ensureReturnOrder(existingOrder, turboCode, canonicalTurboStatus);
+        if (returnOrder) {
+          // Also sync the return order with this status
+          const returnSyncResult = await syncTurboStatusToOrder({
+            orderId: returnOrder.id,
+            orderNumber: returnOrder.orderNumber,
+            companyId,
+            rawStatus,
+            payload,
+            isGuestOrder: false
+          });
+          console.log(`✅ [TURBO-SYNC] Return order ${returnOrder.orderNumber} synced: ${returnSyncResult.turboStatus}`);
+        }
+      } catch (e) {
+        console.error(`❌ [TURBO-SYNC] Failed to create return order for ${turboCode}:`, e.message);
+      }
+    }
+
     console.warn(`🔒 [TURBO-SYNC] PROTECTED: Order ${existingOrder.orderNumber} is DELIVERED — refusing to set turboShipmentStatus to "${canonicalTurboStatus}". Keeping as "delivered".`);
     canonicalTurboStatus = 'delivered';
     orderStatus = 'DELIVERED';
