@@ -1194,7 +1194,7 @@ class EnhancedOrderService {
 
             productName: productItem.productName || product?.name || null,
             productColor: extractedColor || null, // ✨ استخدام البيانات المستخرجة
-            productSize: extractedSize || null, // ✨ استخدام البيانات المستخرجة
+            productSize: extractedSize != null ? String(extractedSize) : null, // ✨ استخدام البيانات المستخرجة
             productImage: productItem.productImage || null,
             productSku: variant?.sku || product?.sku || `MANUAL-${Date.now()}`,
             basePrice: Number.isFinite(basePrice) ? basePrice : null,
@@ -1271,7 +1271,7 @@ class EnhancedOrderService {
         // ✅ معلومات المنتج من الاستخراج التلقائي - بدون قيم افتراضية
         productName: orderData.productName || product?.name || null,
         productColor: orderData.productColor || selectedAttributes.Color || null,
-        productSize: orderData.productSize || selectedAttributes.Size || null,
+        productSize: orderData.productSize != null ? String(orderData.productSize) : (selectedAttributes.Size != null ? String(selectedAttributes.Size) : null),
         productImage: orderData.productImage || null,
         productSku: product?.sku || `AUTO-${Date.now()}`,
         basePrice: product?.basePrice || product?.price || null,
@@ -2476,7 +2476,6 @@ class EnhancedOrderService {
         metadata: {
           color: item.productColor,
           size: item.productSize,
-          sku: item.productSku || '',
           conversationId: order.conversationId,
           source: 'ai_agent',
           confidence: order.confidence,

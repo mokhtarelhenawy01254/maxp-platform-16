@@ -277,14 +277,24 @@ class OrderService {
         ? await this.findOrCreateProduct(productName, companyId)
         : null;
 
+      let productSku = null;
+      if (productId && productName) {
+        const product = await this.getPrisma().product.findUnique({
+          where: { id: productId },
+          select: { sku: true }
+        });
+        productSku = product?.sku || null;
+      }
+
       const orderItem = {
         productId,
+        productSku,
         quantity,
         price: parseFloat(Number(productPrice).toFixed(2)),
         total: parseFloat(subtotal.toFixed(2)),
         productName: productName || null,
-        productColor: productColor || null,
-        productSize: productSize || null,
+        productColor: productColor ? String(productColor) : null,
+        productSize: productSize != null ? String(productSize) : null,
         extractionSource: 'ai',
         confidence: 1,
         metadata: JSON.stringify({

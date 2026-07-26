@@ -160,6 +160,8 @@ class InternalSyncService {
 
                     localOrderItems.push({
                         productId: localProduct ? localProduct.id : null,
+                        productName: item.productName || item.product?.name || null,
+                        productSku: item.productSku || item.product?.sku || null,
                         quantity: item.quantity,
                         price: item.price,
                         total: item.total,
@@ -434,6 +436,8 @@ class InternalSyncService {
                                 orderItems: {
                                     create: items.map(it => ({
                                         productId: it.originalProduct.id,
+                                        productName: it.originalProduct.name || null,
+                                        productSku: it.originalProduct.sku || null,
                                         quantity: it.quantity,
                                         price: it.price,
                                         total: it.total,

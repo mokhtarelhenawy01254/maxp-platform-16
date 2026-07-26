@@ -217,8 +217,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
         "🔍 [FRONTEND-DEBUG] Selected products before sending:",
         selectedProducts.map((item) => ({
           productName: item.productName,
-          productColor: item.productColor,
-          productSize: item.productSize,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
           variantId: item.variantId,
         })),
       );
@@ -251,8 +251,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
             price: item.price,
             total: item.total,
             productName: item.productName,
-            productColor: item.productColor,
-            productSize: item.productSize,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
           };
         }),
         subtotal: calculateSubtotal(),

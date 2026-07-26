@@ -3855,7 +3855,6 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productSku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
             metadata: {
               ...(item.metadata || {}),
-              sku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
               color: color,
               size: size,
               details: details,
@@ -3986,10 +3985,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             price: item.price,
             quantity: item.quantity,
             total: item.total,
-            productSku: item.productSku || parsedMetadata.sku || item.productVariant?.sku || '',
+            productSku: item.productSku || item.productVariant?.sku || parsedMetadata.sku || '',
             metadata: {
               ...parsedMetadata,
-              sku: item.productSku || parsedMetadata.sku || item.productVariant?.sku || '',
               color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
               size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
               details: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails,
@@ -4409,8 +4407,8 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
       return {
         productId: item.productId,
         productName: item.productName,
-        productColor: item.productColor,
-        productSize: item.productSize,
+        productColor: item.productColor ? String(item.productColor) : null,
+        productSize: item.productSize != null ? String(item.productSize) : null,
         price: parseFloat(item.price),
         quantity: item.quantity,
         total: parseFloat(item.total),
@@ -5115,7 +5113,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
               total: item.total,
               productName: item.productName || item.name || null, // ✅ FIX: Persist product details
               productColor: item.productColor || item.color || null, // ✅ FIX: Persist product details
-              productSize: item.productSize || item.size || null, // ✅ FIX: Persist product details
+              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null), // ✅ FIX: Persist product details
               productDetails: item.productDetails || item.details || null, // ✅ FIX: Persist product details
               productSku: item.productSku || item.sku || null,
               metadata: JSON.stringify(item.metadata || {})

@@ -599,11 +599,11 @@ const OrderDetails: React.FC = () => {
 
           // Extract from attributeValues
           if (variantMeta.attributeValues) {
-            if (variantMeta.attributeValues["اللون"] && !productColor) {
-              productColor = variantMeta.attributeValues["اللون"];
+            if (variantMeta.attributeValues["اللون"] != null && !productColor) {
+              productColor = String(variantMeta.attributeValues["اللون"]);
             }
-            if (variantMeta.attributeValues["المقاس"] && !productSize) {
-              productSize = variantMeta.attributeValues["المقاس"];
+            if (variantMeta.attributeValues["المقاس"] != null && !productSize) {
+              productSize = String(variantMeta.attributeValues["المقاس"]);
             }
           }
         } catch (e) {
@@ -700,7 +700,7 @@ const OrderDetails: React.FC = () => {
       quantity: 1,
       total: actualPrice,
       productColor,
-      productSize,
+      productSize: productSize != null ? String(productSize) : "",
       productImage, // ✅ ADDED: Image field
       productSku: itemSku,
       metadata: {

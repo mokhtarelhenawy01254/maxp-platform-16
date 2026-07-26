@@ -1186,6 +1186,9 @@ router.post(
         orderItems.push({
           productId: item.productId,
           variantId: item.variantId || null,
+          productName: product.name,
+          productSku: product.sku,
+          productImage: product.mainImage || product.images?.[0] || null,
           quantity,
           price: Number(price),
           total: itemTotal,
@@ -1235,6 +1238,9 @@ router.post(
             create: orderItems.map((item) => ({
               productId: item.productId,
               variantId: item.variantId,
+              productName: item.productName,
+              productSku: item.productSku,
+              productImage: item.productImage,
               quantity: item.quantity,
               price: item.price,
               total: item.total,
