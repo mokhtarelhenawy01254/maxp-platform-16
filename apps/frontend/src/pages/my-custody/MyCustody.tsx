@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
   ComputerDesktopIcon,
@@ -21,6 +22,7 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MyCustody: React.FC = () => {
+  const { t } = useTranslation();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -177,10 +179,10 @@ const MyCustody: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  عهدتي
+                  {t("employee.custody.title")}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  جميع الأصول والمعدات المسلمة لك من الشركة
+                  {t("employee.custody.subtitle")}
                 </p>
               </div>
             </div>

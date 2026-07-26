@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -75,6 +76,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const MyAdvances = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -209,10 +211,10 @@ const MyAdvances = () => {
                             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
                                 <Wallet className="w-7 h-7 text-white" />
                             </div>
-                            السلف والمستحقات
+                            {t("employee.advances.title")}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-base">
-                            إدارة طلبات السلف الشخصية ومتابعة حالة السداد
+                            {t("employee.advances.subtitle")}
                         </p>
                     </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
   CameraIcon,
@@ -231,6 +232,7 @@ const SectionCard = ({
 };
 
 const Profile: React.FC = () => {
+  const { t } = useTranslation();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
   const { derivedTheme } = useTheme();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     GraduationCap,
     Calendar,
@@ -78,6 +79,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
 };
 
 const MyTraining: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [trainings, setTrainings] = useState<Training[]>([]);
     const [loading, setLoading] = useState(true);
@@ -162,11 +164,11 @@ const MyTraining: React.FC = () => {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h1 className="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600">
-                        تدريباتي
+                        {t("employee.training.title")}
                     </h1>
                     <p className="text-gray-500 font-medium flex items-center gap-2 mt-1">
                         <GraduationCap className="h-4 w-4 text-purple-400" />
-                        سجل الدورات والبرامج التدريبية الخاصة بك
+                        {t("employee.training.subtitle")}
                     </p>
                 </div>
 

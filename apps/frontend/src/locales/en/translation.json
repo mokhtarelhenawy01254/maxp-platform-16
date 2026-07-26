@@ -4390,6 +4390,9 @@
       "approvedStatus": "Approved",
       "rejectedStatus": "Rejected"
     },
+    "activity": {
+      "title": "My Activity"
+    },
     "common": {
       "statusActive": "Active",
       "statusOnLeave": "On Leave",

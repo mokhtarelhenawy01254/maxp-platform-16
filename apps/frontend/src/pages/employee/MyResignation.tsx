@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -39,6 +40,7 @@ type ResignationFormData = {
 };
 
 const MyResignation = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -175,10 +177,10 @@ const MyResignation = () => {
                 <div className="space-y-1">
                     <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                         <FileX className="h-10 w-10 text-red-500" />
-                        طلب استقالة
+                        {t("employee.resignation.title")}
                     </h1>
                     <p className="text-muted-foreground text-lg">
-                        إجراءات إنهاء الخدمة وتسجيل تاريخ آخر يوم عمل
+                        {t("employee.resignation.subtitle")}
                     </p>
                 </div>
 

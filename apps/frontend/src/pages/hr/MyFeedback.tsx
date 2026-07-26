@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     MessageSquare,
     Plus,
@@ -67,6 +68,7 @@ interface Feedback {
 }
 
 const MyFeedback: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -155,10 +157,10 @@ const MyFeedback: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
                         <MessageSquare className="h-8 w-8 text-primary" />
-                        الشكاوى والاقتراحات
+                        {t("employee.feedback.title")}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        إدارة تواصلك مع الإدارة وتقييمات الزملاء في مكان واحد
+                        {t("employee.feedback.subtitle")}
                     </p>
                 </div>
                 <Button onClick={() => navigate("/my-feedback/new")} className="flex items-center gap-2 shadow-lg hover:shadow-primary/20 transition-all">

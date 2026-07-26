@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -20,6 +21,7 @@ import { apiClient } from "../services/apiClient";
 import { Eye, Download, CheckCircle, XCircle, Info, AlertTriangle } from "lucide-react";
 
 const MyActivity = () => {
+  const { t } = useTranslation();
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ const MyActivity = () => {
 
   return (
     <div className="max-w-6xl 2xl:max-w-7xl mx-auto mt-4 mb-4 px-4">
-      <h1 className="text-2xl font-bold mb-3">📊 نشاطاتي</h1>
+      <h1 className="text-2xl font-bold mb-3">{t("employee.activity.title")}</h1>
 
       {stats && <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <Card><CardContent><p className="text-sm text-muted-foreground">إجمالي النشاطات</p><p className="text-2xl font-bold">{stats.totalActivities}</p></CardContent></Card>
