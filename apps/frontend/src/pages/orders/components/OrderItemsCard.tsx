@@ -466,6 +466,16 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
     const hasQuantityError = validationErrors[`quantity_${index}`];
     const hasPriceError = validationErrors[`price_${index}`];
     const quantityOfferSummary = getQuantityOfferSummary(item);
+    const sku = item.productSku || itemMetadata.sku || '';
+
+    console.log("[OrderItemsCard] renderSingleItem:", {
+      productName: item.productName,
+      productSku: item.productSku,
+      metadataSku: itemMetadata.sku,
+      resolvedSku: sku,
+      hasProductSku: !!item.productSku,
+      hasMetadataSku: !!(typeof itemMetadata.sku === "string" && itemMetadata.sku.trim()),
+    });
 
     return (
       <div
@@ -497,9 +507,12 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                 </h4>
 
                 {(item.productSku || (typeof itemMetadata.sku === "string" && itemMetadata.sku.trim())) && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-1.5">
-                    {item.productSku || itemMetadata.sku}
-                  </p>
+                  <div className="inline-flex items-center gap-1.5 rounded bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 mb-2">
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">SKU</span>
+                    <span className="text-xs font-mono font-semibold text-blue-700 dark:text-blue-300">
+                      {item.productSku || itemMetadata.sku}
+                    </span>
+                  </div>
                 )}
 
                 <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -798,6 +811,11 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                                     <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
                                       {item.productName}
                                     </h4>
+                                    {(item.productSku || (typeof itemMetadata.sku === "string" && itemMetadata.sku.trim())) && (
+                                      <span className="inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold font-mono text-blue-600 dark:text-blue-400">
+                                        {item.productSku || itemMetadata.sku}
+                                      </span>
+                                    )}
                                     <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
                                       القطعة {slotIndex || itemPosition + 1}
                                     </span>
