@@ -583,6 +583,19 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     );
   }
 
+  // For non-app-dashboard layouts, still render AppShell for /apps/:appId routes
+  const isAppSubRoute = location.pathname.startsWith('/apps/') && location.pathname !== '/apps';
+  if (isAppSubRoute) {
+    return (
+      <div className="app-dashboard-app-root" data-theme={BUSINESS_THEME_ID} data-visual-theme={shellThemeId}>
+        {headerBlock}
+        <AppShell allSections={menuSections}>
+          {children}
+        </AppShell>
+      </div>
+    );
+  }
+
   return (
     <div
       className="business-shell-root"
