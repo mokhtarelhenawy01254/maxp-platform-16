@@ -43,7 +43,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   const [contactNotes, setContactNotes] = useState("");
 
   // Review Form
-  const [status, setStatus] = useState(request.status);
   const [reasonId, setReasonId] = useState(request.reasonId || "");
   const [customerNotes, setCustomerNotes] = useState(
     request.customerNotes || "",
@@ -52,9 +51,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     request.responsibleParty,
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
-  const [rejectionReason, setRejectionReason] = useState(
-    request.rejectionReason || "",
-  );
   const [isReviewed, setIsReviewed] = useState(request.isReviewed);
   const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -102,19 +98,13 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
       toast.error(t('returns.k_117'));
       return;
     }
-    if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error(t('returns.k_118'));
-      return;
-    }
     setSubmittingReview(true);
     try {
       await returnService.updateRequest(request.id, {
-        status,
         reasonId: reasonId || undefined,
         customerNotes,
         responsibleParty,
         adminNotes,
-        rejectionReason,
         isReviewed,
       });
       toast.success(t('returns.k_119'));
@@ -144,33 +134,14 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return (
-          <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_135')}
-          </span>
-        );
-      case "REJECTED":
-        return (
-          <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <XCircle size={12} /> {t('returns.k_15')}
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> {t('returns.k_16')}
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <Clock size={12} /> {t('returns.k_1')}
-          </span>
-        );
+  const getReceivedBadge = (rs: string | undefined) => {
+    if (rs === "RECEIVED" || rs === "INSPECTED" || rs === "RESTOCKED") {
+      return <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 📦 وصل</span>;
     }
+    if (rs === "IN_TRANSIT") {
+      return <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 🚚 في الطريق</span>;
+    }
+    return <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><Clock size={12} /> ⏳ قيد الانتظار</span>;
   };
 
   return (
@@ -184,7 +155,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
               {t('returns.k_189')}{request.order?.orderNumber}
-              {getStatusBadge(request.status)}
+              {getReceivedBadge(request.receivedStatus)}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(request.createdAt).toLocaleString("ar-EG")}
@@ -454,36 +425,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       <option value="OTHER">{t('returns.k_31')}</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_205')}
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    >
-                      <option value="PENDING">{t('returns.k_1')}</option>
-                      <option value="APPROVED">{t('returns.k_25')}</option>
-                      <option value="REJECTED">{t('returns.k_26')}</option>
-                      <option value="COMPLETED">{t('returns.k_16')}</option>
-                    </select>
-                  </div>
                 </div>
-                {status === "REJECTED" && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_206')}
-                    </label>
-                    <input
-                      type="text"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder={t('returns.k_125')}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    />
-                  </div>
-                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     {t('returns.k_156')}

@@ -34,7 +34,6 @@ export interface ReturnRequest {
   orderId: string;
   customerId: string;
   reasonId?: string;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
   adminNotes?: string;
   customerNotes?: string;
   refundAmount?: number;
@@ -121,8 +120,6 @@ export const returnService = {
   // Batch Operations
   batchReceive: (ids: string[], productCondition?: string) =>
     apiClient.put("/returns/batch/receive", { ids, productCondition }),
-  batchStatusUpdate: (ids: string[], status: string, adminNotes?: string) =>
-    apiClient.put("/returns/batch/status", { ids, status, adminNotes }),
 
   // Details & Logs
   addContactAttempt: (
@@ -160,18 +157,11 @@ export interface ReviewDisplayConfig {
   showCustomerPhone: boolean;
   showReasonColumn: boolean;
   showResponsiblePartyColumn: boolean;
-  showStatusColumn: boolean;
   showReviewColumn: boolean;
   showDateColumn: boolean;
   showActionsColumn: boolean;
   showTrackingColumn?: boolean;
   showReceivedStatusColumn?: boolean;
-  showFilterBar: boolean;
-  showCreateButton: boolean;
-  showPendingStatus?: boolean;
-  showApprovedStatus?: boolean;
-  showRejectedStatus?: boolean;
-  showCompletedStatus?: boolean;
   visibleOrderStatuses?: string[];
   ordersStartDate?: string;
 }

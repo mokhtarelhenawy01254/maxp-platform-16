@@ -96,12 +96,6 @@ const getDisplayFields = (t: any): {
     section: "columns",
   },
   {
-    key: "showStatusColumn",
-    label: t('returns.k_61'),
-    description: t('returns.k_62'),
-    section: "columns",
-  },
-  {
     key: "showReviewColumn",
     label: t('returns.k_63'),
     description: t('returns.k_64'),
@@ -142,38 +136,6 @@ const getDisplayFields = (t: any): {
     label: t('returns.k_71'),
     description: t('returns.k_72'),
     section: "controls",
-  },
-];
-
-const getStatusFields = (t: any): {
-  key: keyof ReviewDisplayConfig;
-  label: string;
-  description: string;
-  statusValue: string;
-}[] => [
-  {
-    key: "showPendingStatus",
-    label: t('returns.k_1'),
-    description: t('returns.k_73'),
-    statusValue: "PENDING",
-  },
-  {
-    key: "showApprovedStatus",
-    label: t('returns.k_14'),
-    description: t('returns.k_74'),
-    statusValue: "APPROVED",
-  },
-  {
-    key: "showRejectedStatus",
-    label: t('returns.k_15'),
-    description: t('returns.k_75'),
-    statusValue: "REJECTED",
-  },
-  {
-    key: "showCompletedStatus",
-    label: t('returns.k_16'),
-    description: t('returns.k_76'),
-    statusValue: "COMPLETED",
   },
 ];
 
@@ -226,7 +188,6 @@ const ReturnSettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const ORDER_STATUS_FIELDS = React.useMemo(() => getOrderStatusFields(t), [t]);
   const DISPLAY_FIELDS = React.useMemo(() => getDisplayFields(t), [t]);
-  const STATUS_FIELDS = React.useMemo(() => getStatusFields(t), [t]);
   const DEFAULT_DATA = React.useMemo(() => getDefaultData(t), [t]);
   const DEFAULT_DISPLAY_CONFIG = React.useMemo(() => ({
     showOrderColumn: true,
@@ -242,13 +203,6 @@ const ReturnSettingsPage: React.FC = () => {
     showActionsColumn: true,
     showTrackingColumn: true,
     showReceivedStatusColumn: true,
-    showFilterBar: true,
-    showCreateButton: true,
-    showPendingStatus: true,
-    showApprovedStatus: true,
-    showRejectedStatus: true,
-    showCompletedStatus: true,
-    visibleOrderStatuses: ORDER_STATUS_FIELDS.map((f) => f.code),
   }), [ORDER_STATUS_FIELDS]);
   const [activeTab, setActiveTab] = useState<"display" | "reasons">("display");
 
@@ -603,60 +557,7 @@ const ReturnSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Status Filters Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
-                <Filter size={20} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-                  {t('returns.k_168')}
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('returns.k_169')}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {STATUS_FIELDS.map((field) => (
-                <div
-                  key={field.key}
-                  className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        displayConfig[field.key]
-                          ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
-                      }`}
-                    >
-                      {displayConfig[field.key] ? (
-                        <Eye size={18} />
-                      ) : (
-                        <EyeOff size={18} />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-gray-800 dark:text-white">
-                        {field.label}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {field.description}
-                      </div>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={displayConfig[field.key]}
-                    onCheckedChange={() => toggleDisplayField(field.key)}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400">
                   <Package size={20} />

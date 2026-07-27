@@ -237,7 +237,7 @@ async function ensureShippingReturnRequestsSynced(companyId) {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { status, orderId, customerId, isReviewed, search, orderStatus, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
+        const { orderId, customerId, search, orderStatus, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
 
         // Auto-sync any returned shipping orders for company
@@ -245,7 +245,6 @@ exports.getReturnRequests = async (req, res) => {
 
         const where = { companyId: effectiveCompanyId };
 
-        if (status) where.status = status;
         if (orderId) where.orderId = orderId;
         if (customerId) where.customerId = customerId;
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
@@ -458,7 +457,7 @@ exports.createReturnRequest = async (req, res) => {
 exports.updateReturnRequest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, adminNotes, customerNotes, reasonId, refundAmount, assignedTo, responsibleParty, isReviewed, rejectionReason } = req.body;
+        const { adminNotes, customerNotes, reasonId, refundAmount, assignedTo, responsibleParty, isReviewed } = req.body;
 
         // Security & Null Check
         const oldRequest = await getPrisma().returnRequest.findFirst({
@@ -470,15 +469,13 @@ exports.updateReturnRequest = async (req, res) => {
         }
 
         const data = {
-            status,
             adminNotes,
             customerNotes,
             reasonId,
             refundAmount,
             assignedTo,
             responsibleParty,
-            isReviewed,
-            rejectionReason
+            isReviewed
         };
 
         if (isReviewed && !oldRequest.isReviewed) {
@@ -491,21 +488,12 @@ exports.updateReturnRequest = async (req, res) => {
             data
         });
 
-        // Log status changes and notes
-        if (status && oldRequest.status !== status) {
-            await logReturnActivity(getPrisma(), id, req.user.id, 'STATUS_CHANGE', { from: oldRequest.status, to: status });
-        }
         if (adminNotes && adminNotes !== oldRequest.adminNotes) {
             await logReturnActivity(getPrisma(), id, req.user.id, 'NOTE_ADDED', 'Admin note updated');
         }
 
-        // If status changed to APPROVED/REJECTED as part of review
         if (isReviewed && !oldRequest.isReviewed) {
-            await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', { status });
-        }
-
-        // If status changed to COMPLETED/APPROVED, recalculate customer score & reverse cashback
-        if (status !== oldRequest.status && (status === 'COMPLETED' || status === 'APPROVED')) {
+            await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', {});
             await calculateCustomerScore(updatedRequest.customerId, req.user.companyId);
             try {
                 await cashbackService.reverseCashbackForReturn({
@@ -885,42 +873,4 @@ exports.batchReceive = async (req, res) => {
     }
 };
 
-exports.batchStatusUpdate = async (req, res) => {
-    try {
-        const { ids, status, adminNotes } = req.body;
-        const companyId = req.user.effectiveCompanyId || req.user.companyId;
 
-        if (!Array.isArray(ids) || !ids.length) {
-            return res.status(400).json({ error: 'ids must be a non-empty array' });
-        }
-
-        const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'];
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
-        }
-
-        // Verify all requests belong to company
-        const requests = await getPrisma().returnRequest.findMany({
-            where: { id: { in: ids }, companyId }
-        });
-
-        if (requests.length !== ids.length) {
-            return res.status(403).json({ error: 'Some requests not found or access denied' });
-        }
-
-        const [updated] = await Promise.all([
-            getPrisma().returnRequest.updateMany({
-                where: { id: { in: ids }, companyId },
-                data: { status, adminNotes: adminNotes || undefined }
-            }),
-            ...requests.map(r =>
-                logReturnActivity(getPrisma(), r.id, req.user.id, 'BATCH_STATUS_CHANGE', { to: status })
-            )
-        ]);
-
-        res.json({ success: true, count: updated.count });
-    } catch (error) {
-        console.error('❌ [BATCH_STATUS] ERROR:', error.message);
-        res.status(500).json({ error: 'Failed to batch update status' });
-    }
-};

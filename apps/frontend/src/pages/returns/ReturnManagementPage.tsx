@@ -22,8 +22,6 @@ import {
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
-const RETURN_STATUSES = ["PENDING", "APPROVED", "REJECTED", "COMPLETED"] as const;
-
 const ReturnManagementPage: React.FC = () => {
   const { t } = useTranslation();
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
@@ -37,7 +35,6 @@ const ReturnManagementPage: React.FC = () => {
     useState<ReviewDisplayConfig | null>(null);
 
   // Filters & Search
-  const [returnStatusFilter, setReturnStatusFilter] = useState<string>("");
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -72,7 +69,6 @@ const ReturnManagementPage: React.FC = () => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page, limit: 20 };
-      if (returnStatusFilter) params.status = returnStatusFilter;
       if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
       if (dateFrom) params.dateFrom = dateFrom;
@@ -91,11 +87,11 @@ const ReturnManagementPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, returnStatusFilter, orderStatusFilter, dateFrom, dateTo]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchData();
-  }, [searchTerm, returnStatusFilter, orderStatusFilter, dateFrom, dateTo, page, displayConfig]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, page, displayConfig]);
 
   // Load order statuses for secondary filter
   useEffect(() => {
@@ -214,46 +210,8 @@ const ReturnManagementPage: React.FC = () => {
       {/* Filters */}
       {displayConfig?.showFilterBar !== false && (
       <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 items-center">
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <Filter size={16} />
-          <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_61')}</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setReturnStatusFilter("")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              returnStatusFilter === ""
-                ? "bg-blue-600 dark:bg-blue-500 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            {t('returns.k_13')}
-          </button>
-          {RETURN_STATUSES.filter((s) => {
-            if (s === "PENDING") return displayConfig?.showPendingStatus !== false;
-            if (s === "APPROVED") return displayConfig?.showApprovedStatus !== false;
-            if (s === "REJECTED") return displayConfig?.showRejectedStatus !== false;
-            if (s === "COMPLETED") return displayConfig?.showCompletedStatus !== false;
-            return true;
-          }).map((s) => (
-            <button
-              key={s}
-              onClick={() => setReturnStatusFilter(s)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                returnStatusFilter === s
-                  ? "bg-blue-600 dark:bg-blue-500 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              {s === "PENDING" && t('returns.k_1')}
-              {s === "APPROVED" && t('returns.k_14')}
-              {s === "REJECTED" && t('returns.k_15')}
-              {s === "COMPLETED" && t('returns.k_16')}
-            </button>
-          ))}
-        </div>
 
-        {/* Secondary: order status filter */}
+        {/* Order status filter */}
         {orderStatuses.length > 0 && (
           <>
             <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
@@ -364,11 +322,6 @@ const ReturnManagementPage: React.FC = () => {
               {displayConfig?.showResponsiblePartyColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t('returns.k_59')}
-                </th>
-              )}
-              {displayConfig?.showStatusColumn !== false && (
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t('returns.k_61')}
                 </th>
               )}
               {displayConfig?.showTrackingColumn !== false && (
@@ -499,17 +452,6 @@ const ReturnManagementPage: React.FC = () => {
                       >
                         {request.responsibleParty}
                       </span>
-                    </td>
-                  )}
-                  {displayConfig?.showStatusColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {(() => {
-                        const st = request.status;
-                        if (st === "APPROVED") return <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full text-xs">{t('returns.k_14')}</span>;
-                        if (st === "REJECTED") return <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full text-xs">{t('returns.k_15')}</span>;
-                        if (st === "COMPLETED") return <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">{t('returns.k_16')}</span>;
-                        return <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs">{t('returns.k_1')}</span>;
-                      })()}
                     </td>
                   )}
                   {displayConfig?.showTrackingColumn !== false && (

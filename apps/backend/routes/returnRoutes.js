@@ -26,7 +26,6 @@ router.put('/settings', verifyToken.authenticateToken, checkAppAccess('order-cor
 
 // Batch Operations
 router.put('/batch/receive', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.batchReceive);
-router.put('/batch/status', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.batchStatusUpdate);
 
 // Return Operations (Contact & History)
 router.post('/requests/:id/contact', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.addContactAttempt);
