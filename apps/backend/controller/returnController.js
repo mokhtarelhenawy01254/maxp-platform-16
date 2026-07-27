@@ -237,7 +237,7 @@ async function ensureShippingReturnRequestsSynced(companyId) {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { orderId, customerId, search, orderStatus, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
+        const { orderId, customerId, search, orderStatus, isReviewed, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
 
         // Auto-sync any returned shipping orders for company
