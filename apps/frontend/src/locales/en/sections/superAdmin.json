@@ -91,6 +91,7 @@
     "aiHubRag": "Knowledge Base (RAG)",
     "aiChat": "AI Chats",
     "aiImageGenerator": "AI Image Generator",
+    "uiTemplates": "UI Templates",
     "landingPages": "Landing Pages /lp",
     "supportSettings": "Support Settings",
     "kanbanBoard": "Kanban Board",

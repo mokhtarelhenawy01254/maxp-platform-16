@@ -1097,6 +1097,9 @@ const QueueMonitor = React.lazy(
 const PlatformPartnerManagement = React.lazy(
   () => import("./pages/super-admin/PlatformPartnerManagement"),
 );
+const TemplateSettingsPage = React.lazy(
+  () => import("./pages/super-admin/TemplateSettings"),
+);
 const PendingReceipts = React.lazy(
   () => import("./pages/super-admin/PendingReceipts"),
 );
@@ -2432,6 +2435,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <PlatformPartnerManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ui-templates"
+              element={
+                <Layout>
+                  <TemplateSettingsPage />
                 </Layout>
               }
             />
