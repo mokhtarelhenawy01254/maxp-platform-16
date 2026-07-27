@@ -388,9 +388,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                   <select
                     value={reasonId}
                     onChange={(e) => {
-                      const selectedReason = reasons.find(
-                        (r) => r.id === e.target.value,
-                      );
+                      const selectedReason = reasons.find((r) => r.id === e.target.value);
                       setReasonId(e.target.value);
                       if (selectedReason?.category?.defaultRole) {
                         setResponsibleParty(selectedReason.category.defaultRole);
@@ -399,22 +397,30 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                   >
                     <option value="">{t('returns.k_30')}</option>
-                    {categories.map((cat: any) => (
-                      <optgroup key={cat.id} label={cat.name}>
-                        {reasons
-                          .filter((r: any) => r.categoryId === cat.id)
-                          .map((reason: any) => (
-                            <option key={reason.id} value={reason.id}>
-                              {reason.reason}
-                              {reason.description && ` - ${reason.description}`}
-                            </option>
-                          ))}
-                      </optgroup>
-                    ))}
-                    {reasons.filter((r: any) => !r.categoryId).length > 0 && (
+                    {categories
+                      .filter((cat: any) => cat.defaultRole === responsibleParty)
+                      .map((cat: any) => (
+                        <optgroup key={cat.id} label={cat.name}>
+                          {reasons
+                            .filter((r: any) => r.categoryId === cat.id)
+                            .map((reason: any) => (
+                              <option key={reason.id} value={reason.id}>
+                                {reason.reason}
+                                {reason.description && ` - ${reason.description}`}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    {reasons.filter((r: any) => {
+                      const cat = categories.find((c: any) => c.id === r.categoryId);
+                      return !cat || cat.defaultRole === 'OTHER';
+                    }).length > 0 && (
                       <optgroup label={t('returns.k_31')}>
                         {reasons
-                          .filter((r: any) => !r.categoryId)
+                          .filter((r: any) => {
+                            const cat = categories.find((c: any) => c.id === r.categoryId);
+                            return !cat || cat.defaultRole === 'OTHER';
+                          })
                           .map((reason: any) => (
                             <option key={reason.id} value={reason.id}>
                               {reason.reason}
@@ -432,9 +438,10 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </label>
                     <select
                       value={responsibleParty}
-                      onChange={(e) =>
-                        setResponsibleParty(e.target.value as any)
-                      }
+                      onChange={(e) => {
+                        setResponsibleParty(e.target.value as any);
+                        setReasonId("");
+                      }}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     >
                       <option value="CUSTOMER">

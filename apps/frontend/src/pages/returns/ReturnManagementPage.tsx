@@ -373,7 +373,7 @@ const ReturnManagementPage: React.FC = () => {
               )}
               {displayConfig?.showTrackingColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t('returns.k_21')}
+                  رقم التتبع
                 </th>
               )}
               {displayConfig?.showReceivedStatusColumn !== false && (
@@ -654,6 +654,32 @@ const ReturnManagementPage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+              {/* المسؤول أولاً */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('returns.k_59')}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
+                    <button
+                      key={party}
+                      type="button"
+                      onClick={() => {
+                        setEditForm({ ...editForm, responsibleParty: party as any, reasonId: "" });
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        editForm.responsibleParty === party
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {party === "CUSTOMER" ? t('returns.k_32') : party === "STORE" ? t('returns.k_33') : party === "SHIPPING" ? t('returns.k_34') : t('returns.k_31')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* الأسباب بعد تحديد المسؤول — مفلترة حسب defaultRole */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('returns.k_154')}
@@ -665,44 +691,39 @@ const ReturnManagementPage: React.FC = () => {
                     setEditForm({
                       ...editForm,
                       reasonId: e.target.value,
-                      responsibleParty: selectedReason?.category?.defaultRole || editForm.responsibleParty,
                     });
                   }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">{t('returns.k_30')}</option>
-                  {editCategories.map((cat: any) => (
-                    <optgroup key={cat.id} label={cat.name}>
-                      {editReasons.filter((r: any) => r.categoryId === cat.id).map((reason: any) => (
+                  {editCategories
+                    .filter((cat: any) => cat.defaultRole === editForm.responsibleParty)
+                    .map((cat: any) => (
+                      <optgroup key={cat.id} label={cat.name}>
+                        {editReasons.filter((r: any) => r.categoryId === cat.id).map((reason: any) => (
+                          <option key={reason.id} value={reason.id}>
+                            {reason.reason}{reason.description && ` - ${reason.description}`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  {/* أسباب بدون تصنيف أو بتصنيف OTHER تظهر دايماً */}
+                  {editReasons.filter((r: any) => {
+                    const cat = editCategories.find((c: any) => c.id === r.categoryId);
+                    return !cat || cat.defaultRole === 'OTHER';
+                  }).length > 0 && (
+                    <optgroup label={t('returns.k_31')}>
+                      {editReasons.filter((r: any) => {
+                        const cat = editCategories.find((c: any) => c.id === r.categoryId);
+                        return !cat || cat.defaultRole === 'OTHER';
+                      }).map((reason: any) => (
                         <option key={reason.id} value={reason.id}>
                           {reason.reason}{reason.description && ` - ${reason.description}`}
                         </option>
                       ))}
                     </optgroup>
-                  ))}
+                  )}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('returns.k_59')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
-                    <button
-                      key={party}
-                      type="button"
-                      onClick={() => setEditForm({ ...editForm, responsibleParty: party as any })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        editForm.responsibleParty === party
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      {party === "CUSTOMER" ? t('returns.k_32') : party === "STORE" ? t('returns.k_33') : party === "SHIPPING" ? t('returns.k_34') : t('returns.k_31')}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div>
