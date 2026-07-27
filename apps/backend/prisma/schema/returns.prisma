@@ -32,6 +32,12 @@ model ReturnRequest {
   isReviewed            Boolean                        @default(false)
   orderItemId           String?
   rejectionReason       String?
+  trackingNumber        String?
+  receivedStatus        ReturnReceivedStatus            @default(PENDING_RECEIVE)
+  receivedAt            DateTime?
+  productCondition      String?
+  shippingReturnCost    Decimal?                       @db.Decimal(10, 2)
+  settlementAmount      Decimal?                       @db.Decimal(10, 2)
   responsibleParty      ReturnRequestsResponsibleParty @default(OTHER)
   reviewedAt            DateTime?
   reviewedBy            String?
@@ -49,6 +55,7 @@ model ReturnRequest {
   @@index([orderId])
   @@index([reasonId])
   @@index([status])
+  @@index([trackingNumber])
   @@map("return_requests")
 }
 

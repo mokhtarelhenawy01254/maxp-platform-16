@@ -9,7 +9,6 @@ import {
 } from "../../services/returnService";
 import { toast } from "sonner";
 import {
-  Plus,
   Edit2,
   Trash2,
   FolderPlus,
@@ -121,6 +120,18 @@ const getDisplayFields = (t: any): {
     section: "columns",
   },
   {
+    key: "showTrackingColumn",
+    label: "رقم التتبع",
+    description: "رقم تتبع الشحنة الراجعة",
+    section: "columns",
+  },
+  {
+    key: "showReceivedStatusColumn",
+    label: "حالة الاستلام",
+    description: "حالة وصول الشحنة للمخزن",
+    section: "columns",
+  },
+  {
     key: "showFilterBar",
     label: t('returns.k_69'),
     description: t('returns.k_70'),
@@ -197,6 +208,18 @@ const getDefaultData = (t: any) => [
       { reason: t('returns.k_90'), description: t('returns.k_91') },
     ],
   },
+  {
+    name: 'أسباب رفض العميل (RTO)',
+    defaultRole: 'CUSTOMER',
+    reasons: [
+      { reason: 'العميل غير موجود عند التسليم', description: 'لم يتم العثور على العميل في العنوان المحدد' },
+      { reason: 'العنوان خطأ أو غير مكتمل', description: 'بيانات العنوان غير صحيحة أو ناقصة' },
+      { reason: 'رفض السعر', description: 'العميل رفض السعر عند الاستلام' },
+      { reason: 'طلب مكرر', description: 'العميل قام بطلب نفس المنتج من مكان آخر' },
+      { reason: 'العميل غير رأيه', description: 'غير رأيه في الشراء' },
+      { reason: 'تأخير في التوصيل', description: 'وصلت الشحنة متأخرة عن الموعد المتوقع' },
+    ],
+  },
 ];
 
 const ReturnSettingsPage: React.FC = () => {
@@ -217,6 +240,8 @@ const ReturnSettingsPage: React.FC = () => {
     showReviewColumn: true,
     showDateColumn: true,
     showActionsColumn: true,
+    showTrackingColumn: true,
+    showReceivedStatusColumn: true,
     showFilterBar: true,
     showCreateButton: true,
     showPendingStatus: true,

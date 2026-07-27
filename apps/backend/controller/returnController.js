@@ -155,7 +155,7 @@ async function ensureShippingReturnRequestsSynced(companyId) {
                     { turboShipmentStatus: { in: ['returned_to_company', 'status_5', '5', 'status_14', '14', 'returned'] } }
                 ]
             },
-            select: { id: true, customerId: true, createdAt: true }
+            select: { id: true, customerId: true, createdAt: true, turboTrackingNumber: true }
         });
 
         if (!returnedOrders.length) return;
@@ -216,6 +216,8 @@ async function ensureShippingReturnRequestsSynced(companyId) {
                     status: 'PENDING',
                     responsibleParty: 'SHIPPING',
                     adminNotes: 'مرتجع تلقائي من شركة الشحن',
+                    trackingNumber: o.turboTrackingNumber || null,
+                    receivedStatus: 'IN_TRANSIT',
                     createdAt: o.createdAt
                 });
             }
@@ -235,7 +237,7 @@ async function ensureShippingReturnRequestsSynced(companyId) {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { status, orderId, customerId, isReviewed, search, orderStatus, page: pageStr, limit: limitStr } = req.query;
+        const { status, orderId, customerId, isReviewed, search, orderStatus, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
 
         // Auto-sync any returned shipping orders for company
@@ -249,30 +251,73 @@ exports.getReturnRequests = async (req, res) => {
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
         if (orderStatus) where.order = { status: orderStatus };
 
-        // Apply ordersStartDate filter from settings or query
+        // Apply date filters
         const settings = await getPrisma().returnSettings.findUnique({
             where: { companyId: effectiveCompanyId }
         });
         const ordersStartDate = req.query.startDate || settings?.reviewDisplayConfig?.ordersStartDate;
+
+        const dateFilters = [];
+        if (dateFrom) {
+            const from = new Date(dateFrom);
+            if (!isNaN(from.getTime())) {
+                dateFilters.push({ createdAt: { gte: from } });
+            }
+        }
+        if (dateTo) {
+            const to = new Date(dateTo);
+            to.setHours(23, 59, 59, 999);
+            if (!isNaN(to.getTime())) {
+                dateFilters.push({ createdAt: { lte: to } });
+            }
+        }
         if (ordersStartDate) {
             const startDate = new Date(ordersStartDate);
             if (!isNaN(startDate.getTime())) {
-                where.OR = [
-                    { createdAt: { gte: startDate } },
-                    { order: { createdAt: { gte: startDate } } }
-                ];
+                dateFilters.push({
+                    OR: [
+                        { createdAt: { gte: startDate } },
+                        { order: { createdAt: { gte: startDate } } }
+                    ]
+                });
             }
+        }
+        if (dateFilters.length) {
+            where.AND = [...(where.AND || []), ...dateFilters];
         }
 
         if (search) {
-            const orders = await getPrisma().order.findMany({
+            const orderIds = (await getPrisma().order.findMany({
                 where: {
                     companyId: effectiveCompanyId,
-                    orderNumber: { contains: search }
+                    OR: [
+                        { orderNumber: { contains: search } },
+                        { turboTrackingNumber: { contains: search } },
+                    ]
                 },
                 select: { id: true }
-            });
-            where.orderId = { in: orders.map(o => o.id) };
+            })).map(o => o.id);
+
+            const customerIds = (await getPrisma().customer.findMany({
+                where: {
+                    companyId: effectiveCompanyId,
+                    OR: [
+                        { firstName: { contains: search } },
+                        { lastName: { contains: search } },
+                        { phone: { contains: search } },
+                    ]
+                },
+                select: { id: true }
+            })).map(c => c.id);
+
+            if (!orderIds.length && !customerIds.length) {
+                where.id = '__no_match__';
+            } else {
+                const filters = [];
+                if (orderIds.length) filters.push({ orderId: { in: orderIds } });
+                if (customerIds.length) filters.push({ customerId: { in: customerIds } });
+                where.AND = [...(where.AND || []), { OR: filters }];
+            }
         }
 
         const page = Math.max(1, parseInt(pageStr) || 1);
@@ -289,7 +334,7 @@ exports.getReturnRequests = async (req, res) => {
                         select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
                     },
                     order: {
-                        select: { orderNumber: true, total: true, currency: true }
+                        select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
                     },
                     returnReason: {
                         include: {
@@ -456,13 +501,9 @@ exports.updateReturnRequest = async (req, res) => {
             await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', { status });
         }
 
-        // If status changed to COMPLETED/APPROVED, recalculate customer score
-        // We will move this logic to a more specific service later if needed
+        // If status changed to COMPLETED/APPROVED, recalculate customer score & reverse cashback
         if (status !== oldRequest.status && (status === 'COMPLETED' || status === 'APPROVED')) {
             await calculateCustomerScore(updatedRequest.customerId, req.user.companyId);
-        }
-
-        if (status && status !== oldRequest.status && (status === 'COMPLETED' || status === 'APPROVED')) {
             try {
                 await cashbackService.reverseCashbackForReturn({
                     returnRequestId: updatedRequest.id,
@@ -676,5 +717,85 @@ exports.getActivityLog = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch activity logs' });
+    }
+};
+
+// 4. Batch Operations
+exports.batchReceive = async (req, res) => {
+    try {
+        const { ids, productCondition } = req.body;
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        if (!Array.isArray(ids) || !ids.length) {
+            return res.status(400).json({ error: 'ids must be a non-empty array' });
+        }
+
+        // Verify all requests belong to company
+        const requests = await getPrisma().returnRequest.findMany({
+            where: { id: { in: ids }, companyId }
+        });
+
+        if (requests.length !== ids.length) {
+            return res.status(403).json({ error: 'Some requests not found or access denied' });
+        }
+
+        const [updated] = await Promise.all([
+            getPrisma().returnRequest.updateMany({
+                where: { id: { in: ids }, companyId },
+                data: {
+                    receivedStatus: 'RECEIVED',
+                    receivedAt: new Date(),
+                    productCondition: productCondition || null
+                }
+            }),
+            ...requests.map(r =>
+                logReturnActivity(getPrisma(), r.id, req.user.id, 'BATCH_RECEIVED', { count: ids.length })
+            )
+        ]);
+
+        res.json({ success: true, count: updated.count });
+    } catch (error) {
+        console.error('❌ [BATCH_RECEIVE] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to batch receive' });
+    }
+};
+
+exports.batchStatusUpdate = async (req, res) => {
+    try {
+        const { ids, status, adminNotes } = req.body;
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        if (!Array.isArray(ids) || !ids.length) {
+            return res.status(400).json({ error: 'ids must be a non-empty array' });
+        }
+
+        const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+        }
+
+        // Verify all requests belong to company
+        const requests = await getPrisma().returnRequest.findMany({
+            where: { id: { in: ids }, companyId }
+        });
+
+        if (requests.length !== ids.length) {
+            return res.status(403).json({ error: 'Some requests not found or access denied' });
+        }
+
+        const [updated] = await Promise.all([
+            getPrisma().returnRequest.updateMany({
+                where: { id: { in: ids }, companyId },
+                data: { status, adminNotes: adminNotes || undefined }
+            }),
+            ...requests.map(r =>
+                logReturnActivity(getPrisma(), r.id, req.user.id, 'BATCH_STATUS_CHANGE', { to: status })
+            )
+        ]);
+
+        res.json({ success: true, count: updated.count });
+    } catch (error) {
+        console.error('❌ [BATCH_STATUS] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to batch update status' });
     }
 };

@@ -15,5 +15,14 @@
   "ratePercentage": "Rate %",
   "returnReasons": "Return Reasons",
   "topReturnedProducts": "Top Returned Products",
-  "returnsCount": "Returns Count"
+  "returnsCount": "Returns Count",
+  "totalOrders": "Total Orders",
+  "returnRateLabel": "Return Rate (RTO)",
+  "lostRevenue": "Lost Revenue",
+  "avgReturnValue": "Avg Return Value",
+  "topProducts": "Top Returned Products",
+  "returnsByRegion": "Returns by Region",
+  "return": "Return",
+  "from": "from",
+  "order": "order"
 }

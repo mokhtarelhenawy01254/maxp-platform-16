@@ -2,32 +2,42 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUturnLeftIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
 
-interface ReturnsStats {
+interface ReturnSummary {
+  totalOrders: number;
   totalReturns: number;
   returnRate: number;
-  returnedRevenue: number;
-  reasons: Array<{ reason: string; count: number; percentage: number }>;
-  topReturnedProducts: Array<{ name: string; returns: number; rate: number }>;
-  dailyTrends: Array<{ date: string; returns: number; rate: number }>;
+  totalLostRevenue: number;
+  avgReturnValue: number;
 }
 
-const COLORS = ["#EF4444", "#F59E0B", "#3B82F6", "#10B981", "#8B5CF6"];
+interface ProductReturn {
+  name: string;
+  returns: number;
+  lostRevenue: number;
+}
+
+interface RegionReturn {
+  name: string;
+  returns: number;
+  lostRevenue: number;
+}
+
+interface ReturnsData {
+  summary: ReturnSummary;
+  topReturnedProducts: ProductReturn[];
+  returnsByRegion: RegionReturn[];
+}
 
 const ReturnsAnalytics: React.FC = () => {
   const { t } = useTranslation();
@@ -35,7 +45,7 @@ const ReturnsAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("30");
-  const [stats, setStats] = useState<ReturnsStats | null>(null);
+  const [data, setData] = useState<ReturnsData | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -45,17 +55,19 @@ const ReturnsAnalytics: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await analyticsService.getReturnsAnalytics(period);
+      const now = new Date();
+      const start = new Date(now.getTime() - parseInt(period) * 24 * 60 * 60 * 1000);
+      const response = await analyticsService.getReturnsAnalytics(
+        start.toISOString(),
+        now.toISOString(),
+      );
       if (response.success && response.data) {
-        setStats(response.data);
+        setData(response.data);
       } else {
-        setStats({
-          totalReturns: 0,
-          returnRate: 0,
-          returnedRevenue: 0,
-          reasons: [],
+        setData({
+          summary: { totalOrders: 0, totalReturns: 0, returnRate: 0, totalLostRevenue: 0, avgReturnValue: 0 },
           topReturnedProducts: [],
-          dailyTrends: [],
+          returnsByRegion: [],
         });
       }
     } catch (err: any) {
@@ -112,18 +124,16 @@ const ReturnsAnalytics: React.FC = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-red-500">
               <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">
-                {t("returnsAnalytics.totalReturns")}
-              </p>
+              <p className="text-sm text-gray-500">{t("returnsAnalytics.totalReturns")}</p>
               <p className="text-2xl font-bold text-red-600">
-                {stats?.totalReturns?.toLocaleString()}
+                {data?.summary?.totalReturns?.toLocaleString() || 0}
               </p>
             </div>
           </div>
@@ -135,11 +145,12 @@ const ReturnsAnalytics: React.FC = () => {
               <XCircleIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">
-                {t("returnsAnalytics.returnRate")}
-              </p>
+              <p className="text-sm text-gray-500">{t("returnsAnalytics.returnRateLabel")}</p>
               <p className="text-2xl font-bold text-orange-600">
-                {stats?.returnRate?.toFixed(1)}%
+                {data?.summary?.returnRate?.toFixed(1) || 0}%
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {t("returnsAnalytics.from")} {data?.summary?.totalOrders?.toLocaleString() || 0} {t("returnsAnalytics.order")}
               </p>
             </div>
           </div>
@@ -151,115 +162,65 @@ const ReturnsAnalytics: React.FC = () => {
               <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">
-                {t("returnsAnalytics.returnedRevenue")}
-              </p>
+              <p className="text-sm text-gray-500">{t("returnsAnalytics.lostRevenue")}</p>
               <p className="text-2xl font-bold text-purple-600">
-                {formatPrice(stats?.returnedRevenue || 0)}
+                {formatPrice(data?.summary?.totalLostRevenue || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-full bg-blue-500">
+              <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">{t("returnsAnalytics.avgReturnValue")}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {formatPrice(data?.summary?.avgReturnValue || 0)}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("returnsAnalytics.returnsTrend")}
-        </h3>
-        <div className="min-w-0 h-[300px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={stats?.dailyTrends || []}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#374151"
-                opacity={0.1}
-              />
-              <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-              <YAxis stroke="#9CA3AF" fontSize={12} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="returns"
-                stroke="#EF4444"
-                strokeWidth={2}
-                name={t("returnsAnalytics.returns")}
-              />
-              <Line
-                type="monotone"
-                dataKey="rate"
-                stroke="#F59E0B"
-                strokeWidth={2}
-                name={t("returnsAnalytics.ratePercentage")}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("returnsAnalytics.returnReasons")}
+            {t("returnsAnalytics.topProducts")}
           </h3>
           <div className="min-w-0 h-[300px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={stats?.reasons || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="count"
-                  nameKey="reason"
-                  label={({ reason, percentage }) =>
-                    `${reason} (${percentage?.toFixed(1)}%)`
-                  }
-                >
-                  {(stats?.reasons || []).map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+              <BarChart
+                data={data?.topReturnedProducts || []}
+                layout="vertical"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
+                <YAxis dataKey="name" type="category" stroke="#9CA3AF" fontSize={12} width={120} />
+                <Tooltip formatter={(value: any) => [value, t("returnsAnalytics.returnsCount")]} />
+                <Bar dataKey="returns" fill="#EF4444" radius={[0, 4, 4, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("returnsAnalytics.topReturnedProducts")}
+            {t("returnsAnalytics.returnsByRegion")}
           </h3>
           <div className="min-w-0 h-[300px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart
-                data={stats?.topReturnedProducts || []}
+                data={data?.returnsByRegion || []}
                 layout="vertical"
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
                 <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  width={120}
-                />
-                <Tooltip />
-                <Bar
-                  dataKey="returns"
-                  fill="#EF4444"
-                  name={t("returnsAnalytics.returnsCount")}
-                  radius={[0, 4, 4, 0]}
-                />
+                <YAxis dataKey="name" type="category" stroke="#9CA3AF" fontSize={12} width={120} />
+                <Tooltip formatter={(value: any) => [value, t("returnsAnalytics.return")]} />
+                <Bar dataKey="returns" fill="#F59E0B" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

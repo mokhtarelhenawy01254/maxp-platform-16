@@ -1787,6 +1787,16 @@ enum ReturnRequestsStatus {
   @@map("return_requests_status")
 }
 
+enum ReturnReceivedStatus {
+  PENDING_RECEIVE
+  IN_TRANSIT
+  RECEIVED
+  INSPECTED
+  RESTOCKED
+
+  @@map("return_received_status")
+}
+
 enum ReturnRequestsResponsibleParty {
   CUSTOMER
   STORE

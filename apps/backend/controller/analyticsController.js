@@ -2686,15 +2686,15 @@ const getReturnAnalytics = async (req, res) => {
     const { startDate, endDate } = req.query;
     const prisma = getSharedPrismaClient();
 
-    // Handle date parameters - if startDate is a number (days), calculate actual dates
+    // Handle date parameters - if startDate is a simple number (days), calculate actual dates
     let dateFilter = {};
     if (startDate && endDate) {
       try {
-        // Check if startDate is a number of days
-        const daysAgo = parseInt(startDate);
-        if (!isNaN(daysAgo) && daysAgo > 0) {
+        // Check if startDate is a plain days-number (no hyphens, no 'T') vs an ISO date string
+        const isDaysNumber = /^\d+$/.test(startDate);
+        if (isDaysNumber && parseInt(startDate) > 0) {
           const now = new Date();
-          const start = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+          const start = new Date(now.getTime() - (parseInt(startDate) * 24 * 60 * 60 * 1000));
           dateFilter = {
             createdAt: {
               gte: start,

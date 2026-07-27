@@ -27,6 +27,8 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export type ReturnReceivedStatus = "PENDING_RECEIVE" | "IN_TRANSIT" | "RECEIVED" | "INSPECTED" | "RESTOCKED";
+
 export interface ReturnRequest {
   id: string;
   orderId: string;
@@ -42,6 +44,12 @@ export interface ReturnRequest {
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionReason?: string;
+  trackingNumber?: string;
+  receivedStatus?: ReturnReceivedStatus;
+  receivedAt?: string;
+  productCondition?: string;
+  shippingReturnCost?: number;
+  settlementAmount?: number;
   createdAt: string;
   customer?: {
     firstName: string;
@@ -55,6 +63,10 @@ export interface ReturnRequest {
     orderNumber: string;
     total: number;
     currency: string;
+    turboTrackingNumber?: string;
+    codDepositAmount?: number;
+    codDepositPaid?: boolean;
+    codDepositRefunded?: boolean;
   };
   reason?: ReturnReason;
   assignedUser?: {
@@ -106,6 +118,12 @@ export const returnService = {
   updateSettings: (data: any) =>
     apiClient.put<ReturnSettingsData>("/returns/settings", data),
 
+  // Batch Operations
+  batchReceive: (ids: string[], productCondition?: string) =>
+    apiClient.put("/returns/batch/receive", { ids, productCondition }),
+  batchStatusUpdate: (ids: string[], status: string, adminNotes?: string) =>
+    apiClient.put("/returns/batch/status", { ids, status, adminNotes }),
+
   // Details & Logs
   addContactAttempt: (
     id: string,
@@ -146,6 +164,8 @@ export interface ReviewDisplayConfig {
   showReviewColumn: boolean;
   showDateColumn: boolean;
   showActionsColumn: boolean;
+  showTrackingColumn?: boolean;
+  showReceivedStatusColumn?: boolean;
   showFilterBar: boolean;
   showCreateButton: boolean;
   showPendingStatus?: boolean;
