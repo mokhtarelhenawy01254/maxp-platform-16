@@ -29,11 +29,17 @@ interface BulkOrderDetail {
     orderNumber?: string;
     customerName?: string;
     customerPhone?: string;
+    city?: string;
+    governorate?: string;
     productName?: string;
+    sku?: string;
+    size?: string;
+    color?: string;
     quantity: number;
     price: number;
     total: number;
     status: string;
+    notes?: string;
   }>;
 }
 
@@ -94,6 +100,20 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
         {t(info.labelKey) || info.label}
       </span>
     );
+  };
+
+  const getColorHex = (color: string): string | null => {
+    const map: Record<string, string> = {
+      'black': '#000', 'white': '#fff', 'red': '#ef4444', 'blue': '#3b82f6',
+      'green': '#22c55e', 'yellow': '#eab308', 'orange': '#f97316',
+      'purple': '#a855f7', 'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
+      'brown': '#92400e', 'navy': '#1e3a5f', 'beige': '#f5f0e1', 'gold': '#f59e0b',
+      'silver': '#cbd5e1', 'أحمر': '#ef4444', 'أزرق': '#3b82f6', 'أخضر': '#22c55e',
+      'أصفر': '#eab308', 'برتقالي': '#f97316', 'بنفسجي': '#a855f7', 'وردي': '#ec4899',
+      'أسود': '#000', 'أبيض': '#fff', 'رمادي': '#6b7280', 'بني': '#92400e',
+      'كحلي': '#1e3a5f', 'ذهبي': '#f59e0b', 'فضي': '#cbd5e1',
+    };
+    return map[color?.toLowerCase()] || null;
   };
 
   if (loading) {
@@ -206,43 +226,61 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkOrderNumber")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCustomer")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemCity")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemGovernorate")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemProduct")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSKU")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSize")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemColor")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemQuantity")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemPrice")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemTotal")}
                 </th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemStatus")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left min-w-[80px]">
+                  {t("orders.bulkItemNotes")}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td colSpan={13} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                     {t("orders.bulkNoItems")}
                   </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400">
+                    <td className="px-3 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                       {item.orderNumber || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <div>
                         <p className="font-medium">{item.customerName || "-"}</p>
                         {item.customerPhone && (
@@ -250,17 +288,45 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.city || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.governorate || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       {item.productName || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-3 py-3 text-sm font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                      {item.sku || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.size || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.color ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-500 flex-shrink-0"
+                            style={{ backgroundColor: getColorHex(item.color) || '#d1d5db' }}
+                          />
+                          {item.color}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {Number(item.price).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {Number(item.total).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
+                    <td className="px-3 py-3">{getStatusBadge(item.status)}</td>
+                    <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[120px] truncate" title={item.notes || ""}>
+                      {item.notes || "-"}
+                    </td>
                   </tr>
                 ))
               )}

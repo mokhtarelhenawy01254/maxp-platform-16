@@ -239,10 +239,16 @@ const bulkOrderService = {
             orderNumber: item.orderNumber,
             customerName: item.customerName,
             customerPhone: item.customerPhone,
+            city: item.city,
+            governorate: item.governorate,
             productName: item.productName,
+            sku: item.sku,
+            size: item.size,
+            color: item.color,
             quantity: item.quantity,
             price: item.price,
             total: item.total,
+            notes: item.notes,
             status: 'PENDING',
             companyId: user.companyId,
           })),
@@ -275,10 +281,11 @@ const bulkOrderService = {
         ['Operation Number', 'Name', 'Total Orders', 'Created At', 'Status', 'Progress', 'Created By'],
         [record.operationNumber, record.name, record.totalOrders, record.createdAt, record.status, `${record.progress}%`, record.createdByName],
         [],
-        ['Order Number', 'Customer Name', 'Phone', 'Product', 'Quantity', 'Price', 'Total', 'Status'],
+        ['Order Number', 'Customer Name', 'Phone', 'City', 'Governorate', 'Product', 'SKU', 'Size', 'Color', 'Quantity', 'Price', 'Total', 'Status', 'Notes'],
         ...record.items.map((item) => [
-          item.orderNumber, item.customerName, item.customerPhone, item.productName,
-          item.quantity, Number(item.price), Number(item.total), item.status,
+          item.orderNumber, item.customerName, item.customerPhone, item.city, item.governorate,
+          item.productName, item.sku, item.size, item.color,
+          item.quantity, Number(item.price), Number(item.total), item.status, item.notes,
         ]),
       ];
       const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -320,9 +327,32 @@ const bulkOrderService = {
       const content = fileBuffer.toString('utf-8');
       const lines = content.split(/\r?\n/).filter((l) => l.trim());
       if (lines.length > 0) {
-        const headers = lines[0].split(/[,\t]/).map((h) => h.trim().replace(/^"|"$/g, ''));
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if ((ch === ',' || ch === '\t') && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += ch;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+        const headers = parseCSVLine(lines[0]);
         for (let i = 1; i < lines.length; i++) {
-          const vals = lines[i].split(/[,\t]/).map((v) => v.trim().replace(/^"|"$/g, ''));
+          const vals = parseCSVLine(lines[i]);
           const row = {};
           headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
           records.push(row);
@@ -334,9 +364,15 @@ const bulkOrderService = {
       orderNumber: String(r['orderNumber'] || r['Order Number'] || r['order_number'] || '').trim(),
       customerName: String(r['customerName'] || r['Customer Name'] || r['customer_name'] || '').trim(),
       customerPhone: String(r['customerPhone'] || r['Phone'] || r['phone'] || r['customer_phone'] || '').trim(),
+      city: String(r['city'] || r['City'] || r['town'] || r['Town'] || r['City/Town'] || '').trim(),
+      governorate: String(r['governorate'] || r['Governorate'] || r['govern'] || r['Govern'] || '').trim(),
       productName: String(r['productName'] || r['Product Name'] || r['product_name'] || r['product'] || '').trim(),
+      sku: String(r['sku'] || r['SKU'] || r['Sku'] || '').trim(),
+      size: String(r['size'] || r['Size'] || r['shoeSize'] || r['Shoe Size'] || '').trim(),
+      color: String(r['color'] || r['Color'] || r['colour'] || r['Colour'] || '').trim(),
       quantity: parseInt(r['quantity'] || r['Quantity'] || '1', 10) || 1,
       price: parseFloat(r['price'] || r['Price'] || '0') || 0,
+      notes: String(r['notes'] || r['Notes'] || r['note'] || r['Note'] || '').trim(),
     }));
   },
 
@@ -353,10 +389,16 @@ const bulkOrderService = {
         orderNumber: item.orderNumber,
         customerName: item.customerName,
         customerPhone: item.customerPhone,
+        city: item.city,
+        governorate: item.governorate,
         productName: item.productName,
+        sku: item.sku,
+        size: item.size,
+        color: item.color,
         quantity: item.quantity || 1,
         price: item.price || 0,
         total: (item.quantity || 1) * (item.price || 0),
+        notes: item.notes,
         companyId: user.companyId,
       })),
     });
