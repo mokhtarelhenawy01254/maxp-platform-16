@@ -1091,6 +1091,8 @@ function getSessionPath(sessionId) {
  * @param {object} options - خيارات إضافية (usePairingCode, phoneNumber)
  */
 async function createSession(sessionId, companyId, options = {}) {
+    /** 🛡️ PRODUCTION-FIX: declared outside try so catch can clean up on error */
+    let sock = null;
     try {
         // Exclude META_CLOUD sessions from Baileys manager
         const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -1187,7 +1189,7 @@ async function createSession(sessionId, companyId, options = {}) {
         };
 
         // إنشاء Socket
-        const sock = makeWASocket(socketOptions);
+        sock = makeWASocket(socketOptions);
 
         // حفظ الجلسة في الذاكرة
         const sessionData = {
@@ -1342,6 +1344,26 @@ async function createSession(sessionId, companyId, options = {}) {
         return sessionData;
     } catch (error) {
         console.error(`❌ Error creating session ${sessionId}:`, error);
+
+        // 🛡️ PRODUCTION-FIX: Clean up partial session state to prevent memory leak
+        // The previous code threw without cleanup, leaving orphaned sockets,
+        // 10+ event listeners, and ~2MB of Baileys crypto keys (native Buffers)
+        // in closure chains — causing RSS to balloon to 6.2GB over time.
+        try {
+            activeSessions.delete(sessionId);
+            if (sock) {
+                cleanupSocketListeners(sock);
+                await endSocketQuietly(sock, 'Session creation failed');
+            }
+        } catch (cleanupErr) {
+            console.warn(`⚠️ [WA] Cleanup error during failed session creation:`, cleanupErr.message);
+        }
+        cleanupSessionState(sessionId, companyId);
+        // ⚠️ IMPORTANT: Must also clean up any auth state that was loaded from DB
+        if (options?.resetAuth) {
+            try { await clearDatabaseAuthState(sessionId); } catch {}
+        }
+
         throw error;
     }
 }

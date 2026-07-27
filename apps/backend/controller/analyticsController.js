@@ -4033,7 +4033,7 @@ const getStatusSummaryOrders = async (req, res) => {
              o."sourceType", o."createdAt",
              c."firstName", c."lastName", c.phone
       FROM "orders" o
-      LEFT JOIN "Customer" c ON c.id = o."customerId"
+      LEFT JOIN "customers" c ON c.id = o."customerId"
       WHERE o."companyId" = $1
         AND ${oDateClause}
         AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
@@ -4167,7 +4167,7 @@ const getStatusSummaryItems = async (req, res) => {
              p.name AS p_name, p.sku AS p_sku
       FROM "order_items" oi
       JOIN "orders" o ON o.id = oi."orderId"
-      LEFT JOIN "Product" p ON p.id = oi."productId"
+      LEFT JOIN "products" p ON p.id = oi."productId"
       WHERE o."companyId" = $1
         AND ${iDateClause}
         AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
