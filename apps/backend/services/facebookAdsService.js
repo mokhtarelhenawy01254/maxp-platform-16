@@ -2247,13 +2247,23 @@ class FacebookAdsService {
       let paging = null;
       const data = [];
 
+      let pageCount = 0;
+      const MAX_PAGES = 5;
       do {
-        const response = await axios.get(nextUrl, { params: requestParams });
+        const response = await axios.get(nextUrl, {
+          params: requestParams,
+          timeout: 15000,
+        });
         data.push(...(response.data.data || []));
         paging = response.data.paging || null;
         nextUrl = paging?.next || null;
         requestParams = undefined;
-      } while (nextUrl);
+        pageCount++;
+      } while (nextUrl && pageCount < MAX_PAGES);
+
+      if (nextUrl) {
+        console.warn('⚠️ [FacebookAdsService] Campaign insights pagination truncated at', MAX_PAGES, 'pages');
+      }
 
       return {
         success: true,

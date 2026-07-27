@@ -5038,7 +5038,23 @@ const getAdDetails = async (req, res) => {
  * GET /api/v1/facebook-ads/reports/decision-summary
  * ملخص قرارات read-only مبني على الربحية والتتبع والـ insights المتزامنة
  */
+const DECISION_TIMEOUT_MS = 25000;
+
 const getDecisionSummary = async (req, res) => {
+  const timeoutHandle = setTimeout(() => {
+    console.warn('⚠️ [DecisionSummary] Request timed out, sending empty response');
+    if (!res.headersSent) {
+      res.json({
+        success: true,
+        data: {
+          dateRange: { startDate: '', endDate: '' },
+          totals: { ads: 0, statusCounts: {} },
+          rows: [],
+        },
+      });
+    }
+  }, DECISION_TIMEOUT_MS);
+
   try {
     const companyId = req.user?.companyId;
     const { startDate, endDate, adAccountId, limit = 50 } = req.query;
@@ -5132,6 +5148,7 @@ const getDecisionSummary = async (req, res) => {
       return (right.summary?.spend || 0) - (left.summary?.spend || 0);
     });
 
+    clearTimeout(timeoutHandle);
     res.json({
       success: true,
       data: {
@@ -5147,6 +5164,7 @@ const getDecisionSummary = async (req, res) => {
       },
     });
   } catch (error) {
+    clearTimeout(timeoutHandle);
     console.error("❌ Error getting Ads decision summary:", error);
     res.status(500).json({
       success: false,
@@ -5523,7 +5541,25 @@ const getCampaignInsights = async (req, res) => {
  * GET /api/v1/facebook-ads/reports/performance-summary
  * ملخص أداء محلي للحملات مع توصيات تحسين عملية
  */
+const PERFORMANCE_TIMEOUT_MS = 25000;
+
 const getPerformanceSummary = async (req, res) => {
+  const timeoutHandle = setTimeout(() => {
+    console.warn('⚠️ [PerformanceSummary] Request timed out, sending empty response');
+    if (!res.headersSent) {
+      res.status(200).json({
+        success: true,
+        data: {
+          dateRange: { startDate: '', endDate: '' },
+          adAccount: null,
+          totals: withDerivedPerformance(createEmptyPerformanceTotals()),
+          campaigns: [],
+          recommendations: [],
+        },
+      });
+    }
+  }, PERFORMANCE_TIMEOUT_MS);
+
   try {
     const companyId = req.user?.companyId;
     const { startDate, endDate, adAccountId } = req.query;
@@ -5543,6 +5579,7 @@ const getPerformanceSummary = async (req, res) => {
     const adAccountScope = await getAdAccountReadScope(companyId, adAccountId);
     if (!adAccountScope) {
       const emptySummary = withDerivedPerformance(createEmptyPerformanceTotals());
+      clearTimeout(timeoutHandle);
 
       return res.json({
         success: true,
@@ -5682,6 +5719,7 @@ const getPerformanceSummary = async (req, res) => {
 
     const summary = withDerivedPerformance(totals);
 
+    clearTimeout(timeoutHandle);
     res.json({
       success: true,
       data: {
@@ -5699,6 +5737,7 @@ const getPerformanceSummary = async (req, res) => {
       },
     });
   } catch (error) {
+    clearTimeout(timeoutHandle);
     console.error("❌ Error getting Facebook Ads performance summary:", error);
     res.status(500).json({
       success: false,
