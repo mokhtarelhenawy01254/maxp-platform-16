@@ -46,6 +46,9 @@ const ReturnManagementPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  // Review Tab: "pending" = unreviewed (default), "reviewed" = completed
+  const [reviewTab, setReviewTab] = useState<"pending" | "reviewed">("pending");
+
   // Edit Reason Modal State
   const [showEditReasonModal, setShowEditReasonModal] = useState(false);
   const [editingRequest, setEditingRequest] = useState<ReturnRequest | null>(null);
@@ -63,6 +66,7 @@ const ReturnManagementPage: React.FC = () => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page, limit: 20 };
+      params.isReviewed = reviewTab === "reviewed" ? "true" : "false";
       if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
       if (dateFrom) params.dateFrom = dateFrom;
@@ -81,11 +85,11 @@ const ReturnManagementPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, orderStatusFilter, dateFrom, dateTo]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, reviewTab]);
 
   useEffect(() => {
     fetchData();
-  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, page, displayConfig]);
+  }, [searchTerm, orderStatusFilter, dateFrom, dateTo, page, displayConfig, reviewTab]);
 
   // Load order statuses for secondary filter
   useEffect(() => {
@@ -164,9 +168,34 @@ const ReturnManagementPage: React.FC = () => {
             {t('returns.k_140')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {t('returns.k_141')}
+            {reviewTab === "pending" ? "طلبات الإرجاع التي لم تراجع بعد" : "طلبات الإرجاع التي تمت مراجعتها"}
+            {!loading && ` (${total})`}
           </p>
         </div>
+      </div>
+
+      {/* Review Tabs */}
+      <div className="flex gap-1 mb-4 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 w-fit">
+        <button
+          onClick={() => setReviewTab("pending")}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
+            reviewTab === "pending"
+              ? "bg-orange-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+        >
+          ⏳ بانتظار المراجعة
+        </button>
+        <button
+          onClick={() => setReviewTab("reviewed")}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
+            reviewTab === "reviewed"
+              ? "bg-green-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+        >
+          ✅ تمت المراجعة
+        </button>
       </div>
 
       {/* Filters */}
