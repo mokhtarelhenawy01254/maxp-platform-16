@@ -6506,6 +6506,7 @@
     "bulkUploadExcel": "رفع Excel",
     "bulkUploadCSV": "رفع CSV",
     "bulkUploadHint": "اسحب الملف أو اضغط للرفع (Excel, CSV)",
+    "bulkDownloadTemplate": "تحميل نموذج",
     "bulkView": "عرض",
     "bulkEdit": "تعديل",
     "bulkDuplicate": "نسخ",

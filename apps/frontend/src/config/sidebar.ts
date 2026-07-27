@@ -645,7 +645,6 @@ export const getSidebarConfig = (
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
                 { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
-                { to: '/settings/orders?tab=cancellation_reasons', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
                 { to: '/settings/cod-deposit', icon: BanknotesIcon, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },

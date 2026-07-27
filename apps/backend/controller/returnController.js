@@ -256,33 +256,33 @@ exports.getReturnRequests = async (req, res) => {
         });
         const ordersStartDate = req.query.startDate || settings?.reviewDisplayConfig?.ordersStartDate;
 
-        const dateFilters = [];
         if (dateFrom) {
             const from = new Date(dateFrom);
             if (!isNaN(from.getTime())) {
-                dateFilters.push({ createdAt: { gte: from } });
+                where.createdAt = { ...(where.createdAt || {}), gte: from };
             }
         }
         if (dateTo) {
             const to = new Date(dateTo);
             to.setHours(23, 59, 59, 999);
             if (!isNaN(to.getTime())) {
-                dateFilters.push({ createdAt: { lte: to } });
+                where.createdAt = { ...(where.createdAt || {}), lte: to };
             }
         }
         if (ordersStartDate) {
             const startDate = new Date(ordersStartDate);
             if (!isNaN(startDate.getTime())) {
-                dateFilters.push({
-                    OR: [
-                        { createdAt: { gte: startDate } },
-                        { order: { createdAt: { gte: startDate } } }
-                    ]
+                const ordersFromDate = await getPrisma().order.findMany({
+                    where: { companyId: effectiveCompanyId, createdAt: { gte: startDate } },
+                    select: { id: true }
                 });
+                const orderIdsFromDate = ordersFromDate.map(o => o.id);
+                if (!where.OR) where.OR = [];
+                where.OR.push(
+                    { createdAt: { gte: startDate } },
+                    ...(orderIdsFromDate.length ? [{ orderId: { in: orderIdsFromDate } }] : [])
+                );
             }
-        }
-        if (dateFilters.length) {
-            where.AND = [...(where.AND || []), ...dateFilters];
         }
 
         if (search) {
@@ -310,12 +310,16 @@ exports.getReturnRequests = async (req, res) => {
             })).map(c => c.id);
 
             if (!orderIds.length && !customerIds.length) {
-                where.id = '__no_match__';
-            } else {
-                const filters = [];
-                if (orderIds.length) filters.push({ orderId: { in: orderIds } });
-                if (customerIds.length) filters.push({ customerId: { in: customerIds } });
-                where.AND = [...(where.AND || []), { OR: filters }];
+                return res.json({ data: [], total: 0, page: 1, limit: 20, totalPages: 0 });
+            }
+
+            const searchFilters = [];
+            if (orderIds.length) searchFilters.push({ orderId: { in: orderIds } });
+            if (customerIds.length) searchFilters.push({ customerId: { in: customerIds } });
+            if (searchFilters.length === 1) {
+                Object.assign(where, searchFilters[0]);
+            } else if (searchFilters.length > 1) {
+                where.OR = [...(where.OR || []), ...searchFilters];
             }
         }
 

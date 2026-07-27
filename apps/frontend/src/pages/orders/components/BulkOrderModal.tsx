@@ -35,6 +35,28 @@ const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderIte
   return res.data?.items || [];
 };
 
+const downloadTemplate = () => {
+  const headers = [
+    "Order Number",
+    "Customer Name",
+    "Phone",
+    "Product Name",
+    "Quantity",
+    "Price",
+  ];
+  const sample = ["ORD-2026-0001", "Ahmed Mohamed", "01001234567", "Product A", "2", "150.00"];
+  const csvContent = "\uFEFF" + [headers, sample].map((row) => row.map((v) => `"${v}"`).join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "bulk_order_template.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === "ar";
@@ -181,9 +203,21 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("orders.bulkUploadFile")}
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("orders.bulkUploadFile")}
+              </label>
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {t("orders.bulkDownloadTemplate") || "Download Template"}
+              </button>
+            </div>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}

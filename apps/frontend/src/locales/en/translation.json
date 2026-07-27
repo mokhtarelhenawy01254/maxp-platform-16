@@ -6497,6 +6497,7 @@
     "bulkUploadExcel": "Upload Excel",
     "bulkUploadCSV": "Upload CSV",
     "bulkUploadHint": "Drag & drop or click to upload (Excel, CSV)",
+    "bulkDownloadTemplate": "Download Template",
     "bulkView": "View",
     "bulkEdit": "Edit",
     "bulkDuplicate": "Duplicate",
