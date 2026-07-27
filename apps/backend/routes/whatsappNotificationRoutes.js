@@ -68,4 +68,17 @@ router.get('/preferences/customer/:customerId', verifyToken.authenticateToken, w
 // تحديث تفضيلات العميل
 router.put('/preferences/customer/:customerId', verifyToken.authenticateToken, whatsappNotificationController.updateCustomerPreferences);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ☁️ نشر وإرسال قوالب ميتا
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// نشر قالب محلي على ميتا
+router.post('/templates/:id/publish', verifyToken.authenticateToken, whatsappNotificationController.publishTemplateToMeta);
+
+// مزامنة حالة القوالب مع ميتا
+router.post('/templates/sync-status', verifyToken.authenticateToken, whatsappNotificationController.syncTemplateStatuses);
+
+// إرسال تأكيد طلب عبر قالب ميتا
+router.post('/send-order-confirmation', verifyToken.authenticateToken, whatsappNotificationController.sendOrderConfirmationMeta);
+
 module.exports = router;

@@ -770,6 +770,191 @@ function getErrorMessage(reason, retryable = false) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ☁️ نشر قالب محلي على ميتا
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function publishTemplateToMeta(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { templateId, sessionId } = req.body;
+
+    if (!templateId || !sessionId) {
+      return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
+    }
+
+    // 1. جلب القالب المحلي
+    const localTemplate = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id: templateId, companyId }
+    });
+    if (!localTemplate) {
+      return res.status(404).json({ error: 'القالب غير موجود' });
+    }
+
+    // 2. التحقق من الجلسة
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: sessionId, companyId, provider: 'META_CLOUD' }
+    });
+    if (!session) {
+      return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
+    }
+
+    // 3. تحويل القالب المحلي لصيغة ميتا
+    const metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
+      .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 512);
+
+    const metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
+      : localTemplate.category === 'AUTHENTICATION' ? 'AUTHENTICATION'
+      : 'UTILITY';
+
+    const bodyText = localTemplate.content
+      .replace(/\{(\w+)\}/g, (_, name) => `{{${name}}}`);
+
+    const components = [{ type: 'BODY', text: bodyText }];
+
+    if (localTemplate.hasButtons && localTemplate.buttons) {
+      try {
+        const btns = typeof localTemplate.buttons === 'string'
+          ? JSON.parse(localTemplate.buttons) : localTemplate.buttons;
+        const quickReplies = btns.map(b => ({
+          type: 'QUICK_REPLY',
+          text: b.text
+        }));
+        if (quickReplies.length > 0) {
+          components.push({ type: 'BUTTONS', buttons: quickReplies });
+        }
+      } catch (e) { /* skip invalid buttons */ }
+    }
+
+    // 4. إنشاء القالب في ميتا
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const result = await MetaCloudProvider.createTemplate(sessionId, {
+      name: metaName,
+      language: 'ar',
+      category: metaCategory,
+      components
+    });
+
+    // 5. تحديث القالب المحلي ببيانات ميتا
+    await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id: templateId },
+      data: {
+        metaTemplateName: metaName,
+        metaTemplateLanguage: 'ar',
+        metaTemplateStatus: 'PENDING',
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`☁️ [PUBLISH-TO-META] Template "${localTemplate.name}" → "${metaName}" (${metaCategory}) — ${result?.id ? 'created' : 'submitted'}`);
+
+    res.json({
+      success: true,
+      metaTemplateName: metaName,
+      metaCategory,
+      metaResult: result,
+      message: 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
+    });
+  } catch (error) {
+    console.error('❌ Error publishing template to Meta:', error?.response?.data || error.message);
+    const metaError = error?.response?.data?.error;
+    res.status(500).json({
+      error: metaError
+        ? `${metaError.message || 'Meta API error'}${metaError.error_user_msg ? ': ' + metaError.error_user_msg : ''}`
+        : error.message
+    });
+  }
+}
+
+async function checkMetaTemplateStatus(sessionId, templateName) {
+  try {
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const templates = await MetaCloudProvider.listTemplates(sessionId);
+    const found = templates.find(t => t.name === templateName);
+    return found ? found.status : null;
+  } catch { return null; }
+}
+
+async function syncTemplateStatuses(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId مطلوب' });
+
+    const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where: { companyId, metaTemplateName: { not: null } }
+    });
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+
+    let updated = 0;
+    for (const local of localTemplates) {
+      const meta = metaTemplates.find(t => t.name === local.metaTemplateName);
+      if (meta && meta.status !== local.metaTemplateStatus) {
+        await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+          where: { id: local.id },
+          data: { metaTemplateStatus: meta.status, updatedAt: new Date() }
+        });
+        updated++;
+      }
+    }
+
+    res.json({ success: true, synced: updated });
+  } catch (error) {
+    console.error('❌ Error syncing template statuses:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function sendOrderConfirmationMeta(req, res) {
+  try {
+    const { companyId, id: userId } = req.user;
+    const { sessionId, to, orderNumber, customerName, total, currency, orderId } = req.body;
+
+    if (!sessionId || !to || !orderNumber) {
+      return res.status(400).json({ error: 'sessionId, to, orderNumber مطلوبون' });
+    }
+
+    // 1. جلب القالب المحلي من نوع ORDER_CONFIRMED
+    const template = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { companyId, eventType: 'ORDER_CONFIRMED', metaTemplateName: { not: null } },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    if (!template) {
+      return res.status(400).json({ error: 'لا يوجد قالب ORDER_CONFIRMED منشور على ميتا. انشر القالب أولاً.' });
+    }
+
+    // 2. تجهيز الـ components
+    const components = [{
+      type: 'BODY',
+      parameters: [
+        { type: 'text', text: customerName || 'عميلنا العزيز' },
+        { type: 'text', text: String(orderNumber) },
+        { type: 'text', text: String(total || '') },
+        { type: 'text', text: currency || 'ج.م' }
+      ]
+    }];
+
+    // 3. إرسال عبر WhatsAppMessageHandler
+    const { WhatsAppMessageHandler } = require('../services/whatsapp');
+    const result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, to, template.metaTemplateName, {
+      name: template.metaTemplateName,
+      language: template.metaTemplateLanguage || 'ar',
+      components
+    }, {
+      templateBody: template.content,
+      senderId: userId
+    });
+
+    res.json({ success: true, message: result });
+  } catch (error) {
+    console.error('❌ Error sending order confirmation:', error?.response?.data || error.message);
+    res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال تأكيد الطلب' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -786,5 +971,8 @@ module.exports = {
   sendManualNotification,
   sendTestNotification,
   getCustomerPreferences,
-  updateCustomerPreferences
+  updateCustomerPreferences,
+  publishTemplateToMeta,
+  syncTemplateStatuses,
+  sendOrderConfirmationMeta
 };
