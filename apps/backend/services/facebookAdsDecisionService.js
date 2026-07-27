@@ -390,7 +390,18 @@ function chooseDecision({ summary, economics, exactOrders, relatedOrders, campai
   });
 }
 
-async function resolveProduct(prisma, companyId, ad) {
+async function resolveProduct(prisma, companyId, ad, preFetchedProductMap) {
+  if (preFetchedProductMap) {
+    const byId = preFetchedProductMap.get(ad?.productId);
+    if (byId) return byId;
+    const slug = parseProductSlug(ad?.linkUrl);
+    if (slug) {
+      const bySlug = preFetchedProductMap.get(slug);
+      if (bySlug) return bySlug;
+    }
+    return null;
+  }
+
   if (ad?.productId) {
     const product = await prisma.product.findFirst({
       where: { id: ad.productId, companyId },
@@ -473,10 +484,27 @@ async function buildAdDecisionForAd({
   summary,
   campaignSummary,
   dateRange,
+  preFetchedOrders,
+  preFetchedProductMap,
 }) {
   const campaign = ad?.facebookAdset?.facebookCampaign || {};
-  const product = await resolveProduct(prisma, companyId, ad);
-  const orders = await getRelatedOrders(prisma, companyId, ad, dateRange);
+  const product = await resolveProduct(prisma, companyId, ad, preFetchedProductMap);
+  const orders = preFetchedOrders
+    ? (() => {
+        const exact = [];
+        const related = [];
+        preFetchedOrders.forEach((order) => {
+          const strength = getOrderMatchStrength(order, ad);
+          if (strength === "AD") {
+            exact.push(order);
+            related.push(order);
+          } else if (strength === "ADSET" || strength === "CAMPAIGN") {
+            related.push(order);
+          }
+        });
+        return { exact, related };
+      })()
+    : await getRelatedOrders(prisma, companyId, ad, dateRange);
   const exactOrders = summarizeOrders(orders.exact);
   const relatedOrders = summarizeOrders(orders.related);
   const economics = getProductEconomics(product, relatedOrders, summary || {});

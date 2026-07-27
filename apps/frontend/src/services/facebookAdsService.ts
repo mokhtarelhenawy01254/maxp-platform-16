@@ -1516,7 +1516,7 @@ export const getCampaignInsights = async (
 /**
  * جلب ملخص أداء الحملات مع توصيات تحسين
  */
-const LONG_TIMEOUT = 70000;
+const LONG_TIMEOUT = 35000;
 
 export const getAdsPerformanceSummary = async (
   startDate?: string,

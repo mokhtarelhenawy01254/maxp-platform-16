@@ -5038,7 +5038,7 @@ const getAdDetails = async (req, res) => {
  * GET /api/v1/facebook-ads/reports/decision-summary
  * ملخص قرارات read-only مبني على الربحية والتتبع والـ insights المتزامنة
  */
-const DECISION_TIMEOUT_MS = 55000;
+const DECISION_TIMEOUT_MS = 25000;
 
 const getDecisionSummary = async (req, res) => {
   const timeoutHandle = setTimeout(() => {
@@ -5108,6 +5108,49 @@ const getDecisionSummary = async (req, res) => {
       take: normalizedLimit,
     });
 
+    const adProductIds = ads.map((a) => a.productId).filter(Boolean);
+    const adProductSlugs = ads.map((a) => parseJsonObject(a.settings)?.linkUrl || a.linkUrl).filter(Boolean);
+    const allSlugs = [...new Set(adProductSlugs.map((url) => {
+      try { return new URL(url).pathname.split("/").filter(Boolean).findLast(() => true) || ""; } catch { return ""; }
+    }).filter(Boolean))];
+    const allProductIds = [...new Set([...adProductIds, ...allSlugs])];
+    const allProducts = allProductIds.length > 0 ? await prisma.product.findMany({
+      where: { companyId, OR: [{ id: { in: allProductIds } }, { slug: { in: allProductIds } }] },
+      include: { productVariants: { select: { cost: true, price: true } } },
+    }) : [];
+    const productMap = new Map(allProducts.map((p) => [p.id, p]));
+    allProducts.forEach((p) => { if (p.slug) productMap.set(p.slug, p); });
+
+    const allOrders = await prisma.order.findMany({
+      where: {
+        companyId,
+        createdAt: {
+          gte: dateRange.rangeStart,
+          lte: dateRange.rangeEnd,
+        },
+        status: { notIn: ["DRAFT", "TRASH"] },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        total: true,
+        shipping: true,
+        metadata: true,
+        createdAt: true,
+        orderItems: {
+          include: {
+            product: {
+              select: { id: true, name: true, price: true, cost: true },
+            },
+            productVariant: {
+              select: { id: true, price: true, cost: true },
+            },
+          },
+        },
+      },
+    });
+
     const rows = await Promise.all(
       ads.map(async (ad) => {
         const summary = aggregatePersistedInsights(ad.facebookAdInsights || []);
@@ -5118,6 +5161,8 @@ const getDecisionSummary = async (req, res) => {
           summary,
           campaignSummary: summary,
           dateRange,
+          preFetchedOrders: allOrders,
+          preFetchedProductMap: productMap,
         });
 
         return {
@@ -5541,7 +5586,7 @@ const getCampaignInsights = async (req, res) => {
  * GET /api/v1/facebook-ads/reports/performance-summary
  * ملخص أداء محلي للحملات مع توصيات تحسين عملية
  */
-const PERFORMANCE_TIMEOUT_MS = 25000;
+const PERFORMANCE_TIMEOUT_MS = 15000;
 
 const getPerformanceSummary = async (req, res) => {
   const timeoutHandle = setTimeout(() => {
