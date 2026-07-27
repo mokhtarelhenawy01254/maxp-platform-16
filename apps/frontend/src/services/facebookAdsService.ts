@@ -4,7 +4,7 @@
  * Service للتعامل مع Facebook Ads Management API
  */
 
-import axios, { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { apiClient } from "./apiClient";
 
 const getAxiosStatus = (error: unknown) =>
@@ -1516,10 +1516,7 @@ export const getCampaignInsights = async (
 /**
  * جلب ملخص أداء الحملات مع توصيات تحسين
  */
-const getBaseUrl = () => {
-  const base = (apiClient as any)?.client?.defaults?.baseURL || "";
-  return base.endsWith("/") ? base.slice(0, -1) : base;
-};
+const LONG_TIMEOUT = 55000;
 
 export const getAdsPerformanceSummary = async (
   startDate?: string,
@@ -1533,10 +1530,12 @@ export const getAdsPerformanceSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const url = `${getBaseUrl()}/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`;
-    const response = await axios.get(url, { timeout: 55000, withCredentials: true });
+    const response = await apiClient.get(
+      `/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`,
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads performance summary:", error);
     throw error;
@@ -1555,10 +1554,12 @@ export const getAdsDecisionSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const url = `${getBaseUrl()}/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`;
-    const response = await axios.get(url, { timeout: 55000, withCredentials: true });
+    const response = await apiClient.get(
+      `/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`,
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads decision summary:", error);
     throw error;
