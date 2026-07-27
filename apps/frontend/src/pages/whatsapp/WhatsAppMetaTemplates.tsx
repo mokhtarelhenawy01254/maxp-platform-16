@@ -106,6 +106,27 @@ const statusIcon: Record<string, React.ComponentType<{ className?: string }>> = 
 
 const CATEGORIES = ["MARKETING", "UTILITY", "AUTHENTICATION"];
 
+const CATEGORY_STYLE: Record<string, { icon: string; gradient: string; badge: string; sectionBg: string }> = {
+  AUTHENTICATION: {
+    icon: "🔐",
+    gradient: "from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400",
+    badge: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300",
+    sectionBg: "bg-gradient-to-b from-violet-50/50 to-transparent dark:from-violet-950/20",
+  },
+  MARKETING: {
+    icon: "📢",
+    gradient: "from-rose-600 to-pink-600 dark:from-rose-400 dark:to-pink-400",
+    badge: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300",
+    sectionBg: "bg-gradient-to-b from-rose-50/50 to-transparent dark:from-rose-950/20",
+  },
+  UTILITY: {
+    icon: "🔧",
+    gradient: "from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400",
+    badge: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300",
+    sectionBg: "bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-950/20",
+  },
+};
+
 function sanitizeTemplateName(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 }
@@ -474,6 +495,15 @@ const WhatsAppMetaTemplates: React.FC<{
     );
   }, [librarySearch]);
 
+  const libraryByCategory = useMemo(() => {
+    const groups: Record<string, typeof templateLibrary> = {};
+    for (const t of filteredLibrary) {
+      if (!groups[t.category]) groups[t.category] = [];
+      groups[t.category].push(t);
+    }
+    return groups;
+  }, [filteredLibrary]);
+
   const pageTitle = companyName
     ? `قوالب Meta API · ${companyName}`
     : "قوالب Meta API";
@@ -510,21 +540,22 @@ const WhatsAppMetaTemplates: React.FC<{
               })}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full">
+          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full">
+          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <History className="size-4" /> السجل
           </Button>
-          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full">
+          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <Library className="size-4" /> قوالب جاهزة
           </Button>
-          <Button onClick={() => { setCreateStep(1); setCreateOpen(true); }} className="rounded-full">
+          <Button onClick={() => { setCreateStep(1); setCreateOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
             <Plus className="size-4" /> قالب جديد
           </Button>
         </div>
       }
     >
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <WhatsAppSurfaceCard title="قوالب Meta API" description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم">
         {loading ? (
           <div className="space-y-3">
@@ -662,20 +693,20 @@ const WhatsAppMetaTemplates: React.FC<{
               { step: 3, label: "المراجعة" },
             ].map((s, i) => (
               <React.Fragment key={s.step}>
-                {i > 0 && <div className="h-px flex-1 bg-[color:var(--shell-control-border)]" />}
+                {i > 0 && <div className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${createStep >= s.step ? 'bg-[var(--shell-ring)]' : 'bg-[color:var(--shell-control-border)]'}`} />}
                 <button
                   type="button"
                   onClick={() => setCreateStep(s.step as 1 | 2 | 3)}
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
                     createStep === s.step
                       ? "bg-[color:var(--shell-ring)] text-white shadow-sm"
                       : "bg-[var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--shell-overlay-bg)]"
                   }`}
                 >
-                  <span className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                    createStep === s.step ? "bg-white/20" : "bg-[var(--color-muted-foreground)]/10"
+                  <span className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold transition-transform duration-200 ${
+                    createStep === s.step ? "bg-white/20 scale-110" : "bg-[var(--color-muted-foreground)]/10"
                   }`}>
-                    {s.step}
+                    {createStep > s.step ? "✓" : s.step}
                   </span>
                   {s.label}
                 </button>
@@ -684,7 +715,7 @@ const WhatsAppMetaTemplates: React.FC<{
           </div>
 
           {createStep === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
               <div className="space-y-2">
                 <Label>اسم القالب</Label>
                 <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
@@ -758,7 +789,7 @@ const WhatsAppMetaTemplates: React.FC<{
           )}
 
           {createStep === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
               <div className="space-y-2">
                 <Label>محتوى الرسالة *</Label>
                 <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
@@ -817,7 +848,7 @@ const WhatsAppMetaTemplates: React.FC<{
           )}
 
           {createStep === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
               <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-muted)] p-4">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">معاينة حية</p>
                 <div className="wa-bubble rounded-2xl bg-[#d9fdd3] px-4 py-3 shadow-sm dark:bg-[var(--whatsapp-message-outgoing)]">
@@ -859,18 +890,18 @@ const WhatsAppMetaTemplates: React.FC<{
 
           <DialogFooter className="gap-2">
             {createStep > 1 && (
-              <Button variant="outline" onClick={() => setCreateStep((createStep - 1) as 1 | 2 | 3)} className="rounded-full">
+              <Button variant="outline" onClick={() => setCreateStep((createStep - 1) as 1 | 2 | 3)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
                 السابق
               </Button>
             )}
             <div className="flex-1" />
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setCreateStep(1); setShowCompliance(false); setComplianceResults([]); }} className="rounded-full">إلغاء</Button>
+            <Button variant="outline" onClick={() => { setCreateOpen(false); setCreateStep(1); setShowCompliance(false); setComplianceResults([]); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
             {createStep < 3 ? (
-              <Button onClick={() => setCreateStep((createStep + 1) as 1 | 2 | 3)} className="rounded-full">
+              <Button onClick={() => setCreateStep((createStep + 1) as 1 | 2 | 3)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
                 التالي
               </Button>
             ) : (
-              <Button onClick={handleCreate} disabled={sending} className="rounded-full">
+              <Button onClick={handleCreate} disabled={sending} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
                 {sending ? "جاري الإنشاء..." : "إنشاء القالب"}
               </Button>
             )}
@@ -1080,8 +1111,8 @@ const WhatsAppMetaTemplates: React.FC<{
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setEditOpen(false); setEditForm(null); setEditComplianceResults([]); setEditShowCompliance(false); }} className="rounded-full">إلغاء</Button>
-            <Button onClick={handleEdit} disabled={editSending} className="rounded-full">
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditForm(null); setEditComplianceResults([]); setEditShowCompliance(false); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
+            <Button onClick={handleEdit} disabled={editSending} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
               {editSending ? "جاري التحديث..." : "تحديث القالب"}
             </Button>
           </DialogFooter>
@@ -1091,14 +1122,24 @@ const WhatsAppMetaTemplates: React.FC<{
       <Dialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
         <DialogContent className="sm:rounded-3xl">
           <DialogHeader>
-            <DialogTitle>حذف القالب</DialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من حذف القالب <strong>{deleteConfirm}</strong>؟
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30">
+                <Trash2 className="size-5 text-red-500" />
+              </div>
+              <div>
+                <DialogTitle>حذف القالب</DialogTitle>
+                <DialogDescription>
+                  هل أنت متأكد من حذف القالب <strong>{deleteConfirm}</strong>؟
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400">
+            سيتم حذف جميع ترجمات هذا القالب. هذا الإجراء لا يمكن التراجع عنه.
+          </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="rounded-full">إلغاء</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="rounded-full">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
+            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
               حذف
             </Button>
           </DialogFooter>
@@ -1108,67 +1149,110 @@ const WhatsAppMetaTemplates: React.FC<{
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
         <DialogContent className="max-w-2xl sm:rounded-3xl">
           <DialogHeader>
-            <DialogTitle>قوالب جاهزة</DialogTitle>
-            <DialogDescription>
-              اختر قالباً جاهزاً لبدء الإنشاء. يتم تعبئة جميع الحقول تلقائياً — يمكنك تعديلها قبل الإرسال.
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 shadow-sm">
+                <Library className="size-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg">قوالب جاهزة</DialogTitle>
+                <DialogDescription>
+                  اختر قالباً لبدء الإنشاء. يتم تعبئة الحقول تلقائياً — يمكنك تعديلها قبل الإرسال.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="relative mb-4">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
             <Input
               value={librarySearch}
               onChange={(e) => setLibrarySearch(e.target.value)}
-              placeholder="البحث في القوالب الجاهزة..."
-              className="h-10 px-9"
+              placeholder="ابحث بالاسم، الوصف، التصنيف..."
+              className="h-11 px-9 rounded-2xl border-[color:var(--shell-control-border)] bg-[var(--color-muted)] transition-all duration-200 focus:scale-[1.01]"
             />
             {librarySearch && (
               <button
                 onClick={() => setLibrarySearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-muted-foreground)] transition-colors hover:text-[color:var(--color-foreground)]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-muted-foreground)] transition-all duration-200 hover:scale-110 hover:text-[color:var(--color-foreground)]"
                 aria-label="مسح البحث"
               >
                 <XCircle className="size-4" />
               </button>
             )}
           </div>
-          <div className="max-h-[400px] space-y-2 overflow-y-auto">
+          <div className="mt-4 max-h-[420px] space-y-6 overflow-y-auto">
             {filteredLibrary.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">لا توجد نتائج للبحث</p>
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <Search className="size-10 text-[color:var(--color-muted-foreground)]" />
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا توجد نتائج للبحث</p>
+                <button onClick={() => setLibrarySearch("")} className="text-xs text-[var(--shell-ring)] underline-offset-2 hover:underline">مسح البحث</button>
+              </div>
             ) : (
-              filteredLibrary.map((libTpl) => (
-                <button
-                  key={libTpl.id}
-                  onClick={() => applyLibraryTemplate(libTpl)}
-                  className="w-full rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-4 text-right transition-colors hover:border-[color:var(--shell-ring)] hover:bg-[var(--shell-overlay-bg)]"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{libTpl.name}</span>
-                        <Badge variant="outline" className="text-[10px]">{libTpl.category}</Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">{libTpl.description}</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {libTpl.languages.map(l => (
-                          <Badge key={l.code} variant="secondary" className="text-[10px]">{l.code}</Badge>
-                        ))}
-                        {libTpl.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="rounded-full bg-[color:var(--shell-ring)]/10 px-2 py-0.5 text-[10px] text-[color:var(--shell-ring)]">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+              Object.entries(libraryByCategory).map(([category, templates]) => {
+                const style = CATEGORY_STYLE[category];
+                return (
+                  <section key={category}>
+                    <div className={`sticky top-0 z-10 mb-3 flex items-center gap-2 rounded-2xl p-2.5 ${style.sectionBg} backdrop-blur-sm`}>
+                      <span className="flex size-8 items-center justify-center rounded-xl bg-white text-base shadow-sm dark:bg-[var(--shell-overlay-bg)]">
+                        {style.icon}
+                      </span>
+                      <span className={`bg-gradient-to-r ${style.gradient} bg-clip-text text-sm font-bold text-transparent`}>
+                        {category === "AUTHENTICATION" ? "المصادقة" : category === "MARKETING" ? "تسويق" : "خدمات"}
+                      </span>
+                      <span className="mr-auto text-[11px] text-[color:var(--color-muted-foreground)]">{templates.length} قالب</span>
                     </div>
-                    <div className="shrink-0 self-center">
-                      <Plus className="size-5 text-[color:var(--color-muted-foreground)]" />
+                    <div className="space-y-2">
+                      {templates.map((libTpl, idx) => (
+                        <button
+                          key={libTpl.id}
+                          onClick={() => applyLibraryTemplate(libTpl)}
+                          style={{ animationDelay: `${idx * 50}ms` }}
+                          className="group w-full rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-4 text-right transition-all duration-200 hover:scale-[1.01] hover:border-[color:var(--shell-ring)] hover:shadow-md hover:bg-[var(--shell-overlay-bg)]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{libTpl.name}</span>
+                                <Badge variant="outline" className={`text-[10px] ${style.badge}`}>{style.icon} {libTpl.category}</Badge>
+                              </div>
+                              <p className="mt-1.5 text-xs leading-5 text-[color:var(--color-muted-foreground)]">{libTpl.description}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                <div className="flex -space-x-1">
+                                  {libTpl.languages.slice(0, 4).map(l => (
+                                    <span key={l.code} className="flex size-5 items-center justify-center rounded-full border-2 border-[var(--color-muted)] bg-[var(--shell-overlay-bg)] text-[9px] font-medium uppercase text-[color:var(--color-muted-foreground)] shadow-sm">
+                                      {l.code}
+                                    </span>
+                                  ))}
+                                  {libTpl.languages.length > 4 && (
+                                    <span className="flex size-5 items-center justify-center rounded-full border-2 border-[var(--color-muted)] bg-[var(--color-muted)] text-[9px] text-[color:var(--color-muted-foreground)]">
+                                      +{libTpl.languages.length - 4}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                                  {libTpl.languages.length} {libTpl.languages.length > 1 ? "لغات" : "لغة"}
+                                </span>
+                                <span className="mx-1 text-[10px] text-[color:var(--color-muted-foreground)]">·</span>
+                                {libTpl.tags.slice(0, 2).map(tag => (
+                                  <span key={tag} className="rounded-full bg-[var(--shell-overlay-bg)] px-2 py-0.5 text-[10px] text-[color:var(--color-muted-foreground)]">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="shrink-0 self-center rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--shell-overlay-bg)] p-2 transition-all duration-200 group-hover:scale-110 group-hover:border-[color:var(--shell-ring)]">
+                              <Plus className="size-4 text-[color:var(--color-muted-foreground)] transition-colors group-hover:text-[var(--shell-ring)]" />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                </button>
-              ))
+                  </section>
+                );
+              })
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setLibraryOpen(false); setLibrarySearch(""); }} className="rounded-full">إلغاء</Button>
+            <Button variant="outline" onClick={() => { setLibraryOpen(false); setLibrarySearch(""); }} className="rounded-full transition-all duration-200 hover:scale-[1.02]">إلغاء</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1183,10 +1267,16 @@ const WhatsAppMetaTemplates: React.FC<{
           </DialogHeader>
           <div className="max-h-[400px] space-y-1 overflow-y-auto">
             {templateHistory.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">لا يوجد سجل بعد. أنشئ أو عدّل قالباً ليظهر هنا.</p>
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <div className="flex size-12 items-center justify-center rounded-full bg-[var(--color-muted)]">
+                  <History className="size-6 text-[color:var(--color-muted-foreground)]" />
+                </div>
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد سجل بعد</p>
+                <p className="text-xs text-[color:var(--color-muted-foreground)]">أنشئ أو عدّل قالباً ليظهر هنا.</p>
+              </div>
             ) : (
               templateHistory.map((entry, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm hover:bg-[var(--color-muted)]">
+                <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 hover:scale-[1.01] hover:bg-[var(--color-muted)]" style={{ animationDelay: `${i * 30}ms` }}>
                   {entry.action === "created" && <CheckCircle className="size-4 text-emerald-500" />}
                   {entry.action === "edited" && <Pencil className="size-4 text-amber-500" />}
                   {entry.action === "deleted" && <Trash2 className="size-4 text-red-500" />}
@@ -1201,10 +1291,10 @@ const WhatsAppMetaTemplates: React.FC<{
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { localStorage.removeItem(HISTORY_KEY); setTemplateHistory([]); }} className="rounded-full">
+            <Button variant="outline" onClick={() => { localStorage.removeItem(HISTORY_KEY); setTemplateHistory([]); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
               مسح السجل
             </Button>
-            <Button variant="outline" onClick={() => setHistoryOpen(false)} className="rounded-full">إغلاق</Button>
+            <Button variant="outline" onClick={() => setHistoryOpen(false)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إغلاق</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
