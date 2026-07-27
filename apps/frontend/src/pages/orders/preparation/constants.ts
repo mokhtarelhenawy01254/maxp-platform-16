@@ -2,7 +2,6 @@ import type {
   PreparationQueueSettings,
   ShortageHoldDetails,
   ShortageReason,
-  StageKey,
 } from "./types";
 
 export const FETCH_LIMIT = 200;
@@ -35,14 +34,12 @@ export const SHORTAGE_HOLD_METADATA_KEY = "preparationShortageHold";
 export const PREPARATION_STATUS_METADATA_KEY = "preparationStatus";
 
 export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-  "RETURNED",
-  "REFUNDED",
-  "PARTIALLY_REFUNDED",
-  "DUPLICATE_ORDER",
-  "TRASH",
+  "PENDING", "DRAFT", "SCHEDULED",
+  "SHIPPED", "DELIVERED",
+  "CANCELLED", "RETURNED",
+  "REFUNDED", "PARTIALLY_REFUNDED",
+  "DUPLICATE_ORDER", "TRASH", "TRASH_ORDER",
+  "EXCHANGED", "PARTIALLY_DELIVERED",
 ]);
 
 export const SHORTAGE_REASON_OPTIONS: Array<{
@@ -67,95 +64,58 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
   state: "held",
 };
 
-export const FALLBACK_STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: "Confirmed",
-  PENDING_PREPARATION: "Pending Preparation",
-  PREPARING: "Preparing",
-  PROCESSING: "Processing",
-  QUALITY_CHECK: "Quality Check",
-  PACKAGED: "Packaged",
-  READY: "Ready",
-  READY_TO_SHIP: "Ready to Ship",
-  STOCK_SHORTAGE: "Stock Shortage",
+
+
+export const PREPARATION_TABLE_COLUMNS = [
+  "customer",
+  "units",
+  "value",
+  "status",
+  "warehouse",
+  "readiness",
+  "printStatus",
+  "shippingCode",
+] as const;
+
+export type PreparationTableColumn = (typeof PREPARATION_TABLE_COLUMNS)[number];
+
+export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> = {
+  customer: "العميل",
+  units: "القطع",
+  value: "القيمة",
+  status: "الحالة",
+  warehouse: "المخزن",
+  readiness: "التجهيز",
+  printStatus: "الطباعة",
+  shippingCode: "كود الشحن",
 };
 
-export const FALLBACK_STATUS_LABEL_KEYS: Record<string, string> = {
-  CONFIRMED: "preparation.fallbackStatusLabels.CONFIRMED",
-  PENDING_PREPARATION: "preparation.fallbackStatusLabels.PENDING_PREPARATION",
-  PREPARING: "preparation.fallbackStatusLabels.PREPARING",
-  PROCESSING: "preparation.fallbackStatusLabels.PROCESSING",
-  QUALITY_CHECK: "preparation.fallbackStatusLabels.QUALITY_CHECK",
-  PACKAGED: "preparation.fallbackStatusLabels.PACKAGED",
-  READY: "preparation.fallbackStatusLabels.READY",
-  READY_TO_SHIP: "preparation.fallbackStatusLabels.READY_TO_SHIP",
-  STOCK_SHORTAGE: "preparation.fallbackStatusLabels.STOCK_SHORTAGE",
+export const VISIBLE_COLUMNS_STORAGE_KEY = "preparation:queue:visible-columns-v1";
+
+export const PREPARATION_FILTER_SECTIONS = [
+  "tabs",
+  "search",
+  "toggleButtons",
+  "advanced",
+] as const;
+
+export type PreparationFilterSection = (typeof PREPARATION_FILTER_SECTIONS)[number];
+
+export const PREPARATION_FILTER_SECTION_LABELS: Record<PreparationFilterSection, string> = {
+  tabs: "شريط التبويبات",
+  search: "البحث",
+  toggleButtons: "أزرار التبديل",
+  advanced: "الفلاتر المتقدمة",
 };
 
-export const STAGE_DEFINITIONS: Array<{
-  key: StageKey;
-  label: string;
-  labelKey: string;
-  colorClass: string;
-  description: string;
-  descriptionKey: string;
-}> = [
-  {
-    key: "WAITING",
-    label: "Confirmed Orders",
-    labelKey: "preparation.stages.WAITING",
-    colorClass: "bg-amber-100 text-amber-800 border-amber-200",
-    description: "Confirmed orders not yet prepared",
-    descriptionKey: "preparation.stageDescriptions.WAITING",
-  },
-  {
-    key: "PREPARING",
-    label: "Preparing",
-    labelKey: "preparation.stages.PREPARING",
-    colorClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    description: "Picking and preparing products from warehouse",
-    descriptionKey: "preparation.stageDescriptions.PREPARING",
-  },
-  {
-    key: "QUALITY_CHECK",
-    label: "Quality Check",
-    labelKey: "preparation.stages.QUALITY_CHECK",
-    colorClass: "bg-cyan-100 text-cyan-800 border-cyan-200",
-    description: "Reviewing quantity and condition before packaging",
-    descriptionKey: "preparation.stageDescriptions.QUALITY_CHECK",
-  },
-  {
-    key: "PACKAGED",
-    label: "Packaged",
-    labelKey: "preparation.stages.PACKAGED",
-    colorClass: "bg-violet-100 text-violet-800 border-violet-200",
-    description: "Order is packaged and awaiting delivery to shipping",
-    descriptionKey: "preparation.stageDescriptions.PACKAGED",
-  },
-  {
-    key: "READY_TO_SHIP",
-    label: "Ready to Ship",
-    labelKey: "preparation.stages.READY_TO_SHIP",
-    colorClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    description: "Ready to hand over to shipping company or create shipment",
-    descriptionKey: "preparation.stageDescriptions.READY_TO_SHIP",
-  },
-  {
-    key: "STOCK_SHORTAGE",
-    label: "Stock Shortage",
-    labelKey: "preparation.stages.STOCK_SHORTAGE",
-    colorClass: "bg-rose-100 text-rose-800 border-rose-200",
-    description: "Orders on hold due to stock shortage or awaiting transfer",
-    descriptionKey: "preparation.stageDescriptions.STOCK_SHORTAGE",
-  },
-  {
-    key: "PENDING_CANCELLATION",
-    label: "Pending Cancellation",
-    labelKey: "preparation.stages.PENDING_CANCELLATION",
-    colorClass: "bg-red-100 text-red-800 border-red-300 shadow-sm shadow-red-200 animate-pulse",
-    description: "Orders the customer requested cancellation during preparation — must stop immediately",
-    descriptionKey: "preparation.stageDescriptions.PENDING_CANCELLATION",
-  },
-];
+export const SORT_OPTIONS = [
+  { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },
+  { value: "createdAt_asc", label: "Oldest First", labelKey: "preparation.sortOptions.createdAt_asc" },
+  { value: "totalUnits_desc", label: "Most Items First", labelKey: "preparation.sortOptions.totalUnits_desc" },
+  { value: "totalUnits_asc", label: "Fewest Items First", labelKey: "preparation.sortOptions.totalUnits_asc" },
+  { value: "totalValue_desc", label: "Highest Value First", labelKey: "preparation.sortOptions.totalValue_desc" },
+  { value: "totalValue_asc", label: "Lowest Value First", labelKey: "preparation.sortOptions.totalValue_asc" },
+] as const;
 
 export const SOURCE_LABELS: Record<string, string> = {
   ai_conversation: "AI Conversation",

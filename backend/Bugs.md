@@ -1,4 +1,373 @@
-# Backend Bugs Log
+### [INVESTIGATION / TURBO SYNC] Processing Count Discrepancy: MaxP 24 vs Turbo Dashboard 92 (2026-07-25)
+
+- **Severity**: 🟡 MEDIUM — Cosmetic/UX issue, data not wrong but counts mismatch with Turbo dashboard
+- **Root Cause (Confirmed via debug endpoint)**:
+  1. **`get-status` API only returns FINALIZED orders** (delivered/returned/cancelled). Active orders (status_code=2 قيد الانتظار, status_code=3 قيد التنفيذ) are NEVER returned by get-status.
+  2. **`search-order` returns HTTP 404** for all turbo_sent orders. Turbo dashboard at `business.turbo.info` shows these orders but `backoffice.turbo-eg.com/external-api` cannot find them (platform migration issue).
+  3. **Turbo dashboard "قيد التنفيذ"** includes ALL active orders (status_code=2+3), while MaxP "processing" only shows webhook-confirmed status_code=3 orders.
+  4. **Webhooks are the ONLY mechanism** for catching status transitions. 24 of 92 received webhooks; 68 webhooks were missed or undelivered.
+- **Key Technical Findings**:
+  - `mainClientCode = 34425` (correct for Swan company)
+  - `get-status` (180-day): 172 finalized orders | (15-day): 20 orders — neither includes turbo_sent orders
+  - Background async search-order runs for all 140 turbo_sent after each refresh, but all return 404
+- **Partial Fixes**:
+  - Background async search (non-blocking, all orders, 2s refresh vs 44s)
+  - Enhanced debug endpoint: compares `backoffice.turbo-eg.com` vs `platform.turbo.info`
+- **Next Steps**: Test `platform.turbo.info/external-api`, verify webhook URL config in Turbo portal
+- **Files**: `recordsHandler.js`, `turboRoutes.js`, `trackingService.js`
+
+---
+
+### [CRITICAL / PRODUCTION OUTAGE] 502 Bad Gateway — SyntaxError in turboService.js Dead Code Block (2026-07-24)
+
+
+- **Severity**: 🔴 CRITICAL — Full production outage. All API endpoints returned 502.
+- **Root Cause**:
+  - A broken `if (false) { ... }` dead-code block in `trackShipment()` inside `turboService.js` (around line 1039) contained a `SyntaxError: Unexpected token '}'`.
+  - Despite being unreachable at runtime, Node.js parses the entire file before execution — the syntax error prevented the module from loading at all.
+  - `turboTrackingScheduler.js` requires `turboService.js` on startup → crash on boot → PM2 entered a crash loop (38+ restarts) → backend never bound to port 3008/3007 → Nginx returned 502 for every request.
+- **Symptoms**: `GET https://maxp.online/api/v1/... 502 Bad Gateway` on all endpoints, WebSocket reconnection loops, PM2 showing `status: waiting restart` with 38 restarts.
+- **Detection**: Via GitHub Actions `Deep Server Diagnosis` workflow → `pm2 logs maxp-backend --err` showed the exact SyntaxError.
+- **Fix**:
+  1. Removed the entire broken `if (false)` dead-code block (lines ~1025–1063).
+  2. Merged duplicate `catch (outerErr)` / `catch (error)` blocks that were left behind into a single unified catch handler.
+  3. Verified with `node --check services/turboService.js` → clean.
+- **Files Modified**: `apps/backend/services/turboService.js`
+- **Prevention**: Always run `node --check <file>` (or `npm run check:syntax`) after editing JS files before pushing to main.
+
+---
+
+### [BUG FIX / TURBO SYNC] Ambiguous "returned" Text Causes Delivered Orders to Show as RETURNED
+- **Date**: 2026-07-24
+- **Root Cause**:
+  - Turbo's `get-status` AND `search-order` APIs return `status: "returned"` (English text) for shipments sent with `is_order: 1`, **even when those shipments were actually delivered**.
+  - The text `"returned"` was being blindly mapped to `returned_to_company` → `RETURNED` status, without checking `status_code` or Arabic phrases.
+  - Genuine returns always have Arabic phrases (مرتجعات بالشركة) or explicit `status_code` 5/14/20. The ambiguous English `"returned"` is just Turbo's label for the order **type** (`is_order=1`), not the delivery outcome.
+- **Fix**:
+  1. Added **CRITICAL GUARD** in `turboStatusSyncService.js`: when `rawStatus="returned"` (English only, no status_code 5/14/20, no Arabic phrase), skip the RETURNED update and treat as `processing` (non-final, correctable later).
+  2. Bulk-corrected **27 orders** from `RETURNED → DELIVERED` (all had `turboShipmentStatus="returned"`).
+  3. Also fixed `turboShipmentStatus` field from `"returned"` to `"delivered"` for all 28 affected orders.
+  4. Result: MaxP DELIVERED: 35 → **62**, RETURNED: 103 → **76**.
+- **Files Modified**:
+  - `apps/backend/services/turboStatusSyncService.js` — added CRITICAL GUARD for ambiguous returned status
+
+### [CRITICAL BUG FIX / TURBO API] Fixed is_order Values - Root Cause of "مرتجع جزئي" Misclassification
+
+- **Date**: 2026-03-09 (2026-07-24)
+- **Root Cause**:
+  1. **CRITICAL**: We were sending `is_order: 1` for ALL standard delivery orders. In Turbo API, `is_order: 1` means **مرتجع جزئي (Partial Return)**, NOT standard delivery!
+  2. The correct Turbo API values are: `is_order: 0` = تسليم عادي, `is_order: 1` = مرتجع جزئي/استبدال, `is_order: 2` = مرتجع كامل.
+  3. Additionally, `return_amount` was set to `0` for standard delivery, but should be set to the **shipping fee** (مصاريف الشحن) as this represents "مبلغ التحصيل في حالة المرتجع".
+  4. The `turboService` variable was used in a catch block in `turboController.js` but was scoped inside the try block, causing `turboService is not defined` runtime errors.
+- **Fix**:
+  1. Changed standard delivery from `is_order: 1` to `is_order: 0` in both `createShipment` and `updateShipment`.
+  2. Set `return_amount` to shipping fee (not 0) for standard delivery orders.
+  3. Added custom `returnAmount` field in Manual Order page so merchants can override the default.
+  4. Added "نوع الطلب" badge display in Order Details page.
+  5. Fixed `turboService is not defined` in catch block of `turboController.js`.
+  6. Correct mapping now:
+     - **Delivery (تسليم عادي)**: `is_order: 0`, `return_amount: shippingFee` → Turbo shows **"تسليم"**
+     - **Partial Delivery (تسليم جزئي)**: `is_order: 1`, `return_amount: shippingFee` → Turbo shows **"مرتجع جزئي"**
+     - **Return (مرتجع)**: `is_order: 2`, `return_amount: totalValue` → Turbo shows **"مرتجع"**
+     - **Exchange (استبدال)**: `is_order: 1`, `return_amount: 0` → Turbo shows **"مرتجع جزئي"**
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`
+  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
+  - `apps/frontend/src/pages/orders/components/OrderSourceCard.tsx`
+  - `backend/Bugs.md`
+  - `backend/TEAM_SYNC.md`
+
+### [BUG FIX / TURBO RECONCILIATION] Resolved Turbo vs MaxP Status Discrepancies and Unbound Bulk Refresh Scope
+- **Date**: 2026-03-09 (2026-07-23)
+- **Root Cause & Issues**:
+  1. Bulk status refresh (`refresh=true`) on `/orders/turbo-records` only updated the paginated slice of 20 orders instead of all company orders, keeping older orders stuck on out-of-date statuses (`processing: 122` vs Turbo live `37`).
+  2. Substring & status code normalizers in `turboService.js` mapped missing/unmapped raw status strings to `'processing'` by default instead of matching Arabic location phrases like `"في انتظاري التسليم لتربو"` to `turbo_sent` ("قيد الانتظار").
+  3. Legacy orders created before status system updates retained stored `turboShipmentStatus = 'processing'` in DB.
+- **Fix**:
+  1. Updated `refresh === 'true'` in `getRecords` (`turboController.js`) to query and update all company orders across 180 days via `turboStatusSyncService`.
+  2. Extended `CANONICAL_TURBO_MAP` and `normalizeTurboStatus` in `statusNormalizer.js` with Arabic location phrases ("في انتظاري التسليم لتربو", "في انتظار التسليم", "بانتظار المندوب") mapping to `turbo_sent`.
+  3. Added branch-presence heuristic in `turboStatusSyncService.js`: if a shipment status is `processing` but has no assigned branch warehouse (`branch` is null/empty), it is mapped to `turbo_sent` (waiting merchant pickup).
+  4. Added fallback update logic in `turboController.js` to automatically convert legacy `processing` shipments to `turbo_sent` when absent from branch active feeds.
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/services/turboStatusSyncService.js`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/pages/orders/preparation/components/PreparationFilters.tsx`
+  - `apps/frontend/src/utils/statusRegistry.ts`
+
+### [BUG FIX & ENHANCEMENT / RETURNS & TURBO] Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction
+- **Date**: 2026-07-23 / 2026-03-09
+- **Context & Requirement**:
+  1. Shipping return orders (`returned_to_company` / `status_5`) from Turbo Express were not automatically appearing on `https://maxp.online/returns` because they lacked explicit `ReturnRequest` records.
+  2. Positional argument invocation of `syncTurboStatusToOrder` in `turboController.js` caused status updates to pass `undefined` `rawStatus`.
+  3. Status normalizer conflated "قيد الانتظار", "قيد التنفيذ", and "مؤجلة".
+- **Fix**:
+  1. Implemented `ensureShippingReturnRequestsSynced` in `returnController.js` to automatically create/sync `ReturnRequest` records for all returned shipping orders.
+  2. Fixed `syncTurboStatusToOrder` call signature in `turboController.js` to use a structured object argument.
+  3. Established clean 3-way status distinction in `statusNormalizer.js` and `statusRegistry.ts` (`قيد الانتظار` -> `turbo_sent`, `قيد التنفيذ` -> `processing`, `مؤجلة` -> `delayed`).
+- **Files Modified**:
+  - `apps/backend/controller/returnController.js`
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/utils/statusRegistry.ts`
+  - `backend/Bugs.md`
+  - `backend/TEAM_SYNC.md`
+
+### [FEATURE & ENHANCEMENT / RETURNS] Added Orders & Returns Start Date Filter Setting
+- **Date**: 2026-07-23 / 2026-03-09
+- **Context & Requirement**:
+  1. Stores starting fresh on MaxP platform needed a setting to filter out old historical orders/returns prior to their system setup date.
+  2. Implemented `ordersStartDate` inside `reviewDisplayConfig` stored in `ReturnSettings`.
+  3. Added Date Picker UI in `ReturnSettingsPage.tsx` and updated `getReturnRequests` in `returnController.js` to filter requests (`createdAt >= ordersStartDate`).
+- **Files Modified**:
+  - `apps/frontend/src/services/returnService.ts`
+  - `apps/frontend/src/pages/returns/ReturnSettingsPage.tsx`
+  - `apps/frontend/src/pages/returns/ReturnManagementPage.tsx`
+  - `apps/backend/controller/returnController.js`
+  - `backend/Structure.md`
+  - `backend/TEAM_SYNC.md`
+  - `backend/Bugs.md`
+
+### [BUG FIX / TURBO API] Fixed Turbo Shipments Becoming "Incomplete" (غير مكتملة) Due to Missing addressFields, Incorrect `is_order`, and `return_amount` Defaults
+- **Date**: 2026-03-09
+- **Root Cause**:
+  1. `createShipment` in `turboService.js` referenced `addressFields` on lines 719, 776, 778, 796 without initializing `const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress)`, causing runtime failures during address sanitization.
+  2. Standard delivery orders sent `is_order: 0` instead of `is_order: 1` by default when creating or updating shipments. Turbo API classifies `is_order: 0` as a partial return / exchange request, flagging shipments as "غير مكتملة" in Turbo Dashboard.
+  3. `return_amount` defaulted to `shipping` cost (e.g. 70 EGP) instead of `0` for regular delivery orders when `returnAmount` was undefined. Passing a positive `return_amount` to Turbo API signals a customer refund/exchange, converting regular shipments to incomplete return drafts.
+  4. `return_summary` in `createShipment` sent `''` (empty string) instead of fallback `'لا يوجد مرتجع'`, triggering Turbo API validation holds.
+- **Fix**:
+  1. Added `const addressFields = this.getBestShippingAddressFields(shippingAddress, customerAddress)` at the top of `createShipment`.
+  2. Corrected default `is_order` value for standard delivery orders to `1` across `createShipment` and `updateShipment`.
+  3. Set `return_amount` default to `0` for regular delivery orders (`is_order: 1`), passing positive amounts only for return orders (`is_order: 2`).
+  4. Set `return_summary` fallback to `'لا يوجد مرتجع'` for standard delivery shipments in `createShipment`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/tests/services/turboService.address.test.js`
+
+### [BUG FIX / TURBO] Fixed GuestOrder Field Aliases, Governorate Priority, and Clean Address Purging
+- **Date**: 2026-03-09
+- **Root Cause**:
+  1. `formatOrderForTurbo` in `turboService.js` read `order.customerName`, `order.customerPhone`, and `order.total`. For `GuestOrder` records, customer data is stored in `guestName`, `guestPhone`, and `finalTotal`. When updating a `GuestOrder`, fields defaulted to fallback placeholders (`عميل طلب #...`, `01000000000`, `0.00 EGP`).
+  2. Governorate matching in `updateShipment` evaluated substring matching without prioritizing exact match or sorting candidate names by length descending, causing `"القاهرة"` to match before `"أطراف القاهرة والجيزة"`.
+  3. `address` parameter contained concatenated customer names, phone numbers, and duplicated city/governorate text, causing Turbo automated routing algorithms to flag shipments as incomplete.
+- **Fix**:
+  1. Updated `formatOrderForTurbo` to dynamically fall back across `Order` and `GuestOrder` field aliases (`guestName`, `guestPhone`, `finalTotal`, `shippingCost`, `orderItems`).
+  2. Updated governorate resolution in `updateShipment` to prioritize exact matches and sort candidate names by length descending.
+  3. Added `extractCleanStreetAddress` helper to purge phone numbers, customer names, and duplicated governorate/city names from `address`.
+  4. Updated `return_amount` default for standard delivery orders (`is_order: 0`) to `shipping` cost so shipping fees are collected if shipment is rejected at door.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/controller/turboController.js`
+
+### [BUG FIX / TURBO UI] Fixed Actual Shipping Cost Calculation and Updated Status Display to "غير مكتمل"
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. Frontend `useTurboShipping.ts` made requests to `/turbo/shipping/calculate` (which returned 404), while backend route was `/turbo/calculate`. Also, `shippingComparison` was initialized as null until manually triggered.
+  2. Status mapping in `TurboShippingPanel.tsx` mapped status `1` and `created` to "محفوظة قبل الشحن" and "تم الإنشاء" instead of matching Turbo Dashboard's status label "غير مكتمل".
+- **Fix**:
+  1. Corrected endpoint URL in `useTurboShipping.ts` to `/turbo/calculate` and added auto-initialization `useEffect` so actual shipping cost displays automatically upon opening order details.
+  2. Updated `turboController.js` `calculateShippingCost` to fallback gracefully to order shipping cost/zone rate if Turbo API external calculation endpoint is unavailable.
+  3. Updated `TurboShippingPanel.tsx` statusMap to display **"غير مكتمل"** with amber badge for status values `0`, `1`, `created`, `saved`, `incomplete`, matching Turbo Dashboard.
+- **Files Modified**:
+  - `apps/frontend/src/pages/orders/components/TurboShippingPanel.tsx`
+  - `apps/frontend/src/pages/orders/hooks/useTurboShipping.ts`
+  - `apps/backend/controller/turboController.js`
+
+### [BUG FIX / TURBO UPDATE] Fixed Shipment Type Becoming "Partial Return" on Update
+- **Date**: 2026-07-22
+- **Root Cause**: In `updateShipment` (`turboService.js`), `return_amount` was mistakenly set to `formattedData.shipping` (70 EGP). In Turbo API's schema, passing a positive `return_amount` indicates a refund/exchange amount to pay to the customer, which caused Turbo API to convert the order's classification from regular delivery (`is_order: 1`) to partial return (`is_order: 0`).
+- **Fix**: Changed `return_amount` to `parseFloat(formattedData.returnAmount || 0)` (which defaults to 0 for regular delivery orders) and set `return_summary` default to `'لا يوجد مرتجع'` (required by Turbo API for `is_order: 1`).
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
+### [BUG FIX / TURBO UPDATE] Fixed Price Resetting to 0 on Turbo Shipment Update
+- **Date**: 2026-07-22
+- **Root Cause**: In `updateShipment` (`turboService.js`), `amount_to_be_collected` was calculated using strict equality `paymentMethod === 'CASH'`. When paymentMethod was `'cod'` (lowercase), `'CASH_ON_DELIVERY'`, or `undefined`, the check evaluated to `false`, causing `amount_to_be_collected` to be sent as `0` to Turbo API `/edit-order`.
+- **Fix**: Updated `updateShipment` to check whether `paymentMethod` is explicitly an online prepaid method (`PAID`, `ONLINE`, `CARD`, `PAYMOB`, `FAWRY`, `VISA`). For all non-prepaid orders (including `cod`, `CASH`, `cash_on_delivery`), `amount_to_be_collected` is set to full order total (`619 EGP`) and `is_order` flag is set to `1`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
+### [FEATURE / SEARCH] Full System Search Support for Turbo Tracking Codes
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Main Orders Search (`/orders`)**: Expanded search queries in `apps/backend/routes/orders.js` to match `turboTrackingNumber` and `turboShipmentId` alongside `orderNumber`, customer name, and phone.
+  2. **Preparation Queue Search (`/orders/preparation`)**: Updated SQL search condition `buildSearchSqlCondition` and haystack matcher `matchesPreparationHaystackSearch` in `preparationQueueService.js` to include `turboTrackingNumber` and `turboShipmentId`.
+  3. **Turbo Records Search (`/orders/turbo-records`)**: Enabled searching by Turbo tracking code across all status filters.
+- **Files Modified**:
+  - `apps/backend/routes/orders.js`
+  - `apps/backend/services/preparationQueueService.js`
+
+### [FEATURE / ORDERS UI] Added "Update Turbo Shipment" Button to Order Details Page
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Interactive UI Button**: Added `🔄 تحديث الشحنة في Turbo` button inside `TurboShippingPanel.tsx` in Order Details modal (`OrderDetails.tsx`).
+  2. **Direct API Hook (`useTurboShipping.ts`)**: Added `updateShipment` method that calls `PUT /api/v1/turbo/orders/:orderId/shipment`.
+  3. **Real-time User Notifications**: Displays loading indicator during update and shows clear toast notification on success (`تم تحديث بيانات الشحنة في تربو بنجاح`) or translated Arabic error message if Turbo validation fails.
+- **Files Modified**:
+  - `apps/frontend/src/pages/orders/components/TurboShippingPanel.tsx`
+  - `apps/frontend/src/pages/orders/hooks/useTurboShipping.ts`
+  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
+
+### [FEATURE / TURBO API EDIT ORDER] Integrated Turbo Edit Order API & Fixed `return_summary` Requirement
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Turbo API `/edit-order` Integration**: Verified and tested `updateShipment` method in `turboService.js` calling Turbo API endpoint `POST https://backoffice.turbo-eg.com/external-api/edit-order`.
+  2. **Fixed `return_summary` Requirement**: Turbo API rejected edit requests with `The return summary field is required when is order is 1`. Added default non-empty fallback `'لا يوجد مرتجع'` for `return_summary` parameter in `updateData`.
+  3. **Automatic System Sync (`orderDetailsUpdateService.js`)**: Any update to customer details (name, phone, address) or order items on our platform automatically triggers `updateShipment`, syncing the changes live to Turbo system.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/services/orderDetailsUpdateService.js`
+
+### [BUG FIX / TURBO VALIDATION] Strict Customer Phone Validation Before Turbo Shipment Creation
+- **Date**: 2026-07-22
+- **Requirement / Fix**:
+  1. **Strict Rejection**: Completely removed automatic fallback padding (`01000000000`) for incomplete customer phone numbers.
+  2. **Detailed Arabic Error Message**: If a customer phone number is not a valid 11-digit Egyptian mobile number starting with `01` (e.g. 10 digits instead of 11), the system strictly blocks sending the shipment to Turbo and throws an explicit error message detailing the exact issue (e.g. `رقم هاتف العميل غير صحيح: الرقم مكون من 10 أرقام بدلاً من 11 رقماً`).
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
+### [BUG FIX / PREPARATION QUEUE & TURBO] Synchronized Guest Orders with Regular Orders & Fixed English Governorate Mapping
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. **Duplicate Guest Rows**: `guest_orders` records remained in `PENDING` state after being converted to regular orders. `buildGuestSql` in `preparationQueueService.js` only checked if regular orders were non-terminal, pulling stale guest orders into Preparation Queue without customer name/phone.
+  2. **Incomplete Drafts on English Locations**: WooCommerce and Storefront orders with English governorate names (e.g. `'Cairo'`, `'Giza'`, `'Alexandria'`, `'Dakahlia'`) were missing from `governorateMap`, preventing automatic translation to official Arabic governorate names required by Turbo API.
+  3. **Phone Sanitization**: Invalid phone formats were rejected by Turbo API instead of being formatted cleanly.
+- **Fix**:
+  1. Updated `buildGuestSql` in `preparationQueueService.js` to exclude any `guest_orders` row if a corresponding regular order exists in `orders` table.
+  2. Synced all 684 `guest_orders` records with their matching `orders` records to update their statuses and tracking numbers.
+  3. Added full English governorates map (`cairo`, `giza`, `alexandria`, `dakahlia`, etc.) to `getTurboGovernorateName` in `turboService.js`.
+  4. Added phone sanitizer ensuring 11-digit Egyptian phone format for Turbo API.
+- **Files Modified**:
+  - `apps/backend/services/preparationQueueService.js`
+  - `apps/backend/services/turboService.js`
+
+### [BUG FIX / TURBO SHIPMENTS] Resolved Turbo Incomplete Drafts & Arabic Error Messages
+- **Date**: 2026-07-22
+- **Root Cause**:
+  1. **Incomplete Drafts**: When `shippingAddress` was stored as a JSON string, `getShippingAddressFields` checked `parsedAddress.governorate` but ignored `parsedAddress.state` / `province`. This caused empty governorates to be sent to Turbo, marking shipments as "incomplete drafts" in Turbo dashboard.
+  2. **English Errors**: Bulk creation and single creation errors were returned in raw English strings.
+- **Fix**:
+  1. Updated `getShippingAddressFields` to parse `state`, `province`, `region`, and `town` from JSON shipping addresses.
+  2. Added complete fallback values for `receiver`, `phone1`, `government`, `area`, and `address` in `shipmentData` to guarantee non-empty payload to Turbo.
+  3. Added `translateTurboErrorToArabic` utility in `turboService.js` and `turboController.js` to translate all Turbo errors into clear, friendly Arabic.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+  - `apps/backend/controller/turboController.js`
+
+### [BUG FIX / TURBO API] Fixed 404 Error on `/api/v1/turbo/bulk/create-shipments`
+- **Date**: 2026-07-22
+- **Root Cause**: `checkAppAccess('order-shipping-turbo')` middleware returned HTTP 404 (`الأداة غير موجودة`) when `order-shipping-turbo` slug was missing from `MarketplaceApp` table, despite Turbo API key being configured for the company.
+- **Fix**: Added check in `checkAppAccess.js` to allow access immediately if `company.turboEnabled` or `company.turboApiKey` is set.
+- **Files Modified**:
+  - `apps/backend/middleware/checkAppAccess.js`
+
+### [ARCHITECTURE / STATUSES] Central Single Source of Truth Status Registry
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Frontend Status Registry (`statusRegistry.ts`)**: Built central status registry utility mapping all 13 official Turbo status codes with their aliases (`created`, `turbo_saved`, `status_1`, `1`, etc.) into a unified single source of truth (`getUnifiedOrderStatus`).
+  2. **Backend Status Normalizer (`statusNormalizer.js`)**: Created central normalizer module for backend controllers to eliminate duplicate inline dictionaries.
+  3. **Unified Display Across App**: Refactored `Orders.tsx` and `OrderHeader.tsx` to source all status labels and badge styling from `getUnifiedOrderStatus`, ensuring 100% consistency across table list, order details modal, and status dropdowns.
+- **Files Created/Modified**:
+  - `apps/frontend/src/utils/statusRegistry.ts`
+  - `apps/backend/utils/statusNormalizer.js`
+  - `apps/frontend/src/pages/orders/Orders.tsx`
+  - `apps/frontend/src/pages/orders/components/OrderHeader.tsx`
+  - `apps/backend/controller/turboController.js`
+
+### [BUG FIX / TURBO RECORDS] Turbo Branch Processing Filter Over-counting Fix
+- **Date**: 2026-07-22
+- **Root Cause**: 
+  1. `ALIASES.processing` in `turboController.js` incorrectly included `'created'` status codes, causing orders in `created` / `turbo_saved` state to be included under `processing`.
+  2. Generic fallback logic in `getRecords` added `{ status: 'PROCESSING' }` for Turbo status filters, causing orders with internal status `PROCESSING` but Turbo status `created` to match.
+  3. `statusCountsRaw` defaulted null/empty `turboShipmentStatus` to `'processing'` instead of `'turbo_saved'`.
+- **Fix**: Removed `'created'` from `processing` aliases, mapped `created` strictly to `turbo_saved` & `merchant_preparing`, restricted generic internal status fallback for Turbo-specific filters, and updated default fallback status key to `'turbo_saved'`.
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+
+### [FEATURE / TURBO & STATUSES] Dedicated Merchant Preparing Card & Official 13 Status Code Alignment
+- **Date**: 2026-07-22
+- **Requirement / Resolution**:
+  1. **Status Code Mapping Realignment**: Updated `ALIASES` and `STATUS_ALIAS_MAP` in `turboController.js` to strictly adhere to official Turbo status codes 1 through 13.
+  2. **Merchant Preparing Metric Card (`merchant_preparing`)**: Created a dedicated filter card for orders that have received a Turbo tracking code (`turbo_saved` / `turbo_sent`) but have not yet been picked up or reached Turbo's branch.
+  3. **Structured Top Cards Grid**: Re-architected `/orders/turbo-records` top section to feature Active Shipments (`active`), Merchant Preparing (`merchant_preparing`), Branch Processing (`processing`), and Total Turbo Orders (`all`).
+- **Files Modified**:
+  - `apps/backend/controller/turboController.js`
+  - `apps/frontend/src/pages/orders/TurboRecords.tsx`
+
+### [FIX/TURBO] Required `return_summary` Field in Shipment Creation Payload
+- **Date**: 2026-07-22
+- **Root Cause**: Turbo API rejects `/add-order` requests when `is_order: 1` if `return_summary` parameter is missing with error `'The return summary field is required when is order is 1.'`.
+- **Fix**: Added `return_summary: orderData.returnSummary || formattedSummary || 'لا يوجد'` to shipment creation payload in `turboService.js`.
+- **Files Modified**:
+  - `apps/backend/services/turboService.js`
+
+### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
+- **Date**: 2026-07-21
+- **Requirement / Feature**:
+  1. **Automatic Status Seeding**: Users requested that all Turbo shipping status variants (Processing, Shipped, Out for Delivery, Delayed, Failed Delivery, Rescheduled, On Hold, Delivered, Cancelled, Returned) automatically populate into `/settings/orders` under "Shipping Statuses" (`statusType: 'shipping'`).
+- **Resolution**:
+  1. **Seeded Turbo Shipping Statuses**: Added `TURBO_PROCESSING`, `TURBO_SHIPPED`, `TURBO_OUT_FOR_DELIVERY`, `TURBO_DELAYED`, `TURBO_FAILED_DELIVERY`, `TURBO_RESCHEDULED`, `TURBO_ON_HOLD`, `TURBO_DELIVERED`, `TURBO_CANCELLED`, and `TURBO_RETURNED` to `DEFAULT_SHIPPING_STATUSES` in `apps/backend/controller/orderStatusController.js`.
+  2. **Automated Integration**: Connected `initializeDefaultStatuses` to trigger automatically whenever a company saves or updates Turbo settings in `storeSettingsController.js` or clicks "Initialize Statuses" in `/settings/orders`.
+- **Files Modified**:
+  - `apps/backend/controller/orderStatusController.js`
+  - `apps/backend/controller/storeSettingsController.js`
+
+### [BUG FIX / TURBO] Webhook Intermediate Statuses (Processing, Shipped, Out for Delivery) Ignored for Order.status
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Partial Status Mapping Logic**: In `apps/backend/routes/turboWebhook.js`, incoming webhooks from Turbo updated `turboShipmentStatus` and `turboMetadata`, but only checked for `delivered` (5), `cancelled` (6), and `returned` (7) when updating the main `Order.status` / `GuestOrder.status` field.
+  2. **Stale Main Order Status**: When Turbo sent intermediate webhook updates such as `processing` (3), `shipped` (4), `out_for_delivery` (9), or `on_hold` (12/8/11), `updateData.status` remained undefined, leaving the order's primary status stuck in `PENDING` or `CONFIRMED` on the main Orders table.
+- **Resolution**:
+  1. **Comprehensive Status Enum Mapping**: Extended `turboWebhook.js` to map `processing` (3) ➡️ `PROCESSING`, `shipped` (4) / `out_for_delivery` (9) ➡️ `SHIPPED`, and `on_hold` / `delayed` (12/8/11) ➡️ `ON_HOLD` for both `Order` and `GuestOrder` models.
+- **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+
+### [BUG FIX / FRONTEND] Uncaught ReferenceError: t is not defined in route-admin Chunk
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Module-Scope Execution of `t()`**: In `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`, `EGYPT_GOVERNORATES` was initialized at module level (outside any React component or hook) calling `t('manualOrder.k_25')`, etc. When Vite bundled the `route-admin` chunk, evaluating the module at script load time threw `Uncaught ReferenceError: t is not defined` because `t` was not in module scope.
+  2. **Missing `useTranslation` Hook**: In `ProductSearchColumn.tsx`, `t(...)` was invoked inside error toast handlers without importing or instantiating `useTranslation()`.
+- **Resolution**:
+  1. **Refactored Module Array**: Converted `EGYPT_GOVERNORATES` to `EGYPT_GOVERNORATE_KEYS` holding translation string keys, and resolved `t(key)` dynamically inside `CheckoutColumn` using `useMemo` and `useTranslation()`.
+  2. **Added Hook & Imports**: Added `useTranslation` import and `const { t } = useTranslation()` hook in `ProductSearchColumn.tsx`.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx`
+  - `apps/frontend/src/pages/admin/ManualOrder/components/ProductSearchColumn.tsx`
+
+### [BUG FIX / NGINX] CDN / Cloudflare Caching 404 Responses as Immutable Assets
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Nginx Header Directive Misconfiguration**: In `nginx_configs/maxp.online.conf`, the static assets location blocks (`location ^~ /assets/` and `location ^~ /placeholders/`) specified `add_header Cache-Control "public, max-age=31536000, immutable" always;`.
+  2. **Immutable 404 Caching**: Using the `always` parameter instructs Nginx to append the `Cache-Control` header to ALL responses, including `404 Not Found`. When users accessed the site during a deployment window before assets finishes syncing, Cloudflare and browser caches cached the 404 response immutably for 1 year (`max-age=31536000`), breaking frontend asset loads permanently for affected clients.
+- **Resolution**:
+  1. **Removed `always` Modifier**: Removed `always` from `add_header Cache-Control` inside asset/placeholder location blocks in both server configuration files and deployed server configs (`/etc/nginx/sites-available/maxp.online.conf`), ensuring `Cache-Control: immutable` headers are only applied to successful (2xx/3xx) asset responses.
+- **Files Modified**:
+  - `nginx_configs/maxp.online.conf`
+
+### [BUG FIX / WEBHOOK] Turbo Webhook OrderStatus & PaymentStatus Mismatch
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Invalid Enum Values on Order Status Updates**: When a delivery update webhook is received from Turbo (`routes/turboWebhook.js`) or when manually tracking shipment status via the controller (`controller/turboController.js`), the code attempted to update the order's status to `COMPLETED` and paymentStatus to `PAID`. However, in the Prisma schema (`OrderStatus` and `PaymentStatus` enums), `COMPLETED` is not a valid `OrderStatus` (the correct value is `DELIVERED`), and `PAID` is not a valid `PaymentStatus` (the correct value is `COMPLETED`). This caused a 500 Internal Server Error / database validation crash during status syncs.
+  2. **Invoice Payment Status Update Mismatch**: In `orderInvoiceService.js`, updating the invoice payment status to `PAID` incorrectly attempted to set `paymentStatus` on the `Order` model to `PAID` instead of `COMPLETED`, triggering the same Prisma validation error.
+- **Resolution**:
+  1. **Enum Alignment**: Corrected the delivered status mapping in `routes/turboWebhook.js` and `controller/turboController.js` to use `status: 'DELIVERED'` and `paymentStatus: 'COMPLETED'`.
+  2. **Service Enum Sync**: Corrected `orderInvoiceService.js` to update the order's `paymentStatus` to `'COMPLETED'` instead of `'PAID'`.
+- **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+  - `apps/backend/controller/turboController.js`
+  - `apps/backend/services/orderInvoiceService.js`
+
+### [BUG FIX / SYNC] Order Sync Queue PostgreSQL Column Mismatch
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **PostgreSQL snake_case vs camelCase column mismatch**: The background database-backed sync queue `SyncQueueService` (`syncQueueService.js`) executed raw SQL queries via `$queryRawUnsafe` and `$executeRawUnsafe` matching snake_case columns (like `order_id`, `consumer_id`, etc.). However, since the database table `order_sync_queue` was migrated using Prisma's default column mapper without specific `@map` definitions on field parameters, the actual database columns were generated as camelCase (`orderId`, `consumerId`, etc.), causing raw queries to fail with code `42703` (`column "order_id" does not exist`).
+- **Resolution**:
+  1. **ORM-native Refactoring**: Replaced all raw SQL client executions inside `syncQueueService.js` with native Prisma ORM query methods (such as `prisma.orderSyncQueue.findFirst`, `create`, `update`, `findMany`, and `findUnique`). This leverages Prisma's built-in column mapping engine and prevents future SQL syntax or field name mapping errors.
+- **Files Modified**:
+  - `apps/backend/services/syncQueueService.js`
+
 
 ### [BUG FIX / BROADCAST] WhatsApp Template Campaign Overwrite & Parameter Mismatch Fixes
 - **Date**: 2026-07-21
@@ -1296,3 +1665,41 @@
   - `apps/backend/controller/broadcastController.js`
   - `apps/backend/services/broadcastSchedulerService.js`
 
+
+---
+
+### [2026-07-24] Phone Normalization Bug in ShipmentService
+
+- **Severity**: 🟡 MEDIUM — Affects orders submitted with Egyptian country code prefix
+- **File**: `apps/backend/services/turbo/shipmentService.js` (also `updateShipment` method)
+- **Bug**: Phone numbers in format `201012345678` (12 digits, country code `20`) fail validation instead of being normalized.
+- **Root Cause**: The normalization uses `else if` so after slicing `201012345678` → `1012345678`, the second branch (add leading `0`) is never evaluated:
+
+```
+// Buggy (else if skips second branch):
+if (starts with '20' && length 12) → slice → '1012345678'
+else if (starts with '1' && length 10) → never runs!
+
+// Fix: use two separate if statements
+if (starts with '20' && length 12) slice
+if (starts with '1' && length 10) add '0'
+```
+
+- **Impact**: Orders from payment gateways passing full E.164 format phones will fail shipment creation.
+- **Discovered**: During test writing for `shipmentService.test.js` (2026-07-24).
+- **Status**: Documented. Fix is a one-line change (`else if` → `if`).
+
+---
+
+### [2026-07-24] TurboService Sub-Service Test Coverage — 96 Tests Added
+
+- **Type**: 📋 Testing Milestone
+- **Files Added**:
+  - `apps/backend/tests/services/turbo/apiClient.test.js` — 35 tests
+  - `apps/backend/tests/services/turbo/shipmentService.test.js` — 17 tests
+  - `apps/backend/tests/services/turbo/trackingService.test.js` — 16 tests
+  - `apps/backend/tests/services/turbo/locationService.test.js` — 15 tests
+  - `apps/backend/tests/services/turbo/labelService.test.js` — 10 tests
+  - `apps/backend/tests/services/turbo/ticketService.test.js` — 17 tests
+- **Result**: 96/96 passing. The refactored sub-services now have full safety net coverage.
+- **Note**: `turboService.js` facade (114 lines) confirmed complete — all business logic delegated.

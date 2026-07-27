@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -109,6 +110,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
   onAddToCart,
   mode = "admin",
 }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -197,7 +199,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error("فشل في جلب المنتجات");
+      toast.error(t('manualOrder.k_2'));
     } finally {
       setLoading(false);
     }
@@ -298,13 +300,13 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
       {/* Search Header */}
       <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">
-          {isAffiliateMode ? "منتجات الشركة المتاحة" : "المنتجات"}
+          {isAffiliateMode ? t('manualOrder.k_3') : t('manualOrder.k_4')}
         </h2>
         <div className="relative">
           <input
             id="manual-order-product-search"
             type="text"
-            placeholder="بحث باسم المنتج أو SKU..."
+            placeholder={t('manualOrder.k_1')}
             className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
             value={searchQuery}
             onChange={(e) => {
@@ -344,8 +346,8 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             <ArchiveBoxIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>
               {isAffiliateMode
-                ? "لا توجد منتجات متاحة لهذا المسوق"
-                : "لا توجد منتجات"}
+                ? t('manualOrder.k_5')
+                : t('manualOrder.k_6')}
             </p>
           </div>
         ) : (
@@ -375,14 +377,14 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                   {/* Stock Badge */}
                   {product.trackInventory !== false && product.stock <= 5 && (
                     <div className="absolute top-2 left-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur text-red-600 dark:text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-red-100 dark:border-red-900">
-                      متبقي {product.stock}
+                      {t('manualOrder.k_135')} {product.stock}
                     </div>
                   )}
 
                   {/* Variant Badge */}
                   {product.variants.length > 0 && (
                     <div className="absolute bottom-2 right-2 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">
-                      خيارات متعددة
+                      {t('manualOrder.k_136')}
                     </div>
                   )}
                 </div>
@@ -398,7 +400,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
 
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-base font-bold text-blue-600 dark:text-blue-400">
-                      {product.price} ج.م
+                      {product.price} {t('manualOrder.k_75')}
                     </span>
 
                     <button
@@ -497,16 +499,16 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                       <div className="flex justify-between items-center mb-3">
                         <div>
                           <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {matchedVariant.price} ج.م
+                            {matchedVariant.price} {t('manualOrder.k_75')}
                           </div>
                           <div
                             className={`text-sm ${isInStock(matchedVariant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}
                           >
                             {isInStock(matchedVariant)
                               ? matchedVariant.trackInventory === false
-                                ? "متاح"
-                                : `${matchedVariant.stock} متاح`
-                              : "نفذت الكمية"}
+                                ? t('manualOrder.k_7')
+                                : t('manualOrder.available_count', { count: matchedVariant.stock })
+                              : t('manualOrder.k_8')}
                           </div>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -525,7 +527,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                                                 `}
                       >
                         <PlusIcon className="w-5 h-5" />
-                        إضافة للسلة
+                        {t('manualOrder.k_137')}
                       </button>
                     </div>
                   )}
@@ -534,11 +536,11 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                   {!allAttributesSelected && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-center text-sm text-gray-500 dark:text-gray-400">
                       <ChevronRightIcon className="w-4 h-4 inline ml-1" />
-                      اختر{" "}
+                      {t('manualOrder.k_138')}{" "}
                       {productAttributes
                         .filter((a) => !selectedAttributes[a.name])
                         .map((a) => a.name)
-                        .join(" و ")}
+                        .join(t('manualOrder.k_9'))}
                     </div>
                   )}
                 </div>
@@ -560,7 +562,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                     >
                       <div className="flex flex-col items-start">
                         <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                          {variant.name || "غير محدد"}
+                          {variant.name || t('manualOrder.k_10')}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           SKU: {variant.sku}
@@ -568,16 +570,16 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                       </div>
                       <div className="text-left">
                         <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">
-                          {variant.price} ج.م
+                          {variant.price} {t('manualOrder.k_75')}
                         </div>
                         <div
                           className={`text-xs mt-0.5 ${isInStock(variant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}
                         >
                           {isInStock(variant)
                             ? variant.trackInventory === false
-                              ? "متاح"
-                              : `${variant.stock} متاح`
-                            : "نفذت الكمية"}
+                              ? t('manualOrder.k_7')
+                              : t('manualOrder.available_count', { count: variant.stock })
+                            : t('manualOrder.k_8')}
                         </div>
                       </div>
                     </button>

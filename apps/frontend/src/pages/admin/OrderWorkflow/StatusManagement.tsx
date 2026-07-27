@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState } from 'react';
 import {
     PlusIcon,
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
+  const { t } = useTranslation();
     const [editingStatus, setEditingStatus] = useState<Partial<OrderStatusDefinition> | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<OrderStatusDefinition | null>(null);
@@ -25,11 +27,11 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
         e.preventDefault();
         if (!editingStatus) return;
         if (!editingStatus.name?.trim()) {
-            setSaveError('يرجى إدخال اسم الحالة');
+            setSaveError(t('orderSettings.k_46'));
             return;
         }
         if (!editingStatus.code?.trim()) {
-            setSaveError('يرجى إدخال رمز الحالة');
+            setSaveError(t('orderSettings.k_47'));
             return;
         }
         try {
@@ -38,7 +40,7 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
             setEditingStatus(null);
             onUpdate();
         } catch (error) {
-            setSaveError(error.message || 'فشل حفظ الحالة');
+            setSaveError(error.message || t('orderSettings.k_48'));
         }
     };
 
@@ -50,7 +52,7 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
             setDeleteTarget(null);
             onUpdate();
         } catch (error) {
-            setDeleteError(error.response?.data?.message || error.message || 'فشل حذف الحالة');
+            setDeleteError(error.response?.data?.message || error.message || t('orderSettings.k_49'));
         }
     };
 
@@ -58,15 +60,15 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
         <div className="animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">إدارة حالات الطلبات</h2>
-                    <p className="text-slate-500 text-sm">قم بتعريف الحالات الممكنة للطلبات وخصائص كل حالة</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('orderSettings.k_50')}</h2>
+                    <p className="text-slate-500 text-sm">{t('orderSettings.k_51')}</p>
                 </div>
                 <button
                     onClick={() => setEditingStatus({ name: '', code: '', color: '#6366f1', sortOrder: 0 })}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
                 >
                     <PlusIcon className="w-5 h-5" />
-                    إضافة حالة جديدة
+                    {t('orderSettings.k_53')}
                 </button>
             </div>
 
@@ -104,22 +106,22 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                         <div className="flex flex-wrap gap-2">
                             {status.isTerminal && (
                                 <span className="flex items-center gap-1 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 px-2 py-0.5 rounded-full border border-red-100 dark:border-red-800">
-                                    <NoSymbolIcon className="w-3 h-3" /> حالة نهائية
+                                    <NoSymbolIcon className="w-3 h-3" /> {t('orderSettings.k_144')}
                                 </span>
                             )}
                             {status.lockAfterEntry && (
                                 <span className="flex items-center gap-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
-                                    <LockClosedIcon className="w-3 h-3" /> مغلقة بعد الدخول
+                                    <LockClosedIcon className="w-3 h-3" /> {t('orderSettings.k_145')}
                                 </span>
                             )}
                             {status.requiresApprovalToExit && (
                                 <span className="flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">
-                                    <CheckCircleIcon className="w-3 h-3" /> تتطلب موافقة للخروج
+                                    <CheckCircleIcon className="w-3 h-3" /> {t('orderSettings.k_146')}
                                 </span>
                             )}
                             {status.notifyCustomer === false && (
                                 <span className="flex items-center gap-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">
-                                    <BellIcon className="w-3 h-3" /> الإشعارات معطلة
+                                    <BellIcon className="w-3 h-3" /> {t('orderSettings.k_147')}
                                 </span>
                             )}
                         </div>
@@ -132,34 +134,34 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200">
                         <form onSubmit={handleSave} className="p-8">
-                            <h2 className="text-2xl font-bold mb-6">{editingStatus.id ? 'تعديل حالة' : 'إضافة حالة جديدة'}</h2>
+                            <h2 className="text-2xl font-bold mb-6">{editingStatus.id ? t('orderSettings.k_52') : t('orderSettings.k_53')}</h2>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">اسم الحالة (بالعربي)</label>
+                                    <label className="block text-sm font-medium mb-1">{t('orderSettings.k_54')}</label>
                                     <input
                                         required
                                         type="text"
                                         value={editingStatus.name}
                                         onChange={(e) => setEditingStatus({ ...editingStatus, name: e.target.value })}
                                         className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent"
-                                        placeholder="مثال: قيد التجهيز"
+                                        placeholder={t('orderSettings.k_55')}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">رمز الحالة (Internal Code)</label>
+                                    <label className="block text-sm font-medium mb-1">{t('orderSettings.k_56')}</label>
                                     <input
                                         required
                                         type="text"
                                         value={editingStatus.code}
                                         onChange={(e) => setEditingStatus({ ...editingStatus, code: e.target.value.toUpperCase() })}
                                         className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent"
-                                        placeholder="مثال: PROCESSING"
+                                        placeholder={t('orderSettings.k_57')}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">اللون</label>
+                                        <label className="block text-sm font-medium mb-1">{t('orderSettings.k_58')}</label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
@@ -176,7 +178,7 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">الترتيب</label>
+                                        <label className="block text-sm font-medium mb-1">{t('orderSettings.k_59')}</label>
                                         <input
                                             type="number"
                                             value={editingStatus.sortOrder}
@@ -188,12 +190,12 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
 
                                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">وصف الحالة (اختياري)</label>
+                                        <label className="block text-sm font-medium mb-1">{t('orderSettings.k_60')}</label>
                                         <textarea
                                             value={editingStatus.description || ''}
                                             onChange={(e) => setEditingStatus({ ...editingStatus, description: e.target.value })}
                                             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent"
-                                            placeholder="وصف مختصر للحالة..."
+                                            placeholder={t('orderSettings.k_61')}
                                             rows={2}
                                         />
                                     </div>
@@ -205,8 +207,8 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                             className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
                                         <div className="text-sm">
-                                            <p className="font-bold">حالة نهائية (Terminal)</p>
-                                            <p className="text-slate-500 text-xs">لا يمكن التغيير إلى أي حالة أخرى بعد الوصول لهذه الحالة.</p>
+                                            <p className="font-bold">{t('orderSettings.k_62')}</p>
+                                            <p className="text-slate-500 text-xs">{t('orderSettings.k_63')}</p>
                                         </div>
                                     </label>
                                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -217,8 +219,8 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                             className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
                                         <div className="text-sm">
-                                            <p className="font-bold">قفل الحالة (Lock after entry)</p>
-                                            <p className="text-slate-500 text-xs">يمنع التغيير من هذه الحالة إلا بواسطة ذوي الصلاحيات الخاصة.</p>
+                                            <p className="font-bold">{t('orderSettings.k_64')}</p>
+                                            <p className="text-slate-500 text-xs">{t('orderSettings.k_65')}</p>
                                         </div>
                                     </label>
                                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -229,8 +231,8 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                             className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
                                         <div className="text-sm">
-                                            <p className="font-bold">تطلب موافقة للخروج</p>
-                                            <p className="text-slate-500 text-xs">أي محاولة للتغيير من هذه الحالة ستنشئ طلب موافقة للمدير.</p>
+                                            <p className="font-bold">{t('orderSettings.k_66')}</p>
+                                            <p className="text-slate-500 text-xs">{t('orderSettings.k_67')}</p>
                                         </div>
                                     </label>
                                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -243,9 +245,9 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         <div className="text-sm">
                                             <p className="font-bold flex items-center gap-1">
                                                 <BellIcon className="w-4 h-4" />
-                                                إرسال إشعار للعميل
+                                                {t('orderSettings.k_148')}
                                             </p>
-                                            <p className="text-slate-500 text-xs">إرسال إشعار واتساب للعميل عند الوصول لهذه الحالة.</p>
+                                            <p className="text-slate-500 text-xs">{t('orderSettings.k_68')}</p>
                                         </div>
                                     </label>
                                 </div>
@@ -262,14 +264,14 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                     type="submit"
                                     className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition"
                                 >
-                                    حفظ البيانات
+                                    {t('orderSettings.k_149')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { setEditingStatus(null); setSaveError(null); }}
                                     className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-200 transition"
                                 >
-                                    إلغاء
+                                    {t('orderSettings.k_95')}
                                 </button>
                             </div>
                         </form>
@@ -281,12 +283,12 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
             {deleteTarget && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 p-8">
-                        <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">تأكيد الحذف</h3>
+                        <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">{t('orderSettings.k_69')}</h3>
                         <p className="text-slate-600 dark:text-slate-300 mb-2">
-                            هل أنت متأكد من حذف حالة <strong>"{deleteTarget.name}"</strong>؟
+                            {t('orderSettings.k_150')} <strong>"{deleteTarget.name}"</strong>{t('orderSettings.k_151')}
                         </p>
                         <p className="text-sm text-slate-500 mb-6">
-                            هذا الإجراء لا يمكن التراجع عنه وقد يؤثر على قواعد الانتقال المرتبطة.
+                            {t('orderSettings.k_152')}
                         </p>
                         {deleteError && (
                             <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
@@ -298,13 +300,13 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                 onClick={handleDelete}
                                 className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition"
                             >
-                                تأكيد الحذف
+                                {t('orderSettings.k_69')}
                             </button>
                             <button
                                 onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
                                 className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-200 transition"
                             >
-                                إلغاء
+                                {t('orderSettings.k_95')}
                             </button>
                         </div>
                     </div>

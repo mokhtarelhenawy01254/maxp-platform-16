@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
   CheckCircle,
+  Cloud,
   Edit,
   Eye,
   FileText,
+  Globe,
   Plus,
   Search,
   Send,
@@ -57,6 +59,8 @@ interface Template {
   sentCount?: number;
   deliveredCount?: number;
   readCount?: number;
+  metaTemplateName?: string | null;
+  metaTemplateStatus?: string | null;
 }
 
 type NoticeTone = "success" | "error" | "warning" | "info";
@@ -253,6 +257,10 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   const [templateForm, setTemplateForm] =
     useState<TemplateFormState>(() => createEmptyTemplateForm(superAdminMode));
 
+  const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
+  const [selectedMetaSession, setSelectedMetaSession] = useState("");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+
   const pageTitle = companyName
     ? `${t("whatsappNotifications.tabs.templates")} · ${companyName}`
     : t("whatsappNotifications.tabs.templates");
@@ -297,16 +305,57 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     }
   }, [withCompanyConfig, i18n.language, showNotice]);
 
+  const fetchMetaSessions = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
+      const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = res.data?.sessions || [];
+      const cloudSessions = list.filter(s => s.provider === 'META_CLOUD');
+      setMetaSessions(cloudSessions);
+      if (cloudSessions.length > 0 && !selectedMetaSession) {
+        setSelectedMetaSession(cloudSessions[0].id);
+      }
+    } catch { /* ignore */ }
+  }, [withCompanyConfig, selectedMetaSession]);
+
+  const publishToMeta = useCallback(async (templateId: string) => {
+    if (!selectedMetaSession) {
+      showNotice("warning", i18n.language === "ar" ? "اختر جلسة ميتا أولاً" : "Select a Meta session first");
+      return;
+    }
+    setPublishingId(templateId);
+    try {
+      const res = await apiClient.post(
+        `/whatsapp-notifications/templates/${templateId}/publish`,
+        { sessionId: selectedMetaSession },
+        withCompanyConfig(),
+      );
+      showNotice("success",
+        i18n.language === "ar"
+          ? "تم إرسال القالب لميتا للمراجعة"
+          : "Template sent to Meta for review");
+      await fetchTemplates();
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      showNotice("error",
+        i18n.language === "ar"
+          ? `فشل النشر: ${err.response?.data?.error || err.message}`
+          : `Publish failed: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setPublishingId(null);
+    }
+  }, [selectedMetaSession, withCompanyConfig, i18n.language, showNotice, fetchTemplates]);
+
   const refreshPageData = useCallback(async () => {
     try {
       setRefreshing(true);
       await fetchTemplates();
+      await fetchMetaSessions();
     } catch (error) {
       console.error("Error refreshing WhatsApp templates:", error);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchTemplates]);
+  }, [fetchTemplates, fetchMetaSessions]);
 
   useEffect(() => {
     let mounted = true;
@@ -318,6 +367,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         }
 
         await fetchTemplates();
+        await fetchMetaSessions();
       } finally {
         if (mounted) {
           setLoading(false);
@@ -330,7 +380,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     return () => {
       mounted = false;
     };
-  }, [fetchTemplates]);
+  }, [fetchTemplates, fetchMetaSessions]);
 
   // Sync category state with searchParams
   useEffect(() => {
@@ -468,24 +518,41 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       description={pageDescription}
       icon={FileText}
       actions={
-        <Button
-          variant="outline"
-          onClick={refreshPageData}
-          disabled={refreshing}
-          className="rounded-full bg-[color:var(--color-muted)]"
-        >
-          {refreshing ? (
-            <span className="flex items-center gap-2">
-              <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              {i18n.language === "ar" ? "جاري التحديث..." : "Refreshing..."}
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <RefreshCw className="size-4" />
-              {i18n.language === "ar" ? "تحديث" : "Refresh"}
-            </span>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          {metaSessions.length > 0 ? (
+            <Select value={selectedMetaSession} onValueChange={setSelectedMetaSession}>
+              <SelectTrigger className="h-9 w-auto min-w-[140px] rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-xs">
+                <Globe className="size-3 me-1" />
+                <SelectValue placeholder={i18n.language === 'ar' ? 'جلسة ميتا' : 'Meta session'} />
+              </SelectTrigger>
+              <SelectContent>
+                {metaSessions.map(s => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.metaDisplayPhoneNumber || s.name || s.id.substring(0, 8)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={refreshPageData}
+            disabled={refreshing}
+            className="rounded-full bg-[color:var(--color-muted)]"
+          >
+            {refreshing ? (
+              <span className="flex items-center gap-2">
+                <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {i18n.language === "ar" ? "جاري التحديث..." : "Refreshing..."}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <RefreshCw className="size-4" />
+                {i18n.language === "ar" ? "تحديث" : "Refresh"}
+              </span>
+            )}
+          </Button>
+        </div>
       }
     >
       <div className="space-y-4">
@@ -641,18 +708,66 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                           </Badge>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-full bg-primary/6 text-[color:var(--color-primary)] hover:bg-primary/12"
-                        onClick={() => {
-                          setEditingTemplate(template);
-                          setTemplateDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="size-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        {template.metaTemplateName ? (
+                          <Badge
+                            variant="outline"
+                            className={
+                              template.metaTemplateStatus === 'APPROVED'
+                                ? 'border-emerald-300/70 bg-emerald-500/10 text-emerald-800'
+                                : template.metaTemplateStatus === 'REJECTED'
+                                  ? 'border-red-300/70 bg-red-500/10 text-red-800'
+                                  : 'border-amber-300/70 bg-amber-500/10 text-amber-800'
+                            }
+                          >
+                            <Cloud className="size-3 me-1" />
+                            {template.metaTemplateStatus === 'APPROVED'
+                              ? (i18n.language === 'ar' ? 'على ميتا' : 'On Meta')
+                              : template.metaTemplateStatus === 'REJECTED'
+                                ? (i18n.language === 'ar' ? 'مرفوض' : 'Rejected')
+                                : template.metaTemplateStatus === 'PENDING'
+                                  ? (i18n.language === 'ar' ? 'قيد المراجعة' : 'Pending')
+                                  : template.metaTemplateStatus || (i18n.language === 'ar' ? 'منشور' : 'Published')}
+                          </Badge>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-full bg-primary/6 text-[color:var(--color-primary)] hover:bg-primary/12"
+                          onClick={() => {
+                            setEditingTemplate(template);
+                            setTemplateDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="size-4" />
+                        </Button>
+                      </div>
                     </div>
+
+                    {template.metaTemplateName && template.metaTemplateStatus !== 'APPROVED' ? null : (
+                      <div className="mt-3 flex items-center gap-2">
+                        {!selectedMetaSession ? (
+                          <p className="text-xs text-muted-foreground">
+                            {i18n.language === 'ar' ? 'لا توجد جلسة ميتا متاحة' : 'No Meta session available'}
+                          </p>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                            disabled={publishingId === template.id}
+                            onClick={() => publishToMeta(template.id!)}
+                          >
+                            <Cloud className="size-3" />
+                            {publishingId === template.id
+                              ? (i18n.language === 'ar' ? 'جاري النشر...' : 'Publishing...')
+                              : template.metaTemplateName
+                                ? (i18n.language === 'ar' ? 'إعادة النشر' : 'Re-publish')
+                                : (i18n.language === 'ar' ? 'نشر على ميتا' : 'Publish to Meta')}
+                          </Button>
+                        )}
+                      </div>
+                    )}
 
                     <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-4 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
                       <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800 dark:text-emerald-200">

@@ -1338,9 +1338,24 @@
 - **Resolution**:
     1. Restored the missing `<div className="flex items-center">` in `Tasks.tsx`.
     2. Reordered CSS files to ensure all `@import` statements precede `@config` or other statements.
-- **Files Modified**: 
-    - `frontend/src/pages/tasks/Tasks.tsx`
-    - `frontend/src/styles/storefront-content.css`
-    - `frontend/src/styles/storefront-commerce.css`
-- **Status**: ✅ Resolved and verified.
+
+### [FIX] Turbo Express Order Status Synchronization & Fallback Hardening
+- **Date**: 2026-03-09
+- **Description**: Resolved critical status mutations, invalid Prisma enum values (`COMPLETED`/`PAID`), and Cairo fallback risks across Turbo shipping integrations.
+- **Root Cause**:
+    1. `turboTrackingScheduler.js` wrote invalid Prisma enum values `status: 'COMPLETED'` and `paymentStatus: 'PAID'` instead of `DELIVERED` and `COMPLETED`.
+    2. `turboWebhook.js` had duplicated and inconsistent status update logic between standard `Order` and `GuestOrder`.
+    3. `turboService.js` fell back silently to `"القاهرة"` when governorates were missing or unmapped, creating wrong shipment destinations.
+- **Resolution**:
+    1. Created unified `turboStatusSyncService.js` to handle all Turbo status updates for both `Order` and `GuestOrder` consistently.
+    2. Updated `statusNormalizer.js` with `getSystemStatusFromTurbo` mapping valid Prisma `OrderStatus` and `PaymentStatus` enums (`DELIVERED`, `SHIPPED`, `PROCESSING`, `CANCELLED`, `RETURNED`, `ON_HOLD`, `COMPLETED`).
+    3. Modified `turboService.js` to eliminate silent fallback to Cairo, throwing a clear Arabic error if governorate is missing/unresolvable.
+- **Files Modified**:
+    - `backend/services/turboStatusSyncService.js`
+    - `backend/utils/statusNormalizer.js`
+    - `backend/routes/turboWebhook.js`
+    - `backend/services/turboTrackingScheduler.js`
+    - `backend/services/turboService.js`
+- **Status**: ✅ Resolved and syntax verified.
+
 

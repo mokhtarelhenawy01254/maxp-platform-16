@@ -1,10 +1,13 @@
-import { Fragment, memo, useMemo, useState } from "react";
+import { Fragment, memo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
+  PREPARATION_COLUMN_LABELS,
   SHORTAGE_HOLD_STATUS,
   SOURCE_LABELS,
-  STAGE_DEFINITIONS,
+  type PreparationTableColumn,
 } from "../constants";
 import {
   buildShortageHoldDetails,
@@ -43,6 +46,7 @@ interface PreparationOrdersTableProps {
   transferingItemKey: string | null;
   printingOrderNumber: string | null;
   preparationSettings: PreparationQueueSettings;
+  visibleColumns: PreparationTableColumn[];
   formatPrice: (value: number) => string;
   formatDate: (value: string) => string;
   onToggleSelection: (orderNumber: string) => void;
@@ -84,6 +88,7 @@ const PreparationOrdersTable = ({
   transferingItemKey,
   printingOrderNumber,
   preparationSettings,
+  visibleColumns,
   formatPrice,
   formatDate,
   onToggleSelection,
@@ -97,6 +102,7 @@ const PreparationOrdersTable = ({
   onReleaseShortageHold,
   onPrintPreparationSlip,
 }: PreparationOrdersTableProps) => {
+  const { t } = useTranslation();
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (orderNumber: string) => {
@@ -113,6 +119,8 @@ const PreparationOrdersTable = ({
 
   if (orders.length === 0) return null;
 
+  const totalCols = visibleColumns.length + 3;
+
   return (
     <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
       <table className="w-full table-auto text-right text-sm">
@@ -122,13 +130,30 @@ const PreparationOrdersTable = ({
               <span className="sr-only">تحديد</span>
             </th>
             <th className="px-3 py-2.5">رقم الطلب</th>
-            <th className="px-3 py-2.5">العميل</th>
-            <th className="px-3 py-2.5">القطع</th>
-            <th className="px-3 py-2.5">القيمة</th>
-            <th className="px-3 py-2.5">الحالة</th>
-            <th className="px-3 py-2.5">المخزن</th>
-            <th className="px-3 py-2.5">التجهيز</th>
-            <th className="px-3 py-2.5">كود الشحن</th>
+            {visibleColumns.includes("customer") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.customer}</th>
+            )}
+            {visibleColumns.includes("units") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.units}</th>
+            )}
+            {visibleColumns.includes("value") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.value}</th>
+            )}
+            {visibleColumns.includes("status") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.status}</th>
+            )}
+            {visibleColumns.includes("warehouse") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.warehouse}</th>
+            )}
+            {visibleColumns.includes("readiness") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.readiness}</th>
+            )}
+            {visibleColumns.includes("printStatus") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.printStatus}</th>
+            )}
+            {visibleColumns.includes("shippingCode") && (
+              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.shippingCode}</th>
+            )}
             <th className="w-20 px-3 py-2.5">
               <span className="sr-only">التفاصيل</span>
             </th>
@@ -136,9 +161,6 @@ const PreparationOrdersTable = ({
         </thead>
         <tbody>
           {orders.map((order, index) => {
-            const stageMeta = STAGE_DEFINITIONS.find(
-              (s) => s.key === order.stage,
-            );
             const canPrepare = order.merchantFulfillment?.canPrepare !== false;
             const isExpanded = expandedOrders.has(order.orderNumber);
 
@@ -218,6 +240,7 @@ const PreparationOrdersTable = ({
                         #{order.orderNumber}
                       </Link>
                     )}
+
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
                       <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
                         {SOURCE_LABELS[
@@ -233,83 +256,113 @@ const PreparationOrdersTable = ({
                   </td>
 
                   {/* Customer */}
-                  <td className="px-3 py-2.5">
-                    <p className="text-xs font-medium text-gray-800">
-                      {order.customerName}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {order.customerPhone || ""}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {getAgeLabel(order.createdAt)}
-                      {order.governorate || order.city
-                        ? ` • ${order.governorate || order.city}`
-                        : ""}
-                    </p>
-                  </td>
+                  {visibleColumns.includes("customer") && (
+                    <td className="px-3 py-2.5">
+                      <p className="text-xs font-medium text-gray-800">
+                        {order.customerName}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {order.customerPhone || ""}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {getAgeLabel(order.createdAt)}
+                        {order.governorate || order.city
+                          ? ` • ${order.governorate || order.city}`
+                          : ""}
+                      </p>
+                    </td>
+                  )}
 
                   {/* Units */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-gray-800">
-                      {order.totalUnits}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("units") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-sm font-bold text-gray-800">
+                        {order.totalUnits}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Value */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-gray-800">
-                      {formatPrice(order.totalValue)}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("value") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-sm font-bold text-gray-800">
+                        {formatPrice(order.totalValue)}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Status */}
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                        stageMeta?.colorClass ||
-                        "bg-gray-100 text-gray-700 border-gray-200"
-                      }`}
-                    >
-                      {stageMeta?.label ||
-                        statusLabelMap.get(order.normalizedStatus) ||
-                        order.normalizedStatus}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("status") && (
+                    <td className="px-3 py-2.5">
+                      {(() => {
+                        const statusInfo = getStatusDisplay(order.normalizedStatus);
+                        return (
+                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.colorClass}`} aria-label={statusInfo.labelKey}>
+                            {t(statusInfo.labelKey) || statusInfo.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
 
                   {/* Warehouse */}
-                  <td className="px-3 py-2.5">
-                    <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700">
-                      {order.recommendedWarehouseName || "غير محدد"}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("warehouse") && (
+                    <td className="px-3 py-2.5">
+                      <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700">
+                        {order.recommendedWarehouseName || "غير محدد"}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Ready / shortage indicator */}
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${
-                        order.isReady
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-rose-50 text-rose-700"
-                      }`}
-                    >
-                      {order.isReady
-                        ? "جاهز ✓"
-                        : `${order.missingItemsCount} نقص`}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("readiness") && (
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                          order.isReady
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-rose-50 text-rose-700"
+                        }`}
+                      >
+                        {order.isReady
+                          ? "جاهز ✓"
+                          : `${order.missingItemsCount} نقص`}
+                      </span>
+                    </td>
+                  )}
+
+                  {/* Print status */}
+                  {visibleColumns.includes("printStatus") && (
+                    <td className="px-3 py-2.5">
+                      {(order.printCount ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700" title={order.printedAt ? formatDate(order.printedAt) : ''}>
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {order.printCount}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-400">
+                          —
+                        </span>
+                      )}
+                    </td>
+                  )}
 
                   {/* Shipping code */}
-                  <td className="px-3 py-2.5">
-                    <span className="text-xs font-medium text-gray-700">
-                      {order.turboTrackingNumber ||
-                        (order.shipments?.length
-                          ? order.shipments
-                              .map((s) => s.trackingNumber)
-                              .filter(Boolean)
-                              .join(", ")
-                          : null) || "—"}
-                    </span>
-                  </td>
+                  {visibleColumns.includes("shippingCode") && (
+                    <td className="px-3 py-2.5">
+                      <span className="text-xs font-medium text-gray-700">
+                        {order.turboTrackingNumber ||
+                          (order.shipments?.length
+                            ? order.shipments
+                                .map((s) => s.trackingNumber)
+                                .filter(Boolean)
+                                .join(", ")
+                            : null) || "—"}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Details button */}
                   <td className="px-3 py-2.5">
@@ -331,7 +384,7 @@ const PreparationOrdersTable = ({
                 {/* Expanded details row */}
                 {isExpanded && (
                   <tr className="bg-gray-50/80">
-                    <td colSpan={10} className="border-b border-gray-100 px-4 py-4">
+                    <td colSpan={totalCols} className="border-b border-gray-100 px-4 py-4">
                       <div className="space-y-2.5">
                         <PreparationOrderItemsList
                           order={order}

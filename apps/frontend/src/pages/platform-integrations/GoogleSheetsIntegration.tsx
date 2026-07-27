@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useState } from "react";
 import {
   TableCellsIcon,
@@ -15,6 +16,7 @@ interface PreviewRow {
 }
 
 const GoogleSheetsIntegration: React.FC = () => {
+  const { t } = useTranslation();
   const [sheetUrl, setSheetUrl] = useState("");
   const [columns, setColumns] = useState<string[]>([]);
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
@@ -30,12 +32,12 @@ const GoogleSheetsIntegration: React.FC = () => {
   const [savingWebhook, setSavingWebhook] = useState(false);
 
   const token = tokenManager.getAccessToken();
-  const importTypeLabel = importType === "products" ? "المنتجات" : "الطلبات";
-  const importUnitLabel = importType === "products" ? "منتج" : "طلب";
+  const importTypeLabel = importType === "products" ? t('platform.k_57') : t('platform.k_58');
+  const importUnitLabel = importType === "products" ? t('platform.k_59') : t('platform.k_60');
   const requirementsText =
     importType === "products"
-      ? "الأعمدة المطلوبة: name, price, stock, sku, category, description, images."
-      : "الأعمدة المطلوبة: customer_name أو customer_phone، مع items أو (product_name + product_price + quantity). صيغة items: اسم|سعر|كمية|SKU مفصولة بـ ;";
+      ? t('platform.k_61')
+      : t('platform.k_62');
 
   const loadWebhookSettings = async () => {
     if (!token) return;
@@ -54,7 +56,7 @@ const GoogleSheetsIntegration: React.FC = () => {
         setWebhookEnabled(settings.googleSheetsWebhookEnabled ?? !!savedUrl);
       }
     } catch (error: any) {
-      toast.error(error.message || "فشل تحميل إعدادات الـ Webhook");
+      toast.error(error.message || t('platform.k_63'));
     } finally {
       setLoadingWebhook(false);
     }
@@ -80,12 +82,12 @@ const GoogleSheetsIntegration: React.FC = () => {
 
       const data = await response.json();
       if (!data.success) {
-        throw new Error(data.error || "تعذر حفظ الإعدادات");
+        throw new Error(data.error || t('platform.k_64'));
       }
 
-      toast.success("تم حفظ إعدادات الـ Webhook");
+      toast.success(t('platform.k_65'));
     } catch (error: any) {
-      toast.error(error.message || "فشل حفظ إعدادات الـ Webhook");
+      toast.error(error.message || t('platform.k_66'));
     } finally {
       setSavingWebhook(false);
     }
@@ -97,7 +99,7 @@ const GoogleSheetsIntegration: React.FC = () => {
 
   const fetchPreview = async () => {
     if (!sheetUrl.trim()) {
-      toast.error("أدخل رابط Google Sheets أولاً");
+      toast.error(t('platform.k_67'));
       return;
     }
 
@@ -115,15 +117,15 @@ const GoogleSheetsIntegration: React.FC = () => {
 
       const data = await response.json();
       if (!data.success) {
-        throw new Error(data.message || "فشل جلب البيانات");
+        throw new Error(data.message || t('platform.k_68'));
       }
 
       setColumns(data.data.columns || []);
       setPreviewRows(data.data.sample || []);
       setTotalRows(data.data.totalRows || 0);
-      toast.success("تم جلب المعاينة بنجاح");
+      toast.success(t('platform.k_69'));
     } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء جلب البيانات");
+      toast.error(error.message || t('platform.k_70'));
       setColumns([]);
       setPreviewRows([]);
       setTotalRows(null);
@@ -134,7 +136,7 @@ const GoogleSheetsIntegration: React.FC = () => {
 
   const importSheet = async () => {
     if (!sheetUrl.trim()) {
-      toast.error("أدخل رابط Google Sheets أولاً");
+      toast.error(t('platform.k_67'));
       return;
     }
 
@@ -155,13 +157,13 @@ const GoogleSheetsIntegration: React.FC = () => {
 
       const data = await response.json();
       if (!data.success) {
-        throw new Error(data.message || "فشل الاستيراد");
+        throw new Error(data.message || t('platform.k_71'));
       }
 
       setImportResult(data.data);
-      toast.success(`تم استيراد ${importTypeLabel} بنجاح`);
+      toast.success(t('platform.import_success', { type: importTypeLabel }));
     } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء الاستيراد");
+      toast.error(error.message || t('platform.k_72'));
     } finally {
       setImporting(false);
     }
@@ -177,7 +179,7 @@ const GoogleSheetsIntegration: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("تعذر تنزيل الملف");
+        throw new Error(t('platform.k_73'));
       }
 
       const blob = await response.blob();
@@ -189,7 +191,7 @@ const GoogleSheetsIntegration: React.FC = () => {
       link.remove();
       URL.revokeObjectURL(link.href);
     } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء التنزيل");
+      toast.error(error.message || t('platform.k_74'));
     } finally {
       setExporting(false);
     }
@@ -204,17 +206,17 @@ const GoogleSheetsIntegration: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              الربط مع Google Sheets
+              {t('platform.k_106')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              استيراد المنتجات أو الطلبات مباشرة من Google Sheets
+              {t('platform.k_107')}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            نوع الاستيراد:
+            {t('platform.k_108')}
           </span>
           <button
             onClick={() => setImportType("products")}
@@ -224,7 +226,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
           >
-            منتجات
+            {t('platform.k_109')}
           </button>
           <button
             onClick={() => setImportType("orders")}
@@ -234,14 +236,14 @@ const GoogleSheetsIntegration: React.FC = () => {
                 : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
           >
-            طلبات
+            {t('platform.k_110')}
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              رابط Google Sheets
+              {t('platform.k_111')}
             </label>
             <input
               type="text"
@@ -263,7 +265,7 @@ const GoogleSheetsIntegration: React.FC = () => {
               ) : (
                 <ArrowDownTrayIcon className="w-5 h-5" />
               )}
-              جلب المعاينة
+              {t('platform.k_112')}
             </button>
             <button
               onClick={importSheet}
@@ -275,25 +277,25 @@ const GoogleSheetsIntegration: React.FC = () => {
               ) : (
                 <ArrowUpTrayIcon className="w-5 h-5" />
               )}
-              استيراد {importTypeLabel}
+              {t('platform.k_113')} {importTypeLabel}
             </button>
           </div>
         </div>
 
         <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-300">
-          شارك الملف كـ "Anyone with link" ثم ألصق الرابط هنا. {requirementsText}
+          {t('platform.k_114')} {requirementsText}
         </div>
 
         {totalRows !== null && (
           <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            إجمالي الصفوف في الملف: {totalRows}
+            {t('platform.k_115')} {totalRows}
           </div>
         )}
 
         {previewRows.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-              معاينة البيانات
+              {t('platform.k_116')}
             </h3>
             <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
               <table className="min-w-full text-sm text-right">
@@ -326,10 +328,10 @@ const GoogleSheetsIntegration: React.FC = () => {
           <div className="mt-6 p-4 rounded-lg border border-green-100 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
               <CheckCircleIcon className="w-5 h-5" />
-              <span className="font-medium">نتيجة الاستيراد</span>
+              <span className="font-medium">{t('platform.k_75')}</span>
             </div>
             <div className="mt-2 text-sm text-gray-700 dark:text-gray-200">
-              تم استيراد {importResult.imported} {importUnitLabel}، تخطي {importResult.skipped}، فشل {importResult.failed}.
+              {t('platform.k_117')} {importResult.imported} {importUnitLabel}{t('platform.k_76')}{importResult.skipped}{t('platform.k_77')}{importResult.failed}.
             </div>
           </div>
         )}
@@ -337,9 +339,9 @@ const GoogleSheetsIntegration: React.FC = () => {
         <div className="mt-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200">Webhook تلقائي للطلبات</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200">{t('platform.k_78')}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                عند تفعيل الـ Webhook سيتم إرسال كل طلب جديد مباشرة إلى Google Sheets.
+                {t('platform.k_118')}
               </p>
             </div>
             <button
@@ -347,14 +349,14 @@ const GoogleSheetsIntegration: React.FC = () => {
               disabled={savingWebhook || loadingWebhook}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {savingWebhook ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
+              {savingWebhook ? t('platform.k_79') : t('platform.k_80')}
             </button>
           </div>
 
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                رابط Webhook (Google Apps Script)
+                {t('platform.k_119')}
               </label>
               <input
                 type="text"
@@ -377,7 +379,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 htmlFor="googleSheetsWebhookEnabled"
                 className="text-sm text-gray-700 dark:text-gray-300"
               >
-                تفعيل الإرسال التلقائي
+                {t('platform.k_120')}
               </label>
             </div>
           </div>
@@ -395,19 +397,19 @@ const GoogleSheetsIntegration: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              التصدير إلى Google Sheets
+              {t('platform.k_121')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              نزّل ملف CSV أو Excel وافتحه داخل Google Sheets
+              {t('platform.k_122')}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">تصدير المنتجات</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('platform.k_81')}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              ملف CSV جاهز يمكن فتحه مباشرة في Google Sheets.
+              {t('platform.k_123')}
             </p>
             <div className="flex flex-col gap-2">
               <button
@@ -416,7 +418,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" />
-                تنزيل CSV
+                {t('platform.k_124')}
               </button>
               <button
                 onClick={() => downloadFile("/api/v1/google-sheets/template/products", "products-template.csv")}
@@ -424,15 +426,15 @@ const GoogleSheetsIntegration: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
               >
                 <TableCellsIcon className="w-4 h-4" />
-                تنزيل قالب جاهز
+                {t('platform.k_125')}
               </button>
             </div>
           </div>
 
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">تصدير الطلبات</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('platform.k_82')}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              يمكنك تنزيل CSV مباشرة أو Excel من النظام.
+              {t('platform.k_126')}
             </p>
             <div className="flex flex-col gap-2">
               <button
@@ -441,7 +443,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" />
-                تنزيل CSV
+                {t('platform.k_124')}
               </button>
               <button
                 onClick={() => downloadFile("/api/v1/google-sheets/template/orders", "orders-template.csv")}
@@ -449,7 +451,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-blue-200 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 <TableCellsIcon className="w-4 h-4" />
-                تنزيل قالب جاهز
+                {t('platform.k_125')}
               </button>
               <button
                 onClick={() => downloadFile("/api/v1/orders/export", "orders.xlsx")}
@@ -457,7 +459,7 @@ const GoogleSheetsIntegration: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-blue-200 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" />
-                تنزيل Excel
+                {t('platform.k_127')}
               </button>
             </div>
           </div>
@@ -466,13 +468,13 @@ const GoogleSheetsIntegration: React.FC = () => {
         {exporting && (
           <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <ArrowPathIcon className="w-4 h-4 animate-spin" />
-            جاري تجهيز الملف...
+            {t('platform.k_128')}
           </div>
         )}
 
         <div className="mt-4 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
           <ExclamationTriangleIcon className="w-4 h-4" />
-          بعد التنزيل: افتح Google Sheets واختر "File → Import" ثم ارفع الملف.
+          {t('platform.k_129')}
         </div>
       </div>
     </div>

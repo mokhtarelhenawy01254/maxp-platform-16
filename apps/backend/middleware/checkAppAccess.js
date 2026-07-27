@@ -39,6 +39,19 @@ const checkAppAccess = (appSlug) => {
         });
       }
 
+      // 🚀 Special check for Turbo: if company has Turbo API key configured or turboEnabled, allow access immediately
+      if (appSlug === 'order-shipping-turbo') {
+        const company = await executeWithRetry(async () => {
+          return await getSharedPrismaClient().company.findUnique({
+            where: { id: companyId },
+            select: { turboEnabled: true, turboApiKey: true }
+          });
+        });
+        if (company && (company.turboEnabled || company.turboApiKey)) {
+          return next();
+        }
+      }
+
       // Get the app
       const candidateSlugs = getCandidateAppSlugs(appSlug);
       const app = await executeWithRetry(async () => {

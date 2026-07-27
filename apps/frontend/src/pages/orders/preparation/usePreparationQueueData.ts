@@ -10,7 +10,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, type PageSize } from "./constants";
+import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, TERMINAL_NON_PREPARATION_STATUSES, type PageSize } from "./constants";
 import {
   normalizeInventoryRecord,
   normalizePreparationQueueSettings,
@@ -25,12 +25,16 @@ import type {
   ApiStatusResponse,
   ApiWarehouseResponse,
   InventoryRecord,
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   PreparationQueuePagination,
   PreparationQueueSettings,
   PreparationQueueSummary,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SimpleOrder,
+  SortBy,
+  SortOrder,
   StageFilter,
   StageCounts,
   StatusConfig,
@@ -61,8 +65,14 @@ interface UsePreparationQueueDataParams {
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   search: string;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
 }
 
 interface UsePreparationQueueDataResult {
@@ -73,9 +83,11 @@ interface UsePreparationQueueDataResult {
   ensureInventory: () => Promise<void>;
   warehouses: WarehouseOption[];
   statusConfigs: StatusConfig[];
+  preparationStatuses: StatusConfig[];
   preparationSettings: PreparationQueueSettings;
   pagination: PreparationQueuePagination;
   summary: PreparationQueueSummary;
+  statusCounts: Record<string, number>;
   shortageOwnerOptions: string[];
   loading: boolean;
   refreshing: boolean;
@@ -99,6 +111,7 @@ const EMPTY_STAGE_COUNTS: StageCounts = {
   READY_TO_SHIP: 0,
   STOCK_SHORTAGE: 0,
   PENDING_CANCELLATION: 0,
+  ON_HOLD_PREP: 0,
 };
 
 const EMPTY_PAGINATION: PreparationQueuePagination = {
@@ -141,11 +154,17 @@ const buildOrdersQueryKey = (
     params.stockFilter,
     params.shortageReasonFilter,
     params.shortageFollowUpFilter,
-    params.shortageOwnerFilter.trim().toLowerCase(),
-    params.productFilter.trim().toLowerCase(),
+    (params.shortageOwnerFilter || "").trim().toLowerCase(),
+    (params.productFilter || "").trim().toLowerCase(),
+    (params.productColorFilter || "").trim().toLowerCase(),
+    (params.productSizeFilter || "").trim().toLowerCase(),
     params.itemCountFilter,
-    params.search.trim().toLowerCase(),
+    params.notPrintedFilter,
+    params.noShippingCodeFilter,
+    (params.search || "").trim().toLowerCase(),
     prioritizeShortageOrders ? "prioritized" : "chronological",
+    params.sortBy,
+    params.sortOrder,
   ] as const;
 
 const fetchOrdersData = async (
@@ -163,11 +182,17 @@ const fetchOrdersData = async (
         stockFilter: params.stockFilter,
         shortageReason: params.shortageReasonFilter,
         shortageFollowUp: params.shortageFollowUpFilter,
-        shortageOwner: params.shortageOwnerFilter.trim() || undefined,
-        productFilter: params.productFilter.trim() || undefined,
+        shortageOwner: (params.shortageOwnerFilter || "").trim() || undefined,
+        productFilter: (params.productFilter || "").trim() || undefined,
+        colorFilter: (params.productColorFilter || "").trim() || undefined,
+        sizeFilter: (params.productSizeFilter || "").trim() || undefined,
         itemCountFilter: params.itemCountFilter,
-        search: params.search.trim() || undefined,
+        notPrinted: params.notPrintedFilter === "not_printed" || undefined,
+        noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
+        search: (params.search || "").trim() || undefined,
         prioritizeShortageOrders,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
       },
     },
   );
@@ -177,7 +202,12 @@ const fetchOrdersData = async (
   const summary = response.data?.summary;
 
   return {
-    orders: payload.map(normalizeSimpleOrder),
+    orders: payload
+      .filter((o: { status?: string }) => {
+        const status = (o.status || '').toUpperCase().trim();
+        return !TERMINAL_NON_PREPARATION_STATUSES.has(status);
+      })
+      .map(normalizeSimpleOrder),
     pagination: {
       total: Number(pagination?.total || 0),
       page: Number(pagination?.page || params.page || 1),
@@ -191,6 +221,7 @@ const fetchOrdersData = async (
         ...EMPTY_STAGE_COUNTS,
         ...(summary?.stageCounts || {}),
       },
+      statusCounts: { ...(summary?.statusCounts || {}) },
       readyCount: Number(summary?.readyCount || 0),
       shortageCount: Number(summary?.shortageCount || 0),
       shortageHoldCount: Number(summary?.shortageHoldCount || 0),
@@ -282,8 +313,14 @@ export const usePreparationQueueData = ({
   shortageFollowUpFilter,
   shortageOwnerFilter,
   productFilter,
+  productColorFilter,
+  productSizeFilter,
   itemCountFilter,
+  notPrintedFilter,
+  noShippingCodeFilter,
   search,
+  sortBy,
+  sortOrder,
 }: UsePreparationQueueDataParams): UsePreparationQueueDataResult => {
   const queryClient = useQueryClient();
   const [orders, setOrders] = useState<SimpleOrder[]>([]);
@@ -311,8 +348,14 @@ export const usePreparationQueueData = ({
       shortageFollowUpFilter,
       shortageOwnerFilter,
       productFilter,
+      productColorFilter,
+      productSizeFilter,
       itemCountFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
       search,
+      sortBy,
+      sortOrder,
     }),
     [
       activeStage,
@@ -325,7 +368,13 @@ export const usePreparationQueueData = ({
       shortageReasonFilter,
       stockFilter,
       productFilter,
+      productColorFilter,
+      productSizeFilter,
       itemCountFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
+      sortBy,
+      sortOrder,
     ],
   );
 
@@ -529,6 +578,18 @@ export const usePreparationQueueData = ({
     ],
   );
 
+  const statusConfigsData = useMemo(
+    () => statusConfigsQuery.data || [],
+    [statusConfigsQuery.data],
+  );
+
+  const preparationStatuses = useMemo(
+    () => statusConfigsData.filter((s) => s.statusType === "preparation"),
+    [statusConfigsData],
+  );
+
+  const statusCounts = ordersQuery.data?.summary?.statusCounts || {};
+
   return {
     orders,
     setOrders: setOrdersState,
@@ -536,11 +597,13 @@ export const usePreparationQueueData = ({
     inventoryLoading,
     ensureInventory,
     warehouses: warehousesQuery.data || [],
-    statusConfigs: statusConfigsQuery.data || [],
+    statusConfigs: statusConfigsData,
+    preparationStatuses,
     preparationSettings:
       preparationSettingsQuery.data || DEFAULT_PREPARATION_QUEUE_SETTINGS,
     pagination: ordersQuery.data?.pagination || EMPTY_PAGINATION,
     summary: ordersQuery.data?.summary || EMPTY_SUMMARY,
+    statusCounts,
     shortageOwnerOptions: ordersQuery.data?.shortageOwnerOptions || [],
     loading,
     refreshing,

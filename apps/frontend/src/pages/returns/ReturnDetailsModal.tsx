@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   ReturnRequest,
@@ -28,6 +29,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   onClose,
   onUpdate,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<
     "details" | "contact" | "activity"
   >("details");
@@ -41,22 +43,34 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   const [contactNotes, setContactNotes] = useState("");
 
   // Review Form
-  const [status, setStatus] = useState(request.status);
+  const [reasonId, setReasonId] = useState(request.reasonId || "");
+  const [customerNotes, setCustomerNotes] = useState(
+    request.customerNotes || "",
+  );
   const [responsibleParty, setResponsibleParty] = useState(
     request.responsibleParty,
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
-  const [rejectionReason, setRejectionReason] = useState(
-    request.rejectionReason || "",
-  );
   const [isReviewed, setIsReviewed] = useState(request.isReviewed);
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Categories & Reasons for dropdown
+  const [categories, setCategories] = useState<any[]>([]);
+  const [reasons, setReasons] = useState<any[]>([]);
+
+  // Activity Log Filter
+  const [activityFilter, setActivityFilter] = useState<string>("");
 
   useEffect(() => {
     if (activeTab !== "details") {
       fetchLogs();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
+    returnService.getReasons().then((res) => setReasons(res.data)).catch(() => {});
+  }, []);
 
   const fetchLogs = async () => {
     setLoadingLogs(true);
@@ -77,30 +91,26 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
 
   const handleSaveReview = async () => {
     if (!status) {
-      toast.error("يرجى اختيار حالة الطلب");
+      toast.error(t('returns.k_116'));
       return;
     }
     if (!responsibleParty) {
-      toast.error("يرجى تحديد الجهة المسؤولة");
-      return;
-    }
-    if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error("يرجى كتابة سبب الرفض");
+      toast.error(t('returns.k_117'));
       return;
     }
     setSubmittingReview(true);
     try {
       await returnService.updateRequest(request.id, {
-        status,
+        reasonId: reasonId || undefined,
+        customerNotes,
         responsibleParty,
         adminNotes,
-        rejectionReason,
         isReviewed,
       });
-      toast.success("تم حفظ المراجعة وتحديث تقييم العميل إذا لزم الأمر");
+      toast.success(t('returns.k_119'));
       onUpdate();
     } catch (error) {
-      toast.error("فشل في حفظ المراجعة");
+      toast.error(t('returns.k_120'));
     } finally {
       setSubmittingReview(false);
     }
@@ -114,43 +124,24 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         result: contactResult,
         notes: contactNotes,
       });
-      toast.success("تم تسجيل المحاوله بنجاح");
+      toast.success(t('returns.k_121'));
       setContactMethod("PHONE");
       setContactResult("NO_ANSWER");
       setContactNotes("");
       fetchLogs();
     } catch (error) {
-      toast.error("فشل في تسجيل المحاوله");
+      toast.error(t('returns.k_122'));
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return (
-          <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> تم الموافقة
-          </span>
-        );
-      case "REJECTED":
-        return (
-          <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <XCircle size={12} /> مرفوض
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <CheckCircle size={12} /> مكتمل
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <Clock size={12} /> قيد الانتظار
-          </span>
-        );
+  const getReceivedBadge = (rs: string | undefined) => {
+    if (rs === "RECEIVED" || rs === "INSPECTED" || rs === "RESTOCKED") {
+      return <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 📦 وصل</span>;
     }
+    if (rs === "IN_TRANSIT") {
+      return <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 🚚 في الطريق</span>;
+    }
+    return <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><Clock size={12} /> ⏳ قيد الانتظار</span>;
   };
 
   return (
@@ -163,8 +154,8 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-lg">
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              طلب إرجاع #{request.order?.orderNumber}
-              {getStatusBadge(request.status)}
+              {t('returns.k_189')}{request.order?.orderNumber}
+              {getReceivedBadge(request.receivedStatus)}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(request.createdAt).toLocaleString("ar-EG")}
@@ -184,19 +175,19 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             onClick={() => setActiveTab("details")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "details" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            تفاصيل الطلب
+            {t('returns.k_190')}
           </button>
           <button
             onClick={() => setActiveTab("contact")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "contact" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            سجل التواصل
+            {t('returns.k_191')}
           </button>
           <button
             onClick={() => setActiveTab("activity")}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "activity" ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
-            سجل النشاط
+            {t('returns.k_192')}
           </button>
         </div>
 
@@ -207,12 +198,12 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    بيانات العميل
+                    {t('returns.k_193')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        الاسم:
+                        {t('returns.k_194')}
                       </span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {request.customer?.firstName}{" "}
@@ -221,7 +212,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        الهاتف:
+                        {t('returns.k_195')}
                       </span>
                       <span
                         className="font-medium text-gray-900 dark:text-white"
@@ -232,7 +223,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        التقييم:
+                        {t('returns.k_196')}
                       </span>
                       <span className="font-medium text-blue-600 dark:text-blue-400">
                         {request.customer?.customerRating} (
@@ -243,12 +234,12 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    تفاصيل الإرجاع
+                    {t('returns.k_197')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        السبب:
+                        {t('returns.k_198')}
                       </span>
                       <span className="font-medium text-red-600 dark:text-red-400 font-bold">
                         {request.reason?.reason}
@@ -256,7 +247,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">
-                        المبلغ المسترد:
+                        {t('returns.k_199')}
                       </span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {request.refundAmount || "-"}
@@ -265,7 +256,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     {request.isReviewed && (
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">
-                          تمت المراجعة في:
+                          {t('returns.k_200')}
                         </span>
                         <span className="font-medium text-xs text-gray-900 dark:text-white">
                           {request.reviewedAt
@@ -278,75 +269,178 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800/30">
-                <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-300 mb-2">
-                  ملاحظات العميل
+              {/* Tracking Info */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  🚚 معلومات التتبع
                 </h3>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {request.customerNotes || "لا توجد ملاحظات"}
-                </p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">رقم التتبع:</span>
+                    <span className="mr-2 font-medium text-gray-900 dark:text-white" dir="ltr">
+                      {request.trackingNumber || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">حالة الاستلام:</span>
+                    <span className="mr-2 font-medium">
+                      {request.receivedStatus === "RECEIVED" || request.receivedStatus === "INSPECTED" || request.receivedStatus === "RESTOCKED" ? "📦 وصل المخزن" :
+                       request.receivedStatus === "IN_TRANSIT" ? "🚚 في الطريق" : "⏳ قيد الانتظار"}
+                    </span>
+                  </div>
+                  {request.receivedAt && (
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">تاريخ الاستلام:</span>
+                      <span className="mr-2 font-medium text-gray-900 dark:text-white">
+                        {new Date(request.receivedAt).toLocaleDateString("ar-EG")}
+                      </span>
+                    </div>
+                  )}
+                  {request.productCondition && (
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">حالة المنتج:</span>
+                      <span className="mr-2 font-medium text-gray-900 dark:text-white">{request.productCondition}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* COD Deposit & Shipping */}
+              {(request.order?.codDepositPaid || request.shippingReturnCost) && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                  <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
+                    💰 التسوية المالية
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {request.order?.codDepositPaid && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">دفعة مسبقة (COD Deposit):</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {request.order.codDepositAmount} {request.order.currency}
+                          {request.order.codDepositRefunded ? " ✅ مستردة" : " ❌ لم تسترد"}
+                        </span>
+                      </div>
+                    )}
+                    {request.shippingReturnCost && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">تكلفة الشحن الراجع:</span>
+                        <span className="font-medium text-red-600 dark:text-red-400">
+                          {request.shippingReturnCost} {request.order?.currency}
+                        </span>
+                      </div>
+                    )}
+                    {request.settlementAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">صافي التسوية:</span>
+                        <span className={`font-medium ${request.settlementAmount >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {request.settlementAmount} {request.order?.currency}
+                        </span>
+                      </div>
+                    )}
+                    {request.productCondition && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">حالة المنتج عند الاستلام:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{request.productCondition}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Enhanced Review Form */}
               <div className="bg-white dark:bg-gray-900/50 border-2 border-blue-100 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
                 <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                  <Shield size={16} /> مراجعة الطلب وتحديد المسؤولية
+                  <Shield size={16} /> {t('returns.k_201')}
                 </h3>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_154')}
+                  </label>
+                  <select
+                    value={reasonId}
+                    onChange={(e) => {
+                      const selectedReason = reasons.find((r) => r.id === e.target.value);
+                      setReasonId(e.target.value);
+                      if (selectedReason?.category?.defaultRole) {
+                        setResponsibleParty(selectedReason.category.defaultRole);
+                      }
+                    }}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  >
+                    <option value="">{t('returns.k_30')}</option>
+                    {categories
+                      .filter((cat: any) => cat.defaultRole === responsibleParty)
+                      .map((cat: any) => (
+                        <optgroup key={cat.id} label={cat.name}>
+                          {reasons
+                            .filter((r: any) => r.categoryId === cat.id)
+                            .map((reason: any) => (
+                              <option key={reason.id} value={reason.id}>
+                                {reason.reason}
+                                {reason.description && ` - ${reason.description}`}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    {reasons.filter((r: any) => {
+                      const cat = categories.find((c: any) => c.id === r.categoryId);
+                      return !cat || cat.defaultRole === 'OTHER';
+                    }).length > 0 && (
+                      <optgroup label={t('returns.k_31')}>
+                        {reasons
+                          .filter((r: any) => {
+                            const cat = categories.find((c: any) => c.id === r.categoryId);
+                            return !cat || cat.defaultRole === 'OTHER';
+                          })
+                          .map((reason: any) => (
+                            <option key={reason.id} value={reason.id}>
+                              {reason.reason}
+                              {reason.description && ` - ${reason.description}`}
+                            </option>
+                          ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      الجهة المسؤولة
+                      {t('returns.k_202')}
                     </label>
                     <select
                       value={responsibleParty}
-                      onChange={(e) =>
-                        setResponsibleParty(e.target.value as any)
-                      }
+                      onChange={(e) => {
+                        setResponsibleParty(e.target.value as any);
+                        setReasonId("");
+                      }}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     >
                       <option value="CUSTOMER">
-                        العميل (خطأ في القياس/تغيير رأي)
+                        {t('returns.k_203')}
                       </option>
                       <option value="STORE">
-                        المتجر (خطأ في التجهيز/عيب فني)
+                        {t('returns.k_204')}
                       </option>
-                      <option value="SHIPPING">شركة الشحن (تلف/تأخير)</option>
-                      <option value="OTHER">أخرى</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      قرار الحالة
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    >
-                      <option value="PENDING">قيد الانتظار</option>
-                      <option value="APPROVED">موافقة</option>
-                      <option value="REJECTED">رفض</option>
-                      <option value="COMPLETED">مكتمل</option>
+                      <option value="SHIPPING">{t('returns.k_124')}</option>
+                      <option value="OTHER">{t('returns.k_31')}</option>
                     </select>
                   </div>
                 </div>
-                {status === "REJECTED" && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      سبب الرفض
-                    </label>
-                    <input
-                      type="text"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="اكتب سبب الرفض للعميل..."
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    />
-                  </div>
-                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    ملاحظات إدارية (داخلية)
+                    {t('returns.k_156')}
+                  </label>
+                  <textarea
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    rows={2}
+                    placeholder={t('returns.k_35')}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_207')}
                   </label>
                   <textarea
                     value={adminNotes}
@@ -367,8 +461,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     htmlFor="isReviewed"
                     className="text-xs font-bold text-gray-700 dark:text-gray-300"
                   >
-                    تأكيد إتمام المراجعة (سيتم تحديث تقييم العميل بناءً على
-                    المسؤولية)
+                    {t('returns.k_208')}
                   </label>
                 </div>
               </div>
@@ -383,73 +476,73 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                  <Phone size={16} /> تسجيل محاولة تواصل
+                  <Phone size={16} /> {t('returns.k_209')}
                 </h3>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      طريقة التواصل
+                      {t('returns.k_210')}
                     </label>
                     <select
                       value={contactMethod}
                       onChange={(e) => setContactMethod(e.target.value)}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     >
-                      <option value="PHONE">📞 مكالمة هاتفية</option>
-                      <option value="WHATSAPP">💬 واتساب</option>
+                      <option value="PHONE">{t('returns.k_126')}</option>
+                      <option value="WHATSAPP">{t('returns.k_127')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      النتيجة
+                      {t('returns.k_211')}
                     </label>
                     <select
                       value={contactResult}
                       onChange={(e) => setContactResult(e.target.value)}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     >
-                      <option value="NO_ANSWER">لم يرد</option>
-                      <option value="ANSWERED">تم الرد</option>
-                      <option value="BUSY">مشغول</option>
-                      <option value="WRONG_NUMBER">رقم خاطئ</option>
+                      <option value="NO_ANSWER">{t('returns.k_128')}</option>
+                      <option value="ANSWERED">{t('returns.k_129')}</option>
+                      <option value="BUSY">{t('returns.k_130')}</option>
+                      <option value="WRONG_NUMBER">{t('returns.k_131')}</option>
                       <option value="CALL_BACK_LATER">
-                        طلب معاودة الاتصال
+                        {t('returns.k_212')}
                       </option>
                     </select>
                   </div>
                 </div>
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    ملاحظات
+                    {t('returns.k_213')}
                   </label>
                   <textarea
                     value={contactNotes}
                     onChange={(e) => setContactNotes(e.target.value)}
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500"
                     rows={2}
-                    placeholder="تفاصيل المكالمة..."
+                    placeholder={t('returns.k_132')}
                   />
                 </div>
                 <button
                   type="submit"
                   className="w-full bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
-                  تسجيل المحاولة
+                  {t('returns.k_214')}
                 </button>
               </form>
 
               {/* History List */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                  السجل السابق
+                  {t('returns.k_215')}
                 </h3>
                 {loadingLogs ? (
                   <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
-                    جاري التحميل...
+                    {t('returns.k_144')}
                   </p>
                 ) : contactHistory.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-400 dark:text-gray-500 text-sm">
-                    لا توجد محاولات تواصل مسجلة
+                    {t('returns.k_216')}
                   </div>
                 ) : (
                   contactHistory.map((attempt) => (
@@ -500,15 +593,44 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             <div className="space-y-4">
               {loadingLogs ? (
                 <p className="text-center text-gray-500 dark:text-gray-400">
-                  جاري التحميل...
-                </p>
-              ) : activityLog.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  لا يوجد نشاط مسجل
+                  {t('returns.k_144')}
                 </p>
               ) : (
-                <div className="relative border-r-2 border-gray-200 dark:border-gray-700 mr-4 space-y-8">
-                  {activityLog.map((log) => (
+                <>
+                  <div className="flex gap-2 flex-wrap border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <button
+                      onClick={() => setActivityFilter("")}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        activityFilter === ""
+                          ? "bg-blue-600 dark:bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {t('returns.k_13')}
+                    </button>
+                    {Array.from(new Set(activityLog.map((l) => l.action))).map((action) => (
+                      <button
+                        key={action}
+                        onClick={() => setActivityFilter(action)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          activityFilter === action
+                            ? "bg-blue-600 dark:bg-blue-500 text-white"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                  {activityLog.filter((l) => !activityFilter || l.action === activityFilter).length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      {t('returns.k_217')}
+                    </p>
+                  ) : (
+                    <div className="relative border-r-2 border-gray-200 dark:border-gray-700 mr-4 space-y-8">
+                      {activityLog
+                        .filter((l) => !activityFilter || l.action === activityFilter)
+                        .map((log) => (
                     <div
                       key={log.id}
                       className="relative flex items-start gap-4 mr-[-9px]"
@@ -526,8 +648,8 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          قام <strong>{log.user?.firstName || "سيستم"}</strong>{" "}
-                          بهذا الإجراء.
+                          {t('returns.k_218')} <strong>{log.user?.firstName || t('returns.k_133')}</strong>{" "}
+                          {t('returns.k_219')}
                         </p>
                         {log.details && (
                           <div className="text-xs bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 font-mono text-gray-500 dark:text-gray-400 overflow-x-auto">
@@ -541,9 +663,11 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                   ))}
                 </div>
               )}
-            </div>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg flex justify-end gap-2">
@@ -551,7 +675,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            إغلاق
+            {t('returns.k_220')}
           </button>
           {activeTab === "details" && (
             <button
@@ -559,7 +683,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
               disabled={submittingReview}
               className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md text-sm font-bold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
-              {submittingReview ? "جاري الحفظ..." : "حفظ قرار المراجعة"}
+              {submittingReview ? t('returns.k_105') : t('returns.k_134')}
             </button>
           )}
         </div>

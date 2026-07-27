@@ -1,0 +1,40 @@
+{
+  "payments": {
+    "title": "المدفوعات",
+    "walletBalance": "رصيد المحفظة",
+    "currency": "ج.م",
+    "recharge": "شحن",
+    "transactionHistory": "سجل الحركات",
+    "noTransactions": "لا توجد حركات حالياً",
+    "description": "الوصف",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "notSpecified": "غير محدد",
+    "rechargeWallet": "شحن المحفظة",
+    "amountPlaceholder": "المبلغ (جنيه)",
+    "recharging": "جاري الشحن...",
+    "confirmRecharge": "تأكيد الشحن",
+    "enterValidAmount": "أدخل مبلغاً صحيحاً",
+    "sessionFailed": "فشل إنشاء جلسة الدفع",
+    "gatewayError": "خطأ في الاتصال ببوابة الدفع",
+    "serverError": "خطأ في الاتصال بالخادم"
+  },
+  "bundles": {
+    "title": "الباقات",
+    "subtitle": "تصفح الباقات والاشتراكات المتاحة",
+    "perMonth": "/ شهرياً",
+    "currency": "ج.م",
+    "saveAmount": "وفر {{amount}} ج.م ({{pct}}%)",
+    "whatsIncluded": "ماذا تشمل الباقة؟",
+    "keyFeatures": "المميزات الأساسية",
+    "bundlePrice": "سعر الباقة",
+    "trialTitle": "جرب مجاناً لمدة {{days}} يوم",
+    "trialDescription": "الباقة كاملة بدون دفع. بعد التجربة، اشترك للاستمرار.",
+    "activated": "الباقة مفعلة",
+    "activating": "جاري التفعيل...",
+    "startTrial": "ابدأ النسخة التجريبية",
+    "subscribeNow": "اشترك الآن",
+    "requestDemo": "طلب عرض توضيحي",
+    "trialTerms": "نسخة تجريبية مجانية بدون دفع. يمكنك الإلغاء في أي وقت."
+  }
+}

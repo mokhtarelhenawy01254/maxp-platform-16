@@ -7,10 +7,10 @@
   "generate": "Generate",
   "slug_description": "Unique URL identifier for the product",
   "addNew": "Add New Product",
-  "editProduct": "Edit Product",
   "editTitle": "Edit Product",
-  "save": "Save Product",
+  "editProduct": "Edit Product",
   "addProduct": "Save Product",
+  "save": "Save Product",
   "updateProduct": "Update Product",
   "productName": "Product Name *",
   "description": "Description",
@@ -26,7 +26,7 @@
     "productNamePlaceholder": "Enter product name here...",
     "descriptionPlaceholder": "Write a detailed product description including features and benefits...",
     "selectCategory": "Select a product category...",
-    "tagsPlaceholder": "Add a tag and press Enter...",
+    "tagsPlaceholder": "Add tag and press Enter...",
     "searchProducts": "Search products..."
   },
   "tabs": {
@@ -40,7 +40,7 @@
     "shipping": "Shipping",
     "commission": "Commission",
     "whatsapp": "WhatsApp Notification",
-    "seo": "SEO",
+    "seo": "SEO Optimization",
     "advanced": "Advanced"
   },
   "pricing": {
@@ -202,9 +202,9 @@
     "productCreated": "Product created successfully!",
     "productError": "Failed to update product",
     "productCreationError": "Failed to create product",
-    "productErrorNetwork": "Network error while updating product",
+    "productErrorNetwork": "Failed to connect to the server to update product",
     "categoriesLoadError": "Failed to load categories",
-    "categoriesLoadErrorNetwork": "Network error while loading categories",
+    "categoriesLoadErrorNetwork": "Failed to connect to load categories",
     "editingProduct": "Edit current product data",
     "creatingProduct": "Create a new product",
     "cancel": "Cancel",

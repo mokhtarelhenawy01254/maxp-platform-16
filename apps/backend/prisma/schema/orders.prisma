@@ -81,12 +81,20 @@ model GuestOrder {
   isViewed            Boolean              @default(false)
   metadata            String?
   affiliateId         String?
-  turboLabelUrl       String?
-  turboMetadata       String?
-  turboShipmentId     String?
-  turboShipmentStatus String?
-  turboTrackingNumber String?
-  callAttempts        Int                  @default(0)
+  turboLabelUrl           String?
+  turboMetadata           String?
+  turboShipmentId         String?
+  turboShipmentStatus     String?
+  turboTrackingNumber     String?
+  turboCaptainName        String?
+  turboCaptainPhone       String?
+  turboBranchName         String?
+  turboBranchPhone        String?
+  turboBranchId           String?
+  turboDelayReason        String?
+  turboReturnReason       String?
+  turboExpectedBranch     String?
+  callAttempts            Int                  @default(0)
   lastCallAt          DateTime?
   followUpDate        DateTime?
   createdBy           String?
@@ -297,6 +305,13 @@ model Order {
   turboShipmentId         String?
   turboShipmentStatus     String?
   turboTrackingNumber     String?
+  turboCaptainName        String?
+  turboCaptainPhone       String?
+  turboBranchName         String?
+  turboBranchPhone        String?
+  turboDelayReason        String?
+  turboReturnReason       String?
+  turboExpectedBranch     String?
   callAttempts            Int                       @default(0)
   lastCallAttemptAt       DateTime?
   followUpDate            DateTime?

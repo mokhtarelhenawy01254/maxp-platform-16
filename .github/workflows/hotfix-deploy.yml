@@ -1,0 +1,77 @@
+name: Patch turboService SyntaxError
+
+on:
+  workflow_dispatch:
+
+env:
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  patch:
+    name: Patch turboService.js on Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Check and Fix SyntaxError
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          timeout: 5m
+          script: |
+            TARGET="/var/www/backend2/services/turboService.js"
+            node --check "$TARGET" 2>&1 && echo "Already clean - no fix needed" && exit 0
+
+            echo "SyntaxError found - backing up and patching"
+            cp "$TARGET" "${TARGET}.bak.$(date +%Y%m%d_%H%M%S)"
+
+            node -e "
+              const fs = require('fs');
+              let c = fs.readFileSync('$TARGET', 'utf8');
+              const lines = c.split('\n');
+              const out = [];
+              let skip = false, depth = 0;
+              for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (!skip && l.includes('if (false) {') && i+1 < lines.length && lines[i+1].includes('dead code')) {
+                  skip = true; depth = 1; continue;
+                }
+                if (skip) {
+                  depth += (l.match(/\{/g)||[]).length - (l.match(/\}/g)||[]).length;
+                  if (depth <= 0) skip = false;
+                  continue;
+                }
+                out.push(l);
+              }
+              c = out.join('\n');
+              c = c.replace(
+                '    } catch (outerErr) {\n      console.error(' + \"'\" + '\u274c [TURBO] trackShipment fatal error:' + \"'\" + ', outerErr.message);\n      // legacy placeholders kept for parse continuity\n      const possibleEndpoints = [];\n      let response;\n      let lastError = outerErr;\n      const apiKey = null;',
+                '    } catch (outerErr) {\n      console.error(' + \"'\" + '\u274c [TURBO] trackShipment fatal error:' + \"'\" + ', outerErr.message);'
+              );
+              fs.writeFileSync('$TARGET', c);
+              console.log('Patched OK');
+            "
+
+            echo "=== Syntax after patch ==="
+            node --check "$TARGET" 2>&1 && echo "SYNTAX OK" || echo "STILL HAS ERROR"
+
+            echo "=== Restarting backend ==="
+            pm2 restart maxp-backend || pm2 start /var/www/backend2/server.js --name maxp-backend
+            sleep 8
+            pm2 list
+
+            echo "=== Health ==="
+            curl -fsS http://127.0.0.1:3007/api/v1/health && echo "UP 3007" || \
+            curl -fsS http://127.0.0.1:3008/api/v1/health && echo "UP 3008" || echo "DOWN"

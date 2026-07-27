@@ -12,7 +12,7 @@ const DEFAULT_ORDER_STATUSES = [
   { code: 'SCHEDULED', name: 'طلب مجدول', nameEn: 'Scheduled', color: '#FFA500', icon: 'Calendar', sortOrder: 3, wooCommerceStatus: 'pending' },
   { code: 'CONFIRMED', name: 'مؤكد', nameEn: 'Confirmed', color: '#3B82F6', icon: 'CheckCircle', sortOrder: 4, wooCommerceStatus: 'processing' },
   { code: 'ON_HOLD', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 5, wooCommerceStatus: 'on-hold' },
-  { code: 'PROCESSING', name: 'قيد التجهيز', nameEn: 'Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 6, wooCommerceStatus: 'processing' },
+  { code: 'PROCESSING', name: 'قيد التنفيذ', nameEn: 'Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 6, wooCommerceStatus: 'processing' },
   { code: 'SHIPPED', name: 'تم الشحن', nameEn: 'Shipped', color: '#06B6D4', icon: 'Truck', sortOrder: 7, wooCommerceStatus: 'completed' },
   { code: 'DELIVERED', name: 'تم التسليم', nameEn: 'Delivered', color: '#10B981', icon: 'CheckCircle2', sortOrder: 8, wooCommerceStatus: 'completed' },
   { code: 'CANCELLED', name: 'ملغي', nameEn: 'Cancelled', color: '#EF4444', icon: 'XCircle', sortOrder: 9, wooCommerceStatus: 'cancelled' },
@@ -44,7 +44,21 @@ const DEFAULT_SHIPPING_STATUSES = [
   { code: 'OUT_FOR_DELIVERY', name: 'قيد التوصيل', nameEn: 'Out for Delivery', color: '#06B6D4', icon: 'Truck', sortOrder: 4 },
   { code: 'DELIVERED', name: 'تم التسليم', nameEn: 'Delivered', color: '#10B981', icon: 'CheckCircle', sortOrder: 5 },
   { code: 'RETURNED', name: 'تم الإرجاع', nameEn: 'Returned', color: '#EF4444', icon: 'RotateCcw', sortOrder: 6 },
-  { code: 'LOST', name: 'مفقود', nameEn: 'Lost', color: '#DC2626', icon: 'AlertCircle', sortOrder: 7 }
+  { code: 'LOST', name: 'مفقود', nameEn: 'Lost', color: '#DC2626', icon: 'AlertCircle', sortOrder: 7 },
+  // 🚀 حالات شحن تربو التلقائية المحدثة (Official Turbo Shipping Statuses 1..13)
+  { code: 'turbo_saved', name: 'تربو: محفوظة قبل الشحن', nameEn: 'Turbo: Saved', color: '#6366F1', icon: 'Clock', sortOrder: 8 },
+  { code: 'turbo_sent', name: 'تربو: مرسلة لشركة تربو', nameEn: 'Turbo: Sent', color: '#3B82F6', icon: 'CheckCircle', sortOrder: 9 },
+  { code: 'processing', name: 'تربو: قيد التنفيذ بالفرع', nameEn: 'Turbo: Processing', color: '#8B5CF6', icon: 'Package', sortOrder: 10 },
+  { code: 'out_for_delivery', name: 'تربو: مع الكابتن / مسلمة للمندوب', nameEn: 'Turbo: Out for Delivery', color: '#06B6D4', icon: 'Truck', sortOrder: 11, mapsToSystem: 'SHIPPED' },
+  { code: 'returned_to_company', name: 'تربو: مرتجعة مع الشركة', nameEn: 'Turbo: Returned With Company', color: '#991B1B', icon: 'RotateCcw', sortOrder: 12, mapsToSystem: 'RETURNED' },
+  { code: 'cancelled', name: 'تربو: ملغي من الشحن', nameEn: 'Turbo: Cancelled', color: '#DC2626', icon: 'XCircle', sortOrder: 13, mapsToSystem: 'CANCELLED' },
+  { code: 'delivered', name: 'تربو: تم التسليم', nameEn: 'Turbo: Delivered', color: '#10B981', icon: 'CheckCircle', sortOrder: 14, mapsToSystem: 'DELIVERED' },
+  { code: 'remitted', name: 'تربو: تم التوريد وتحصيل المبلغ', nameEn: 'Turbo: Remitted', color: '#047857', icon: 'CheckCircle', sortOrder: 15, mapsToSystem: 'DELIVERED' },
+  { code: 'archived', name: 'تربو: شحنة محذوفة في تربو', nameEn: 'Turbo: Archived', color: '#78716C', icon: 'Trash2', sortOrder: 16 },
+  { code: 'returned_resent', name: 'تربو: معاد إرسالها', nameEn: 'Turbo: Resent', color: '#2563EB', icon: 'RotateCcw', sortOrder: 17, mapsToSystem: 'PROCESSING' },
+  { code: 'returned_missing', name: 'تربو: مرتجع مفقود', nameEn: 'Turbo: Missing', color: '#7F1D1D', icon: 'AlertCircle', sortOrder: 18, mapsToSystem: 'RETURNED' },
+  { code: 'returned_destroyed', name: 'تربو: مرتجع معدوم', nameEn: 'Turbo: Destroyed', color: '#451A03', icon: 'XCircle', sortOrder: 19, mapsToSystem: 'RETURNED' },
+  { code: 'delayed', name: 'تربو: مؤجلة مع المندوب', nameEn: 'Turbo: Delayed', color: '#F97316', icon: 'Clock', sortOrder: 20, mapsToSystem: 'ON_HOLD' }
 ];
 
 const DEFAULT_PREPARATION_STATUSES = [
@@ -53,7 +67,8 @@ const DEFAULT_PREPARATION_STATUSES = [
   { code: 'READY', name: 'جاهز', nameEn: 'Ready', color: '#10B981', icon: 'CheckCircle', sortOrder: 3 },
   { code: 'QUALITY_CHECK', name: 'فحص الجودة', nameEn: 'Quality Check', color: '#06B6D4', icon: 'CheckCircle', sortOrder: 4 },
   { code: 'PACKAGED', name: 'تم التغليف', nameEn: 'Packaged', color: '#3B82F6', icon: 'Package', sortOrder: 5 },
-  { code: 'ON_HOLD_PREP', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 6 }
+  { code: 'ON_HOLD_PREP', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 6 },
+  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 }
 ];
 
 // WooCommerce default statuses mapping
@@ -170,6 +185,71 @@ const getStatusById = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// 🔄 Sync Helper: Mirror status to OrderStatusDefinition (workflow)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Sync a status from orderStatusConfig into orderStatusDefinition (workflow table).
+ * This ensures any status added/edited from settings/orders automatically appears
+ * in the TransitionRules on settings/order-workflow.
+ */
+const syncStatusToWorkflow = async (prisma, companyId, statusConfig) => {
+  try {
+    await prisma.orderStatusDefinition.upsert({
+      where: { companyId_code: { companyId, code: statusConfig.code } },
+      update: {
+        name: statusConfig.name,
+        color: statusConfig.color || '#6B7280',
+        sortOrder: statusConfig.sortOrder || 0,
+        description: statusConfig.description || null,
+        notifyCustomer: statusConfig.notifyCustomer || false,
+      },
+      create: {
+        companyId,
+        name: statusConfig.name,
+        code: statusConfig.code,
+        color: statusConfig.color || '#6B7280',
+        sortOrder: statusConfig.sortOrder || 0,
+        description: statusConfig.description || null,
+        notifyCustomer: statusConfig.notifyCustomer || false,
+        isTerminal: false,
+        lockAfterEntry: false,
+        requiresApprovalToExit: false,
+      }
+    });
+    console.log(`✅ [ORDER-STATUS-SYNC] Synced status "${statusConfig.code}" to workflow definitions for company ${companyId}`);
+  } catch (syncErr) {
+    // Non-fatal: log but don't fail the main request
+    console.warn(`⚠️ [ORDER-STATUS-SYNC] Could not sync status "${statusConfig.code}" to workflow:`, syncErr.message);
+  }
+};
+
+/**
+ * Remove a status from orderStatusDefinition when it is deactivated/deleted from orderStatusConfig.
+ * Only removes if no active workflow transitions reference it.
+ */
+const removeStatusFromWorkflow = async (prisma, companyId, code) => {
+  try {
+    const wfStatus = await prisma.orderStatusDefinition.findUnique({
+      where: { companyId_code: { companyId, code } },
+      include: { fromTransitions: true, toTransitions: true }
+    });
+    if (!wfStatus) return; // Already gone
+    if (wfStatus.fromTransitions.length > 0 || wfStatus.toTransitions.length > 0) {
+      // Has linked transition rules — keep it in workflow so existing rules still work
+      console.log(`ℹ️ [ORDER-STATUS-SYNC] Skipped removing "${code}" from workflow — has active transition rules.`);
+      return;
+    }
+    await prisma.orderStatusDefinition.delete({
+      where: { companyId_code: { companyId, code } }
+    });
+    console.log(`🗑️ [ORDER-STATUS-SYNC] Removed status "${code}" from workflow definitions for company ${companyId}`);
+  } catch (syncErr) {
+    console.warn(`⚠️ [ORDER-STATUS-SYNC] Could not remove status "${code}" from workflow:`, syncErr.message);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // ➕ Create Status
 // ═══════════════════════════════════════════════════════════════
 
@@ -216,10 +296,11 @@ const createStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'هذا الكود موجود بالفعل' });
     }
 
+    const finalCode = code.toUpperCase().replace(/\s+/g, '_');
     const status = await getSharedPrismaClient().orderStatusConfig.create({
       data: {
         companyId,
-        code: code.toUpperCase().replace(/\s+/g, '_'),
+        code: finalCode,
         name,
         nameEn,
         description,
@@ -239,6 +320,9 @@ const createStatus = async (req, res) => {
         smsTemplate
       }
     });
+
+    // 🔄 Auto-sync to workflow statuses so it appears in TransitionRules immediately
+    await syncStatusToWorkflow(getSharedPrismaClient(), companyId, status);
 
     res.status(201).json({
       success: true,
@@ -312,6 +396,14 @@ const updateStatus = async (req, res) => {
       }
     });
 
+    // 🔄 Auto-sync name/color/description to workflow so TransitionRules stay in sync
+    if (status.isActive !== false) {
+      await syncStatusToWorkflow(getSharedPrismaClient(), companyId, status);
+    } else {
+      // Status deactivated — try to remove from workflow if no transitions use it
+      await removeStatusFromWorkflow(getSharedPrismaClient(), companyId, status.code);
+    }
+
     res.json({
       success: true,
       message: 'تم تحديث الحالة بنجاح',
@@ -349,6 +441,9 @@ const deleteStatus = async (req, res) => {
       where: { id },
       data: { isActive: false }
     });
+
+    // 🔄 Remove from workflow definitions if no transitions reference it
+    await removeStatusFromWorkflow(getSharedPrismaClient(), companyId, existing.code);
 
     res.json({
       success: true,
@@ -594,7 +689,17 @@ const initializeStatuses = async (req, res) => {
 
     await initializeDefaultStatuses(companyId);
 
-    const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+    // 🔄 Sync all order statuses to workflow definitions (backfill)
+    const prisma = getSharedPrismaClient();
+    const orderStatuses = await prisma.orderStatusConfig.findMany({
+      where: { companyId, isActive: true, statusType: 'order' },
+      orderBy: { sortOrder: 'asc' }
+    });
+    for (const s of orderStatuses) {
+      await syncStatusToWorkflow(prisma, companyId, s);
+    }
+
+    const statuses = await prisma.orderStatusConfig.findMany({
       where: { companyId },
       orderBy: { sortOrder: 'asc' }
     });
@@ -704,7 +809,7 @@ const initializeDefaultStatuses = async (companyId) => {
             companyId,
             ...status,
             statusType: 'shipping',
-            source: 'system',
+            source: status.code.startsWith('TURBO_') ? 'turbo' : 'system',
             isSystemStatus: true
           }
         });
@@ -714,7 +819,7 @@ const initializeDefaultStatuses = async (companyId) => {
           data: {
             ...status,
             statusType: 'shipping',
-            source: 'system',
+            source: status.code.startsWith('TURBO_') ? 'turbo' : 'system',
             isSystemStatus: true,
             isActive: true
           }

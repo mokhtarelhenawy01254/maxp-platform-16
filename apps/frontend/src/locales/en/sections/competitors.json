@@ -189,9 +189,9 @@
   "weekly": "Weekly",
   "comprehensive": "Comprehensive",
   "metrics": {
-    "productCount": "Product Count",
-    "adCount": "Ad Count",
-    "reportCount": "Report Count"
+    "followersGrowth": "Followers Growth",
+    "engagementTrend": "Engagement Trend",
+    "noData": "No metrics data yet"
   },
   "battlecard": {
     "title": "Battlecard",
@@ -399,11 +399,6 @@
     "negative": "Negative",
     "neutral": "Neutral"
   },
-  "metrics": {
-    "followersGrowth": "Followers Growth",
-    "engagementTrend": "Engagement Trend",
-    "noData": "No metrics data yet"
-  },
   "notAvailable": "N/A",
   "errors": {
     "fetchFailed": "Failed to fetch competitors",
@@ -478,8 +473,6 @@
   "ourDescription": "Our Description",
   "easiestToUse": "Who's Easier to Use?",
   "us": "Us",
-  "competitor": "Competitor",
-  "equal": "Equal",
   "whoIsStronger": "Who's Stronger?",
   "additionalNotes": "Additional Notes",
   "noComparisons": "No comparisons yet",
@@ -518,7 +511,6 @@
   "additionalNotesPlaceholder": "Any additional notes...",
   "noDevIdeas": "No development ideas yet. Add a new idea.",
   "ideaTitlePlaceholder": "Development idea title",
-  "ideaImages": "Idea Images",
   "summary": "Summary",
   "competitorNamePlaceholder": "e.g. Noon, Amazon...",
   "founderNamePlaceholder": "e.g. John Smith",

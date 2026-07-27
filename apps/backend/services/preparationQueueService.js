@@ -51,6 +51,143 @@ const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES].filt
 const PREPARATION_BATCH_SIZE = 150;
 
 const toPreparationUpper = (value) => String(value || '').trim().toUpperCase();
+
+const PREPARATION_ONLY_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK'
+]);
+
+const getMappedRegularOrderStatus = (preparationStatus) =>
+  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
+    ? 'CONFIRMED'
+    : 'PROCESSING';
+
+const updatePreparationOrderStatus = async ({
+  orderIdentifier,
+  companyId,
+  status,
+  notes,
+  userId,
+  userName,
+}) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (!PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
+    const error = new Error(`الحالة "${normalizedStatus}" غير مسموح بها في قائمة التجهيز`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const prisma = getSharedPrismaClient();
+
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    }
+  });
+
+  if (order) {
+    const currentMetadata = parsePreparationJsonObject(order.metadata);
+    const previousPreparationStatus =
+      typeof currentMetadata.preparationStatus === 'string'
+        ? currentMetadata.preparationStatus
+        : order.status;
+    const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: mappedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        statusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: previousPreparationStatus,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'regular', order: updatedOrder };
+  }
+
+  const guestOrder = await prisma.guestOrder.findFirst({
+    where: {
+      OR: [
+        { id: orderIdentifier, companyId },
+        { orderNumber: orderIdentifier, companyId }
+      ]
+    },
+    select: { id: true, status: true, metadata: true }
+  });
+
+  if (guestOrder) {
+    const currentMetadata = parsePreparationJsonObject(guestOrder.metadata);
+    const nextMetadata = {
+      ...currentMetadata,
+      preparationStatus: normalizedStatus,
+      preparationStatusUpdatedAt: new Date().toISOString()
+    };
+
+    const updatedGuestOrder = await prisma.guestOrder.update({
+      where: { id: guestOrder.id },
+      data: {
+        status: normalizedStatus,
+        notes: notes || undefined,
+        metadata: JSON.stringify(nextMetadata),
+        OrderStatusHistory: {
+          create: {
+            status: normalizedStatus,
+            oldStatus: guestOrder.status,
+            reason: notes || 'Bulk preparation queue update',
+            changedBy: userId,
+            userName
+          }
+        },
+        updatedAt: new Date()
+      }
+    });
+
+    return { orderType: 'guest', order: updatedGuestOrder };
+  }
+
+  const notFoundError = new Error('الطلب غير موجود');
+  notFoundError.statusCode = 404;
+  throw notFoundError;
+};
+
+const getBulkStatusNote = (status) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+
+  if (normalizedStatus === 'TRASH') {
+    return 'Bulk trash';
+  }
+
+  if (normalizedStatus === 'RESTORE') {
+    return 'Bulk restore';
+  }
+
+  return 'Bulk status update';
+};
 const toPreparationNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -147,6 +284,9 @@ const normalizePreparationStage = (status) => {
   if (normalized === 'PENDING_CANCELLATION') {
     return 'PENDING_CANCELLATION';
   }
+  if (normalized === 'ON_HOLD_PREP') {
+    return 'ON_HOLD_PREP';
+  }
   return null;
 };
 
@@ -186,7 +326,9 @@ const createPreparationStageCounts = () => ({
   QUALITY_CHECK: 0,
   PACKAGED: 0,
   READY_TO_SHIP: 0,
-  STOCK_SHORTAGE: 0
+  STOCK_SHORTAGE: 0,
+  PENDING_CANCELLATION: 0,
+  ON_HOLD_PREP: 0
 });
 
 const dedupePreparationWarehouseName = (names) => {
@@ -415,6 +557,8 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
     notes: order.notes,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    printCount: order.orderInvoice?.printCount ?? 0,
+    printedAt: order.orderInvoice?.printedAt ?? null,
     metadata: {
       ...parsePreparationJsonObject(order.metadata),
       ...(merchantFulfillment
@@ -514,7 +658,9 @@ const mapGuestOrderToSimple = (order) => {
     updatedAt: order.updatedAt,
     metadata,
     isViewed: order.isViewed ?? false,
-    sourceType: 'storefront'
+    sourceType: 'storefront',
+    printCount: 0,
+    printedAt: null,
   };
 };
 
@@ -553,9 +699,14 @@ const buildPreparationOrderSummary = (
         typeof item.metadata.productName === 'string'
         ? item.metadata.productName
         : '';
+    const itemMetadata = typeof item.metadata === 'object' && item.metadata && !Array.isArray(item.metadata) ? item.metadata : {};
+    const color = item.color || itemMetadata.color || itemMetadata.productColor || '';
+    const size = item.size || itemMetadata.size || itemMetadata.productSize || '';
 
     return {
       displayName: item.productName || item.name || metadataProductName || 'منتج غير محدد',
+      color,
+      size,
       quantityNumber,
       availableInScope,
       reservedInScope,
@@ -570,6 +721,9 @@ const buildPreparationOrderSummary = (
     ? itemInsights.length > 0
     : true;
 
+  const totalUnits = itemInsights.reduce((sum, item) => sum + item.quantityNumber, 0);
+  const totalValue = toPreparationNumber(order.total);
+
   return {
     ...order,
     normalizedStatus,
@@ -577,6 +731,8 @@ const buildPreparationOrderSummary = (
     shortageHoldDetails,
     itemInsights,
     missingItemsCount,
+    totalUnits,
+    totalValue,
     isReady: itemInsights.length > 0 && missingItemsCount === 0,
     warehouseMatch,
     recommendedWarehouseName: dedupePreparationWarehouseName(
@@ -599,6 +755,7 @@ const createEmptyPreparationQueueResponse = (page, limit) => ({
     filteredTotal: 0,
     visibleTotal: 0,
     stageCounts: createPreparationStageCounts(),
+    statusCounts: {},
     readyCount: 0,
     shortageCount: 0,
     shortageHoldCount: 0,
@@ -621,31 +778,42 @@ const buildPreparationSqlOr = (conditions) => {
   return Prisma.sql`(${Prisma.join(conditions, Prisma.sql` OR `)})`;
 };
 
-const comparePreparationOrders = (left, right, prioritizeShortageOrders) => {
-  if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
-    const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
-      getPreparationShortageFollowUpState(
-        left.shortageHoldDetails.followUpDate,
-        left.stage
-      )
-    ];
-    const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
-      getPreparationShortageFollowUpState(
-        right.shortageHoldDetails.followUpDate,
-        right.stage
-      )
-    ];
+const VALID_SORT_BY = new Set(['createdAt', 'totalUnits', 'totalValue']);
 
-    if (leftPriority !== rightPriority) {
-      return leftPriority - rightPriority;
+const comparePreparationOrders = (left, right, prioritizeShortageOrders, sortByField = 'createdAt', sortOrderDir = 'desc') => {
+  if (sortByField === 'createdAt' && sortOrderDir === 'desc') {
+    if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
+      const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
+        getPreparationShortageFollowUpState(
+          left.shortageHoldDetails.followUpDate,
+          left.stage
+        )
+      ];
+      const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
+        getPreparationShortageFollowUpState(
+          right.shortageHoldDetails.followUpDate,
+          right.stage
+        )
+      ];
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
     }
+  }
+
+  const leftValue = sortByField === 'totalUnits' ? left.totalUnits : sortByField === 'totalValue' ? left.totalValue : left.createdAtMs;
+  const rightValue = sortByField === 'totalUnits' ? right.totalUnits : sortByField === 'totalValue' ? right.totalValue : right.createdAtMs;
+
+  if (leftValue !== rightValue) {
+    return sortOrderDir === 'asc' ? leftValue - rightValue : rightValue - leftValue;
   }
 
   if (prioritizeShortageOrders && left.missingItemsCount !== right.missingItemsCount) {
     return right.missingItemsCount - left.missingItemsCount;
   }
 
-  return right.createdAtMs - left.createdAtMs;
+  return left.createdAtMs - right.createdAtMs;
 };
 
 const stripPreparationTransientFields = ({
@@ -666,6 +834,8 @@ const matchesPreparationHaystackSearch = (order, searchQuery) => {
 
   const haystack = [
     order.orderNumber,
+    order.turboTrackingNumber,
+    order.turboShipmentId,
     order.customerName,
     order.customerPhone,
     order.customerEmail,
@@ -682,15 +852,30 @@ const matchesPreparationHaystackSearch = (order, searchQuery) => {
   return haystack.includes(searchQuery);
 };
 
+const hasShipmentTracking = (order) =>
+  (order.shipments || []).some((s) => s.trackingNumber);
+
 const matchesPreparationFilters = ({
   order,
   stockFilter,
   shortageReasonFilter,
   shortageOwnerQuery,
   shortageFollowUpFilter,
-  searchQuery
+  itemCountFilter,
+  searchQuery,
+  notPrinted,
+  noShippingCode,
+  productFilter,
+  colorFilter,
+  sizeFilter,
 }) => {
   if (!order.warehouseMatch) return false;
+
+  if (itemCountFilter === 'single' && order.itemInsights.length !== 1) return false;
+  if (itemCountFilter === 'multiple' && order.itemInsights.length <= 1) return false;
+
+  if (notPrinted && (order.printCount || 0) > 0) return false;
+  if (noShippingCode && (order.turboTrackingNumber || hasShipmentTracking(order))) return false;
 
   const hasShortageContext =
     order.missingItemsCount > 0 || order.stage === 'STOCK_SHORTAGE';
@@ -734,6 +919,27 @@ const matchesPreparationFilters = ({
     }
   }
 
+  if (productFilter || colorFilter || sizeFilter) {
+    const matchesProduct = (order.itemInsights || []).some(
+      (item) => {
+        let match = true;
+        if (productFilter) {
+          match = match && ((item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
+          (item.color && item.color.toLowerCase().includes(productFilter)) ||
+          (item.size && item.size.toLowerCase().includes(productFilter)));
+        }
+        if (colorFilter) {
+          match = match && (item.color && item.color.toLowerCase() === colorFilter);
+        }
+        if (sizeFilter) {
+          match = match && (item.size && item.size.toLowerCase() === sizeFilter);
+        }
+        return match;
+      }
+    );
+    if (!matchesProduct) return false;
+  }
+
   return matchesPreparationHaystackSearch(order, searchQuery);
 };
 
@@ -741,12 +947,14 @@ const collectTopPreparationOrders = ({
   buffer,
   order,
   limit,
-  prioritizeShortageOrders
+  prioritizeShortageOrders,
+  sortByField,
+  sortOrderDir,
 }) => {
   if (limit <= 0) return;
 
   buffer.push(order);
-  buffer.sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders));
+  buffer.sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders, sortByField, sortOrderDir));
 
   if (buffer.length > limit) {
     buffer.length = limit;
@@ -765,7 +973,15 @@ const STAGE_EFFECTIVE_STATUS_MAP = {
 
 const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata) => {
   const statuses = STAGE_EFFECTIVE_STATUS_MAP[stage];
-  if (!statuses) return null;
+  if (!statuses) {
+    if (useMetadata) {
+      const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
+      const placeholder = builder.pushValue(stage);
+      return `UPPER(${effectiveStatus}) = ${placeholder}`;
+    }
+    const placeholder = builder.pushValue(stage);
+    return `UPPER(${tableAlias}."status") = ${placeholder}`;
+  }
 
   if (useMetadata) {
     const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
@@ -785,13 +1001,19 @@ const buildSearchSqlCondition = (builder, search, tableAlias, isRegular) => {
   if (isRegular) {
     return builder.orGroup([
       `${tableAlias}."orderNumber" ILIKE ${searchPattern}`,
+      `${tableAlias}."turboTrackingNumber" ILIKE ${searchPattern}`,
+      `${tableAlias}."turboShipmentId" ILIKE ${searchPattern}`,
       `c."firstName" ILIKE ${searchPattern}`,
       `c."lastName" ILIKE ${searchPattern}`,
       `c."phone" ILIKE ${searchPattern}`,
     ]);
   }
 
-  return `${tableAlias}."orderNumber" ILIKE ${searchPattern}`;
+  return builder.orGroup([
+    `${tableAlias}."orderNumber" ILIKE ${searchPattern}`,
+    `${tableAlias}."turboTrackingNumber" ILIKE ${searchPattern}`,
+    `${tableAlias}."turboShipmentId" ILIKE ${searchPattern}`,
+  ]);
 };
 
 const fetchPreparationCandidateRows = async ({
@@ -894,7 +1116,6 @@ const fetchPreparationCandidateRows = async ({
 
     const duplicateConditions = [
       builder.equals('o_dup."companyId"', companyId),
-      builder.notInList('o_dup."status"::text', PREPARATION_DB_TERMINAL_STATUSES),
       'o_dup."orderNumber" = g."orderNumber"'
     ];
 
@@ -976,6 +1197,9 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
               product: { select: { id: true, name: true, images: true } }
             }
           },
+          orderInvoice: {
+            select: { printCount: true, printedAt: true }
+          },
           shipments: {
             select: {
               id: true,
@@ -1048,6 +1272,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const page = Math.max(1, parseInt(query.page, 10) || 1);
   const limit = Math.max(1, parseInt(query.limit, 10) || 12);
   const activeStage = toPreparationUpper(query.stage || 'ALL');
+  const resolvedStage = activeStage === 'ALL' ? 'ALL' : normalizePreparationStage(activeStage) || activeStage;
   const searchTerm = String(query.search || '').trim();
   const searchQuery = searchTerm.toLowerCase();
   const selectedWarehouseId = String(query.warehouseId || '').trim();
@@ -1055,7 +1280,15 @@ const getPreparationQueue = async ({ user, query }) => {
   const shortageReasonFilter = String(query.shortageReason || 'all').trim();
   const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
   const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
+  const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
   const prioritizeShortageOrders = query.prioritizeShortageOrders !== 'false';
+  const sortByField = VALID_SORT_BY.has(query.sortBy) ? query.sortBy : 'createdAt';
+  const sortOrderDir = query.sortOrder === 'asc' ? 'asc' : 'desc';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1085,6 +1318,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const requestedVisibleLimit = Math.max(limit, page * limit);
   const batchSize = Math.max(PREPARATION_BATCH_SIZE, limit * 4);
   const stageCounts = createPreparationStageCounts();
+  const statusCounts = {};
   const shortageOwnerSet = new Set();
   const topVisibleOrders = [];
 
@@ -1105,7 +1339,7 @@ const getPreparationQueue = async ({ user, query }) => {
       merchantId,
       offset: candidateOffset,
       limit: batchSize,
-      activeStage,
+      activeStage: 'ALL',
       search: searchQuery,
     });
 
@@ -1175,7 +1409,13 @@ const getPreparationQueue = async ({ user, query }) => {
         shortageReasonFilter,
         shortageOwnerQuery,
         shortageFollowUpFilter,
-        searchQuery
+        itemCountFilter,
+        searchQuery,
+        notPrinted,
+        noShippingCode,
+        productFilter,
+        colorFilter,
+        sizeFilter,
       });
 
       if (!matchesFilters) {
@@ -1185,8 +1425,9 @@ const getPreparationQueue = async ({ user, query }) => {
       filteredTotal += 1;
       stageCounts.ALL += 1;
       if (order.stage) {
-        stageCounts[order.stage] += 1;
+        stageCounts[order.stage] = (stageCounts[order.stage] || 0) + 1;
       }
+      statusCounts[order.normalizedStatus] = (statusCounts[order.normalizedStatus] || 0) + 1;
 
       if (order.isReady) {
         readyCount += 1;
@@ -1214,13 +1455,15 @@ const getPreparationQueue = async ({ user, query }) => {
         readyToShipCount += 1;
       }
 
-      if (activeStage === 'ALL' || order.stage === activeStage) {
+      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
         visibleTotal += 1;
         collectTopPreparationOrders({
           buffer: topVisibleOrders,
           order,
           limit: requestedVisibleLimit,
-          prioritizeShortageOrders
+          prioritizeShortageOrders,
+          sortByField,
+          sortOrderDir,
         });
       }
     });
@@ -1230,7 +1473,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const safePage = Math.min(page, pages);
   const startIndex = (safePage - 1) * limit;
   const paginatedOrders = topVisibleOrders
-    .sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders))
+    .sort((left, right) => comparePreparationOrders(left, right, prioritizeShortageOrders, sortByField, sortOrderDir))
     .slice(startIndex, startIndex + limit)
     .map(stripPreparationTransientFields);
   const shortageOwnerOptions = [...shortageOwnerSet].sort((left, right) =>
@@ -1250,6 +1493,7 @@ const getPreparationQueue = async ({ user, query }) => {
       filteredTotal,
       visibleTotal,
       stageCounts,
+      statusCounts,
       readyCount,
       shortageCount,
       shortageHoldCount,
@@ -1261,6 +1505,180 @@ const getPreparationQueue = async ({ user, query }) => {
   };
 };
 
+const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, userName }) => {
+  if (!user) {
+    const error = new Error('غير مصرح - يجب تسجيل الدخول');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  let companyId = user.companyId || user.effectiveCompanyId;
+  if (!companyId) {
+    const error = new Error('غير مصرح - معرف الشركة مطلوب');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const activeStage = toPreparationUpper(query.stage || 'ALL');
+  const resolvedStage = activeStage === 'ALL' ? 'ALL' : normalizePreparationStage(activeStage) || activeStage;
+  const searchTerm = String(query.search || '').trim();
+  const searchQuery = searchTerm.toLowerCase();
+  const selectedWarehouseId = String(query.warehouseId || '').trim();
+  const stockFilter = String(query.stockFilter || 'all').trim().toLowerCase();
+  const shortageReasonFilter = String(query.shortageReason || 'all').trim();
+  const shortageOwnerQuery = String(query.shortageOwner || '').trim().toLowerCase();
+  const shortageFollowUpFilter = String(query.shortageFollowUp || 'all').trim().toLowerCase();
+  const itemCountFilter = String(query.itemCountFilter || 'all').trim().toLowerCase();
+  const notPrinted = query.notPrinted === 'true';
+  const noShippingCode = query.noShippingCode === 'true';
+  const productFilter = String(query.productFilter || '').trim().toLowerCase();
+  const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
+  const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
+
+  const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
+  if (!normalizedStatus) {
+    const error = new Error('حالة الطلب مطلوبة');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let affiliateId = query.affiliateId;
+  let merchantId = null;
+
+  if (isMerchantUser(user)) {
+    const merchant = await requireMerchantAccountForUser(user);
+    merchantId = merchant.id;
+    companyId = merchant.companyId;
+  }
+
+  if (user.role === 'AFFILIATE') {
+    const affiliate = await getSharedPrismaClient().affiliate.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!affiliate) {
+      return { totalRequested: 0, successCount: 0, results: [] };
+    }
+    affiliateId = affiliate.id;
+  }
+
+  if (affiliateId) {
+    affiliateId = String(affiliateId).trim();
+  }
+
+  const batchSize = PREPARATION_BATCH_SIZE;
+  let candidateOffset = 0;
+  const matchingOrderNumbers = [];
+
+  while (true) {
+    const candidateRows = await fetchPreparationCandidateRows({
+      companyId,
+      affiliateId,
+      merchantId,
+      offset: candidateOffset,
+      limit: batchSize,
+      activeStage: 'ALL',
+      search: searchQuery,
+    });
+
+    if (!candidateRows.length) {
+      break;
+    }
+
+    candidateOffset += candidateRows.length;
+
+    const batchOrders = await fetchPreparationBatchOrders(candidateRows, { merchantId });
+    if (!batchOrders.length) {
+      continue;
+    }
+
+    const inventoryProductIds = [...new Set(
+      batchOrders
+        .flatMap((order) => (Array.isArray(order.items) ? order.items : []))
+        .map((item) => String(item.productId || '').trim())
+        .filter(Boolean)
+    )];
+
+    const inventoryRecords = inventoryProductIds.length > 0
+      ? await getSharedPrismaClient().inventory.findMany({
+        where: {
+          productId: { in: inventoryProductIds },
+          warehouse: {
+            companyId,
+            ...(merchantId ? { merchantId } : {})
+          }
+        },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, sku: true } }
+        }
+      })
+      : [];
+
+    const inventorySummaryByProduct = buildPreparationInventorySummary(inventoryRecords);
+    const batchPreparationOrders = batchOrders
+      .map((order) =>
+        buildPreparationOrderSummary(order, inventorySummaryByProduct, selectedWarehouseId)
+      )
+      .filter(Boolean);
+
+    batchPreparationOrders.forEach((order) => {
+      const matchesFilters = matchesPreparationFilters({
+        order,
+        stockFilter,
+        shortageReasonFilter,
+        shortageOwnerQuery,
+        shortageFollowUpFilter,
+        itemCountFilter,
+        searchQuery,
+        notPrinted,
+        noShippingCode,
+        productFilter,
+        colorFilter,
+        sizeFilter,
+      });
+
+      if (!matchesFilters) return;
+
+      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
+        matchingOrderNumbers.push(order.orderNumber);
+      }
+    });
+  }
+
+  if (matchingOrderNumbers.length === 0) {
+    return { totalRequested: 0, successCount: 0, results: [] };
+  }
+
+  const bulkNote = notes || getBulkStatusNote(normalizedStatus);
+  const results = [];
+
+  for (const orderNumber of matchingOrderNumbers) {
+    try {
+      const updateResult = await updatePreparationOrderStatus({
+        orderIdentifier: orderNumber,
+        companyId,
+        status: normalizedStatus,
+        notes: bulkNote,
+        userId,
+        userName,
+      });
+      results.push({ id: orderNumber, success: true, orderType: updateResult.orderType });
+    } catch (err) {
+      results.push({ id: orderNumber, success: false, error: err.message });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+
+  return {
+    totalRequested: matchingOrderNumbers.length,
+    successCount,
+    results
+  };
+};
+
 module.exports = {
-  getPreparationQueue
+  getPreparationQueue,
+  bulkUpdateByFilters
 };

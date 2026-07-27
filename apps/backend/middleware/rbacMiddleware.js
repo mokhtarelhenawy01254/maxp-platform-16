@@ -84,6 +84,8 @@ const PERMISSIONS = {
   'bulkOrders.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'bulkOrders.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'bulkOrders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.import': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.execute': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 
   // Orders — main
   'orders.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
@@ -93,7 +95,11 @@ const PERMISSIONS = {
   'orders.status.change': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.assign': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'orders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.bulk.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'orders.bulk.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'orders.invoice.print': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
 
   // Orders — Incomplete Orders section

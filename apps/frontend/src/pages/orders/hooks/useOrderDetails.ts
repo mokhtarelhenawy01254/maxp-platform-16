@@ -43,16 +43,16 @@ const resolveOrderImageSrc = (value: any): string => {
 };
 
 const looksLikeSizeValue = (value: unknown): boolean => {
-  if (typeof value !== "string") return false;
-
+  if (value == null) return false;
+  const str = String(value).trim();
   return /^(?:xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl|4xl|5xl|free|one size|onesize|universal|small|medium|large|extra large|\d{1,3}(?:\.\d+)?)$/i.test(
-    value.trim(),
+    str,
   );
 };
 
 const normalizeVariantDisplayValues = (color: unknown, size: unknown) => {
-  const normalizedColor = typeof color === "string" ? color.trim() : "";
-  let normalizedSize = typeof size === "string" ? size.trim() : "";
+  const normalizedColor = typeof color === "string" ? color.trim() : (color != null ? String(color).trim() : "");
+  let normalizedSize = size != null ? String(size).trim() : "";
 
   if (
     normalizedColor &&
@@ -153,17 +153,30 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
       { code: "PARTIALLY_DELIVERED", name: "تسليم جزئي", color: "#FBBF24" },
       { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
+      // 🚀 حالات شحن تربو (Turbo Shipping Statuses 1..13)
+      { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
+      { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
+      { code: "processing", name: "تربو: قيد التنفيذ بالفرع (كود 3)", color: "#8B5CF6" },
+      { code: "out_for_delivery", name: "تربو: مسلمة للمندوب (كود 4)", color: "#06B6D4" },
+      { code: "returned_to_company", name: "تربو: مرتجعات بالشركة (كود 5)", color: "#991B1B" },
+      { code: "cancelled", name: "تربو: ملغي من الشحن (كود 6)", color: "#DC2626" },
+      { code: "delivered", name: "تربو: تم التسليم (كود 7)", color: "#10B981" },
+      { code: "remitted", name: "تربو: تم التوريد وتحصيل المبلغ (كود 8)", color: "#047857" },
+      { code: "archived", name: "تربو: شحنة محذوفة (كود 9)", color: "#78716C" },
+      { code: "returned_resent", name: "تربو: معاد إرسالها (كود 10)", color: "#2563EB" },
+      { code: "returned_missing", name: "تربو: مرتجع مفقود (كود 11)", color: "#7F1D1D" },
+      { code: "returned_destroyed", name: "تربو: مرتجع معدوم (كود 12)", color: "#451A03" },
+      { code: "delayed", name: "تربو: مؤجلة مع المندوب (كود 13)", color: "#F97316" },
     ];
 
     try {
-      const response = await apiClient.get("/order-status?statusType=order");
+      const response = await apiClient.get("/order-status");
       console.log("📊 Order Statuses API Response:", response.data);
       if (response.data.success) {
         const apiStatuses = response.data.data || [];
         console.log("📊 Loaded statuses from API:", apiStatuses);
 
         // دمج الحالات من API مع الحالات الافتراضية
-        // الحالات من API لها الأولوية
         const statusMap = new Map();
 
         // أضف الحالات الافتراضية أولاً
@@ -171,8 +184,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           statusMap.set(status.code, status);
         });
 
-        // اكتب فوقها بالحالات من API (تشمل الحالات المخصصة)
-        apiStatuses.forEach((status) => {
+        // اكتب فوقها بالحالات من API
+        apiStatuses.forEach((status: any) => {
           statusMap.set(status.code, status);
         });
 
@@ -414,24 +427,27 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
               return "";
             })();
 
+            const toStr = (v: unknown): string =>
+              v != null ? String(v).trim() : "";
+
             const extractedProductSize = (() => {
               // 1. Direct fields
-              if (item.productSize) return item.productSize;
-              if (item.size) return item.size;
+              if (item.productSize != null) return toStr(item.productSize);
+              if (item.size != null) return toStr(item.size);
 
               // 2. Metadata
-              if (itemMetadata.size) return itemMetadata.size;
-              if (itemMetadata.attributeValues?.["المقاس"])
-                return itemMetadata.attributeValues["المقاس"];
-              if (itemMetadata.attributeValues?.["size"])
-                return itemMetadata.attributeValues["size"];
+              if (itemMetadata.size != null) return toStr(itemMetadata.size);
+              if (itemMetadata.attributeValues?.["المقاس"] != null)
+                return toStr(itemMetadata.attributeValues["المقاس"]);
+              if (itemMetadata.attributeValues?.["size"] != null)
+                return toStr(itemMetadata.attributeValues["size"]);
 
               // 3. Variant Relation
               if (item.variant) {
-                if (variantMetadata.attributeValues?.["المقاس"])
-                  return variantMetadata.attributeValues["المقاس"];
-                if (variantMetadata.attributeValues?.["size"])
-                  return variantMetadata.attributeValues["size"];
+                if (variantMetadata.attributeValues?.["المقاس"] != null)
+                  return toStr(variantMetadata.attributeValues["المقاس"]);
+                if (variantMetadata.attributeValues?.["size"] != null)
+                  return toStr(variantMetadata.attributeValues["size"]);
 
                 if (item.variant.name) {
                   const parts = item.variant.name
@@ -469,6 +485,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
                 resolveOrderImageSrc(itemMetadata.images) ||
                 resolveOrderImageSrc(item.product?.images) ||
                 "",
+              productSku: item.productSku || "",
               price: validPrice,
               quantity: validQuantity,
               total: parseFloat(item.total) || validPrice * validQuantity,
@@ -795,12 +812,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
 
       // 2. Update Items
-      const itemsToUpdate =
-        editForm.items && editForm.items.length > 0
-          ? editForm.items
-          : order.items && order.items.length > 0
-            ? order.items
-            : [];
+      const itemsToUpdate = editForm.items || [];
 
       if (itemsToUpdate && itemsToUpdate.length > 0) {
         const newItems = itemsToUpdate.map((item: any) => {
@@ -817,8 +829,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           return {
             productId: item.productId || item.id || "",
             productName: item.productName || item.name || "",
-            productColor: item.productColor || null,
-            productSize: item.productSize || null,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize != null ? String(item.productSize) : null,
             price,
             quantity,
             total: price * quantity,

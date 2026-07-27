@@ -119,6 +119,8 @@ const OrderDetails: React.FC = () => {
     turboTrackingData,
     shippingComparison,
     createShipment,
+    updateShipment,
+    syncStatus,
     getWaybill,
     cancelShipment,
     unlinkShipment,
@@ -208,7 +210,7 @@ const OrderDetails: React.FC = () => {
     ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS,
   );
   const showPartnerOperationsCard = !isMerchant;
-  const showOrderSourceCard = !isMerchant && hasOrderSourceTrackingApp;
+  const showOrderSourceCard = !isMerchant;
   const showOrderAttributionCard = !isMerchant && hasOrderCampaignAttributionApp;
   const showConfirmationDistributionCard =
     !isMerchant && hasOrderConfirmationDistributionApp;
@@ -597,11 +599,11 @@ const OrderDetails: React.FC = () => {
 
           // Extract from attributeValues
           if (variantMeta.attributeValues) {
-            if (variantMeta.attributeValues["اللون"] && !productColor) {
-              productColor = variantMeta.attributeValues["اللون"];
+            if (variantMeta.attributeValues["اللون"] != null && !productColor) {
+              productColor = String(variantMeta.attributeValues["اللون"]);
             }
-            if (variantMeta.attributeValues["المقاس"] && !productSize) {
-              productSize = variantMeta.attributeValues["المقاس"];
+            if (variantMeta.attributeValues["المقاس"] != null && !productSize) {
+              productSize = String(variantMeta.attributeValues["المقاس"]);
             }
           }
         } catch (e) {
@@ -689,6 +691,8 @@ const OrderDetails: React.FC = () => {
       getFirstImage(product.image) ||
       "";
 
+    const itemSku = variant?.sku || product.sku;
+
     const newItem = {
       productId: variant?.id || product.id,
       productName: product.name,
@@ -696,13 +700,14 @@ const OrderDetails: React.FC = () => {
       quantity: 1,
       total: actualPrice,
       productColor,
-      productSize,
+      productSize: productSize != null ? String(productSize) : "",
       productImage, // ✅ ADDED: Image field
+      productSku: itemSku,
       metadata: {
         ...metadata,
         image: productImage, // Add to metadata as backup
         variantId: variant?.id,
-        sku: variant?.sku || product.sku,
+        sku: itemSku,
         originalProductId: product.id,
       },
     };
@@ -977,6 +982,8 @@ const OrderDetails: React.FC = () => {
             loadingComparison={false}
             turboLoading={turboLoading}
             onCreateShipment={handleCreateShipment}
+            onUpdateShipment={updateShipment}
+            onSyncStatus={syncStatus}
             onPrintWaybill={() => {
               void getWaybill();
             }}
@@ -1006,6 +1013,27 @@ const OrderDetails: React.FC = () => {
 
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
+
+          {/* مبلغ التحصيل في حالة المرتجع */}
+          {(() => {
+            const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
+            const returnAmt = meta.returnAmount || null;
+            const shippingCost = parseFloat(order.shipping || order.shippingCost || '0');
+            const displayAmount = returnAmt ? parseFloat(returnAmt) : shippingCost;
+            return displayAmount > 0 ? (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">💰 مبلغ التحصيل في حالة المرتجع</span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    {displayAmount.toFixed(2)} ج.م
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
+                  {returnAmt ? 'قيمة مخصصة' : 'افتراضي: مصاريف الشحن'} — يظهر في شركة الشحن كمبلغ التحصيل عند الإرجاع
+                </p>
+              </div>
+            ) : null;
+          })()}
 
           {isCancellationStatus(order.status) && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/50 dark:bg-red-950/20">

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
@@ -202,17 +203,17 @@ const PosProductImage = ({
 };
 
 const PosPage = () => {
-  const { actualTheme, toggleTheme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { actualTheme, toggleTheme } = useTheme();
   const isDark = actualTheme === "dark";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(t("posPage.all"));
+  const [selectedCategory, setSelectedCategory] = useState(t('pos.k_1'));
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [categories, setCategories] = useState<string[]>([t("posPage.all")]);
+  const [categories, setCategories] = useState<string[]>([t('pos.k_1')]);
   const [processing, setProcessing] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showShiftReport, setShowShiftReport] = useState(false);
@@ -262,13 +263,13 @@ const PosPage = () => {
             name: p.name,
             price: Number(p.price),
             sku: p.sku || "",
-            category: p.category?.name || t("posPage.notSpecified"),
+            category: p.category?.name || t('pos.k_13'),
             images: getImageCandidates(p.mainImage, p.image, p.images),
             stock: Number(p.stock || 0),
           }));
           setProducts(prods);
           setCategories([
-            t("posPage.all"),
+            t('pos.k_1'),
             ...(Array.from(
               new Set(prods.map((product) => product.category)),
             ) as string[]),
@@ -292,12 +293,12 @@ const PosPage = () => {
     const q = searchQuery.toLowerCase();
     return (
       (p.name.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)) &&
-      (selectedCategory === t("posPage.all") || p.category === selectedCategory)
+      (selectedCategory === t('pos.k_1') || p.category === selectedCategory)
     );
   });
 
   const addToCart = (p: Product) => {
-    if (p.stock <= 0) return alert(t("posPage.notAvailable"));
+    if (p.stock <= 0) return alert(t('pos.k_14'));
     setCart((prev) => {
       const ex = prev.find((i) => i.id === p.id);
       if (ex) {
@@ -319,7 +320,7 @@ const PosPage = () => {
   const removeItem = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
   const clearCart = () => {
-    if (cart.length > 0 && !window.confirm(t("posPage.clearCartConfirm"))) return;
+    if (cart.length > 0 && !window.confirm(t('pos.k_15'))) return;
     setCart([]);
     setCustomer(null);
   };
@@ -332,7 +333,7 @@ const PosPage = () => {
         const p = products.find((x) => x.sku === sku || x.id === sku);
         if (p) {
           if (p.stock <= 0) {
-            alert(t("posPage.notAvailable"));
+            alert(t('pos.k_14'));
           } else {
             setCart((prev) => {
               const ex = prev.find((i) => i.id === p.id);
@@ -443,7 +444,7 @@ const PosPage = () => {
         setCashReceived(0);
       } else alert(data.message);
     } catch {
-      alert(t("posPage.connectionError"));
+      alert(t('pos.k_16'));
     } finally {
       setProcessing(false);
     }
@@ -451,19 +452,16 @@ const PosPage = () => {
 
   const printReceipt = () => {
     if (!lastOrder) return;
-    const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
     const w = window.open("", "", "width=400,height=600");
     if (w) {
       w.document.write(
         '<html dir="rtl"><head><style>body{font:12px Arial;max-width:280px;margin:auto;padding:20px}.c{text-align:center}.r{display:flex;justify-content:space-between;margin:4px 0}.b{font-weight:bold}.hr{border-top:1px dashed #000;margin:10px 0}</style></head><body>',
       );
       w.document.write(
-        '<div class="c"><h2>' +
-          t("posPage.posReceipt") +
-          '</h2><p>' +
+        '<div class="c"><h2>' + t('pos.k_3') + '</h2><p>' +
           lastOrder.orderNumber +
           "</p><p>" +
-          lastOrder.date.toLocaleString(locale) +
+          lastOrder.date.toLocaleString("ar-EG") +
           '</p></div><div class="hr"></div>',
       );
       lastOrder.items.forEach((i) =>
@@ -473,53 +471,39 @@ const PosPage = () => {
             " x" +
             i.qty +
             "</span><span>" +
-            (i.price * i.qty).toLocaleString(locale) +
+            (i.price * i.qty).toLocaleString() +
             "</span></div>",
         ),
       );
       w.document.write(
-        '<div class="hr"></div><div class="r"><span>' +
-          t("posPage.subtotal") +
-          '</span><span>' +
-          lastOrder.subtotal.toLocaleString(locale) +
+        '<div class="hr"></div><div class="r"><span>' + t('pos.k_4') + '</span><span>' +
+          lastOrder.subtotal.toLocaleString() +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r"><span>' +
-          t("posPage.vat") +
-          '</span><span>' +
-          lastOrder.tax.toLocaleString(locale) +
+        '<div class="r"><span>' + t('pos.k_5') + '</span><span>' +
+          lastOrder.tax.toLocaleString() +
           "</span></div>",
       );
       w.document.write(
-        '<div class="r b"><span>' +
-          t("posPage.total") +
-          '</span><span>' +
-          lastOrder.total.toLocaleString(locale) +
-          " " +
-          t("posPage.egp") +
-          "</span></div>",
+        '<div class="r b"><span>' + t('pos.k_6') + '</span><span>' +
+          lastOrder.total.toLocaleString() +
+          t('pos.k_17'),
       );
       if (lastOrder.paymentMethod === "CASH") {
         w.document.write(
-          '<div class="hr"></div><div class="r"><span>' +
-            t("posPage.paid") +
-            '</span><span>' +
-            (lastOrder.cashReceived || 0).toLocaleString(locale) +
+          '<div class="hr"></div><div class="r"><span>' + t('pos.k_7') + '</span><span>' +
+            (lastOrder.cashReceived || 0).toLocaleString() +
             "</span></div>",
         );
         w.document.write(
-          '<div class="r b"><span>' +
-            t("posPage.change") +
-            '</span><span>' +
-            (lastOrder.change || 0).toLocaleString(locale) +
+          '<div class="r b"><span>' + t('pos.k_8') + '</span><span>' +
+            (lastOrder.change || 0).toLocaleString() +
             "</span></div>",
         );
       }
       w.document.write(
-        '<div class="hr"></div><p class="c">' +
-          t("posPage.thankYou") +
-          '</p></body></html>',
+        '<div class="hr"></div><p class="c">' + t('pos.k_9') + '</p></body></html>',
       );
       w.document.close();
       setTimeout(() => {
@@ -544,7 +528,7 @@ const PosPage = () => {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 flex" dir="rtl">
+    <div className="bg-gray-100 dark:bg-gray-900 flex" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
       <div className="flex-1 flex flex-col">
         <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 py-3 flex gap-4">
           <div className="relative flex-1">
@@ -552,7 +536,7 @@ const PosPage = () => {
             <input
               ref={searchRef}
               type="text"
-              placeholder={t("posPage.searchPlaceholder")}
+              placeholder={t('pos.k_2')}
               className="w-full pr-10 pl-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -562,7 +546,7 @@ const PosPage = () => {
           <button
             onClick={toggleTheme}
             className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            title={isDark ? t("posPage.toggleLightMode") : t("posPage.toggleDarkMode")}
+            title={isDark ? t('pos.k_18') : t('pos.k_19')}
           >
             {isDark ? (
               <Sun className="h-5 w-5 text-yellow-500" />
@@ -652,7 +636,7 @@ const PosPage = () => {
                             : "bg-green-500")
                       }
                     >
-                      {p.stock <= 0 ? t("posPage.outOfStock") : p.stock}
+                      {p.stock <= 0 ? t('pos.k_20') : p.stock}
                     </span>
                   </div>
                   <div className="p-3">
@@ -660,7 +644,7 @@ const PosPage = () => {
                       {p.name}
                     </h3>
                     <p className="text-blue-600 font-bold mt-1">
-                      {p.price.toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US")} {t("posPage.egp")}
+                      {p.price.toLocaleString()} {t('pos.k_39')}
                     </p>
                   </div>
                 </div>
@@ -670,10 +654,10 @@ const PosPage = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 px-4 py-2 flex items-center gap-2 text-xs text-gray-500">
           <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-            {t("posPage.f2Search")}
+            {t('pos.k_44')}
           </span>
           <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
-            {t("posPage.f4Pay")}
+            {t('pos.k_45')}
           </span>
         </div>
       </div>
@@ -683,7 +667,7 @@ const PosPage = () => {
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-6 w-6 text-blue-600" />
             <span className="font-bold text-lg text-gray-900 dark:text-white">
-              السلة
+              {t('pos.k_46')}
             </span>
             <span className="bg-blue-100 text-blue-600 text-sm px-2 py-0.5 rounded-full">
               {cart.length}
@@ -700,7 +684,7 @@ const PosPage = () => {
           {!cart.length ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600">
               <ShoppingCart className="h-16 w-16 mb-4 opacity-30" />
-              <p>السلة فارغة</p>
+              <p>{t('pos.k_10')}</p>
             </div>
           ) : (
             cart.map((item) => (
@@ -732,7 +716,7 @@ const PosPage = () => {
                       {item.name}
                     </h4>
                     <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">
-                      {(item.price * item.qty).toLocaleString()} ج.م
+                      {(item.price * item.qty).toLocaleString()} {t('pos.k_39')}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -766,21 +750,21 @@ const PosPage = () => {
         <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 space-y-3">
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex justify-between">
-              <span>المجموع</span>
+              <span>{t('pos.k_4')}</span>
               <span className="text-gray-900 dark:text-white">
-                {subtotal.toLocaleString()} ج.م
+                {subtotal.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>الضريبة 14%</span>
+              <span>{t('pos.k_11')}</span>
               <span className="text-gray-900 dark:text-white">
-                {tax.toLocaleString()} ج.م
+                {tax.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
             <div className="flex justify-between text-xl font-bold pt-2 border-t dark:border-gray-700 text-gray-900 dark:text-white">
-              <span>الإجمالي</span>
+              <span>{t('pos.k_6')}</span>
               <span className="text-blue-600 dark:text-blue-400">
-                {total.toLocaleString()} ج.م
+                {total.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
           </div>
@@ -790,7 +774,7 @@ const PosPage = () => {
               className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg flex flex-col items-center hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
             >
               <FileText className="h-5 w-5" />
-              <span className="text-xs mt-1">تقرير</span>
+              <span className="text-xs mt-1">{t('pos.k_12')}</span>
             </button>
             <button
               onClick={() => {
@@ -801,7 +785,7 @@ const PosPage = () => {
               className="col-span-2 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 font-bold transition-all shadow-md active:scale-95"
             >
               <CreditCard className="h-5 w-5" />
-              دفع (F4)
+              {t('pos.k_47')}
             </button>
           </div>
         </div>
@@ -812,7 +796,7 @@ const PosPage = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                💳 الدفع
+                {t('pos.k_48')}
               </h2>
               <button
                 onClick={() => setShowPayment(false)}
@@ -822,9 +806,9 @@ const PosPage = () => {
               </button>
             </div>
             <div className="text-center mb-6">
-              <p className="text-gray-500 dark:text-gray-400">الإجمالي</p>
+              <p className="text-gray-500 dark:text-gray-400">{t('pos.k_6')}</p>
               <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                {total.toLocaleString()} ج.م
+                {total.toLocaleString()} {t('pos.k_39')}
               </p>
             </div>
             <div className="flex gap-2 mb-6">
@@ -842,12 +826,12 @@ const PosPage = () => {
                   {m === "CASH" ? (
                     <>
                       <Banknote className="h-5 w-5" />
-                      نقدي
+                      {t('pos.k_49')}
                     </>
                   ) : (
                     <>
                       <CreditCard className="h-5 w-5" />
-                      بطاقة
+                      {t('pos.k_50')}
                     </>
                   )}
                 </button>
@@ -856,7 +840,7 @@ const PosPage = () => {
             {paymentMethod === "CASH" && (
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  المبلغ المستلم
+                  {t('pos.k_51')}
                 </label>
                 <input
                   type="number"
@@ -877,9 +861,9 @@ const PosPage = () => {
                 </div>
                 {cashReceived >= total && (
                   <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl text-center border border-green-100 dark:border-green-900/30">
-                    <p className="text-gray-600 dark:text-gray-400">الباقي</p>
+                    <p className="text-gray-600 dark:text-gray-400">{t('pos.k_8')}</p>
                     <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                      {change.toLocaleString()} ج.م
+                      {change.toLocaleString()} {t('pos.k_39')}
                     </p>
                   </div>
                 )}
@@ -897,7 +881,7 @@ const PosPage = () => {
               ) : (
                 <Check className="h-6 w-6" />
               )}
-              تأكيد الدفع
+              {t('pos.k_52')}
             </button>
           </div>
         </div>
@@ -909,7 +893,7 @@ const PosPage = () => {
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">✅</div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                تم الطلب بنجاح
+                {t('pos.k_53')}
               </h2>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
                 {lastOrder.orderNumber}
@@ -919,9 +903,9 @@ const PosPage = () => {
               lastOrder.change &&
               lastOrder.change > 0 && (
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 mb-6 text-center border border-green-100 dark:border-green-900/30">
-                  <p className="text-gray-600 dark:text-gray-400">الباقي</p>
+                  <p className="text-gray-600 dark:text-gray-400">{t('pos.k_8')}</p>
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    {lastOrder.change.toLocaleString()} ج.م
+                    {lastOrder.change.toLocaleString()} {t('pos.k_39')}
                   </p>
                 </div>
               )}
@@ -931,13 +915,13 @@ const PosPage = () => {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
                 <Printer className="h-5 w-5" />
-                طباعة
+                {t('pos.k_54')}
               </button>
               <button
                 onClick={() => setShowReceipt(false)}
                 className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
-                إغلاق
+                {t('pos.k_55')}
               </button>
             </div>
           </div>
@@ -949,7 +933,7 @@ const PosPage = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                📊 تقرير الوردية
+                {t('pos.k_56')}
               </h2>
               <button
                 onClick={() => setShowShiftReport(false)}
@@ -962,16 +946,16 @@ const PosPage = () => {
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border border-blue-100 dark:border-blue-900/30">
                 <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("posPage.totalSales")}
+                  {t('pos.k_57')}
                 </p>
                 <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {shiftData.totalSales.toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US")} {t("posPage.egp")}
+                  {shiftData.totalSales.toLocaleString()} {t('pos.k_39')}
                 </p>
               </div>
               <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center border border-green-100 dark:border-green-900/30">
                 <Package className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("posPage.ordersCount")}
+                  {t('pos.k_58')}
                 </p>
                 <p className="text-xl font-bold text-green-600 dark:text-green-400">
                   {shiftData.totalOrders}
@@ -980,7 +964,7 @@ const PosPage = () => {
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center border border-purple-100 dark:border-purple-900/30">
                 <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("posPage.totalProducts")}
+                  {t('pos.k_59')}
                 </p>
                 <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
                   {shiftData.totalItems}
@@ -989,7 +973,7 @@ const PosPage = () => {
               <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 text-center border border-orange-100 dark:border-orange-900/30">
                 <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("posPage.shiftStart")}
+                  {t('pos.k_60')}
                 </p>
                 <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
                   {shiftData.startTime.toLocaleTimeString("ar-EG")}
@@ -1002,13 +986,13 @@ const PosPage = () => {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
                 <RotateCcw className="h-5 w-5" />
-                {t("posPage.newShift")}
+                {t('pos.k_61')}
               </button>
               <button
                 onClick={() => setShowShiftReport(false)}
                 className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
-                {t("posPage.close")}
+                {t('pos.k_55')}
               </button>
             </div>
           </div>

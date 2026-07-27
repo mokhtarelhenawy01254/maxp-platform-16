@@ -5,7 +5,7 @@
   "socialLinks": "روابط السوشيال",
   "quickLinks": "الروابط السريعة",
   "copyright": "حقوق النشر",
-  "copyrightPlaceholder": "\u00a9 2024 متجرك. جميع الحقوق محفوظة.",
+  "copyrightPlaceholder": "© 2024 متجرك. جميع الحقوق محفوظة.",
   "save": "حفظ",
   "saving": "جاري الحفظ...",
   "footerSaved": "تم حفظ إعدادات الفوتر بنجاح",
@@ -31,5 +31,5 @@
   "aboutUs": "من نحن",
   "contactUsLink": "اتصل بنا",
   "privacyPolicy": "سياسة الخصوصية",
-  "socialPreview": "Social"
+  "socialPreview": "وسائل التواصل الاجتماعي"
 }

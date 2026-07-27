@@ -4,6 +4,7 @@ const {
 } = require('../services/sharedDatabase');
 const tenantContext = require('../services/tenantContext');
 const shippingZoneController = require('./shippingZoneController');
+const orderStatusController = require('./orderStatusController');
 
 /**
  * Store Settings Controller
@@ -453,8 +454,16 @@ exports.updateTurboSettings = async (req, res) => {
       });
     }, 3);
 
-    // ملاحظة: إعداد webhook في Turbo يتم يدوياً من Turbo Portal
-    // نحن نحفظ فقط TOKEN في قاعدة البيانات للتحقق من webhook requests
+    // تلقائياً أنشئ/حدث حالات الشحن المخصصة لتربو في إعدادات حالات الطلب للشركة
+    try {
+      if (orderStatusController && typeof orderStatusController.initializeDefaultStatuses === 'function') {
+        await orderStatusController.initializeDefaultStatuses(companyId);
+        console.log(`✅ [TURBO] Default shipping statuses initialized for company ${companyId}`);
+      }
+    } catch (statusInitErr) {
+      console.warn('⚠️ [TURBO] Could not auto-initialize shipping statuses:', statusInitErr.message);
+    }
+
     console.log(`✅ [TURBO] Settings saved for company ${companyId}`);
     if (updateData.turboWebhookToken) {
       console.log(`✅ [TURBO] Webhook token saved (length: ${updateData.turboWebhookToken.length})`);

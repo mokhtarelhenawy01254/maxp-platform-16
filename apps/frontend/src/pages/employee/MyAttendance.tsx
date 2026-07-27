@@ -1,6 +1,5 @@
 /**
  * 📍 My Attendance - Employee Self-Service
- * صفحة تسجيل الحضور والانصراف للموظف
  */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -44,6 +43,7 @@ import {
 import api from "../../services/api";
 import { toast } from "sonner";
 import { envConfig } from "../../config/environment";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 
 interface TodayAttendance {
@@ -86,30 +86,31 @@ const STALE_SHIFT_HOURS = 24;
 const statusConfig: Record<
   string,
   {
-    label: string;
+    labelKey: string;
     color: string;
     icon: React.ComponentType<{ className?: string }>;
   }
 > = {
   PRESENT: {
-    label: "حاضر",
+    labelKey: "employee.attendance.statusPresent",
     color: "bg-green-100 text-green-800",
     icon: CheckCircle,
   },
-  ABSENT: { label: "غائب", color: "bg-red-100 text-red-800", icon: XCircle },
+  ABSENT: { labelKey: "employee.attendance.statusAbsent", color: "bg-red-100 text-red-800", icon: XCircle },
   LATE: {
-    label: "متأخر",
+    labelKey: "employee.attendance.statusLate",
     color: "bg-yellow-100 text-yellow-800",
     icon: AlertCircle,
   },
   ON_LEAVE: {
-    label: "إجازة",
+    labelKey: "employee.attendance.statusOnLeave",
     color: "bg-purple-100 text-purple-800",
     icon: Calendar,
   },
 };
 
 const MyAttendance: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const timezone = user?.timezone || "Africa/Cairo";
   const [loading, setLoading] = useState(true);
@@ -254,10 +255,10 @@ const MyAttendance: React.FC = () => {
       console.error("Error fetching today attendance:", error);
       const errorMessage =
         apiError.response?.data?.error ||
-        "تعذر تحميل بيانات حضور اليوم. يرجى المحاولة مرة أخرى.";
+        t("employee.attendance.errorFetchToday");
       setErrorKey("today", errorMessage);
       toast.error(errorMessage, {
-        description: "تأكد من اتصالك بالإنترنت وحاول مرة أخرى"
+        description: t("employee.attendance.errorFetchTodayDesc")
         });
     } finally {
       setLoading(false);
@@ -273,10 +274,10 @@ const MyAttendance: React.FC = () => {
       const apiError = getApiError(error);
       console.error("Error fetching stats:", error);
       const errorMessage =
-        apiError.response?.data?.error || "تعذر تحميل إحصائيات الحضور.";
+        apiError.response?.data?.error || t("employee.attendance.errorFetchStats");
       setErrorKey("stats", errorMessage);
       toast.error(errorMessage, {
-        description: "سيتم إعادة المحاولة تلقائياً"
+        description: t("employee.attendance.errorFetchStatsDesc")
         });
     }
   };
@@ -311,16 +312,15 @@ const MyAttendance: React.FC = () => {
       const apiError = getApiError(error);
       console.error("Error fetching recent attendance:", error);
       const errorMessage =
-        apiError.response?.data?.error || "تعذر تحميل سجل الحضور الأخير.";
+        apiError.response?.data?.error || t("employee.attendance.errorFetchLog");
       setErrorKey("recent", errorMessage);
       setHasMoreRecent(false);
       toast.error(errorMessage, {
-        description: "يمكنك تحديث الصفحة لإعادة المحاولة"
+        description: t("employee.attendance.errorFetchLogDesc")
         });
     }
   };
 
-  // دالة لفتح الموقع في الخريطة
   const openLocationInMap = (
     latitude: number,
     longitude: number,
@@ -330,7 +330,6 @@ const MyAttendance: React.FC = () => {
     setShowMapModal(true);
   };
 
-  // دالة لعرض بيانات الموقع
   const renderLocationInfo = (
     checkInLocation: string | null,
     checkOutLocation: string | null,
@@ -361,14 +360,14 @@ const MyAttendance: React.FC = () => {
               openLocationInMap(
                 checkInLoc.latitude,
                 checkInLoc.longitude,
-                "حضور",
+                t("employee.attendance.colCheckIn"),
               )
             }
-            title="اضغط لفتح الموقع في الخريطة"
+            title={t("employee.attendance.openInMap")}
           >
             <MapPin className="h-3 w-3" />
             <span className="underline">
-              حضور: {checkInLoc.latitude?.toFixed(4)},{" "}
+              {t("employee.attendance.colCheckIn")}: {checkInLoc.latitude?.toFixed(4)},{" "}
               {checkInLoc.longitude?.toFixed(4)}
             </span>
           </div>
@@ -380,14 +379,14 @@ const MyAttendance: React.FC = () => {
               openLocationInMap(
                 checkOutLoc.latitude,
                 checkOutLoc.longitude,
-                "انصراف",
+                t("employee.attendance.colCheckOut"),
               )
             }
-            title="اضغط لفتح الموقع في الخريطة"
+            title={t("employee.attendance.openInMap")}
           >
             <MapPin className="h-3 w-3" />
             <span className="underline">
-              انصراف: {checkOutLoc.latitude?.toFixed(4)},{" "}
+              {t("employee.attendance.colCheckOut")}: {checkOutLoc.latitude?.toFixed(4)},{" "}
               {checkOutLoc.longitude?.toFixed(4)}
             </span>
           </div>
@@ -438,7 +437,7 @@ const MyAttendance: React.FC = () => {
         location: location ? JSON.stringify(location) : null,
       });
 
-      toast.success("تم تسجيل الانصراف بنجاح!");
+      toast.success(t("employee.attendance.checkoutSuccess"));
       await fetchTodayAttendance();
       await fetchStats();
       await fetchTodayGoals();
@@ -453,28 +452,31 @@ const MyAttendance: React.FC = () => {
       ) {
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
-        toast.error("⛔ أنت خارج نطاق البصمة المسموح!", {
-          description:
-            `📍 المسافة: ${Math.round(distance)}م | ✅ المسموحة: ${allowedRadius}م | 🚶 اقترب: ${distanceToMove}م`,
+        toast.error(t("employee.attendance.geofenceError"), {
+          description: t("employee.attendance.geofenceDetail", {
+            distance: Math.round(distance),
+            allowed: allowedRadius,
+            toMove: distanceToMove,
+          }),
           duration: 8000,
         });
       } else if (apiError.response?.status === 400) {
-        toast.error("❌ خطأ في البيانات", {
-          description: apiError.response?.data?.error || "لم يتم تسجيل الحضور بعد",
+        toast.error(t("employee.attendance.dataError"), {
+          description: apiError.response?.data?.error || t("employee.attendance.notCheckedInYet"),
         });
       } else if (apiError.response?.status === 401) {
-        toast.error("🔒 انتهت صلاحية الجلسة", {
-          description: "يرجى تسجيل الدخول مرة أخرى",
+        toast.error(t("employee.attendance.sessionExpired"), {
+          description: t("employee.attendance.sessionExpiredDesc"),
         });
       } else if (!navigator.onLine) {
-        toast.error("📡 لا يوجد اتصال بالإنترنت", {
-          description: "تحقق من اتصالك بالإنترنت وحاول مرة أخرى",
+        toast.error(t("employee.attendance.noInternet"), {
+          description: t("employee.attendance.noInternetDesc"),
         });
       } else {
-        toast.error("❌ فشل تسجيل الانصراف", {
+        toast.error(t("employee.attendance.checkoutFailed"), {
           description:
             apiError.response?.data?.error ||
-            "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى",
+            t("employee.attendance.unexpectedError"),
         });
       }
     } finally {
@@ -490,7 +492,7 @@ const MyAttendance: React.FC = () => {
         const nextValue = Number.parseFloat(goalProgressDrafts[goal.id] || "0");
 
         if (!Number.isFinite(nextValue) || nextValue < 0) {
-          toast.error(`قيمة غير صالحة في الهدف: ${goal.title}`);
+          toast.error(t("employee.attendance.invalidGoalValue", { title: goal.title }));
           setCheckingOut(false);
           return;
         }
@@ -507,7 +509,7 @@ const MyAttendance: React.FC = () => {
       const apiError = getApiError(error);
       console.error("Error updating today goals:", error);
       toast.error(
-        apiError.response?.data?.error || "تعذر تحديث أهداف اليوم قبل الانصراف",
+        apiError.response?.data?.error || t("employee.attendance.goalsUpdateFailed"),
       );
       setCheckingOut(false);
       return;
@@ -528,7 +530,7 @@ const MyAttendance: React.FC = () => {
         location: location ? JSON.stringify(location) : null,
       });
 
-      toast.success("تم تسجيل الحضور بنجاح!");
+      toast.success(t("employee.attendance.checkinSuccess"));
       await fetchTodayAttendance();
       await fetchStats();
       await fetchTodayGoals();
@@ -544,31 +546,33 @@ const MyAttendance: React.FC = () => {
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
 
-        // Show toast with detailed message
-        toast.error("⛔ أنت خارج نطاق البصمة المسموح!", {
-          description:
-            `📍 المسافة: ${Math.round(distance)}م | ✅ المسموحة: ${allowedRadius}م | 🚶 اقترب: ${distanceToMove}م`,
+        toast.error(t("employee.attendance.geofenceError"), {
+          description: t("employee.attendance.geofenceDetail", {
+            distance: Math.round(distance),
+            allowed: allowedRadius,
+            toMove: distanceToMove,
+          }),
           duration: 8000,
         });
-        return; // Don't show additional error messages
+        return;
       } else if (apiError.response?.status === 400) {
-        toast.error("❌ خطأ في البيانات", {
+        toast.error(t("employee.attendance.dataError"), {
           description:
-            apiError.response?.data?.error || "يرجى التحقق من البيانات المدخلة"
+            apiError.response?.data?.error || t("employee.attendance.dataErrorDesc")
         });
       } else if (apiError.response?.status === 401) {
-        toast.error("🔒 انتهت صلاحية الجلسة", {
-          description: "يرجى تسجيل الدخول مرة أخرى"
+        toast.error(t("employee.attendance.sessionExpired"), {
+          description: t("employee.attendance.sessionExpiredDesc")
         });
       } else if (!navigator.onLine) {
-        toast.error("📡 لا يوجد اتصال بالإنترنت", {
-          description: "تحقق من اتصالك بالإنترنت وحاول مرة أخرى"
+        toast.error(t("employee.attendance.noInternet"), {
+          description: t("employee.attendance.noInternetDesc")
         });
       } else {
-        toast.error("❌ فشل تسجيل الحضور", {
+        toast.error(t("employee.attendance.checkinFailed"), {
           description:
             apiError.response?.data?.error ||
-            "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى"
+            t("employee.attendance.unexpectedError")
         });
       }
     } finally {
@@ -689,14 +693,14 @@ const MyAttendance: React.FC = () => {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            حضوري وانصرافي
+            {t("employee.attendance.myAttendance")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            إدارة أوقات الحضور والانصراف
+            {t("employee.attendance.myAttendanceDesc")}
           </p>
           {user && (
             <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">
-              الموظف: {user.firstName} {user.lastName}
+              {t("employee.attendance.employee", { name: `${user.firstName} ${user.lastName}` })}
             </p>
           )}
         </div>
@@ -733,7 +737,7 @@ const MyAttendance: React.FC = () => {
               <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-blue-600 dark:text-blue-400">
                 {formatTime(currentTime)}
               </div>
-              <p className="text-gray-600 dark:text-gray-300">الوقت الحالي</p>
+              <p className="text-gray-600 dark:text-gray-300">{t("employee.attendance.currentTime")}</p>
               </div>
 
               {/* Today's Status */}
@@ -749,7 +753,7 @@ const MyAttendance: React.FC = () => {
                         }`}
                       />
                       <span className="font-medium text-gray-900 dark:text-white">
-                        حالة اليوم:
+                        {t("employee.attendance.todayStatus")}
                       </span>
                     </div>
                     <Badge
@@ -760,21 +764,21 @@ const MyAttendance: React.FC = () => {
                       }
                     >
                       {showOvernightWarning
-                        ? "تنبيه: شفت غير مغلق"
-                        : statusConfig[todayAttendance.status]?.label ||
-                          todayAttendance.status}
+                        ? t("employee.attendance.shiftNotClosed")
+                        : t(statusConfig[todayAttendance.status]?.labelKey ||
+                          todayAttendance.status)}
                     </Badge>
                   </div>
                   {recordDateLabel && (
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      سجل مرتبط بتاريخ: {recordDateLabel}
+                      {t("employee.attendance.linkedToDate", { date: recordDateLabel })}
                     </p>
                   )}
 
                 <div className="grid grid-cols-2 gap-4 mt-3">
                   <div className="text-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      تسجيل حضور
+                      {t("employee.attendance.checkIn")}
                     </p>
                     <p className="font-bold text-lg text-gray-900 dark:text-white">
                       {formattedCheckIn}
@@ -782,7 +786,7 @@ const MyAttendance: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      تسجيل انصراف
+                      {t("employee.attendance.checkOut")}
                     </p>
                     <p className="font-bold text-lg text-gray-900 dark:text-white">
                       {formattedCheckOut}
@@ -793,20 +797,20 @@ const MyAttendance: React.FC = () => {
                 {(todayAttendance.checkIn || todayAttendance.checkOut) && (
                   <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm">
                     {!todayAttendance.checkOut && todayAttendance.checkIn && (
-                      <Badge className="bg-blue-100 text-blue-800">
-                        ⏱️ مدة الشفت: {duration}
+                        <Badge className="bg-blue-100 text-blue-800">
+                        ⏱️ {t("employee.attendance.shiftDuration", { duration })}
                       </Badge>
                     )}
                     {todayAttendance.lateMinutes !== null &&
                       todayAttendance.lateMinutes > 0 && (
                         <Badge className="bg-yellow-100 text-yellow-800">
-                          متأخر {todayAttendance.lateMinutes} دقيقة
+                          {t("employee.attendance.lateMinutes", { minutes: todayAttendance.lateMinutes })}
                         </Badge>
                       )}
                     {todayAttendance.earlyLeaveMinutes !== null &&
                       todayAttendance.earlyLeaveMinutes > 0 && (
                         <Badge className="bg-amber-100 text-amber-800">
-                          انصراف مبكر {todayAttendance.earlyLeaveMinutes} دقيقة
+                          {t("employee.attendance.earlyLeave", { minutes: todayAttendance.earlyLeaveMinutes })}
                         </Badge>
                       )}
                   </div>
@@ -820,18 +824,17 @@ const MyAttendance: React.FC = () => {
                   <AlertCircle className="h-5 w-5 mt-0.5 text-amber-600" />
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">
-                      يوجد شفت مفتوح من يوم سابق ولم يُغلق بعد.
+                      {t("employee.attendance.openShiftWarning")}
                     </p>
                     {checkInDate && (
                       <p className="text-xs text-amber-800">
-                        وقت الحضور: {formatTimeWithTZ(checkInDate)} •{" "}
+                        {t("employee.attendance.checkinTime")} {formatTimeWithTZ(checkInDate)} •{" "}
                         {formatDateWithTZ(checkInDate)}
-                        {staleHours !== null && ` • مضى ${staleHours} ساعة`}
+                        {staleHours !== null && ` • ${t("employee.attendance.hoursElapsed", { hours: staleHours })}`}
                       </p>
                     )}
                     <p className="text-xs text-amber-800">
-                      أغلق الشفت العالق أولاً ليظهر زر تسجيل حضور لليوم الحالي
-                      ويتم احتساب الإحصائيات بشكل صحيح.
+                      {t("employee.attendance.closeShiftFirst")}
                     </p>
                   </div>
                 </div>
@@ -843,7 +846,7 @@ const MyAttendance: React.FC = () => {
                     disabled={checkingOut}
                     className="bg-amber-600 hover:bg-amber-700 text-white"
                   >
-                    {checkingOut ? "جاري الإغلاق..." : "إغلاق الشفت العالق"}
+                    {checkingOut ? t("employee.attendance.closing") : t("employee.attendance.closePendingShift")}
                   </Button>
                 </div>
               </div>
@@ -861,7 +864,7 @@ const MyAttendance: React.FC = () => {
                       }`}
                   >
                     <MapPin className={`h-4 w-4 ${workMode === "OFFICE" ? "text-blue-500" : ""}`} />
-                    <span className="font-bold">من الشركة</span>
+                    <span className="font-bold">{t("employee.attendance.fromOffice")}</span>
                   </button>
                   <button
                     onClick={() => setWorkMode("HOME")}
@@ -871,7 +874,7 @@ const MyAttendance: React.FC = () => {
                       }`}
                   >
                     <Home className={`h-4 w-4 ${workMode === "HOME" ? "text-purple-500" : ""}`} />
-                    <span className="font-bold">من المنزل</span>
+                    <span className="font-bold">{t("employee.attendance.fromHome")}</span>
                   </button>
                 </div>
               </div>
@@ -890,12 +893,12 @@ const MyAttendance: React.FC = () => {
                   {checkingIn ? (
                     <>
                       <div className="mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      جاري التسجيل...
+                      {t("employee.attendance.registering")}
                     </>
                   ) : (
                     <>
                       <LogIn className="mr-2 h-6 w-6" />
-                      تسجيل الدخول
+                      {t("employee.attendance.login")}
                     </>
                   )}
                 </Button>
@@ -912,12 +915,12 @@ const MyAttendance: React.FC = () => {
                   {checkingOut ? (
                     <>
                       <div className="mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      جاري التسجيل...
+                      {t("employee.attendance.registering")}
                     </>
                   ) : (
                     <>
                       <LogOut className="mr-2 h-6 w-6" />
-                      تسجيل انصراف
+                      {t("employee.attendance.checkOut")}
                     </>
                   )}
                 </Button>
@@ -927,7 +930,7 @@ const MyAttendance: React.FC = () => {
                 <div className="text-center">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
                   <p className="text-lg font-semibold text-gray-900">
-                    تم تسجيل الحضور والانصراف لهذا اليوم
+                    {t("employee.attendance.alreadyChecked")}
                   </p>
                 </div>
               )}
@@ -936,7 +939,7 @@ const MyAttendance: React.FC = () => {
             {/* Location Info */}
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <MapPin className="h-4 w-4" />
-              <span>سيتم تسجيل موقعك تلقائياً</span>
+              <span>{t("employee.attendance.locationAuto")}</span>
             </div>
           </div>
         </CardContent>
@@ -948,15 +951,15 @@ const MyAttendance: React.FC = () => {
             <div>
               <CardTitle className="flex items-center gap-2 text-indigo-900 dark:text-indigo-100">
                 <Target className="h-5 w-5" />
-                أهداف اليوم
+                {t("employee.attendance.dailyGoals")}
               </CardTitle>
               <p className="text-sm text-indigo-800/80 dark:text-indigo-200/80">
-                هذه الأهداف تُحدَّث قبل الانصراف، وأي رقم تدخله هنا يرفع التقدم للهدف الأب تلقائيًا.
+                {t("employee.attendance.dailyGoalsDesc")}
               </p>
             </div>
             {canCheckOut ? (
               <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-100">
-                راجعها قبل checkout
+                {t("employee.attendance.reviewBeforeCheckout")}
               </Badge>
             ) : null}
           </CardHeader>
@@ -972,7 +975,7 @@ const MyAttendance: React.FC = () => {
                       {goal.title}
                     </div>
                     <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      {goal.parentGoal?.title ? `يتبع: ${goal.parentGoal.title}` : "هدف يومي مباشر"}
+                      {goal.parentGoal?.title ? t("employee.attendance.belongsTo", { title: goal.parentGoal.title }) : t("employee.attendance.directDailyGoal")}
                       {goal.project?.name ? ` • ${goal.project.name}` : ""}
                     </div>
                   </div>
@@ -997,7 +1000,7 @@ const MyAttendance: React.FC = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">نسبة الحضور</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("employee.attendance.attendanceRate")}</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -1016,13 +1019,13 @@ const MyAttendance: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">أيام الحضور</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("employee.attendance.daysPresent")}</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.presentDays}</div>
               <p className="text-xs text-gray-500 mt-1">
-                من {stats.totalDays} يوم
+                {t("employee.attendance.ofTotalDays", { total: stats.totalDays })}
               </p>
             </CardContent>
           </Card>
@@ -1030,7 +1033,7 @@ const MyAttendance: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                أيام التأخير
+                {t("employee.attendance.lateDays")}
               </CardTitle>
               <AlertCircle className="h-4 w-4 text-yellow-600" />
             </CardHeader>
@@ -1040,14 +1043,14 @@ const MyAttendance: React.FC = () => {
                 {stats.totalDays
                   ? ((stats.lateDays / stats.totalDays) * 100).toFixed(1)
                   : "0.0"}
-                % من الأيام
+                {t("employee.attendance.percentageOfDays")}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ساعات العمل</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("employee.attendance.workHours")}</CardTitle>
               <Timer className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
@@ -1055,7 +1058,7 @@ const MyAttendance: React.FC = () => {
                 {Number(stats.totalWorkHours || 0).toFixed(1)}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                إضافي: {Number(stats.totalOvertimeHours || 0).toFixed(1)} ساعة
+                {t("employee.attendance.overtime", { hours: Number(stats.totalOvertimeHours || 0).toFixed(1) })}
               </p>
             </CardContent>
           </Card>
@@ -1065,7 +1068,7 @@ const MyAttendance: React.FC = () => {
       {/* Recent Attendance */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle>سجل الحضور</CardTitle>
+          <CardTitle>{t("employee.attendance.attendanceLog")}</CardTitle>
           <div className="flex items-center gap-2">
             <Input
               type="month"
@@ -1081,22 +1084,22 @@ const MyAttendance: React.FC = () => {
         <CardContent>
           {recentAttendance.length === 0 ? (
             <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-              لا يوجد سجل حضور حتى الآن
+              {t("employee.attendance.noAttendanceYet")}
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
               <Table className="min-w-[720px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">الحضور</TableHead>
-                    <TableHead className="text-right">الانصراف</TableHead>
-                    <TableHead className="text-right">الموقع</TableHead>
-                    <TableHead className="text-right">نوع العمل</TableHead>
-                    <TableHead className="text-right">ساعات العمل</TableHead>
-                  <TableHead className="text-right">التأخير</TableHead>
-                  <TableHead className="text-right">انصراف مبكر</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colDate")}</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colCheckIn")}</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colCheckOut")}</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colLocation")}</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colWorkMode")}</TableHead>
+                    <TableHead className="text-right">{t("employee.attendance.colWorkHours")}</TableHead>
+                  <TableHead className="text-right">{t("employee.attendance.colDelay")}</TableHead>
+                  <TableHead className="text-right">{t("employee.attendance.colEarlyLeave")}</TableHead>
+                  <TableHead className="text-right">{t("employee.attendance.colStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1134,19 +1137,19 @@ const MyAttendance: React.FC = () => {
                           {record.workMode === "HOME" ? (
                             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-bold w-fit">
                               <Home className="h-3 w-3" />
-                              <span>منزل</span>
+                              <span>{t("employee.attendance.home")}</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold w-fit">
                               <Building2 className="h-3 w-3" />
-                              <span>مكتب</span>
+                              <span>{t("employee.attendance.office")}</span>
                             </div>
                           )}
                         </TableCell>
                         <TableCell>
                           {record.workHours ? (
                             <span>
-                              {Number(record.workHours).toFixed(1)} ساعة
+                              {Number(record.workHours).toFixed(1)} {t("employee.attendance.hour")}
                             </span>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -1155,7 +1158,7 @@ const MyAttendance: React.FC = () => {
                         <TableCell>
                           {Number(record.lateMinutes) > 0 ? (
                             <span className="text-red-600">
-                              {record.lateMinutes} دقيقة
+                              {record.lateMinutes} {t("employee.attendance.minute")}
                             </span>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -1164,7 +1167,7 @@ const MyAttendance: React.FC = () => {
                         <TableCell>
                           {Number(record.earlyLeaveMinutes) > 0 ? (
                             <span className="text-amber-700">
-                              {record.earlyLeaveMinutes} دقيقة
+                              {record.earlyLeaveMinutes} {t("employee.attendance.minute")}
                             </span>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -1175,8 +1178,8 @@ const MyAttendance: React.FC = () => {
                             className={statusConfig[record.status]?.color || ""}
                           >
                             <StatusIcon className="h-3 w-3 ml-1" />
-                            {statusConfig[record.status]?.label ||
-                              record.status}
+                            {t(statusConfig[record.status]?.labelKey ||
+                              record.status)}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -1190,7 +1193,7 @@ const MyAttendance: React.FC = () => {
           {recentAttendance.length > 0 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
               <p className="text-sm text-gray-500">
-                عرض {recentAttendance.length} سجل
+                {t("employee.attendance.showingRecords", { count: recentAttendance.length })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -1201,7 +1204,7 @@ const MyAttendance: React.FC = () => {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <span className="text-sm">صفحة {recentPage}</span>
+                <span className="text-sm">{t("employee.attendance.page", { num: recentPage })}</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1228,13 +1231,13 @@ const MyAttendance: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-indigo-600" />
-              تحديث أهداف اليوم قبل الانصراف
+              {t("employee.attendance.updateGoalsBeforeCheckout")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              أدخل ما أُنجز فعليًا حتى الآن. سيتم تحديث الهدف اليومي ثم الهدف الأب تلقائيًا.
+              {t("employee.attendance.updateGoalsDesc")}
             </p>
 
             {todayGoals.map((goal) => (
@@ -1254,7 +1257,7 @@ const MyAttendance: React.FC = () => {
 
                   <div className="w-full sm:w-44">
                     <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                      المنجز الحالي
+                      {t("employee.attendance.currentProgress")}
                     </label>
                     <Input
                       type="number"
@@ -1279,14 +1282,14 @@ const MyAttendance: React.FC = () => {
               onClick={() => setShowGoalsReviewDialog(false)}
               disabled={checkingOut}
             >
-              رجوع
+              {t("employee.attendance.back")}
             </Button>
             <Button
               data-testid="attendance-goals-review-submit"
               onClick={submitGoalUpdatesAndCheckOut}
               disabled={checkingOut}
             >
-              {checkingOut ? "جارٍ الحفظ والانصراف..." : "حفظ ثم تسجيل الانصراف"}
+              {checkingOut ? t("employee.attendance.savingAndCheckout") : t("employee.attendance.saveAndCheckout")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1299,7 +1302,7 @@ const MyAttendance: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              موقع {selectedLocation?.type}
+              {t("employee.attendance.location", { type: selectedLocation?.type })}
             </DialogTitle>
           </DialogHeader>
 
@@ -1308,7 +1311,7 @@ const MyAttendance: React.FC = () => {
               <>
                 <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>الإحداثيات:</strong>{" "}
+                    <strong>{t("employee.attendance.coordinates")}</strong>{" "}
                     {selectedLocation.latitude.toFixed(6)},{" "}
                     {selectedLocation.longitude.toFixed(6)}
                   </p>
@@ -1323,7 +1326,7 @@ const MyAttendance: React.FC = () => {
                     style={{ border: 0 }}
                     src={`https://www.google.com/maps/embed/v1/place?key=${envConfig.googleMapsApiKey || ""}&q=${selectedLocation.latitude},${selectedLocation.longitude}&zoom=16`}
                     allowFullScreen
-                    title={`خريطة موقع ${selectedLocation.type}`}
+                    title={t("employee.attendance.location", { type: selectedLocation.type })}
                   />
                 </div>
 
@@ -1336,7 +1339,7 @@ const MyAttendance: React.FC = () => {
                       window.open(url, "_blank");
                     }}
                   >
-                    فتح في Google Maps
+                    {t("employee.attendance.openInGoogleMaps")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1344,10 +1347,10 @@ const MyAttendance: React.FC = () => {
                       navigator.clipboard.writeText(
                         `${selectedLocation.latitude}, ${selectedLocation.longitude}`,
                       );
-                      toast.success("تم نسخ الإحداثيات");
+                      toast.success(t("employee.attendance.coordinatesCopied"));
                     }}
                   >
-                    نسخ الإحداثيات
+                    {t("employee.attendance.copyCoordinates")}
                   </Button>
                 </div>
               </>
@@ -1356,7 +1359,7 @@ const MyAttendance: React.FC = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowMapModal(false)}>
-              إغلاق
+              {t("employee.attendance.close")}
             </Button>
           </DialogFooter>
         </DialogContent>

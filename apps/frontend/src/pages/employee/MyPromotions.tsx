@@ -36,17 +36,17 @@ interface Promotion {
 
 const PROMOTION_STATUS = {
     PENDING: {
-        label: "في الانتظار",
+        labelKey: "employee.promotions.pendingStatus",
         color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
         icon: Clock,
     },
     APPROVED: {
-        label: "معتمد",
+        labelKey: "employee.promotions.approvedStatus",
         color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
         icon: CheckCircle,
     },
     REJECTED: {
-        label: "مرفوض",
+        labelKey: "employee.promotions.rejectedStatus",
         color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
         icon: XCircle,
     }
@@ -104,10 +104,10 @@ const MyPromotions: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                         <Award className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-                        ترقياتي ومساري الوظيفي
+                        {t("employee.promotions.title")}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        سجل الترقيات والتغييرات في المنصب والمستوى الوظيفي
+                        {t("employee.promotions.subtitle")}
                     </p>
                 </div>
             </div>
@@ -120,10 +120,10 @@ const MyPromotions: React.FC = () => {
                             <TrendingUp className="h-8 w-8" />
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            لا يوجد سجل ترقيات حتى الآن
+                            {t("employee.promotions.noPromotions")}
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
-                            سيظهر هنا تاريخك الوظيفي وأي ترقيات تحصل عليها في المستقبل.
+                            {t("employee.promotions.noPromotionsDesc")}
                         </p>
                     </div>
                 ) : (
@@ -142,23 +142,23 @@ const MyPromotions: React.FC = () => {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
                                                     <StatusIcon className="h-3 w-3 ml-1" />
-                                                    {status.label}
+                                                    {t(status.labelKey)}
                                                 </span>
                                                 <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                                                     <Clock className="h-4 w-4 ml-1" />
-                                                    تم في {formatDate(promotion.promotionDate)}
+                                                    {t("employee.promotions.promotedOn", { date: formatDate(promotion.promotionDate) })}
                                                 </span>
                                             </div>
 
                                             <div className="flex flex-col md:flex-row md:items-center gap-4 py-2">
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">المنصب السابق</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">{t("employee.promotions.previousPosition")}</p>
                                                     <div className="flex items-center">
                                                         <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center ml-2">
                                                             <Briefcase className="h-4 w-4 text-gray-500" />
                                                         </div>
                                                         <span className="text-lg font-semibold text-gray-500 dark:text-gray-400 line-through">
-                                                            {promotion.fromPositionName || promotion.fromPosition?.title || "لا يوجد منصب سابق"}
+                                                            {promotion.fromPositionName || promotion.fromPosition?.title || t("employee.promotions.noPreviousPosition")}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -168,7 +168,7 @@ const MyPromotions: React.FC = () => {
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 mb-1 uppercase tracking-wider">المنصب الجديد</p>
+                                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 mb-1 uppercase tracking-wider">{t("employee.promotions.newPosition")}</p>
                                                     <div className="flex items-center">
                                                         <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center ml-2 font-bold text-indigo-600">
                                                             <Award className="h-4 w-4" />
@@ -183,21 +183,21 @@ const MyPromotions: React.FC = () => {
                                             <div className="flex flex-wrap items-center gap-6 text-sm">
                                                 <div className="flex items-center text-gray-600 dark:text-gray-400">
                                                     <DollarSign className="h-4 w-4 ml-1 text-green-600" />
-                                                    <span>الراتب الجديد: </span>
+                                                    <span>{t("employee.promotions.newSalary")}</span>
                                                     <span className="font-bold text-gray-900 dark:text-white mr-1">
                                                         {formatCurrency(promotion.toSalary)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center text-gray-600 dark:text-gray-400">
                                                     <Calendar className="h-4 w-4 ml-1 text-blue-500" />
-                                                    <span>تاريخ السريان: </span>
+                                                    <span>{t("employee.promotions.effectiveDate")}</span>
                                                     <span className="font-medium mr-1">{formatDate(promotion.effectiveDate)}</span>
                                                 </div>
                                             </div>
 
                                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
                                                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                    <span className="font-semibold ml-1">السبب:</span>
+                                                    <span className="font-semibold ml-1">{t("employee.promotions.reason")}</span>
                                                     {promotion.reason}
                                                 </p>
                                             </div>
@@ -211,7 +211,7 @@ const MyPromotions: React.FC = () => {
                                                 }}
                                                 className="px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg text-sm font-medium transition-colors"
                                             >
-                                                عرض التفاصيل
+                                                {t("employee.promotions.viewDetails")}
                                             </button>
                                         </div>
                                     </div>
@@ -229,7 +229,7 @@ const MyPromotions: React.FC = () => {
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                                 <Info className="h-6 w-6 text-indigo-500 ml-2" />
-                                تفاصيل الترقية
+                                {t("employee.promotions.detailsTitle")}
                             </h2>
                             <button
                                 onClick={() => setShowDetailsModal(false)}
@@ -242,35 +242,35 @@ const MyPromotions: React.FC = () => {
                         <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">المنصب الجديد</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.newPosition")}</p>
                                     <p className="text-lg font-bold text-gray-900 dark:text-white">
                                         {selectedPromotion.toPositionName || selectedPromotion.toPosition?.title}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">المنصب السابق</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.previousPosition")}</p>
                                     <p className="text-lg font-medium text-gray-500 dark:text-gray-400 line-through">
                                         {selectedPromotion.fromPositionName || selectedPromotion.fromPosition?.title || "—"}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">الراتب الجديد</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.newSalary")}</p>
                                     <p className="text-lg font-bold text-green-600 dark:text-green-400">
                                         {formatCurrency(selectedPromotion.toSalary)}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">الراتب السابق</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.previousSalary")}</p>
                                     <p className="text-lg font-medium text-gray-500 dark:text-gray-400">
                                         {formatCurrency(selectedPromotion.fromSalary)}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">تاريخ الترقية</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.promotionDate")}</p>
                                     <p className="font-medium">{formatDate(selectedPromotion.promotionDate)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">تاريخ السريان الفعلي</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">{t("employee.promotions.effectiveDateLabel")}</p>
                                     <p className="font-medium text-indigo-600 dark:text-indigo-400">
                                         {formatDate(selectedPromotion.effectiveDate)}
                                     </p>
@@ -279,7 +279,7 @@ const MyPromotions: React.FC = () => {
 
                             <div className="space-y-4">
                                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 font-bold">السبب</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 font-bold">{t("employee.promotions.reason")}</p>
                                     <p className="text-gray-900 dark:text-white leading-relaxed">
                                         {selectedPromotion.reason}
                                     </p>
@@ -287,7 +287,7 @@ const MyPromotions: React.FC = () => {
 
                                 {selectedPromotion.notes && (
                                     <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl">
-                                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 font-bold">ملاحظات إضافية</p>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 font-bold">{t("employee.promotions.notes")}</p>
                                         <p className="text-gray-900 dark:text-white leading-relaxed italic">
                                             {selectedPromotion.notes}
                                         </p>
@@ -301,7 +301,7 @@ const MyPromotions: React.FC = () => {
                                 onClick={() => setShowDetailsModal(false)}
                                 className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none font-bold"
                             >
-                                إغلاق
+                                {t("employee.common.close")}
                             </button>
                         </div>
                     </div>

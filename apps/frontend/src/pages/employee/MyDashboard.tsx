@@ -205,7 +205,7 @@ const MyDashboard: React.FC = () => {
         }
         console.error("Error fetching dashboard data:", error);
         if (!background) {
-          toast.error("حدث خطأ أثناء جلب البيانات");
+          toast.error(t("employee.dashboard.fetchError"));
         }
       } finally {
         if (!background) {
@@ -238,8 +238,8 @@ const MyDashboard: React.FC = () => {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
             <Briefcase className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">لم يتم تفعيل نظام HR</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">هذه الصفحة خاصة بموظفي الشركة. يرجى تثبيت تطبيق HR Basic من متجر التطبيقات للوصول إلى لوحة تحكم الموظف.</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t("employee.dashboard.hrNotActive")}</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">{t("employee.dashboard.hrNotActiveDesc")}</p>
         </div>
       </div>
     );
@@ -252,7 +252,7 @@ const MyDashboard: React.FC = () => {
           <div className="relative mx-auto mb-6 w-16 h-16">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
           </div>
-          <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">جاري تحميل بياناتك...</p>
+          <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">{t("employee.dashboard.loading")}</p>
         </div>
       </div>
     );
@@ -263,9 +263,9 @@ const MyDashboard: React.FC = () => {
       <div className="p-4 md:p-8 min-h-screen flex items-center justify-center bg-[#f8faff] dark:bg-gray-950" dir="rtl">
         <div className="bg-red-50 dark:bg-red-900/20 p-8 rounded-2xl text-center max-w-md">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">عذراً، لم يتم العثور على بيانات الموظف</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">يرجى الاتصال بإدارة الموارد البشرية للتأكد من ربط حسابك.</p>
-          <Button onClick={() => window.location.reload()} variant="outline">إعادة المحاولة</Button>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t("employee.dashboard.noData")}</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">{t("employee.dashboard.noDataDesc")}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">{t("employee.dashboard.retry")}</Button>
         </div>
       </div>
     );
@@ -298,17 +298,17 @@ const MyDashboard: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                مرحباً، {employee.firstName}
+                {t("employee.dashboard.welcome", { name: employee.firstName })}
               </h1>
               
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2">
               <span className="bg-primary/10 text-primary px-3 py-0.5 rounded-full text-sm">
-                {employee.position?.title || "موظف"}
+                {employee.position?.title || t("employee.dashboard.employee")}
               </span>
               <span>•</span>
               <span className="text-gray-400 dark:text-gray-500">
-                {employee.department?.name || "بدون قسم"}
+                {employee.department?.name || t("employee.dashboard.noDepartment")}
               </span>
             </p>
           </div>
@@ -316,7 +316,7 @@ const MyDashboard: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="bg-white dark:bg-gray-900 px-5 py-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center min-w-[120px]">
-            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">رقم الموظف</span>
+            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t("employee.dashboard.employeeNumber")}</span>
             <span className="text-lg font-black text-primary">{employee.employeeNumber}</span>
           </div>
           <Button
@@ -325,7 +325,7 @@ const MyDashboard: React.FC = () => {
             onClick={() => navigate("/profile")}
           >
             <Users className="ml-2 h-5 w-5" />
-            الملف الشخصي
+            {t("employee.dashboard.profile")}
           </Button>
         </div>
       </div>
@@ -339,7 +339,7 @@ const MyDashboard: React.FC = () => {
           </div>
           <CardContent className="p-6 relative">
             <p className="text-blue-100 text-sm font-bold mb-4 flex items-center gap-2">
-              <Clock className="h-4 w-4" /> الحضور اليوم
+              <Clock className="h-4 w-4" /> {t("employee.dashboard.todayAttendance")}
             </p>
             <div className="flex flex-col">
               {todayAttendance?.checkIn ? (
@@ -347,12 +347,12 @@ const MyDashboard: React.FC = () => {
                   <span className="text-3xl font-black mb-1">
                     {new Date(todayAttendance.checkIn).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
                   </span>
-                  <span className="text-xs text-blue-100 font-medium">سجلت الحضور بنجاح</span>
+                  <span className="text-xs text-blue-100 font-medium">{t("employee.dashboard.checkedIn")}</span>
                 </>
               ) : (
                 <>
                   <span className="text-3xl font-black mb-1 text-blue-200 opacity-60">--:--</span>
-                  <span className="text-xs text-blue-100 font-medium">لم يتم تسجيل الحضور اليوم</span>
+                  <span className="text-xs text-blue-100 font-medium">{t("employee.dashboard.notCheckedIn")}</span>
                 </>
               )}
             </div>
@@ -366,12 +366,12 @@ const MyDashboard: React.FC = () => {
               <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform duration-300">
                 <Calendar className="h-6 w-6" />
               </div>
-              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">رصيد سنوي</Badge>
+              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">{t("employee.dashboard.annualBalance")}</Badge>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-1">رصيد الإجازات</p>
+            <p className="text-sm text-gray-500 font-medium mb-1">{t("employee.dashboard.leaveBalance")}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black text-gray-900 dark:text-white">{employee.annualLeaveBalance}</span>
-              <span className="text-sm text-gray-400 font-bold">يوم</span>
+              <span className="text-sm text-gray-400 font-bold">{t("employee.dashboard.day")}</span>
             </div>
           </CardContent>
         </Card>
@@ -385,12 +385,12 @@ const MyDashboard: React.FC = () => {
               </div>
               <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">{lastPayroll ? format(new Date(lastPayroll.year, lastPayroll.month - 1), "MMMM", { locale: ar }) : "--"}</Badge>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-1">آخر مرتب صافي</p>
+            <p className="text-sm text-gray-500 font-medium mb-1">{t("employee.dashboard.lastNetSalary")}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black text-gray-900 dark:text-white">
                 {lastPayroll ? lastPayroll.netSalary.toLocaleString() : "0"}
               </span>
-              <span className="text-sm text-gray-400 font-bold">ج.م</span>
+              <span className="text-sm text-gray-400 font-bold">{t("employee.dashboard.egp")}</span>
             </div>
           </CardContent>
         </Card>
@@ -402,14 +402,14 @@ const MyDashboard: React.FC = () => {
               <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-2xl text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
                 <Briefcase className="h-6 w-6" />
               </div>
-              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">مسيرة العمل</Badge>
+              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">{t("employee.dashboard.careerTimeline")}</Badge>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-1">مدة الخدمة</p>
+            <p className="text-sm text-gray-500 font-medium mb-1">{t("employee.dashboard.serviceDuration")}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black text-gray-900 dark:text-white">
                 {Math.max(0, Math.floor((new Date().getTime() - new Date(employee.hireDate).getTime()) / (1000 * 60 * 60 * 24 * 365)))}
               </span>
-              <span className="text-sm text-gray-400 font-bold">سنة</span>
+              <span className="text-sm text-gray-400 font-bold">{t("employee.dashboard.year")}</span>
             </div>
           </CardContent>
         </Card>
@@ -426,9 +426,9 @@ const MyDashboard: React.FC = () => {
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                الإجراءات السريعة
+                {t("employee.dashboard.quickActions")}
               </CardTitle>
-              <CardDescription>اطلب ما تحتاجه بضغطة واحدة</CardDescription>
+              <CardDescription>{t("employee.dashboard.quickActionsDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               <Button
@@ -440,8 +440,8 @@ const MyDashboard: React.FC = () => {
                   <Clock className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="flex-1 text-right">
-                  <p className="font-bold text-gray-900 dark:text-gray-100">{canCheckIn ? "تسجيل حضور" : "تسجيل انصراف"}</p>
-                  <p className="text-[10px] text-gray-400">تحقق من الدوام اليومي</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{canCheckIn ? t("employee.attendance.checkIn") : t("employee.attendance.checkOut")}</p>
+                  <p className="text-[10px] text-gray-400">{t("employee.dashboard.checkInOutDesc")}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 -mr-4 group-hover:mr-0 transition-all" />
               </Button>
@@ -455,8 +455,8 @@ const MyDashboard: React.FC = () => {
                   <Calendar className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1 text-right">
-                  <p className="font-bold text-gray-900 dark:text-gray-100">طلب إجازة</p>
-                  <p className="text-[10px] text-gray-400">سنوية، مرضية، أو اضطرارية</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.requestLeave")}</p>
+                  <p className="text-[10px] text-gray-400">{t("employee.dashboard.requestLeaveDesc")}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 -mr-4 group-hover:mr-0 transition-all" />
               </Button>
@@ -470,8 +470,8 @@ const MyDashboard: React.FC = () => {
                   <FileText className="h-5 w-5 text-yellow-600" />
                 </div>
                 <div className="flex-1 text-right">
-                  <p className="font-bold text-gray-900 dark:text-gray-100">طلب إذن</p>
-                  <p className="text-[10px] text-gray-400">خروج مبكر أو تأخير بعذر</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.requestPermission")}</p>
+                  <p className="text-[10px] text-gray-400">{t("employee.dashboard.requestPermissionDesc")}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 -mr-4 group-hover:mr-0 transition-all" />
               </Button>
@@ -485,8 +485,8 @@ const MyDashboard: React.FC = () => {
                   <DollarSign className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1 text-right">
-                  <p className="font-bold text-gray-900 dark:text-gray-100">طلب سلفة</p>
-                  <p className="text-[10px] text-gray-400">تمويل شخصي ميسر</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.requestAdvance")}</p>
+                  <p className="text-[10px] text-gray-400">{t("employee.dashboard.requestAdvanceDesc")}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 -mr-4 group-hover:mr-0 transition-all" />
               </Button>
@@ -499,25 +499,25 @@ const MyDashboard: React.FC = () => {
               <div className="absolute top-0 right-0 h-1 w-full bg-yellow-400"></div>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center justify-between">
-                  <span>طلبات قيد المراجعة</span>
+                  <span>{t("employee.dashboard.pendingRequests")}</span>
                   <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none rounded-full">{pendingRequestsCount}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-xs text-gray-500">لديك {pendingRequestsCount} طلبات تنتظر الموافقة من المدير المباشر.</p>
+                <p className="text-xs text-gray-500">{t("employee.dashboard.pendingRequestsDesc", { count: pendingRequestsCount })}</p>
                 <div className="flex -space-x-reverse space-x-2">
                   {recentLeaves.filter(l => l.status === "PENDING").map(l => (
-                    <div key={l.id} title="طلب إجازة" className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 border border-green-100 dark:border-green-800">
+                    <div key={l.id} title={t("employee.dashboard.leaveRequest")} className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 border border-green-100 dark:border-green-800">
                       <Calendar className="h-4 w-4" />
                     </div>
                   ))}
                   {permissions.filter(p => p.status === "PENDING").map(p => (
-                    <div key={p.id} title="طلب إذن" className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-600 border border-yellow-100 dark:border-yellow-800">
+                    <div key={p.id} title={t("employee.dashboard.permissionRequest")} className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-600 border border-yellow-100 dark:border-yellow-800">
                       <FileText className="h-4 w-4" />
                     </div>
                   ))}
                   {advances.filter(a => a.status === "PENDING").map(a => (
-                    <div key={a.id} title="طلب سلفة" className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600 border border-purple-100 dark:border-purple-800">
+                    <div key={a.id} title={t("employee.dashboard.advanceRequest")} className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600 border border-purple-100 dark:border-purple-800">
                       <DollarSign className="h-4 w-4" />
                     </div>
                   ))}
@@ -532,9 +532,9 @@ const MyDashboard: React.FC = () => {
               <CardContent className="p-4 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-1" />
                 <div className="flex-1">
-                  <p className="font-bold text-red-900 dark:text-red-400 text-sm">تنبيه إداري</p>
-                  <p className="text-xs text-red-700 dark:text-red-500/80 mb-2">لديك سجل إنذارات يحتاج إلى مراجعة وتوقيع.</p>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-red-600 font-bold" onClick={() => navigate("/my-warnings")}>عرض الإنذارات</Button>
+                  <p className="font-bold text-red-900 dark:text-red-400 text-sm">{t("employee.dashboard.adminAlert")}</p>
+                  <p className="text-xs text-red-700 dark:text-red-500/80 mb-2">{t("employee.dashboard.adminAlertDesc")}</p>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-red-600 font-bold" onClick={() => navigate("/my-warnings")}>{t("employee.dashboard.viewWarnings")}</Button>
                 </div>
               </CardContent>
             </Card>
@@ -550,13 +550,13 @@ const MyDashboard: React.FC = () => {
                   value="activity"
                   className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all font-bold"
                 >
-                  النشاط الأخير
+                  {t("employee.dashboard.recentActivity")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="requests"
                   className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all font-bold"
                 >
-                  الطلبات
+                  {t("employee.dashboard.requests")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="financial"
@@ -574,10 +574,10 @@ const MyDashboard: React.FC = () => {
                   <div className="space-y-6">
                     {/* Combine important movements */}
                     {[
-                      ...recentLeaves.slice(0, 2).map(l => ({ ...l, category: 'LEAVE', icon: Calendar, color: 'green', title: `طلب إجازة ${l.type}`, date: l.createdAt || l.startDate })),
-                      ...permissions.slice(0, 2).map(p => ({ ...p, category: 'PERMISSION', icon: FileText, color: 'yellow', title: `طلب إذن ${p.type === 'OUT' ? 'خروج' : 'تأخير'}`, date: p.createdAt || p.date })),
-                      ...advances.slice(0, 2).map(a => ({ ...a, category: 'ADVANCE', icon: DollarSign, color: 'blue', title: 'طلب سلفة', date: a.createdAt })),
-                      ...rewards.slice(0, 2).map(r => ({ ...r, category: 'REWARD', icon: Award, color: 'purple', title: r.rewardName || 'مكافأة إضافية', date: r.appliedAt || r.createdAt })),
+                      ...recentLeaves.slice(0, 2).map(l => ({ ...l, category: 'LEAVE', icon: Calendar, color: 'green', title: `${t("employee.dashboard.leaveRequest")} ${l.type}`, date: l.createdAt || l.startDate })),
+                      ...permissions.slice(0, 2).map(p => ({ ...p, category: 'PERMISSION', icon: FileText, color: 'yellow', title: p.type === 'OUT' ? t("employee.dashboard.exitPermission") : t("employee.dashboard.delayPermission"), date: p.createdAt || p.date })),
+                      ...advances.slice(0, 2).map(a => ({ ...a, category: 'ADVANCE', icon: DollarSign, color: 'blue', title: t("employee.dashboard.advanceRequest"), date: a.createdAt })),
+                      ...rewards.slice(0, 2).map(r => ({ ...r, category: 'REWARD', icon: Award, color: 'purple', title: r.rewardName || t("employee.dashboard.additionalReward"), date: r.appliedAt || r.createdAt })),
                     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                       .slice(0, 5)
                       .map((item, idx) => (
@@ -602,12 +602,12 @@ const MyDashboard: React.FC = () => {
                                     item.status === "REJECTED" ? "bg-red-100/50 text-red-700 border-none" :
                                       "bg-blue-100/50 text-blue-700 border-none"
                               }>
-                                {(item.status === "APPROVED" || item.status === "COMPLETED") ? "مكتمل" : item.status === "PENDING" ? "تحت المراجعة" : item.status === "REJECTED" ? "مرفوض" : "نشط"}
+                                {(item.status === "APPROVED" || item.status === "COMPLETED") ? t("employee.dashboard.completed") : item.status === "PENDING" ? t("employee.dashboard.underReview") : item.status === "REJECTED" ? t("employee.dashboard.rejected") : t("employee.dashboard.active")}
                               </Badge>
                               <span className="text-xs text-gray-400">
-                                {item.category === 'LEAVE' ? `${item.totalDays} أيام` :
-                                  item.category === 'REWARD' ? `القيمة: ${item.calculatedValue} ج.م` :
-                                    item.category === 'ADVANCE' ? `القيمة: ${item.amount} ج.م` :
+                                {item.category === 'LEAVE' ? t("employee.dashboard.days", { count: item.totalDays }) :
+                                  item.category === 'REWARD' ? t("employee.dashboard.value", { amount: item.calculatedValue }) :
+                                    item.category === 'ADVANCE' ? t("employee.dashboard.value", { amount: item.amount }) :
                                       `${item.startTime} - ${item.endTime}`}
                               </span>
                             </div>
@@ -620,7 +620,7 @@ const MyDashboard: React.FC = () => {
                         <div className="bg-gray-50 dark:bg-gray-800/10 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Users className="h-8 w-8 text-gray-300" />
                         </div>
-                        <p className="text-gray-400 font-medium">لا يوجد نشاط مسجل مؤخراً</p>
+                        <p className="text-gray-400 font-medium">{t("employee.dashboard.noRecentActivity")}</p>
                       </div>
                     )}
                   </div>
@@ -634,8 +634,8 @@ const MyDashboard: React.FC = () => {
                 {/* Permissions List */}
                 <Card className="border-none shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-md font-bold">الأذونات (آخر 5)</CardTitle>
-                    <Button variant="link" size="sm" onClick={() => navigate("/my-permissions")}>عرض الكل</Button>
+                    <CardTitle className="text-md font-bold">{t("employee.dashboard.recentPermissions")}</CardTitle>
+                    <Button variant="link" size="sm" onClick={() => navigate("/my-permissions")}>{t("employee.dashboard.viewAll")}</Button>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -646,16 +646,16 @@ const MyDashboard: React.FC = () => {
                               <FileText className="h-5 w-5 text-yellow-600" />
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900 dark:text-gray-100">{p.type === 'OUT' ? 'إذن خروج' : 'إذن تأخير'}</p>
+                              <p className="font-bold text-gray-900 dark:text-gray-100">{p.type === 'OUT' ? t("employee.dashboard.exitPermission") : t("employee.dashboard.delayPermission")}</p>
                               <p className="text-xs text-gray-400">{format(new Date(p.date), "dd/MM/yyyy")} • {p.startTime} - {p.endTime}</p>
                             </div>
                           </div>
                           <Badge className={p.status === 'APPROVED' ? 'bg-green-500' : p.status === 'PENDING' ? 'bg-yellow-500' : 'bg-red-500'}>
-                            {p.status === 'APPROVED' ? 'مقبول' : p.status === 'PENDING' ? 'انتظار' : 'مرفوض'}
+                            {p.status === 'APPROVED' ? t("employee.dashboard.approved") : p.status === 'PENDING' ? t("employee.dashboard.pending") : t("employee.dashboard.rejected")}
                           </Badge>
                         </div>
                       ))}
-                      {permissions.length === 0 && <p className="text-center text-gray-400 py-4 text-sm">لا توجد طلبات أذونات</p>}
+                      {permissions.length === 0 && <p className="text-center text-gray-400 py-4 text-sm">{t("employee.dashboard.noPermissions")}</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -663,8 +663,8 @@ const MyDashboard: React.FC = () => {
                 {/* Leaves List (Brief) */}
                 <Card className="border-none shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-md font-bold">الإجازات الأخيرة</CardTitle>
-                    <Button variant="link" size="sm" onClick={() => navigate("/my-leaves")}>عرض الكل</Button>
+                    <CardTitle className="text-md font-bold">{t("employee.dashboard.recentLeaves")}</CardTitle>
+                    <Button variant="link" size="sm" onClick={() => navigate("/my-leaves")}>{t("employee.dashboard.viewAll")}</Button>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -676,12 +676,12 @@ const MyDashboard: React.FC = () => {
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-0.5">
                               <p className="font-bold text-sm">{l.type}</p>
-                              <span className="text-[10px] text-gray-400">{l.totalDays} يوم</span>
+                              <span className="text-[10px] text-gray-400">{t("employee.dashboard.days", { count: l.totalDays })}</span>
                             </div>
                             <p className="text-[10px] text-gray-400">{format(new Date(l.startDate), "dd/MM")} - {format(new Date(l.endDate), "dd/MM")}</p>
                           </div>
                           <Badge variant="outline" className={l.status === 'APPROVED' ? 'text-green-600 border-green-200' : 'text-yellow-600 border-yellow-200'}>
-                            {l.status === 'APPROVED' ? 'مقبول' : 'انتظار'}
+                            {l.status === 'APPROVED' ? t("employee.dashboard.approved") : t("employee.dashboard.pending")}
                           </Badge>
                         </div>
                       ))}
@@ -711,15 +711,15 @@ const MyDashboard: React.FC = () => {
                             <p className="text-xs text-gray-400">{format(new Date(r.appliedAt || r.createdAt), "dd MMMM yyyy", { locale: ar })}</p>
                           </div>
                           <div className="text-left">
-                            <p className="text-lg font-black text-purple-600">+{r.calculatedValue} <span className="text-xs">ج.م</span></p>
-                            <Badge className="bg-purple-100 text-purple-700 border-none rounded-full text-[10px]">{r.rewardCategory || "مكافأة أداء"}</Badge>
+                            <p className="text-lg font-black text-purple-600">+{r.calculatedValue} <span className="text-xs">{t("employee.dashboard.egp")}</span></p>
+                            <Badge className="bg-purple-100 text-purple-700 border-none rounded-full text-[10px]">{r.rewardCategory || t("employee.dashboard.performanceBonus")}</Badge>
                           </div>
                         </div>
                       ))}
                       {rewards.length === 0 && (
                         <div className="text-center py-6 text-gray-400">
                           <Award className="h-10 w-10 mx-auto opacity-20 mb-2" />
-                          <p className="text-sm">اجتهد لتحصل على مكافأتك الأولى!</p>
+                          <p className="text-sm">{t("employee.dashboard.earnFirstReward")}</p>
                         </div>
                       )}
                     </div>
@@ -731,7 +731,7 @@ const MyDashboard: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="text-md font-bold flex items-center gap-2">
                       <DollarSign className="h-5 w-5 text-green-600" />
-                      السلف النشطة
+                      {t("employee.dashboard.activeAdvances")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -740,18 +740,18 @@ const MyDashboard: React.FC = () => {
                         <div key={a.id} className="p-4 bg-gray-50 dark:bg-gray-800/20 rounded-2xl">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <p className="text-xs text-gray-400 font-bold mb-1 uppercase tracking-tight">إجمالي السلفة</p>
-                              <p className="text-xl font-black text-gray-900 dark:text-gray-100">{a.amount.toLocaleString()} ج.م</p>
+                              <p className="text-xs text-gray-400 font-bold mb-1 uppercase tracking-tight">{t("employee.dashboard.totalAdvance")}</p>
+                              <p className="text-xl font-black text-gray-900 dark:text-gray-100">{a.amount.toLocaleString()} {t("employee.dashboard.egp")}</p>
                             </div>
-                            <Badge className="bg-green-100 text-green-700 border-none">نشط</Badge>
+                            <Badge className="bg-green-100 text-green-700 border-none">{t("employee.dashboard.active")}</Badge>
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between text-xs font-bold mb-1">
-                              <span className="text-gray-400">المبلغ المتبقي</span>
-                              <span className="text-primary">{a.remainingBalance.toLocaleString()} ج.م</span>
+                              <span className="text-gray-400">{t("employee.dashboard.remainingAmount")}</span>
+                              <span className="text-primary">{a.remainingBalance.toLocaleString()} {t("employee.dashboard.egp")}</span>
                             </div>
                             <Progress value={((a.amount - a.remainingBalance) / a.amount) * 100} className="h-2 bg-gray-200" />
-                            <p className="text-[10px] text-gray-400 text-left mt-2">نظام التقسيط: {a.installmentsCount} أشهر</p>
+                            <p className="text-[10px] text-gray-400 text-left mt-2">{t("employee.dashboard.installmentPlan", { count: a.installmentsCount })}</p>
                           </div>
                         </div>
                       ))}
@@ -762,8 +762,8 @@ const MyDashboard: React.FC = () => {
                 {/* Advances History (Brief) */}
                 <Card className="border-none shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-md font-bold text-gray-900 dark:text-gray-100">آخر طلبات السلف</CardTitle>
-                    <Button variant="link" size="sm" onClick={() => navigate("/my-advances")}>عرض الكل</Button>
+                    <CardTitle className="text-md font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.recentAdvances")}</CardTitle>
+                    <Button variant="link" size="sm" onClick={() => navigate("/my-advances")}>{t("employee.dashboard.viewAll")}</Button>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -774,16 +774,16 @@ const MyDashboard: React.FC = () => {
                               <DollarSign className="h-5 w-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900 dark:text-gray-100">{a.amount.toLocaleString()} ج.م</p>
+                              <p className="font-bold text-gray-900 dark:text-gray-100">{a.amount.toLocaleString()} {t("employee.dashboard.egp")}</p>
                               <p className="text-xs text-gray-400">{format(new Date(a.createdAt), "dd/MM/yyyy")}</p>
                             </div>
                           </div>
                           <Badge className={a.status === 'APPROVED' ? 'bg-green-500' : a.status === 'PENDING' ? 'bg-yellow-500' : 'bg-red-500'}>
-                            {a.status === 'APPROVED' ? 'مقبول' : a.status === 'PENDING' ? 'انتظار' : 'مرفوض'}
+                            {a.status === 'APPROVED' ? t("employee.dashboard.approved") : a.status === 'PENDING' ? t("employee.dashboard.pending") : t("employee.dashboard.rejected")}
                           </Badge>
                         </div>
                       ))}
-                      {advances.length === 0 && <p className="text-center text-gray-400 py-4 text-sm">لا توجد طلبات سلف</p>}
+                      {advances.length === 0 && <p className="text-center text-gray-400 py-4 text-sm">{t("employee.dashboard.noAdvances")}</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -798,7 +798,7 @@ const MyDashboard: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            أهدافك وتطورك
+            {t("employee.dashboard.goalsAndDevelopment")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -808,11 +808,11 @@ const MyDashboard: React.FC = () => {
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
                   <Target className="h-5 w-5" />
                 </div>
-                <h5 className="font-bold text-gray-900 dark:text-gray-100">تحسين الأداء</h5>
+                <h5 className="font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.improvePerformance")}</h5>
               </div>
-              <p className="text-xs text-gray-500 mb-4 line-clamp-2">التركيز على سرعة إنجاز المهام المسندة ورفع الجودة بنسبة 15% خلال هذا الربع.</p>
+              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{t("employee.dashboard.improvePerformanceDesc")}</p>
               <div className="flex items-center justify-between text-[10px] font-bold text-blue-600 mb-1">
-                <span>معدل الإنجاز</span>
+                <span>{t("employee.dashboard.completionRate")}</span>
                 <span>75%</span>
               </div>
               <Progress value={75} className="h-1.5 bg-blue-100 dark:bg-blue-900/30" />
@@ -823,11 +823,11 @@ const MyDashboard: React.FC = () => {
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600">
                   <Award className="h-5 w-5" />
                 </div>
-                <h5 className="font-bold text-gray-900 dark:text-gray-100">التدريب المهني</h5>
+                <h5 className="font-bold text-gray-900 dark:text-gray-100">{t("employee.dashboard.professionalTraining")}</h5>
               </div>
-              <p className="text-xs text-gray-500 mb-4 line-clamp-2">إكمال دورة "الإدارة الفعالة للوقت" المتاحة في منصة التعليم الداخلية.</p>
+              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{t("employee.dashboard.professionalTrainingDesc")}</p>
               <div className="flex items-center justify-between text-[10px] font-bold text-purple-600 mb-1">
-                <span>معدل الإنجاز</span>
+                <span>{t("employee.dashboard.completionRate")}</span>
                 <span>40%</span>
               </div>
               <Progress value={40} className="h-1.5 bg-purple-100 dark:bg-purple-900/30" />
@@ -835,7 +835,7 @@ const MyDashboard: React.FC = () => {
 
             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center">
               <Plus className="h-8 w-8 text-gray-300 mb-2 cursor-pointer hover:text-primary transition-colors" />
-              <p className="text-xs text-gray-400 font-medium">أضف هدفاً شخصياً جديداً</p>
+              <p className="text-xs text-gray-400 font-medium">{t("employee.dashboard.addPersonalGoal")}</p>
             </div>
           </div>
         </CardContent>
@@ -843,11 +843,11 @@ const MyDashboard: React.FC = () => {
 
       {/* Support & Footer */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-8 border-t border-gray-100 dark:border-gray-900">
-        <p className="text-sm text-gray-400">نظام MaxP لإدارة الموارد البشرية © 2026</p>
+        <p className="text-sm text-gray-400">{t("employee.dashboard.footer")}</p>
         <div className="flex items-center gap-6">
-          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">مركز المساعدة</Button>
-          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">سياسة الشركة</Button>
-          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">الإبلاغ عن مشكلة</Button>
+          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">{t("employee.dashboard.helpCenter")}</Button>
+          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">{t("employee.dashboard.companyPolicy")}</Button>
+          <Button variant="link" className="text-sm text-gray-400 hover:text-primary p-0 h-auto">{t("employee.dashboard.reportIssue")}</Button>
         </div>
       </div>
     </div>

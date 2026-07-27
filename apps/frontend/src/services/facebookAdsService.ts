@@ -1516,6 +1516,8 @@ export const getCampaignInsights = async (
 /**
  * جلب ملخص أداء الحملات مع توصيات تحسين
  */
+const LONG_TIMEOUT = 35000;
+
 export const getAdsPerformanceSummary = async (
   startDate?: string,
   endDate?: string,
@@ -1528,11 +1530,12 @@ export const getAdsPerformanceSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
+    const response = await apiClient.get(
       `/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsPerformanceSummary } };
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads performance summary:", error);
     throw error;
@@ -1551,11 +1554,12 @@ export const getAdsDecisionSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
+    const response = await apiClient.get(
       `/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsDecisionSummary } };
+      { timeout: LONG_TIMEOUT },
+    );
 
-    return response.data.data;
+    return (response.data as any).data;
   } catch (error: unknown) {
     console.error("❌ Error fetching Ads decision summary:", error);
     throw error;

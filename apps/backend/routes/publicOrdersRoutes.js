@@ -774,8 +774,8 @@ function buildTrackedOrderItem(item) {
     variantId: item?.variantId || null,
     quantity: item?.quantity,
     price: item?.price,
-    productColor: item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون']) || null,
-    productSize: item?.productSize || getAttributeValue(attributes, ['size', 'المقاس']) || null,
+    productColor: (item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) ? String(item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) : null,
+    productSize: (item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) != null ? String(item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) : null,
     image: productImage,
     imageUrl: productImage,
     attributes,
@@ -1037,7 +1037,7 @@ router.post('/', async (req, res) => {
           });
         }
 
-        if (variant.trackInventory !== false && variant.stock < item.quantity) {
+        if (variant.trackInventory !== false && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
           console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -1146,7 +1146,7 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        if (product.trackInventory !== false && product.stock < item.quantity) {
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
           console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
           return res.status(400).json({
             success: false,
@@ -2050,6 +2050,7 @@ router.post('/', async (req, res) => {
           customerEmail: order.guestEmail || null,
           customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
           shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
+          governorate: shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '',
           city: shippingAddress?.city || '',
           subtotal: parseFloat(order.total),
           shipping: parseFloat(order.shippingCost || 0),

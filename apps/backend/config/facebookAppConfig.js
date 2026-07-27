@@ -73,6 +73,7 @@ const saveFacebookOAuthConfig = (config) => {
     whatsappAppId: normalizeCredential(config?.whatsappAppId),
     whatsappAppSecret: normalizeCredential(config?.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(config?.whatsappConfigId),
+    whatsappWebhookVerifyToken: normalizeCredential(config?.whatsappWebhookVerifyToken),
     updatedAt: new Date().toISOString(),
   };
 
@@ -99,6 +100,7 @@ const getFacebookOAuthConfig = () => {
     whatsappAppId: chooseCredential(stored.whatsappAppId),
     whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(stored.whatsappConfigId),
+    whatsappWebhookVerifyToken: normalizeCredential(stored.whatsappWebhookVerifyToken),
   };
 };
 

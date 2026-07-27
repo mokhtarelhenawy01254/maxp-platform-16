@@ -19,6 +19,7 @@ const SuperAdminFacebookOAuth = () => {
     whatsappAppId: "",
     whatsappAppSecret: "",
     whatsappConfigId: "",
+    whatsappWebhookVerifyToken: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +42,7 @@ const SuperAdminFacebookOAuth = () => {
         whatsappAppId: data.data.whatsappAppId || "",
         whatsappAppSecret: data.data.whatsappAppSecret || "",
         whatsappConfigId: data.data.whatsappConfigId || "",
+        whatsappWebhookVerifyToken: data.data.whatsappWebhookVerifyToken || "",
       });
       else setError(data.message || "فشل في جلب الإعدادات");
     } catch (err) { setError("فشل في الاتصال بالخادم"); } finally { setLoading(false); }
@@ -70,7 +72,7 @@ const SuperAdminFacebookOAuth = () => {
       <Card><CardContent>
         <div className="flex items-center gap-2 mb-2"><Info className="size-5 text-blue-600" /><h2 className="text-base font-semibold">معلومات الإعداد</h2></div>
         <p className="text-sm mb-3">لتمكين تكامل Facebook OAuth، تحتاج إلى إنشاء تطبيق على منصة Facebook Developers وإدخال المعلومات التالية:</p>
-        <ol className="list-decimal pr-4 mb-3 text-sm space-y-1"><li>انتقل إلى <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Facebook Developers</a></li><li>أنشئ تطبيقًا جديدًا أو استخدم تطبيقًا موجودًا</li><li>احصل على App ID و App Secret</li><li>أضف رابط إعادة التوجيه: <code className="bg-muted px-1 rounded">{window.location.origin}/settings/facebook/callback</code></li></ol>
+        <ol className="list-decimal pr-4 mb-3 text-sm space-y-1"><li>انتقل إلى <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Facebook Developers</a></li><li>أنشئ تطبيقًا جديدًا أو استخدم تطبيقًا موجودًا</li><li>احصل على App ID و App Secret</li><li>أضف روابط إعادة التوجيه في لوحة التحكم فيسبوك: <ul className="list-disc pr-4 my-1 space-y-1"><li>رابط الصفحات/المسنجر: <code className="bg-muted px-1 rounded">{window.location.origin}/settings/facebook/callback</code></li><li>رابط الواتساب السحابي: <code className="bg-muted px-1 rounded">{window.location.origin}/whatsapp/cloud-connect</code></li></ul></li></ol>
         <hr className="my-3" />
         <div className="flex items-center gap-2 mb-2"><Facebook className="size-5 text-[#1877F2]" /><h2 className="text-base font-semibold">إعدادات التطبيق الأساسي</h2></div>
         <div className="flex items-center gap-2 mb-3"><Badge variant={isConfigured ? "default" : "secondary"}>{isConfigured ? "مُكوَّن" : "غير مُكوَّن"}</Badge><span className="text-sm text-muted-foreground">{isConfigured ? "تم تكوين إعدادات Facebook OAuth بشكل صحيح" : "لم يتم تكوين إعدادات Facebook OAuth بعد"}</span></div>
@@ -89,6 +91,7 @@ const SuperAdminFacebookOAuth = () => {
           <div><Label>WhatsApp App ID (اختياري)</Label><Input value={config.whatsappAppId} onChange={e => setConfig(p => ({ ...p, whatsappAppId: e.target.value }))} placeholder="أدخل App ID الخاص بالواتساب" /></div>
           <div><Label>WhatsApp App Secret (اختياري)</Label><div className="relative"><Input type={showWaSecret ? "text" : "password"} value={config.whatsappAppSecret} onChange={e => setConfig(p => ({ ...p, whatsappAppSecret: e.target.value }))} placeholder="أدخل App Secret الخاص بالواتساب" /><Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2" onClick={() => setShowWaSecret(!showWaSecret)}>{showWaSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</Button></div></div>
           <div><Label>WhatsApp Configuration ID (اختياري)</Label><Input value={config.whatsappConfigId} onChange={e => setConfig(p => ({ ...p, whatsappConfigId: e.target.value }))} placeholder="أدخل Configuration ID الخاص بـ Facebook Login for Business" /></div>
+          <div><Label>WhatsApp Webhook Verify Token (رمز التحقق للويب هوك)</Label><Input value={config.whatsappWebhookVerifyToken} onChange={e => setConfig(p => ({ ...p, whatsappWebhookVerifyToken: e.target.value }))} placeholder="أدخل رمز التحقق الخاص بالويب هوك (Verify Token)" /></div>
         </div>
 
         <div className="flex justify-end mt-4"><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Save className="size-4" />} حفظ الإعدادات</Button></div>

@@ -1,20 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { SHORTAGE_REASON_OPTIONS, STAGE_DEFINITIONS } from "../constants";
+import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
+import { getStatusDisplay } from "../../../../utils/statusRegistry";
+import { normalizeStatusToStage } from "../helpers";
+import type {
+  PreparationFilterSection,
+} from "../constants";
 import type {
   ItemCountFilter,
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
+  SortBy,
+  SortOrder,
   StageCounts,
-  StageFilter,
   StockFilter,
   WarehouseOption,
 } from "../types";
 
+interface ProductSuggestion {
+  displayName: string;
+  color: string;
+  size: string;
+}
+
 interface PreparationFiltersProps {
-  activeStage: StageFilter;
+  activeFilter: string;
+  statusCounts: Record<string, number>;
   stageCounts: StageCounts;
+  filterTabs: { statusCode: string; name: string }[];
   visibleOrdersCount: number;
   search: string;
   selectedWarehouseId: string;
@@ -24,9 +40,17 @@ interface PreparationFiltersProps {
   shortageOwnerOptions: string[];
   shortageFollowUpFilter: ShortageFollowUpFilter;
   productFilter: string;
+  productColorFilter: string;
+  productSizeFilter: string;
+  productSuggestions: ProductSuggestion[];
   itemCountFilter: ItemCountFilter;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
   warehouses: WarehouseOption[];
-  onActiveStageChange: (stage: StageFilter) => void;
+  visibleFilterSections: PreparationFilterSection[];
+  onFilterChange: (filter: string) => void;
   onSearchChange: (value: string) => void;
   onSelectedWarehouseChange: (value: string) => void;
   onStockFilterChange: (value: StockFilter) => void;
@@ -34,15 +58,22 @@ interface PreparationFiltersProps {
   onShortageOwnerFilterChange: (value: string) => void;
   onShortageFollowUpFilterChange: (value: ShortageFollowUpFilter) => void;
   onProductFilterChange: (value: string) => void;
+  onProductColorFilterChange: (value: string) => void;
+  onProductSizeFilterChange: (value: string) => void;
   onItemCountFilterChange: (value: ItemCountFilter) => void;
+  onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
+  onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
+  onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
 const selectClass =
   "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white";
 
 const PreparationFilters = ({
-  activeStage,
+  activeFilter,
+  statusCounts,
   stageCounts,
+  filterTabs,
   visibleOrdersCount,
   search,
   selectedWarehouseId,
@@ -52,9 +83,17 @@ const PreparationFilters = ({
   shortageOwnerOptions,
   shortageFollowUpFilter,
   productFilter,
+  productColorFilter,
+  productSizeFilter,
+  productSuggestions,
   itemCountFilter,
+  notPrintedFilter,
+  noShippingCodeFilter,
+  sortBy,
+  sortOrder,
   warehouses,
-  onActiveStageChange,
+  visibleFilterSections,
+  onFilterChange,
   onSearchChange,
   onSelectedWarehouseChange,
   onStockFilterChange,
@@ -62,13 +101,23 @@ const PreparationFilters = ({
   onShortageOwnerFilterChange,
   onShortageFollowUpFilterChange,
   onProductFilterChange,
+  onProductColorFilterChange,
+  onProductSizeFilterChange,
   onItemCountFilterChange,
+  onNotPrintedFilterChange,
+  onNoShippingCodeFilterChange,
+  onSortChange,
 }: PreparationFiltersProps) => {
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const productSuggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const isInitialMount = useRef(true);
 
+  const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -85,20 +134,56 @@ const PreparationFilters = ({
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasActiveFilters =
-    activeStage !== "ALL" ||
+  useEffect(() => {
+    setLocalProductFilter(productFilter);
+  }, [productFilter]);
+
+  const filteredProductSuggestions = localProductFilter
+    ? productSuggestions.filter((s) => {
+        const query = localProductFilter.toLowerCase();
+        return (
+          s.displayName.toLowerCase().includes(query) ||
+          s.color.toLowerCase().includes(query) ||
+          s.size.toLowerCase().includes(query)
+        );
+      })
+    : productSuggestions;
+
+  const handleProductSuggestionSelect = (suggestion: ProductSuggestion) => {
+    setLocalProductFilter(suggestion.displayName);
+    onProductFilterChange(suggestion.displayName);
+    setShowProductSuggestions(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        productSuggestionsRef.current &&
+        !productSuggestionsRef.current.contains(e.target as Node) &&
+        productInputRef.current &&
+        !productInputRef.current.contains(e.target as Node)
+      ) {
+        setShowProductSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const hasAdvancedFilters =
     selectedWarehouseId !== "" ||
     stockFilter !== "all" ||
     shortageReasonFilter !== "all" ||
     shortageOwnerFilter !== "" ||
     shortageFollowUpFilter !== "all" ||
-    productFilter !== "" ||
     itemCountFilter !== "all" ||
-    search !== "";
+    notPrintedFilter !== "all" ||
+    noShippingCodeFilter !== "all";
+
+  const hasActiveFilters = activeFilter !== "ALL" || search !== "" || productFilter !== "" || hasAdvancedFilters;
 
   const resetAll = () => {
-    onActiveStageChange("ALL");
-    setLocalSearch("");
+    onFilterChange("ALL");
     onSearchChange("");
     onSelectedWarehouseChange("");
     onStockFilterChange("all");
@@ -106,191 +191,317 @@ const PreparationFilters = ({
     onShortageOwnerFilterChange("");
     onShortageFollowUpFilterChange("all");
     onProductFilterChange("");
+    onProductColorFilterChange("");
+    onProductSizeFilterChange("");
     onItemCountFilterChange("all");
+    onNotPrintedFilterChange("all");
+    onNoShippingCodeFilterChange("all");
+    onSortChange("createdAt", "desc");
+    setLocalSearch("");
+    setLocalProductFilter("");
+    setShowProductSuggestions(false);
   };
 
   return (
-    <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <FunnelIcon className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-semibold text-gray-700">{t("preparation.filters.title")}</span>
-          {hasActiveFilters && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-              {t("preparation.filters.active")}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-xl bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-            {t("preparation.filters.ordersCount", { count: visibleOrdersCount })}
-          </span>
-          {hasActiveFilters && (
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      {/* Top bar: Tabs & Search Controls */}
+      <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+        
+        {/* Horizontal Scrollable Tabs */}
+        {visibleFilterSections.includes("tabs") && (
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
-              onClick={resetAll}
-              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+              onClick={() => onFilterChange("ALL")}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                activeFilter === "ALL"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
             >
-              <XMarkIcon className="h-3.5 w-3.5" />
-              {t("preparation.filters.clearAll")}
+              <span>{t("preparation.filters.allStages", { count: "" }).replace(/\(\s*\)/, "").trim()}</span>
+              <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                activeFilter === "ALL" ? "bg-white/20 text-white" : "bg-gray-200/80 text-gray-700"
+              }`}>
+                {visibleOrdersCount}
+              </span>
             </button>
-          )}
-        </div>
+
+            {filterTabs.map((tab) => {
+              const display = getStatusDisplay(tab.statusCode);
+              const mappedStage = normalizeStatusToStage(tab.statusCode);
+              const count = mappedStage && stageCounts[mappedStage] !== undefined
+                ? stageCounts[mappedStage]
+                : statusCounts[tab.statusCode] ?? 0;
+              const isActive = activeFilter === tab.statusCode;
+
+              return (
+                <button
+                  key={tab.statusCode}
+                  onClick={() => onFilterChange(tab.statusCode)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                    isActive
+                      ? `${display.colorClass} border border-current shadow-sm`
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                  title={tab.name}
+                >
+                  <span>{tab.name}</span>
+                  <span
+                    className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      isActive
+                        ? "bg-white/25 text-current"
+                        : count > 0
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-gray-200/70 text-gray-500"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Search & Advanced Filters Trigger */}
+        {visibleFilterSections.includes("search") && (
+          <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
+            <div className="relative flex-1 sm:w-48">
+              <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+              <input
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                placeholder={t("preparation.filters.quickSearchPlaceholder")}
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className={`flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition ${
+                showAdvanced || hasAdvancedFilters
+                  ? "bg-amber-100 text-amber-800 font-semibold"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <FunnelIcon className="h-3.5 w-3.5" />
+              <span>{t("preparation.filters.advanced")}</span>
+              <ChevronDownIcon className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={resetAll}
+                title={t("common.reset", "إعادة ضبط")}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Stage tabs */}
-      <div className="flex flex-wrap gap-1.5 border-b border-gray-100 px-4 py-2.5">
-        <button
-          onClick={() => onActiveStageChange("ALL")}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-            activeStage === "ALL"
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          {t("preparation.filters.allStages", { count: stageCounts.ALL })}
-        </button>
-        {STAGE_DEFINITIONS.map((stage) => (
+      {/* Toggle filter buttons + Product filter */}
+      {visibleFilterSections.includes("toggleButtons") && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2.5">
           <button
-            key={stage.key}
-            onClick={() => onActiveStageChange(stage.key)}
+            onClick={() =>
+              onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
+            }
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              activeStage === stage.key
-                ? `${stage.colorClass} border border-current`
+              notPrintedFilter === "not_printed"
+                ? "bg-amber-500 text-white shadow-sm"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
-            title={t(stage.descriptionKey)}
           >
-            {t(stage.labelKey)} ({stageCounts[stage.key]})
+            {t("preparation.filters.notPrinted")}
           </button>
-        ))}
-      </div>
+          <button
+            onClick={() =>
+              onNoShippingCodeFilterChange(noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code")
+            }
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              noShippingCodeFilter === "no_shipping_code"
+                ? "bg-amber-500 text-white shadow-sm"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {t("preparation.filters.noShippingCode")}
+          </button>
 
-      {/* Filter fields */}
-      <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
-        {/* Search — wider */}
-        <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.quickSearch")}</label>
-          <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <div className="relative mr-auto min-w-[180px] max-w-[260px]">
             <input
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder={t("preparation.filters.quickSearchPlaceholder")}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
-            />
-          </div>
-        </div>
-
-        {/* Product filter */}
-        <div className="col-span-2 sm:col-span-3 md:col-span-2 lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.product")}</label>
-          <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              value={productFilter}
-              onChange={(e) => onProductFilterChange(e.target.value)}
+              ref={productInputRef}
+              value={localProductFilter}
+              onChange={(e) => {
+                setLocalProductFilter(e.target.value);
+                onProductFilterChange(e.target.value);
+                setShowProductSuggestions(true);
+              }}
+              onFocus={() => setShowProductSuggestions(true)}
               placeholder={t("preparation.filters.productPlaceholder")}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400"
             />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            {showProductSuggestions && (
+              <div
+                ref={productSuggestionsRef}
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+              >
+                {filteredProductSuggestions.length > 0 ? (
+                  filteredProductSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleProductSuggestionSelect(suggestion)}
+                      className="flex w-full items-center gap-2 border-b border-gray-50 px-3 py-2.5 text-right text-xs transition last:border-0 hover:bg-amber-50"
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-semibold text-gray-900">{suggestion.displayName}</span>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          {suggestion.color && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700">
+                              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: suggestion.color.toLowerCase() === 'احمر' ? '#ef4444' : suggestion.color.toLowerCase() === 'ازرق' ? '#3b82f6' : suggestion.color.toLowerCase() === 'اخضر' ? '#22c55e' : suggestion.color.toLowerCase() === 'اسود' ? '#111827' : suggestion.color.toLowerCase() === 'ابيض' ? '#f9fafb' : suggestion.color.toLowerCase() === 'اصفر' ? '#eab308' : suggestion.color.toLowerCase() === 'بنى' ? '#92400e' : suggestion.color.toLowerCase() === 'رمادى' ? '#6b7280' : suggestion.color.toLowerCase() === 'فضى' ? '#9ca3af' : suggestion.color.toLowerCase() === 'ذهبى' ? '#d97706' : '#e5e7eb' }} />
+                              {suggestion.color}
+                            </span>
+                          )}
+                          {suggestion.size && (
+                            <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                              {suggestion.size}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-center text-xs text-gray-400">
+                    لا توجد منتجات مطابقة
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="relative min-w-[120px]">
+            <select
+              value={productColorFilter}
+              onChange={(e) => onProductColorFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">اللون (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.color).filter(Boolean))).map((color, idx) => (
+                <option key={idx} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative min-w-[120px]">
+            <select
+              value={productSizeFilter}
+              onChange={(e) => onProductSizeFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">المقاس (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.size).filter(Boolean))).map((size, idx) => (
+                <option key={idx} value={size}>{size}</option>
+              ))}
+            </select>
           </div>
         </div>
+      )}
 
-        {/* Warehouse */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.warehouse")}</label>
-          <select
-            value={selectedWarehouseId}
-            onChange={(e) => onSelectedWarehouseChange(e.target.value)}
-            className={selectClass}
-          >
-            <option value="">{t("preparation.filters.allWarehouses")}</option>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>{w.name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Advanced filters (collapsible) */}
+      {showAdvanced && visibleFilterSections.includes("advanced") && (
+        <div className="grid grid-cols-2 gap-2 border-t border-gray-50 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.warehouse")}</label>
+            <select
+              value={selectedWarehouseId}
+              onChange={(e) => onSelectedWarehouseChange(e.target.value)}
+              className={selectClass}
+            >
+              <option value="">{t("preparation.filters.allWarehouses")}</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Stock status */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.stockStatus")}</label>
-          <select
-            value={stockFilter}
-            onChange={(e) => onStockFilterChange(e.target.value as StockFilter)}
-            className={selectClass}
-          >
-            <option value="all">{t("preparation.filters.allStock")}</option>
-            <option value="ready">{t("preparation.filters.ready")}</option>
-            <option value="shortage">{t("preparation.filters.shortage")}</option>
-          </select>
-        </div>
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.stock")}</label>
+            <select
+              value={stockFilter}
+              onChange={(e) => onStockFilterChange(e.target.value as StockFilter)}
+              className={selectClass}
+            >
+              <option value="all">{t("preparation.filters.allStock")}</option>
+              <option value="available">{t("preparation.filters.stockAvailable")}</option>
+              <option value="shortage">{t("preparation.filters.stockShortage")}</option>
+            </select>
+          </div>
 
-        {/* Item count */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.itemsCount")}</label>
-          <select
-            value={itemCountFilter}
-            onChange={(e) => onItemCountFilterChange(e.target.value as ItemCountFilter)}
-            className={selectClass}
-          >
-            <option value="all">{t("preparation.filters.allStock")}</option>
-            <option value="single">{t("preparation.filters.singleItem")}</option>
-            <option value="multiple">{t("preparation.filters.multipleItems")}</option>
-          </select>
-        </div>
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.sortBy")}</label>
+            <select
+              value={`${sortBy}_${sortOrder}`}
+              onChange={(e) => {
+                const [newSortBy, newSortOrder] = e.target.value.split("_") as [SortBy, SortOrder];
+                onSortChange(newSortBy, newSortOrder);
+              }}
+              className={selectClass}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Shortage reason */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.shortageReason")}</label>
-          <select
-            value={shortageReasonFilter}
-            onChange={(e) =>
-              onShortageReasonFilterChange(e.target.value as ShortageReasonFilter)
-            }
-            className={selectClass}
-          >
-            <option value="all">{t("preparation.filters.allReasons")}</option>
-            {SHORTAGE_REASON_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
-            ))}
-          </select>
-        </div>
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.itemCount")}</label>
+            <select
+              value={itemCountFilter}
+              onChange={(e) => onItemCountFilterChange(e.target.value as ItemCountFilter)}
+              className={selectClass}
+            >
+              <option value="all">{t("preparation.filters.allItems")}</option>
+              <option value="single">{t("preparation.filters.singleItem")}</option>
+              <option value="multiple">{t("preparation.filters.multipleItems")}</option>
+            </select>
+          </div>
 
-        {/* Owner */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.owner")}</label>
-          <input
-            list="preparation-shortage-owners"
-            value={shortageOwnerFilter}
-            onChange={(e) => onShortageOwnerFilterChange(e.target.value)}
-            placeholder={t("preparation.filters.allOwners")}
-            className={selectClass}
-          />
-          <datalist id="preparation-shortage-owners">
-            {shortageOwnerOptions.map((owner) => (
-              <option key={owner} value={owner} />
-            ))}
-          </datalist>
-        </div>
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.shortageReason")}</label>
+            <select
+              value={shortageReasonFilter}
+              onChange={(e) => onShortageReasonFilterChange(e.target.value as ShortageReasonFilter)}
+              className={selectClass}
+            >
+              <option value="all">{t("preparation.filters.allReasons")}</option>
+              {SHORTAGE_REASON_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Follow-up date */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.followUpDate")}</label>
-          <select
-            value={shortageFollowUpFilter}
-            onChange={(e) =>
-              onShortageFollowUpFilterChange(e.target.value as ShortageFollowUpFilter)
-            }
-            className={selectClass}
-          >
-            <option value="all">{t("preparation.filters.allDates")}</option>
-            <option value="today">{t("preparation.filters.today")}</option>
-            <option value="overdue">{t("preparation.filters.overdue")}</option>
-            <option value="without_date">{t("preparation.filters.withoutDate")}</option>
-          </select>
+          <div className="space-y-1">
+            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.followUpDate")}</label>
+            <select
+              value={shortageFollowUpFilter}
+              onChange={(e) => onShortageFollowUpFilterChange(e.target.value as ShortageFollowUpFilter)}
+              className={selectClass}
+            >
+              <option value="all">{t("preparation.filters.allDates")}</option>
+              <option value="today">{t("preparation.filters.today")}</option>
+              <option value="overdue">{t("preparation.filters.overdue")}</option>
+              <option value="none">{t("preparation.filters.noDate")}</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   );
 };
 

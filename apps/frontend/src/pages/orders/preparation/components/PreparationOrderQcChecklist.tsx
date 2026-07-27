@@ -1,11 +1,12 @@
+import { useTranslation } from "react-i18next";
 import type { QcCheckKey } from "../types";
 
-const QC_LABEL_MAP: Record<QcCheckKey, string> = {
-  quantity: "مراجعة الكمية",
-  variant: "مراجعة المقاس / اللون",
-  packaging: "سلامة التغليف",
-  accessories: "الملحقات",
-  invoiceSlip: "الورقة الداخلية",
+const QC_LABEL_KEY_MAP: Record<QcCheckKey, string> = {
+  quantity: "preparation.qc.quantity",
+  variant: "preparation.qc.variant",
+  packaging: "preparation.qc.packaging",
+  accessories: "preparation.qc.accessories",
+  invoiceSlip: "preparation.qc.invoiceSlip",
 };
 
 interface PreparationOrderQcChecklistProps {
@@ -27,6 +28,8 @@ const PreparationOrderQcChecklist = ({
   qcCompleted,
   onQcCheckToggle,
 }: PreparationOrderQcChecklistProps) => {
+  const { t } = useTranslation();
+
   if (enabledQcChecks.length === 0) {
     return null;
   }
@@ -35,9 +38,9 @@ const PreparationOrderQcChecklist = ({
     <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h4 className="font-semibold text-cyan-900">Checklist فحص الجودة</h4>
+          <h4 className="font-semibold text-cyan-900">{t("preparation.qc.title")}</h4>
           <p className="mt-1 text-xs text-cyan-800">
-            يجب استكمال العناصر المطلوبة قبل اعتماد التغليف.
+            {t("preparation.qc.desc")}
           </p>
         </div>
 
@@ -48,7 +51,7 @@ const PreparationOrderQcChecklist = ({
               : "bg-amber-100 text-amber-800"
           }`}
         >
-          {qcCompleted ? "الفحص مكتمل" : "الفحص غير مكتمل"}
+          {qcCompleted ? t("preparation.qc.completed") : t("preparation.qc.incomplete")}
         </span>
       </div>
 
@@ -66,7 +69,7 @@ const PreparationOrderQcChecklist = ({
               }
               className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
             />
-            {QC_LABEL_MAP[key]}
+            {t(QC_LABEL_KEY_MAP[key])}
           </label>
         ))}
       </div>

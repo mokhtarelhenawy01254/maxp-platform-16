@@ -8,6 +8,7 @@ import {
   ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
+import { getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { OrderDetailsType } from "../types";
 
@@ -18,6 +19,8 @@ interface TurboShippingPanelProps {
   loadingComparison: boolean;
   turboLoading: boolean;
   onCreateShipment: () => void;
+  onUpdateShipment?: () => void;
+  onSyncStatus?: () => void;
   onPrintWaybill: () => void;
   onCancelShipment: () => void;
   onUnlinkShipment: () => void;
@@ -33,6 +36,8 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
   loadingComparison,
   turboLoading,
   onCreateShipment,
+  onUpdateShipment,
+  onSyncStatus,
   onPrintWaybill,
   onCancelShipment,
   onUnlinkShipment,
@@ -42,115 +47,6 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
 }) => {
   const { formatDate } = useDateFormat();
   const { formatPrice } = useCurrency();
-
-  const getTurboStatusText = (status?: string) => {
-    if (!status) return "غير متاح";
-    const statusMap: { [key: string]: string } = {
-      "1": "محفوظة قبل الشحن",
-      "2": "مرسلة للشحن",
-      "3": "قيد التنفيذ",
-      "4": "مع الكابتن",
-      "5": "مرتجعة مع الشركة",
-      "6": "مرتجعة",
-      "7": "تم التسليم",
-      "8": "تم التوريد",
-      "9": "محذوفة",
-      "10": "مرتجعة معاد إرسالها",
-      "11": "مرتجع مفقود",
-      "12": "مرتجع معدوم",
-      "13": "مؤجلة",
-      created: "تم الإنشاء",
-      confirmed: "مؤكدة",
-      pending: "قيد الانتظار",
-      processing: "قيد المعالجة",
-      shipped: "تم الشحن",
-      picked_up: "تم الاستلام",
-      in_transit: "قيد النقل",
-      out_for_delivery: "في الطريق للتسليم",
-      delivered: "تم التسليم",
-      cancelled: "ملغاة",
-      returned: "مرتجعة",
-      saved: "محفوظة قبل الشحن",
-      sent: "مرسلة للشحن",
-      in_progress: "قيد التنفيذ",
-      with_captain: "مع الكابتن",
-      returned_to_company: "مرتجعة مع الشركة",
-      completed: "تم التوريد",
-      deleted: "محذوفة",
-      returned_resent: "مرتجعة معاد إرسالها",
-      returned_missing: "مرتجع مفقود",
-      returned_destroyed: "مرتجع معدوم",
-      postponed: "مؤجلة",
-    };
-    return statusMap[status.toLowerCase()] || statusMap[status] || status;
-  };
-
-  const getTurboStatusColor = (status?: string) => {
-    if (!status)
-      return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
-    const statusLower = status.toLowerCase();
-
-    if (
-      statusLower === "7" ||
-      statusLower === "8" ||
-      statusLower === "delivered" ||
-      statusLower === "completed"
-    ) {
-      return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400";
-    }
-
-    if (
-      statusLower === "9" ||
-      statusLower === "cancelled" ||
-      statusLower === "deleted"
-    ) {
-      return "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400";
-    }
-
-    if (
-      statusLower === "5" ||
-      statusLower === "6" ||
-      statusLower === "10" ||
-      statusLower === "11" ||
-      statusLower === "12" ||
-      statusLower === "returned" ||
-      statusLower === "returned_to_company" ||
-      statusLower === "returned_resent" ||
-      statusLower === "returned_missing" ||
-      statusLower === "returned_destroyed"
-    ) {
-      return "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400";
-    }
-
-    if (
-      statusLower === "2" ||
-      statusLower === "3" ||
-      statusLower === "4" ||
-      statusLower === "sent" ||
-      statusLower === "in_progress" ||
-      statusLower === "with_captain" ||
-      statusLower === "in_transit" ||
-      statusLower === "out_for_delivery" ||
-      statusLower === "picked_up" ||
-      statusLower === "confirmed" ||
-      statusLower === "processing" ||
-      statusLower === "shipped"
-    ) {
-      return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400";
-    }
-
-    if (
-      statusLower === "1" ||
-      statusLower === "13" ||
-      statusLower === "created" ||
-      statusLower === "saved" ||
-      statusLower === "postponed"
-    ) {
-      return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
-    }
-
-    return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
-  };
 
   if (!order) return null;
 
@@ -210,9 +106,9 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
                   حالة الشحنة:
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getTurboStatusColor(order.turboShipmentStatus)}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${getTurboStatusDisplay(order.turboShipmentStatus).colorClass}`}
                 >
-                  {getTurboStatusText(order.turboShipmentStatus)}
+                  {getTurboStatusDisplay(order.turboShipmentStatus).label}
                 </span>
               </div>
               {turboTrackingData?.currentLocation && (
@@ -245,13 +141,53 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
                   </span>
                 </div>
               )}
-              {turboTrackingData?.branch && (
+              {(order.turboCaptainName || turboTrackingData?.captain) && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    الفرع المتوقع:
+                    المندوب:
                   </span>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {turboTrackingData.branch}
+                  <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                    {order.turboCaptainName || turboTrackingData?.captain}
+                    {(order.turboCaptainPhone || turboTrackingData?.captainNumber1) && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ltr">
+                        ({order.turboCaptainPhone || turboTrackingData?.captainNumber1})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {(order.turboBranchName || turboTrackingData?.branch) && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    الفرع:
+                  </span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                    {order.turboBranchName || turboTrackingData?.branch}
+                    {(order.turboBranchPhone || turboTrackingData?.branchNumber1) && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ltr">
+                        ({order.turboBranchPhone || turboTrackingData?.branchNumber1})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {order.turboDelayReason && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    سبب التأخير:
+                  </span>
+                  <span className="text-sm text-amber-600 dark:text-amber-400">
+                    {order.turboDelayReason}
+                  </span>
+                </div>
+              )}
+              {order.turboReturnReason && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    سبب الارتجاع:
+                  </span>
+                  <span className="text-sm text-red-600 dark:text-red-400">
+                    {order.turboReturnReason}
                   </span>
                 </div>
               )}
@@ -363,6 +299,32 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
+            {canManageShipments && onUpdateShipment && (
+              <button
+                onClick={onUpdateShipment}
+                disabled={turboLoading}
+                className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 text-sm font-medium transition-all shadow-sm hover:shadow"
+                title="تحديث بيانات الشحنة (الاسم والتليفون والعنوان) في سيستم تربو"
+              >
+                <ArrowPathIcon
+                  className={`w-4 h-4 ml-1 ${turboLoading ? "animate-spin" : ""}`}
+                />
+                تحديث الشحنة في Turbo
+              </button>
+            )}
+            {canManageShipments && onSyncStatus && (
+              <button
+                onClick={onSyncStatus}
+                disabled={turboLoading}
+                className="flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 text-sm font-medium transition-all shadow-sm hover:shadow"
+                title="سحب ومزامنة حالة الشحنة المباشرة من سيرفر تربو وتحديث الطلب بالنظام"
+              >
+                <ArrowPathIcon
+                  className={`w-4 h-4 ml-1 ${turboLoading ? "animate-spin" : ""}`}
+                />
+                سحب ومزامنة حالة Turbo
+              </button>
+            )}
             {canManageShipments && (
               <button
                 onClick={onPrintWaybill}

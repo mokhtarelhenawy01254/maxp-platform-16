@@ -1,5 +1,5 @@
 {
-  "title": "AI Hub",
+  "title": "مركز الذكاء الاصطناعي",
   "subtitle": "مركز الوكلاء الذكي",
   "company": "الشركة",
   "loadCompaniesFailed": "فشل تحميل قائمة الشركات",
@@ -68,8 +68,8 @@
     },
     "trace": {
       "title": "مسار التشغيل",
-      "pythonRuntime": "Python",
-      "nodeRuntime": "Node",
+      "pythonRuntime": "بايثون",
+      "nodeRuntime": "نود",
       "unknownRuntime": "غير معروف",
       "model": "النموذج",
       "intent": "النية",

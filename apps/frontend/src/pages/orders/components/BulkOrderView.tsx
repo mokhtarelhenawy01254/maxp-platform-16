@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
+import { getStatusDisplay } from "../../../utils/statusRegistry";
 
 interface BulkOrderViewProps {
   id: string;
@@ -40,6 +42,7 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
   const isRtl = i18n.language === "ar";
   const [data, setData] = useState<BulkOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -58,18 +61,37 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
     fetchDetail();
   }, [id]);
 
+  const handleExecute = async () => {
+    setExecuting(true);
+    try {
+      const res = await apiClient.post(`/api/v1/bulk-orders/${id}/execute`);
+      if (res.data?.success) {
+        const { successCount, errors: execErrors } = res.data;
+        if (execErrors && execErrors.length > 0) {
+          toast.warning(
+            t("orders.bulkExecutedPartial", { success: successCount, failed: execErrors.length }) ||
+            `${successCount} succeeded, ${execErrors.length} failed`
+          );
+        } else {
+          toast.success(t("orders.bulkExecuted") || "Operation executed successfully");
+        }
+        const refresh = await apiClient.get(`/api/v1/bulk-orders/${id}`);
+        if (refresh.data?.success) {
+          setData(refresh.data.data);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t("orders.bulkExecuteFailed") || "Execution failed");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-      PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200",
-      PROCESSING: "bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200",
-      COMPLETED: "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200",
-      FAILED: "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200",
-      CANCELLED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    };
+    const info = getStatusDisplay(status);
     return (
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status] || colors.DRAFT}`}>
-        {t(`orders.bulkStatus${status}`)}
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${info.colorClass}`}>
+        {t(info.labelKey) || info.label}
       </span>
     );
   };
@@ -114,6 +136,26 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
           <button onClick={() => onDuplicate(data.id)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             {t("orders.bulkDuplicate")}
           </button>
+          {(data.status !== "COMPLETED" && data.status !== "CANCELLED" && data.status !== "PROCESSING") && (
+            <button
+              onClick={handleExecute}
+              disabled={executing}
+              className="px-4 py-2 text-sm rounded-lg bg-amber-500 hover:bg-amber-600 disabled:bg-amber-400 text-white transition-colors flex items-center gap-1.5"
+            >
+              {executing ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {t("orders.bulkExecute")}
+            </button>
+          )}
           <button onClick={() => onExport(data.id, "excel")} className="px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
             {t("orders.bulkExportExcel")}
           </button>

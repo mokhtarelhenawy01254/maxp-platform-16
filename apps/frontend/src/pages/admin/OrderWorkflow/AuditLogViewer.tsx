@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState } from 'react';
 import {
     MagnifyingGlassIcon,
@@ -13,6 +14,7 @@ import orderWorkflowService from '../../../services/orderWorkflowService';
 const PAGE_SIZE = 20;
 
 const AuditLogViewer: React.FC = () => {
+  const { t } = useTranslation();
     const [orderNumber, setOrderNumber] = useState('');
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -75,19 +77,19 @@ const AuditLogViewer: React.FC = () => {
     const getTypeBadge = (type: string) => {
         switch (type) {
             case 'override':
-                return <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 font-bold"><ShieldExclamationIcon className="w-3 h-3" /> تجـاوز</span>;
+                return <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 font-bold"><ShieldExclamationIcon className="w-3 h-3" />{t('orderSettings.k_127')}</span>;
             case 'approval':
-                return <span className="flex items-center gap-1 text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full border border-green-100 font-bold"><CheckBadgeIcon className="w-3 h-3" /> بموافقة</span>;
+                return <span className="flex items-center gap-1 text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full border border-green-100 font-bold"><CheckBadgeIcon className="w-3 h-3" />{t('orderSettings.k_128')}</span>;
             default:
-                return <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">اعتيادي</span>;
+                return <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">{t('orderSettings.k_129')}</span>;
         }
     };
 
     return (
         <div className="animate-in fade-in duration-500">
             <div className="mb-8">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">سجل الرقابة على المسار</h2>
-                <p className="text-slate-500 text-sm">تتبع جميع التغييرات التي طرأت على حالات الطلبات والمسؤولين عنها</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('orderSettings.k_130')}</h2>
+                <p className="text-slate-500 text-sm">{t('orderSettings.k_131')}</p>
             </div>
 
             {/* Search Bar */}
@@ -98,7 +100,7 @@ const AuditLogViewer: React.FC = () => {
                         type="text"
                         value={orderNumber}
                         onChange={(e) => setOrderNumber(e.target.value)}
-                        placeholder="أدخل رقم الطلب أو معرفه للبحث في سجل العمليات..."
+                        placeholder={t('orderSettings.k_132')}
                         className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                 </div>
@@ -107,7 +109,7 @@ const AuditLogViewer: React.FC = () => {
                     disabled={loading}
                     className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                    {loading ? 'جاري البحث...' : 'عـرض السجل'}
+                    {loading ? t('orderSettings.k_133') : t('orderSettings.k_134')}
                 </button>
             </form>
 
@@ -118,7 +120,7 @@ const AuditLogViewer: React.FC = () => {
                 )}
 
                 {searched && logs.length === 0 && (
-                    <div className="p-20 text-center text-slate-400">لا يوجد سجل عمليات لهذا الطلب</div>
+                    <div className="p-20 text-center text-slate-400">{t('orderSettings.k_135')}</div>
                 )}
 
                 <div className="space-y-8">
@@ -136,7 +138,7 @@ const AuditLogViewer: React.FC = () => {
                                                 #{log.order.orderNumber}
                                             </div>
                                         )}
-                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{log.fromStatus?.name || 'بداية'}</span>
+                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{log.fromStatus?.name || t('orderSettings.k_104')}</span>
                                         <ArrowRightIcon className="w-4 h-4 text-slate-300" />
                                         <span className="text-sm font-bold text-indigo-600">{log.toStatus?.name}</span>
                                         {getTypeBadge(log.changeType)}
@@ -147,13 +149,13 @@ const AuditLogViewer: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center gap-2 text-sm">
                                         <UserIcon className="w-4 h-4 text-slate-400" />
-                                        <span className="text-slate-500">المنفذ:</span>
+                                        <span className="text-slate-500">{t('orderSettings.k_136')}</span>
                                         <span className="font-medium text-slate-700 dark:text-slate-300">{log.user?.firstName} {log.user?.lastName}</span>
                                     </div>
                                     {log.approver && (
                                         <div className="flex items-center gap-2 text-sm">
                                             <CheckBadgeIcon className="w-4 h-4 text-green-500" />
-                                            <span className="text-slate-500">الموافق:</span>
+                                            <span className="text-slate-500">{t('orderSettings.k_137')}</span>
                                             <span className="font-medium text-green-600">{log.approver?.firstName} {log.approver?.lastName}</span>
                                         </div>
                                     )}
@@ -176,8 +178,8 @@ const AuditLogViewer: React.FC = () => {
                             disabled={loadingMore}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
                         >
-                            {loadingMore ? 'جاري التحميل...' : (
-                                <>عرض المزيد <ChevronDownIcon className="w-4 h-4" /></>
+                            {loadingMore ? t('orderSettings.k_101') : (
+                                <>{t('orderSettings.k_138')}<ChevronDownIcon className="w-4 h-4" /></>
                             )}
                         </button>
                     </div>

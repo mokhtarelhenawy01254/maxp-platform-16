@@ -427,6 +427,10 @@ bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed,
 echo "🛠️ Fixing data duplicates..."
 node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
 
+# Step 2.9: Backfill productSku for existing OrderItems
+echo "📦 Backfilling productSku for existing OrderItems..."
+node scripts/backfill_productSku.js || echo "⚠️ ProductSku backfill failed, continuing..."
+
 # Step 3: Push schema to PostgreSQL database
 echo "🚀 Pushing schema to PostgreSQL..."
 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {

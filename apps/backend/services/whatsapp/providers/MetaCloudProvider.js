@@ -365,6 +365,19 @@ async function checkContact(sessionId, phoneNumbers) {
   }
 }
 
+function generateComponentExamples(components) {
+  return components.map(comp => {
+    if (comp.type === 'BODY' && comp.text) {
+      const varCount = (comp.text.match(/\{\{\d+\}\}/g) || []).length;
+      if (varCount > 0) {
+        const examples = Array.from({ length: varCount }, (_, i) => `example${i + 1}`);
+        return { ...comp, example: { body_text: [examples] } };
+      }
+    }
+    return comp;
+  });
+}
+
 async function createTemplate(sessionId, templateData) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
@@ -373,10 +386,12 @@ async function createTemplate(sessionId, templateData) {
   const wabaId = session?.metaWabaId;
   if (!wabaId) throw new Error('Missing Meta WABA ID for session');
 
-  const { name, language, category, components, allowCategoryChange } = templateData;
+  const { name, language, category, components: rawComponents, allowCategoryChange } = templateData;
   if (!name || !language || !category) {
     throw new Error('Missing required fields: name, language, category');
   }
+
+  const components = generateComponentExamples(rawComponents);
 
   const payload = {
     name,

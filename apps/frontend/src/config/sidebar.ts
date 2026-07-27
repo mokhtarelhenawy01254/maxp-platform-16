@@ -72,6 +72,7 @@ import {
     HeartIcon,
     EyeIcon,
 } from '@heroicons/react/24/outline';
+import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
@@ -534,9 +535,9 @@ export const getSidebarConfig = (
 
         // 2️⃣ فيسبوك
         {
-            id: 'facebook',
-            title: t('sidebar.facebookSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'facebook',
+          title: t('sidebar.facebookSection'),
+          icon: FacebookIcon,
             items: [
                 { to: '/facebook-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookInbox') },
                 { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
@@ -552,9 +553,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.1 إنستجرام
         {
-            id: 'instagram',
-            title: t('sidebar.instagramSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'instagram',
+          title: t('sidebar.instagramSection'),
+          icon: InstagramIcon,
             items: [
                 { to: '/instagram-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.instagramInbox') },
                 { to: '/settings/instagram', icon: CogIcon, label: t('sidebar.instagramSettings') },
@@ -565,9 +566,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.5 واتساب
         {
-            id: 'whatsapp',
-            title: t('sidebar.whatsappSection'),
-            icon: ChatBubbleLeftRightIcon,
+          id: 'whatsapp',
+          title: t('sidebar.whatsappSection'),
+          icon: WhatsAppIcon,
             items: [
                 { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
                 { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
@@ -597,9 +598,9 @@ export const getSidebarConfig = (
 
         // 2️⃣.6 تليجرام
         {
-            id: 'telegram',
-            title: t('sidebar.telegramSection'),
-            icon: PaperAirplaneIcon,
+          id: 'telegram',
+          title: t('sidebar.telegramSection'),
+          icon: TelegramIcon,
             items: [
                 { to: '/telegram/pro', icon: PaperAirplaneIcon, label: t('sidebar.telegramPro') },
                 { to: '/telegram-userbot', icon: UserCircleIcon, label: t('sidebar.telegramUserbot') },
@@ -634,16 +635,16 @@ export const getSidebarConfig = (
                 { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings'), requiredPermissions: ['orders.customer-blocks.view'] },
                 { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings'), requiredPermissions: ['orders.turbo-settings.view'] },
+                { to: '/settings/turbo/status-mapping', icon: ArrowsRightLeftIcon, label: t('sidebar.turboStatusMapping'), requiredPermissions: ['orders.turbo-settings.view'] },
                 { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords'), requiredPermissions: ['orders.turbo.view'] },
                 { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets'), requiredPermissions: ['orders.tickets.view'] },
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'] },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },
-                { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders'), requiredPermissions: ['orders.bulk.create'] },
+                { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'] },
                 { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
                 { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
-                { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
                 { to: '/settings/cod-deposit', icon: BanknotesIcon, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
@@ -1048,6 +1049,7 @@ export const getSidebarConfig = (
             id: 'hotel',
             title: t('sidebar.hotelModule'),
             icon: BuildingOffice2Icon,
+            hidden: !isAppActive('hotel-app'),
             items: [
                 { to: '/admin/hotel', icon: BuildingOffice2Icon, label: t('sidebar.hotelDashboard') },
             ]

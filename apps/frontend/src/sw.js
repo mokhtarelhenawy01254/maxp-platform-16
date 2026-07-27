@@ -1,0 +1,123 @@
+import { precacheAndRoute } from 'workbox-precaching';
+import { NetworkFirst } from 'workbox-strategies';
+import { registerRoute } from 'workbox-routing';
+import { ExpirationPlugin } from 'workbox-expiration';
+
+precacheAndRoute(self.__WB_MANIFEST);
+
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: 'pages',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  }),
+);
+
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/'),
+  new NetworkFirst({
+    cacheName: 'api',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 }),
+    ],
+  }),
+);
+
+registerRoute(
+  ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
+  new NetworkFirst({
+    cacheName: 'assets',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+    ],
+  }),
+);
+
+self.addEventListener('install', () => self.skipWaiting());
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('push', (event) => {
+  const payload = (() => {
+    try {
+      return event.data ? event.data.json() : {};
+    } catch (error) {
+      return {};
+    }
+  })();
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      const hasVisibleClient = clients.some(
+        (client) => client.visibilityState === 'visible',
+      );
+      const forceVisibleNotification =
+        payload.forceVisibleNotification === true ||
+        payload.data?.forceVisibleNotification === true;
+
+      if (hasVisibleClient && !forceVisibleNotification) {
+        for (const client of clients) {
+          client.postMessage({
+            type: 'browser-push-received',
+            payload,
+          });
+        }
+        return;
+      }
+
+      const title = payload.title || 'إشعار جديد';
+      await self.registration.showNotification(title, {
+        body: payload.body || '',
+        icon: payload.icon || '/favicon.ico',
+        badge: payload.badge || '/favicon.ico',
+        tag: payload.tag || 'maxp-browser-push',
+        data: payload.data || { url: payload.url || '/' },
+        requireInteraction: payload.requireInteraction === true,
+      });
+    })(),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl =
+    event.notification.data?.url ||
+    event.notification.data?.data?.url ||
+    '/';
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      for (const client of clients) {
+        if ('focus' in client) {
+          await client.focus();
+          if ('navigate' in client && targetUrl) {
+            try {
+              await client.navigate(targetUrl);
+            } catch (error) {
+            }
+          }
+          return;
+        }
+      }
+
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(targetUrl);
+      }
+    })(),
+  );
+});

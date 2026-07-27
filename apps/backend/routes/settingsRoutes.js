@@ -4,6 +4,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { invalidateWebhookCache } = require('../services/orderWebhookService');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const verifyToken = require('../utils/verifyToken');
+const { TURBO_STATUS_DEFINITIONS, SYSTEM_STATUS_MAPPING } = require('../utils/statusNormalizer');
 
 const COMPANY_SETTINGS_SELECT = Object.freeze({
   id: true,
@@ -747,6 +748,102 @@ router.put('/brand-identity', verifyToken.authenticateToken, async (req, res) =>
   } catch (error) {
     console.error('❌ [BRAND-IDENTITY] Error updating:', error);
     res.status(500).json({ success: false, error: 'Failed to update brand identity', details: error.message });
+  }
+});
+
+// ============================================
+// 🚚 Turbo Status Mapping Endpoints
+// ============================================
+
+const TURBO_STATUS_ORDER_MAP_DEFAULTS = Object.fromEntries(
+  Object.entries(SYSTEM_STATUS_MAPPING).map(([key, val]) => [key, { orderStatus: val.orderStatus }])
+);
+
+// Get turbo status mapping
+router.get('/turbo-status-mapping', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب', code: 'COMPANY_ID_REQUIRED' });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let parsed = {};
+    try { parsed = company?.settings ? JSON.parse(company.settings) : {}; } catch (e) { parsed = {}; }
+
+    const savedMapping = parsed.turboStatusMapping || {};
+
+    // Merge saved mapping with defaults — any Turbo status not in saved mapping uses default
+    const mergedMapping = { ...TURBO_STATUS_ORDER_MAP_DEFAULTS };
+    for (const [key, val] of Object.entries(savedMapping)) {
+      if (mergedMapping[key]) {
+        mergedMapping[key] = { orderStatus: val.orderStatus || null };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        turboStatuses: TURBO_STATUS_DEFINITIONS,
+        mapping: mergedMapping,
+        defaults: TURBO_STATUS_ORDER_MAP_DEFAULTS
+      }
+    });
+  } catch (error) {
+    console.error('❌ [TURBO-STATUS-MAPPING] Error fetching:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch turbo status mapping', details: error.message });
+  }
+});
+
+// Update turbo status mapping
+router.put('/turbo-status-mapping', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب', code: 'COMPANY_ID_REQUIRED' });
+    }
+
+    const { mapping } = req.body;
+    if (!mapping || typeof mapping !== 'object') {
+      return res.status(400).json({ success: false, message: 'بيانات mapping غير صالحة' });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let currentSettings = {};
+    try { currentSettings = company?.settings ? JSON.parse(company.settings) : {}; } catch (e) { currentSettings = {}; }
+
+    // Validate: only allow canonical Turbo statuses
+    const validKeys = Object.keys(TURBO_STATUS_DEFINITIONS);
+    const cleanMapping = {};
+    for (const [key, val] of Object.entries(mapping)) {
+      if (validKeys.includes(key)) {
+        cleanMapping[key] = { orderStatus: val?.orderStatus || null };
+      }
+    }
+
+    currentSettings.turboStatusMapping = cleanMapping;
+
+    await getSharedPrismaClient().company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) }
+    });
+
+    res.json({
+      success: true,
+      data: { mapping: cleanMapping },
+      message: 'تم حفظ ربط حالات Turbo بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [TURBO-STATUS-MAPPING] Error updating:', error);
+    res.status(500).json({ success: false, error: 'Failed to update turbo status mapping', details: error.message });
   }
 });
 

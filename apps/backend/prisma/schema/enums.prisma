@@ -92,6 +92,7 @@ enum MessageType {
   PACKAGED
   ON_HOLD_PREP
   PARTIALLY_DELIVERED
+  STOCK_SHORTAGE
 }
 
 enum PaymentStatus {
@@ -1784,6 +1785,16 @@ enum ReturnRequestsStatus {
   COMPLETED
 
   @@map("return_requests_status")
+}
+
+enum ReturnReceivedStatus {
+  PENDING_RECEIVE
+  IN_TRANSIT
+  RECEIVED
+  INSPECTED
+  RESTOCKED
+
+  @@map("return_received_status")
 }
 
 enum ReturnRequestsResponsibleParty {

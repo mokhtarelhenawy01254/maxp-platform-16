@@ -352,6 +352,9 @@ const CodDepositSettings = React.lazy(
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
 );
+const TurboStatusMapping = React.lazy(
+  () => import("./pages/settings/TurboStatusMapping"),
+);
 const TurboTicketDetails = React.lazy(
   () => import("./pages/settings/TicketDetails"),
 );
@@ -726,6 +729,9 @@ const MessagingLanding = React.lazy(
 );
 const AiInboxLanding = React.lazy(
   () => import("./pages/landing/AiInboxLanding"),
+);
+const MedicalLanding = React.lazy(
+  () => import("./pages/landing/MedicalLanding"),
 );
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
@@ -1771,6 +1777,7 @@ const AppContent = () => {
             {activeLpSlugs && !activeLpSlugs.has("mg-agency") ? <Route path="/lp/mg-agency" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("messaging") ? <Route path="/lp/messaging" element={<Navigate to="/" replace />} /> : <Route path="/lp/messaging" element={<MessagingLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("ai-inbox") ? <Route path="/lp/ai-inbox" element={<Navigate to="/" replace />} /> : <Route path="/lp/ai-inbox" element={<AiInboxLanding />} />}
+            {activeLpSlugs && !activeLpSlugs.has("medical") ? <Route path="/lp/medical" element={<Navigate to="/" replace />} /> : <Route path="/lp/medical" element={<MedicalLanding />} />}
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
@@ -4076,7 +4083,9 @@ const AppContent = () => {
                   path="/returns"
                   element={
                     <Layout>
-                      <ReturnManagementPage />
+                      <PermissionProtectedRoute requiredPermissions={['orders.returns.view']}>
+                        <ReturnManagementPage />
+                      </PermissionProtectedRoute>
                     </Layout>
                   }
                 />
@@ -4084,17 +4093,15 @@ const AppContent = () => {
                   path="/returns/settings"
                   element={
                     <Layout>
-                      <ReturnSettingsPage />
+                      <PermissionProtectedRoute requiredPermissions={['orders.return-settings.view']}>
+                        <ReturnSettingsPage />
+                      </PermissionProtectedRoute>
                     </Layout>
                   }
                 />
                 <Route
                   path="/cancellations/settings"
-                  element={
-                    <Layout>
-                      <CancellationSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/orders?tab=cancellation_reasons" replace />}
                 />
                 <Route
                   path="/bulk-search"
@@ -5438,6 +5445,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TurboSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/turbo/status-mapping"
+                  element={
+                    <Layout>
+                      <TurboStatusMapping />
                     </Layout>
                   }
                 />

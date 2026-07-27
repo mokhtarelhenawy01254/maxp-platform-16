@@ -15,5 +15,14 @@
   "ratePercentage": "المعدل %",
   "returnReasons": "أسباب المرتجعات",
   "topReturnedProducts": "المنتجات الأكثر إرجاعاً",
-  "returnsCount": "عدد المرتجعات"
+  "returnsCount": "عدد المرتجعات",
+  "totalOrders": "إجمالي الطلبات",
+  "returnRateLabel": "نسبة المرتجعات (RTO)",
+  "lostRevenue": "خسارة الإيرادات",
+  "avgReturnValue": "متوسط قيمة المرتجع",
+  "topProducts": "أكثر المنتجات المرتجعة",
+  "returnsByRegion": "المرتجعات حسب المنطقة",
+  "return": "مرتجع",
+  "from": "من",
+  "order": "طلب"
 }

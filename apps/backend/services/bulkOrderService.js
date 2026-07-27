@@ -1,5 +1,4 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const { v4: uuidv4 } = require('uuid');
 const XLSX = require('xlsx');
 const auditTrailService = require('./auditTrailService');
 
@@ -19,17 +18,36 @@ const BULK_ORDER_PERMISSIONS = {
   EDIT: 'bulkOrders.edit',
   DELETE: 'bulkOrders.delete',
   EXPORT: 'bulkOrders.export',
+  IMPORT: 'bulkOrders.import',
+  EXECUTE: 'bulkOrders.execute',
 };
 
 const generateOperationNumber = async (companyId) => {
-  const count = await getSharedPrismaClient().bulkOrder.count({
-    where: { companyId }
-  });
+  const prisma = getSharedPrismaClient();
   const date = new Date();
   const y = date.getFullYear().toString().slice(-2);
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
-  return `BLK-${y}${m}${d}-${String(count + 1).padStart(4, '0')}`;
+  const prefix = `BLK-${y}${m}${d}-`;
+
+  const lastRecord = await prisma.bulkOrder.findFirst({
+    where: {
+      companyId,
+      operationNumber: { startsWith: prefix },
+    },
+    orderBy: { operationNumber: 'desc' },
+  });
+
+  let nextNum = 1;
+  if (lastRecord && lastRecord.operationNumber) {
+    const parts = lastRecord.operationNumber.split('-');
+    const lastNum = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(lastNum)) {
+      nextNum = lastNum + 1;
+    }
+  }
+
+  return `${prefix}${String(nextNum).padStart(4, '0')}`;
 };
 
 const bulkOrderService = {
@@ -48,11 +66,22 @@ const bulkOrderService = {
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
+      if (dateTo) {
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endOfDay;
+      }
     }
 
+    const ALLOWED_SORT_COLUMNS = [
+      'operationNumber', 'name', 'totalOrders', 'status',
+      'progress', 'createdByName', 'createdAt', 'updatedAt',
+    ];
+    const safeSort = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : 'createdAt';
+    const safeOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+    const orderBy = { [safeSort]: safeOrder };
+
     const skip = (page - 1) * limit;
-    const orderBy = { [sortBy]: sortOrder };
 
     const [data, total] = await Promise.all([
       prisma.bulkOrder.findMany({
@@ -93,13 +122,19 @@ const bulkOrderService = {
 
   async create(data, user) {
     const prisma = getSharedPrismaClient();
+    if (!data.name || !data.name.trim()) {
+      throw new Error('Operation name is required');
+    }
     const operationNumber = await generateOperationNumber(user.companyId);
+    const validStatuses = ['DRAFT', 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'];
+    const initialStatus = validStatuses.includes(data.status) ? data.status : 'DRAFT';
+
     const record = await prisma.bulkOrder.create({
       data: {
         operationNumber,
         name: data.name,
         description: data.description,
-        status: 'DRAFT',
+        status: initialStatus,
         totalOrders: data.totalOrders || 0,
         customerData: data.customerData ? JSON.stringify(data.customerData) : null,
         productData: data.productData ? JSON.stringify(data.productData) : null,
@@ -129,7 +164,7 @@ const bulkOrderService = {
     if (!existing) throw new Error('Bulk order not found');
 
     const record = await prisma.bulkOrder.update({
-      where: { id },
+      where: { id, companyId: user.companyId },
       data: {
         name: data.name ?? existing.name,
         description: data.description ?? existing.description,
@@ -162,8 +197,8 @@ const bulkOrderService = {
     });
     if (!existing) throw new Error('Bulk order not found');
 
-    await prisma.bulkOrderItem.deleteMany({ where: { bulkOrderId: id } });
-    await prisma.bulkOrder.delete({ where: { id } });
+    await prisma.bulkOrderItem.deleteMany({ where: { bulkOrderId: id, companyId } });
+    await prisma.bulkOrder.delete({ where: { id, companyId } });
     if (user) {
       auditTrailService.createAuditEntry({
         action: AUDIT_ACTIONS.BULK_ORDER_DELETED,
@@ -255,8 +290,8 @@ const bulkOrderService = {
     return {
       data: {
         ...record,
-        customerData: record.customerData ? JSON.parse(record.customerData) : null,
-        productData: record.productData ? JSON.parse(record.productData) : null,
+        customerData: (() => { try { return record.customerData ? JSON.parse(record.customerData) : null; } catch { return record.customerData; } })(),
+        productData: (() => { try { return record.productData ? JSON.parse(record.productData) : null; } catch { return record.productData; } })(),
         items: record.items,
       },
       filename: `bulk-order-${record.operationNumber}.json`,
@@ -275,7 +310,7 @@ const bulkOrderService = {
     }).catch(() => {});
   },
 
-  async parseUpload(fileBuffer, mimeType) {
+  async parseUpload(fileBuffer, _mimeType) {
     let records = [];
     try {
       const wb = XLSX.read(fileBuffer, { type: 'buffer', raw: true });
@@ -328,7 +363,7 @@ const bulkOrderService = {
 
     const count = await prisma.bulkOrderItem.count({ where: { bulkOrderId } });
     await prisma.bulkOrder.update({
-      where: { id: bulkOrderId },
+      where: { id: bulkOrderId, companyId: user.companyId },
       data: { totalOrders: count },
     });
 
@@ -353,7 +388,7 @@ const bulkOrderService = {
     if (!order) throw new Error('Bulk order not found');
 
     await prisma.bulkOrder.update({
-      where: { id: bulkOrderId },
+      where: { id: bulkOrderId, companyId: user.companyId },
       data: { status: 'PROCESSING', updatedById: user.id, updatedByName: user.name || user.email },
     });
 
@@ -363,20 +398,39 @@ const bulkOrderService = {
     for (const item of order.items) {
       try {
         if (item.orderNumber) {
-          await prisma.order.update({
-            where: { id: item.orderNumber },
-            data: { status: 'CONFIRMED' },
+          const existingOrder = await prisma.order.findFirst({
+            where: { orderNumber: item.orderNumber, companyId: user.companyId },
           });
+          if (existingOrder) {
+            await prisma.order.update({
+              where: { id: existingOrder.id },
+              data: { status: 'CONFIRMED' },
+            });
+            await prisma.bulkOrderItem.update({
+              where: { id: item.id, companyId: user.companyId },
+              data: { status: 'COMPLETED' },
+            });
+          } else {
+            await prisma.bulkOrderItem.update({
+              where: { id: item.id, companyId: user.companyId },
+              data: { status: 'FAILED' },
+            });
+            throw new Error(`Order not found: ${item.orderNumber}`);
+          }
         }
         successCount++;
       } catch (err) {
+        await prisma.bulkOrderItem.update({
+          where: { id: item.id, companyId: user.companyId },
+          data: { status: 'FAILED' },
+        }).catch(() => {});
         errors.push({ itemId: item.id, error: err.message });
       }
     }
 
     const progress = order.items.length > 0 ? Math.round((successCount / order.items.length) * 100) : 0;
     await prisma.bulkOrder.update({
-      where: { id: bulkOrderId },
+      where: { id: bulkOrderId, companyId: user.companyId },
       data: {
         status: errors.length === 0 ? 'COMPLETED' : 'FAILED',
         progress,

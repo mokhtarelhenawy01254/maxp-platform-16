@@ -329,8 +329,10 @@ router.post('/migrate-from-files', async (req, res) => {
               data: {
                 orderId: newOrder.id,
                 productName: item.name || 'منتج غير محدد',
-                productColor: item.metadata?.color || '',
-                productSize: item.metadata?.size || '',
+                productColor: item.metadata?.color ? String(item.metadata.color) : '',
+                productSize: item.metadata?.size != null ? String(item.metadata.size) : '',
+                productSku: item.sku || item.productSku || item.metadata?.sku || null,
+                productId: item.productId || null,
                 price: item.price || 0,
                 quantity: item.quantity || 1,
                 total: item.total || 0
@@ -614,6 +616,11 @@ router.post('/', async (req, res) => {
       total: parseFloat(item.total),
       variantId: item.variantId
     })) : [];
+
+    // Map address field to customerAddress for the order service
+    if (req.body.address && !req.body.customerAddress) {
+      req.body.customerAddress = req.body.address;
+    }
 
     const orderData = {
       ...req.body,

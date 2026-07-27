@@ -1,0 +1,40 @@
+{
+  "payments": {
+    "title": "Payments",
+    "walletBalance": "Wallet Balance",
+    "currency": "EGP",
+    "recharge": "Recharge",
+    "transactionHistory": "Transaction History",
+    "noTransactions": "No transactions yet",
+    "description": "Description",
+    "amount": "Amount",
+    "date": "Date",
+    "notSpecified": "Not specified",
+    "rechargeWallet": "Recharge Wallet",
+    "amountPlaceholder": "Amount (EGP)",
+    "recharging": "Recharging...",
+    "confirmRecharge": "Confirm Recharge",
+    "enterValidAmount": "Enter a valid amount",
+    "sessionFailed": "Failed to create payment session",
+    "gatewayError": "Failed to connect to payment gateway",
+    "serverError": "Server connection error"
+  },
+  "bundles": {
+    "title": "Bundles",
+    "subtitle": "Browse our available bundles and subscriptions",
+    "perMonth": "/ month",
+    "currency": "EGP",
+    "saveAmount": "Save {{amount}} EGP ({{pct}}%)",
+    "whatsIncluded": "What's included in the bundle?",
+    "keyFeatures": "Key Features",
+    "bundlePrice": "Bundle Price",
+    "trialTitle": "Try free for {{days}} days",
+    "trialDescription": "Full bundle with no payment. After the trial, subscribe to continue.",
+    "activated": "Bundle is active",
+    "activating": "Activating...",
+    "startTrial": "Start Free Trial",
+    "subscribeNow": "Subscribe Now",
+    "requestDemo": "Request a Demo",
+    "trialTerms": "Free trial with no payment required. Cancel anytime."
+  }
+}

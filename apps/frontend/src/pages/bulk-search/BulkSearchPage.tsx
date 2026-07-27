@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,6 +6,7 @@ import {
   Order,
   BulkSearchStats,
 } from "../../services/bulkSearchService";
+import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
   Search,
@@ -19,6 +20,27 @@ import {
   Copy,
 } from "lucide-react";
 
+const ORDER_STATUSES = [
+  { code: "PENDING", name: "قيد الانتظار", nameEn: "Pending" },
+  { code: "CONFIRMED", name: "تم التأكيد", nameEn: "Confirmed" },
+  { code: "PROCESSING", name: "قيد التجهيز", nameEn: "Processing" },
+  { code: "SHIPPED", name: "تم الشحن", nameEn: "Shipped" },
+  { code: "DELIVERED", name: "تم التوصيل", nameEn: "Delivered" },
+  { code: "CANCELLED", name: "ملغي", nameEn: "Cancelled" },
+  { code: "REFUNDED", name: "مسترد", nameEn: "Refunded" },
+  { code: "RETURNED", name: "مرتجع", nameEn: "Returned" },
+  { code: "ON_HOLD", name: "معلق", nameEn: "On Hold" },
+  { code: "TRASH", name: "مهملة", nameEn: "Trash" },
+];
+
+const normalizeStatusCode = (value: string | null | undefined) =>
+  String(value || "").trim().toUpperCase();
+
+const isCancellationStatus = (value: string | null | undefined) => {
+  const normalizedStatus = normalizeStatusCode(value);
+  return normalizedStatus === "CANCELLED" || normalizedStatus === "CANCELED";
+};
+
 const BulkSearchPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -31,6 +53,116 @@ const BulkSearchPage: React.FC = () => {
   const [notFoundValues, setNotFoundValues] = useState<string[]>([]);
   const [stats, setStats] = useState<BulkSearchStats | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const toggleSelect = useCallback((orderNumber: string) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderNumber)) {
+        next.delete(orderNumber);
+      } else {
+        next.add(orderNumber);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedOrderIds((prev) => {
+      if (prev.size === results.length) {
+        return new Set();
+      }
+      return new Set(results.map((o) => o.orderNumber));
+    });
+  }, [results]);
+
+  const handleBulkStatusUpdate = useCallback(
+    async (newStatus: string) => {
+      if (!newStatus) return;
+      const normalizedStatus = normalizeStatusCode(newStatus);
+      let notes = "";
+
+      if (isCancellationStatus(normalizedStatus)) {
+        const cancellationReason = window.prompt(
+          t("bulkSearch.cancellationReasonPrompt") ||
+            t("orders.cancellationReasonPrompt"),
+        );
+        if (cancellationReason === null) return;
+        notes = cancellationReason.trim();
+        if (!notes) {
+          toast.error(
+            t("bulkSearch.cancellationReasonRequired") ||
+              t("orders.cancellationReasonRequired"),
+          );
+          return;
+        }
+      }
+
+      if (
+        !window.confirm(
+          t("bulkSearch.confirmBulkUpdate", {
+            count: selectedOrderIds.size,
+            status:
+              ORDER_STATUSES.find(
+                (s) => normalizeStatusCode(s.code) === normalizedStatus,
+              )?.name || newStatus,
+          }),
+        )
+      )
+        return;
+
+      try {
+        setUpdatingStatus(true);
+        const response = await apiClient.post("/orders-new/bulk/status", {
+          orderIds: Array.from(selectedOrderIds),
+          status: normalizedStatus,
+          notes,
+        });
+
+        const data = response.data;
+        const results_arr = data.data?.results ?? [];
+        const failedResults = results_arr.filter(
+          (r: Record<string, unknown>) => !r.success,
+        );
+        const failedCount = failedResults.length;
+        const successCount = data.data?.successCount ?? 0;
+
+        if (successCount > 0) {
+          if (failedCount === 0) {
+            toast.success(t("bulkSearch.bulkUpdateSuccess", { count: successCount }));
+          } else {
+            toast.warning(
+              t("bulkSearch.bulkUpdatePartial", {
+                success: successCount,
+                failed: failedCount,
+              }),
+            );
+          }
+          setSelectedOrderIds(new Set());
+        } else {
+          toast.error(
+            failedResults
+              .map((r: Record<string, unknown>) => String(r.error ?? ""))
+              .join("\n") || t("bulkSearch.bulkUpdateFailed"),
+          );
+        }
+      } catch (error: unknown) {
+        console.error("Bulk status update error:", error);
+        const err = error as { response?: { data?: { message?: string } }; message?: string };
+        toast.error(
+          err.response?.data?.message ||
+            err.message ||
+            t("bulkSearch.bulkUpdateError"),
+        );
+      } finally {
+        setUpdatingStatus(false);
+      }
+    },
+    [selectedOrderIds, t],
+  );
 
   const handleSearch = async () => {
     if (!inputText.trim()) {
@@ -40,6 +172,7 @@ const BulkSearchPage: React.FC = () => {
 
     setLoading(true);
     setHasSearched(false);
+    setSelectedOrderIds(new Set());
 
     try {
       const values = bulkSearchService.parseInput(inputText);
@@ -92,13 +225,14 @@ const BulkSearchPage: React.FC = () => {
           toast.success(message);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Bulk search error:", error);
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
+        err.response?.data?.error ||
+        err.message ||
         t("bulkSearch.errorSearch");
-      const statusCode = error.response?.status;
+      const statusCode = (error as { response?: { status?: number } }).response?.status;
 
       if (statusCode === 403) {
         toast.error(t("bulkSearch.errorUnauthorized"));
@@ -148,6 +282,7 @@ const BulkSearchPage: React.FC = () => {
     setNotFoundValues([]);
     setStats(null);
     setHasSearched(false);
+    setSelectedOrderIds(new Set());
   };
 
   const getStatusBadge = (status: string) => {
@@ -396,31 +531,115 @@ const BulkSearchPage: React.FC = () => {
       {/* Results Table */}
       {hasSearched && results.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-              {t("bulkSearch.results")} ({results.length})
-            </h2>
+          <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex flex-wrap gap-3 justify-between items-center">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={
+                    results.length > 0 &&
+                    selectedOrderIds.size === results.length
+                  }
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                {t("bulkSearch.selectAll")}
+              </label>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+                {t("bulkSearch.results")} ({results.length})
+                {selectedOrderIds.size > 0 && (
+                  <span className="text-sm font-normal text-blue-600 dark:text-blue-400 mr-2">
+                    ({selectedOrderIds.size} {" "}
+                    {t("bulkSearch.selected")})
+                  </span>
+                )}
+              </h2>
+            </div>
             <div className="flex gap-2">
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Copy size={18} />
-                {t("bulkSearch.copy")}
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Download size={18} />
-                {t("bulkSearch.export")}
-              </button>
+              {selectedOrderIds.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) {
+                        handleBulkStatusUpdate(val);
+                        e.target.value = "";
+                      }
+                    }}
+                    disabled={updatingStatus}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="">
+                      {updatingStatus
+                        ? t("bulkSearch.updating")
+                        : t("bulkSearch.updateStatus")}
+                    </option>
+                    {ORDER_STATUSES.filter(
+                      (s) =>
+                        normalizeStatusCode(s.code) !== "TRASH" &&
+                        normalizeStatusCode(s.code) !== "DRAFT",
+                    ).map((status) => (
+                      <option key={status.code} value={status.code}>
+                        {status.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={results.length === 0}
+                  >
+                    <Copy size={18} />
+                    {t("bulkSearch.copy")}
+                  </button>
+                  <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={results.length === 0}
+                  >
+                    <Download size={18} />
+                    {t("bulkSearch.export")}
+                  </button>
+                </div>
+              )}
+              {selectedOrderIds.size === 0 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={results.length === 0}
+                  >
+                    <Copy size={18} />
+                    {t("bulkSearch.copy")}
+                  </button>
+                  <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={results.length === 0}
+                  >
+                    <Download size={18} />
+                    {t("bulkSearch.export")}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                  <th className="px-4 py-3 text-right" style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={
+                        results.length > 0 &&
+                        selectedOrderIds.size === results.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     {t("bulkSearch.orderNumber")}
                   </th>
@@ -445,9 +664,24 @@ const BulkSearchPage: React.FC = () => {
                 {results.map((order) => (
                   <tr
                     key={order.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                      selectedOrderIds.has(order.orderNumber)
+                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        : ""
+                    }`}
                     onClick={() => navigate(`/orders/${order.id}`)}
                   >
+                    <td
+                      className="px-4 py-4 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.has(order.orderNumber)}
+                        onChange={() => toggleSelect(order.orderNumber)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
                         {order.orderNumber}

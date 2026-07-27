@@ -10,6 +10,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import { summarizeOrderDocumentItems } from "../../utils/orderDocumentQuantityOffers";
+import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
   MERCHANT_OPERATION_APP_SLUGS,
@@ -120,9 +121,10 @@ interface Order {
   isScheduled?: boolean;
   scheduledDeliveryDate?: string;
   scheduledNotes?: string;
-  isViewed?: boolean;
   governorate?: string;
   sourceType?: string;
+  turboShipmentStatus?: string;
+  turboTrackingNumber?: string;
   affiliateId?: string;
   affiliate?: AffiliateFilterOption;
   merchantOrder?: MerchantOrderScope;
@@ -405,6 +407,20 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
   { code: "PARTIALLY_DELIVERED", name: i18n.t('orders.partiallyDelivered'), color: "#FBBF24" },
   { code: "EXCHANGED", name: i18n.t('orders.exchanged'), color: "#7C3AED" },
   { code: "TRASH", name: i18n.t('orders.trash'), color: "#6B7280" },
+  // 🚀 حالات شحن تربو 1..13
+  { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
+  { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
+  { code: "processing", name: "تربو: قيد التنفيذ بالفرع (كود 3)", color: "#8B5CF6" },
+  { code: "out_for_delivery", name: "تربو: مسلمة للمندوب (كود 4)", color: "#06B6D4" },
+  { code: "returned_to_company", name: "تربو: مرتجعات بالشركة (كود 5)", color: "#991B1B" },
+  { code: "cancelled", name: "تربو: ملغي من الشحن (كود 6)", color: "#DC2626" },
+  { code: "delivered", name: "تربو: تم التسليم (كود 7)", color: "#10B981" },
+  { code: "remitted", name: "تربو: تم التوريد وتحصيل المبلغ (كود 8)", color: "#047857" },
+  { code: "archived", name: "تربو: شحنة محذوفة (كود 9)", color: "#78716C" },
+  { code: "returned_resent", name: "تربو: معاد إرسالها (كود 10)", color: "#2563EB" },
+  { code: "returned_missing", name: "تربو: مرتجع مفقود (كود 11)", color: "#7F1D1D" },
+  { code: "returned_destroyed", name: "تربو: مرتجع معدوم (كود 12)", color: "#451A03" },
+  { code: "delayed", name: "تربو: مؤجلة مع المندوب (كود 13)", color: "#F97316" },
 ];
 
 const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
@@ -543,6 +559,8 @@ const transformOrder = (order: RawOrder): Order => {
     affiliateId: order.affiliateId || undefined,
     affiliate: order.affiliate,
     merchantOrder: order.merchantOrder,
+    turboShipmentStatus: order.turboShipmentStatus || order.metadata?.turboShipmentStatus || undefined,
+    turboTrackingNumber: order.turboTrackingNumber || order.metadata?.turboTrackingNumber || undefined,
   };
 };
 
@@ -1885,72 +1903,16 @@ const Orders: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (normalizeStatusCode(status)) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-      case "SCHEDULED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
-      case "PROCESSING":
-        return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400";
-      case "SHIPPED":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
-      case "DELIVERED":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
-      case "DUPLICATE_ORDER":
-        return "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400";
-      case "TRASH":
-      case "TRASH_ORDER":
-        return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
-    }
-  };
+  const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
+    const display = getOrderStatusDisplay(order);
+    const customStyle = getStatusBadgeStyle(order.status || "");
 
-  const getStatusText = (status: string) => {
-    const normalizedStatus = normalizeStatusCode(status);
-    const configuredStatus = orderStatusMap.get(normalizedStatus);
-    if (configuredStatus?.name) {
-      return configuredStatus.name;
-    }
-
-    switch (normalizedStatus) {
-      case "PENDING":
-        return t("orders.pending");
-      case "CONFIRMED":
-        return t("orders.confirmed");
-      case "SCHEDULED":
-        return t("orders.scheduled");
-      case "PROCESSING":
-        return t("orders.processing");
-      case "SHIPPED":
-        return t("orders.shipped");
-      case "DELIVERED":
-        return t("orders.delivered");
-      case "CANCELLED":
-        return t("orders.cancelled");
-      case "DUPLICATE_ORDER":
-        return t("orders.duplicate");
-      case "PARTIALLY_RETURNED":
-        return t("orders.partiallyReturned");
-      case "PARTIALLY_DELIVERED":
-        return t("orders.partiallyDelivered");
-      case "RETURNED":
-        return t("orders.returned");
-      case "REFUNDED":
-        return t("orders.refunded");
-      case "PARTIALLY_REFUNDED":
-        return t("orders.partiallyRefunded");
-      case "TRASH":
-      case "TRASH_ORDER":
-        return t("orders.trash");
-      default:
-        return status;
-    }
+    return {
+      text: translate(display.primary.labelKey) || display.primary.label,
+      labelKey: display.primary.labelKey,
+      className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${display.primary.colorClass}`,
+      style: customStyle,
+    };
   };
 
   const getStatusBadgeStyle = (status: string): React.CSSProperties | undefined => {
@@ -3031,16 +2993,14 @@ const Orders: React.FC = () => {
                       (order.paymentStatus || "pending").toLowerCase(),
                     )}
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeStyle(
-                      order.status || "",
-                    )
-                      ? ""
-                      : getStatusColor(order.status || "")}`}
-                    style={getStatusBadgeStyle(order.status || "")}
-                  >
-                    {getStatusText(order.status || "")}
-                  </span>
+                  {(() => {
+                    const unifiedStatus = getUnifiedStatusDisplay(order, t);
+                    return (
+                      <span className={unifiedStatus.className} style={unifiedStatus.style} aria-label={unifiedStatus.labelKey}>
+                        {unifiedStatus.text}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -3327,20 +3287,14 @@ const Orders: React.FC = () => {
                         <td className="px-3 py-2.5 lg:px-4">
                           <div className="flex flex-col gap-1">
                             {(() => {
-                              const statusBadgeStyle = getStatusBadgeStyle(
-                                order.status || "",
-                              );
-
+                              const unifiedStatus = getUnifiedStatusDisplay(order, t);
                               return (
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    statusBadgeStyle
-                                      ? ""
-                                      : getStatusColor(order.status || "")
-                                  }`}
-                                  style={statusBadgeStyle}
+                                  className={unifiedStatus.className}
+                                  style={unifiedStatus.style}
+                                  aria-label={unifiedStatus.labelKey}
                                 >
-                                  {getStatusText(order.status || "")}
+                                  {unifiedStatus.text}
                                 </span>
                               );
                             })()}

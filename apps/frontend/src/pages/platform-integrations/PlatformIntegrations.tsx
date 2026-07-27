@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -15,6 +16,7 @@ import { LinkIcon } from "@heroicons/react/24/outline";
 import { TableCellsIcon } from "@heroicons/react/24/outline";
 
 const PlatformIntegrations: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,7 +33,7 @@ const PlatformIntegrations: React.FC = () => {
       id: "easyorders",
       label: "EasyOrders",
       icon: DocumentTextIcon,
-      description: "استيراد الطلبات من EasyOrders",
+      description: t('platform.k_1'),
       component: EasyOrdersImport,
       available: true,
     },
@@ -39,7 +41,7 @@ const PlatformIntegrations: React.FC = () => {
       id: "google-sheets",
       label: "Google Sheets",
       icon: TableCellsIcon,
-      description: "تصدير واستيراد عبر Google Sheets",
+      description: t('platform.k_2'),
       component: GoogleSheetsIntegration,
       available: true,
     },
@@ -47,15 +49,15 @@ const PlatformIntegrations: React.FC = () => {
       id: "woocommerce",
       label: "WooCommerce",
       icon: ShoppingCartIcon,
-      description: "مزامنة مع WooCommerce",
+      description: t('platform.k_3'),
       component: WooCommerceSync,
       available: true,
     },
     {
       id: "internal",
-      label: "الربط الداخلي",
+      label: t('platform.k_4'),
       icon: LinkIcon,
-      description: "ربط مع متاجر أخرى على المنصة",
+      description: t('platform.k_5'),
       component: InternalIntegrations,
       available: true,
     },
@@ -63,20 +65,20 @@ const PlatformIntegrations: React.FC = () => {
       id: "shopify",
       label: "Shopify",
       icon: ShoppingBagIcon,
-      description: "ربط مع Shopify",
+      description: t('platform.k_6'),
       component: () => (
         <div className="p-8">
           <div className="max-w-2xl mx-auto text-center">
             <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-8 shadow-sm">
               <div className="text-6xl mb-4">🚀</div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
-                ربط Shopify
+                {t('platform.k_83')}
               </h2>
               <p className="text-yellow-800 dark:text-yellow-400 font-medium mb-2">
-                قريباً...
+                {t('platform.k_84')}
               </p>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                نعمل على إضافة التكامل مع Shopify. ترقبوا التحديثات القادمة!
+                {t('platform.k_85')}
               </p>
             </div>
           </div>
@@ -103,10 +105,10 @@ const PlatformIntegrations: React.FC = () => {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              الربط مع المنصات
+              {t('platform.k_86')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              إدارة الربط مع منصات التجارة الإلكترونية
+              {t('platform.k_87')}
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ const PlatformIntegrations: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-6">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
                 <h2 className="font-semibold text-gray-900 dark:text-white">
-                  المنصات
+                  {t('platform.k_88')}
                 </h2>
               </div>
               <nav className="p-2 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible no-scrollbar">
@@ -150,7 +152,7 @@ const PlatformIntegrations: React.FC = () => {
                       </div>
                       {!tab.available && (
                         <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
-                          قريباً
+                          {t('platform.k_89')}
                         </span>
                       )}
                     </button>

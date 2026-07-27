@@ -160,6 +160,8 @@ class InternalSyncService {
 
                     localOrderItems.push({
                         productId: localProduct ? localProduct.id : null,
+                        productName: item.productName || item.product?.name || null,
+                        productSku: item.productSku || item.product?.sku || null,
                         quantity: item.quantity,
                         price: item.price,
                         total: item.total,
@@ -396,6 +398,18 @@ class InternalSyncService {
                         const subtotal = items.reduce((acc, curr) => acc + Number(curr.total), 0);
                         const shipping = 0;
 
+                        // Parse shipping address from original order
+                        let parsedAddress = {};
+                        try {
+                            if (typeof order.shippingAddress === 'string') {
+                                parsedAddress = JSON.parse(order.shippingAddress);
+                            } else if (typeof order.shippingAddress === 'object' && order.shippingAddress !== null) {
+                                parsedAddress = order.shippingAddress;
+                            }
+                        } catch (e) {
+                            parsedAddress = {};
+                        }
+
                         const orderService = require('./orderService');
                         const orderNumber = await orderService.generateOrderNumber(providerId);
 
@@ -413,12 +427,17 @@ class InternalSyncService {
                                 paymentStatus: 'PENDING',
                                 paymentMethod: order.paymentMethod,
                                 shippingAddress: order.shippingAddress,
+                                governorate: parsedAddress.governorate || order.governorate || null,
+                                city: parsedAddress.city || parsedAddress.area || order.city || null,
+                                customerAddress: parsedAddress.address || order.customerAddress || null,
                                 notes: `طلب آلي من متجر أفليت (شركة: ${consumerId}). كود المسوق: ${affiliate.affiliateCode}. رقم الطلب الأصلي: ${order.orderNumber}`,
                                 sourceType: 'internal_push',
                                 externalId: orderId,
                                 orderItems: {
                                     create: items.map(it => ({
                                         productId: it.originalProduct.id,
+                                        productName: it.originalProduct.name || null,
+                                        productSku: it.originalProduct.sku || null,
                                         quantity: it.quantity,
                                         price: it.price,
                                         total: it.total,

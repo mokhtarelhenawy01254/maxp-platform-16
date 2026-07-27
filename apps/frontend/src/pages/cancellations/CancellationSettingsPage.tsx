@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import {
   cancellationService,
@@ -16,32 +17,34 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const DEFAULT_DATA = [
+const getDefaultData = (t: any) => [
   {
-    name: "العميل",
+    name: t('cancellations.k_1'),
     reasons: [
-      { reason: "العميل طلب الإلغاء", description: "تواصل العميل وطلب إلغاء الطلب" },
-      { reason: "رقم الهاتف غير صحيح", description: "رقم الهاتف المسجل خطأ أو لا يعمل" },
-      { reason: "غير مرغوب فيه", description: "العميل غير راغب في استلام الطلب" },
+      { reason: t('cancellations.k_2'), description: t('cancellations.k_3') },
+      { reason: t('cancellations.k_4'), description: t('cancellations.k_5') },
+      { reason: t('cancellations.k_6'), description: t('cancellations.k_7') },
     ],
   },
   {
-    name: "المخزون",
+    name: t('cancellations.k_8'),
     reasons: [
-      { reason: "نفاد المخزون", description: "المنتج غير متوفر في المخزون" },
-      { reason: "خطأ في السعر", description: "تم تسعير المنتج بشكل خاطئ" },
+      { reason: t('cancellations.k_9'), description: t('cancellations.k_10') },
+      { reason: t('cancellations.k_11'), description: t('cancellations.k_12') },
     ],
   },
   {
-    name: "الشحن",
+    name: t('cancellations.k_13'),
     reasons: [
-      { reason: "الشحن غير متاح", description: "لا يمكن الشحن إلى المنطقة المطلوبة" },
-      { reason: "تأخير في التوصيل", description: "تأخر التوصيل عن الموعد المحدد" },
+      { reason: t('cancellations.k_14'), description: t('cancellations.k_15') },
+      { reason: t('cancellations.k_16'), description: t('cancellations.k_17') },
     ],
   },
 ];
 
-const CancellationSettingsPage: React.FC = () => {
+const CancellationSettingsPage: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded = false }) => {
+  const { t } = useTranslation();
+  const DEFAULT_DATA = React.useMemo(() => getDefaultData(t), [t]);
   const [categories, setCategories] = useState<CancellationReasonCategory[]>([]);
   const [reasons, setReasons] = useState<CancellationReason[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +69,7 @@ const CancellationSettingsPage: React.FC = () => {
       setCategories(catRes.data);
       setReasons(resRes.data);
     } catch (error) {
-      toast.error("فشل في تحميل البيانات");
+      toast.error(t('cancellations.k_18'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,7 @@ const CancellationSettingsPage: React.FC = () => {
   }, []);
 
   const addDefaults = async () => {
-    if (!confirm("سيتم إضافة بيانات افتراضية. هل أنت متأكد؟")) return;
+    if (!confirm(t('cancellations.k_19'))) return;
     setLoading(true);
     try {
       for (const catData of DEFAULT_DATA) {
@@ -91,11 +94,11 @@ const CancellationSettingsPage: React.FC = () => {
           });
         }
       }
-      toast.success("تم إضافة البيانات الافتراضية بنجاح");
+      toast.success(t('cancellations.k_20'));
       fetchData();
     } catch (error) {
       console.error(error);
-      toast.error("فشل في إضافة البيانات الافتراضية");
+      toast.error(t('cancellations.k_21'));
       setLoading(false);
     }
   };
@@ -105,17 +108,17 @@ const CancellationSettingsPage: React.FC = () => {
     try {
       if (editingCategory) {
         await cancellationService.updateCategory(editingCategory.id, { name: categoryName });
-        toast.success("تم تحديث التصنيف");
+        toast.success(t('cancellations.k_22'));
       } else {
         await cancellationService.createCategory({ name: categoryName });
-        toast.success("تم إنشاء التصنيف");
+        toast.success(t('cancellations.k_23'));
       }
       setIsCategoryModalOpen(false);
       setEditingCategory(null);
       setCategoryName("");
       fetchData();
     } catch (error) {
-      toast.error("فشل في الحفظ");
+      toast.error(t('cancellations.k_24'));
     }
   };
 
@@ -128,14 +131,14 @@ const CancellationSettingsPage: React.FC = () => {
           description: reasonDesc,
           categoryId: selectedCategoryId,
         });
-        toast.success("تم تحديث السبب");
+        toast.success(t('cancellations.k_25'));
       } else {
         await cancellationService.createReason({
           reason: reasonText,
           description: reasonDesc,
           categoryId: selectedCategoryId,
         });
-        toast.success("تم إنشاء السبب");
+        toast.success(t('cancellations.k_26'));
       }
       setIsReasonModalOpen(false);
       setEditingReason(null);
@@ -144,36 +147,38 @@ const CancellationSettingsPage: React.FC = () => {
       setSelectedCategoryId("");
       fetchData();
     } catch (error) {
-      toast.error("فشل في الحفظ");
+      toast.error(t('cancellations.k_24'));
     }
   };
 
   const deleteReason = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا السبب؟")) return;
+    if (!confirm(t('cancellations.k_27'))) return;
     try {
       await cancellationService.deleteReason(id);
-      toast.success("تم الحذف");
+      toast.success(t('cancellations.k_28'));
       fetchData();
     } catch (error) {
-      toast.error("فشل في الحذف");
+      toast.error(t('cancellations.k_29'));
     }
   };
 
   return (
     <div
-      className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white"
+      className={isEmbedded ? "" : "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white"}
       dir="rtl"
     >
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            إعدادات أسباب الإلغاء
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            إدارة تصنيفات وأسباب إلغاء الطلبات
-          </p>
+      {!isEmbedded && (
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+              {t('cancellations.k_43')}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              {t('cancellations.k_44')}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
@@ -181,7 +186,7 @@ const CancellationSettingsPage: React.FC = () => {
             onClick={addDefaults}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors text-sm"
           >
-            <Sparkles size={18} /> اقتراحات ذكية
+            <Sparkles size={18} /> {t('cancellations.k_45')}
           </button>
         </div>
       </div>
@@ -191,7 +196,7 @@ const CancellationSettingsPage: React.FC = () => {
         <div className="lg:col-span-1">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              <FolderPlus size={20} className="text-blue-500" /> التصنيفات
+              <FolderPlus size={20} className="text-blue-500" /> {t('cancellations.k_46')}
             </h2>
             <button
               onClick={() => {
@@ -201,14 +206,14 @@ const CancellationSettingsPage: React.FC = () => {
               }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              + إضافة
+              {t('cancellations.k_47')}
             </button>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
             {loading ? (
-              <div className="p-4 text-center text-gray-500 dark:text-gray-400">جاري التحميل...</div>
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">{t('cancellations.k_30')}</div>
             ) : categories.length === 0 ? (
-              <div className="p-4 text-center text-gray-400">لا توجد تصنيفات</div>
+              <div className="p-4 text-center text-gray-400">{t('cancellations.k_31')}</div>
             ) : (
               categories.map((cat) => (
                 <div
@@ -238,7 +243,7 @@ const CancellationSettingsPage: React.FC = () => {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              <Tag size={20} className="text-green-500" /> أسباب الإلغاء
+              <Tag size={20} className="text-green-500" /> {t('cancellations.k_48')}
             </h2>
             <button
               onClick={() => {
@@ -250,27 +255,27 @@ const CancellationSettingsPage: React.FC = () => {
               }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              + إضافة سبب
+              {t('cancellations.k_49')}
             </button>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">السبب</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">التصنيف</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الحالة</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase pl-6">الإجراءات</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('cancellations.k_32')}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('cancellations.k_33')}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('cancellations.k_34')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase pl-6">{t('cancellations.k_35')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="p-4 text-center text-gray-500 dark:text-gray-400">جاري التحميل...</td>
+                    <td colSpan={4} className="p-4 text-center text-gray-500 dark:text-gray-400">{t('cancellations.k_30')}</td>
                   </tr>
                 ) : reasons.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-4 text-center text-gray-400">لا توجد أسباب</td>
+                    <td colSpan={4} className="p-4 text-center text-gray-400">{t('cancellations.k_36')}</td>
                   </tr>
                 ) : (
                   reasons.map((reason) => (
@@ -281,17 +286,17 @@ const CancellationSettingsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-900/30">
-                          {reason.category?.name || "غير مصنف"}
+                          {reason.category?.name || t('cancellations.k_37')}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         {reason.isActive ? (
                           <span className="text-green-600 dark:text-green-400 flex items-center gap-1 text-xs">
-                            <CheckCircle size={14} /> نشط
+                            <CheckCircle size={14} /> {t('cancellations.k_50')}
                           </span>
                         ) : (
                           <span className="text-gray-400 dark:text-gray-500 flex items-center gap-1 text-xs">
-                            <XCircle size={14} /> معطل
+                            <XCircle size={14} /> {t('cancellations.k_51')}
                           </span>
                         )}
                       </td>
@@ -331,13 +336,13 @@ const CancellationSettingsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
             <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              {editingCategory ? "تعديل تصنيف" : "تصنيف جديد"}
+              {editingCategory ? t('cancellations.k_38') : t('cancellations.k_39')}
             </h3>
             <form onSubmit={handleSaveCategory}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    اسم التصنيف (مثال: العميل، المخزون، الشحن)
+                    {t('cancellations.k_52')}
                   </label>
                   <input
                     type="text"
@@ -354,13 +359,13 @@ const CancellationSettingsPage: React.FC = () => {
                   onClick={() => setIsCategoryModalOpen(false)}
                   className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
-                  إلغاء
+                  {t('cancellations.k_53')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  حفظ
+                  {t('cancellations.k_54')}
                 </button>
               </div>
             </form>
@@ -373,13 +378,13 @@ const CancellationSettingsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
             <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
-              {editingReason ? "تعديل سبب" : "سبب جديد"}
+              {editingReason ? t('cancellations.k_40') : t('cancellations.k_41')}
             </h3>
             <form onSubmit={handleSaveReason}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    السبب (مثال: العميل طلب الإلغاء)
+                    {t('cancellations.k_55')}
                   </label>
                   <input
                     type="text"
@@ -391,7 +396,7 @@ const CancellationSettingsPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    التصنيف
+                    {t('cancellations.k_33')}
                   </label>
                   <select
                     required
@@ -399,7 +404,7 @@ const CancellationSettingsPage: React.FC = () => {
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
-                    <option value="">اختر تصنيفاً...</option>
+                    <option value="">{t('cancellations.k_42')}</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -409,7 +414,7 @@ const CancellationSettingsPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    وصف إضافي
+                    {t('cancellations.k_56')}
                   </label>
                   <textarea
                     value={reasonDesc}
@@ -425,13 +430,13 @@ const CancellationSettingsPage: React.FC = () => {
                   onClick={() => setIsReasonModalOpen(false)}
                   className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
-                  إلغاء
+                  {t('cancellations.k_53')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  حفظ
+                  {t('cancellations.k_54')}
                 </button>
               </div>
             </form>

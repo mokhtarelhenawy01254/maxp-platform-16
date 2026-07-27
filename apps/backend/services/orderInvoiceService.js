@@ -359,7 +359,7 @@ async function updateInvoicePaymentStatus(invoiceId, paymentStatus, paidAt = nul
     if (paymentStatus === 'PAID') {
       await prisma.order.update({
         where: { id: invoice.orderId },
-        data: { paymentStatus: 'PAID' }
+        data: { paymentStatus: 'COMPLETED' }
       });
     }
 
@@ -383,6 +383,39 @@ async function incrementPrintCount(invoiceId) {
         }
       });
     });
+
+    // Event-Based Automation: Print
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: invoice.orderId },
+        select: { id: true, orderNumber: true, companyId: true, status: true }
+      });
+      if (order && order.companyId) {
+        const company = await prisma.company.findUnique({
+          where: { id: order.companyId },
+          select: { settings: true }
+        });
+        if (company && company.settings) {
+          const settings = JSON.parse(company.settings);
+          if (settings.printAutomationEnabled && settings.printAutomationStatus && settings.printAutomationStatus !== order.status) {
+            const orderService = require('./orderService');
+            // updateOrderStatus(orderNumber, companyId, status, notes, userId, userName, existingOrderObject, isOverride, options)
+            await orderService.updateOrderStatus(
+              order.orderNumber,
+              order.companyId,
+              settings.printAutomationStatus,
+              'تغيير تلقائي للحالة بعد طباعة الطلب', // notes
+              'SYSTEM', // userId
+              'System Automation', // userName
+              null,
+              true // isOverride to bypass standard transition checks
+            );
+          }
+        }
+      }
+    } catch (autoErr) {
+      console.error('Error executing print automation:', autoErr);
+    }
 
     return invoice;
   } catch (error) {

@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
+  Cog6ToothIcon,
   ExclamationTriangleIcon,
-  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -17,18 +16,23 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
-  FALLBACK_STATUS_LABELS,
   PAGE_SIZE_OPTIONS,
+  PREPARATION_COLUMN_LABELS,
+  PREPARATION_FILTER_SECTION_LABELS,
+  PREPARATION_FILTER_SECTIONS,
+  PREPARATION_TABLE_COLUMNS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
+  VISIBLE_COLUMNS_STORAGE_KEY,
   type PageSize,
+  type PreparationFilterSection,
+  type PreparationTableColumn,
 } from "./preparation/constants";
 import {
   getApiErrorMessage,
   buildShortageHoldDetails,
   getEffectivePreparationStatus,
   mergePlainObjects,
-  normalizeStage,
   parseMaybeJsonObject,
   toNumber,
   toUpper,
@@ -42,7 +46,7 @@ import type {
   ShortageHoldDetails,
 } from "./preparation/types";
 import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
-import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
+import { usePreparationQueueUiState, type PreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
@@ -53,13 +57,67 @@ type BulkStatusResult = {
   success?: boolean;
 };
 
+const PREPARATION_STORAGE_KEY = "preparation:queue:view-state:v1";
+
+const parsePositiveInt = (value: unknown, fallback: number) => {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const readStoredPreparationState = (): Partial<PreparationQueueUiState> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PREPARATION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const getInitialPreparationState = (searchParams: URLSearchParams): Partial<PreparationQueueUiState> => {
+  const hasQueryKeys = ["page", "pageSize", "activeStage", "warehouseId", "stockFilter", "shortageReason", "shortageFollowUp", "shortageOwner", "productFilter", "itemCountFilter", "search", "sortBy", "sortOrder", "notPrinted", "noShippingCode"].some((k) => searchParams.has(k));
+
+  if (hasQueryKeys) {
+    const pageSizeRaw = parsePositiveInt(searchParams.get("pageSize"), 12);
+    const validPageSize = PAGE_SIZE_OPTIONS.includes(pageSizeRaw as PageSize) ? (pageSizeRaw as PageSize) : 12;
+    return {
+      page: parsePositiveInt(searchParams.get("page"), 1),
+      pageSize: validPageSize,
+      activeStage: searchParams.get("activeStage") || "ALL",
+      selectedWarehouseId: searchParams.get("warehouseId") || "",
+      stockFilter: (searchParams.get("stockFilter") as "all" | "ready" | "shortage") || "all",
+      shortageReasonFilter: (searchParams.get("shortageReason") as "all" | "stock_shortage" | "waiting_transfer" | "waiting_restock" | "other") || "all",
+      shortageFollowUpFilter: (searchParams.get("shortageFollowUp") as "all" | "today" | "overdue" | "without_date") || "all",
+      shortageOwnerFilter: searchParams.get("shortageOwner") || "",
+      productFilter: searchParams.get("productFilter") || "",
+      itemCountFilter: (searchParams.get("itemCountFilter") as "all" | "single" | "multiple") || "all",
+      search: searchParams.get("search") || "",
+      sortBy: (searchParams.get("sortBy") as "createdAt" | "totalUnits" | "totalValue") || "createdAt",
+      sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      notPrintedFilter: (searchParams.get("notPrinted") as "all" | "not_printed") || "all",
+      noShippingCodeFilter: (searchParams.get("noShippingCode") as "all" | "no_shipping_code") || "all",
+    };
+  }
+
+  const stored = readStoredPreparationState();
+  if (stored) {
+    return stored;
+  }
+
+  return {};
+};
+
 const PreparationQueue: React.FC = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
-  const { state: uiState, actions: uiActions } = usePreparationQueueUiState();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialOverrides = useMemo(() => getInitialPreparationState(searchParams), []);
+  const { state: uiState, actions: uiActions } = usePreparationQueueUiState(initialOverrides);
   const isMerchantUser = user?.role === "MERCHANT";
 
   const deferredSearch = useDeferredValue(uiState.search);
@@ -72,9 +130,11 @@ const PreparationQueue: React.FC = () => {
     ensureInventory,
     warehouses,
     statusConfigs,
+    preparationStatuses,
     preparationSettings,
     pagination,
     summary,
+    statusCounts,
     shortageOwnerOptions: serverShortageOwnerOptions,
     loading,
     fetchInventory,
@@ -89,8 +149,14 @@ const PreparationQueue: React.FC = () => {
     shortageFollowUpFilter: uiState.shortageFollowUpFilter,
     shortageOwnerFilter: uiState.shortageOwnerFilter,
     productFilter: uiState.productFilter,
+    productColorFilter: uiState.productColorFilter,
+    productSizeFilter: uiState.productSizeFilter,
     itemCountFilter: uiState.itemCountFilter,
+    notPrintedFilter: uiState.notPrintedFilter,
+    noShippingCodeFilter: uiState.noShippingCodeFilter,
     search: deferredSearch,
+    sortBy: uiState.sortBy,
+    sortOrder: uiState.sortOrder,
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -101,7 +167,6 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
@@ -110,6 +175,54 @@ const PreparationQueue: React.FC = () => {
   >(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
+    if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
+    try {
+      const raw = window.localStorage.getItem(VISIBLE_COLUMNS_STORAGE_KEY);
+      if (!raw) return [...PREPARATION_TABLE_COLUMNS];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every((c: string) => PREPARATION_TABLE_COLUMNS.includes(c as PreparationTableColumn))) {
+        return parsed as PreparationTableColumn[];
+      }
+    } catch { /* ignore */ }
+    return [...PREPARATION_TABLE_COLUMNS];
+  });
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
+
+  const toggleColumn = (col: PreparationTableColumn) => {
+    setVisibleColumns((prev) =>
+      prev.includes(col)
+        ? prev.filter((c) => c !== col)
+        : [...prev, col],
+    );
+  };
+
+  const [visibleFilterSections, setVisibleFilterSections] = useState<PreparationFilterSection[]>(() => {
+    const defaults = [...PREPARATION_FILTER_SECTIONS];
+    if (typeof window === "undefined") return defaults;
+    try {
+      const raw = window.localStorage.getItem("preparation:queue:visible-filters-v1");
+      if (!raw) return defaults;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const stored = parsed.filter((s): s is PreparationFilterSection =>
+          PREPARATION_FILTER_SECTIONS.includes(s as PreparationFilterSection),
+        );
+        const merged = [...new Set([...defaults, ...stored])];
+        return merged;
+      }
+    } catch { /* ignore */ }
+    return defaults;
+  });
+  const [showFilters, setShowFilters] = useState(true);
+
+  const toggleFilterSection = (section: PreparationFilterSection) => {
+    setVisibleFilterSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section],
+    );
+  };
 
   const {
     activeStage,
@@ -120,7 +233,11 @@ const PreparationQueue: React.FC = () => {
     shortageOwnerFilter,
     productFilter,
     itemCountFilter,
+    notPrintedFilter,
+    noShippingCodeFilter,
     search,
+    sortBy,
+    sortOrder,
     selectedOrders,
     statusSelections,
     bulkStatus,
@@ -152,12 +269,92 @@ const PreparationQueue: React.FC = () => {
     });
   }, [orders]);
 
+  useEffect(() => {
+    const nextState: Record<string, unknown> = {
+      page: uiState.page,
+      pageSize: uiState.pageSize,
+      activeStage: uiState.activeStage,
+      selectedWarehouseId: uiState.selectedWarehouseId,
+      stockFilter: uiState.stockFilter,
+      shortageReasonFilter: uiState.shortageReasonFilter,
+      shortageFollowUpFilter: uiState.shortageFollowUpFilter,
+      shortageOwnerFilter: uiState.shortageOwnerFilter,
+      productFilter: uiState.productFilter,
+      itemCountFilter: uiState.itemCountFilter,
+      search: uiState.search,
+      sortBy: uiState.sortBy,
+      sortOrder: uiState.sortOrder,
+      notPrintedFilter: uiState.notPrintedFilter,
+      noShippingCodeFilter: uiState.noShippingCodeFilter,
+    };
+
+    const params: Record<string, string> = {};
+    if (nextState.page !== 1) params.page = String(nextState.page);
+    if (nextState.pageSize !== 12) params.pageSize = String(nextState.pageSize);
+    if (nextState.activeStage !== "ALL") params.activeStage = String(nextState.activeStage);
+    if (nextState.selectedWarehouseId) params.warehouseId = String(nextState.selectedWarehouseId);
+    if (nextState.stockFilter !== "all") params.stockFilter = String(nextState.stockFilter);
+    if (nextState.shortageReasonFilter !== "all") params.shortageReason = String(nextState.shortageReasonFilter);
+    if (nextState.shortageFollowUpFilter !== "all") params.shortageFollowUp = String(nextState.shortageFollowUpFilter);
+    if (nextState.shortageOwnerFilter) params.shortageOwner = String(nextState.shortageOwnerFilter);
+    if (nextState.productFilter) params.productFilter = String(nextState.productFilter);
+    if (nextState.itemCountFilter !== "all") params.itemCountFilter = String(nextState.itemCountFilter);
+    if (nextState.notPrintedFilter !== "all") params.notPrinted = String(nextState.notPrintedFilter);
+    if (nextState.noShippingCodeFilter !== "all") params.noShippingCode = String(nextState.noShippingCodeFilter);
+    if (nextState.search) params.search = String(nextState.search);
+    if (nextState.sortBy !== "createdAt") params.sortBy = String(nextState.sortBy);
+    if (nextState.sortOrder !== "desc") params.sortOrder = String(nextState.sortOrder);
+
+    setSearchParams(params, { replace: true });
+
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(PREPARATION_STORAGE_KEY, JSON.stringify(nextState));
+      } catch {
+        // ignore
+      }
+    }
+  }, [
+    uiState.page,
+    uiState.pageSize,
+    uiState.activeStage,
+    uiState.selectedWarehouseId,
+    uiState.stockFilter,
+    uiState.shortageReasonFilter,
+    uiState.shortageFollowUpFilter,
+    uiState.shortageOwnerFilter,
+    uiState.productFilter,
+    uiState.itemCountFilter,
+    uiState.search,
+    uiState.sortBy,
+    uiState.sortOrder,
+    uiState.notPrintedFilter,
+    uiState.noShippingCodeFilter,
+    setSearchParams,
+  ]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(VISIBLE_COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
+        window.localStorage.setItem("preparation:queue:visible-filters-v1", JSON.stringify(visibleFilterSections));
+      } catch { /* ignore */ }
+    }
+  }, [visibleColumns, visibleFilterSections]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (columnSettingsOpen && !target.closest("[data-column-settings]")) {
+        setColumnSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [columnSettingsOpen]);
+
   const statusLabelMap = useMemo(() => {
     const map = new Map<string, string>();
-
-    Object.entries(FALLBACK_STATUS_LABELS).forEach(([code, label]) => {
-      map.set(code, label);
-    });
 
     statusConfigs.forEach((status) => {
       map.set(toUpper(status.code), status.name);
@@ -167,28 +364,79 @@ const PreparationQueue: React.FC = () => {
   }, [statusConfigs]);
 
   const statusOptions = useMemo<PreparationStatusOption[]>(() => {
-    const dynamicOptions = [
-      { code: preparationSettings.startingStatus, fallbackName: t('preparation.page.stages.WAITING') },
-      { code: "PREPARING", fallbackName: t('preparation.page.stages.PREPARING') },
-      { code: "QUALITY_CHECK", fallbackName: t('preparation.page.stages.QUALITY_CHECK') },
-      { code: "PACKAGED", fallbackName: t('preparation.page.stages.PACKAGED') },
-      { code: SHORTAGE_HOLD_STATUS, fallbackName: t('preparation.page.stages.STOCK_SHORTAGE') },
-      {
-        code: preparationSettings.handoffStatus || "READY_TO_SHIP",
-        fallbackName: t('preparation.page.stages.READY_TO_SHIP'),
-      },
-    ];
+    const dynamicOptions = preparationStatuses.map((s) => ({
+      code: toUpper(s.code),
+      fallbackName: s.name,
+    }));
 
-    const deduped = new Map<string, PreparationStatusOption>();
-    dynamicOptions.forEach((option) => {
-      deduped.set(toUpper(option.code), {
-        code: toUpper(option.code),
-        fallbackName: option.fallbackName,
+    const includesStarting = dynamicOptions.some(
+      (opt) => opt.code === toUpper(preparationSettings.startingStatus),
+    );
+    if (!includesStarting && preparationSettings.startingStatus) {
+      dynamicOptions.unshift({
+        code: toUpper(preparationSettings.startingStatus),
+        fallbackName: t('preparation.k_5'),
       });
+    }
+
+    const includesHandoff = dynamicOptions.some(
+      (opt) => opt.code === toUpper(preparationSettings.handoffStatus),
+    );
+    if (!includesHandoff && preparationSettings.handoffStatus) {
+      dynamicOptions.push({
+        code: toUpper(preparationSettings.handoffStatus),
+        fallbackName: t('preparation.k_10'),
+      });
+    }
+
+    const includesShortage = dynamicOptions.some(
+      (opt) => opt.code === toUpper(SHORTAGE_HOLD_STATUS),
+    );
+    if (!includesShortage) {
+      dynamicOptions.push({
+        code: toUpper(SHORTAGE_HOLD_STATUS),
+        fallbackName: t('preparation.k_9'),
+      });
+    }
+
+    return dynamicOptions;
+  }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+
+  const filterTabs = useMemo(() => {
+    const seen = new Set<string>();
+    const tabs: { statusCode: string; name: string }[] = [];
+
+    preparationStatuses.forEach((status) => {
+      const code = toUpper(status.code);
+      if (!seen.has(code)) {
+        seen.add(code);
+        tabs.push({ statusCode: code, name: status.name });
+      }
     });
 
-    return [...deduped.values()];
-  }, [preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+    const forcedStatuses: { code: string; name: string }[] = [
+      { code: "CONFIRMED", name: t("orders.confirmed") },
+    ];
+
+    forcedStatuses.forEach((s) => {
+      const code = toUpper(s.code);
+      if (!seen.has(code)) {
+        seen.add(code);
+        tabs.push({ statusCode: code, name: s.name });
+      }
+    });
+
+    const shortageCode = toUpper(SHORTAGE_HOLD_STATUS);
+    if (!seen.has(shortageCode)) {
+      seen.add(shortageCode);
+      tabs.push({
+        statusCode: shortageCode,
+        name: statusLabelMap.get(shortageCode) || t('preparation.k_9'),
+      });
+    }
+
+    return tabs;
+  }, [preparationStatuses, statusLabelMap, SHORTAGE_HOLD_STATUS]);
 
   const enabledQcChecks = useMemo(
     () =>
@@ -209,7 +457,7 @@ const PreparationQueue: React.FC = () => {
         map.set(productId, {
           productId,
           productName:
-            record.products?.name || record.products?.sku || t('preparation.page.unnamedProduct'),
+            record.products?.name || record.products?.sku || t('preparation.k_11'),
           sku: record.products?.sku || null,
           totalQuantity: 0,
           totalAvailable: 0,
@@ -224,7 +472,7 @@ const PreparationQueue: React.FC = () => {
       entry.totalReserved += toNumber(record.reserved);
       entry.warehouses.push({
         warehouseId: String(record.warehouseId || ""),
-        warehouseName: record.warehouses?.name || t('preparation.page.unnamedWarehouse'),
+        warehouseName: record.warehouses?.name || t('preparation.k_12'),
         quantity: toNumber(record.quantity),
         available: toNumber(record.available),
         reserved: toNumber(record.reserved),
@@ -256,7 +504,7 @@ const PreparationQueue: React.FC = () => {
           order.status,
           order.metadata,
         );
-        const stage = normalizeStage(normalizedStatus);
+        const stage = normalizedStatus;
         const totalValue = toNumber(order.total);
         const shortageHoldDetails = buildShortageHoldDetails(order.metadata);
 
@@ -291,7 +539,7 @@ const PreparationQueue: React.FC = () => {
 
           return {
             ...item,
-            displayName: item.productName || item.name || metadataProductName || t('preparation.page.unnamedProduct'),
+            displayName: item.productName || item.name || metadataProductName || t('preparation.k_13'),
             quantityNumber,
             availableInScope,
             reservedInScope,
@@ -335,7 +583,7 @@ const PreparationQueue: React.FC = () => {
     const uniqueOwners = new Set<string>();
 
     serverShortageOwnerOptions.forEach((owner) => {
-      const normalizedOwner = owner.trim();
+      const normalizedOwner = (owner || "").trim();
       if (normalizedOwner) {
         uniqueOwners.add(normalizedOwner);
       }
@@ -353,10 +601,27 @@ const PreparationQueue: React.FC = () => {
     return [...uniqueOwners].sort((left, right) => left.localeCompare(right, "ar"));
   }, [preparationOrders, serverShortageOwnerOptions, shortageHoldDrafts]);
 
+  const productSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    return preparationOrders.flatMap((order) =>
+      order.itemInsights.map((item) => {
+        const key = `${item.displayName}|${item.color || ""}|${item.size || ""}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        return {
+          displayName: item.displayName,
+          color: item.color || "",
+          size: item.size || "",
+        };
+      }),
+    ).filter((s): s is NonNullable<typeof s> => s !== null);
+  }, [preparationOrders]);
+
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
   const paginatedOrders = preparationOrders;
-  const visibleOrdersCount = summary.visibleTotal;
+  const visibleOrdersCount = summary.filteredTotal;
+  const currentPageCount = paginatedOrders.length;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
 
@@ -372,8 +637,12 @@ const PreparationQueue: React.FC = () => {
         stockFilter,
         shortageReasonFilter,
         shortageFollowUpFilter,
-        shortageOwnerFilter.trim().toLowerCase(),
-        deferredSearch.trim().toLowerCase(),
+        (shortageOwnerFilter || "").trim().toLowerCase(),
+        (deferredSearch || "").trim().toLowerCase(),
+        notPrintedFilter,
+        noShippingCodeFilter,
+        sortBy,
+        sortOrder,
       ].join("|"),
     [
       activeStage,
@@ -382,6 +651,10 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUpFilter,
       shortageOwnerFilter,
       shortageReasonFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
+      sortBy,
+      sortOrder,
       stockFilter,
     ],
   );
@@ -459,7 +732,7 @@ const PreparationQueue: React.FC = () => {
       if (!preparationSettings.enabled) {
         return {
           valid: false,
-          message: t('preparation.page.disabled'),
+          message: t('preparation.k_14'),
         };
       }
 
@@ -477,8 +750,8 @@ const PreparationQueue: React.FC = () => {
         return {
           valid: false,
           message: preparationSettings.allowCrossWarehouseTransfer
-            ? t('preparation.page.transferNoSource')
-            : t('preparation.page.stockMustBeComplete'),
+            ? t('preparation.k_15')
+            : t('preparation.k_16'),
         };
       }
 
@@ -489,7 +762,7 @@ const PreparationQueue: React.FC = () => {
       ) {
         return {
           valid: false,
-          message: t('preparation.page.qcChecklistRequired'),
+          message: t('preparation.k_17'),
         };
       }
 
@@ -540,10 +813,10 @@ const PreparationQueue: React.FC = () => {
     try {
       setPrintingOrderNumber(orderNumber);
       await printPreparationSlip(orderNumber);
-      toast.success(t('preparation.page.slipOpened'));
+      toast.success(t('preparation.k_18'));
     } catch (error: unknown) {
       console.error("Failed to print preparation slip:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.slipFailed'));
+      toast.error(getApiErrorMessage(error) || t('preparation.k_19'));
     } finally {
       setPrintingOrderNumber(null);
     }
@@ -557,7 +830,7 @@ const PreparationQueue: React.FC = () => {
     ) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       if (!order) {
-        toast.error(t('preparation.page.orderNotFound'));
+        toast.error(t('preparation.k_20'));
         return false;
       }
 
@@ -584,7 +857,7 @@ const PreparationQueue: React.FC = () => {
         }));
 
         if (options?.successMessage !== null) {
-          toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
+          toast.success(options?.successMessage || t('preparation.k_21'));
         }
 
         void fetchAll();
@@ -592,7 +865,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to save shortage hold details:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.page.shortageHoldFailed'),
+          getApiErrorMessage(error) || t('preparation.k_22'),
         );
         return false;
       } finally {
@@ -606,7 +879,7 @@ const PreparationQueue: React.FC = () => {
     async (orderNumber: string, nextStatus: string) => {
       const order = getOrderByNumber(orderNumber);
       if (!order) {
-        toast.error("تعذر العثور على الطلب المحدد");
+        toast.error(t('preparation.k_20'));
         return;
       }
 
@@ -641,7 +914,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed to update order status:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.page.stageUpdateError'),
+          getApiErrorMessage(error) || t('preparation.k_23'),
         );
       } finally {
         setRowUpdatingId(null);
@@ -676,7 +949,7 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error(t('preparation.page.unnamedProduct'));
+      toast.error(t('preparation.k_24'));
       return;
     }
 
@@ -718,7 +991,7 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update:", error);
       toast.error(
-        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
+        getApiErrorMessage(error) || t('preparation.k_25'),
       );
     } finally {
       setBulkUpdating(false);
@@ -735,56 +1008,58 @@ const PreparationQueue: React.FC = () => {
   ]);
 
   const handleBulkUpdateAll = useCallback(async () => {
-    if (!bulkStatus || paginatedOrders.length === 0) return;
+    if (!bulkStatus) return;
 
-    const validOrders: PreparationOrder[] = [];
-    const invalidOrders: PreparationOrder[] = [];
-
-    paginatedOrders.forEach((order) => {
-      const validation = validateTransition(order, bulkStatus);
-      if (validation.valid) {
-        validOrders.push(order);
-      } else {
-        invalidOrders.push(order);
-      }
-    });
-
-    if (validOrders.length === 0) {
-      toast.error(t('preparation.page.unnamedProduct'));
+    const totalMatching = pagination.total;
+    if (totalMatching === 0) {
+      toast.error(t('preparation.k_26'));
       return;
     }
 
     const confirmed = window.confirm(
-      `تحديث ${validOrders.length} طلب إلى مرحلة ${
+      `تحديث ${totalMatching} طلب إلى مرحلة ${
         statusLabelMap.get(bulkStatus) || bulkStatus
-      }${invalidOrders.length > 0 ? ` مع استبعاد ${invalidOrders.length} طلب غير مطابق` : ""}؟`,
+      } (جميع الطلبات المطابقة للفلتر)؟`,
     );
 
     if (!confirmed) return;
 
+    const filters = {
+      stage: activeStage,
+      warehouseId: selectedWarehouseId,
+      stockFilter,
+      shortageReason: shortageReasonFilter,
+      shortageFollowUp: shortageFollowUpFilter,
+      shortageOwner: shortageOwnerFilter,
+      productFilter,
+      itemCountFilter,
+      notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
+      noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
+      search: deferredSearch,
+      sortBy,
+      sortOrder,
+    };
+
     try {
       setBulkUpdating(true);
-      const response = await apiClient.post("/orders-new/bulk/status", {
-        orderIds: validOrders.map((order) => order.orderNumber),
+      const response = await apiClient.post("/orders-new/bulk/status/by-filters", {
         status: bulkStatus,
+        filters,
       });
 
-      const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
-        ? response.data.data.results
-        : [];
-      const successIds = results
-        .filter((result) => result.success)
-        .map((result) => String(result.id));
+      const result = response.data?.data;
+      const successCount = result?.successCount ?? 0;
+      const totalRequested = result?.totalRequested ?? 0;
 
-      if (successIds.length > 0) {
-        updateLocalStatuses(successIds, bulkStatus);
+      if (totalRequested === 0) {
+        toast.error(t('preparation.k_26'));
+        return;
       }
 
-      const failedCount = results.filter((result) => !result.success).length;
       toast.success(
-        failedCount > 0
-          ? `تم تحديث ${successIds.length} طلب وفشل ${failedCount} طلب`
-          : `تم تحديث ${successIds.length} طلب بنجاح`,
+        successCount < totalRequested
+          ? `تم تحديث ${successCount} طلب وفشل ${totalRequested - successCount} طلب`
+          : `تم تحديث ${successCount} طلب بنجاح`,
       );
 
       uiActions.clearBulkControls();
@@ -792,30 +1067,41 @@ const PreparationQueue: React.FC = () => {
     } catch (error: unknown) {
       console.error("Failed bulk status update all:", error);
       toast.error(
-        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
+        getApiErrorMessage(error) || t('preparation.k_27'),
       );
     } finally {
       setBulkUpdating(false);
     }
   }, [
     bulkStatus,
-    paginatedOrders,
+    activeStage,
+    selectedWarehouseId,
+    stockFilter,
+    shortageReasonFilter,
+    shortageFollowUpFilter,
+    shortageOwnerFilter,
+    productFilter,
+    itemCountFilter,
+    notPrintedFilter,
+    noShippingCodeFilter,
+    deferredSearch,
+    sortBy,
+    sortOrder,
+    pagination.total,
     statusLabelMap,
-    updateLocalStatuses,
     uiActions,
     fetchAll,
-    validateTransition,
   ]);
 
   const handleQuickTransfer = useCallback(
     async (orderNumber: string, item: ItemInsight) => {
       if (!selectedWarehouseId) {
-        toast.error(t('preparation.page.selectWarehouseFirst'));
+        toast.error(t('preparation.k_28'));
         return;
       }
 
       if (!item.productId || item.shortage <= 0) {
-        toast.error(t('preparation.page.transferNoShortage'));
+        toast.error(t('preparation.k_29'));
         return;
       }
 
@@ -827,7 +1113,7 @@ const PreparationQueue: React.FC = () => {
       );
 
       if (!sourceWarehouse) {
-        toast.error(t('preparation.page.transferNoSource'));
+        toast.error(t('preparation.k_30'));
         return;
       }
 
@@ -850,7 +1136,7 @@ const PreparationQueue: React.FC = () => {
       } catch (error: unknown) {
         console.error("Failed quick transfer:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.page.transferFailed'),
+          getApiErrorMessage(error) || t('preparation.k_31'),
         );
       } finally {
         setTransferingItemKey(null);
@@ -861,7 +1147,7 @@ const PreparationQueue: React.FC = () => {
 
   const handleSendToTurbo = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error(t('preparation.page.selectOrderFirst'));
+      toast.error(t('preparation.k_32'));
       return;
     }
 
@@ -885,11 +1171,11 @@ const PreparationQueue: React.FC = () => {
         uiActions.clearBulkControls();
         void fetchAll();
       } else {
-        toast.error(response.data?.error || t('preparation.page.failedToTurbo'));
+        toast.error(response.data?.error || t('preparation.k_33'));
       }
     } catch (error: unknown) {
       console.error("Failed to send to Turbo:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.failedToTurbo'));
+      toast.error(getApiErrorMessage(error) || t('preparation.k_34'));
     } finally {
       setSendingToTurbo(false);
     }
@@ -897,7 +1183,7 @@ const PreparationQueue: React.FC = () => {
 
   const handlePrintInvoices = useCallback(async () => {
     if (selectedOrders.length === 0) {
-      toast.error(t('preparation.page.selectOrderFirst'));
+      toast.error(t('preparation.k_35'));
       return;
     }
 
@@ -910,18 +1196,18 @@ const PreparationQueue: React.FC = () => {
       if (response.data?.success) {
         const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
         if (invoices.length === 0) {
-          toast.error(t('preparation.page.invoiceNotFound'));
+          toast.error(t('preparation.k_36'));
           return;
         }
 
         const invoiceIds = invoices.map((inv) => inv.id).join(",");
         navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
       } else {
-        toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
+        toast.error(response.data?.message || t('preparation.k_37'));
       }
     } catch (error: unknown) {
       console.error("Failed to print invoices:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
+      toast.error(getApiErrorMessage(error) || t('preparation.k_38'));
     } finally {
       setPrintingInvoices(false);
     }
@@ -1007,65 +1293,62 @@ const PreparationQueue: React.FC = () => {
       {!preparationSettings.enabled ? (
         <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
           <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700" />
-          <span className="font-semibold">صفحة التجهيز معطلة</span>
-          <span className="text-amber-700">— يمكن إعادة تفعيلها من إعدادات الطلبات.</span>
+          <span className="font-semibold">{t('preparation.k_1')}</span>
+          <span className="text-amber-700">{t('preparation.k_2')}</span>
         </div>
       ) : null}
 
       {allOverdueShortageFollowUpCount > 0 ? (
         <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900">
           <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700" />
-          <span className="font-semibold">{allOverdueShortageFollowUpCount} طلب تجاوز موعد المتابعة</span>
-          <span className="text-orange-700">— استخدم فلتر السبب أو المسؤول للوصول السريع.</span>
+          <span className="font-semibold">{t('preparation.overdueBanner', { count: allOverdueShortageFollowUpCount })}</span>
+          <span className="text-orange-700">{t('preparation.k_3')}</span>
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowFilters((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-        >
-          <span className="flex items-center gap-2">
-            <FunnelIcon className="h-4 w-4 text-gray-400" />
-            فلترة التجهيز
-          </span>
-          <ChevronDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform ${
-              showFilters ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        {showFilters && (
-          <div className="border-t border-gray-100">
-            <PreparationFilters
-              activeStage={activeStage}
-              stageCounts={stageCounts}
-              visibleOrdersCount={visibleOrdersCount}
-              search={search}
-              selectedWarehouseId={selectedWarehouseId}
-              stockFilter={stockFilter}
-              shortageReasonFilter={shortageReasonFilter}
-              shortageOwnerFilter={shortageOwnerFilter}
-              shortageOwnerOptions={shortageOwnerOptions}
-              shortageFollowUpFilter={shortageFollowUpFilter}
-              productFilter={productFilter}
-              itemCountFilter={itemCountFilter}
-              warehouses={warehouses}
-              onActiveStageChange={uiActions.setActiveStage}
-              onSearchChange={uiActions.setSearch}
-              onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-              onStockFilterChange={uiActions.setStockFilter}
-              onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-              onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-              onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-              onProductFilterChange={uiActions.setProductFilter}
-              onItemCountFilterChange={uiActions.setItemCountFilter}
-            />
-          </div>
-        )}
+      {showFilters && (
+        <PreparationFilters
+          activeFilter={activeStage}
+          statusCounts={statusCounts}
+          stageCounts={summary.stageCounts}
+          filterTabs={filterTabs}
+          visibleOrdersCount={visibleOrdersCount}
+          search={search}
+          selectedWarehouseId={selectedWarehouseId}
+          stockFilter={stockFilter}
+          shortageReasonFilter={shortageReasonFilter}
+          shortageOwnerFilter={shortageOwnerFilter}
+          shortageOwnerOptions={shortageOwnerOptions}
+          shortageFollowUpFilter={shortageFollowUpFilter}
+          productFilter={productFilter}
+          productColorFilter={uiState.productColorFilter}
+          productSizeFilter={uiState.productSizeFilter}
+          productSuggestions={productSuggestions}
+          itemCountFilter={itemCountFilter}
+          notPrintedFilter={notPrintedFilter}
+          noShippingCodeFilter={noShippingCodeFilter}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          warehouses={warehouses}
+          visibleFilterSections={visibleFilterSections}
+          onFilterChange={uiActions.setActiveStage}
+          onSearchChange={uiActions.setSearch}
+          onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+          onStockFilterChange={uiActions.setStockFilter}
+          onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+          onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+          onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+          onProductFilterChange={uiActions.setProductFilter}
+          onProductColorFilterChange={uiActions.setProductColorFilter}
+          onProductSizeFilterChange={uiActions.setProductSizeFilter}
+          onItemCountFilterChange={uiActions.setItemCountFilter}
+          onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
+          onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
+          onSortChange={(sortBy, sortOrder) => uiActions.setSort({ sortBy, sortOrder })}
+        />
+      )}
 
-        <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-gray-100 px-4 py-3">
           <PreparationBulkActions
             compact
             selectedOrdersCount={selectedOrders.length}
@@ -1076,7 +1359,7 @@ const PreparationQueue: React.FC = () => {
             preparationEnabled={preparationSettings.enabled}
             bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
             allVisibleSelected={allVisibleSelected}
-            totalVisibleOrders={paginatedOrders.length}
+            totalVisibleOrders={pagination.total}
             sendingToTurbo={sendingToTurbo}
             printingInvoices={printingInvoices}
             onBulkStatusChange={uiActions.setBulkStatus}
@@ -1089,7 +1372,6 @@ const PreparationQueue: React.FC = () => {
             onPrintInvoices={() => void handlePrintInvoices()}
           />
         </div>
-      </div>
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
@@ -1100,18 +1382,80 @@ const PreparationQueue: React.FC = () => {
               onChange={toggleSelectAllVisible}
               className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
             />
-            تحديد الكل
+            {t('preparation.selectAllCheckbox')}
           </label>
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">قائمة التنفيذ</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('preparation.k_4')}</span>
           {inventoryLoading && (
             <div className="mr-auto flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
               <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
-              جاري التحقق من المتاح
+              {t('preparation.checkingInventory')}
             </div>
           )}
           {!inventoryLoading && loading && (
             <div className="mr-auto h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
           )}
+
+          <div className="relative" data-column-settings>
+            <button
+              type="button"
+              onClick={() => setColumnSettingsOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+              title="إعدادات الأعمدة"
+            >
+              <Cog6ToothIcon className="h-3.5 w-3.5" />
+            </button>
+            {columnSettingsOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+                  الأعمدة الظاهرة
+                </div>
+                {PREPARATION_TABLE_COLUMNS.map((col) => (
+                  <label
+                    key={col}
+                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.includes(col)}
+                      onChange={() => toggleColumn(col)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    {PREPARATION_COLUMN_LABELS[col]}
+                  </label>
+                ))}
+
+                <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+                  إظهار/إخفاء الفلاتر
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={showFilters}
+                    onChange={() => setShowFilters((prev) => !prev)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  إظهار شريط الفلاتر
+                </label>
+                {PREPARATION_FILTER_SECTIONS.map((section) => (
+                  <label
+                    key={section}
+                    className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-gray-50 ${
+                      showFilters ? "text-gray-700" : "text-gray-300 pointer-events-none"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showFilters && visibleFilterSections.includes(section)}
+                      onChange={() => toggleFilterSection(section)}
+                      disabled={!showFilters}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    {PREPARATION_FILTER_SECTION_LABELS[section]}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -1132,11 +1476,10 @@ const PreparationQueue: React.FC = () => {
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900">
-              لا توجد طلبات مطابقة الآن
+              {t('preparation.emptyState.title')}
             </h3>
             <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-              جرّب تغيير الفلاتر أو إزالة فلتر المخزن، أو حدّث الصفحة إذا كنت
-              تتوقع وجود طلبات جديدة في مسار التجهيز.
+              {t('preparation.emptyState.desc')}
             </p>
           </div>
         ) : (
@@ -1156,6 +1499,7 @@ const PreparationQueue: React.FC = () => {
               transferingItemKey={transferingItemKey}
               printingOrderNumber={printingOrderNumber}
               preparationSettings={preparationSettings}
+              visibleColumns={visibleColumns}
               formatPrice={formatPrice}
               formatDate={formatDate}
               onToggleSelection={toggleOrderSelection}
@@ -1185,11 +1529,11 @@ const PreparationQueue: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs text-gray-400">
-              صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
+              {t('preparation.pagination.pageInfo', { page: pagination.page, totalPages, count: currentPageCount })}
             </p>
 
             <label className="flex items-center gap-1.5 text-xs text-gray-400">
-              عرض
+              {t('preparation.pagination.show')}
               <select
                 value={uiState.pageSize}
                 onChange={(e) =>
@@ -1203,7 +1547,7 @@ const PreparationQueue: React.FC = () => {
                   </option>
                 ))}
               </select>
-              لكل صفحة
+              {t('preparation.pagination.perPage')}
             </label>
           </div>
 
@@ -1214,7 +1558,7 @@ const PreparationQueue: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRightIcon className="h-3.5 w-3.5" />
-              السابق
+              {t('preparation.pagination.previous')}
             </button>
 
             <button
@@ -1222,7 +1566,7 @@ const PreparationQueue: React.FC = () => {
               disabled={pagination.page === totalPages}
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              التالي
+              {t('preparation.pagination.next')}
               <ChevronLeftIcon className="h-3.5 w-3.5" />
             </button>
           </div>

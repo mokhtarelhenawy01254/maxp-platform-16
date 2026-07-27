@@ -738,6 +738,8 @@ exports.importInternalOrders = async (req, res) => {
 
                     localOrderItems.push({
                         productId: localProduct ? localProduct.id : null,
+                        productName: item.productName || item.product?.name || null,
+                        productSku: item.productSku || item.product?.sku || null,
                         quantity: item.quantity,
                         price: item.price,
                         total: item.total,

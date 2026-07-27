@@ -137,7 +137,7 @@
   "compare": "قارن",
   "cheaper": "أرخص منك",
   "yourPriceHigher": "أغلى منك",
-  "equal": "متساوٍ",
+  "equal": "متساويان",
   "gaps": "فجوات",
   "notInYourCatalog": "مش موجود في كتالوجك",
   "opportunity": "فرصة",
@@ -189,9 +189,9 @@
   "weekly": "أسبوعي",
   "comprehensive": "شامل",
   "metrics": {
-    "productCount": "عدد المنتجات",
-    "adCount": "عدد الإعلانات",
-    "reportCount": "عدد التقارير"
+    "followersGrowth": "نمو المتابعين",
+    "engagementTrend": "اتجاه التفاعل",
+    "noData": "لا توجد بيانات إحصائيات بعد"
   },
   "battlecard": {
     "title": "بطاقة المنافسة",
@@ -252,8 +252,8 @@
   },
   "platforms": {
     "amazon": "أمازون",
-    "googleBusiness": "Google Business",
-    "shopify": "Shopify",
+    "googleBusiness": "نشاطي التجاري على جوجل",
+    "shopify": "شوبيفاي",
     "techStack": "التقنيات",
     "noPlatformData": "لا توجد بيانات منصات",
     "addPlatformData": "أضف بيانات منصة",
@@ -399,11 +399,6 @@
     "negative": "سلبي",
     "neutral": "محايد"
   },
-  "metrics": {
-    "followersGrowth": "نمو المتابعين",
-    "engagementTrend": "اتجاه التفاعل",
-    "noData": "لا توجد بيانات إحصائيات بعد"
-  },
   "notAvailable": "غير متاح",
   "errors": {
     "fetchFailed": "فشل في جلب المنافسين",
@@ -430,11 +425,11 @@
   "city": "المدينة (اختياري)",
   "platformOptions": {
     "manual": "يدوي",
-    "shopify": "Shopify",
-    "woocommerce": "WooCommerce",
+    "shopify": "شوبيفاي",
+    "woocommerce": "وو كومرس",
     "salla": "سلة",
     "zid": "زد",
-    "easyOrders": "Easy Orders",
+    "easyOrders": "إيزي أوردرز",
     "other": "أخرى"
   },
   "socialMedia": "السوشيال ميديا",
@@ -445,13 +440,13 @@
   "showPassword": "إظهار",
   "hidePassword": "إخفاء",
   "socialPlatforms": {
-    "facebook": "Facebook",
-    "instagram": "Instagram",
-    "tiktok": "TikTok",
-    "snapchat": "Snapchat",
+    "facebook": "فيسبوك",
+    "instagram": "إنستغرام",
+    "tiktok": "تيك توك",
+    "snapchat": "سناب شات",
     "x": "X (تويتر)",
-    "youtube": "YouTube",
-    "linkedin": "LinkedIn",
+    "youtube": "يوتيوب",
+    "linkedin": "لينكد إن",
     "other": "أخرى"
   },
   "activityImages": "صور نوع النشاط",
@@ -462,9 +457,9 @@
   "replaceImage": "استبدال",
   "noImages": "لا توجد صور",
   "trafficSource": "مصدر الترافيك",
-  "organic": "Organic",
-  "paid": "Paid",
-  "both": "Both",
+  "organic": "طبيعي (مجاني)",
+  "paid": "مدفوع",
+  "both": "كلاهما",
   "mediaNotes": "ملاحظات تحليل الميديا",
   "addNote": "إضافة ملاحظة",
   "notePlaceholder": "اكتب ملاحظتك هنا...",
@@ -478,8 +473,6 @@
   "ourDescription": "الوصف عندنا",
   "easiestToUse": "من الأسهل استخداماً؟",
   "us": "نحن",
-  "competitor": "المنافس",
-  "equal": "متساويان",
   "whoIsStronger": "من الأقوى؟",
   "additionalNotes": "ملاحظات إضافية",
   "noComparisons": "لا توجد مقارنات بعد",
@@ -489,7 +482,7 @@
   "ideaTitle": "عنوان الفكرة",
   "ideaDescription": "وصف الفكرة",
   "noIdeas": "لا توجد أفكار تطويرية بعد",
-  "ideaImages": "صور الفكرة",
+  "ideaImages": "الصور المرجعية للأفكار",
   "monthlyPrice": "السعر الشهري",
   "yearlyPrice": "السعر السنوي",
   "pricingNotes": "ملاحظات التسعير",
@@ -518,7 +511,6 @@
   "additionalNotesPlaceholder": "أي ملاحظات إضافية...",
   "noDevIdeas": "لم تضف أي أفكار تطويرية بعد. أضف فكرة جديدة.",
   "ideaTitlePlaceholder": "عنوان الفكرة التطويرية",
-  "ideaImages": "الصور المرجعية للأفكار",
   "summary": "الملخص",
   "competitorNamePlaceholder": "مثال: نون, أمازون...",
   "founderNamePlaceholder": "مثال: محمد الأحمد",

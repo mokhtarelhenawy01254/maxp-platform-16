@@ -1,11 +1,17 @@
-# System Structure & Architecture
+### Turbo Records & Status Synchronization Architecture
+1. **Unbound Bulk Status Refresh (`turboController.js` & `turboStatusSyncService.js`)**:
+   - `GET /api/v1/turbo/records?refresh=true` — Performs a comprehensive 180-day bulk status sync across all company orders via `turboStatusSyncService.syncTurboStatusToOrder`.
+   - Incorporates branch-presence heuristics: shipments with status `processing` but missing branch assignments (`branch` null/empty) or containing Arabic location phrases like `"في انتظاري التسليم لتربو"` are mapped to canonical `turbo_sent` ("قيد الانتظار").
+   - Automatically converts legacy `processing` shipments to `turbo_sent` when not active in branch feeds.
 
 ### Sidebar Navigation & Path Matching
 1. Refactored `isSidebarPathActive` in `matchSidebarPath.ts` to support generalized sub-path highlighting. It now returns true for sub-paths (e.g. `/orders/123` highlights `/orders`), while excluding root-level dashboards such as `/`, `/hr`, `/admin/booking`, and `/admin/education` to prevent duplicate active state styling.
 2. Extracted `NavLink` into a standalone, file-scoped component within `ClassicSidebar.tsx` to optimize React rendering performance and avoid reconciliation re-mount loops.
 
 ### API Endpoints
-1. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
+1. Extended `/api/v1/returns/requests` endpoint (`getReturnRequests` in `returnController.js`):
+   - Supports filtering return requests by company `ordersStartDate` setting stored in `returnSettings.reviewDisplayConfig` (`createdAt >= ordersStartDate`) or explicit `startDate` query parameter, ensuring only orders/returns on or after the system start date appear.
+2. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
    - `GET /api/v1/ai-admin/logs` — Extended response payload to include global aggregated stats (`success_count`, `failed_count`, and `avg_latency`) for the filtered keys and providers, computed across both PostgreSQL tables: `ai.provider_logs` (ORM) and `public.ai_provider_logs` (Raw SQL).
 2. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
    - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.
@@ -82,6 +88,7 @@
 13. Preserved all hidden/system prompt configurations inside the `SOUL.md` content on the backend during merchant updates of the simplified fields.
 
 ### System Architecture
+- **Order Sync Queue Service Overhaul**: Migrated the background database-backed sync queue service (`SyncQueueService`) from raw SQL to native Prisma Client ORM query structures. This eliminates PostgreSQL naming mismatches (where `order_id` / `consumer_id` snake_case references threw column mapping exceptions on camelCase DB schemas) and enforces strict database query typing and security.
 - **Vite Chunk Load Recovery & Cache Control Routing**: Overhauled the frontend root error boundary structure in `AdminAppBootstrap.tsx` to statically import the `ErrorBoundary` component, ensuring the application can capture module loading failures (due to deleted assets during production updates) and successfully execute chunk load recovery (automatic window reloads). Hardened the Nginx static assets mapping in `nginx_configs/maxp.online.conf` by adding strict Cache-Control headers (`no-cache, no-store, must-revalidate`) for the SPA `/` location blocks, preventing browsers and proxy CDNs from caching `index.html` and forcing them to fetch the most updated hashed asset references.
 - **WhatsApp Workspace Responsive Overhaul**: Introduced container `:has()` layout overrides in `index.css` to dynamically strip container paddings and avoid double scrolls when browsing the `/whatsapp` path. Leveraged modern 2026 CSS layout patterns: View Transitions API for seamless sliding transitions, `@starting-style` entry animations for conversation cards/messages, `@container` queries for screen-width sensitive chat bubble sizing, and CSS-native Scroll-Driven Animations for header compression on scrolling. Added touch event swipe capture for mobile back-to-list navigation, responsive overlay trays for entry tools, themed container compatibility for the audio recorder component, sliding bottom sheet drawer configurations for the emoji picker, and touch swipe gestures (`Swipe-to-Archive`) for conversation cards in the chat list.
 - Added **Silent Takeover & human-in-the-loop** event-driven pattern via Socket.IO: on AI failure (e.g. guardrail blocks or JSON parsing exhaustion), the thread is marked as needing human intervention, notifying moderators instantly without alerting the customer.
@@ -157,5 +164,6 @@
 3. **Conversational Slot-Filling Prompting**: Enhanced `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` templates directory to instruct the model to conversationally gather missing required fields (name, phone, dates) rather than inventing mock values or aborting.
 4. **Pydantic ValidationError Handling**: Upgraded `_execute_one_tool` inside the skills pipeline (`skills_pipeline.py`) to catch validation errors (`ValidationError`) from Pydantic input models during tool calling, formats them into a structured human-readable parameter-by-parameter error description, and feeds them back as a tool execution error to the LLM to guide self-correction.
 
-
-
+### Webhook and Controller Status Sync Realignment
+1. **OrderStatus and PaymentStatus Webhook and Controller Alignment**: Corrected delivered shipment mapping in `routes/turboWebhook.js` and `controller/turboController.js` to set `status` to `'DELIVERED'` (conforming to `OrderStatus` enum values) and `paymentStatus` to `'COMPLETED'` (conforming to `PaymentStatus` enum values).
+2. **Service Enum Sync**: Corrected `services/orderInvoiceService.js` to set order `paymentStatus` to `'COMPLETED'` instead of `'PAID'` to avoid database enum validation crashes (500 Internal Server Errors).

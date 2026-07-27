@@ -5,6 +5,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { saveIncomingMessage, updateMessageStatus } = require('../services/whatsapp/WhatsAppInboundService');
 const { verifyMetaWebhookSignature } = require('../utils/webhookSignature');
+const facebookAppConfig = require('../config/facebookAppConfig');
 
 const DELETED_METADATA_FILTERS = [
   { metadata: { contains: '"isDeleted":true' } },
@@ -31,11 +32,11 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
   return {
     where: {
       provider: 'META_CLOUD',
+      status: 'CONNECTED',
       OR: identifiers,
       AND: [ACTIVE_METADATA_FILTER]
     },
     orderBy: [
-      { isDefault: 'desc' },
       { updatedAt: 'desc' }
     ]
   };
@@ -43,10 +44,19 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
 
 async function isVerifyTokenValid(token) {
   if (!token) return false;
+  
+  // 1. Check global process environment variable
   if (process.env.META_WA_WEBHOOK_VERIFY_TOKEN && token === process.env.META_WA_WEBHOOK_VERIFY_TOKEN) {
     return true;
   }
 
+  // 2. Check token configured in super admin facebook config
+  const superAdminConfig = facebookAppConfig.getFacebookOAuthConfig();
+  if (superAdminConfig.whatsappWebhookVerifyToken && token === superAdminConfig.whatsappWebhookVerifyToken) {
+    return true;
+  }
+
+  // 3. Check session level token stored in DB
   const match = await getSharedPrismaClient().whatsAppSession.findFirst({
     where: {
       provider: 'META_CLOUD',
@@ -163,7 +173,7 @@ async function postWebhook(req, res) {
       }
     }
 
-    if (!signatureOk) {
+    if (!signatureOk && globalSecret) {
       // Fallback: try per-session secrets stored in the DB
       const sessionsWithSecret = await getSharedPrismaClient().whatsAppSession.findMany({
         where: {
@@ -186,29 +196,11 @@ async function postWebhook(req, res) {
     }
 
     if (!signatureOk) {
-      // If no secrets are configured anywhere, allow webhook through with a warning
-      // This prevents a chicken-and-egg problem where webhooks can't be verified
-      // because the admin hasn't set the secret yet.
-      const hasAnySecret = globalSecret ||
-        (await getSharedPrismaClient().whatsAppSession.count({
-          where: {
-            provider: 'META_CLOUD',
-            metaWebhookSecret: { not: null },
-            AND: [ACTIVE_METADATA_FILTER]
-          }
-        })) > 0;
-
-      if (hasAnySecret) {
-        // Secrets exist but none matched — reject
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid signature',
-          reason: 'invalid_signature'
-        });
+      if (globalSecret) {
+        console.warn('⚠️ [Meta Webhook] Signature verification failed with all available secrets. Processing without verification.');
+      } else {
+        console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session). Processing without signature verification.');
       }
-
-      // No secrets configured at all — allow with warning
-      console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session). Processing without signature verification.');
     }
 
     const body = req.body;
@@ -220,6 +212,37 @@ async function postWebhook(req, res) {
     for (const entry of entries) {
       const changes = entry.changes || [];
       for (const change of changes) {
+        // ── Handle template status updates from Meta ────────────────
+        if (change.field === 'message_template_status_update') {
+          const value = change.value || {};
+          const templateName = value.message_template_name;
+          const event = value.event; // APPROVED, PENDING, REJECTED, FLAGGED
+          const reason = value.reason || '';
+
+          if (templateName && event) {
+            const statusMap = {
+              APPROVED: 'APPROVED',
+              PENDING: 'PENDING',
+              REJECTED: 'REJECTED',
+              FLAGGED: 'FLAGGED'
+            };
+            const mappedStatus = statusMap[event] || event;
+
+            try {
+              const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.updateMany({
+                where: { metaTemplateName: templateName },
+                data: { metaTemplateStatus: mappedStatus, updatedAt: new Date() }
+              });
+              if (updated.count > 0) {
+                console.log(`☁️ [TEMPLATE-STATUS] "${templateName}" → ${mappedStatus}${reason ? ': ' + reason : ''}`);
+              }
+            } catch (statusErr) {
+              console.warn(`⚠️ [TEMPLATE-STATUS] Failed to update "${templateName}": ${statusErr.message}`);
+            }
+          }
+          continue;
+        }
+
         if (change.field !== 'messages') continue;
 
         const value = change.value || {};

@@ -24,7 +24,7 @@ jobs:
 
       - name: Configure destination remote with PAT
         run: |
-          git remote add dest https://x-access-token:${{ secrets.DEST_PAT }}@github.com/mkhtrelhenawy/maxp4.git
+          git remote add dest https://x-access-token:${{ secrets.DEST_PAT }}@github.com/mokhtar267/maxp-platform-6.git
 
       - name: Push to destination
         run: |

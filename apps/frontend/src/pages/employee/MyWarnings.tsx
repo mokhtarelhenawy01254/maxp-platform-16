@@ -25,6 +25,7 @@ import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { useTranslation } from "react-i18next";
 
 interface Warning {
     id: string;
@@ -38,30 +39,31 @@ interface Warning {
     createdAt: string;
 }
 
-const severityConfig: Record<string, { label: string; color: string; icon: any }> = {
+const severityConfig: Record<string, { labelKey: string; color: string; icon: any }> = {
     low: {
-        label: "تنبيه بسيط",
+        labelKey: "employee.warnings.severityLow",
         color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
         icon: Info,
     },
     medium: {
-        label: "تنبيه متوسط",
+        labelKey: "employee.warnings.severityMedium",
         color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
         icon: AlertCircle,
     },
     major: {
-        label: "إنذار جسيم",
+        labelKey: "employee.warnings.severityHigh",
         color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800",
         icon: AlertTriangle,
     },
     critical: {
-        label: "إنذار خطير جداً",
+        labelKey: "employee.warnings.severityCritical",
         color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800",
         icon: ShieldAlert,
     },
 };
 
 const MyWarnings: React.FC = () => {
+    const { t } = useTranslation();
     const { formatDate } = useDateFormat();
     const [warnings, setWarnings] = useState<Warning[]>([]);
     const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ const MyWarnings: React.FC = () => {
             setWarnings(response.data.warnings || []);
         } catch (error) {
             console.error("Error fetching warnings:", error);
-            toast.error("فشل في تحميل سجل الإنذارات");
+            toast.error(t("employee.warnings.fetchError"));
         } finally {
             setLoading(false);
         }
@@ -90,7 +92,7 @@ const MyWarnings: React.FC = () => {
             setAcknowledgingId(id);
             const response = await api.post(`/hr/warnings/${id}/acknowledge`);
             if (response.data.success) {
-                toast.success("تم تأكيد الاستلام بنجاح");
+                toast.success(t("employee.warnings.acknowledgeSuccess"));
                 setWarnings((prev) =>
                     prev.map((w) =>
                         w.id === id ? { ...w, acknowledgedAt: new Date().toISOString() } : w
@@ -99,7 +101,7 @@ const MyWarnings: React.FC = () => {
             }
         } catch (error) {
             console.error("Error acknowledging warning:", error);
-            toast.error("فشل في تأكيد الاستلام");
+            toast.error(t("employee.warnings.acknowledgeError"));
         } finally {
             setAcknowledgingId(null);
         }
@@ -124,7 +126,7 @@ const MyWarnings: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
                 <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
-                <p className="text-gray-500 font-medium animate-pulse">جاري تحميل سجل الإنذارات...</p>
+                <p className="text-gray-500 font-medium animate-pulse">{t("employee.warnings.loading")}</p>
             </div>
         );
     }
@@ -137,23 +139,23 @@ const MyWarnings: React.FC = () => {
                     <div className="space-y-2">
                         <h1 className="text-3xl font-extrabold flex items-center gap-3">
                             <ShieldAlert className="h-10 w-10 text-white/90" />
-                            إنذاراتي وتنبيهاتي
+                            {t("employee.warnings.title")}
                         </h1>
                         <p className="text-white/80 text-lg max-w-xl">
-                            هنا تجد سجل الإنذارات والتنبيهات الرسمية المسجلة بحسابك. يرجى مراجعة كل إنذار وتأكيد العلم به.
+                            {t("employee.warnings.subtitle")}
                         </p>
                     </div>
                     <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
                         <div className="text-center">
                             <span className="block text-3xl font-bold">{warnings.length}</span>
-                            <span className="text-xs uppercase tracking-wider opacity-80 font-bold">إجمالي السجلات</span>
+                            <span className="text-xs uppercase tracking-wider opacity-80 font-bold">{t("employee.warnings.totalRecords")}</span>
                         </div>
                         <div className="h-10 w-px bg-white/20" />
                         <div className="text-center">
                             <span className="block text-3xl font-bold">
                                 {warnings.filter(w => !w.acknowledgedAt).length}
                             </span>
-                            <span className="text-xs uppercase tracking-wider opacity-80 font-bold">بانتظار التأكيد</span>
+                            <span className="text-xs uppercase tracking-wider opacity-80 font-bold">{t("employee.warnings.pendingAck")}</span>
                         </div>
                     </div>
                 </div>
@@ -172,9 +174,9 @@ const MyWarnings: React.FC = () => {
                         <div className="w-24 h-24 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-6">
                             <CheckCircle2 className="h-12 w-12 text-green-500" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">سجلك نظيف تماماً!</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t("employee.warnings.cleanRecord")}</h3>
                         <p className="text-gray-500 dark:text-gray-400 text-center max-w-md px-6">
-                            لم نجد أي إنذارات أو تنبيهات مسجلة بحسابك. استمر في الحفاظ على هذا المستوى الرائع من الانضباط!
+                            {t("employee.warnings.cleanRecordDesc")}
                         </p>
                     </motion.div>
                 ) : (
@@ -213,7 +215,7 @@ const MyWarnings: React.FC = () => {
                                                                 size="icon"
                                                                 className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full flex-shrink-0"
                                                                 onClick={() => setSelectedWarning(warning)}
-                                                                title="عرض التفاصيل"
+                                                                title={t("employee.warnings.viewDetails")}
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
@@ -231,7 +233,7 @@ const MyWarnings: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <Badge className={`${config.color} border py-1.5 px-4 rounded-full text-sm font-bold shadow-sm flex-shrink-0`}>
-                                                    {config.label}
+                                                    {t(config.labelKey)}
                                                 </Badge>
                                             </div>
                                         </CardHeader>
@@ -241,7 +243,7 @@ const MyWarnings: React.FC = () => {
                                                 <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2 text-gray-400">
                                                         <FileText className="h-4 w-4" />
-                                                        <span className="text-xs font-bold uppercase">وصف المخالفة:</span>
+                                                        <span className="text-xs font-bold uppercase">{t("employee.warnings.violationDesc")}</span>
                                                     </div>
                                                     <p
                                                         className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap px-1"
@@ -257,7 +259,7 @@ const MyWarnings: React.FC = () => {
                                                     <div className="flex flex-col gap-2">
                                                         <div className="flex items-center gap-2 text-amber-500">
                                                             <Info className="h-4 w-4" />
-                                                            <span className="text-xs font-bold uppercase">الإجراء المتخذ:</span>
+                                                            <span className="text-xs font-bold uppercase">{t("employee.warnings.actionTaken")}</span>
                                                         </div>
                                                         <p
                                                             className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap px-1"
@@ -271,7 +273,7 @@ const MyWarnings: React.FC = () => {
 
                                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                                                 <div className="text-xs text-gray-400 font-medium">
-                                                    تاريخ التسجيل النظامي: {formatDate(warning.createdAt)}
+                                                    {t("employee.warnings.recordDate", { date: formatDate(warning.createdAt) })}
                                                 </div>
 
                                                 {!warning.acknowledgedAt ? (
@@ -285,14 +287,14 @@ const MyWarnings: React.FC = () => {
                                                         ) : (
                                                             <>
                                                                 <CheckCircle2 className="ml-2 h-5 w-5" />
-                                                                تأكيد العلم والاستلام
+                                                                {t("employee.warnings.acknowledge")}
                                                             </>
                                                         )}
                                                     </Button>
                                                 ) : (
                                                     <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 py-2 px-4 rounded-xl border border-green-100 dark:border-green-900/30 text-sm font-bold">
                                                         <CheckCircle2 className="h-5 w-5" />
-                                                        تم التأكيد في {formatDate(warning.acknowledgedAt)}
+                                                        {t("employee.warnings.acknowledged", { date: formatDate(warning.acknowledgedAt) })}
                                                     </div>
                                                 )}
                                             </div>
@@ -328,7 +330,7 @@ const MyWarnings: React.FC = () => {
                                         </DialogTitle>
                                         <div className="flex items-center gap-2">
                                             <Badge variant="outline" className="rounded-full px-3 py-0.5 border-blue-200 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 text-[10px] font-black uppercase tracking-widest">
-                                                {severityConfig[selectedWarning.severity]?.label || "تنبيه رقمي"}
+                                                {t(severityConfig[selectedWarning.severity]?.labelKey || "employee.warnings.digitalWarning")}
                                             </Badge>
                                             <span className="text-[10px] text-muted-foreground font-mono">#{selectedWarning.id.slice(-6).toUpperCase()}</span>
                                         </div>
@@ -341,7 +343,7 @@ const MyWarnings: React.FC = () => {
                                 <div className="space-y-3">
                                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                         <FileText className="h-3.5 w-3.5" />
-                                        تفاصيل المخالفة المسجلة
+                                        {t("employee.warnings.violationDetails")}
                                     </h4>
                                     <div className="relative group">
                                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 to-transparent rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-500" />
@@ -359,7 +361,7 @@ const MyWarnings: React.FC = () => {
                                     <div className="space-y-3">
                                         <h4 className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                             <Info className="h-3.5 w-3.5" />
-                                            الإجراء الإداري المقرر
+                                            {t("employee.warnings.adminAction")}
                                         </h4>
                                         <div className="bg-amber-500/5 dark:bg-amber-500/10 p-6 rounded-[1.5rem] border border-amber-500/10 shadow-sm border-dashed">
                                             <p
@@ -376,11 +378,11 @@ const MyWarnings: React.FC = () => {
                                 <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-dashed border-gray-200 dark:border-gray-800">
                                     <div className="flex items-center gap-2 px-4 py-2 bg-muted/40 rounded-2xl text-xs font-bold text-gray-500">
                                         <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                                        <span>تاريخ الحادثة: {formatDate(selectedWarning.incidentDate)}</span>
+                                        <span>{t("employee.warnings.incidentDate", { date: formatDate(selectedWarning.incidentDate) })}</span>
                                     </div>
                                     <div className="flex items-center gap-2 px-4 py-2 bg-muted/40 rounded-2xl text-xs font-bold text-gray-500">
                                         <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                        <span>التوقيت: {new Date(selectedWarning.incidentDate).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span>{t("employee.warnings.time", { time: new Date(selectedWarning.incidentDate).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -389,7 +391,7 @@ const MyWarnings: React.FC = () => {
                             <div className="p-6 bg-muted/20 border-t border-gray-100 dark:border-gray-800 flex justify-end items-center gap-4">
                                 {!selectedWarning.acknowledgedAt && (
                                     <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold ml-auto animate-pulse flex items-center gap-1">
-                                        <AlertTriangle className="h-3 w-3" /> يرجى الإقرار بالعلم
+                                        <AlertTriangle className="h-3 w-3" /> {t("employee.warnings.pleaseAcknowledge")}
                                     </p>
                                 )}
                                 <Button
@@ -397,8 +399,8 @@ const MyWarnings: React.FC = () => {
                                     onClick={() => setSelectedWarning(null)}
                                     className="rounded-xl px-8 font-black text-xs uppercase tracking-widest h-11"
                                 >
-                                    إغلاق
-                                </Button>
+                                {t("employee.common.close")}
+                            </Button>
                             </div>
                         </>
                     )}

@@ -24,6 +24,7 @@ const { Worker } = require('bullmq');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const redisConfig = require('../config/redis');
 const { processFacebookMessage, processFacebookComment, processReadReceipt } = require('../services/webhookService');
+const { syncTurboStatusToOrder } = require('../services/turboStatusSyncService');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 
 /**
@@ -59,6 +60,19 @@ function startWebhookWorker() {
                 case 'facebook-read-receipt':
                     // console.log(`👷 [WORKER] Processing Facebook read receipt`);
                     await processReadReceipt(data);
+                    break;
+
+                case 'turbo-status-update':
+                    console.log(`👷 [WORKER] Processing Turbo status update for ${data.orderNumber || data.turboShipmentId}...`);
+                    await syncTurboStatusToOrder({
+                        orderId: data.orderId,
+                        orderNumber: data.orderNumber,
+                        companyId: data.companyId,
+                        rawStatus: data.rawStatus,
+                        payload: data.payload,
+                        isGuestOrder: data.isGuestOrder || false
+                    });
+                    console.log(`✅ [WORKER] Turbo status update complete for ${data.orderNumber || data.turboShipmentId}`);
                     break;
 
                 default:

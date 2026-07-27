@@ -1,7 +1,8 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TruckIcon, PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../hooks/useAuthSimple';
+// import { useAuth } from '../../hooks/useAuthSimple';
 import { envConfig } from '../../config/environment';
 import tokenManager from '../../utils/tokenManager';
 
@@ -21,21 +22,6 @@ interface ShippingCompany {
   createdAt: string;
 }
 
-const providerLabels: Record<string, string> = {
-  MANUAL: "يدوي",
-  TURBO: "Turbo",
-  BOSTA: "Bosta",
-  BOSTA_DEMO: "Bosta Demo",
-  MYLERZ_DEMO: "Mylerz Demo",
-  ARAMEX_DEMO: "Aramex Demo",
-};
-
-const integrationLabels: Record<string, string> = {
-  MANUAL: "يدوي",
-  DEMO: "ديمو",
-  LIVE: "فعلي",
-};
-
 const parseSettings = (value?: string | null) => {
   if (!value) return {};
   try {
@@ -46,7 +32,24 @@ const parseSettings = (value?: string | null) => {
 };
 
 const ShippingCompanies: React.FC = () => {
-  const { user } = useAuth();
+  const { t: tVal } = useTranslation();
+  const t = tVal as any;
+
+  const providerLabels: Record<string, string> = {
+    MANUAL: t('shipping.k_1'),
+    TURBO: "Turbo",
+    BOSTA: "Bosta",
+    BOSTA_DEMO: "Bosta Demo",
+    MYLERZ_DEMO: "Mylerz Demo",
+    ARAMEX_DEMO: "Aramex Demo",
+  };
+
+  const integrationLabels: Record<string, string> = {
+    MANUAL: t('shipping.k_1'),
+    DEMO: t('shipping.k_2'),
+    LIVE: t('shipping.k_3'),
+  };
+
   const [companies, setCompanies] = useState<ShippingCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingDemo, setCreatingDemo] = useState(false);
@@ -112,11 +115,11 @@ const ShippingCompanies: React.FC = () => {
         setEditingCompany(null);
         setFormData({ name: '', slug: '', phone: '', email: '', website: '', apiKey: '', apiUrl: '', providerKey: 'MANUAL', integrationMode: 'MANUAL', autoCreateShipments: false, isActive: true });
       } else {
-        alert(data.error || "حدث خطأ");
+        alert(data.error || t('shipping.k_4'));
       }
     } catch (error) {
       console.error("Error saving shipping company:", error);
-      alert("حدث خطأ أثناء الحفظ");
+      alert(t('shipping.k_5'));
     }
   };
 
@@ -153,20 +156,20 @@ const ShippingCompanies: React.FC = () => {
       );
       const data = await response.json();
       if (!data.success) {
-        alert(data.error || "تعذر تجهيز شركات الديمو");
+        alert(data.error || t('shipping.k_6'));
         return;
       }
       await fetchCompanies();
     } catch (error) {
       console.error("Error creating demo carriers:", error);
-      alert("حدث خطأ أثناء تجهيز شركات الديمو");
+      alert(t('shipping.k_7'));
     } finally {
       setCreatingDemo(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("هل أنت متأكد من حذف شركة الشحن؟")) {
+    if (confirm(t('shipping.k_8'))) {
       try {
         const response = await fetch(
           `${envConfig.backendUrl}/api/v1/shipping-companies/${id}`,
@@ -179,11 +182,11 @@ const ShippingCompanies: React.FC = () => {
         if (data.success) {
           await fetchCompanies();
         } else {
-          alert(data.error || "حدث خطأ أثناء الحذف");
+          alert(data.error || t('shipping.k_9'));
         }
       } catch (error) {
         console.error("Error deleting shipping company:", error);
-        alert("حدث خطأ أثناء الحذف");
+        alert(t('shipping.k_9'));
       }
     }
   };
@@ -199,7 +202,7 @@ const ShippingCompanies: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <TruckIcon className="h-8 w-8 text-blue-600 ml-3" />
-          <h1 className="text-2xl font-bold text-gray-900">شركات الشحن</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('shipping.k_10')}</h1>
         </div>
         <div className="flex flex-wrap gap-3">
           <button
@@ -207,7 +210,7 @@ const ShippingCompanies: React.FC = () => {
             disabled={creatingDemo}
             className="flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-60 transition-colors"
           >
-            {creatingDemo ? "جاري التجهيز..." : "إضافة شركات ديمو"}
+            {creatingDemo ? t('shipping.k_11') : t('shipping.k_12')}
           </button>
           <button
             onClick={() => {
@@ -217,7 +220,7 @@ const ShippingCompanies: React.FC = () => {
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5 ml-2" />
-            إضافة شركة شحن
+            {t('shipping.k_25')}
           </button>
         </div>
       </div>
@@ -230,7 +233,7 @@ const ShippingCompanies: React.FC = () => {
               <TruckIcon className="h-6 w-6 text-blue-600" />
             </div>
             <div className="mr-4">
-              <p className="text-sm text-gray-500">إجمالي الشركات</p>
+              <p className="text-sm text-gray-500">{t('shipping.k_13')}</p>
               <p className="text-2xl font-bold">{companies.length}</p>
             </div>
           </div>
@@ -243,7 +246,7 @@ const ShippingCompanies: React.FC = () => {
               </div>
             </div>
             <div className="mr-4">
-              <p className="text-sm text-gray-500">الشركات النشطة</p>
+              <p className="text-sm text-gray-500">{t('shipping.k_14')}</p>
               <p className="text-2xl font-bold">
                 {companies.filter((c) => c.isActive).length}
               </p>
@@ -258,7 +261,7 @@ const ShippingCompanies: React.FC = () => {
               </div>
             </div>
             <div className="mr-4">
-              <p className="text-sm text-gray-500">غير النشطة</p>
+              <p className="text-sm text-gray-500">{t('shipping.k_15')}</p>
               <p className="text-2xl font-bold">
                 {companies.filter((c) => !c.isActive).length}
               </p>
@@ -270,20 +273,20 @@ const ShippingCompanies: React.FC = () => {
       {/* Companies Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">قائمة شركات الشحن</h2>
+          <h2 className="text-lg font-semibold">{t('shipping.k_16')}</h2>
         </div>
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-500">جاري التحميل...</p>
+            <p className="mt-4 text-gray-500">{t('shipping.k_17')}</p>
           </div>
         ) : companies.length === 0 ? (
           <div className="p-12 text-center">
             <TruckIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              لا توجد شركات شحن
+              {t('shipping.k_46')}
             </h3>
-            <p className="text-gray-500 mb-4">ابدأ بإضافة شركة شحن جديدة</p>
+            <p className="text-gray-500 mb-4">{t('shipping.k_18')}</p>
             <button
               onClick={() => {
                 resetForm();
@@ -291,7 +294,7 @@ const ShippingCompanies: React.FC = () => {
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              إضافة شركة شحن
+              {t('shipping.k_25')}
             </button>
           </div>
         ) : (
@@ -299,19 +302,19 @@ const ShippingCompanies: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  الاسم
+                  {t('shipping.k_47')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  الهاتف
+                  {t('shipping.k_48')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  الربط
+                  {t('shipping.k_49')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  الحالة
+                  {t('shipping.k_50')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  الإجراءات
+                  {t('shipping.k_51')}
                 </th>
               </tr>
             </thead>
@@ -344,31 +347,31 @@ const ShippingCompanies: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
-                      {providerLabels[company.providerKey || "MANUAL"] || company.providerKey || "يدوي"}
+                      {providerLabels[company.providerKey || "MANUAL"] || company.providerKey || t('shipping.k_1')}
                     </span>
                     <span className="mr-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
-                      {integrationLabels[company.integrationMode || "MANUAL"] || company.integrationMode || "يدوي"}
+                      {integrationLabels[company.integrationMode || "MANUAL"] || company.integrationMode || t('shipping.k_1')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${company.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
                     >
-                      {company.isActive ? "نشط" : "غير نشط"}
+                      {company.isActive ? t('shipping.k_19') : t('shipping.k_20')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <Link 
                       to={`/shipping-companies/${company.slug || company.id}`}
                       className="text-blue-600 hover:text-blue-900 ml-3"
-                      title="عرض التفاصيل"
+                      title={t('shipping.k_21')}
                     >
                       <EyeIcon className="h-5 w-5" />
                     </Link>
-                    <button onClick={() => handleEdit(company)} className="text-indigo-600 hover:text-indigo-900 ml-3" title="تعديل">
+                    <button onClick={() => handleEdit(company)} className="text-indigo-600 hover:text-indigo-900 ml-3" title={t('shipping.k_22')}>
                       <PencilIcon className="h-5 w-5" />
                     </button>
-                    <button onClick={() => handleDelete(company.id)} className="text-red-600 hover:text-red-900" title="حذف">
+                    <button onClick={() => handleDelete(company.id)} className="text-red-600 hover:text-red-900" title={t('shipping.k_23')}>
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </td>
@@ -385,14 +388,14 @@ const ShippingCompanies: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold">
-                {editingCompany ? "تعديل شركة الشحن" : "إضافة شركة شحن"}
+                {editingCompany ? t('shipping.k_24') : t('shipping.k_25')}
               </h3>
             </div>
             <form onSubmit={handleSubmit} className="p-6">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    اسم الشركة *
+                    {t('shipping.k_52')}
                   </label>
                   <input
                     type="text"
@@ -402,13 +405,13 @@ const ShippingCompanies: React.FC = () => {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="مثال: أرامكس، SMSA، ناقل"
+                    placeholder={t('shipping.k_26')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    الرابط المختصر (Slug)
-                    <span className="text-gray-400 text-xs mr-1">(اختياري - يتولد تلقائياً من الاسم)</span>
+                    {t('shipping.k_53')}
+                    <span className="text-gray-400 text-xs mr-1">{t('shipping.k_27')}</span>
                   </label>
                   <input
                     type="text"
@@ -417,10 +420,10 @@ const ShippingCompanies: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="fiora, sola, aramex..."
                   />
-                  <p className="text-xs text-gray-500 mt-1">الرابط النهائي: /shipping-companies/{formData.slug || '...'}</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('shipping.k_28')}{formData.slug || '...'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('shipping.k_29')}</label>
                   <input
                     type="text"
                     value={formData.phone}
@@ -433,7 +436,7 @@ const ShippingCompanies: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    البريد الإلكتروني
+                    {t('shipping.k_40')}
                   </label>
                   <input
                     type="email"
@@ -447,7 +450,7 @@ const ShippingCompanies: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    الموقع الإلكتروني
+                    {t('shipping.k_41')}
                   </label>
                   <input
                     type="url"
@@ -470,7 +473,7 @@ const ShippingCompanies: React.FC = () => {
                       setFormData({ ...formData, apiKey: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="مفتاح API للربط"
+                    placeholder={t('shipping.k_30')}
                   />
                 </div>
                 <div>
@@ -489,7 +492,7 @@ const ShippingCompanies: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    نوع الربط
+                    {t('shipping.k_54')}
                   </label>
                   <select
                     value={formData.providerKey}
@@ -504,20 +507,20 @@ const ShippingCompanies: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="MANUAL">يدوي</option>
-                    <option value="TURBO">Turbo فعلي</option>
-                    <option value="BOSTA">Bosta فعلي</option>
+                    <option value="MANUAL">{t('shipping.k_1')}</option>
+                    <option value="TURBO">{t('shipping.k_31')}</option>
+                    <option value="BOSTA">{t('shipping.k_32')}</option>
                     <option value="BOSTA_DEMO">Bosta Demo</option>
                     <option value="MYLERZ_DEMO">Mylerz Demo</option>
                     <option value="ARAMEX_DEMO">Aramex Demo</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    شركات الديمو تنشئ رقم تتبع وليبل وهمي للتجربة فقط.
+                    {t('shipping.k_55')}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    وضع التشغيل
+                    {t('shipping.k_56')}
                   </label>
                   <select
                     value={formData.integrationMode}
@@ -526,9 +529,9 @@ const ShippingCompanies: React.FC = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="MANUAL">يدوي</option>
-                    <option value="DEMO">ديمو</option>
-                    <option value="LIVE">فعلي</option>
+                    <option value="MANUAL">{t('shipping.k_1')}</option>
+                    <option value="DEMO">{t('shipping.k_2')}</option>
+                    <option value="LIVE">{t('shipping.k_3')}</option>
                   </select>
                 </div>
                 <div className="flex items-start">
@@ -545,9 +548,9 @@ const ShippingCompanies: React.FC = () => {
                     htmlFor="autoCreateShipments"
                     className="mr-2 text-sm text-gray-700"
                   >
-                    إنشاء شحنة تلقائياً عند توجيه طلب أفليت للتاجر
+                    {t('shipping.k_57')}
                     <span className="block text-xs text-gray-500">
-                      مفعلة تلقائياً للديمو. الربط الفعلي يحتاج تأكيد منفصل حتى لا ننشئ شحنات حقيقية بالغلط.
+                      {t('shipping.k_58')}
                     </span>
                   </label>
                 </div>
@@ -565,7 +568,7 @@ const ShippingCompanies: React.FC = () => {
                     htmlFor="isActive"
                     className="mr-2 text-sm text-gray-700"
                   >
-                    نشط
+                    {t('shipping.k_19')}
                   </label>
                 </div>
               </div>
@@ -578,13 +581,13 @@ const ShippingCompanies: React.FC = () => {
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                 >
-                  إلغاء
+                  {t('shipping.k_59')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  {editingCompany ? "حفظ التغييرات" : "إضافة"}
+                  {editingCompany ? t('shipping.k_33') : t('shipping.k_34')}
                 </button>
               </div>
             </form>

@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import BulkOrderModal from "./components/BulkOrderModal";
 import BulkOrderView from "./components/BulkOrderView";
+import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface BulkOrder {
   id: string;
@@ -37,6 +39,8 @@ const BulkOrders = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [sortBy, setSortBy] = useState("createdAt");
@@ -46,11 +50,15 @@ const BulkOrders = () => {
   const [viewingItem, setViewingItem] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleteMultipleConfirm, setDeleteMultipleConfirm] = useState(false);
+  const [activeActions, setActiveActions] = useState<Set<string>>(new Set());
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const prevViewingItem = useRef<string | null>(null);
 
-  const canCreate = user?.role && ["SUPER_ADMIN", "COMPANY_ADMIN", "TEAM_LEADER"].includes(user.role);
+  const canCreate = user?.permissions?.some((p) => p === "bulkOrders.create" || p === "orders.bulk.create")
+    || (user?.role && ["SUPER_ADMIN", "COMPANY_ADMIN", "TEAM_LEADER"].includes(user.role));
   const canEdit = canCreate;
-  const canDelete = user?.role && ["SUPER_ADMIN", "COMPANY_ADMIN"].includes(user.role);
+  const canDelete = user?.permissions?.some((p) => p === "bulkOrders.delete" || p === "orders.bulk.delete")
+    || (user?.role && ["SUPER_ADMIN", "COMPANY_ADMIN"].includes(user.role));
 
   const fetchData = useCallback(async (page = pagination.page) => {
     setLoading(true);
@@ -63,6 +71,8 @@ const BulkOrders = () => {
       });
       if (search) params.set("search", search);
       if (statusFilter) params.set("status", statusFilter);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
 
       const res = await apiClient.get(`/api/v1/bulk-orders?${params}`);
       if (res.data?.success) {
@@ -74,7 +84,7 @@ const BulkOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, sortBy, sortOrder, pagination.limit]);
+  }, [search, statusFilter, sortBy, sortOrder, pagination.limit, dateFrom, dateTo]);
 
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
@@ -82,7 +92,14 @@ const BulkOrders = () => {
       fetchData(1);
     }, 300);
     return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
-  }, [search, statusFilter, sortBy, sortOrder]);
+  }, [search, statusFilter, sortBy, sortOrder, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (prevViewingItem.current && !viewingItem) {
+      fetchData();
+    }
+    prevViewingItem.current = viewingItem;
+  }, [viewingItem, fetchData]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -109,77 +126,102 @@ const BulkOrders = () => {
   };
 
   const handleDelete = async (id: string) => {
+    setActiveActions((prev) => new Set(prev).add(`delete-${id}`));
     try {
       await apiClient.delete(`/api/v1/bulk-orders/${id}`);
+      toast.success(t("orders.bulkDeleted"));
       setDeleteConfirm(null);
       fetchData();
     } catch (err) {
-      console.error("Failed to delete", err);
+      toast.error(t("orders.bulkDeleteFailed"));
+    } finally {
+      setActiveActions((prev) => { const next = new Set(prev); next.delete(`delete-${id}`); return next; });
     }
   };
 
   const handleBulkDelete = async () => {
+    setActiveActions((prev) => new Set(prev).add("bulk-delete"));
     try {
       await apiClient.delete("/api/v1/bulk-orders", { data: { ids: selectedIds } });
+      toast.success(t("orders.bulkDeleted"));
       setDeleteMultipleConfirm(false);
       setSelectedIds([]);
       setSelectAll(false);
       fetchData();
     } catch (err) {
-      console.error("Failed to bulk delete", err);
+      toast.error(t("orders.bulkDeleteFailed"));
+    } finally {
+      setActiveActions((prev) => { const next = new Set(prev); next.delete("bulk-delete"); return next; });
     }
   };
 
   const handleDuplicate = async (id: string) => {
+    setActiveActions((prev) => new Set(prev).add(`dup-${id}`));
     try {
       await apiClient.post(`/api/v1/bulk-orders/${id}/duplicate`);
+      toast.success(t("orders.bulkDuplicated"));
       fetchData();
     } catch (err) {
-      console.error("Failed to duplicate", err);
+      toast.error(t("orders.bulkDuplicateFailed"));
+    } finally {
+      setActiveActions((prev) => { const next = new Set(prev); next.delete(`dup-${id}`); return next; });
     }
   };
 
   const handleExport = async (id: string, format: string = "excel") => {
+    setActiveActions((prev) => new Set(prev).add(`export-${id}`));
     try {
       const res = await apiClient.get(`/api/v1/bulk-orders/${id}/export?format=${format}`, {
         responseType: format === "excel" ? "blob" : "json",
       });
       if (format === "excel") {
+        const op = data.find((d) => d.id === id);
+        const filename = op ? `bulk-order-${op.operationNumber}.xlsx` : `bulk-order-${id}.xlsx`;
         const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", `bulk-order-${id}.xlsx`);
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       }
+      toast.success(t("orders.bulkExported"));
     } catch (err) {
-      console.error("Failed to export", err);
+      toast.error(t("orders.bulkExportFailed"));
+    } finally {
+      setActiveActions((prev) => { const next = new Set(prev); next.delete(`export-${id}`); return next; });
     }
   };
 
-  const renderSortIcon = (column: string) => {
-    if (sortBy !== column) return;
-    return (
-      <span className={`inline-block ml-1 ${sortOrder === "asc" ? "rotate-180" : ""}`}>
-        &#9650;
-      </span>
-    );
+  const handleExecute = async (id: string) => {
+    setActiveActions((prev) => new Set(prev).add(`exec-${id}`));
+    try {
+      const res = await apiClient.post(`/api/v1/bulk-orders/${id}/execute`);
+      if (res.data?.success) {
+        const { successCount, errors: execErrors } = res.data;
+        if (execErrors && execErrors.length > 0) {
+          toast.warning(
+            t("orders.bulkExecutedPartial", { success: successCount, failed: execErrors.length }) ||
+            `${successCount} succeeded, ${execErrors.length} failed`
+          );
+        } else {
+          toast.success(t("orders.bulkExecuted") || "Operation executed successfully");
+        }
+      }
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t("orders.bulkExecuteFailed") || "Execution failed");
+    } finally {
+      setActiveActions((prev) => { const next = new Set(prev); next.delete(`exec-${id}`); return next; });
+    }
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-      PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200",
-      PROCESSING: "bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200",
-      COMPLETED: "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200",
-      FAILED: "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200",
-      CANCELLED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    };
+    const info = getStatusDisplay(status);
     return (
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status] || colors.DRAFT}`}>
-        {t(`orders.bulkStatus${status}`)}
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${info.colorClass}`}>
+        {t(info.labelKey) || info.label}
       </span>
     );
   };
@@ -264,7 +306,7 @@ const BulkOrders = () => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 ${isRtl ? "right-3" : "left-3"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -272,7 +314,7 @@ const BulkOrders = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("orders.bulkSearchPlaceholder")}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${isRtl ? "pr-10 pl-4" : "pl-10 pr-4"}`}
               />
             </div>
             <select
@@ -285,6 +327,20 @@ const BulkOrders = () => {
                 <option key={s} value={s}>{t(`orders.bulkStatus${s}`)}</option>
               ))}
             </select>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500"
+              title={t("orders.bulkFilterDate")}
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500"
+              title={t("orders.bulkFilterDate")}
+            />
           </div>
         </div>
 
@@ -403,8 +459,9 @@ const BulkOrders = () => {
                         {canEdit && (
                           <button
                             onClick={() => { setEditingItem(item); setShowModal(true); }}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
                             title={t("orders.bulkEdit")}
+                            disabled={activeActions.has(`exec-${item.id}`)}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -413,33 +470,77 @@ const BulkOrders = () => {
                         )}
                         {canEdit && (
                           <button
-                            onClick={() => handleDuplicate(item.id)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                            title={t("orders.bulkDuplicate")}
+                            onClick={() => handleExecute(item.id)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors disabled:opacity-50"
+                            title={t("orders.bulkExecute")}
+                            disabled={activeActions.has(`exec-${item.id}`) || item.status === "COMPLETED" || item.status === "CANCELLED" || item.status === "PROCESSING"}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
+                            {activeActions.has(`exec-${item.id}`) ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            onClick={() => handleDuplicate(item.id)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors disabled:opacity-50"
+                            title={t("orders.bulkDuplicate")}
+                            disabled={activeActions.has(`dup-${item.id}`)}
+                          >
+                            {activeActions.has(`dup-${item.id}`) ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
                           </button>
                         )}
                         <button
                           onClick={() => handleExport(item.id, "excel")}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors disabled:opacity-50"
                           title={t("orders.bulkExport")}
+                          disabled={activeActions.has(`export-${item.id}`)}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
+                          {activeActions.has(`export-${item.id}`) ? (
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          )}
                         </button>
                         {canDelete && (
                           <button
                             onClick={() => setDeleteConfirm(item.id)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
                             title={t("orders.bulkDelete")}
+                            disabled={activeActions.has(`delete-${item.id}`)}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            {activeActions.has(`delete-${item.id}`) ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
                           </button>
                         )}
                       </div>
@@ -515,8 +616,15 @@ const BulkOrders = () => {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 text-sm rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+                disabled={activeActions.has(`delete-${deleteConfirm}`)}
+                className="px-4 py-2 text-sm rounded-lg bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white transition-colors flex items-center gap-1.5"
               >
+                {activeActions.has(`delete-${deleteConfirm}`) && (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
                 {t("orders.bulkDelete")}
               </button>
             </div>
@@ -540,8 +648,15 @@ const BulkOrders = () => {
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-4 py-2 text-sm rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+                disabled={activeActions.has("bulk-delete")}
+                className="px-4 py-2 text-sm rounded-lg bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white transition-colors flex items-center gap-1.5"
               >
+                {activeActions.has("bulk-delete") && (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
                 {t("orders.bulkDelete")}
               </button>
             </div>

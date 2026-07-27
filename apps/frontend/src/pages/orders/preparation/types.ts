@@ -1,24 +1,19 @@
 export type JsonObject = Record<string, unknown>;
 
-export type StageKey =
-  | "WAITING"
-  | "PREPARING"
-  | "QUALITY_CHECK"
-  | "PACKAGED"
-  | "READY_TO_SHIP"
-  | "STOCK_SHORTAGE"
-  | "PENDING_CANCELLATION";
+export type StageKey = string;
 
-export type StageFilter = "ALL" | StageKey;
+export type StageFilter = "ALL" | string;
 export type StockFilter = "all" | "ready" | "shortage";
 export type ItemCountFilter = "all" | "single" | "multiple";
-export type StageCounts = Record<StageFilter, number>;
+export type StageCounts = Record<string, number>;
 
 export interface SimpleOrderItem {
   id: string;
   productId: string;
   name?: string;
   productName?: string;
+  color?: string;
+  size?: string;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
@@ -63,6 +58,8 @@ export interface SimpleOrder {
   turboShipmentId?: string | null;
   turboShipmentStatus?: string | null;
   shipments?: SimpleOrderShipment[];
+  printCount?: number;
+  printedAt?: string | null;
 }
 
 export interface InventoryRecord {
@@ -93,6 +90,16 @@ export interface StatusConfig {
   code: string;
   name: string;
   color?: string;
+  statusType?: string;
+}
+
+export interface StageDefinition {
+  key: string;
+  label: string;
+  labelKey: string;
+  colorClass: string;
+  description: string;
+  descriptionKey: string;
 }
 
 export interface PreparationStatusOption {
@@ -136,6 +143,11 @@ export type ShortageReason =
 
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
+export type NotPrintedFilter = "all" | "not_printed";
+export type NoShippingCodeFilter = "all" | "no_shipping_code";
+export type SortBy = "createdAt" | "totalUnits" | "totalValue";
+export type SortOrder = "asc" | "desc";
+
 export type ShortageFollowUpState =
   | "none"
   | "today"
@@ -197,11 +209,15 @@ export interface PreparationQueueSettings {
 
 export type QcCheckKey = keyof PreparationQueueSettings["qcChecks"];
 
+
+
 export interface ApiOrderItemResponse {
   id?: string | number | null;
   productId?: string | number | null;
   name?: string | null;
   productName?: string | null;
+  color?: string | null;
+  size?: string | null;
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
@@ -239,6 +255,8 @@ export interface ApiOrderResponse {
   turboShipmentId?: string | null;
   turboShipmentStatus?: string | null;
   shipments?: ApiOrderShipmentResponse[] | null;
+  printCount?: number;
+  printedAt?: string | null;
 }
 
 export interface ApiInventoryResponse {
@@ -265,6 +283,7 @@ export interface ApiStatusResponse {
   name?: string | null;
   nameEn?: string | null;
   color?: string | null;
+  statusType?: string | null;
 }
 
 export interface PreparationQueuePagination {
@@ -278,6 +297,7 @@ export interface PreparationQueueSummary {
   filteredTotal: number;
   visibleTotal: number;
   stageCounts: StageCounts;
+  statusCounts?: Record<string, number>;
   readyCount: number;
   shortageCount: number;
   shortageHoldCount: number;

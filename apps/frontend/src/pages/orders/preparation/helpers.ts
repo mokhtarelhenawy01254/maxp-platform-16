@@ -144,9 +144,10 @@ export const getEffectivePreparationStatus = (
   return metadataStatus || normalizedStatus;
 };
 
-export const getShortageReasonLabel = (reason: ShortageReason) =>
-  SHORTAGE_REASON_OPTIONS.find((option) => option.value === reason)?.label ||
-  i18n.t("preparation.shortageReasons.stock_shortage");
+export const getShortageReasonLabel = (reason: ShortageReason) => {
+  const option = SHORTAGE_REASON_OPTIONS.find((o) => o.value === reason);
+  return option ? i18n.t(option.labelKey) : i18n.t("preparation.shortageReasons.stock_shortage");
+};
 
 export const getDateInputValueWithOffset = (offsetDays = 0) => {
   const date = new Date();
@@ -241,29 +242,26 @@ export const getShortageFollowUpVisual = (
   }
 };
 
-export const normalizeStage = (status: string): StageKey | null => {
-  const normalized = toUpper(status);
-  if (["CONFIRMED", "PENDING", "PENDING_PREPARATION"].includes(normalized)) {
-    return "WAITING";
-  }
-  if (["PROCESSING", "PREPARING"].includes(normalized)) {
-    return "PREPARING";
-  }
-  if (normalized === "QUALITY_CHECK") {
-    return "QUALITY_CHECK";
-  }
-  if (["PACKAGED", "PACKED"].includes(normalized)) {
-    return "PACKAGED";
-  }
-  if (
-    ["STOCK_SHORTAGE", "PENDING_STOCK", "ON_HOLD_STOCK"].includes(normalized)
-  ) {
-    return "STOCK_SHORTAGE";
-  }
-  if (["READY", "READY_TO_SHIP"].includes(normalized)) {
-    return "READY_TO_SHIP";
-  }
-  return null;
+const STAGE_BY_STATUS: Record<string, string> = {
+  PENDING: "WAITING",
+  CONFIRMED: "WAITING",
+  PENDING_PREPARATION: "WAITING",
+  PROCESSING: "PREPARING",
+  PREPARING: "PREPARING",
+  QUALITY_CHECK: "QUALITY_CHECK",
+  PACKAGED: "PACKAGED",
+  PACKED: "PACKAGED",
+  STOCK_SHORTAGE: "STOCK_SHORTAGE",
+  PENDING_STOCK: "STOCK_SHORTAGE",
+  ON_HOLD_STOCK: "STOCK_SHORTAGE",
+  READY: "READY_TO_SHIP",
+  READY_TO_SHIP: "READY_TO_SHIP",
+  PENDING_CANCELLATION: "PENDING_CANCELLATION",
+  ON_HOLD_PREP: "ON_HOLD_PREP",
+};
+
+export const normalizeStatusToStage = (status: string): string | null => {
+  return STAGE_BY_STATUS[toUpper(status)] || null;
 };
 
 export const getNextStatus = (

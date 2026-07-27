@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from 'react';
 import {
     ShieldExclamationIcon,
@@ -10,12 +11,12 @@ import orderWorkflowService, { OrderWorkflowConfig } from '../../../services/ord
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
 
-const AVAILABLE_ROLES = [
-    { value: 'OWNER', label: 'مالك الشركة' },
-    { value: 'SUPER_ADMIN', label: 'مدير النظام' },
-    { value: 'COMPANY_ADMIN', label: 'مدير شركة' },
-    { value: 'MANAGER', label: 'مدير' },
-    { value: 'AGENT', label: 'موظف / عميل' },
+const getAvailableRoles = (t: any) => [
+    { value: 'OWNER', label: t('orderSettings.k_70') },
+    { value: 'SUPER_ADMIN', label: t('orderSettings.k_71') },
+    { value: 'COMPANY_ADMIN', label: t('orderSettings.k_72') },
+    { value: 'MANAGER', label: t('orderSettings.k_73') },
+    { value: 'AGENT', label: t('orderSettings.k_74') },
 ];
 
 interface Props {
@@ -24,6 +25,8 @@ interface Props {
 }
 
 const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
+  const { t } = useTranslation();
+  const AVAILABLE_ROLES = React.useMemo(() => getAvailableRoles(t), [t]);
     const { user } = useAuth();
     const selectedRoles: string[] = config?.overrideRoles
         ? JSON.parse(config.overrideRoles)
@@ -72,16 +75,16 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
     return (
         <div className="animate-in fade-in duration-500">
             <div className="mb-8">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">صلاحيات التجاوز (Override)</h2>
-                <p className="text-slate-500 text-sm">حدد الأدوار التي تملك صلاحية تجاوز قيود المسار والتحكم الكامل في الحالات</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('orderSettings.k_115')}</h2>
+                <p className="text-slate-500 text-sm">{t('orderSettings.k_116')}</p>
             </div>
 
             {/* Allow Override Toggle */}
             <div className="mb-8 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white">السماح بالتجاوز</h3>
-                        <p className="text-sm text-slate-500">تفعيل خاصية تجاوز قيود المسار للأدوار المحددة أدناه</p>
+                        <h3 className="font-bold text-slate-900 dark:text-white">{t('orderSettings.k_117')}</h3>
+                        <p className="text-sm text-slate-500">{t('orderSettings.k_118')}</p>
                     </div>
                     <button
                         onClick={async () => {
@@ -100,17 +103,17 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
                     <div className="p-6 rounded-3xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800">
                         <div className="flex items-center gap-3 mb-4">
                             <ShieldExclamationIcon className="w-8 h-8 text-indigo-600" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">ما هو التجاوز (Override)؟</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('orderSettings.k_119')}</h3>
                         </div>
                         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                            تسمح صلاحية التجاوز للمستخدم الموثوق بتغيير حالة الطلب في حالات الطوارئ أو الاستثناءات، حتى لو كانت القواعد تمنع ذلك (مثلاً: الحالة مغلقة، أو الانتقال غير معرف).
+                            {t('orderSettings.k_159')}
                         </p>
                     </div>
 
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                         <h3 className="font-bold flex items-center gap-2 mb-4">
                             <UserGroupIcon className="w-5 h-5 text-slate-400" />
-                            اختر الأدوار التي تملك حق التجاوز:
+                            {t('orderSettings.k_160')}
                         </h3>
                         <div className="space-y-3">
                             {AVAILABLE_ROLES.map(role => {
@@ -154,7 +157,7 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
                             <>
                                 <h3 className="font-bold flex items-center gap-2 mt-6 mb-3">
                                     <UserGroupIcon className="w-5 h-5 text-slate-400" />
-                                    أو اختر موظفين بعينهم:
+                                    {t('orderSettings.k_161')}
                                 </h3>
                                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-xl">
                                     {employees.map(emp => {
@@ -194,7 +197,7 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
                         )}
 
                         {draftRoles.length === 0 && (
-                            <p className="text-xs text-red-500 mt-2">يجب اختيار دور أو موظف واحد على الأقل</p>
+                            <p className="text-xs text-red-500 mt-2">{t('orderSettings.k_120')}</p>
                         )}
 
                         <button
@@ -208,25 +211,25 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
                                         : 'bg-indigo-600 text-white hover:bg-indigo-700'
                             }`}
                         >
-                            {saving ? 'جاري الحفظ...' : saved ? '✓ تم الحفظ' : 'حفظ التغييرات'}
+                            {saving ? t('orderSettings.k_121') : saved ? t('orderSettings.k_122') : t('orderSettings.k_123')}
                         </button>
                     </div>
                 </div>
 
                 <div className="p-8 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/50">
                     <ExclamationTriangleIcon className="w-12 h-12 text-amber-500 mb-6" />
-                    <h3 className="text-xl font-bold text-amber-900 dark:text-amber-400 mb-4">تحذير أمني</h3>
+                    <h3 className="text-xl font-bold text-amber-900 dark:text-amber-400 mb-4">{t('orderSettings.k_124')}</h3>
                     <p className="text-sm text-amber-800 dark:text-amber-500 mb-6 leading-relaxed">
-                        صلاحية التجاوز هي صلاحية حساسة جداً. أي عملية تجاوز يتم تسجيلها تلقائياً في سجل الرقابة (Audit Trail) مع اسم المستخدم، الوقت، والسبب المقدم.
+                        {t('orderSettings.k_162')}
                     </p>
                     <div className="space-y-4">
                         <div className="flex gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                            <p className="text-xs text-amber-700 dark:text-amber-600">لا تعطي هذه الصلاحية إلا لمن تثق بهم تماماً.</p>
+                            <p className="text-xs text-amber-700 dark:text-amber-600">{t('orderSettings.k_125')}</p>
                         </div>
                         <div className="flex gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                            <p className="text-xs text-amber-700 dark:text-amber-600">عمليات التجاوز تظهر بوضوح في التقارير الإدارية.</p>
+                            <p className="text-xs text-amber-700 dark:text-amber-600">{t('orderSettings.k_126')}</p>
                         </div>
                     </div>
                 </div>

@@ -35,5 +35,24 @@
     ],
     "createdAt": "2026-06-17T00:00:00.000Z",
     "updatedAt": "2026-06-17T00:00:00.000Z"
+  },
+  {
+    "id": "cat-bundle-medical",
+    "slug": "medical-bundle",
+    "name": "الباقة الطبية الشاملة",
+    "nameEn": "Medical Bundle",
+    "description": "النظام الطبي المتكامل + واتساب بزنس + ٥ وكلاء ذكاء اصطناعي بشخصيات بشرية — كل ما تحتاجه لإدارة عياداتك ومراكزك الطبية في باقة واحدة.",
+    "monthlyPrice": 999,
+    "yearlyPrice": null,
+    "discount": 37,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "medical-system",
+      "unified-inbox",
+      "ai-chat-basic"
+    ],
+    "createdAt": "2026-07-21T00:00:00.000Z",
+    "updatedAt": "2026-07-21T00:00:00.000Z"
   }
 ]

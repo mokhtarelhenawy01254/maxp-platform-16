@@ -41,5 +41,14 @@
   "errorExport": "Export failed. Please try again.",
   "errorNoCopy": "No results to copy",
   "successCopy": "Results copied to clipboard",
-  "errorCopy": "Copy failed. Please try again."
+  "errorCopy": "Copy failed. Please try again.",
+  "selected": "selected",
+  "selectAll": "Select All",
+  "updateStatus": "Change Status",
+  "updating": "Updating...",
+  "confirmBulkUpdate": "Are you sure you want to update {{count}} order(s)?",
+  "bulkUpdateSuccess": "{{count}} order(s) updated successfully",
+  "bulkUpdatePartial": "Updated {{success}} order(s), {{failed}} failed",
+  "bulkUpdateFailed": "Failed to update orders",
+  "bulkUpdateError": "An error occurred during update"
 }

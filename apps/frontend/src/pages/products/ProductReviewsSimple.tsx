@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ interface Pagination {
 }
 
 const ProductReviewsSimple: React.FC = () => {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -83,11 +85,11 @@ const ProductReviewsSimple: React.FC = () => {
         setReviews(response.data.data.reviews || []);
         setPagination((prev) => response.data.data.pagination || prev);
       } else {
-        toast.error("حدث خطأ في جلب التقييمات");
+        toast.error(t('productReviews.k_1'));
       }
     } catch (error: any) {
       console.error("Error fetching reviews:", error);
-      toast.error(error.response?.data?.error || "حدث خطأ في جلب التقييمات");
+      toast.error(error.response?.data?.error || t('productReviews.k_1'));
     } finally {
       setLoading(false);
     }
@@ -117,13 +119,13 @@ const ProductReviewsSimple: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/approve`);
       if (response.data.success) {
-        toast.success("تم الموافقة على التقييم بنجاح");
+        toast.success(t('productReviews.k_2'));
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error approving review:", error);
       toast.error(
-        error.response?.data?.error || "حدث خطأ في الموافقة على التقييم",
+        error.response?.data?.error || t('productReviews.k_3'),
       );
     }
   };
@@ -132,29 +134,29 @@ const ProductReviewsSimple: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/reject`);
       if (response.data.success) {
-        toast.success("تم رفض التقييم بنجاح");
+        toast.success(t('productReviews.k_4'));
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error rejecting review:", error);
-      toast.error(error.response?.data?.error || "حدث خطأ في رفض التقييم");
+      toast.error(error.response?.data?.error || t('productReviews.k_5'));
     }
   };
 
   const handleDelete = async (reviewId: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا التقييم؟")) {
+    if (!window.confirm(t('productReviews.k_6'))) {
       return;
     }
 
     try {
       const response = await apiClient.delete(`/reviews/${reviewId}`);
       if (response.data.success) {
-        toast.success("تم حذف التقييم بنجاح");
+        toast.success(t('productReviews.k_7'));
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error deleting review:", error);
-      toast.error(error.response?.data?.error || "حدث خطأ في حذف التقييم");
+      toast.error(error.response?.data?.error || t('productReviews.k_8'));
     }
   };
 
@@ -194,7 +196,7 @@ const ProductReviewsSimple: React.FC = () => {
 
     if (
       action === "delete" &&
-      !window.confirm(`هل أنت متأكد من حذف ${selectedReviews.length} تقييم؟`)
+      !window.confirm(t('productReviews.confirm_bulk_delete', { count: selectedReviews.length }))
     ) {
       return;
     }
@@ -212,7 +214,7 @@ const ProductReviewsSimple: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error executing bulk action:", error);
-      toast.error(error.response?.data?.error || "حدث خطأ في تنفيذ العملية");
+      toast.error(error.response?.data?.error || t('productReviews.k_9'));
     }
   };
 
@@ -262,10 +264,10 @@ const ProductReviewsSimple: React.FC = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            إدارة التقييمات
+            {t('productReviews.k_22')}
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            إدارة ومراجعة تقييمات المنتجات
+            {t('productReviews.k_23')}
           </p>
         </div>
 
@@ -273,7 +275,7 @@ const ProductReviewsSimple: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              إجمالي التقييمات
+              {t('productReviews.k_24')}
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {pagination.total}
@@ -281,7 +283,7 @@ const ProductReviewsSimple: React.FC = () => {
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              موافق عليها
+              {t('productReviews.k_12')}
             </div>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {approvedCount}
@@ -289,7 +291,7 @@ const ProductReviewsSimple: React.FC = () => {
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              في انتظار الموافقة
+              {t('productReviews.k_13')}
             </div>
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {pendingCount}
@@ -306,7 +308,7 @@ const ProductReviewsSimple: React.FC = () => {
                 <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="ابحث عن تقييم..."
+                  placeholder={t('productReviews.k_10')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -326,9 +328,9 @@ const ProductReviewsSimple: React.FC = () => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               >
-                <option value="all">جميع الحالات</option>
-                <option value="true">موافق عليها</option>
-                <option value="false">في انتظار الموافقة</option>
+                <option value="all">{t('productReviews.k_11')}</option>
+                <option value="true">{t('productReviews.k_12')}</option>
+                <option value="false">{t('productReviews.k_13')}</option>
               </select>
             </div>
 
@@ -341,12 +343,12 @@ const ProductReviewsSimple: React.FC = () => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               >
-                <option value="">جميع التقييمات</option>
-                <option value="5">5 نجوم</option>
-                <option value="4">4 نجوم</option>
-                <option value="3">3 نجوم</option>
-                <option value="2">2 نجوم</option>
-                <option value="1">1 نجم</option>
+                <option value="">{t('productReviews.k_14')}</option>
+                <option value="5">{t('productReviews.k_15')}</option>
+                <option value="4">{t('productReviews.k_16')}</option>
+                <option value="3">{t('productReviews.k_17')}</option>
+                <option value="2">{t('productReviews.k_18')}</option>
+                <option value="1">{t('productReviews.k_19')}</option>
               </select>
             </div>
           </div>
@@ -366,7 +368,7 @@ const ProductReviewsSimple: React.FC = () => {
             disabled={reviews.length === 0}
           />
           <span className="text-gray-700 dark:text-gray-300 font-medium">
-            تحديد الكل ({selectedReviews.length})
+            {t('productReviews.k_25')}{selectedReviews.length})
           </span>
         </div>
 
@@ -377,21 +379,21 @@ const ProductReviewsSimple: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
             >
               <CheckCircleIcon className="h-4 w-4" />
-              موافقة
+              {t('productReviews.k_26')}
             </button>
             <button
               onClick={() => handleBulkAction("reject")}
               className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors text-sm font-medium"
             >
               <XCircleIcon className="h-4 w-4" />
-              رفض
+              {t('productReviews.k_27')}
             </button>
             <button
               onClick={() => handleBulkAction("delete")}
               className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
             >
               <TrashIcon className="h-4 w-4" />
-              حذف
+              {t('productReviews.k_28')}
             </button>
           </div>
         )}
@@ -405,7 +407,7 @@ const ProductReviewsSimple: React.FC = () => {
           </div>
         ) : reviews.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            لا توجد تقييمات
+            {t('productReviews.k_29')}
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -441,8 +443,8 @@ const ProductReviewsSimple: React.FC = () => {
                         }`}
                       >
                         {review.isApproved
-                          ? "موافق عليها"
-                          : "في انتظار الموافقة"}
+                          ? t('productReviews.k_12')
+                          : t('productReviews.k_13')}
                       </span>
                     </div>
 
@@ -503,7 +505,7 @@ const ProductReviewsSimple: React.FC = () => {
                       {review.customerPhone && (
                         <span>{review.customerPhone}</span>
                       )}
-                      <span>مفيد ({review.helpfulCount})</span>
+                      <span>{t('productReviews.k_20')}{review.helpfulCount})</span>
                     </div>
                   </div>
 
@@ -515,7 +517,7 @@ const ProductReviewsSimple: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                       >
                         <CheckCircleIcon className="h-4 w-4" />
-                        موافقة
+                        {t('productReviews.k_26')}
                       </button>
                     )}
                     {review.isApproved && (
@@ -524,7 +526,7 @@ const ProductReviewsSimple: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
                       >
                         <XCircleIcon className="h-4 w-4" />
-                        إلغاء الموافقة
+                        {t('productReviews.k_30')}
                       </button>
                     )}
                     <button
@@ -532,7 +534,7 @@ const ProductReviewsSimple: React.FC = () => {
                       className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                     >
                       <TrashIcon className="h-4 w-4" />
-                      حذف
+                      {t('productReviews.k_28')}
                     </button>
                   </div>
                 </div>
@@ -545,7 +547,7 @@ const ProductReviewsSimple: React.FC = () => {
         {pagination.pages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              صفحة {pagination.page} من {pagination.pages}
+              {t('productReviews.k_31')} {pagination.page}{t('productReviews.k_21')}{pagination.pages}
             </div>
             <div className="flex gap-2">
               <button
@@ -555,7 +557,7 @@ const ProductReviewsSimple: React.FC = () => {
                 disabled={pagination.page === 1}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                السابق
+                {t('productReviews.k_32')}
               </button>
               <button
                 onClick={() =>
@@ -564,7 +566,7 @@ const ProductReviewsSimple: React.FC = () => {
                 disabled={pagination.page === pagination.pages}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                التالي
+                {t('productReviews.k_33')}
               </button>
             </div>
           </div>

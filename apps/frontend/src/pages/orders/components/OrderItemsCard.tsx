@@ -14,16 +14,16 @@ import { validatePrice, validateQuantity } from "../../../utils/validation";
 import DeleteItemConfirmModal from "./DeleteItemConfirmModal";
 
 const looksLikeSizeValue = (value: unknown): boolean => {
-  if (typeof value !== "string") return false;
-
+  if (value == null) return false;
+  const str = String(value).trim();
   return /^(?:xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl|4xl|5xl|free|one size|onesize|universal|small|medium|large|extra large|\d{1,3}(?:\.\d+)?)$/i.test(
-    value.trim(),
+    str,
   );
 };
 
 const normalizeVariantDisplayValues = (color: unknown, size: unknown) => {
-  const normalizedColor = typeof color === "string" ? color.trim() : "";
-  let normalizedSize = typeof size === "string" ? size.trim() : "";
+  const normalizedColor = typeof color === "string" ? color.trim() : (color != null ? String(color).trim() : "");
+  let normalizedSize = size != null ? String(size).trim() : "";
 
   if (
     normalizedColor &&
@@ -467,6 +467,11 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
     const hasPriceError = validationErrors[`price_${index}`];
     const quantityOfferSummary = getQuantityOfferSummary(item);
 
+    console.log("[OrderItemsCard] renderSingleItem:", {
+      productName: item.productName,
+      productSku: item.productSku,
+    });
+
     return (
       <div
         key={`${item.id || item.productId || "item"}-${index}`}
@@ -492,35 +497,36 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1">
-                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-0.5">
                   {item.productName}
                 </h4>
 
-                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {typeof itemMetadata.sku === "string" && itemMetadata.sku.trim() && (
-                    <span className="font-mono">
-                      SKU: {itemMetadata.sku}
+                {(item.productSku) && (
+                  <div className="inline-flex items-center gap-1.5 rounded bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 mb-2">
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">SKU</span>
+                    <span className="text-xs font-mono font-semibold text-blue-700 dark:text-blue-300">
+                      {item.productSku}
                     </span>
-                  )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
                   {stockInfo.stock > 0 && (
-                    <>
-                      <span>•</span>
-                      <span
-                        className={`font-semibold ${
-                          stockInfo.status === "available"
-                            ? "text-green-600 dark:text-green-400"
-                            : stockInfo.status === "low"
-                              ? "text-orange-600 dark:text-orange-400"
-                              : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {stockInfo.status === "available"
-                          ? "🟢 متوفر"
+                    <span
+                      className={`font-semibold ${
+                        stockInfo.status === "available"
+                          ? "text-green-600 dark:text-green-400"
                           : stockInfo.status === "low"
-                            ? `🟡 متبقي ${stockInfo.stock}`
-                            : "🔴 نفذ"}
-                      </span>
-                    </>
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {stockInfo.status === "available"
+                        ? "🟢 متوفر"
+                        : stockInfo.status === "low"
+                          ? `🟡 متبقي ${stockInfo.stock}`
+                          : "🔴 نفذ"}
+                    </span>
                   )}
                 </div>
 
@@ -800,6 +806,11 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                                     <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
                                       {item.productName}
                                     </h4>
+                                    {(item.productSku) && (
+                                      <span className="inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold font-mono text-blue-600 dark:text-blue-400">
+                                        {item.productSku}
+                                      </span>
+                                    )}
                                     <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
                                       القطعة {slotIndex || itemPosition + 1}
                                     </span>

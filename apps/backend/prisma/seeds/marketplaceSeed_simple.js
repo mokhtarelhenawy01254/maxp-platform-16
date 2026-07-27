@@ -127,6 +127,17 @@ async function seedMarketplace() {
         discount: 0,
         isActive: true,
         isFeatured: true
+      },
+      {
+        slug: 'medical-bundle',
+        name: 'الباقة الطبية الشاملة',
+        description: 'النظام الطبي المتكامل + واتساب بزنس + ٥ وكلاء ذكاء اصطناعي بشخصيات بشرية — كل ما تحتاجه لإدارة عياداتك ومراكزك الطبية في باقة واحدة.',
+        appIds: JSON.stringify(['medical-system', 'unified-inbox', 'ai-chat-basic']),
+        monthlyPrice: 999,
+        yearlyPrice: null,
+        discount: 37,
+        isActive: true,
+        isFeatured: true
       }
     ];
 

@@ -57,10 +57,10 @@ const GROUP_LABEL_KEYS: Record<string, string> = {
   management: "agentTools.groups.management", system: "agentTools.groups.system",
   mcp: "agentTools.groups.mcp",
 };
-const groupLabel = (g: string) => {
+const getGroupLabel = (g: string, t: (key: string, options?: any) => string) => {
   const key = GROUP_LABEL_KEYS[g];
-  if (key) return i18n.t(key);
-  const fallback = i18n.t(`agentTools.groups.${g}`);
+  if (key) return t(key);
+  const fallback = t(`agentTools.groups.${g}`);
   return fallback === `agentTools.groups.${g}` ? g : fallback;
 };
 interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
@@ -82,6 +82,7 @@ const apiPut = async <T,>(path: string, body: unknown, companyId?: string): Prom
 };
 
 function AssignToolDialog({ open, toolName, agents, onClose, onSaved, companyId }: { open: boolean; toolName: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
 
@@ -89,27 +90,28 @@ function AssignToolDialog({ open, toolName, agents, onClose, onSaved, companyId 
   const filtered = useMemo(() => { if (!search.trim()) return agents; const q = search.toLowerCase(); return agents.filter((a) => [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))); }, [agents, search]);
   const toggle = (id: string) => setSelected((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map((a) => a.id))); };
-  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedTools?.includes(toolName); const add = selected.has(agent.id); if (has === add) return; const nt = add ? [...(agent.allowedTools || []), toolName] : (agent.allowedTools || []).filter((t) => t !== toolName); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: nt, allowedSkills: [], toolAutonomy: { ...(agent.toolAutonomy || {}), ...(add ? { [toolName]: "auto" } : {}) } }, companyId); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || i18n.t("common.saveError")); } finally { setSaving(false); } };
+  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedTools?.includes(toolName); const add = selected.has(agent.id); if (has === add) return; const nt = add ? [...(agent.allowedTools || []), toolName] : (agent.allowedTools || []).filter((t) => t !== toolName); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: nt, allowedSkills: [], toolAutonomy: { ...(agent.toolAutonomy || {}), ...(add ? { [toolName]: "auto" } : {}) } }, companyId); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || t("common.saveError")); } finally { setSaving(false); } };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle><div className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /><span>{i18n.t("agentTools.dialogAssignTitle")}</span></div></DialogTitle>
+          <DialogTitle><div className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /><span>{t("agentTools.dialogAssignTitle")}</span></div></DialogTitle>
           <DialogDescription className="font-mono text-xs">{toolName}</DialogDescription>
         </DialogHeader>
         {saving && <div className="h-0.5 w-full animate-pulse bg-primary" />}
         {error && <Alert variant="destructive"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-        <div className="relative mb-3"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={i18n.t("agentTools.dialogSearch")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" /></div>
-        <div className="mb-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">{i18n.t("agentTools.dialogSelected", { selected: selected.size, total: filtered.length })}</span><Button size="sm" variant="link" onClick={toggleAll}>{selected.size === filtered.length ? i18n.t("agentTools.dialogDeselectAll") : i18n.t("agentTools.dialogSelectAll")}</Button></div>
-        <div className="max-h-[360px] space-y-1 overflow-auto">{filtered.map((agent) => { const checked = selected.has(agent.id); const already = agent.allowedTools?.includes(toolName); return (<div key={agent.id} onClick={() => toggle(agent.id)} className={cn("flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition-all", checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted")}><div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div><span className="text-lg">{agent.icon || "🤖"}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div>{already && !checked && <Badge variant="outline" className="h-4 text-[0.6rem]">{i18n.t("agentTools.dialogCurrent")}</Badge>}</div>); })}</div>
-        <DialogFooter><Button variant="outline" onClick={onClose} disabled={saving}>{i18n.t("common.cancel")}</Button><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Check className="size-4" />}{saving ? i18n.t("agentTools.dialogSaving") : i18n.t("common.save")}</Button></DialogFooter>
+        <div className="relative mb-3"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentTools.dialogSearch")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" /></div>
+        <div className="mb-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">{t("agentTools.dialogSelected", { selected: selected.size, total: filtered.length })}</span><Button size="sm" variant="link" onClick={toggleAll}>{selected.size === filtered.length ? t("agentTools.dialogDeselectAll") : t("agentTools.dialogSelectAll")}</Button></div>
+        <div className="max-h-[360px] space-y-1 overflow-auto">{filtered.map((agent) => { const checked = selected.has(agent.id); const already = agent.allowedTools?.includes(toolName); return (<div key={agent.id} onClick={() => toggle(agent.id)} className={cn("flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition-all", checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted")}><div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div><span className="text-lg">{agent.icon || "🤖"}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div>{already && !checked && <Badge variant="outline" className="h-4 text-[0.6rem]">{t("agentTools.dialogCurrent")}</Badge>}</div>); })}</div>
+        <DialogFooter><Button variant="outline" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Check className="size-4" />}{saving ? t("agentTools.dialogSaving") : t("common.save")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
 export default function AgentToolsPage({ companyId }: { companyId?: string } = {}) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
@@ -119,25 +121,25 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const toolToAgents = useMemo(() => {
-    const alias = new Map<string, string>(); for (const t of tools) { alias.set(t.name, t.name); for (const a of t.aliases || []) alias.set(a, t.name); }
+    const alias = new Map<string, string>(); for (const toolItem of tools) { alias.set(toolItem.name, toolItem.name); for (const a of toolItem.aliases || []) alias.set(a, toolItem.name); }
     const m = new Map<string, AgentToolInfo[]>(); for (const a of agents) { for (const tn of a.allowedTools || []) { const cn = alias.get(tn) || tn; if (!m.has(cn)) m.set(cn, []); m.get(cn)!.push({ id: a.id, name: a.name, role: a.role, icon: a.icon, status: a.status, autonomy: a.toolAutonomy?.[tn] || "auto" }); } }
     return m;
   }, [agents, tools]);
   const allGroups = useMemo(() => {
-    const groups = [...new Set(tools.map((t) => t.group).filter(Boolean))] as string[];
-    return groups.sort((a, b) => groupLabel(a).localeCompare(groupLabel(b), "ar"));
-  }, [tools]);
+    const groups = [...new Set(tools.map((toolItem) => toolItem.group).filter(Boolean))] as string[];
+    return groups.sort((a, b) => getGroupLabel(a, t).localeCompare(getGroupLabel(b, t), "ar"));
+  }, [tools, t]);
   const filteredTools = useMemo(() => {
     let list = tools;
     const n = query.trim().toLowerCase();
-    if (n) list = list.filter((t) => { const an = (toolToAgents.get(t.name) || []).map((a) => a.name).join(" "); return [t.name, t.description, t.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); });
-    if (selectedGroup) list = list.filter((t) => t.group === selectedGroup);
+    if (n) list = list.filter((toolItem) => { const an = (toolToAgents.get(toolItem.name) || []).map((a) => a.name).join(" "); return [toolItem.name, toolItem.description, toolItem.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); });
+    if (selectedGroup) list = list.filter((toolItem) => toolItem.group === selectedGroup);
     return list;
   }, [tools, query, toolToAgents, selectedGroup]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), companyId ? apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId) : { success: true as const, agents: [] as AgentDefinition[] }]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || i18n.t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), companyId ? apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId) : { success: true as const, agents: [] as AgentDefinition[] }]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, [companyId, t]);
   useEffect(() => { loadAll(); }, [loadAll]);
-  const readT = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
-  const writeT = filteredTools.filter((t) => t.sideEffects === "write");
+  const readT = filteredTools.filter((toolItem) => !toolItem.sideEffects || toolItem.sideEffects === "read");
+  const writeT = filteredTools.filter((toolItem) => toolItem.sideEffects === "write");
 
   function ToolCard({ tool }: { tool: ToolDefinition }) {
     const isExpanded = expandedTool === tool.name;

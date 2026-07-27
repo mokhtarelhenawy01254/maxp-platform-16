@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   CalendarRange,
@@ -17,7 +17,6 @@ import {
   WalletCards,
 } from "lucide-react";
 
-import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "../../lib/utils";
 import {
@@ -101,42 +100,42 @@ type PaymentStatusKey =
   | "PARTIALLY_PAID";
 
 interface PaymentStatusMeta {
-  labelKey: string;
+  label: string;
   className: string;
 }
 
-const PAYMENT_STATUS_META: Record<PaymentStatusKey, PaymentStatusMeta> = {
+const createPaymentStatusMeta = (t: (key: string) => string): Record<PaymentStatusKey, PaymentStatusMeta> => ({
   PAID: {
-    labelKey: "orders.orderInvoices_statusPaid",
+    label: t('orderInvoices.k_19'),
     className:
       "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   },
   PENDING: {
-    labelKey: "orders.orderInvoices_statusPending",
+    label: t('orderInvoices.k_18'),
     className:
       "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   },
   CANCELLED: {
-    labelKey: "orders.orderInvoices_statusCancelled",
+    label: t('orderInvoices.k_21'),
     className:
       "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   },
   REFUNDED: {
-    labelKey: "orders.orderInvoices_statusRefunded",
+    label: t('orderInvoices.k_22'),
     className:
       "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   },
   PARTIALLY_PAID: {
-    labelKey: "orders.orderInvoices_statusPartiallyPaid",
+    label: t('orderInvoices.k_20'),
     className:
       "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300",
   },
-};
+});
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-const getPaymentStatusMeta = (status: string): PaymentStatusMeta =>
-  PAYMENT_STATUS_META[status as PaymentStatusKey] ?? PAYMENT_STATUS_META.PENDING;
+const getPaymentStatusMeta = (status: string, meta: Record<PaymentStatusKey, PaymentStatusMeta>): PaymentStatusMeta =>
+  meta[status as PaymentStatusKey] ?? meta.PENDING;
 
 const getVisiblePages = (currentPage: number, totalPages: number) => {
   if (totalPages <= 1) {
@@ -203,7 +202,7 @@ const toAmount = (value: number | string | undefined | null) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const getErrorMessage = (error: unknown) => {
+const getErrorMessage = (error: unknown, t: (key: string) => string) => {
   const message =
     typeof error === "object" && error !== null && "response" in error
       ? (error as { response?: { data?: { message?: string } } }).response?.data
@@ -214,12 +213,13 @@ const getErrorMessage = (error: unknown) => {
     return message;
   }
 
-  return i18n.t("orders.orderInvoices_errorMessage");
+  return t('orderInvoices.k_32');
 };
 
 const OrderInvoices: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const paymentStatusMeta = useMemo(() => createPaymentStatusMeta(t), [t]);
 
   const [invoices, setInvoices] = useState<OrderInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,7 +249,7 @@ const OrderInvoices: React.FC = () => {
 
   useEffect(() => {
     void fetchInvoices();
-  }, [page, rowsPerPage, paymentStatus]);
+  }, [page, rowsPerPage, paymentStatus]); // eslint-disable-line react-hooks/exhaustive-deps -- search/date filters apply manually
 
   const fetchInvoices = async (
     pageOverride = page,
@@ -297,7 +297,7 @@ const OrderInvoices: React.FC = () => {
       }
 
       console.error("Error fetching invoices:", err);
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err, t));
       setInvoices([]);
       setTotal(0);
       setStats(null);
@@ -354,7 +354,7 @@ const OrderInvoices: React.FC = () => {
       window.open(`/orders/invoice/${invoiceId}`, "_blank");
     } catch (err) {
       console.error("Error printing invoice:", err);
-      setError(t("orders.orderInvoices_printErrorMessage"));
+      setError(t('orderInvoices.k_33'));
     }
   };
 
@@ -376,38 +376,38 @@ const OrderInvoices: React.FC = () => {
 
   const paginationPages = getVisiblePages(currentPage, totalPages);
   const activeFilterLabels = [
-    paymentStatus ? t(getPaymentStatusMeta(paymentStatus).labelKey) : null,
-    dateFrom ? t("orders.orderInvoices_filterFromDate", { date: formatDate(dateFrom) }) : null,
-    dateTo ? t("orders.orderInvoices_filterToDate", { date: formatDate(dateTo) }) : null,
+    paymentStatus ? getPaymentStatusMeta(paymentStatus, paymentStatusMeta).label : null,
+    dateFrom ? t('orderInvoices.from_date', { date: formatDate(dateFrom) }) : null,
+    dateTo ? t('orderInvoices.to_date', { date: formatDate(dateTo) }) : null,
   ].filter((label): label is string => Boolean(label));
   const activeFiltersCount = activeFilterLabels.length;
   const metricItems = stats
     ? [
         {
-          title: t("orders.orderInvoices_totalInvoices"),
+          title: t('orderInvoices.k_34'),
           value: stats.totalInvoices,
-          subtitle: t("orders.orderInvoices_totalInvoicesSub"),
+          subtitle: t('orderInvoices.k_35'),
           tone: "primary" as const,
           icon: Receipt,
         },
         {
-          title: t("orders.orderInvoices_paidInvoices"),
+          title: t('orderInvoices.k_36'),
           value: stats.paidInvoices,
-          subtitle: t("orders.orderInvoices_paidInvoicesSub"),
+          subtitle: t('orderInvoices.k_37'),
           tone: "success" as const,
           icon: CheckCircle2,
         },
         {
-          title: t("orders.orderInvoices_pendingInvoices"),
+          title: t('orderInvoices.k_38'),
           value: stats.pendingInvoices,
-          subtitle: t("orders.orderInvoices_pendingInvoicesSub"),
+          subtitle: t('orderInvoices.k_39'),
           tone: "warning" as const,
           icon: Clock3,
         },
         {
-          title: t("orders.orderInvoices_totalAmount"),
+          title: t('orderInvoices.k_40'),
           value: formatCurrency(stats.totalAmount),
-          subtitle: t("orders.orderInvoices_totalAmountSub"),
+          subtitle: t('orderInvoices.k_41'),
           tone: "secondary" as const,
           icon: WalletCards,
         },
@@ -416,18 +416,18 @@ const OrderInvoices: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <BusinessPageShell className="space-y-4 md:space-y-6" dir="rtl">
+      <BusinessPageShell className="space-y-4 md:space-y-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
         <BusinessPageHero
           eyebrow="ORDERS · FINANCE"
           title={
             <span className="business-page-title-row">
-              <span className="business-page-title-copy">{t("orders.orderInvoices_title")}</span>
+              <span className="business-page-title-copy">{t('orderInvoices.k_16')}</span>
               <span className="business-page-title-artwork">
                 <Receipt className="size-6" />
               </span>
             </span>
           }
-          description={t("orders.orderInvoices_description")}
+          description={t('orderInvoices.k_1')}
           actions={
             <Button
               type="button"
@@ -439,7 +439,7 @@ const OrderInvoices: React.FC = () => {
               <RefreshCw
                 className={cn("size-4", loading ? "animate-spin" : "")}
               />
-              {t("orders.orderInvoices_refresh")}
+              {t('orderInvoices.k_48')}
             </Button>
           }
         />
@@ -449,10 +449,10 @@ const OrderInvoices: React.FC = () => {
         <BusinessMobileSearchPanel
           searchId="order-invoices-mobile-search"
           searchName="orderInvoicesMobileSearch"
-          searchLabel={t("orders.orderInvoices_searchLabel")}
-          searchPlaceholder={t("orders.orderInvoices_searchPlaceholder")}
+          searchLabel={t('orderInvoices.k_2')}
+          searchPlaceholder={t('orderInvoices.k_3')}
           searchValue={search}
-          searchAriaLabel={t("orders.orderInvoices_searchAriaLabel")}
+          searchAriaLabel={t('orderInvoices.k_4')}
           onSearchChange={setSearch}
           onSearchSubmit={handleSearch}
           onOpenFilters={() => setIsFiltersSheetOpen(true)}
@@ -460,23 +460,23 @@ const OrderInvoices: React.FC = () => {
           summaryIcon={<Receipt className="size-3.5" />}
           summary={
             loading
-              ? t("orders.orderInvoices_updating")
+              ? t('orderInvoices.k_42')
               : total > 0
-                ? t("orders.orderInvoices_fromTotal", { from: currentFrom, to: currentTo, total })
-                : t("orders.orderInvoices_noResults")
+                ? `${currentFrom}-${currentTo} ${t('orderInvoices.k_45')} ${total}`
+                : t('orderInvoices.k_43')
           }
           activeFilters={activeFilterLabels}
         />
 
         <BusinessSectionPanel
           className="hidden md:block"
-          title={t("orders.orderInvoices_filtersTitle")}
-          description={t("orders.orderInvoices_filtersDescription")}
+          title={t('orderInvoices.k_5')}
+          description={t('orderInvoices.k_6')}
           contentClassName="space-y-4"
         >
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]">
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-search">{t("orders.orderInvoices_search")}</Label>
+                <Label htmlFor="order-invoices-search">{t('orderInvoices.k_17')}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -489,15 +489,15 @@ const OrderInvoices: React.FC = () => {
                         handleSearch();
                       }
                     }}
-                    placeholder={t("orders.orderInvoices_searchInputPlaceholder")}
+                    placeholder={t('orderInvoices.k_7')}
                     className="h-11 pr-10 text-right"
-                    aria-label={t("orders.orderInvoices_searchInputAriaLabel")}
+                    aria-label={t('orderInvoices.k_8')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>{t("orders.orderInvoices_paymentStatus")}</Label>
+                <Label>{t('orderInvoices.k_15')}</Label>
                 <Select
                   value={paymentStatus || "ALL"}
                   onValueChange={(value) => {
@@ -506,21 +506,21 @@ const OrderInvoices: React.FC = () => {
                   }}
                 >
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder={t("orders.orderInvoices_allStatuses")} />
+                    <SelectValue placeholder={t('orderInvoices.k_9')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">{t("orders.orderInvoices_allStatuses")}</SelectItem>
-                    <SelectItem value="PENDING">{t("orders.orderInvoices_statusPending")}</SelectItem>
-                    <SelectItem value="PAID">{t("orders.orderInvoices_statusPaid")}</SelectItem>
-                    <SelectItem value="PARTIALLY_PAID">{t("orders.orderInvoices_statusPartiallyPaid")}</SelectItem>
-                    <SelectItem value="CANCELLED">{t("orders.orderInvoices_statusCancelled")}</SelectItem>
-                    <SelectItem value="REFUNDED">{t("orders.orderInvoices_statusRefunded")}</SelectItem>
+                    <SelectItem value="ALL">{t('orderInvoices.k_9')}</SelectItem>
+                    <SelectItem value="PENDING">{t('orderInvoices.k_18')}</SelectItem>
+                    <SelectItem value="PAID">{t('orderInvoices.k_19')}</SelectItem>
+                    <SelectItem value="PARTIALLY_PAID">{t('orderInvoices.k_20')}</SelectItem>
+                    <SelectItem value="CANCELLED">{t('orderInvoices.k_21')}</SelectItem>
+                    <SelectItem value="REFUNDED">{t('orderInvoices.k_22')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-from">{t("orders.orderInvoices_fromDate")}</Label>
+                <Label htmlFor="order-invoices-date-from">{t('orderInvoices.k_10')}</Label>
                 <Input
                   id="order-invoices-date-from"
                   name="orderInvoicesDateFrom"
@@ -528,12 +528,12 @@ const OrderInvoices: React.FC = () => {
                   value={dateFrom}
                   onChange={(event) => setDateFrom(event.target.value)}
                   className="h-11"
-                  aria-label={t("orders.orderInvoices_fromDate")}
+                  aria-label={t('orderInvoices.k_10')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-to">{t("orders.orderInvoices_toDate")}</Label>
+                <Label htmlFor="order-invoices-date-to">{t('orderInvoices.k_11')}</Label>
                 <Input
                   id="order-invoices-date-to"
                   name="orderInvoicesDateTo"
@@ -541,7 +541,7 @@ const OrderInvoices: React.FC = () => {
                   value={dateTo}
                   onChange={(event) => setDateTo(event.target.value)}
                   className="h-11"
-                  aria-label={t("orders.orderInvoices_toDate")}
+                  aria-label={t('orderInvoices.k_11')}
                 />
               </div>
 
@@ -552,7 +552,7 @@ const OrderInvoices: React.FC = () => {
                   className="h-11 w-full px-5 xl:w-auto"
                 >
                   <Search className="size-4" />
-                  {t("orders.orderInvoices_search")}
+                  {t('orderInvoices.k_49')}
                 </Button>
               </div>
             </div>
@@ -560,23 +560,23 @@ const OrderInvoices: React.FC = () => {
             {error ? (
               <Alert variant="destructive" className="border-rose-500/30">
                 <AlertCircle className="size-4" />
-                <AlertTitle>{t("orders.orderInvoices_errorTitle")}</AlertTitle>
+                <AlertTitle>{t('orderInvoices.k_23')}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
         </BusinessSectionPanel>
 
         <BusinessSectionPanel
-          title={t("orders.orderInvoices_recordsTitle")}
+          title={t('orderInvoices.k_12')}
           description={
             total > 0
-              ? t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })
-              : t("orders.orderInvoices_noMatchingResults")
+              ? t('orderInvoices.showing_invoices', { 'from': currentFrom, 'to': currentTo, 'total': total })
+              : t('orderInvoices.k_44')
           }
           headerAside={
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
               <Receipt className="size-3.5" />
-              {loading ? t("orders.orderInvoices_updating") : t("orders.orderInvoices_itemsPerPage", { count: rowsPerPage })}
+              {loading ? t('orderInvoices.k_42') : t('orderInvoices.items_per_page', { count: rowsPerPage })}
             </div>
           }
           contentClassName="p-0"
@@ -584,15 +584,15 @@ const OrderInvoices: React.FC = () => {
             {loading ? (
               <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
                 <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-sm">{t("orders.orderInvoices_loading")}</p>
+                <p className="text-sm">{t('orderInvoices.k_24')}</p>
               </div>
             ) : invoices.length === 0 ? (
               <div className="flex min-h-[280px] items-center justify-center px-6 py-10">
                 <Alert className="max-w-md border-dashed bg-background/70">
                   <AlertCircle className="size-4" />
-                  <AlertTitle>{t("orders.orderInvoices_noInvoices")}</AlertTitle>
+                  <AlertTitle>{t('orderInvoices.k_25')}</AlertTitle>
                   <AlertDescription>
-                    {t("orders.orderInvoices_noInvoicesDesc")}
+                    {t('orderInvoices.k_50')}
                   </AlertDescription>
                 </Alert>
               </div>
@@ -601,7 +601,7 @@ const OrderInvoices: React.FC = () => {
                 <div className="space-y-3 p-4 md:hidden">
                   {invoices.map((invoice) => {
                     const statusMeta = getPaymentStatusMeta(
-                      invoice.paymentStatus,
+                      invoice.paymentStatus, paymentStatusMeta,
                     );
 
                     return (
@@ -612,7 +612,7 @@ const OrderInvoices: React.FC = () => {
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">
-                              {t("orders.orderInvoices_invoiceNumber")}
+                              {t('orderInvoices.k_51')}
                             </p>
                             <p className="font-semibold text-foreground">
                               {invoice.invoiceNumber}
@@ -622,19 +622,19 @@ const OrderInvoices: React.FC = () => {
                             variant="outline"
                             className={cn("rounded-full", statusMeta.className)}
                           >
-                            {t(statusMeta.labelKey)}
+                            {statusMeta.label}
                           </Badge>
                         </div>
 
                         <div className="mt-4 grid gap-3 rounded-2xl bg-muted/30 p-3 text-sm">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_orderNumber")}</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_26')}</span>
                             <span className="font-medium text-foreground">
                               {invoice.order?.orderNumber || "—"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_customer")}</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_27')}</span>
                             <div className="text-left">
                               <p className="font-medium text-foreground">
                                 {invoice.customerName}
@@ -647,13 +647,13 @@ const OrderInvoices: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_issueDate")}</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_28')}</span>
                             <span className="font-medium text-foreground">
                               {formatDate(invoice.issueDate)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_amount")}</span>
+                            <span className="text-muted-foreground">{t('orderInvoices.k_29')}</span>
                             <span className="font-semibold text-foreground">
                               {formatCurrency(
                                 toAmount(invoice.totalAmount),
@@ -671,7 +671,7 @@ const OrderInvoices: React.FC = () => {
                             onClick={() => handleViewInvoice(invoice.id)}
                           >
                             <Eye className="size-4" />
-                            {t("orders.orderInvoices_view")}
+                            {t('orderInvoices.k_52')}
                           </Button>
                           <Button
                             type="button"
@@ -680,7 +680,7 @@ const OrderInvoices: React.FC = () => {
                             onClick={() => handlePrintInvoice(invoice.id)}
                           >
                             <Printer className="size-4" />
-                            {t("orders.orderInvoices_print")}
+                            {t('orderInvoices.k_53')}
                           </Button>
                         </div>
                       </div>
@@ -693,32 +693,32 @@ const OrderInvoices: React.FC = () => {
                     <TableHeader>
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_invoiceNumber")}
+                          {t('orderInvoices.k_51')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_orderNumber")}
+                          {t('orderInvoices.k_54')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_customer")}
+                          {t('orderInvoices.k_27')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_issueDate")}
+                          {t('orderInvoices.k_55')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_amount")}
+                          {t('orderInvoices.k_29')}
                         </TableHead>
                         <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_paymentStatus")}
+                          {t('orderInvoices.k_15')}
                         </TableHead>
                         <TableHead className="text-center font-semibold text-foreground">
-                          {t("orders.orderInvoices_actions")}
+                          {t('orderInvoices.k_56')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {invoices.map((invoice) => {
                         const statusMeta = getPaymentStatusMeta(
-                          invoice.paymentStatus,
+                          invoice.paymentStatus, paymentStatusMeta,
                         );
 
                         return (
@@ -758,7 +758,7 @@ const OrderInvoices: React.FC = () => {
                                   statusMeta.className,
                                 )}
                               >
-                                {t(statusMeta.labelKey)}
+                                {statusMeta.label}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">
@@ -776,7 +776,7 @@ const OrderInvoices: React.FC = () => {
                                       <Eye className="size-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>{t("orders.orderInvoices_viewInvoice")}</TooltipContent>
+                                  <TooltipContent>{t('orderInvoices.k_30')}</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
@@ -792,7 +792,7 @@ const OrderInvoices: React.FC = () => {
                                       <Printer className="size-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>{t("orders.orderInvoices_printInvoice")}</TooltipContent>
+                                  <TooltipContent>{t('orderInvoices.k_31')}</TooltipContent>
                                 </Tooltip>
                               </div>
                             </TableCell>
@@ -807,12 +807,12 @@ const OrderInvoices: React.FC = () => {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <p className="text-sm text-muted-foreground">
-                        {t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })}
+                        {t('orderInvoices.k_52')} {currentFrom} - {currentTo}{t('orderInvoices.k_47')}{total}
                       </p>
 
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">
-                          {t("orders.orderInvoices_rowsLabel")}
+                          {t('orderInvoices.k_57')}
                         </span>
                         <Select
                           value={rowsPerPage.toString()}
@@ -824,7 +824,7 @@ const OrderInvoices: React.FC = () => {
                           <SelectContent>
                             {PAGE_SIZE_OPTIONS.map((size) => (
                               <SelectItem key={size} value={size.toString()}>
-                                {t("orders.orderInvoices_perPage", { size })}
+                                {size} {t('orderInvoices.k_58')}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -841,7 +841,7 @@ const OrderInvoices: React.FC = () => {
                         onClick={() => handlePageChange(0)}
                       >
                         <ChevronsRight className="size-4" />
-                        {t("orders.orderInvoices_first")}
+                        {t('orderInvoices.k_59')}
                       </Button>
 
                       {paginationPages.map((pageItem) => {
@@ -882,7 +882,7 @@ const OrderInvoices: React.FC = () => {
                         disabled={page >= totalPages - 1}
                         onClick={() => handlePageChange(totalPages - 1)}
                       >
-                        {t("orders.orderInvoices_last")}
+                        {t('orderInvoices.k_60')}
                         <ChevronsLeft className="size-4" />
                       </Button>
                     </div>
@@ -895,13 +895,13 @@ const OrderInvoices: React.FC = () => {
         <BusinessFilterSheet
           open={isFiltersSheetOpen}
           onOpenChange={setIsFiltersSheetOpen}
-          title={t("orders.orderInvoices_filterTitle")}
-          description={t("orders.orderInvoices_filterDescription")}
+          title={t('orderInvoices.k_13')}
+          description={t('orderInvoices.k_14')}
           onClear={handleClearFilters}
           onApply={handleApplyFilters}
         >
           <div className="space-y-2">
-            <Label htmlFor="order-invoices-sheet-search">{t("orders.orderInvoices_search")}</Label>
+            <Label htmlFor="order-invoices-sheet-search">{t('orderInvoices.k_17')}</Label>
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -909,14 +909,14 @@ const OrderInvoices: React.FC = () => {
                 name="orderInvoicesSheetSearch"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("orders.orderInvoices_searchPlaceholder")}
+                placeholder={t('orderInvoices.k_3')}
                 className="h-11 rounded-2xl pr-10 text-right"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>{t("orders.orderInvoices_paymentStatus")}</Label>
+            <Label>{t('orderInvoices.k_15')}</Label>
             <Select
               value={paymentStatus || "ALL"}
               onValueChange={(value) => {
@@ -924,23 +924,23 @@ const OrderInvoices: React.FC = () => {
                 setPage(0);
               }}
             >
-              <SelectTrigger className="h-11 rounded-2xl" aria-label={t("orders.orderInvoices_paymentStatus")}>
-                <SelectValue placeholder={t("orders.orderInvoices_allStatuses")} />
+              <SelectTrigger className="h-11 rounded-2xl" aria-label={t('orderInvoices.k_15')}>
+                <SelectValue placeholder={t('orderInvoices.k_9')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">{t("orders.orderInvoices_allStatuses")}</SelectItem>
-                <SelectItem value="PENDING">{t("orders.orderInvoices_statusPending")}</SelectItem>
-                <SelectItem value="PAID">{t("orders.orderInvoices_statusPaid")}</SelectItem>
-                <SelectItem value="PARTIALLY_PAID">{t("orders.orderInvoices_statusPartiallyPaid")}</SelectItem>
-                <SelectItem value="CANCELLED">{t("orders.orderInvoices_statusCancelled")}</SelectItem>
-                <SelectItem value="REFUNDED">{t("orders.orderInvoices_statusRefunded")}</SelectItem>
+                <SelectItem value="ALL">{t('orderInvoices.k_9')}</SelectItem>
+                <SelectItem value="PENDING">{t('orderInvoices.k_18')}</SelectItem>
+                <SelectItem value="PAID">{t('orderInvoices.k_19')}</SelectItem>
+                <SelectItem value="PARTIALLY_PAID">{t('orderInvoices.k_20')}</SelectItem>
+                <SelectItem value="CANCELLED">{t('orderInvoices.k_21')}</SelectItem>
+                <SelectItem value="REFUNDED">{t('orderInvoices.k_22')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-from">{t("orders.orderInvoices_fromDate")}</Label>
+              <Label htmlFor="order-invoices-mobile-date-from">{t('orderInvoices.k_10')}</Label>
               <div className="relative">
                 <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -950,13 +950,13 @@ const OrderInvoices: React.FC = () => {
                   value={dateFrom}
                   onChange={(event) => setDateFrom(event.target.value)}
                   className="h-11 rounded-2xl pr-10"
-                  aria-label={t("orders.orderInvoices_fromDate")}
+                  aria-label={t('orderInvoices.k_10')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-to">{t("orders.orderInvoices_toDate")}</Label>
+              <Label htmlFor="order-invoices-mobile-date-to">{t('orderInvoices.k_11')}</Label>
               <div className="relative">
                 <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -966,7 +966,7 @@ const OrderInvoices: React.FC = () => {
                   value={dateTo}
                   onChange={(event) => setDateTo(event.target.value)}
                   className="h-11 rounded-2xl pr-10"
-                  aria-label={t("orders.orderInvoices_toDate")}
+                  aria-label={t('orderInvoices.k_11')}
                 />
               </div>
             </div>

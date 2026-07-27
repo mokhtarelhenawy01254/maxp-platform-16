@@ -128,7 +128,7 @@ class EnhancedOrderService {
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
       // توحيد الحالات
-      data.status = (data.status || 'PENDING').toUpperCase();
+      data.status = (data.status || 'CONFIRMED').toUpperCase();
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
 
@@ -235,10 +235,9 @@ class EnhancedOrderService {
           console.error('❌ [ENHANCED-ORDER] Error stack:', wooError.stack);
         }
 
-        // 🚀 Push order to provider(s) if it contains imported products
-        internalSyncService.pushOrderToProvider(order.id, data.companyId).catch(err => {
-          console.error(`❌ [INTERNAL-SYNC] Failed to push order ${order.id} to provider:`, err.message);
-        });
+        // 🚀 Push order to provider(s) via sync queue
+        const syncQueueService = require('./syncQueueService');
+        syncQueueService.enqueue(order.id, data.companyId);
       }
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل
@@ -695,7 +694,7 @@ class EnhancedOrderService {
       companyId: data.companyId,
 
       // حالة الطلب
-      status: data.status || 'PENDING',
+      status: data.status || 'CONFIRMED',
       paymentStatus: data.paymentStatus || 'PENDING',
       paymentMethod: data.paymentMethod || 'CASH',
 
@@ -714,6 +713,7 @@ class EnhancedOrderService {
       customerName: data.customerName || `${customer.firstName} ${customer.lastName}`,
       customerPhone: data.customerPhone || customer.phone,
       customerEmail: data.customerEmail || customer.email,
+      governorate: addrGov,
       city: addrCity,
       customerAddress: data.customerAddress || '',
 
@@ -770,6 +770,7 @@ class EnhancedOrderService {
         conversationId: data.conversationId,
         source: data.source,
         requestType: data.requestType || 'delivery',
+        returnAmount: data.returnAmount || null,
         originalData: {
           productName: data.productName,
           productColor: data.productColor,
@@ -1193,7 +1194,7 @@ class EnhancedOrderService {
 
             productName: productItem.productName || product?.name || null,
             productColor: extractedColor || null, // ✨ استخدام البيانات المستخرجة
-            productSize: extractedSize || null, // ✨ استخدام البيانات المستخرجة
+            productSize: extractedSize != null ? String(extractedSize) : null, // ✨ استخدام البيانات المستخرجة
             productImage: productItem.productImage || null,
             productSku: variant?.sku || product?.sku || `MANUAL-${Date.now()}`,
             basePrice: Number.isFinite(basePrice) ? basePrice : null,
@@ -1270,7 +1271,7 @@ class EnhancedOrderService {
         // ✅ معلومات المنتج من الاستخراج التلقائي - بدون قيم افتراضية
         productName: orderData.productName || product?.name || null,
         productColor: orderData.productColor || selectedAttributes.Color || null,
-        productSize: orderData.productSize || selectedAttributes.Size || null,
+        productSize: orderData.productSize != null ? String(orderData.productSize) : (selectedAttributes.Size != null ? String(selectedAttributes.Size) : null),
         productImage: orderData.productImage || null,
         productSku: product?.sku || `AUTO-${Date.now()}`,
         basePrice: product?.basePrice || product?.price || null,
@@ -2318,6 +2319,7 @@ class EnhancedOrderService {
               productName: item.name || item.productName || '',
               productColor: item.color || '',
               productSize: item.size || '',
+              productSku: item.sku || item.productSku || '',
               price: parseFloat(item.price || 0),
               quantity: parseInt(item.quantity || 1),
               total: parseFloat(item.total || (item.price * item.quantity) || 0),
@@ -2374,6 +2376,7 @@ class EnhancedOrderService {
           productName: item.productName,
           productColor: item.productColor,
           productSize: item.productSize,
+          productSku: item.productSku || '',
           productImage: (() => {
             if (item.product?.images) {
               try {
@@ -2469,6 +2472,7 @@ class EnhancedOrderService {
         price: parseFloat(item.price) || 0,
         quantity: item.quantity || 1,
         total: parseFloat(item.total) || 0,
+        productSku: item.productSku || '',
         metadata: {
           color: item.productColor,
           size: item.productSize,

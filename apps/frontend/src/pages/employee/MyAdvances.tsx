@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -47,19 +48,20 @@ type AdvanceFormData = {
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
+    const { t } = useTranslation();
     const config: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
         PENDING: {
-            label: "قيد المراجعة",
+            label: t("employee.advances.pendingStatus"),
             icon: <Clock className="w-3.5 h-3.5" />,
             className: "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300",
         },
         APPROVED: {
-            label: "تمت الموافقة",
+            label: t("employee.advances.approvedStatus"),
             icon: <CheckCircle2 className="w-3.5 h-3.5" />,
             className: "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300",
         },
         REJECTED: {
-            label: "مرفوض",
+            label: t("employee.advances.rejectedStatus"),
             icon: <XCircle className="w-3.5 h-3.5" />,
             className: "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-300",
         },
@@ -75,6 +77,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const MyAdvances = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -119,7 +122,7 @@ const MyAdvances = () => {
                 setHistory(historyResult.value.data.data || []);
             } else {
                 console.error("Error fetching advances history:", historyResult.reason);
-                toast.error("حدث خطأ أثناء جلب سجل السلف");
+                toast.error(t("employee.advances.fetchError"));
             }
 
             if (settingsResult.status === "fulfilled") {
@@ -143,7 +146,7 @@ const MyAdvances = () => {
             if (settings && user?.baseSalary) {
                 const maxAllowed = (parseFloat(user.baseSalary) * settings.maxAdvancePercentage) / 100;
                 if (requestedAmount > maxAllowed && maxAllowed > 0) {
-                    toast.error(`المبلغ يتجاوز الحد المسموح: ${maxAllowed.toFixed(0)} جم`);
+                    toast.error(t("employee.advances.maxExceeded", { max: maxAllowed.toFixed(0) }));
                     return;
                 }
             }
@@ -154,12 +157,12 @@ const MyAdvances = () => {
                 installmentsCount: data.repaymentType === "INSTALLMENTS" ? parseInt(data.installmentsCount) : 1,
             });
 
-            toast.success("✅ تم تقديم طلب السلفة بنجاح، سيتم مراجعته قريباً");
+            toast.success(t("employee.advances.submitSuccess"));
             setShowForm(false);
             reset();
             fetchData();
         } catch (error: any) {
-            toast.error(error.response?.data?.error || "فشل في تقديم الطلب");
+            toast.error(error.response?.data?.error || t("employee.advances.submitError"));
         } finally {
             setLoading(false);
         }
@@ -193,7 +196,7 @@ const MyAdvances = () => {
                     <Wallet className="w-16 h-16 text-emerald-200 dark:text-emerald-900" />
                     <Loader2 className="w-8 h-8 text-emerald-500 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                 </div>
-                <p className="text-gray-400 font-medium text-lg">جارٍ تحميل سجل السلف...</p>
+                <p className="text-gray-400 font-medium text-lg">{t("employee.advances.loading")}</p>
             </div>
         );
     }
@@ -209,10 +212,10 @@ const MyAdvances = () => {
                             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
                                 <Wallet className="w-7 h-7 text-white" />
                             </div>
-                            السلف والمستحقات
+                            {t("employee.advances.title")}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-base">
-                            إدارة طلبات السلف الشخصية ومتابعة حالة السداد
+                            {t("employee.advances.subtitle")}
                         </p>
                     </div>
 
@@ -222,13 +225,13 @@ const MyAdvances = () => {
                             className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 rounded-xl h-12 px-6 gap-2 transition-all hover:scale-[1.02]"
                         >
                             <Plus className="w-5 h-5" />
-                            طلب سلفة جديدة
+                            {t("employee.advances.newRequest")}
                         </Button>
                     )}
                     {hasPending && (
                         <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-bold">
                             <Clock className="w-4 h-4" />
-                            لديك طلب قيد المراجعة
+                            {t("employee.advances.hasPendingRequest")}
                         </div>
                     )}
                 </div>
@@ -237,36 +240,36 @@ const MyAdvances = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         {
-                            label: "إجمالي طلباتك",
+                            label: t("employee.advances.totalRequests"),
                             value: history.length,
-                            suffix: "طلب",
+                            suffix: t("employee.advances.statsRequestSuffix"),
                             icon: <BarChart3 className="w-5 h-5" />,
                             color: "from-blue-500 to-indigo-600",
                             bg: "bg-blue-50 dark:bg-blue-900/20",
                             text: "text-blue-600 dark:text-blue-400",
                         },
                         {
-                            label: "قيد الانتظار",
+                            label: t("employee.advances.pending"),
                             value: totalPending,
-                            suffix: "طلب",
+                            suffix: t("employee.advances.statsRequestSuffix"),
                             icon: <Clock className="w-5 h-5" />,
                             color: "from-amber-500 to-orange-600",
                             bg: "bg-amber-50 dark:bg-amber-900/20",
                             text: "text-amber-600 dark:text-amber-400",
                         },
                         {
-                            label: "المتبقي للسداد",
+                            label: t("employee.advances.remainingForRepayment"),
                             value: totalActive.toFixed(0),
-                            suffix: "جم",
+                            suffix: t("employee.advances.egp"),
                             icon: <TrendingDown className="w-5 h-5" />,
                             color: "from-rose-500 to-pink-600",
                             bg: "bg-rose-50 dark:bg-rose-900/20",
                             text: "text-rose-600 dark:text-rose-400",
                         },
                         {
-                            label: "الحد المسموح",
+                            label: t("employee.advances.maxAllowed"),
                             value: maxAllowed > 0 ? maxAllowed.toFixed(0) : "---",
-                            suffix: maxAllowed > 0 ? "جم" : "",
+                            suffix: maxAllowed > 0 ? t("employee.advances.egp") : "",
                             icon: <ShieldCheck className="w-5 h-5" />,
                             color: "from-emerald-500 to-teal-600",
                             bg: "bg-emerald-50 dark:bg-emerald-900/20",
@@ -309,8 +312,8 @@ const MyAdvances = () => {
                                             <CreditCard className="w-6 h-6 text-emerald-600" />
                                         </div>
                                         <div>
-                                            <h2 className="font-black text-gray-900 dark:text-white text-xl">طلب سلفة جديدة</h2>
-                                            <p className="text-gray-500 dark:text-gray-400 text-sm">سيتم مراجعة طلبك من قبل الإدارة</p>
+                                            <h2 className="font-black text-gray-900 dark:text-white text-xl">{t("employee.advances.dialogTitle")}</h2>
+                                            <p className="text-gray-500 dark:text-gray-400 text-sm">{t("employee.advances.dialogDesc")}</p>
                                         </div>
                                     </div>
                                     <Button
@@ -330,19 +333,19 @@ const MyAdvances = () => {
                                             <div className="space-y-2">
                                                 <Label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                                     <Banknote className="w-4 h-4 text-emerald-500" />
-                                                    المبلغ المطلوب (جم)
+                                                    {t("employee.advances.amountLabel")}
                                                 </Label>
                                                 <div className="relative">
                                                     <Input
                                                         type="number"
-                                                        placeholder="مثال: 2000"
+                                                        placeholder={t("employee.advances.amountPlaceholder")}
                                                         className="h-14 text-xl font-bold pr-4 pl-14 border-2 border-gray-100 dark:border-gray-700 focus:border-emerald-400 focus:ring-emerald-200 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 transition-all"
                                                         {...register("amount", {
-                                                            required: "يرجى إدخال المبلغ",
-                                                            min: { value: 100, message: "الحد الأدنى 100 جم" },
+                                                            required: t("employee.advances.amountRequired"),
+                                                            min: { value: 100, message: t("employee.advances.minAmount") },
                                                         })}
                                                     />
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">جم</span>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">{t("employee.advances.egp")}</span>
                                                 </div>
                                                 {errors.amount && (
                                                     <p className="text-rose-500 text-sm flex items-center gap-1 font-medium">
@@ -352,7 +355,7 @@ const MyAdvances = () => {
                                                 {maxAllowed > 0 && (
                                                     <p className="text-gray-400 text-xs font-medium flex items-center gap-1">
                                                         <Info className="w-3.5 h-3.5" />
-                                                        الحد الأقصى المسموح: <span className="text-emerald-600 font-bold">{maxAllowed.toFixed(0)} جم</span>
+                                                        {t("employee.advances.maxAmount", { max: maxAllowed.toFixed(0) })}
                                                     </p>
                                                 )}
                                             </div>
@@ -361,18 +364,18 @@ const MyAdvances = () => {
                                             <div className="space-y-2">
                                                 <Label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                                     <Calendar className="w-4 h-4 text-blue-500" />
-                                                    طريقة السداد
+                                                    {t("employee.advances.repaymentMethod")}
                                                 </Label>
                                                 <Select
                                                     onValueChange={(val) => setValue("repaymentType", val as any)}
                                                     defaultValue="INSTALLMENTS"
                                                 >
                                                     <SelectTrigger className="h-14 text-base font-semibold border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 focus:border-blue-400">
-                                                        <SelectValue placeholder="اختر طريقة السداد" />
+                                                        <SelectValue placeholder={t("employee.advances.repaymentPlaceholder")} />
                                                     </SelectTrigger>
                                                     <SelectContent className="rounded-xl border-2 shadow-xl">
-                                                        <SelectItem value="INSTALLMENTS" className="text-base h-11 rounded-lg font-medium">📅 تقسيط شهري على دفعات</SelectItem>
-                                                        <SelectItem value="ONE_TIME" className="text-base h-11 rounded-lg font-medium">💸 خصم كامل من الراتب القادم</SelectItem>
+                                                        <SelectItem value="INSTALLMENTS" className="text-base h-11 rounded-lg font-medium">{t("employee.advances.monthlyInstallment")}</SelectItem>
+                                                        <SelectItem value="ONE_TIME" className="text-base h-11 rounded-lg font-medium">{t("employee.advances.fullDeduction")}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -386,15 +389,15 @@ const MyAdvances = () => {
                                                 >
                                                     <Label className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                                         <Clock className="w-4 h-4 text-amber-500" />
-                                                        عدد الأقساط (أشهر)
+                                                        {t("employee.advances.installmentCount")}
                                                     </Label>
                                                     <Input
                                                         type="number"
                                                         className="h-14 text-xl font-bold border-2 border-gray-100 dark:border-gray-700 focus:border-amber-400 focus:ring-amber-200 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 transition-all"
                                                         {...register("installmentsCount", {
-                                                            required: "أدخل عدد الأقساط",
-                                                            min: { value: 1, message: "الحد الأدنى شهر واحد" },
-                                                            max: { value: settings?.advanceRepaymentMonths || 12, message: `الحد الأقصى ${settings?.advanceRepaymentMonths || 12} أشهر` },
+                                                            required: t("employee.advances.installmentRequired"),
+                                                            min: { value: 1, message: t("employee.advances.minInstallment") },
+                                                            max: { value: settings?.advanceRepaymentMonths || 12, message: t("employee.advances.maxInstallment", { max: settings?.advanceRepaymentMonths || 12 }) },
                                                         })}
                                                     />
                                                     {errors.installmentsCount && (
@@ -411,18 +414,18 @@ const MyAdvances = () => {
                                                     className={`${repaymentType === "INSTALLMENTS" ? "" : "md:col-span-2"} bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-100 dark:border-blue-900/30 rounded-2xl p-5`}
                                                 >
                                                     <p className="text-blue-700 dark:text-blue-300 font-black text-sm mb-2 flex items-center gap-2">
-                                                        <Info className="w-4 h-4" /> ملخص السلفة
+                                                        <Info className="w-4 h-4" /> {t("employee.advances.summaryTitle")}
                                                     </p>
                                                     <div className="flex flex-wrap gap-4">
                                                         <div>
-                                                            <p className="text-xs text-blue-500 font-semibold">المبلغ الإجمالي</p>
-                                                            <p className="text-2xl font-black text-blue-800 dark:text-blue-200">{parseFloat(amount).toFixed(0)} <span className="text-sm">جم</span></p>
+                                                            <p className="text-xs text-blue-500 font-semibold">{t("employee.advances.totalAmount")}</p>
+                                                            <p className="text-2xl font-black text-blue-800 dark:text-blue-200">{parseFloat(amount).toFixed(0)} <span className="text-sm">{t("employee.advances.egp")}</span></p>
                                                         </div>
                                                         {repaymentType === "INSTALLMENTS" && installmentsCount && (
                                                             <div>
-                                                                <p className="text-xs text-blue-500 font-semibold">القسط الشهري</p>
+                                                                <p className="text-xs text-blue-500 font-semibold">{t("employee.advances.monthlyPayment")}</p>
                                                                 <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                                                                    {(parseFloat(amount) / parseInt(installmentsCount || "1")).toFixed(0)} <span className="text-sm">جم</span>
+                                                                    {(parseFloat(amount) / parseInt(installmentsCount || "1")).toFixed(0)} <span className="text-sm">{t("employee.advances.egp")}</span>
                                                                 </p>
                                                             </div>
                                                         )}
@@ -433,11 +436,11 @@ const MyAdvances = () => {
 
                                         {/* Reason */}
                                         <div className="space-y-2">
-                                            <Label className="font-bold text-gray-700 dark:text-gray-300">سبب الطلب</Label>
+                                            <Label className="font-bold text-gray-700 dark:text-gray-300">{t("employee.advances.reasonLabel")}</Label>
                                             <Textarea
-                                                placeholder="يرجى توضيح سبب الاحتياج للسلفة مثل: ظروف طارئة، مصروفات طبية..."
+                                                placeholder={t("employee.advances.reasonPlaceholder")}
                                                 className="min-h-[110px] text-base border-2 border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-all bg-gray-50/50 dark:bg-gray-800/50 p-4 rounded-xl resize-none"
-                                                {...register("reason", { required: "يرجى إدخال سبب الطلب" })}
+                                                {...register("reason", { required: t("employee.advances.reasonRequired") })}
                                             />
                                             {errors.reason && (
                                                 <p className="text-rose-500 text-sm font-medium flex items-center gap-1">
@@ -453,7 +456,7 @@ const MyAdvances = () => {
                                                 onClick={() => { setShowForm(false); reset(); }}
                                                 className="flex-1 h-12 rounded-xl font-bold border-2"
                                             >
-                                                إلغاء
+                                                {t("employee.advances.cancelButton")}
                                             </Button>
                                             <Button
                                                 type="submit"
@@ -461,9 +464,9 @@ const MyAdvances = () => {
                                                 className="flex-[2] h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 text-base gap-2"
                                             >
                                                 {loading ? (
-                                                    <><Loader2 className="w-5 h-5 animate-spin" /> جارٍ الإرسال...</>
+                                                    <><Loader2 className="w-5 h-5 animate-spin" /> {t("employee.advances.sending")}</>
                                                 ) : (
-                                                    <><CheckCircle2 className="w-5 h-5" /> تأكيد وإرسال الطلب</>
+                                                    <><CheckCircle2 className="w-5 h-5" /> {t("employee.advances.submitButton")}</>
                                                 )}
                                             </Button>
                                         </div>
@@ -479,7 +482,7 @@ const MyAdvances = () => {
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2.5">
                             <History className="w-6 h-6 text-gray-400" />
-                            سجل السلف
+                            {t("employee.advances.recordsTitle")}
                             {history.length > 0 && (
                                 <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm px-2.5 py-0.5 rounded-full font-bold">
                                     {history.length}
@@ -497,14 +500,14 @@ const MyAdvances = () => {
                             <div className="bg-emerald-50 dark:bg-emerald-900/20 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto border border-emerald-100 dark:border-emerald-900">
                                 <Banknote className="w-10 h-10 text-emerald-300" />
                             </div>
-                            <h3 className="text-2xl font-black text-gray-700 dark:text-gray-300">لا توجد سلف بعد</h3>
-                            <p className="text-gray-400 max-w-sm mx-auto">لم يتم تقديم أو إنشاء أي طلبات سلف لحسابك حتى الآن.</p>
+                            <h3 className="text-2xl font-black text-gray-700 dark:text-gray-300">{t("employee.advances.noAdvances")}</h3>
+                            <p className="text-gray-400 max-w-sm mx-auto">{t("employee.advances.noAdvancesDesc")}</p>
                             <Button
                                 onClick={() => setShowForm(true)}
                                 className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-8 font-bold"
                             >
                                 <Plus className="w-4 h-4 ml-1" />
-                                اطلب أول سلفة
+                                {t("employee.advances.firstAdvance")}
                             </Button>
                         </motion.div>
                     ) : (
@@ -541,7 +544,7 @@ const MyAdvances = () => {
                                                             req.status === "REJECTED" ? "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300" :
                                                                 "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"}`}>
                                                         <span className="text-lg font-black leading-none">{parseFloat(req.amount).toFixed(0)}</span>
-                                                        <span className="text-xs opacity-70">جم</span>
+                                                        <span className="text-xs opacity-70">{t("employee.advances.egp")}</span>
                                                     </div>
 
                                                     {/* Info */}
@@ -549,12 +552,12 @@ const MyAdvances = () => {
                                                         <div className="flex items-center gap-2 flex-wrap mb-1">
                                                             <StatusBadge status={req.status} />
                                                             <span className="text-xs text-gray-400 font-medium">
-                                                                {isOneTime ? "دفعة واحدة" : `${req.installmentsCount} أقساط`}
+                                                                {isOneTime ? t("employee.advances.lumpSum") : t("employee.advances.installments", { count: req.installmentsCount })}
                                                             </span>
                                                             {/* Tag if created by manager */}
                                                             {req.approvedBy && req.status === "APPROVED" && (
                                                                 <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 px-2 py-0.5 rounded-full font-bold">
-                                                                    <User className="w-3 h-3" /> معتمدة من الإدارة
+                                                                    <User className="w-3 h-3" /> {t("employee.advances.approvedByMgmt")}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -572,15 +575,15 @@ const MyAdvances = () => {
                                                     <div className="flex items-center gap-3 shrink-0">
                                                         {req.status === "APPROVED" && !req.isPaidOff && (
                                                             <div className="text-left hidden sm:block">
-                                                                <p className="text-xs text-gray-400 font-semibold">المتبقي</p>
+                                                                <p className="text-xs text-gray-400 font-semibold">{t("employee.advances.remaining")}</p>
                                                                 <p className="text-lg font-black text-rose-600 dark:text-rose-400">
-                                                                    {parseFloat(req.remainingBalance || 0).toFixed(0)} جم
+                                                                    {parseFloat(req.remainingBalance || 0).toFixed(0)} {t("employee.advances.egp")}
                                                                 </p>
                                                             </div>
                                                         )}
                                                         {req.isPaidOff && (
                                                             <span className="text-emerald-600 text-xs font-black bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 rounded-full flex items-center gap-1">
-                                                                <CheckCircle2 className="w-3.5 h-3.5" /> مسدّدة
+                                                                <CheckCircle2 className="w-3.5 h-3.5" /> {t("employee.advances.settled")}
                                                             </span>
                                                         )}
                                                         <ArrowRight className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
@@ -591,7 +594,7 @@ const MyAdvances = () => {
                                                 {req.status === "APPROVED" && !isOneTime && !req.isPaidOff && (
                                                     <div className="px-5 pb-3">
                                                         <div className="flex justify-between text-xs text-gray-400 mb-1.5 font-medium">
-                                                            <span>تم سداد {paidAmount.toFixed(0)} جم</span>
+                                                            <span>{t("employee.advances.paidAmount", { amount: paidAmount.toFixed(0) })}</span>
                                                             <span>{progressPct.toFixed(0)}%</span>
                                                         </div>
                                                         <Progress value={progressPct} className="h-1.5 bg-gray-100 dark:bg-gray-800" />
@@ -611,23 +614,23 @@ const MyAdvances = () => {
                                                             <div className="border-t border-gray-100 dark:border-gray-800 p-5 bg-gray-50/50 dark:bg-gray-800/30 space-y-4">
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                                                     <div>
-                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">المبلغ الكلي</p>
-                                                                        <p className="font-black text-gray-800 dark:text-white text-base">{parseFloat(req.amount).toFixed(0)} جم</p>
-                                                                    </div>
+                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.totalAmountLabel")}</p>
+                                                                    <p className="font-black text-gray-800 dark:text-white text-base">{parseFloat(req.amount).toFixed(0)} {t("employee.advances.egp")}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.repaymentMethodLabel")}</p>
+                                                                    <p className="font-bold text-gray-700 dark:text-gray-300">
+                                                                        {isOneTime ? t("employee.advances.lumpSum") : t("employee.advances.installments", { count: req.installmentsCount })}
+                                                                    </p>
+                                                                </div>
+                                                                {!isOneTime && (
                                                                     <div>
-                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">طريقة السداد</p>
-                                                                        <p className="font-bold text-gray-700 dark:text-gray-300">
-                                                                            {isOneTime ? "دفعة واحدة" : `${req.installmentsCount} أقساط`}
-                                                                        </p>
+                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.monthlyPaymentLabel")}</p>
+                                                                        <p className="font-bold text-gray-700 dark:text-gray-300">{parseFloat(req.monthlyAmount || req.installmentAmount || 0).toFixed(0)} {t("employee.advances.egp")}</p>
                                                                     </div>
-                                                                    {!isOneTime && (
-                                                                        <div>
-                                                                            <p className="text-gray-400 font-semibold text-xs uppercase mb-1">القسط الشهري</p>
-                                                                            <p className="font-bold text-gray-700 dark:text-gray-300">{parseFloat(req.monthlyAmount || req.installmentAmount || 0).toFixed(0)} جم</p>
-                                                                        </div>
-                                                                    )}
-                                                                    <div>
-                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">تاريخ الطلب</p>
+                                                                )}
+                                                                <div>
+                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.requestDateLabel")}</p>
                                                                         <p className="font-bold text-gray-700 dark:text-gray-300">
                                                                             {new Date(req.createdAt).toLocaleDateString("ar-EG")}
                                                                         </p>
@@ -636,7 +639,7 @@ const MyAdvances = () => {
 
                                                                 {/* Reason box */}
                                                                 <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
-                                                                    <p className="text-xs text-gray-400 font-bold uppercase mb-1.5">سبب الطلب</p>
+                                                                    <p className="text-xs text-gray-400 font-bold uppercase mb-1.5">{t("employee.advances.reasonDetail")}</p>
                                                                     <p className="text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{req.reason}</p>
                                                                 </div>
 
@@ -644,7 +647,7 @@ const MyAdvances = () => {
                                                                 {req.status === "APPROVED" && req.approver && (
                                                                     <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 px-4 py-2.5 rounded-xl text-sm font-bold">
                                                                         <ShieldCheck className="w-4 h-4" />
-                                                                        تمت الموافقة من قبل: {req.approver.firstName} {req.approver.lastName}
+                                                                        {t("employee.advances.approvedBy", { name: `${req.approver.firstName} ${req.approver.lastName}` })}
                                                                         {req.approvedAt && (
                                                                             <span className="text-emerald-500 font-normal mr-auto">
                                                                                 {new Date(req.approvedAt).toLocaleDateString("ar-EG")}
@@ -658,7 +661,7 @@ const MyAdvances = () => {
                                                                     <div className="flex items-start gap-2.5 text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 px-4 py-3 rounded-xl text-sm">
                                                                         <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                                                                         <div>
-                                                                            <p className="font-black text-xs uppercase mb-0.5">سبب الرفض</p>
+                                                                            <p className="font-black text-xs uppercase mb-0.5">{t("employee.advances.rejectionReason")}</p>
                                                                             <p className="font-medium">{req.rejectedReason}</p>
                                                                         </div>
                                                                     </div>

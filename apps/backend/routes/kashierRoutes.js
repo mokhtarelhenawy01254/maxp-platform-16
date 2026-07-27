@@ -62,8 +62,8 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         quantity,
         total: price * quantity,
         productSku: item.sku || null,
-        productColor: item.color || item.attributes?.color || item.attributes?.Colour || null,
-        productSize: item.size || item.attributes?.size || null,
+        productColor: item.color ? String(item.color) : (item.attributes?.color ? String(item.attributes.color) : (item.attributes?.Colour ? String(item.attributes.Colour) : null)),
+        productSize: item.size != null ? String(item.size) : (item.attributes?.size != null ? String(item.attributes.size) : null),
         metadata: JSON.stringify({
           attributes: item.attributes || {},
           image,

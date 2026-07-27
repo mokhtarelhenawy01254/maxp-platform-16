@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceContent, { getInvoicePages, type InvoiceData } from "../../components/orders/InvoiceContent";
@@ -162,6 +162,17 @@ const PrintMultipleInvoices: React.FC = () => {
       setPrintLayout(autoDetectLayout(allSlots.length));
     }
   }, [allSlots, loading, autoLayout]);
+
+  // Increment print count for all invoices (fire once per page load)
+  const printedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && invoices.length > 0 && !printedRef.current) {
+      printedRef.current = true;
+      invoices.forEach((inv) => {
+        apiClient.post(`/order-invoices/${inv.id}/print`).catch(() => {});
+      });
+    }
+  }, [invoices, loading]);
 
   // Trigger print after layout is set and data is ready
   useEffect(() => {

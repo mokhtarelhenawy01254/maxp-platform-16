@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   UserIcon,
   MapPinIcon,
@@ -24,36 +25,35 @@ import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuthSimple";
-
-// قائمة المحافظات المصرية
-const EGYPT_GOVERNORATES = [
-  "القاهرة",
-  "الجيزة",
-  "الإسكندرية",
-  "الدقهلية",
-  "البحر الأحمر",
-  "البحيرة",
-  "الفيوم",
-  "الغربية",
-  "الإسماعيلية",
-  "المنوفية",
-  "المنيا",
-  "القليوبية",
-  "الوادي الجديد",
-  "السويس",
-  "أسوان",
-  "أسيوط",
-  "بني سويف",
-  "بورسعيد",
-  "دمياط",
-  "الشرقية",
-  "جنوب سيناء",
-  "كفر الشيخ",
-  "مطروح",
-  "الأقصر",
-  "قنا",
-  "شمال سيناء",
-  "سوهاج",
+// قائمة المحافظات المصرية - translation keys (resolved inside component via useTranslation)
+const EGYPT_GOVERNORATE_KEYS = [
+  'manualOrder.k_25',
+  'manualOrder.k_26',
+  'manualOrder.k_27',
+  'manualOrder.k_28',
+  'manualOrder.k_29',
+  'manualOrder.k_30',
+  'manualOrder.k_31',
+  'manualOrder.k_32',
+  'manualOrder.k_33',
+  'manualOrder.k_34',
+  'manualOrder.k_35',
+  'manualOrder.k_36',
+  'manualOrder.k_37',
+  'manualOrder.k_38',
+  'manualOrder.k_39',
+  'manualOrder.k_40',
+  'manualOrder.k_41',
+  'manualOrder.k_42',
+  'manualOrder.k_43',
+  'manualOrder.k_44',
+  'manualOrder.k_45',
+  'manualOrder.k_46',
+  'manualOrder.k_47',
+  'manualOrder.k_48',
+  'manualOrder.k_49',
+  'manualOrder.k_50',
+  'manualOrder.k_51',
 ];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
@@ -131,9 +131,11 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   cartItems,
   onClearCart,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
+  const EGYPT_GOVERNORATES = useMemo(() => EGYPT_GOVERNORATE_KEYS.map(k => t(k)), [t]);
   const canOverrideBlockedCustomer = [
     "OWNER",
     "COMPANY_ADMIN",
@@ -167,9 +169,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const [loadingAreas, setLoadingAreas] = useState(false);
 
   // Order Settings
-  const [status, setStatus] = useState("PENDING"); // PENDING, CONFIRMED
+  const [status, setStatus] = useState("CONFIRMED"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [requestType, setRequestType] = useState("delivery");
+  const [returnAmount, setReturnAmount] = useState<string>("");
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -287,7 +290,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 "",
             ),
           );
-          toast.success("تم العثور على العميل!");
+          toast.success(t('manualOrder.k_52'));
         }
       } catch (error) {
         console.error("Search error:", error);
@@ -435,12 +438,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   // Apply Coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      toast.error("أدخل كود الكوبون");
+      toast.error(t('manualOrder.k_53'));
       return;
     }
 
     if (subtotal <= 0) {
-      toast.error("أضف منتجات للسلة أولاً");
+      toast.error(t('manualOrder.k_54'));
       return;
     }
 
@@ -458,12 +461,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           discountAmount,
         });
         toast.success(
-          `تم تطبيق الكوبون: خصم ${discountAmount.toLocaleString()} ج.م`,
+          t('manualOrder.coupon_applied', { amount: discountAmount.toLocaleString() }),
         );
         setCouponCode("");
       }
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "كوبون غير صالح"));
+      toast.error(getApiErrorMessage(error, t('manualOrder.k_55')));
     } finally {
       setLoadingCoupon(false);
     }
@@ -472,7 +475,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   // Remove Coupon
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
-    toast.success("تم إزالة الكوبون");
+    toast.success(t('manualOrder.k_56'));
   };
 
   // Reset form after successful order
@@ -499,22 +502,22 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
   const handleCreateOrder = async () => {
     if (cartItems.length === 0) {
-      toast.error("السلة فارغة");
+      toast.error(t('manualOrder.k_57'));
       return;
     }
     if (!phone || !firstName) {
-      toast.error("بيانات العميل ناقصة");
+      toast.error(t('manualOrder.k_58'));
       return;
     }
     if (governorate && loadingShipping) {
-      toast.error("جاري حساب تكلفة الشحن، انتظر لحظة");
+      toast.error(t('manualOrder.k_59'));
       return;
     }
     if (
       customerBlock?.blocked &&
       !(canOverrideBlockedCustomer && allowBlockedCustomerOverride)
     ) {
-      toast.error(customerBlock.message || "هذا العميل محظور من إنشاء الطلبات");
+      toast.error(customerBlock.message || t('manualOrder.k_60'));
       return;
     }
 
@@ -542,8 +545,8 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           quantity: item.quantity,
           variantId: item.variantId,
           sku: item.sku,
-          productColor: item.color,
-          productSize: item.size,
+          productColor: item.color ? String(item.color) : null,
+          productSize: item.size != null ? String(item.size) : null,
           productImage: item.image,
         })),
         customerPhone: phone,
@@ -560,6 +563,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         platform: "manual",
         source: "manual_entry",
         requestType: requestType,
+        returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
         // New fields for shipping and discount
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
@@ -588,7 +592,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
       const response = await apiClient.post("/orders-enhanced", payload);
 
       if (response.data.success) {
-        toast.success("تم إنشاء الطلب بنجاح!");
+        toast.success(t('manualOrder.k_61'));
 
         // Get order ID and show success modal
         const orderId = response.data.order?.id || response.data.data?.id;
@@ -596,12 +600,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         setShowSuccessModal(true);
       } else {
         toast.error(
-          "فشل إنشاء الطلب: " + (response.data.error || "خطأ غير معروف"),
+          t('manualOrder.k_62') + (response.data.error || t('manualOrder.k_63')),
         );
       }
     } catch (error: unknown) {
       console.error("Create order error:", error);
-      toast.error(getApiErrorMessage(error, "حدث خطأ أثناء إنشاء الطلب"));
+      toast.error(getApiErrorMessage(error, t('manualOrder.k_64')));
     } finally {
       setLoading(false);
     }
@@ -620,7 +624,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     >
       <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-          بيانات العميل والدفع
+          {t('manualOrder.k_89')}
         </h2>
       </div>
 
@@ -629,12 +633,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <UserIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            بيانات العميل
+            {t('manualOrder.k_90')}
           </h3>
 
           <div className="relative">
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              رقم الهاتف{" "}
+              {t('manualOrder.k_91')}{" "}
               <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <div className="relative">
@@ -665,10 +669,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">
                     {checkingBlock
-                      ? "جاري التحقق من الحظر..."
+                      ? t('manualOrder.k_65')
                       : customerBlock?.blocked
-                        ? "هذا العميل محظور"
-                        : "يوجد تنبيه حظر على هذا العميل"}
+                        ? t('manualOrder.k_66')
+                        : t('manualOrder.k_67')}
                   </p>
                   {customerBlock?.message && (
                     <p className="mt-1 leading-5">{customerBlock.message}</p>
@@ -683,7 +687,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                         }
                         className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
                       />
-                      إنشاء الطلب بتجاوز إداري
+                      {t('manualOrder.k_92')}
                     </label>
                   )}
                 </div>
@@ -694,7 +698,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                الاسم الأول{" "}
+                {t('manualOrder.k_93')}{" "}
                 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <input
@@ -706,7 +710,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                الاسم الأخير
+                {t('manualOrder.k_94')}
               </label>
               <input
                 type="text"
@@ -719,7 +723,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              المحافظة <span className="text-red-500 dark:text-red-400">*</span>
+              {t('manualOrder.k_95')} <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <SearchableSelect
               options={availableGovernorates.map((gov) => ({
@@ -736,23 +740,23 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   setArea("");
                 }
               }}
-              placeholder="اختر المحافظة..."
-              searchPlaceholder="ابحث عن محافظة..."
-              emptyText="لا توجد محافظة تطابق البحث"
+              placeholder={t('manualOrder.k_1')}
+              searchPlaceholder={t('manualOrder.k_2')}
+              emptyText={t('manualOrder.k_3')}
               disabled={false}
               loading={loadingGovernments}
-              loadingText="جاري تحميل المحافظات..."
+              loadingText={t('manualOrder.k_4')}
             />
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-                جاري تحميل قائمة المحافظات الدقيقة...
+                {t('manualOrder.k_96')}
               </p>
             )}
           </div>
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              المنطقة / الزون داخل المحافظة
+              {t('manualOrder.k_97')}
             </label>
             {availableAreas.length > 0 ? (
               <SearchableSelect
@@ -762,12 +766,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 }))}
                 value={area}
                 onChange={setArea}
-                placeholder={loadingAreas ? "جاري تحميل المناطق..." : "اختر المنطقة..."}
-                searchPlaceholder="ابحث عن منطقة..."
-                emptyText="لا توجد منطقة تطابق البحث"
+                placeholder={loadingAreas ? t('manualOrder.k_7') : t('manualOrder.k_68')}
+                searchPlaceholder={t('manualOrder.k_5')}
+                emptyText={t('manualOrder.k_6')}
                 disabled={false}
                 loading={loadingAreas}
-                loadingText="جاري تحميل المناطق..."
+                loadingText={t('manualOrder.k_7')}
               />
             ) : (
               <input
@@ -777,25 +781,25 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 placeholder={
                   governorate
-                    ? "مثال: مدينة نصر، الهرم، سيدي بشر..."
-                    : "اختر المحافظة أولاً ثم أدخل المنطقة"
+                    ? t('manualOrder.k_69')
+                    : t('manualOrder.k_70')
                 }
               />
             )}
             <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-              حدّد مكان العميل بشكل أدق داخل المحافظة لتسهيل التأكيد والشحن.
+              {t('manualOrder.k_98')}
             </p>
           </div>
 
           <div className="relative">
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              العنوان بالتفصيل
+              {t('manualOrder.k_99')}
             </label>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 h-20 resize-none dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-              placeholder="اسم الشارع، رقم العمارة، علامة مميزة..."
+              placeholder={t('manualOrder.k_8')}
             />
             <MapPinIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-8" />
           </div>
@@ -807,38 +811,38 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <TruckIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            الشحن
+            {t('manualOrder.k_24')}
           </h3>
 
           {loadingShipping ? (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <div className="w-4 h-4 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
-              جاري حساب تكلفة الشحن...
+              {t('manualOrder.k_100')}
             </div>
           ) : shippingInfo?.zoneId ? (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-green-700 dark:text-green-400">
-                  تكلفة الشحن ({shippingInfo.governorate})
+                  {t('manualOrder.k_101')}{shippingInfo.governorate})
                 </span>
                 <span className="font-bold text-green-700 dark:text-green-400">
-                  {shippingInfo.price.toLocaleString()} ج.م
+                  {shippingInfo.price.toLocaleString()} {t('manualOrder.k_75')}
                 </span>
               </div>
               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                مدة التوصيل: {shippingInfo.deliveryTime}
+                {t('manualOrder.k_102')} {shippingInfo.deliveryTime}
               </div>
             </div>
           ) : governorate ? (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
               <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-400">
                 <ExclamationTriangleIcon className="w-4 h-4" />
-                لا توجد منطقة شحن لهذه المحافظة
+                {t('manualOrder.k_103')}
               </div>
             </div>
           ) : (
             <div className="text-sm text-gray-400 dark:text-gray-500">
-              أدخل المحافظة لحساب الشحن
+              {t('manualOrder.k_104')}
             </div>
           )}
         </div>
@@ -849,7 +853,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <TicketIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            الخصومات
+            {t('manualOrder.k_105')}
           </h3>
 
           {/* Coupon Input */}
@@ -859,7 +863,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 type="text"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="كود الكوبون"
+                placeholder={t('manualOrder.k_9')}
                 className="flex-1 border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
               />
@@ -871,7 +875,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 {loadingCoupon ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  "تطبيق"
+                  t('manualOrder.k_71')
                 )}
               </button>
             </div>
@@ -894,7 +898,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 </button>
               </div>
               <div className="text-sm text-blue-700 dark:text-blue-400 mt-1">
-                خصم: -{appliedCoupon.discountAmount.toLocaleString()} ج.م
+                {t('manualOrder.k_106')}{appliedCoupon.discountAmount.toLocaleString()} {t('manualOrder.k_75')}
               </div>
             </div>
           )}
@@ -902,7 +906,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           {/* Manual Discount */}
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              خصم يدوي (ج.م)
+              {t('manualOrder.k_107')}
             </label>
             <input
               type="number"
@@ -923,43 +927,43 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <BanknotesIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            تفاصيل الطلب
+            {t('manualOrder.k_108')}
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                طريقة الدفع
+                {t('manualOrder.k_109')}
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="CASH">الدفع عند الاستلام (COD)</option>
-                <option value="WALLET">محفظة إلكترونية</option>
+                <option value="CASH">{t('manualOrder.k_12')}</option>
+                <option value="WALLET">{t('manualOrder.k_13')}</option>
                 <option value="INSTAPAY">Instapay</option>
               </select>
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                حالة الطلب
+                {t('manualOrder.k_110')}
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="PENDING">جديد (PENDING)</option>
-                <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
-                <option value="PROCESSING">جاري التجهيز</option>
-                <option value="RETURNED">مرتجع (RETURNED)</option>
-                <option value="EXCHANGED">استبدال (EXCHANGED)</option>
+                <option value="PENDING">{t('manualOrder.k_14')}</option>
+                <option value="CONFIRMED">{t('manualOrder.k_15')}</option>
+                <option value="PROCESSING">{t('manualOrder.k_16')}</option>
+                <option value="RETURNED">{t('manualOrder.k_17')}</option>
+                <option value="EXCHANGED">{t('manualOrder.k_18')}</option>
               </select>
             </div>
             <div className="col-span-2 sm:col-span-1">
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                نوع الطلب
+                {t('manualOrder.k_111')}
               </label>
               <select
                 value={requestType}
@@ -971,27 +975,50 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   } else if (val === "exchange") {
                     setStatus("EXCHANGED");
                   } else {
-                    setStatus("PENDING");
+                    setStatus("CONFIRMED");
                   }
                 }}
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
-                <option value="delivery">طلب تسليم (عادي)</option>
-                <option value="return">طلب مرتجع</option>
-                <option value="exchange">طلب استبدال</option>
+                <option value="delivery">{t('manualOrder.k_19')}</option>
+                <option value="partial_delivery">طلب تسليم جزئي</option>
+                <option value="return">{t('manualOrder.k_20')}</option>
+                <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
             </div>
           </div>
 
+          {/* قيمة المرتجع الافتراضية */}
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              ملاحظات داخلية
+              💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={returnAmount}
+                onChange={(e) => setReturnAmount(e.target.value)}
+                placeholder={shippingInfo ? `${shippingInfo.price} (مصاريف الشحن)` : 'سيتم استخدام مصاريف الشحن تلقائياً'}
+                className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 pe-16"
+                min="0"
+                step="1"
+              />
+              <span className="absolute start-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">ج.م</span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              هذا المبلغ يظهر في شركة الشحن كـ "مبلغ التحصيل في حالة المرتجع"
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              {t('manualOrder.k_112')}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 h-16 resize-none text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-              placeholder="أي ملاحظات إضافية للتيم..."
+              placeholder={t('manualOrder.k_10')}
             />
           </div>
         </div>
@@ -1010,7 +1037,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
               />
               <CalendarIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                طلب مجدول (استلام في وقت محدد)
+                {t('manualOrder.k_113')}
               </span>
             </label>
 
@@ -1019,7 +1046,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      تاريخ الاستلام <span className="text-red-500">*</span>
+                      {t('manualOrder.k_114')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -1036,7 +1063,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      وقت الاستلام
+                      {t('manualOrder.k_115')}
                     </label>
                     <input
                       type="time"
@@ -1048,21 +1075,20 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    ملاحظات الجدولة
+                    {t('manualOrder.k_116')}
                   </label>
                   <textarea
                     value={scheduledNotes}
                     onChange={(e) => setScheduledNotes(e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                     rows={2}
-                    placeholder="مثال: عيد ميلاد - يرجى التغليف الخاص"
+                    placeholder={t('manualOrder.k_11')}
                   />
                 </div>
                 <div className="flex items-start gap-2 text-xs text-orange-700 dark:text-orange-300">
                   <CalendarIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p>
-                    سيتم تحويل الطلب تلقائياً للحالة التالية عند حلول الموعد
-                    المحدد
+                    {t('manualOrder.k_117')}
                   </p>
                 </div>
               </div>
@@ -1076,7 +1102,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-700">
           <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
             <ExclamationTriangleIcon className="w-4 h-4" />
-            <span>تحذير: بعض المنتجات تتجاوز المخزون المتاح</span>
+            <span>{t('manualOrder.k_22')}</span>
           </div>
         </div>
       )}
@@ -1085,36 +1111,36 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
       <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600 dark:text-gray-400">
-            إجمالي المنتجات (
-            {cartItems.reduce((acc, item) => acc + item.quantity, 0)} قطعة)
+            {t('manualOrder.k_118')}
+            {cartItems.reduce((acc, item) => acc + item.quantity, 0)} {t('manualOrder.k_119')}
           </span>
           <span className="font-medium text-gray-900 dark:text-gray-100">
-            {subtotal.toLocaleString()} ج.م
+            {subtotal.toLocaleString()} {t('manualOrder.k_75')}
           </span>
         </div>
 
         {totalDiscount > 0 && (
           <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-            <span>الخصم</span>
-            <span>-{totalDiscount.toLocaleString()} ج.م</span>
+            <span>{t('manualOrder.k_23')}</span>
+            <span>-{totalDiscount.toLocaleString()}{t('manualOrder.k_75')}</span>
           </div>
         )}
 
         {shippingCost > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">الشحن</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('manualOrder.k_24')}</span>
             <span className="font-medium text-gray-900 dark:text-gray-100">
-              +{shippingCost.toLocaleString()} ج.م
+              +{shippingCost.toLocaleString()} {t('manualOrder.k_75')}
             </span>
           </div>
         )}
 
         <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
           <span className="text-gray-900 dark:text-gray-100">
-            الإجمالي النهائي
+            {t('manualOrder.k_120')}
           </span>
           <span className="text-blue-600 dark:text-blue-400">
-            {grandTotal.toLocaleString()} ج.م
+            {grandTotal.toLocaleString()} {t('manualOrder.k_75')}
           </span>
         </div>
 
@@ -1133,7 +1159,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           ) : (
             <>
               <CheckCircleIcon className="w-6 h-6" />
-              <span>إنشاء الطلب ({grandTotal.toLocaleString()} ج.م)</span>
+              <span>{t('manualOrder.k_82')}{grandTotal.toLocaleString()}{t('manualOrder.k_83')}</span>
             </>
           )}
         </button>
@@ -1148,17 +1174,17 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <ShoppingCartIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
-                تأكيد إنشاء الطلب
+                {t('manualOrder.k_121')}
               </h3>
               <p className="text-center text-gray-600 dark:text-gray-400 mb-4">
-                هل أنت متأكد من إنشاء هذا الطلب؟
+                {t('manualOrder.k_122')}
               </p>
 
               {/* Order Summary in Modal */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    العميل:
+                    {t('manualOrder.k_123')}
                   </span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {firstName} {lastName}
@@ -1166,7 +1192,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    الهاتف:
+                    {t('manualOrder.k_124')}
                   </span>
                   <span
                     className="font-medium text-gray-900 dark:text-gray-100"
@@ -1177,17 +1203,17 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    عدد المنتجات:
+                    {t('manualOrder.k_125')}
                   </span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {cartItems.length} منتج (
+                    {cartItems.length} {t('manualOrder.k_126')}
                     {cartItems.reduce((acc, item) => acc + item.quantity, 0)}{" "}
-                    قطعة)
+                    {t('manualOrder.k_119')}
                   </span>
                 </div>
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
                   <div className="text-gray-600 dark:text-gray-400 mb-2">
-                    المنتجات:
+                    {t('manualOrder.k_127')}
                   </div>
                   <div className="space-y-2">
                     {cartItems.map((item) => {
@@ -1206,12 +1232,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                               <div className="mt-1 flex flex-wrap gap-1.5">
                                 {item.color && (
                                   <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                                    اللون: {item.color}
+                                    {t('manualOrder.k_85')} {item.color}
                                   </span>
                                 )}
                                 {item.size && (
                                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                                    المقاس: {item.size}
+                                    {t('manualOrder.k_86')} {item.size}
                                   </span>
                                 )}
                                 {!item.color && !item.size && variantSummary && (
@@ -1223,10 +1249,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                             </div>
                             <div className="text-left shrink-0">
                               <div className="font-semibold text-blue-600 dark:text-blue-400">
-                                {item.price.toLocaleString()} ج.م
+                                {item.price.toLocaleString()} {t('manualOrder.k_75')}
                               </div>
                               <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                                الكمية: {item.quantity}
+                                {t('manualOrder.k_128')} {item.quantity}
                               </div>
                             </div>
                           </div>
@@ -1237,10 +1263,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 </div>
                 <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600 font-bold">
                   <span className="text-gray-900 dark:text-gray-100">
-                    الإجمالي:
+                    {t('manualOrder.k_77')}
                   </span>
                   <span className="text-blue-600 dark:text-blue-400">
-                    {grandTotal.toLocaleString()} ج.م
+                    {grandTotal.toLocaleString()} {t('manualOrder.k_75')}
                   </span>
                 </div>
               </div>
@@ -1250,13 +1276,13 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   onClick={() => setShowConfirmModal(false)}
                   className="flex-1 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  إلغاء
+                  {t('manualOrder.k_129')}
                 </button>
                 <button
                   onClick={confirmCreateOrder}
                   className="flex-1 py-2.5 px-4 bg-green-600 dark:bg-green-500 text-white rounded-lg font-medium hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
                 >
-                  تأكيد الطلب
+                  {t('manualOrder.k_130')}
                 </button>
               </div>
             </div>
@@ -1273,10 +1299,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <CheckCircleIcon className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
-                تم إنشاء الطلب بنجاح!
+                {t('manualOrder.k_61')}
               </h3>
               <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-                ماذا تريد أن تفعل الآن؟
+                {t('manualOrder.k_131')}
               </p>
 
               <div className="flex flex-col gap-3">
@@ -1293,7 +1319,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   }}
                   className="w-full py-3 px-4 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                 >
-                  عرض تفاصيل الطلب
+                  {t('manualOrder.k_132')}
                 </button>
                 <button
                   onClick={() => {
@@ -1309,7 +1335,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   className="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                 >
                   <PrinterIcon className="w-5 h-5" />
-                  طباعة الفاتورة
+                  {t('manualOrder.k_133')}
                 </button>
                 <button
                   onClick={() => {
@@ -1319,7 +1345,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   }}
                   className="w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  إنشاء طلب جديد
+                  {t('manualOrder.k_134')}
                 </button>
               </div>
             </div>

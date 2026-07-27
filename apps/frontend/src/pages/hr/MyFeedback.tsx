@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     MessageSquare,
     Plus,
@@ -67,6 +68,7 @@ interface Feedback {
 }
 
 const MyFeedback: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -96,30 +98,30 @@ const MyFeedback: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Error fetching feedback:", error);
-            toast.error("فشل في جلب البيانات");
+            toast.error(t("employee.feedback.fetchError"));
         } finally {
             setLoading(false);
         }
     };
 
-    const getTypeLabel = (type: string) => {
+    const getTypeKey = (type: string) => {
         const typeMap: Record<string, string> = {
-            SUGGESTION: "اقتراح",
-            COMPLAINT: "شكوى",
-            INQUIRY: "استفسار",
-            PEER: "تقييم زميل",
-            MANAGER: "تقييم مدير",
-            SUBORDINATE: "تقييم مرؤوس",
-            OTHER: "آخر",
+            SUGGESTION: "employee.feedback.typeSuggestion",
+            COMPLAINT: "employee.feedback.typeComplaint",
+            INQUIRY: "employee.feedback.typeInquiry",
+            PEER: "employee.feedback.typePeerReview",
+            MANAGER: "employee.feedback.typeManagerReview",
+            SUBORDINATE: "employee.feedback.typeSubordinateReview",
+            OTHER: "employee.feedback.typeOther",
         };
-        return typeMap[type] || type;
+        return typeMap[type] || "employee.feedback.typeOther";
     };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'ACTIVE': return <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">جديد</Badge>;
-            case 'RESOLVED': return <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none">تم الرد</Badge>;
-            case 'ARCHIVED': return <Badge variant="secondary">مؤرشف</Badge>;
+            case 'ACTIVE': return <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">{t("employee.feedback.statusNew")}</Badge>;
+            case 'RESOLVED': return <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none">{t("employee.feedback.statusReplied")}</Badge>;
+            case 'ARCHIVED': return <Badge variant="secondary">{t("employee.feedback.statusArchived")}</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }
     }
@@ -141,7 +143,7 @@ const MyFeedback: React.FC = () => {
             const search = searchQuery.toLowerCase();
             const contentMatch = (item.content || "").toLowerCase().includes(search);
             const fromName = item.fromEmployee ? `${item.fromEmployee.firstName} ${item.fromEmployee.lastName}` : "";
-            const toName = item.toEmployee ? `${item.toEmployee.firstName} ${item.toEmployee.lastName}` : (item.toUserId ? "" : "الإدارة");
+            const toName = item.toEmployee ? `${item.toEmployee.firstName} ${item.toEmployee.lastName}` : (item.toUserId ? "" : t("employee.feedback.generalManagement"));
 
             return contentMatch || fromName.toLowerCase().includes(search) || toName.toLowerCase().includes(search);
         }
@@ -155,15 +157,15 @@ const MyFeedback: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
                         <MessageSquare className="h-8 w-8 text-primary" />
-                        الشكاوى والاقتراحات
+                        {t("employee.feedback.title")}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        إدارة تواصلك مع الإدارة وتقييمات الزملاء في مكان واحد
+                        {t("employee.feedback.subtitle")}
                     </p>
                 </div>
                 <Button onClick={() => navigate("/my-feedback/new")} className="flex items-center gap-2 shadow-lg hover:shadow-primary/20 transition-all">
                     <Plus className="h-5 w-5" />
-                    إرسال رسالة جديدة
+                    {t("employee.feedback.newMessage")}
                 </Button>
             </div>
 
@@ -175,12 +177,12 @@ const MyFeedback: React.FC = () => {
                     </div>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                            الرسائل المستلمة
+                            {t("employee.feedback.receivedMessages")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{feedback.filter(f => f.toUserId === user?.id).length}</div>
-                        <p className="text-xs text-muted-foreground mt-1">رسائل وتلقيات من الزملاء</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t("employee.feedback.receivedDesc")}</p>
                     </CardContent>
                 </Card>
 
@@ -190,12 +192,12 @@ const MyFeedback: React.FC = () => {
                     </div>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                            الرسائل المرسلة
+                            {t("employee.feedback.sentMessages")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{feedback.filter(f => f.fromUserId === user?.id).length}</div>
-                        <p className="text-xs text-muted-foreground mt-1">شكاوى، اقتراحات، وتقييمات للغير</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t("employee.feedback.sentDesc")}</p>
                     </CardContent>
                 </Card>
 
@@ -205,7 +207,7 @@ const MyFeedback: React.FC = () => {
                     </div>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                            متوسط التقييم العام
+                            {t("employee.feedback.avgRating")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -217,7 +219,7 @@ const MyFeedback: React.FC = () => {
                                 return avg.toFixed(1);
                             })()}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">بناءً على التقييمات المسجلة في حسابك</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t("employee.feedback.basedOnRatings")}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -228,18 +230,18 @@ const MyFeedback: React.FC = () => {
                     <TabsList className="grid grid-cols-2 w-full md:w-[400px]">
                         <TabsTrigger value="sent" className="flex items-center gap-2">
                             <SendIcon className="h-4 w-4" />
-                            الرسائل المرسلة
+                            {t("employee.feedback.sentTab")}
                         </TabsTrigger>
                         <TabsTrigger value="received" className="flex items-center gap-2">
                             <Inbox className="h-4 w-4" />
-                            الرسائل المستلمة
+                            {t("employee.feedback.receivedTab")}
                         </TabsTrigger>
                     </TabsList>
 
                     <div className="relative w-full md:w-80 px-2">
                         <Search className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="ابحث في المحتوى أو الأسماء..."
+                            placeholder={String(t("employee.feedback.searchPlaceholder"))}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pr-10 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary"
@@ -251,7 +253,7 @@ const MyFeedback: React.FC = () => {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 space-y-4">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-                            <p className="text-muted-foreground animate-pulse">جاري تحميل البيانات...</p>
+                            <p className="text-muted-foreground animate-pulse">{t("employee.feedback.loading")}</p>
                         </div>
                     ) : filteredFeedback.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -283,8 +285,8 @@ const MyFeedback: React.FC = () => {
                                                 <div>
                                                     <p className="font-bold text-foreground">
                                                         {activeTab === "received"
-                                                            ? (item.isAnonymous ? "مجهول" : `${item.fromEmployee?.firstName} ${item.fromEmployee?.lastName}`)
-                                                            : (item.toUserId ? `${item.toEmployee?.firstName} ${item.toEmployee?.lastName}` : "الإدارة العامة")}
+                                                             ? (item.isAnonymous ? t("employee.feedback.anonymous") : `${item.fromEmployee?.firstName} ${item.fromEmployee?.lastName}`)
+                                                             : (item.toUserId ? `${item.toEmployee?.firstName} ${item.toEmployee?.lastName}` : t("employee.feedback.generalManagement"))}
                                                     </p>
                                                     <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
                                                         <Calendar className="h-3 w-3" />
@@ -294,7 +296,7 @@ const MyFeedback: React.FC = () => {
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
                                                 <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 bg-background shadow-sm">
-                                                    {getTypeLabel(item.type)}
+                                                    {t(getTypeKey(item.type))}
                                                 </Badge>
                                                 {getStatusBadge(item.status)}
                                                 <Button
@@ -342,7 +344,7 @@ const MyFeedback: React.FC = () => {
                                             <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 relative">
                                                 <div className="absolute -right-4 top-4 bottom-4 w-1 bg-primary/30 rounded-full" />
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <Badge className="bg-primary/20 text-primary border-none text-[10px] h-5">رد الإدارة</Badge>
+                                                    <Badge className="bg-primary/20 text-primary border-none text-[10px] h-5">{t("employee.feedback.replyBadge")}</Badge>
                                                     {item.repliedAt && (
                                                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                             <Clock className="h-3 w-3" />
@@ -364,14 +366,14 @@ const MyFeedback: React.FC = () => {
                             <div className="bg-primary/5 p-6 rounded-full mb-4">
                                 <AlertCircle className="h-12 w-12 text-primary/40" />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">لا توجد سجلات حالياً</h3>
+                            <h3 className="text-xl font-bold mb-2">{t("employee.feedback.noRecords")}</h3>
                             <p className="text-muted-foreground mb-8 max-w-sm">
                                 {activeTab === "received"
-                                    ? "قسم الرسائل المستلمة فارغ حالياً."
-                                    : "لم تقم بإرسال أي شكاوى أو مقترحات حتى هذه اللحظة."}
+                                    ? t("employee.feedback.receivedEmpty")
+                                    : t("employee.feedback.sentEmpty")}
                             </p>
                             <Button onClick={() => navigate("/my-feedback/new")} variant="outline" className="rounded-full px-8 hover:bg-primary hover:text-white transition-all">
-                                ابدأ بكتابة رسالة الآن
+                                {t("employee.feedback.startWriting")}
                             </Button>
                         </div>
                     )}
@@ -390,10 +392,10 @@ const MyFeedback: React.FC = () => {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <MessageSquare className="h-5 w-5 text-primary" />
-                            معاينة الرسالة
+                            {t("employee.feedback.quickView")}
                         </DialogTitle>
                         <DialogDescription>
-                            عرض سريع للتفاصيل دون فتح البطاقة الكاملة
+                            {t("employee.feedback.quickViewDesc")}
                         </DialogDescription>
                     </DialogHeader>
                     {previewItem && (
@@ -402,8 +404,8 @@ const MyFeedback: React.FC = () => {
                                 <div>
                                     <p className="font-bold text-lg">
                                         {previewItem.toUserId
-                                            ? `${previewItem.toEmployee?.firstName || ""} ${previewItem.toEmployee?.lastName || ""}`.trim() || "موظف"
-                                            : "الإدارة العامة"}
+                                        ? `${previewItem.toEmployee?.firstName || ""} ${previewItem.toEmployee?.lastName || ""}`.trim() || t("employee.feedback.generalManagement")
+                                        : t("employee.feedback.generalManagement")}
                                     </p>
                                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                                         <Calendar className="h-4 w-4" />
@@ -411,7 +413,7 @@ const MyFeedback: React.FC = () => {
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Badge variant="outline">{getTypeLabel(previewItem.type)}</Badge>
+                                    <Badge variant="outline">{t(getTypeKey(previewItem.type))}</Badge>
                                     {getStatusBadge(previewItem.status)}
                                 </div>
                             </div>
@@ -430,7 +432,7 @@ const MyFeedback: React.FC = () => {
                                         <Clock className="h-4 w-4" />
                                         {previewItem.repliedAt
                                             ? format(new Date(previewItem.repliedAt), "dd MMMM yyyy HH:mm", { locale: ar })
-                                            : "تم الرد"}
+                                            : t("employee.feedback.statusReplied")}
                                     </p>
                                     <p className="text-sm font-medium">{previewItem.adminReply}</p>
                                 </div>

@@ -88,21 +88,16 @@ const STOREFRONT_READY_MARKETPLACE_PREVIEWS = new Set([
   "pharmacy-demo",
 ]);
 
-const getFilterTypeLabels = (t: any): Record<ThemeFilterType, string> => ({
-  all: t("storefrontThemes.filterAll"),
-  owned: t("storefrontThemes.filterOwned"),
-  free: t("storefrontThemes.filterFree"),
-  paid: t("storefrontThemes.filterPaid"),
-});
+const THEME_FILTER_TYPES: ThemeFilterType[] = ["all", "owned", "free", "paid"];
 
 const FALLBACK_THEME_CATEGORY: StorefrontThemeCatalogItem["category"] = {
   primary: {
     id: "general",
-    label: "عام",
+    label: "General",
   },
   secondary: {
     id: "general-store",
-    label: "متجر عام",
+    label: "General Store",
   },
 };
 
@@ -142,7 +137,7 @@ const getThemeCategory = (
   },
 });
 
-const formatThemePrice = (theme: StorefrontThemeCatalogItem, t: any): string => {
+const formatThemePrice = (theme: StorefrontThemeCatalogItem, t: (key: string) => string): string => {
   if (theme.pricingModel === "ONE_TIME" && theme.monthlyPrice > 0) {
     return `${theme.monthlyPrice.toLocaleString("en-US")} ${theme.currency}`;
   }
@@ -287,7 +282,6 @@ const matchesMarketplaceSearch = (
 
 
 function StorefrontThemeCard({
-  t: t_sft,
   themeItem,
   highlighted,
   isBusy,
@@ -306,6 +300,7 @@ function StorefrontThemeCard({
   onCopyLink: (themeId: string) => void;
   onCustomize: (themeId: string) => void;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopyClick = () => {
@@ -319,21 +314,21 @@ function StorefrontThemeCard({
   
   const primaryAction = themeItem.isCurrentTheme
     ? {
-        label: t_sft("storefrontThemes.customize"),
+        label: t("storefrontThemes.customize"),
         icon: Palette,
         onClick: () => onCustomize(themeItem.themeId),
         className: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
       }
     : themeItem.canPurchase
       ? {
-          label: t_sft("storefrontThemes.purchase"),
+          label: t("storefrontThemes.purchase"),
           icon: ShoppingCart,
           onClick: () => onPurchase(themeItem),
           className: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
         }
       : canApplyNow
         ? {
-            label: isFreeActivation ? t_sft("storefrontThemes.activateFree") : t_sft("storefrontThemes.apply"),
+            label: isFreeActivation ? t("storefrontThemes.freeActivate") : t("storefrontThemes.apply"),
             icon: CheckCircle2,
             onClick: () => onApply(themeItem),
             className: isFreeActivation
@@ -341,7 +336,7 @@ function StorefrontThemeCard({
               : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-sm",
           }
         : {
-            label: t_sft("storefrontThemes.customize"),
+            label: t("storefrontThemes.customize"),
             icon: Palette,
             onClick: () => onCustomize(themeItem.themeId),
             className: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
@@ -373,21 +368,21 @@ function StorefrontThemeCard({
         {/* STATUS BADGES OVERLAY */}
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
            {themeItem.isCurrentTheme && (
-              <span className="bg-indigo-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
-                <CheckCircle2 className="size-2" /> {t_sft("storefrontThemes.activeBadge")}
-              </span>
+             <span className="bg-indigo-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
+               <CheckCircle2 className="size-2" /> ACTIVE
+             </span>
            )}
            {themeItem.isFeatured && (
-              <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
-                <Sparkles className="size-2" /> {t_sft("storefrontThemes.featuredBadge")}
-              </span>
+             <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
+               <Sparkles className="size-2" /> FEATURED
+             </span>
            )}
         </div>
 
         {/* PRICE OVERLAY */}
         <div className="absolute bottom-2 left-2">
            <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-md border border-white/10">
-               {formatThemePrice(themeItem, t_sft)}
+              {formatThemePrice(themeItem, t)}
            </span>
         </div>
       </div>
@@ -417,11 +412,11 @@ function StorefrontThemeCard({
         {/* MINI STATS GRID */}
         <div className="grid grid-cols-2 gap-2 mt-3 py-2 border-y border-slate-100 dark:border-slate-800/50">
            <div className="text-right">
-              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">{t_sft("storefrontThemes.homeSections")}</span>
+              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Home Sections</span>
               <span className="text-xs font-black text-slate-700 dark:text-slate-300">{themeItem.pageStats.homeSections}</span>
            </div>
            <div className="text-right">
-              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">{t_sft("storefrontThemes.shopLayers")}</span>
+              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Shop Layers</span>
               <span className="text-xs font-black text-slate-700 dark:text-slate-300">{themeItem.pageStats.shopSections}</span>
            </div>
         </div>
@@ -432,11 +427,11 @@ function StorefrontThemeCard({
             onClick={() => onPreview(themeItem.themeId)}
             className="flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
           >
-            <Eye className="size-3" /> {t_sft("storefrontThemes.preview")}
+            <Eye className="size-3" /> Preview
           </button>
           <button
             onClick={handleCopyClick}
-            title={t_sft("storefrontThemes.copyLink")}
+            title={t("storefrontThemes.copyPreviewLink")}
             className={cn(
               "flex items-center justify-center w-8 h-8 rounded-lg border transition-all",
               copied
@@ -456,7 +451,7 @@ function StorefrontThemeCard({
             )}
           >
             {isBusy ? <Loader2 className="size-3 animate-spin" /> : <primaryAction.icon className="size-3" />}
-            {isBusy ? t_sft("storefrontThemes.wait") : primaryAction.label}
+            {isBusy ? "WAIT..." : primaryAction.label}
           </button>
         </div>
       </div>
@@ -466,7 +461,6 @@ function StorefrontThemeCard({
 
 export default function StorefrontThemes() {
   const { t } = useTranslation();
-  const FILTER_TYPE_LABELS = getFilterTypeLabels(t);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const auth = useOptionalAuth();
@@ -773,7 +767,7 @@ export default function StorefrontThemes() {
     const labels: string[] = [];
 
     if (filterType !== "all") {
-      labels.push(FILTER_TYPE_LABELS[filterType]);
+      labels.push(t("storefrontThemes.filter" + filterType.charAt(0).toUpperCase() + filterType.slice(1)));
     }
 
     if (selectedPrimaryCategory) {
@@ -785,7 +779,7 @@ export default function StorefrontThemes() {
     }
 
     return labels;
-  }, [filterType, selectedPrimaryCategory, selectedSecondaryCategory]);
+  }, [t, filterType, selectedPrimaryCategory, selectedSecondaryCategory]);
 
   const filterCount = activeFilterLabels.length;
   const resultsSummaryLabel = t("storefrontThemes.resultsSummary", { count: filteredThemes.length, total: themes.length });
@@ -910,12 +904,12 @@ export default function StorefrontThemes() {
   const handleCopyLink = (themeId: string) => {
     const url = buildPreviewUrl(themeId);
     if (!url) {
-      toast.error(t("storefrontThemes.copyNoCompany"));
+      toast.error(t("storefrontThemes.copyLinkError"));
       return;
     }
     navigator.clipboard.writeText(url).then(
-      () => toast.success(t("storefrontThemes.copySuccess")),
-      () => toast.error(t("storefrontThemes.copyError")),
+      () => toast.success(t("storefrontThemes.copyLinkSuccess")),
+      () => toast.error(t("storefrontThemes.copyLinkFailed")),
     );
   };
 
@@ -940,7 +934,7 @@ export default function StorefrontThemes() {
     const previewUrl = buildPreviewUrl(themeId);
 
     if (!previewUrl) {
-      toast.error(t("storefrontThemes.previewNoCompany"));
+      toast.error(t("storefrontThemes.previewError"));
       return;
     }
 
@@ -954,7 +948,7 @@ export default function StorefrontThemes() {
         className,
       )}
     >
-      {(Object.keys(FILTER_TYPE_LABELS) as ThemeFilterType[]).map((value) => {
+      {THEME_FILTER_TYPES.map((value) => {
         const isActive = filterType === value;
         return (
           <button
@@ -964,7 +958,7 @@ export default function StorefrontThemes() {
             data-active={isActive}
             onClick={() => setFilterType(value)}
           >
-            {FILTER_TYPE_LABELS[value]}
+            {t("storefrontThemes.filter" + value.charAt(0).toUpperCase() + value.slice(1))}
           </button>
         );
       })}
@@ -976,7 +970,7 @@ export default function StorefrontThemes() {
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950">
         <div className="flex items-center gap-3 text-indigo-500 font-black uppercase tracking-widest text-[10px]">
           <Loader2 className="size-4 animate-spin" />
-          {t("storefrontThemes.loading")}
+          Initializing Engine...
         </div>
       </div>
     );
@@ -992,9 +986,9 @@ export default function StorefrontThemes() {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-              {t("storefrontThemes.title")} <span className="text-[10px] bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded-full">{t("storefrontThemes.version")}</span>
+              Storefront Matrix <span className="text-[10px] bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded-full">v2.0</span>
             </h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("storefrontThemes.subtitle")}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enterprise Theme Management</p>
           </div>
         </div>
 
@@ -1002,7 +996,7 @@ export default function StorefrontThemes() {
            {/* WALLET MINI NODE */}
            <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
               <div className="text-right">
-                  <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("storefrontThemes.walletBalance")}</span>
+                 <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Balance</span>
                  <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">
                    {wallet ? formatCurrency(wallet.balance, wallet.currency) : "0.00 EGP"}
                  </span>
@@ -1023,7 +1017,7 @@ export default function StorefrontThemes() {
                 onClick={() => navigate("/settings/storefront/editor")}
               >
                 <Sparkles className="size-4 mr-2" />
-                {t("storefrontThemes.customizeCurrent")}
+                Customize Current
               </Button>
            </div>
         </div>
@@ -1038,7 +1032,7 @@ export default function StorefrontThemes() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("storefrontThemes.searchPlaceholder")}
+                placeholder="SEARCH NODES..."
                 className="w-full h-9 pl-4 pr-10 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
               />
            </div>
@@ -1046,20 +1040,20 @@ export default function StorefrontThemes() {
            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden md:block" />
 
            <div className="flex items-center gap-1">
-              {(Object.keys(FILTER_TYPE_LABELS) as ThemeFilterType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setFilterType(type)}
-                  className={cn(
-                    "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
-                    filterType === type 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
-                      : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-indigo-500/50"
-                  )}
-                >
-                  {FILTER_TYPE_LABELS[type]}
-                </button>
-              ))}
+               {THEME_FILTER_TYPES.map((type) => (
+                 <button
+                   key={type}
+                   onClick={() => setFilterType(type)}
+                   className={cn(
+                     "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
+                     filterType === type 
+                       ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                       : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-indigo-500/50"
+                   )}
+                 >
+                   {t("storefrontThemes.filter" + type.charAt(0).toUpperCase() + type.slice(1))}
+                 </button>
+               ))}
            </div>
         </div>
 
@@ -1074,7 +1068,7 @@ export default function StorefrontThemes() {
                     : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
                 )}
               >
-                {t("storefrontThemes.allDomains")}
+                All Domains
               </button>
               {categoryGroups.map((group) => (
                 <button
@@ -1098,7 +1092,7 @@ export default function StorefrontThemes() {
       {/* SUBCATEGORY SECONDARY BAR */}
       {selectedPrimaryCategory && (
         <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 py-2 flex items-center gap-4 overflow-x-auto no-scrollbar">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{t("storefrontThemes.subMatrix")}</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Sub-Matrix:</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => handlePrimaryCategorySelect(selectedPrimaryCategory.id)}
@@ -1109,7 +1103,7 @@ export default function StorefrontThemes() {
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               )}
             >
-              {t("storefrontThemes.allPrefix")} {selectedPrimaryCategory.label}
+              All {selectedPrimaryCategory.label}
             </button>
             {selectedPrimaryCategory.subcategories.map((sub) => (
               <button
@@ -1136,7 +1130,7 @@ export default function StorefrontThemes() {
               <div className="flex items-center justify-between mb-4">
                  <div className="flex items-center gap-2">
                     <div className="size-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">{t("storefrontThemes.directNodeAccess")}</span>
+                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Direct Node Access</span>
                  </div>
                  <button
                    onClick={() => {
@@ -1146,12 +1140,11 @@ export default function StorefrontThemes() {
                    }}
                    className="text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest"
                  >
-                    {t("storefrontThemes.clearFocus")}
+                   Clear Focus
                  </button>
               </div>
               <div className="max-w-sm">
-                 <StorefrontThemeCard
-                  t={t}
+                <StorefrontThemeCard
                   themeItem={highlightedTheme}
                   highlighted={true}
                   isBusy={processingThemeId === highlightedTheme.themeId}
@@ -1169,7 +1162,6 @@ export default function StorefrontThemes() {
           {filteredThemes.map((theme) => (
             <StorefrontThemeCard
               key={theme.themeId}
-              t={t}
               themeItem={theme}
               highlighted={theme.themeId === highlightedThemeId}
               isBusy={processingThemeId === theme.themeId}
@@ -1188,11 +1180,11 @@ export default function StorefrontThemes() {
                 <Search className="size-8" />
              </div>
              <div>
-                 <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{t("storefrontThemes.noNodesFound")}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t("storefrontThemes.noNodesHint")}</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">No Matching Nodes Found</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Adjust filters to re-initialize search</p>
              </div>
              <Button variant="outline" className="mt-4 rounded-xl px-8 h-10 font-black text-[10px] uppercase tracking-widest" onClick={clearAllFilters}>
-                {t("storefrontThemes.resetFilters")}
+               Reset All Filters
              </Button>
           </div>
         )}

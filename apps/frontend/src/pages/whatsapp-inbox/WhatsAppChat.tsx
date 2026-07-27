@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getStatusDisplay } from "../../utils/statusRegistry";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
@@ -106,7 +107,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     [superAdminMode, companyId],
   );
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const copy = useMemo(() => getWhatsAppInboxWorkspaceCopy(i18n.language), [i18n.language]);
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -371,24 +372,23 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   );
 
   const getOrderStatusTheme = (status?: string) => {
-    const upper = (status || '').toUpperCase();
-    const mix = (token: string) => `color-mix(in srgb, ${token} 12%, var(--color-background))`;
-    if (['COMPLETED', 'DELIVERED', 'PAID'].includes(upper)) {
-      return { background: mix('var(--business-success)'), color: 'var(--business-success)' };
-    }
-    if (['CANCELLED', 'REFUNDED', 'RETURNED'].includes(upper)) {
-      return { background: mix('var(--business-danger)'), color: 'var(--business-danger)' };
-    }
-    if (upper === 'PENDING') {
-      return { background: mix('var(--business-warning)'), color: 'var(--business-warning)' };
-    }
-    if (upper === 'CONFIRMED') {
-      return { background: mix('var(--color-primary)'), color: 'var(--color-primary)' };
-    }
-    if (['PROCESSING', 'SHIPPED'].includes(upper)) {
-      return { background: mix('var(--business-chart-tertiary)'), color: 'var(--business-chart-tertiary)' };
-    }
-    return { background: 'color-mix(in srgb, var(--color-border) 42%, var(--color-background))', color: 'var(--color-muted-foreground)' };
+    if (!status) return { background: '#f3f4f6', color: '#374151' };
+    const info = getStatusDisplay(status);
+    const colorMatch = info.colorClass.match(/text-([a-z]+)-(\d+)/);
+    const colorMap: Record<string, string> = {
+      'green': '#16a34a', 'red': '#dc2626', 'yellow': '#ca8a04',
+      'blue': '#2563eb', 'indigo': '#4f46e5', 'purple': '#9333ea',
+      'orange': '#ea580c', 'amber': '#d97706', 'gray': '#6b7280',
+      'cyan': '#06b6d4', 'teal': '#0d9488', 'rose': '#e11d48',
+      'sky': '#0284c7', 'emerald': '#059669', 'pink': '#db2777',
+      'stone': '#78716c',
+    };
+    const colorName = colorMatch ? colorMatch[1] : 'gray';
+    const color = colorMap[colorName] || '#6b7280';
+    return {
+      background: `color-mix(in srgb, ${color} 12%, white)`,
+      color,
+    };
   };
 
   const canTransfer = conversation?.canTransfer && ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(currentRole || '');
@@ -795,7 +795,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                           </div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ ...theme }}>
-                          {order.status}
+                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">

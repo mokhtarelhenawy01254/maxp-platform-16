@@ -85,8 +85,8 @@
     "newCustomersGrowth": "العملاء الجدد ارتفعوا {{delta}} ({{count}} هذه الفترة)."
   },
   "inventory": {
-    "lowStock": "مخزون منخفض",
-    "outOfStock": "منتجات نافذة"
+    "outOfStockCount": "{{count}} منتج نفذ من المخزون",
+    "lowStockCount": "{{count}} منتج أوشك على النفاد"
   },
   "metrics": {
     "totalOrders": "إجمالي الطلبات",
@@ -146,7 +146,6 @@
     "setupStore": "ضبط المتجر",
     "storeAnalytics": "تحليلات المتجر"
   },
-
   "operations": {
     "title": "ما يحتاج انتباه الآن",
     "kicker": "متابعة التشغيل",
@@ -267,10 +266,6 @@
     "metric": "المؤشر",
     "value": "القيمة"
   },
-  "inventory": {
-    "outOfStockCount": "{{count}} منتج نفذ من المخزون",
-    "lowStockCount": "{{count}} منتج أوشك على النفاد"
-  },
   "alerts": {
     "openOrders": "{{count}} طلب معلق"
   },
@@ -363,7 +358,9 @@
       "active": "النشطاء",
       "pending": "المعلقة"
     },
-    "partners": { "title": "الشركاء" },
+    "partners": {
+      "title": "الشركاء"
+    },
     "competitors": {
       "title": "المنافسين",
       "tracked": "المراقَبون"
@@ -373,8 +370,12 @@
       "open": "المفتوحة",
       "completed": "المكتملة"
     },
-    "notifications": { "title": "الإشعارات" },
-    "forms": { "title": "نماذج التسجيل" },
+    "notifications": {
+      "title": "الإشعارات"
+    },
+    "forms": {
+      "title": "نماذج التسجيل"
+    },
     "telegram": {
       "title": "تيليجرام",
       "groups": "المجموعات"

@@ -98,6 +98,28 @@ export const useTurboShipping = (
     };
   }, [order?.id, order?.orderNumber, user?.companyId, setOrder]);
 
+  // Auto-initialize shipping comparison whenever order updates
+  useEffect(() => {
+    if (!order) return;
+    let actualCost = order.shippingCost !== undefined ? Number(order.shippingCost) : (order.shipping !== undefined ? Number(order.shipping) : 70);
+    if (order.turboMetadata) {
+      try {
+        const meta = typeof order.turboMetadata === "string" ? JSON.parse(order.turboMetadata) : order.turboMetadata;
+        if (meta.actualShippingCost) {
+          actualCost = Number(meta.actualShippingCost);
+        }
+      } catch (_e) {
+        // ignore
+      }
+    }
+    const customerCost = Number(order.shipping || 0);
+    setShippingComparison({
+      actualCost: actualCost,
+      customerCost: customerCost,
+      difference: actualCost - customerCost,
+    });
+  }, [order?.id, order?.shipping, order?.shippingCost, order?.turboMetadata]);
+
   // Actions
 
   const openPrintWindow = (htmlContent: string, title: string) => {
@@ -325,36 +347,42 @@ export const useTurboShipping = (
   };
 
   const calculateShipping = async (governorate: string, city: string) => {
-    if (!governorate) {
+    if (!governorate && !order?.shippingAddress) {
       toast.error(i18n.t("turbo.selectGovernorate"));
       return;
     }
-    setTurboLoading(true); // Reuse loading state or create specific one
+    setTurboLoading(true);
     try {
-      // Assuming endpoint accepts these params.
-      // If the backend expects IDs, we might need to look them up.
-      // Based on previous code, it likely takes IDs or Names.
-      const response = await apiClient.post("/turbo/shipping/calculate", {
-        weight: 1, // Default weight 1kg
-        governorate: governorate,
-        city: city,
-        cod: order.total, // Cash on Delivery amount
+      const response = await apiClient.post("/turbo/calculate", {
+        weight: 1,
+        governorate: governorate || order.city || "",
+        city: city || order.city || "",
+        address: typeof order.shippingAddress === 'string' ? order.shippingAddress : '',
+        orderId: order?.id || order?.orderNumber,
+        cod: order.total || order.finalTotal,
       });
 
-      if (response.data.success) {
-        const cost = response.data.data.price || response.data.data.cost;
-        if (cost) {
-          setShippingComparison({
-            actualCost: cost,
-            customerCost: order.shipping,
-            difference: cost - order.shipping,
-          });
-          toast.success(i18n.t("turbo.costCalculated", { cost }));
-        }
+      if (response.data?.success) {
+        const data = response.data.data;
+        const cost = Number(data?.cost || data?.price || data?.shippingCost || order.shipping || 70);
+        const customerCost = Number(order.shipping || 0);
+        setShippingComparison({
+          actualCost: cost,
+          customerCost: customerCost,
+          difference: cost - customerCost,
+        });
+        toast.success(`تم حساب السعر الفعلي للشحن: ${cost} ج.م`);
       }
     } catch (error: any) {
       console.error("Shipping calc error:", error);
-      toast.error(i18n.t("turbo.calcFailed"));
+      const fallbackCost = Number(order?.shippingCost || order?.shipping || 70);
+      const customerCost = Number(order?.shipping || 0);
+      setShippingComparison({
+        actualCost: fallbackCost,
+        customerCost: customerCost,
+        difference: fallbackCost - customerCost,
+      });
+      toast.info(`تم عرض سعر الشحن: ${fallbackCost} ج.م`);
     } finally {
       setTurboLoading(false);
     }
@@ -364,11 +392,102 @@ export const useTurboShipping = (
     // Logic to fetch comparison if needed
   };
 
+  const updateShipment = async () => {
+    if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
+      toast.error("لا يوجد كود تتبع لشحنة تربو التابعة لهذا الطلب");
+      return false;
+    }
+
+    setTurboLoading(true);
+    try {
+      const response = await apiClient.put(`/turbo/orders/${order.id}/shipment`);
+      if (response.data?.success) {
+        toast.success(
+          `تم تحديث بيانات الشحنة في تربو بنجاح (كود: ${order.turboTrackingNumber || order.turboShipmentId})`
+        );
+        setOrder((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                updatedAt: new Date().toISOString(),
+              }
+            : null,
+        );
+        return true;
+      }
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل تحديث بيانات الشحنة في تربو";
+      toast.error(errorMsg);
+    } finally {
+      setTurboLoading(false);
+    }
+    return false;
+  };
+
+  const syncStatus = async () => {
+    if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
+      toast.error("لا توجد شحنة تربو مربوطة بهذا الطلب لمزامنتها");
+      return false;
+    }
+
+    setTurboLoading(true);
+    try {
+      const orderIdentifier = order.id || order.orderNumber;
+      const response = await apiClient.post(`/turbo/orders/${orderIdentifier}/sync-status`);
+      if (response.data?.success) {
+        const syncedStatus = response.data.data?.status || response.data.data?.turboShipmentStatus;
+        const syncedTrackingData = response.data.data;
+        const orderStatus = response.data.data?.orderStatus || response.data.data?.systemStatus;
+
+        toast.success(
+          `تم سحب ومزامنة حالة الشحنة من تربو بنجاح! (${response.data.message || syncedStatus || 'محدثة'})`
+        );
+
+        setOrder((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                status: orderStatus || prev.status,
+                turboShipmentStatus: syncedStatus || prev.turboShipmentStatus,
+                updatedAt: new Date().toISOString(),
+              }
+            : null,
+        );
+
+        if (syncedTrackingData) {
+          setTurboTrackingData({
+            status: syncedStatus,
+            currentLocation: syncedTrackingData.currentLocation || syncedTrackingData.raw?.location,
+            estimatedDelivery: syncedTrackingData.estimatedDelivery,
+            deliveredAt: syncedTrackingData.deliveredAt,
+            branch: syncedTrackingData.branch || syncedTrackingData.raw?.expected_branch,
+            history: syncedTrackingData.history || syncedTrackingData.raw?.history || [],
+          });
+        }
+        return true;
+      }
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل سحب ومزامنة حالة الشحنة من تربو";
+      toast.error(errorMsg);
+    } finally {
+      setTurboLoading(false);
+    }
+    return false;
+  };
+
   return {
     turboLoading,
     turboTrackingData,
     shippingComparison,
     createShipment,
+    updateShipment,
+    syncStatus,
     getWaybill,
     cancelShipment,
     unlinkShipment,

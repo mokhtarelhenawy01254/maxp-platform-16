@@ -1254,6 +1254,11 @@ async function startServer() {
       );
     }
 
+    // 🚀 Start sync queue processor (polls every 5s)
+    const syncQueueService = require('./services/syncQueueService');
+    setInterval(() => syncQueueService.processBatch(5), 5000);
+    console.log("✅ [SERVER] Sync queue processor started (5s interval)");
+
     await telegramBotService.initialize();
     console.log("✅ [SERVER] Telegram Bot initialized");
 

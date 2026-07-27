@@ -6,6 +6,9 @@
 const cron = require('node-cron');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const TurboService = require('./turboService');
+const { syncTurboStatusToOrder } = require('./turboStatusSyncService');
+
+const TERMINAL_TURBO_STATUSES = ['delivered', 'cancelled', 'returned', 'remitted'];
 
 class TurboTrackingScheduler {
   constructor() {
@@ -30,20 +33,18 @@ class TurboTrackingScheduler {
 
     console.log('🚀 [TURBO-TRACKING] Starting tracking scheduler...');
 
-    // فحص كل 6 ساعات (يمكن تعديله حسب الحاجة)
-    // يمكن تغييره إلى '0 */6 * * *' للفحص كل 6 ساعات
-    // أو '0 */1 * * *' للفحص كل ساعة
-    this.cronJob = cron.schedule('0 */6 * * *', async () => {
+    // فحص كل 30 دقيقة
+    this.cronJob = cron.schedule('*/30 * * * *', async () => {
       await this.updateAllShipments();
     });
 
-    console.log('✅ [TURBO-TRACKING] Scheduler started - checking every 6 hours');
+    console.log('✅ [TURBO-TRACKING] Scheduler started - checking every 30 minutes');
     
     // تشغيل فحص أولي بعد 5 دقائق من بدء السيرفر
     setTimeout(() => {
       console.log('🔄 [TURBO-TRACKING] Running initial check...');
       this.updateAllShipments();
-    }, 5 * 60 * 1000); // 5 دقائق
+    }, 5 * 60 * 1000);
   }
 
   /**
@@ -62,228 +63,154 @@ class TurboTrackingScheduler {
    * تحديث حالة جميع الشحنات
    */
   async updateAllShipments() {
-    if (this.isRunning) {
-      console.log('⚠️ [TURBO-TRACKING] Update already in progress, skipping...');
-      return;
-    }
-
+    if (this.isRunning) return;
     this.isRunning = true;
     const startTime = Date.now();
-    console.log('🔄 [TURBO-TRACKING] Starting batch update of shipment statuses...');
-
+    console.log('🔄 [TURBO-TRACKING] Starting batch update...');
     try {
       const prisma = getSharedPrismaClient();
-
-      // جلب جميع الطلبات التي لديها turboTrackingNumber
-      const orders = await safeQuery(async () => {
-        return await prisma.order.findMany({
-          where: {
-            turboTrackingNumber: {
-              not: null
-            },
-            // تحديث فقط الشحنات التي لم يتم تسليمها أو إلغاؤها
-            turboShipmentStatus: {
-              notIn: ['delivered', 'cancelled', 'returned']
-            }
-          },
-          select: {
-            id: true,
-            orderNumber: true,
-            companyId: true,
-            turboTrackingNumber: true,
-            turboShipmentId: true,
-            turboShipmentStatus: true,
-            company: {
-              select: {
-                id: true,
-                turboApiKey: true,
-                turboEnabled: true
-              }
-            }
-          },
-          // تحديث فقط الشحنات التي لم يتم تحديثها في آخر 6 ساعات
-          // أو التي لم يتم تحديثها من قبل
-          orderBy: {
-            updatedAt: 'asc'
-          },
-          take: 100 // تحديث 100 طلب في كل مرة لتجنب الضغط على API
-        });
-      }, 3);
-
-      if (!orders || orders.length === 0) {
-        console.log('ℹ️ [TURBO-TRACKING] No shipments to update');
-        this.isRunning = false;
-        this.lastRun = new Date();
-        return;
+      const companies = await safeQuery(() => prisma.company.findMany({
+        where: { turboEnabled: true, turboApiKey: { not: null } },
+        select: { id: true, turboApiKey: true }
+      }), 3);
+      if (!companies?.length) {
+        console.log('ℹ️ [TURBO-TRACKING] No Turbo-enabled companies');
+        this.isRunning = false; this.lastRun = new Date(); return;
       }
-
-      console.log(`📦 [TURBO-TRACKING] Found ${orders.length} shipments to check`);
-
-      let updated = 0;
-      let errors = 0;
-      let checked = 0;
-
-      // تجميع الطلبات حسب الشركة لتقليل عدد استدعاءات API
-      const ordersByCompany = {};
-      for (const order of orders) {
-        if (!order.company.turboEnabled || !order.company.turboApiKey) {
-          continue;
-        }
-        if (!ordersByCompany[order.companyId]) {
-          ordersByCompany[order.companyId] = [];
-        }
-        ordersByCompany[order.companyId].push(order);
-      }
-
-      // تحديث كل شركة على حدة
-      for (const [companyId, companyOrders] of Object.entries(ordersByCompany)) {
+      let totalChecked = 0, totalUpdated = 0, totalErrors = 0;
+      for (const company of companies) {
         try {
-          const firstOrder = companyOrders[0];
-          const turboService = new TurboService(firstOrder.company.turboApiKey, companyId);
+          const turboService = new TurboService(company.turboApiKey, company.id);
+          const statusResult = await turboService.fetchAllStatuses();
+          if (!statusResult?.success || !statusResult.shipments?.length) continue;
 
-          for (const order of companyOrders) {
-            checked++;
-            try {
-              if (!order.turboTrackingNumber) {
-                continue;
-              }
+          const statusByCode = {};
+          for (const s of statusResult.shipments) {
+            if (s.code) statusByCode[s.code] = s;
+            if (s.barCode) statusByCode[s.barCode] = s;
+          }
+          const codes = Object.keys(statusByCode);
 
-              console.log(`🔍 [TURBO-TRACKING] Checking order ${order.orderNumber} (${order.turboTrackingNumber})`);
+          // Find Orders
+          const orders = await safeQuery(() => prisma.order.findMany({
+            where: {
+              companyId: company.id,
+              turboShipmentStatus: { notIn: TERMINAL_TURBO_STATUSES },
+              OR: [{ turboShipmentId: { in: codes } }, { turboTrackingNumber: { in: codes } }]
+            },
+            select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
+          }), 3);
 
-              // تتبع الشحنة
-              const trackingResult = await turboService.trackShipment(order.turboTrackingNumber);
+          for (const order of orders) {
+            totalChecked++;
+            const key = order.turboShipmentId || order.turboTrackingNumber;
+            const matched = statusByCode[key];
+            if (!matched) continue;
 
-              if (trackingResult && trackingResult.success) {
-                const newStatus = trackingResult.status;
-                const oldStatus = order.turboShipmentStatus;
-
-                // تحديث فقط إذا تغيرت الحالة
-                if (newStatus && newStatus !== oldStatus) {
-                  await safeQuery(async () => {
-                    return await prisma.order.updateMany({
-                      where: {
-                        orderNumber: order.orderNumber,
-                        companyId: companyId
-                      },
-                      data: {
-                        turboShipmentStatus: newStatus,
-                        turboMetadata: JSON.stringify(trackingResult.data || trackingResult),
-                        updatedAt: new Date()
-                      }
-                    });
-                  }, 3);
-
-                  updated++;
-                  console.log(`✅ [TURBO-TRACKING] Updated order ${order.orderNumber}: ${oldStatus} → ${newStatus}`);
-                } else {
-                  console.log(`ℹ️ [TURBO-TRACKING] Order ${order.orderNumber} status unchanged: ${newStatus}`);
-                }
-              }
-
-              // إضافة تأخير صغير بين الطلبات لتجنب rate limiting
-              await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-            } catch (orderError) {
-              errors++;
-              console.error(`❌ [TURBO-TRACKING] Error updating order ${order.orderNumber}:`, orderError.message);
+            const newTurboStatus = matched.internalStatus;
+            if (newTurboStatus && newTurboStatus !== order.turboShipmentStatus) {
+              await syncTurboStatusToOrder({
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                companyId: company.id,
+                rawStatus: matched.statusCode || matched.status || newTurboStatus,
+                payload: matched.raw || matched,
+                isGuestOrder: false
+              });
+              totalUpdated++;
+              console.log(`✅ [TURBO-TRACKING] Order ${order.orderNumber}: ${order.turboShipmentStatus} → ${newTurboStatus}`);
             }
           }
-        } catch (companyError) {
-          console.error(`❌ [TURBO-TRACKING] Error processing company ${companyId}:`, companyError.message);
-          errors += companyOrders.length;
-        }
+
+          // Find GuestOrders
+          const guestOrders = await safeQuery(() => prisma.guestOrder.findMany({
+            where: {
+              companyId: company.id,
+              turboShipmentStatus: { notIn: TERMINAL_TURBO_STATUSES },
+              OR: [{ turboShipmentId: { in: codes } }, { turboTrackingNumber: { in: codes } }]
+            },
+            select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
+          }), 3);
+
+          for (const guestOrder of guestOrders) {
+            totalChecked++;
+            const key = guestOrder.turboShipmentId || guestOrder.turboTrackingNumber;
+            const matched = statusByCode[key];
+            if (!matched) continue;
+
+            const newTurboStatus = matched.internalStatus;
+            if (newTurboStatus && newTurboStatus !== guestOrder.turboShipmentStatus) {
+              await syncTurboStatusToOrder({
+                orderId: guestOrder.id,
+                orderNumber: guestOrder.orderNumber,
+                companyId: company.id,
+                rawStatus: matched.statusCode || matched.status || newTurboStatus,
+                payload: matched.raw || matched,
+                isGuestOrder: true
+              });
+              totalUpdated++;
+              console.log(`✅ [TURBO-TRACKING] GuestOrder ${guestOrder.orderNumber}: ${guestOrder.turboShipmentStatus} → ${newTurboStatus}`);
+            }
+          }
+
+        } catch (e) { totalErrors++; console.error(`❌ [TURBO-TRACKING] Company ${company.id}:`, e.message); }
       }
-
-      this.stats.totalChecked += checked;
-      this.stats.totalUpdated += updated;
-      this.stats.totalErrors += errors;
-
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`✅ [TURBO-TRACKING] Batch update completed in ${duration}s`);
-      console.log(`📊 [TURBO-TRACKING] Stats: Checked: ${checked}, Updated: ${updated}, Errors: ${errors}`);
-      console.log(`📊 [TURBO-TRACKING] Total Stats: Checked: ${this.stats.totalChecked}, Updated: ${this.stats.totalUpdated}, Errors: ${this.stats.totalErrors}`);
-
+      this.stats.totalChecked += totalChecked;
+      this.stats.totalUpdated += totalUpdated;
+      this.stats.totalErrors += totalErrors;
+      const dur = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`✅ [TURBO-TRACKING] Done in ${dur}s | Checked: ${totalChecked} Updated: ${totalUpdated} Errors: ${totalErrors}`);
       this.lastRun = new Date();
-    } catch (error) {
-      console.error('❌ [TURBO-TRACKING] Error in batch update:', error);
-      this.stats.totalErrors++;
-    } finally {
-      this.isRunning = false;
-    }
+    } catch (e) { console.error('❌ [TURBO-TRACKING]', e); this.stats.totalErrors++; }
+    finally { this.isRunning = false; }
   }
 
-  /**
-   * تحديث حالة شحنة واحدة (للاستخدام اليدوي)
-   */
   async updateSingleShipment(orderNumber, companyId) {
     try {
       const prisma = getSharedPrismaClient();
+      let order = await safeQuery(() => prisma.order.findFirst({
+        where: { orderNumber, companyId },
+        include: { company: { select: { id: true, turboApiKey: true, turboEnabled: true } } }
+      }), 3);
 
-      const order = await safeQuery(async () => {
-        return await prisma.order.findFirst({
-          where: {
-            orderNumber: orderNumber,
-            companyId: companyId
-          },
-          include: {
-            company: {
-              select: {
-                id: true,
-                turboApiKey: true,
-                turboEnabled: true
-              }
-            }
-          }
-        });
-      }, 3);
-
-      if (!order || !order.turboTrackingNumber) {
-        throw new Error('Order not found or no tracking number');
+      let isGuest = false;
+      if (!order) {
+        order = await safeQuery(() => prisma.guestOrder.findFirst({
+          where: { orderNumber, companyId }
+        }), 3);
+        isGuest = true;
       }
 
-      if (!order.company.turboEnabled || !order.company.turboApiKey) {
-        throw new Error('Turbo is not enabled for this company');
-      }
+      if (!order?.turboTrackingNumber) throw new Error('Order not found or no tracking number');
+      
+      const company = isGuest
+        ? await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { id: true, turboApiKey: true, turboEnabled: true } }), 2)
+        : order.company;
 
-      const turboService = new TurboService(order.company.turboApiKey, companyId);
-      const trackingResult = await turboService.trackShipment(order.turboTrackingNumber);
+      if (!company?.turboEnabled || !company?.turboApiKey) throw new Error('Turbo not enabled');
+      
+      const turboService = new TurboService(company.turboApiKey, companyId);
+      const statusResult = await turboService.fetchAllStatuses();
 
-      if (trackingResult && trackingResult.success) {
-        const newStatus = trackingResult.status;
-
-        await safeQuery(async () => {
-          return await prisma.order.updateMany({
-            where: {
-              orderNumber: orderNumber,
-              companyId: companyId
-            },
-            data: {
-              turboShipmentStatus: newStatus,
-              turboMetadata: JSON.stringify(trackingResult.data || trackingResult),
-              updatedAt: new Date()
-            }
+      if (statusResult?.success && statusResult.shipments?.length > 0) {
+        const key = order.turboShipmentId || order.turboTrackingNumber;
+        const matched = statusResult.shipments.find(s => s.code === key || s.barCode === key);
+        if (matched) {
+          const syncRes = await syncTurboStatusToOrder({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            companyId,
+            rawStatus: matched.statusCode || matched.status || matched.internalStatus,
+            payload: matched.raw || matched,
+            isGuestOrder: isGuest
           });
-        }, 3);
-
-        return {
-          success: true,
-          status: newStatus,
-          data: trackingResult
-        };
+          return { success: true, status: syncRes.turboStatus, data: matched };
+        }
       }
-
-      return {
-        success: false,
-        error: 'Failed to track shipment'
-      };
-    } catch (error) {
-      console.error(`❌ [TURBO-TRACKING] Error updating single shipment:`, error);
-      throw error;
-    }
+      return { success: false, error: 'Failed to track shipment' };
+    } catch (e) { console.error('❌ [TURBO-TRACKING]', e); throw e; }
   }
 
-  /**
-   * الحصول على إحصائيات الخدمة
-   */
   getStats() {
     return {
       isRunning: this.isRunning,
@@ -293,8 +220,6 @@ class TurboTrackingScheduler {
   }
 }
 
-// إنشاء instance واحد من الخدمة (Singleton)
 const turboTrackingScheduler = new TurboTrackingScheduler();
 
 module.exports = turboTrackingScheduler;
-

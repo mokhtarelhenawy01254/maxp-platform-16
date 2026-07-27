@@ -106,6 +106,27 @@ const statusIcon: Record<string, React.ComponentType<{ className?: string }>> = 
 
 const CATEGORIES = ["MARKETING", "UTILITY", "AUTHENTICATION"];
 
+const CATEGORY_STYLE: Record<string, { icon: string; gradient: string; badge: string; sectionBg: string }> = {
+  AUTHENTICATION: {
+    icon: "🔐",
+    gradient: "from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400",
+    badge: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300",
+    sectionBg: "bg-gradient-to-b from-violet-50/50 to-transparent dark:from-violet-950/20",
+  },
+  MARKETING: {
+    icon: "📢",
+    gradient: "from-rose-600 to-pink-600 dark:from-rose-400 dark:to-pink-400",
+    badge: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300",
+    sectionBg: "bg-gradient-to-b from-rose-50/50 to-transparent dark:from-rose-950/20",
+  },
+  UTILITY: {
+    icon: "🔧",
+    gradient: "from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400",
+    badge: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300",
+    sectionBg: "bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-950/20",
+  },
+};
+
 function sanitizeTemplateName(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 }
@@ -219,6 +240,7 @@ const WhatsAppMetaTemplates: React.FC<{
   const [selectedSessionId, setSelectedSessionId] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [createStep, setCreateStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState(initialForm);
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -227,6 +249,8 @@ const WhatsAppMetaTemplates: React.FC<{
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<typeof initialForm | null>(null);
   const [editSending, setEditSending] = useState(false);
+  const [editComplianceResults, setEditComplianceResults] = useState<ComplianceResult[]>([]);
+  const [editShowCompliance, setEditShowCompliance] = useState(false);
 
   const [varValues, setVarValues] = useState<Record<string, string>>({});
 
@@ -380,6 +404,13 @@ const WhatsAppMetaTemplates: React.FC<{
       toast.error("بيانات التعديل غير مكتملة");
       return;
     }
+    const results = runComplianceCheck(editForm);
+    setEditComplianceResults(results);
+    setEditShowCompliance(true);
+    if (results.some(r => r.severity === "error")) {
+      toast.error("يوجد أخطاء توافق مع سياسات Meta — راجع رسائل الفحص أعلاه");
+      return;
+    }
     try {
       setEditSending(true);
       const components = buildComponents(editForm);
@@ -449,6 +480,7 @@ const WhatsAppMetaTemplates: React.FC<{
     });
     setLibraryOpen(false);
     setLibrarySearch("");
+    setCreateStep(1);
     setCreateOpen(true);
   }, []);
 
@@ -462,6 +494,15 @@ const WhatsAppMetaTemplates: React.FC<{
       t.category.toLowerCase().includes(q)
     );
   }, [librarySearch]);
+
+  const libraryByCategory = useMemo(() => {
+    const groups: Record<string, typeof templateLibrary> = {};
+    for (const t of filteredLibrary) {
+      if (!groups[t.category]) groups[t.category] = [];
+      groups[t.category].push(t);
+    }
+    return groups;
+  }, [filteredLibrary]);
 
   const pageTitle = companyName
     ? `قوالب Meta API · ${companyName}`
@@ -499,21 +540,22 @@ const WhatsAppMetaTemplates: React.FC<{
               })}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full">
+          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full">
+          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <History className="size-4" /> السجل
           </Button>
-          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full">
+          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
             <Library className="size-4" /> قوالب جاهزة
           </Button>
-          <Button onClick={() => setCreateOpen(true)} className="rounded-full">
+          <Button onClick={() => { setCreateStep(1); setCreateOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
             <Plus className="size-4" /> قالب جديد
           </Button>
         </div>
       }
     >
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <WhatsAppSurfaceCard title="قوالب Meta API" description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم">
         {loading ? (
           <div className="space-y-3">
@@ -522,8 +564,12 @@ const WhatsAppMetaTemplates: React.FC<{
             ))}
           </div>
         ) : Object.keys(groupedTemplates).length === 0 ? (
-          <div className="py-12 text-center text-[color:var(--color-muted-foreground)]">
-            {selectedSessionId ? "لا توجد قوالب. أنشئ أول قالب." : "اختر جلسة أولاً"}
+          <div className="flex flex-col items-center gap-4 py-16 text-center text-[color:var(--color-muted-foreground)]">
+            <div className="flex size-16 items-center justify-center rounded-full bg-[var(--color-muted)]">
+              <FileText className="size-8 text-[color:var(--color-muted-foreground)]" />
+            </div>
+            <p className="text-sm font-medium">{selectedSessionId ? "لا توجد قوالب بعد" : "اختر جلسة أولاً"}</p>
+            <p className="text-xs">{selectedSessionId ? "أنشئ أول قالب لإرسال رسائل واتساب بزنس." : "اختر جلسة واتساب من القائمة أعلاه لعرض القوالب."}</p>
           </div>
         ) : (
           <Table>
@@ -631,7 +677,7 @@ const WhatsAppMetaTemplates: React.FC<{
         )}
       </WhatsAppSurfaceCard>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) { setCreateStep(1); setShowCompliance(false); setComplianceResults([]); } }}>
         <DialogContent className="max-w-xl sm:rounded-3xl">
           <DialogHeader>
             <DialogTitle>قالب جديد</DialogTitle>
@@ -639,174 +685,226 @@ const WhatsAppMetaTemplates: React.FC<{
               أنشئ قالب رسالة جديد في Meta Cloud API. بعد الإنشاء، يمر القالب بمراجعة من ميتا.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>اسم القالب</Label>
-              <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="مثال: payment_request" className="h-11" dir="ltr" />
-              {form.name && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-[color:var(--color-muted-foreground)]">الاسم في Meta:</span>
-                  <code className={`rounded-md px-2 py-0.5 font-mono ${nameValid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 text-red-700 dark:text-red-300'}`}>
-                    {sanitizedName || '(غير صالح)'}
-                  </code>
-                </div>
-              )}
-              <p className="text-[11px] text-[color:var(--color-muted-foreground)]">
-                أحرف إنجليزية صغيرة وأرقام و _ فقط. الأحرف العربية والمسافات تُحوَّل تلقائياً.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+          <div className="mb-6 flex items-center gap-2" role="group" aria-label="مراحل إنشاء القالب">
+            {[
+              { step: 1, label: "المعلومات الأساسية" },
+              { step: 2, label: "المحتوى" },
+              { step: 3, label: "المراجعة" },
+            ].map((s, i) => (
+              <React.Fragment key={s.step}>
+                {i > 0 && <div className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${createStep >= s.step ? 'bg-[var(--shell-ring)]' : 'bg-[color:var(--shell-control-border)]'}`} />}
+                <button
+                  type="button"
+                  onClick={() => setCreateStep(s.step as 1 | 2 | 3)}
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
+                    createStep === s.step
+                      ? "bg-[color:var(--shell-ring)] text-white shadow-sm"
+                      : "bg-[var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--shell-overlay-bg)]"
+                  }`}
+                >
+                  <span className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold transition-transform duration-200 ${
+                    createStep === s.step ? "bg-white/20 scale-110" : "bg-[var(--color-muted-foreground)]/10"
+                  }`}>
+                    {createStep > s.step ? "✓" : s.step}
+                  </span>
+                  {s.label}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {createStep === 1 && (
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
               <div className="space-y-2">
-                <Label>اللغة</Label>
-                <Select value={form.language} onValueChange={(v) => setForm((p) => ({ ...p, language: v }))}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">العربية</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="tr">Türkçe</SelectItem>
-                    <SelectItem value="ur">اردو</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>التصنيف</Label>
-                <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>رأس الرسالة (اختياري)</Label>
-              <div className="flex gap-2">
-                <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v }))}>
-                  <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
-                    <SelectItem value="IMAGE"><Image className="ml-1 size-3.5 inline" /> IMAGE</SelectItem>
-                    <SelectItem value="VIDEO"><Video className="ml-1 size-3.5 inline" /> VIDEO</SelectItem>
-                    <SelectItem value="DOCUMENT"><File className="ml-1 size-3.5 inline" /> DOCUMENT</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.headerFormat === "TEXT" && (
-                  <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
-                    placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
-                )}
-                {form.headerFormat !== "TEXT" && (
-                  <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
-                    <Eye className="ml-2 size-4" />
-                    <span>يتم تحديد {form.headerFormat === "IMAGE" ? "الصورة" : form.headerFormat === "VIDEO" ? "الفيديو" : "المستند"} عند الإرسال</span>
+                <Label>اسم القالب</Label>
+                <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="مثال: payment_request" className="h-11" dir="ltr" />
+                {form.name && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[color:var(--color-muted-foreground)]">الاسم في Meta:</span>
+                    <code className={`rounded-md px-2 py-0.5 font-mono ${nameValid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 text-red-700 dark:text-red-300'}`}>
+                      {sanitizedName || '(غير صالح)'}
+                    </code>
                   </div>
                 )}
-              </div>
-              {form.headerText && !headerVarsOk && (
-                <p className="text-[11px] text-red-500 dark:text-red-400">
-                  ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
+                <p className="text-[11px] text-[color:var(--color-muted-foreground)]">
+                  أحرف إنجليزية صغيرة وأرقام و _ فقط. الأحرف العربية والمسافات تُحوَّل تلقائياً.
                 </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>محتوى الرسالة *</Label>
-              <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
-                placeholder={"مرحباً {{1}}\nطلبك رقم {{2}} جاهز للاستلام."}
-                className="min-h-[120px]" />
-              {form.bodyText && !bodyVarsOk && (
-                <p className="text-[11px] text-red-500 dark:text-red-400">
-                  ⚠️ استخدم متغيرات مرقمة: {"{{1}}"}, {"{{2}}"} بدلاً من أسماء. Meta يتطلب ترقيم المتغيرات.
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>تذييل الرسالة (اختياري)</Label>
-              <Input value={form.footerText} onChange={(e) => setForm((p) => ({ ...p, footerText: e.target.value }))}
-                placeholder="شكراً لاختيارك متجرنا" className="h-11" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>نص الزر (اختياري)</Label>
-                <Input value={form.buttonText} onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
-                  placeholder="تتبع الطلب" className="h-11" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>اللغة</Label>
+                  <Select value={form.language} onValueChange={(v) => setForm((p) => ({ ...p, language: v }))}>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ar">العربية</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="tr">Türkçe</SelectItem>
+                      <SelectItem value="ur">اردو</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>التصنيف</Label>
+                  <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>رابط الزر (اختياري)</Label>
-                <Input value={form.buttonUrl} onChange={(e) => setForm((p) => ({ ...p, buttonUrl: e.target.value }))}
-                  placeholder="https://example.com/track" className="h-11" dir="ltr" />
-                {form.buttonUrl && !buttonUrlOk && (
+                <Label>رأس الرسالة (اختياري)</Label>
+                <div className="flex gap-2">
+                  <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v }))}>
+                    <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
+                      <SelectItem value="IMAGE"><Image className="ml-1 size-3.5 inline" /> IMAGE</SelectItem>
+                      <SelectItem value="VIDEO"><Video className="ml-1 size-3.5 inline" /> VIDEO</SelectItem>
+                      <SelectItem value="DOCUMENT"><File className="ml-1 size-3.5 inline" /> DOCUMENT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.headerFormat === "TEXT" && (
+                    <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
+                      placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
+                  )}
+                  {form.headerFormat !== "TEXT" && (
+                    <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
+                      <Eye className="ml-2 size-4" />
+                      <span>يتم تحديد {form.headerFormat === "IMAGE" ? "الصورة" : form.headerFormat === "VIDEO" ? "الفيديو" : "المستند"} عند الإرسال</span>
+                    </div>
+                  )}
+                </div>
+                {form.headerText && !headerVarsOk && (
                   <p className="text-[11px] text-red-500 dark:text-red-400">
-                    ⚠️ الرابط يجب أن يبدأ بـ https://
+                    ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
                   </p>
                 )}
               </div>
             </div>
-          </div>
-          {extractedVars.length > 0 && (
-            <div className="space-y-2 rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-3">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">اختبار المتغيرات</Label>
-              <div className="flex flex-wrap gap-2">
-                {extractedVars.map((v) => {
-                  const key = v.replace(/\D/g, "");
-                  return (
-                    <div key={key} className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-[color:var(--color-muted-foreground)]">{v}</span>
-                      <Input
-                        value={varValues[key] || ""}
-                        onChange={(e) => setVarValues((p) => ({ ...p, [key]: e.target.value }))}
-                        placeholder={`قيمة ${key}`}
-                        className="h-8 w-28 text-xs"
-                      />
-                    </div>
-                  );
-                })}
+          )}
+
+          {createStep === 2 && (
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
+              <div className="space-y-2">
+                <Label>محتوى الرسالة *</Label>
+                <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
+                  placeholder={"مرحباً {{1}}\nطلبك رقم {{2}} جاهز للاستلام."}
+                  className="min-h-[140px]" />
+                {form.bodyText && !bodyVarsOk && (
+                  <p className="text-[11px] text-red-500 dark:text-red-400">
+                    ⚠️ استخدم متغيرات مرقمة: {"{{1}}"}, {"{{2}}"} بدلاً من أسماء. Meta يتطلب ترقيم المتغيرات.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>تذييل الرسالة (اختياري)</Label>
+                <Input value={form.footerText} onChange={(e) => setForm((p) => ({ ...p, footerText: e.target.value }))}
+                  placeholder="شكراً لاختيارك متجرنا" className="h-11" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>نص الزر (اختياري)</Label>
+                  <Input value={form.buttonText} onChange={(e) => setForm((p) => ({ ...p, buttonText: e.target.value }))}
+                    placeholder="تتبع الطلب" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label>رابط الزر (اختياري)</Label>
+                  <Input value={form.buttonUrl} onChange={(e) => setForm((p) => ({ ...p, buttonUrl: e.target.value }))}
+                    placeholder="https://example.com/track" className="h-11" dir="ltr" />
+                  {form.buttonUrl && !buttonUrlOk && (
+                    <p className="text-[11px] text-red-500 dark:text-red-400">
+                      ⚠️ الرابط يجب أن يبدأ بـ https://
+                    </p>
+                  )}
+                </div>
+              </div>
+              {extractedVars.length > 0 && (
+                <div className="space-y-2 rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-3">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">اختبار المتغيرات</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {extractedVars.map((v) => {
+                      const key = v.replace(/\D/g, "");
+                      return (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-[color:var(--color-muted-foreground)]">{v}</span>
+                          <Input
+                            value={varValues[key] || ""}
+                            onChange={(e) => setVarValues((p) => ({ ...p, [key]: e.target.value }))}
+                            placeholder={`قيمة ${key}`}
+                            className="h-8 w-28 text-xs"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {createStep === 3 && (
+            <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
+              <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-muted)] p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">معاينة حية</p>
+                <div className="wa-bubble rounded-2xl bg-[#d9fdd3] px-4 py-3 shadow-sm dark:bg-[var(--whatsapp-message-outgoing)]">
+                  <p className="whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]">{previewText || "(لا يوجد محتوى)"}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="size-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs font-medium text-amber-800 dark:text-amber-200">التحقق من التوافق مع سياسات Meta</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setShowCompliance(!showCompliance)}
+                  >
+                    {showCompliance ? "إخفاء" : "تشغيل الفحص"}
+                  </Button>
+                </div>
+                {showCompliance && (
+                  <div className="mt-2 space-y-1">
+                    {complianceResults.length === 0 ? (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">✅ لا توجد مشاكل توافق — القالب جاهز للإرسال</p>
+                    ) : (
+                      complianceResults.map(r => (
+                        <p key={r.id} className={`text-[11px] ${r.severity === "error" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                          {r.severity === "error" ? "❌" : "⚠️"} {r.message}
+                        </p>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-muted)] p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">معاينة حية</p>
-            <div className="wa-bubble rounded-2xl bg-[#d9fdd3] px-4 py-3 shadow-sm dark:bg-[var(--whatsapp-message-outgoing)]">
-              <p className="whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]">{previewText || "(لا يوجد محتوى)"}</p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Shield className="size-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-xs font-medium text-amber-800 dark:text-amber-200">التحقق من التوافق مع سياسات Meta</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setShowCompliance(!showCompliance)}
-              >
-                {showCompliance ? "إخفاء" : "تشغيل الفحص"}
-              </Button>
-            </div>
-            {showCompliance && (
-              <div className="mt-2 space-y-1">
-                {complianceResults.length === 0 ? (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">✅ لا توجد مشاكل توافق — القالب جاهز للإرسال</p>
-                ) : (
-                  complianceResults.map(r => (
-                    <p key={r.id} className={`text-[11px] ${r.severity === "error" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                      {r.severity === "error" ? "❌" : "⚠️"} {r.message}
-                    </p>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setShowCompliance(false); setComplianceResults([]); }} className="rounded-full">إلغاء</Button>
-            <Button onClick={handleCreate} disabled={sending} className="rounded-full">
-              {sending ? "جاري الإنشاء..." : "إنشاء القالب"}
-            </Button>
+            {createStep > 1 && (
+              <Button variant="outline" onClick={() => setCreateStep((createStep - 1) as 1 | 2 | 3)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
+                السابق
+              </Button>
+            )}
+            <div className="flex-1" />
+            <Button variant="outline" onClick={() => { setCreateOpen(false); setCreateStep(1); setShowCompliance(false); setComplianceResults([]); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
+            {createStep < 3 ? (
+              <Button onClick={() => setCreateStep((createStep + 1) as 1 | 2 | 3)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
+                التالي
+              </Button>
+            ) : (
+              <Button onClick={handleCreate} disabled={sending} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
+                {sending ? "جاري الإنشاء..." : "إنشاء القالب"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -983,9 +1081,38 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
             </div>
           )}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="size-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-medium text-amber-800 dark:text-amber-200">التحقق من التوافق مع سياسات Meta</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setEditShowCompliance(!editShowCompliance)}
+              >
+                {editShowCompliance ? "إخفاء" : "تشغيل الفحص"}
+              </Button>
+            </div>
+            {editShowCompliance && (
+              <div className="mt-2 space-y-1">
+                {editComplianceResults.length === 0 ? (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">✅ لا توجد مشاكل توافق — القالب جاهز للإرسال</p>
+                ) : (
+                  editComplianceResults.map(r => (
+                    <p key={r.id} className={`text-[11px] ${r.severity === "error" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                      {r.severity === "error" ? "❌" : "⚠️"} {r.message}
+                    </p>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setEditOpen(false); setEditForm(null); }} className="rounded-full">إلغاء</Button>
-            <Button onClick={handleEdit} disabled={editSending} className="rounded-full">
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditForm(null); setEditComplianceResults([]); setEditShowCompliance(false); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
+            <Button onClick={handleEdit} disabled={editSending} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
               {editSending ? "جاري التحديث..." : "تحديث القالب"}
             </Button>
           </DialogFooter>
@@ -995,14 +1122,24 @@ const WhatsAppMetaTemplates: React.FC<{
       <Dialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
         <DialogContent className="sm:rounded-3xl">
           <DialogHeader>
-            <DialogTitle>حذف القالب</DialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من حذف القالب <strong>{deleteConfirm}</strong>؟
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30">
+                <Trash2 className="size-5 text-red-500" />
+              </div>
+              <div>
+                <DialogTitle>حذف القالب</DialogTitle>
+                <DialogDescription>
+                  هل أنت متأكد من حذف القالب <strong>{deleteConfirm}</strong>؟
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400">
+            سيتم حذف جميع ترجمات هذا القالب. هذا الإجراء لا يمكن التراجع عنه.
+          </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="rounded-full">إلغاء</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="rounded-full">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إلغاء</Button>
+            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
               حذف
             </Button>
           </DialogFooter>
@@ -1012,58 +1149,110 @@ const WhatsAppMetaTemplates: React.FC<{
       <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
         <DialogContent className="max-w-2xl sm:rounded-3xl">
           <DialogHeader>
-            <DialogTitle>قوالب جاهزة</DialogTitle>
-            <DialogDescription>
-              اختر قالباً جاهزاً لبدء الإنشاء. يتم تعبئة جميع الحقول تلقائياً — يمكنك تعديلها قبل الإرسال.
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 shadow-sm">
+                <Library className="size-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg">قوالب جاهزة</DialogTitle>
+                <DialogDescription>
+                  اختر قالباً لبدء الإنشاء. يتم تعبئة الحقول تلقائياً — يمكنك تعديلها قبل الإرسال.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="relative mb-4">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
             <Input
               value={librarySearch}
               onChange={(e) => setLibrarySearch(e.target.value)}
-              placeholder="البحث في القوالب الجاهزة..."
-              className="h-10 pl-9"
+              placeholder="ابحث بالاسم، الوصف، التصنيف..."
+              className="h-11 px-9 rounded-2xl border-[color:var(--shell-control-border)] bg-[var(--color-muted)] transition-all duration-200 focus:scale-[1.01]"
             />
+            {librarySearch && (
+              <button
+                onClick={() => setLibrarySearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-muted-foreground)] transition-all duration-200 hover:scale-110 hover:text-[color:var(--color-foreground)]"
+                aria-label="مسح البحث"
+              >
+                <XCircle className="size-4" />
+              </button>
+            )}
           </div>
-          <div className="max-h-[400px] space-y-2 overflow-y-auto">
+          <div className="mt-4 max-h-[420px] space-y-6 overflow-y-auto">
             {filteredLibrary.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">لا توجد نتائج للبحث</p>
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <Search className="size-10 text-[color:var(--color-muted-foreground)]" />
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا توجد نتائج للبحث</p>
+                <button onClick={() => setLibrarySearch("")} className="text-xs text-[var(--shell-ring)] underline-offset-2 hover:underline">مسح البحث</button>
+              </div>
             ) : (
-              filteredLibrary.map((libTpl) => (
-                <button
-                  key={libTpl.id}
-                  onClick={() => applyLibraryTemplate(libTpl)}
-                  className="w-full rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-4 text-right transition-colors hover:border-[color:var(--shell-ring)] hover:bg-[var(--shell-overlay-bg)]"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{libTpl.name}</span>
-                        <Badge variant="outline" className="text-[10px]">{libTpl.category}</Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">{libTpl.description}</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {libTpl.languages.map(l => (
-                          <Badge key={l.code} variant="secondary" className="text-[10px]">{l.code}</Badge>
-                        ))}
-                        {libTpl.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="rounded-full bg-[color:var(--shell-ring)]/10 px-2 py-0.5 text-[10px] text-[color:var(--shell-ring)]">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+              Object.entries(libraryByCategory).map(([category, templates]) => {
+                const style = CATEGORY_STYLE[category];
+                return (
+                  <section key={category}>
+                    <div className={`sticky top-0 z-10 mb-3 flex items-center gap-2 rounded-2xl p-2.5 ${style.sectionBg} backdrop-blur-sm`}>
+                      <span className="flex size-8 items-center justify-center rounded-xl bg-white text-base shadow-sm dark:bg-[var(--shell-overlay-bg)]">
+                        {style.icon}
+                      </span>
+                      <span className={`bg-gradient-to-r ${style.gradient} bg-clip-text text-sm font-bold text-transparent`}>
+                        {category === "AUTHENTICATION" ? "المصادقة" : category === "MARKETING" ? "تسويق" : "خدمات"}
+                      </span>
+                      <span className="mr-auto text-[11px] text-[color:var(--color-muted-foreground)]">{templates.length} قالب</span>
                     </div>
-                    <div className="shrink-0 self-center">
-                      <Plus className="size-5 text-[color:var(--color-muted-foreground)]" />
+                    <div className="space-y-2">
+                      {templates.map((libTpl, idx) => (
+                        <button
+                          key={libTpl.id}
+                          onClick={() => applyLibraryTemplate(libTpl)}
+                          style={{ animationDelay: `${idx * 50}ms` }}
+                          className="group w-full rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-4 text-right transition-all duration-200 hover:scale-[1.01] hover:border-[color:var(--shell-ring)] hover:shadow-md hover:bg-[var(--shell-overlay-bg)]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{libTpl.name}</span>
+                                <Badge variant="outline" className={`text-[10px] ${style.badge}`}>{style.icon} {libTpl.category}</Badge>
+                              </div>
+                              <p className="mt-1.5 text-xs leading-5 text-[color:var(--color-muted-foreground)]">{libTpl.description}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                <div className="flex -space-x-1">
+                                  {libTpl.languages.slice(0, 4).map(l => (
+                                    <span key={l.code} className="flex size-5 items-center justify-center rounded-full border-2 border-[var(--color-muted)] bg-[var(--shell-overlay-bg)] text-[9px] font-medium uppercase text-[color:var(--color-muted-foreground)] shadow-sm">
+                                      {l.code}
+                                    </span>
+                                  ))}
+                                  {libTpl.languages.length > 4 && (
+                                    <span className="flex size-5 items-center justify-center rounded-full border-2 border-[var(--color-muted)] bg-[var(--color-muted)] text-[9px] text-[color:var(--color-muted-foreground)]">
+                                      +{libTpl.languages.length - 4}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                                  {libTpl.languages.length} {libTpl.languages.length > 1 ? "لغات" : "لغة"}
+                                </span>
+                                <span className="mx-1 text-[10px] text-[color:var(--color-muted-foreground)]">·</span>
+                                {libTpl.tags.slice(0, 2).map(tag => (
+                                  <span key={tag} className="rounded-full bg-[var(--shell-overlay-bg)] px-2 py-0.5 text-[10px] text-[color:var(--color-muted-foreground)]">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="shrink-0 self-center rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--shell-overlay-bg)] p-2 transition-all duration-200 group-hover:scale-110 group-hover:border-[color:var(--shell-ring)]">
+                              <Plus className="size-4 text-[color:var(--color-muted-foreground)] transition-colors group-hover:text-[var(--shell-ring)]" />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                </button>
-              ))
+                  </section>
+                );
+              })
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setLibraryOpen(false); setLibrarySearch(""); }} className="rounded-full">إلغاء</Button>
+            <Button variant="outline" onClick={() => { setLibraryOpen(false); setLibrarySearch(""); }} className="rounded-full transition-all duration-200 hover:scale-[1.02]">إلغاء</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1078,10 +1267,16 @@ const WhatsAppMetaTemplates: React.FC<{
           </DialogHeader>
           <div className="max-h-[400px] space-y-1 overflow-y-auto">
             {templateHistory.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">لا يوجد سجل بعد. أنشئ أو عدّل قالباً ليظهر هنا.</p>
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <div className="flex size-12 items-center justify-center rounded-full bg-[var(--color-muted)]">
+                  <History className="size-6 text-[color:var(--color-muted-foreground)]" />
+                </div>
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد سجل بعد</p>
+                <p className="text-xs text-[color:var(--color-muted-foreground)]">أنشئ أو عدّل قالباً ليظهر هنا.</p>
+              </div>
             ) : (
               templateHistory.map((entry, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm hover:bg-[var(--color-muted)]">
+                <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 hover:scale-[1.01] hover:bg-[var(--color-muted)]" style={{ animationDelay: `${i * 30}ms` }}>
                   {entry.action === "created" && <CheckCircle className="size-4 text-emerald-500" />}
                   {entry.action === "edited" && <Pencil className="size-4 text-amber-500" />}
                   {entry.action === "deleted" && <Trash2 className="size-4 text-red-500" />}
@@ -1096,10 +1291,10 @@ const WhatsAppMetaTemplates: React.FC<{
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { localStorage.removeItem(HISTORY_KEY); setTemplateHistory([]); }} className="rounded-full">
+            <Button variant="outline" onClick={() => { localStorage.removeItem(HISTORY_KEY); setTemplateHistory([]); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
               مسح السجل
             </Button>
-            <Button variant="outline" onClick={() => setHistoryOpen(false)} className="rounded-full">إغلاق</Button>
+            <Button variant="outline" onClick={() => setHistoryOpen(false)} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">إغلاق</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
