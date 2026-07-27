@@ -15,6 +15,7 @@ import {
   Package,
   CircleDollarSign,
   AlertOctagon,
+  XCircle,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -30,6 +31,7 @@ import OrderConfirmationSettings from "./OrderConfirmationSettings";
 import OrderPreparationSettings from "./OrderPreparationSettings";
 import MinimumOrderSettings from "./MinimumOrderSettings";
 import LateCancellationSettings from "./LateCancellationSettings";
+import CancellationSettingsPage from "../cancellations/CancellationSettingsPage";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -48,7 +50,8 @@ type TabId =
   | "incomplete"
   | "confirmation"
   | "preparation"
-  | "late_cancellation";
+  | "late_cancellation"
+  | "cancellation_reasons";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -64,6 +67,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "confirmation",
   "preparation",
   "late_cancellation",
+  "cancellation_reasons",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -200,6 +204,12 @@ const OrderSettings: React.FC = () => {
       icon: AlertOctagon,
       description: t('orderSettings.k_26'),
     },
+    {
+      id: "cancellation_reasons",
+      label: t('orderSettings.k_163'),
+      icon: XCircle,
+      description: t('orderSettings.k_164'),
+    },
   ];
 
   return (
@@ -284,6 +294,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "confirmation" && <OrderConfirmationSettings />}
             {activeTab === "preparation" && <OrderPreparationSettings />}
             {activeTab === "late_cancellation" && <LateCancellationSettings />}
+            {activeTab === "cancellation_reasons" && <CancellationSettingsPage isEmbedded={true} />}
           </div>
         </div>
       </div>

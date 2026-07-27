@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 
 interface BulkOrderItem {
@@ -25,6 +26,15 @@ interface BulkOrderModalProps {
   onSaved: () => void;
 }
 
+const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderItem[]> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await apiClient.post(`/api/v1/bulk-orders/${bulkOrderId}/import`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data?.items || [];
+};
+
 const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === "ar";
@@ -37,24 +47,25 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
   const [error, setError] = useState("");
   const [importedItems, setImportedItems] = useState<BulkOrderItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      if (item) {
-        const res = await apiClient.post(`/api/v1/bulk-orders/${item.id}/import`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (res.data?.items) {
-          setImportedItems(res.data.items);
+    if (item) {
+      try {
+        const items = await uploadFile(item.id, file);
+        if (items.length > 0) {
+          setImportedItems(items);
+          toast.success(t("orders.bulkImportSuccess", { count: items.length }));
         }
+      } catch (err) {
+        setError(t("orders.bulkUploadFailed") || "Failed to upload file");
       }
-    } catch (err) {
-      setError("Failed to upload file");
+    } else {
+      setPendingFile(file);
+      setError("");
+      toast.info(t("orders.bulkFileWillUploadAfterSave") || "File will be uploaded after saving");
     }
-  }, [item]);
+  }, [item, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -65,7 +76,10 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleFileUpload(file);
+    if (file) {
+      handleFileUpload(file);
+      e.target.value = "";
+    }
   };
 
   const handleSave = async () => {
@@ -77,14 +91,31 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
     setError("");
 
     try {
+      let savedId: string | null = item?.id || null;
+
       if (item) {
         await apiClient.put(`/api/v1/bulk-orders/${item.id}`, { name, description, status });
+        toast.success(t("orders.bulkUpdated"));
       } else {
-        await apiClient.post("/api/v1/bulk-orders", { name, description, status });
+        const res = await apiClient.post("/api/v1/bulk-orders", { name, description, status });
+        savedId = res.data?.data?.id;
+        toast.success(t("orders.bulkCreated"));
       }
+
+      if (pendingFile && savedId) {
+        try {
+          const items = await uploadFile(savedId, pendingFile);
+          if (items.length > 0) {
+            toast.success(t("orders.bulkImportSuccess", { count: items.length }));
+          }
+        } catch {
+          toast.error(t("orders.bulkUploadFailed") || "File upload failed after save");
+        }
+      }
+
       onSaved();
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to save");
+      setError(err.response?.data?.error || t("orders.saveFailed") || "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -161,6 +192,8 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                 dragOver
                   ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                  : pendingFile
+                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                   : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
               }`}
             >
@@ -171,10 +204,24 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <svg className="w-10 h-10 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("orders.bulkUploadHint")}</p>
+              {pendingFile ? (
+                <div className="text-center">
+                  <svg className="w-10 h-10 mx-auto mb-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">{pendingFile.name}</p>
+                  <p className="text-xs text-green-500 dark:text-green-400 mt-1">
+                    {t("orders.bulkFileWillUploadAfterSave") || "Will be uploaded after save"}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <svg className="w-10 h-10 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t("orders.bulkUploadHint")}</p>
+                </>
+              )}
             </div>
           </div>
 

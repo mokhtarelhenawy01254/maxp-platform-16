@@ -19,6 +19,10 @@ const PERMISSIONS = [
   { key: 'orders.assign', name: 'تعيين طلب لمستخدم', domain: 'ORDERS' },
   { key: 'orders.export', name: 'تصدير الطلبات', domain: 'ORDERS' },
   { key: 'orders.bulk.create', name: 'إنشاء طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.view', name: 'عرض طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.edit', name: 'تعديل طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.delete', name: 'حذف طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.bulk.export', name: 'تصدير طلبات bulk', domain: 'ORDERS' },
   { key: 'orders.invoice.print', name: 'طباعة الفواتير', domain: 'ORDERS' },
 
   // Orders — Incomplete Orders section
@@ -215,6 +219,8 @@ const PERMISSIONS = [
   { key: 'bulkOrders.edit', name: 'تعديل طلب bulk', domain: 'ORDERS' },
   { key: 'bulkOrders.delete', name: 'حذف طلب bulk', domain: 'ORDERS' },
   { key: 'bulkOrders.export', name: 'تصدير طلبات bulk', domain: 'ORDERS' },
+  { key: 'bulkOrders.import', name: 'استيراد طلبات bulk', domain: 'ORDERS' },
+  { key: 'bulkOrders.execute', name: 'تنفيذ طلبات bulk', domain: 'ORDERS' },
 
   // Marketing
   { key: 'marketing.campaigns', name: 'إدارة الحملات', domain: 'MARKETING' },

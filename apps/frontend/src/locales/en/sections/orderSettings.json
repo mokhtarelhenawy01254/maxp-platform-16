@@ -162,5 +162,15 @@
   "k_159": "Override permission allows a trusted user to change the status of a request in emergencies or exceptions, even if the rules prevent it (for example: the status is closed, or the transition is undefined).",
   "k_160": "Choose which roles have override rights:",
   "k_161": "Or select specific employees:",
-  "k_162": "The override power is a very sensitive power. Any bypass is automatically logged in the Audit Trail with the username, time, and reason provided."
+  "k_162": "The override power is a very sensitive power. Any bypass is automatically logged in the Audit Trail with the username, time, and reason provided.",
+  "k_163": "Cancellation Reasons",
+  "k_164": "Manage cancellation reason categories and reasons",
+  "k_165": "Manage Statuses",
+  "k_166": "Edit Rule",
+  "k_167": "Search employees...",
+  "k_168": "Edit",
+  "k_169": "No results found",
+  "imported_statuses_success": "Successfully imported {{count}} statuses",
+  "k_170": "Allow Override",
+  "k_171": "Allows users with override permission to bypass this rule."
 }

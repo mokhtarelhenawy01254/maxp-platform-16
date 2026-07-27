@@ -7,13 +7,15 @@ import {
     ClockIcon,
     CheckBadgeIcon,
     AdjustmentsVerticalIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    TagIcon
 } from '@heroicons/react/24/outline';
 import orderWorkflowService, { OrderStatusDefinition, OrderWorkflowConfig } from '../../../services/orderWorkflowService';
 import TransitionRules from './TransitionRules';
 import ApprovalRules from './ApprovalRules';
 import OverridePermissions from './OverridePermissions';
 import AuditLogViewer from './AuditLogViewer';
+import StatusManagement from './StatusManagement';
 import TabErrorBoundary from './TabErrorBoundary';
 
 interface OrderWorkflowProps {
@@ -65,6 +67,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
 
     const tabs = [
         { id: 'settings', label: t('orderSettings.k_27'), icon: AdjustmentsVerticalIcon },
+        { id: 'statuses', label: t('orderSettings.k_165'), icon: TagIcon },
         { id: 'transitions', label: t('orderSettings.k_28'), icon: ArrowsRightLeftIcon },
         { id: 'approvals', label: t('orderSettings.k_29'), icon: CheckBadgeIcon },
         { id: 'overrides', label: t('orderSettings.k_30'), icon: ShieldCheckIcon },
@@ -155,7 +158,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                 key={tab.id}
                                 onClick={() => {
                                     setActiveTab(tab.id);
-                                    if (tab.id === 'transitions') {
+                                    if (tab.id === 'transitions' || tab.id === 'statuses') {
                                         orderWorkflowService.getStatuses()
                                             .then(res => setStatuses((res.data || [])))
                                             .catch(() => {});
@@ -225,6 +228,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                         </div>
                                         </TabErrorBoundary>
                                     )}
+                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel={t('orderSettings.k_165')}><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'transitions' && <TabErrorBoundary tabLabel={t('orderSettings.k_28')}><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'approvals' && <TabErrorBoundary tabLabel={t('orderSettings.k_29')}><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'overrides' && <TabErrorBoundary tabLabel={t('orderSettings.k_30')}><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}

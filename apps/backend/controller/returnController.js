@@ -442,7 +442,10 @@ exports.createReturnRequest = async (req, res) => {
         // Log creation
         await logReturnActivity(getPrisma(), request.id, req.user?.id, 'CREATED', 'Return request created');
 
-        res.json(request);
+        // Try auto-approval
+        const finalRequest = await tryAutoApprove(getPrisma(), request, req.user.effectiveCompanyId || req.user.companyId);
+
+        res.json(finalRequest);
     } catch (error) {
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
@@ -526,6 +529,50 @@ exports.updateReturnRequest = async (req, res) => {
     }
 };
 
+exports.getPublicReasons = async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        if (!companyId) {
+            return res.status(400).json({ error: 'companyId is required' });
+        }
+
+        const reasons = await getPrisma().returnReason.findMany({
+            where: {
+                companyId,
+                isActive: true
+            },
+            include: {
+                returnReasonCategory: {
+                    where: { isActive: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const mappedReasons = reasons.map(r => ({
+            id: r.id,
+            reason: r.reason,
+            description: r.description,
+            categoryId: r.categoryId,
+            category: r.returnReasonCategory ? {
+                id: r.returnReasonCategory.id,
+                name: r.returnReasonCategory.name,
+                defaultRole: r.returnReasonCategory.defaultRole
+            } : null
+        }));
+
+        const categories = await getPrisma().returnReasonCategory.findMany({
+            where: { companyId, isActive: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ reasons: mappedReasons, categories });
+    } catch (error) {
+        console.error('❌ [GET_PUBLIC_REASONS] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to fetch return reasons' });
+    }
+};
+
 exports.createPublicReturnRequest = async (req, res) => {
     try {
         const { orderNumber, emailOrPhone, reasonId, customerNotes } = req.body;
@@ -540,6 +587,10 @@ exports.createPublicReturnRequest = async (req, res) => {
         }
 
         const customer = order.customer;
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found for this order' });
+        }
+
         // Verify email or phone matches
         const matches = (customer.email && customer.email === emailOrPhone) ||
             (customer.phone && customer.phone === emailOrPhone);
@@ -567,7 +618,13 @@ exports.createPublicReturnRequest = async (req, res) => {
             }
         });
 
-        res.json({ success: true, request });
+        // Log creation
+        await logReturnActivity(getPrisma(), request.id, null, 'CREATED', 'Public return request created');
+
+        // Try auto-approval
+        const finalRequest = await tryAutoApprove(getPrisma(), request, order.companyId);
+
+        res.json({ success: true, request: finalRequest });
     } catch (error) {
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'يوجد طلب إرجاع مسبق لهذا الطلب' });
@@ -578,6 +635,74 @@ exports.createPublicReturnRequest = async (req, res) => {
 };
 
 /* --- New Features Implementation --- */
+
+// Helper to auto-approve return request based on customer score
+async function tryAutoApprove(prismaClient, returnRequest, companyId) {
+    try {
+        const settings = await prismaClient.returnSettings.findUnique({
+            where: { companyId }
+        });
+
+        if (!settings?.enableAutoApproval) return returnRequest;
+
+        const customer = await prismaClient.customer.findUnique({
+            where: { id: returnRequest.customerId },
+            select: { successScore: true }
+        });
+
+        if (!customer || customer.successScore == null) return returnRequest;
+
+        const score = customer.successScore;
+        const threshold = settings.autoApproveScore ?? 95;
+
+        if (score >= threshold) {
+            const autoNote = 'تمت الموافقة التلقائية بناءً على تقييم العميل';
+            const existingNotes = returnRequest.adminNotes ? returnRequest.adminNotes + '\n' + autoNote : autoNote;
+
+            const updated = await prismaClient.returnRequest.update({
+                where: { id: returnRequest.id },
+                data: {
+                    status: 'APPROVED',
+                    isReviewed: true,
+                    reviewedAt: new Date(),
+                    adminNotes: existingNotes
+                }
+            });
+
+            await logReturnActivity(prismaClient, returnRequest.id, null, 'STATUS_CHANGE', {
+                from: 'PENDING',
+                to: 'APPROVED',
+                reason: `Auto-approved: customer score ${score}% >= threshold ${threshold}%`
+            });
+
+            await logReturnActivity(prismaClient, returnRequest.id, null, 'REVIEWED', {
+                status: 'APPROVED',
+                reason: 'Auto-review: customer score meets threshold'
+            });
+
+            // Recalculate customer score
+            await calculateCustomerScore(returnRequest.customerId, companyId);
+
+            // Reverse cashback for auto-approved return
+            try {
+                await cashbackService.reverseCashbackForReturn({
+                    returnRequestId: updated.id,
+                    companyId,
+                    changedBy: null
+                });
+            } catch (e) {
+                console.error('❌ [CASHBACK] Failed to reverse cashback for auto-approved return:', e.message);
+            }
+
+            return updated;
+        }
+
+        return returnRequest;
+    } catch (e) {
+        console.error('⚠️ [AUTO-APPROVE] Error:', e.message);
+        return returnRequest;
+    }
+}
 
 // Helper to log activity
 async function logReturnActivity(prismaClient, returnRequestId, userId, action, details) {

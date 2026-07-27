@@ -62,6 +62,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from "./utils/marketplaceApps";
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
+import ReturnsPage from "./pages/ReturnsPage";
 import { useStorePage } from "../hooks/useStorePage";
 import i18n from "../i18n";
 import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
@@ -8475,6 +8476,10 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route
           path={scopedPath("pages/:pageSlug/*")}
           element={<DynamicStorefrontPage />}
+        />
+        <Route
+          path={scopedPath("returns")}
+          element={<ReturnsPage />}
         />
         <Route
           path={scopedPath(":pageSlug/*")}

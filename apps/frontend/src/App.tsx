@@ -4083,7 +4083,9 @@ const AppContent = () => {
                   path="/returns"
                   element={
                     <Layout>
-                      <ReturnManagementPage />
+                      <PermissionProtectedRoute requiredPermissions={['orders.returns.view']}>
+                        <ReturnManagementPage />
+                      </PermissionProtectedRoute>
                     </Layout>
                   }
                 />
@@ -4091,17 +4093,15 @@ const AppContent = () => {
                   path="/returns/settings"
                   element={
                     <Layout>
-                      <ReturnSettingsPage />
+                      <PermissionProtectedRoute requiredPermissions={['orders.return-settings.view']}>
+                        <ReturnSettingsPage />
+                      </PermissionProtectedRoute>
                     </Layout>
                   }
                 />
                 <Route
                   path="/cancellations/settings"
-                  element={
-                    <Layout>
-                      <CancellationSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/orders?tab=cancellation_reasons" replace />}
                 />
                 <Route
                   path="/bulk-search"
