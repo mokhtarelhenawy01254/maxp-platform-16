@@ -4,7 +4,7 @@
  * Service للتعامل مع Facebook Ads Management API
  */
 
-import type { AxiosError } from "axios";
+import axios, { type AxiosError } from "axios";
 import { apiClient } from "./apiClient";
 
 const getAxiosStatus = (error: unknown) =>
@@ -1516,6 +1516,11 @@ export const getCampaignInsights = async (
 /**
  * جلب ملخص أداء الحملات مع توصيات تحسين
  */
+const getBaseUrl = () => {
+  const base = (apiClient as any)?.client?.defaults?.baseURL || "";
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+};
+
 export const getAdsPerformanceSummary = async (
   startDate?: string,
   endDate?: string,
@@ -1528,9 +1533,8 @@ export const getAdsPerformanceSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
-      `/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsPerformanceSummary } };
+    const url = `${getBaseUrl()}/facebook-ads/reports/performance-summary${query ? `?${query}` : ""}`;
+    const response = await axios.get(url, { timeout: 55000, withCredentials: true });
 
     return response.data.data;
   } catch (error: unknown) {
@@ -1551,9 +1555,8 @@ export const getAdsDecisionSummary = async (
     if (adAccountId) params.append("adAccountId", adAccountId);
 
     const query = params.toString();
-    const response = (await apiClient.get(
-      `/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`,
-    )) as { data: { data: FacebookAdsDecisionSummary } };
+    const url = `${getBaseUrl()}/facebook-ads/reports/decision-summary${query ? `?${query}` : ""}`;
+    const response = await axios.get(url, { timeout: 55000, withCredentials: true });
 
     return response.data.data;
   } catch (error: unknown) {
