@@ -5038,7 +5038,7 @@ const getAdDetails = async (req, res) => {
  * GET /api/v1/facebook-ads/reports/decision-summary
  * ملخص قرارات read-only مبني على الربحية والتتبع والـ insights المتزامنة
  */
-const DECISION_TIMEOUT_MS = 25000;
+const DECISION_TIMEOUT_MS = 40000;
 
 const getDecisionSummary = async (req, res) => {
   const timeoutHandle = setTimeout(() => {
@@ -5057,7 +5057,7 @@ const getDecisionSummary = async (req, res) => {
 
   try {
     const companyId = req.user?.companyId;
-    const { startDate, endDate, adAccountId, limit = 50 } = req.query;
+    const { startDate, endDate, adAccountId, limit = 20 } = req.query;
     const prisma = getSharedPrismaClient();
     const dateRange = normalizeReportDateRange(startDate, endDate);
     const normalizedLimit = Math.min(100, Math.max(1, Number(limit) || 50));
