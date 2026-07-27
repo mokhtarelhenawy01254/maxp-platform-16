@@ -140,4 +140,83 @@ const getCaptainStats = async (req, res) => {
   }
 };
 
-module.exports = { getCaptainStats };
+const getCaptainOrders = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+
+    const captainName = decodeURIComponent(req.params.name);
+    if (!captainName) return res.status(400).json({ success: false, error: 'Captain name is required' });
+
+    const prisma = getSharedPrismaClient();
+    const { page = '1', limit = '50', status } = req.query;
+    const pageNum = parseInt(page), limitNum = parseInt(limit), skip = (pageNum - 1) * limitNum;
+
+    const where = {
+      companyId,
+      turboShipmentId: { not: null },
+      turboCaptainName: captainName
+    };
+
+    if (status) {
+      if (status === 'delivered') where.turboShipmentStatus = { in: ['delivered', 'remitted'] };
+      else if (status === 'returned') where.turboShipmentStatus = { startsWith: 'returned' };
+      else if (status === 'active') where.turboShipmentStatus = { in: ['processing', 'turbo_sent', 'out_for_delivery', 'turbo_saved', 'created'] };
+      else if (status === 'delayed') where.turboShipmentStatus = 'delayed';
+    }
+
+    const [orders, total] = await Promise.all([
+      safeQuery(() => prisma.order.findMany({
+        where,
+        select: {
+          id: true, orderNumber: true, customerName: true, customerPhone: true,
+          total: true, shipping: true, status: true,
+          turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true,
+          turboCaptainName: true, turboCaptainPhone: true,
+          turboBranchName: true, turboBranchPhone: true,
+          turboDelayReason: true, turboReturnReason: true, turboExpectedBranch: true,
+          governorate: true, city: true, createdAt: true
+        },
+        orderBy: { createdAt: 'desc' },
+        skip, take: limitNum
+      }), 5),
+      safeQuery(() => prisma.order.count({ where }), 3)
+    ]);
+
+    // Aggregate stats for this captain
+    const allOrders = await safeQuery(() => prisma.order.findMany({
+      where: { companyId, turboShipmentId: { not: null }, turboCaptainName: captainName },
+      select: { turboShipmentStatus: true, total: true, shipping: true, turboDelayReason: true, turboReturnReason: true }
+    }), 5);
+
+    const stats = { total: 0, delivered: 0, returned: 0, active: 0, delayed: 0, remitted: 0, totalRevenue: 0, totalShipping: 0, delayReasons: {}, returnReasons: {} };
+    allOrders.forEach(o => {
+      stats.total++;
+      stats.totalRevenue += parseFloat(o.total || 0);
+      stats.totalShipping += parseFloat(o.shipping || 0);
+      const s = (o.turboShipmentStatus || '').toLowerCase().trim();
+      if (s === 'delivered') stats.delivered++;
+      else if (s === 'remitted') stats.remitted++;
+      else if (s.startsWith('returned')) stats.returned++;
+      else if (['processing', 'turbo_sent', 'out_for_delivery', 'turbo_saved', 'created'].includes(s)) stats.active++;
+      else if (s === 'delayed') stats.delayed++;
+      if (o.turboDelayReason) stats.delayReasons[o.turboDelayReason] = (stats.delayReasons[o.turboDelayReason] || 0) + 1;
+      if (o.turboReturnReason) stats.returnReasons[o.turboReturnReason] = (stats.returnReasons[o.turboReturnReason] || 0) + 1;
+    });
+
+    stats.deliveryRate = stats.total > 0 ? parseFloat(((stats.delivered + stats.remitted) / stats.total * 100).toFixed(1)) : 0;
+
+    res.json({
+      success: true,
+      data: orders,
+      stats,
+      captain: orders[0] ? { name: orders[0].turboCaptainName, phone: orders[0].turboCaptainPhone, branch: orders[0].turboBranchName, branchPhone: orders[0].turboBranchPhone } : { name: captainName },
+      pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    console.error('❌ [TURBO-CAPTAIN-ORDERS] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports = { getCaptainStats, getCaptainOrders };

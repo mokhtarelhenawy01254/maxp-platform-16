@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../services/api';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface CaptainStats {
@@ -192,9 +193,9 @@ const TurboCaptains: React.FC = () => {
                 captains.map((cap, i) => (
                   <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                      <Link to={`/orders/turbo-captains/${encodeURIComponent(cap.captainName)}`} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
                         {cap.captainName}
-                      </div>
+                      </Link>
                       {cap.captainPhone && (
                         <div className="text-xs text-gray-500 ltr">{cap.captainPhone}</div>
                       )}
