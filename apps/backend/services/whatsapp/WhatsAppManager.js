@@ -1762,8 +1762,9 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         updatedAt: new Date()
     };
 
-    // فقط chats الحقيقية (المحادثات اللي ليها رسايل في واتساب) — مش contacts address book
+    // نخزن بس الـ chats اللي فعلاً عندهم رسايل — عشان contacts address book ميتخزنوش
     for (const chat of chats) {
+        if (!chat.messages?.length) continue;
         try {
             await upsertHistoryContact(sessionId, chat.id, {
                 name: chat.name,
