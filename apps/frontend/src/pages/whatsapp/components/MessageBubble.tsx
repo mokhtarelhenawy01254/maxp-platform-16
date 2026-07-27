@@ -246,7 +246,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         } catch {
           return (
             <LinkifiedText
-              text={message.content ?? ''}
+              text={message.content}
               className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
             />
           );
@@ -293,7 +293,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
       return (
         <LinkifiedText
-          text={message.content ?? ''}
+          text={message.content}
           className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
         />
       );

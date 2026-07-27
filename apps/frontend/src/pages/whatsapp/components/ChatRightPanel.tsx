@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, MapPin, Tag, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, ExternalLink, MapPin, ChevronDown, Tag, Plus, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
-import { getInboxCustomerAvatarUrl } from '../../../utils/imageUrl';
+import { getInboxCustomerAvatarUrl, buildProxyImageUrl } from '../../../utils/imageUrl';
 import { Contact } from '../../../hooks/useWhatsAppQueries';
 import { apiClient } from '../../../services/apiClient';
 import { customerService } from '../../../services/customerService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -109,7 +109,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     setJourneyLoading(true);
     apiClient.get("/whatsapp/automation/journeys", { params: { customerId, status: 'ACTIVE' } })
       .then(r => {
-        const data = (r as any).data?.data || [];
+        const data = r.data?.data || [];
         if (data.length > 0) {
           const j = data[0];
           setActiveJourney({
@@ -131,7 +131,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
 
   useEffect(() => {
     apiClient.get("/whatsapp/lead-categories").then(r => {
-      setLeadCategories((r as any).data?.data || []);
+      setLeadCategories(r.data?.data || []);
     }).catch(() => {});
 
     // Fetch distinct tags for suggestions
@@ -155,7 +155,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
       });
       // Refresh journey status
       const r = await apiClient.get("/whatsapp/automation/journeys", { params: { customerId, status: 'ACTIVE' } });
-      const data = (r as any).data?.data || [];
+      const data = r.data?.data || [];
       if (data.length > 0) {
         const j = data[0];
         setActiveJourney({
@@ -340,7 +340,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                       {selectedCategory && (
                         <span className="inline-block size-3 shrink-0 rounded-full" style={{ background: selectedCategory.color || '#6366f1' }} />
                       )}
-                      <Select value={selectedCategoryId} onValueChange={(v) => v && void handleCategoryChange(v)} disabled={updatingCategory}>
+                      <Select value={selectedCategoryId} onValueChange={handleCategoryChange} disabled={updatingCategory}>
                         <SelectTrigger className="h-9 w-full text-xs">
                           <SelectValue placeholder="اختر التصنيف" />
                         </SelectTrigger>

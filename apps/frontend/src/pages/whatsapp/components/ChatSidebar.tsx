@@ -25,6 +25,8 @@ import {
   User,
   Users,
   VolumeX,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react";
 
@@ -45,6 +47,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -252,16 +255,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const swipeTouchStartYRef = useRef<number>(0);
   const isSwipingRef = useRef<boolean>(false);
 
-  const handleSwipeTouchStart = (e: React.TouchEvent, _contactId: string) => {
-    swipeTouchStartRef.current = e.touches[0]!.clientX;
-    swipeTouchStartYRef.current = e.touches[0]!.clientY;
+  const handleSwipeTouchStart = (e: React.TouchEvent, contactId: string) => {
+    swipeTouchStartRef.current = e.touches[0].clientX;
+    swipeTouchStartYRef.current = e.touches[0].clientY;
     isSwipingRef.current = true;
   };
 
   const handleSwipeTouchMove = (e: React.TouchEvent, contactId: string) => {
     if (!isSwipingRef.current) return;
-    const diffX = e.touches[0]!.clientX - swipeTouchStartRef.current;
-    const diffY = Math.abs(e.touches[0]!.clientY - swipeTouchStartYRef.current);
+    const diffX = e.touches[0].clientX - swipeTouchStartRef.current;
+    const diffY = Math.abs(e.touches[0].clientY - swipeTouchStartYRef.current);
     
     // If scrolling vertically, do not swipe
     if (diffY > 30 && Math.abs(diffX) < 10) {
@@ -287,7 +290,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  const handleSwipeTouchEnd = (_e: React.TouchEvent, _contact: Contact) => {
+  const handleSwipeTouchEnd = (e: React.TouchEvent, contact: Contact) => {
     isSwipingRef.current = false;
     const isRtl = document.documentElement.dir === 'rtl';
     const threshold = 40;
@@ -547,7 +550,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           ) : null}
           {/* Inline session selector — compact */}
           {sessionOptions.length > 1 ? (
-            <Select value={resolvedSessionValue} onValueChange={(v) => v && onSelectSession(v)}>
+            <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
               <SelectTrigger className="h-7 min-w-0 max-w-[9rem] rounded-lg bg-[var(--whatsapp-surface)] text-[10px] px-2 gap-1">
                 <span className="truncate font-medium text-[color:var(--color-foreground)]">
                   {resolvedSessionValue === "all"
@@ -670,8 +673,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
-              aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
+              placeholder={t("whatsapp.sidebar.searchPlaceholder")}
+              aria-label={t("whatsapp.sidebar.searchPlaceholder")}
               className="whatsapp-search-input h-7 rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
             />
             <Button
@@ -688,7 +691,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
                   : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
               )}
-              title={t("whatsapp.sidebar.unread") as string}
+              title={t("whatsapp.sidebar.unread")}
             >
               <Filter className="size-3.5" />
             </Button>
