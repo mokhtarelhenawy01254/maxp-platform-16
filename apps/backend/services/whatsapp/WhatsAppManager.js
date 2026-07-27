@@ -1962,12 +1962,14 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // تحديث أو إنشاء جهة الاتصال
+            const previewText = messageContent.text || (messageContent.type === 'AUDIO' ? '🎵 رسالة صوتية' : messageContent.type === 'IMAGE' ? '🖼️ صورة' : messageContent.type === 'VIDEO' ? '🎬 فيديو' : messageContent.type === 'DOCUMENT' ? '📄 مستند' : messageContent.type);
             const contact = await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
                 isOutgoing: fromMe,
                 customerId: syncedCustomer?.id,
                 suppressUnread: importHistory || !isNewMessage,
                 incrementCounters: isNewMessage,
                 lastMessageAt: messageTimestamp,
+                lastMessagePreview: previewText,
                 skipProfilePic: importHistory
             });
 
@@ -2545,6 +2547,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             suppressUnread = false,
             incrementCounters = true,
             lastMessageAt,
+            lastMessagePreview,
             skipProfilePic = false
         } = options;
 
@@ -2602,6 +2605,9 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
         // Only update chat metadata if it's NOT a background participant update
         if (!isGroupParticipant) {
             updateData.lastMessageAt = lastMessageAt || new Date();
+            if (lastMessagePreview !== undefined) {
+                updateData.lastMessagePreview = lastMessagePreview;
+            }
             if (incrementCounters) {
                 updateData.totalMessages = { increment: 1 };
             }

@@ -242,6 +242,7 @@ const getUnifiedConversations = async (req, res) => {
                             category: true,
                             unreadCount: true,
                             lastMessageAt: true,
+                            lastMessagePreview: true,
                             isPinned: true,
                             isMuted: true,
                             whatsAppSession: {
