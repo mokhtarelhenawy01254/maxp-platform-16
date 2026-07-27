@@ -242,7 +242,7 @@ describe('ShipmentService', () => {
         expect.objectContaining({
           authentication_key: 'test-api-key',
           main_client_code: '37321',
-          search_Key: 'TRK-123',
+          search_key: 'TRK-123',
         }),
         expect.any(Object)
       );

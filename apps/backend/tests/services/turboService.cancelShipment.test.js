@@ -34,7 +34,7 @@ describe('TurboService.cancelShipment', () => {
       1,
       'https://backoffice.turbo-eg.com/external-api/delete-order',
       expect.objectContaining({
-        search_Key: 'CODE-123',
+        search_key: 'CODE-123',
       }),
       expect.any(Object),
     );
@@ -42,7 +42,7 @@ describe('TurboService.cancelShipment', () => {
       2,
       'https://backoffice.turbo-eg.com/external-api/delete-order',
       expect.objectContaining({
-        search_Key: 'BAR-999',
+        search_key: 'BAR-999',
       }),
       expect.any(Object),
     );
@@ -69,7 +69,7 @@ describe('TurboService.cancelShipment', () => {
     expect(axios.post).toHaveBeenCalledWith(
       'https://backoffice.turbo-eg.com/external-api/delete-order',
       expect.objectContaining({
-        search_Key: '00012345',
+        search_key: '00012345',
       }),
       expect.any(Object),
     );

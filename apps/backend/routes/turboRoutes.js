@@ -198,10 +198,10 @@ router.get('/debug/search/:code', verifyToken.authenticateToken, async (req, res
     const platformUrl = 'https://platform.turbo.info/external-api';
     const results = {};
 
-    // Test both API endpoints with search_Key (capital K)
+    // Test both API endpoints with search_key (lowercase k)
     for (const [label, url] of [['backoffice', backofficeUrl], ['platform', platformUrl]]) {
       try {
-        const r = await axios.post(`${url}/search-order`, { authentication_key: apiKey, main_client_code: clientCode, search_Key: code }, { timeout: 15000 });
+        const r = await axios.post(`${url}/search-order`, { authentication_key: apiKey, main_client_code: clientCode, search_key: code }, { timeout: 15000 });
         results[label+'_searchKey'] = { success: r.data?.success, hasData: !!r.data?.data, statusCode: r.data?.data?.[0]?.status_code, statusText: r.data?.data?.[0]?.status };
       } catch (e) { results[label+'_searchKey'] = { error: `HTTP_${e.response?.status}: ${e.response?.data?.message || e.message}` }; }
     }
@@ -284,7 +284,7 @@ router.get('/debug/ghost-orders', verifyToken.authenticateToken, async (req, res
     if (fix && ghostProcessing.length > 0) {
       for (const o of ghostProcessing.slice(0, 20)) {
         try {
-          const sr = await axios.post('https://platform.turbo.info/external-api/search-order', { authentication_key: apiKey, main_client_code: clientCode, search_Key: o.turboShipmentId }, { timeout: 10000 });
+          const sr = await axios.post('https://platform.turbo.info/external-api/search-order', { authentication_key: apiKey, main_client_code: clientCode, search_key: o.turboShipmentId }, { timeout: 10000 });
           const d2 = sr.data?.data?.[0];
           if (d2 && d2.status_code) {
             fixResults.push({ code: o.turboShipmentId, orderNumber: o.orderNumber, found: true, status_code: d2.status_code, status: d2.status });

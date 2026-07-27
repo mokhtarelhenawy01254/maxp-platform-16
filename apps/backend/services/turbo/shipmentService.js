@@ -126,7 +126,7 @@ class ShipmentService {
       for (let index = 0; index < shipmentSearchKeys.length; index += 1) {
         const searchKey = shipmentSearchKeys[index];
         try {
-          const response = await axios.post(`${this._client.baseUrl}/delete-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_Key: searchKey }, { headers, timeout: this._client.timeout });
+          const response = await axios.post(`${this._client.baseUrl}/delete-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_key: searchKey }, { headers, timeout: this._client.timeout });
           const result = response.data;
           if (result.success === 0 || result.error_msg || result.success === false) {
             const err = new Error(result.error_msg || result.message || 'Unknown error from Turbo API');

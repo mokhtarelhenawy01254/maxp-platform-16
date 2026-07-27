@@ -17,7 +17,7 @@ class TrackingService {
       const trackingNumberStr = String(trackingNumber || '');
 
       try {
-        const searchResponse = await axios.post(`${this._client.baseUrl}/search-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_Key: trackingNumberStr }, { headers, timeout: this._client.timeout });
+        const searchResponse = await axios.post(`${this._client.baseUrl}/search-order`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, search_key: trackingNumberStr }, { headers, timeout: this._client.timeout });
         const searchData = searchResponse.data;
         console.log(`🔍 [TURBO-TRACK] search-order for ${trackingNumberStr}: success=${searchData?.success}, hasResult=${!!searchData?.result}, hasData=${!!searchData?.data}`);
         const searchItems = searchData?.result || searchData?.data;

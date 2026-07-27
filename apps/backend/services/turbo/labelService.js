@@ -18,13 +18,13 @@ class LabelService {
 
       for (const endpoint of possibleEndpoints) {
         try {
-          response = await axios.post(`${this._client.baseUrl}${endpoint}`, { authentication_key: apiKey, search_Key: shipmentIdStr }, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
+          response = await axios.post(`${this._client.baseUrl}${endpoint}`, { authentication_key: apiKey, search_key: shipmentIdStr }, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
           break;
         } catch (postError) {
           lastError = postError;
           if (postError.response?.status === 405 || postError.response?.status === 404) {
             try {
-              response = await axios.get(`${this._client.baseUrl}${endpoint}?authentication_key=${apiKey}&search_Key=${shipmentIdStr}`, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
+              response = await axios.get(`${this._client.baseUrl}${endpoint}?authentication_key=${apiKey}&search_key=${shipmentIdStr}`, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
               break;
             } catch (getError) { continue; }
           } else if (postError.response?.data && Buffer.isBuffer(postError.response.data)) {
@@ -51,14 +51,14 @@ class LabelService {
 
       for (const endpoint of possibleEndpoints) {
         try {
-          const response = await axios.post(`${this._client.baseUrl}${endpoint}`, { authentication_key: apiKey, search_Key: shipmentIdStr }, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
+          const response = await axios.post(`${this._client.baseUrl}${endpoint}`, { authentication_key: apiKey, search_key: shipmentIdStr }, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
           apiWaybill = { success: true, waybillPdf: Buffer.from(response.data).toString('base64'), contentType: 'application/pdf', fromApi: true };
           break;
         } catch (postError) {
           lastError = postError;
           if (postError.response?.status === 405 || postError.response?.status === 404) {
             try {
-              const response = await axios.get(`${this._client.baseUrl}${endpoint}?authentication_key=${apiKey}&search_Key=${shipmentIdStr}`, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
+              const response = await axios.get(`${this._client.baseUrl}${endpoint}?authentication_key=${apiKey}&search_key=${shipmentIdStr}`, { headers, timeout: this._client.timeout, responseType: 'arraybuffer' });
               apiWaybill = { success: true, waybillPdf: Buffer.from(response.data).toString('base64'), contentType: 'application/pdf', fromApi: true };
               break;
             } catch (getError) { continue; }
