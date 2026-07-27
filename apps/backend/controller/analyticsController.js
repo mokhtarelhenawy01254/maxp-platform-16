@@ -4052,7 +4052,7 @@ const getStatusSummaryOrders = async (req, res) => {
                oi."productName", oi."productColor", oi."productSize", oi."productSku",
                p.name AS p_name, p.sku AS p_sku
         FROM "order_items" oi
-        LEFT JOIN "Product" p ON p.id = oi."productId"
+        LEFT JOIN "products" p ON p.id = oi."productId"
         WHERE oi."orderId" IN (${itemPlaceholders})
       `, ...orderIds);
       itemsMap = {};
