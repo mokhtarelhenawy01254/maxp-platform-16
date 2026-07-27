@@ -32,11 +32,11 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
   return {
     where: {
       provider: 'META_CLOUD',
+      status: 'CONNECTED',
       OR: identifiers,
       AND: [ACTIVE_METADATA_FILTER]
     },
     orderBy: [
-      { isDefault: 'desc' },
       { updatedAt: 'desc' }
     ]
   };
