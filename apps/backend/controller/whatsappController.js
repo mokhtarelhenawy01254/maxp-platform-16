@@ -4496,6 +4496,18 @@ async function facebookConnect(req, res) {
             }
         }
 
+        // Step 5.75: Disconnect any existing CONNECTED session with the same phone number ID (SaaS safeguard)
+        if (metaPhoneNumberId) {
+            try {
+                await getSharedPrismaClient().whatsAppSession.updateMany({
+                    where: { metaPhoneNumberId: metaPhoneNumberId, status: 'CONNECTED' },
+                    data: { status: 'DISCONNECTED', updatedAt: new Date() }
+                });
+            } catch (discErr) {
+                console.warn('⚠️ Could not disconnect old session with same phoneNumberId:', discErr.message);
+            }
+        }
+
         // Step 6: Create WhatsAppSession in DB
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
@@ -4739,6 +4751,20 @@ async function facebookEmbeddedConnect(req, res) {
             displayPhoneNumber = phoneInfo.data?.display_phone_number || null;
         } catch (phoneErr) {
             console.warn('⚠️ Could not fetch phone number details:', phoneErr.message);
+        }
+
+        // Disconnect any existing CONNECTED session with the same phone number ID (SaaS safeguard)
+        try {
+            await getSharedPrismaClient().whatsAppSession.updateMany({
+                where: {
+                    metaPhoneNumberId: phoneNumberId,
+                    status: 'CONNECTED',
+                    id: { not: undefined } // will match all
+                },
+                data: { status: 'DISCONNECTED', updatedAt: new Date() }
+            });
+        } catch (discErr) {
+            console.warn('⚠️ Could not disconnect old session with same phoneNumberId:', discErr.message);
         }
 
         const session = await getSharedPrismaClient().whatsAppSession.create({
