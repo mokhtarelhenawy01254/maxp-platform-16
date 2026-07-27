@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
@@ -197,9 +197,9 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    void loadConversations();
-  }, [debouncedSearch, loadConversations]);
+  }, [debouncedSearch]);
+
+  // NOTE: loadConversations is defined below — this effect is intentionally placed after
 
   const loadConversations = useCallback(async () => {
     if (!activeSession) {
@@ -232,6 +232,11 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
       setError(loadConversationsError);
     }
   }, [activeSession, apiBase, companyId, debouncedSearch, loadConversationsError, queueFilter, superAdminMode]);
+
+  // Trigger reload when debouncedSearch changes (loadConversations now defined)
+  useEffect(() => {
+    void loadConversations();
+  }, [debouncedSearch, loadConversations]);
 
   useEffect(() => {
     setActiveSession(sessionId || null);

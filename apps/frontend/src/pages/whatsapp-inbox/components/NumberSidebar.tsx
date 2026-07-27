@@ -121,7 +121,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
             number.session.name ||
             number.session.profileName ||
             number.session.phoneNumber;
-          const StatusIcon = STATUS_ICONS[NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus];
+          const _StatusIcon = STATUS_ICONS[NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus];
           const norm = NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus;
           const dotColor = STATUS_DOT[norm] || 'bg-muted';
 

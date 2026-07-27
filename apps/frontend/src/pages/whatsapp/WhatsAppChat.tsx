@@ -18,8 +18,6 @@ import {
   Loader2,
   MapPin,
   MousePointerSquare,
-  PanelRightClose,
-  PanelRightOpen,
   Phone,
   PlusCircle,
   Reply,
@@ -34,7 +32,6 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/apiClient';
 import { indexedDBStorage } from '../../services/indexedDBStorage';
@@ -51,16 +48,16 @@ import LabelsDialog from '../../components/whatsapp/LabelsDialog';
 import BroadcastDialog from '../../components/whatsapp/BroadcastDialog';
 import PrivacySettingsDialog from '../../components/whatsapp/PrivacySettingsDialog';
 import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDialog';
-import AudioRecorder from './components/AudioRecorder';
+
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import { useAuth } from '../../hooks/useAuthSimple';
-import MessageBubble from './components/MessageBubble';
+
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
 import ChatRightPanel from './components/ChatRightPanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { config } from '../../config';
+
 import {
   useWhatsAppSessions,
   useWhatsAppConversations,
@@ -91,7 +88,6 @@ import {
   useArchiveConversation
 } from '../../hooks/useWhatsAppMutations';
 import {
-  useVirtualConversations,
   useVirtualMessages,
   useInfiniteScroll
 } from '../../hooks/useVirtualScroll';
@@ -214,6 +210,7 @@ const WhatsAppChatContent: React.FC = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  void messagesEndRef.current;
   const fileInputRef = useRef<HTMLInputElement>(null);
   // const conversationsListRef = useRef<HTMLDivElement>(null); // Moved to ChatSidebar
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -228,15 +225,18 @@ const WhatsAppChatContent: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   // const [searchQuery, setSearchQuery] = useState(''); // Moved to ChatSidebar
-  const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  const [_showQuickReplies, setShowQuickReplies] = useState(false);
+  void setShowQuickReplies;
+  const [_contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  void setContactMenuAnchor;
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') !== 'false');
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [_aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  void setAiSuggestion;
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageContextMenu, setMessageContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
   const [selectedMessageForMenu, setSelectedMessageForMenu] = useState<Message | null>(null);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [_editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editMessageText, setEditMessageText] = useState('');
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const [selectedContactsForForward, setSelectedContactsForForward] = useState<string[]>([]);

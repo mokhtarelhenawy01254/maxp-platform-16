@@ -181,7 +181,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
     const response = await apiClient.get("/whatsapp-notifications/stats", withCompanyConfig({
       params: { days: dateRange },
     }));
-    setStats(response.data.stats);
+    setStats((response as any).data.stats);
   }, [dateRange, withCompanyConfig]);
 
   const fetchLogs = useCallback(async () => {
@@ -194,8 +194,8 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       },
     }));
 
-    setLogs(response.data.logs || []);
-    setTotalLogs(response.data.pagination?.total || 0);
+    setLogs((response as any).data.logs || []);
+    setTotalLogs((response as any).data.pagination?.total || 0);
   }, [categoryFilter, page, rowsPerPage, statusFilter, withCompanyConfig]);
 
   useEffect(() => {
@@ -291,7 +291,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
         description={t("whatsappAnalytics.description")}
         icon={BarChart3}
         backHref={backHref}
-        backLabel={t("common.back")}
+        backLabel={t("common.back") as string}
         eyebrow={eyebrow}
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -314,7 +314,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       description={t("whatsappAnalytics.description")}
       icon={BarChart3}
       backHref={backHref}
-      backLabel={t("common.back")}
+      backLabel={t("common.back") as string}
       eyebrow={eyebrow}
       actions={
         <>
@@ -375,21 +375,21 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
         <WhatsAppMetricCard
           label={t("whatsappAnalytics.stats.delivered")}
           value={stats?.delivered || 0}
-          hint={t("whatsappAnalytics.stats.deliveryRate")}
+          hint={t("whatsappAnalytics.stats.deliveryRate") as string}
           icon={CheckCircle2}
           tone="success"
         />
         <WhatsAppMetricCard
           label={t("whatsappAnalytics.stats.read")}
           value={stats?.read || 0}
-          hint={t("whatsappAnalytics.stats.readRate")}
+          hint={t("whatsappAnalytics.stats.readRate") as string}
           icon={Eye}
           tone="info"
         />
         <WhatsAppMetricCard
-          label={t("whatsappAnalytics.stats.failed")}
+          label={t("whatsappAnalytics.stats.failed") as string}
           value={stats?.failed || 0}
-          hint={t("whatsappAnalytics.logs.status")}
+          hint={t("whatsappAnalytics.logs.status") as string}
           icon={AlertTriangle}
           tone="danger"
         />
@@ -430,7 +430,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
         </WhatsAppSurfaceCard>
 
         <WhatsAppSurfaceCard
-          title={t("whatsappAnalytics.stats.readRate")}
+          title={t("whatsappAnalytics.stats.readRate") as string}
           description={summaryHint}
         >
           <div className="space-y-5">
@@ -462,8 +462,8 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
 
       <div className="grid gap-4 xl:grid-cols-2">
         <WhatsAppSurfaceCard
-          title={t("whatsappAnalytics.charts.byCategory")}
-          description={t("whatsappAnalytics.description")}
+          title={t("whatsappAnalytics.charts.byCategory") as string}
+          description={t("whatsappAnalytics.description") as string}
         >
           {categorySeries.length > 0 ? (
             <div className="space-y-4">
@@ -517,7 +517,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
         </WhatsAppSurfaceCard>
 
         <WhatsAppSurfaceCard
-          title={t("whatsappAnalytics.charts.topEvents")}
+          title={t("whatsappAnalytics.charts.topEvents") as string}
           description={summaryHint}
         >
           {topEvents.length > 0 ? (
@@ -573,15 +573,15 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       </div>
 
       <WhatsAppSurfaceCard
-        title={t("whatsappAnalytics.logs.title")}
-        description={t("whatsappAnalytics.description")}
+        title={t("whatsappAnalytics.logs.title") as string}
+        description={t("whatsappAnalytics.description") as string}
         action={
           <div className="flex flex-wrap gap-2">
             <Select
               value={categoryFilter || "__all__"}
               onValueChange={(value) => {
                 setPage(0);
-                setCategoryFilter(value === "__all__" ? "" : value);
+                setCategoryFilter(value === "__all__" ? "" : (value ?? ""));
               }}
             >
               <SelectTrigger className="min-w-[11rem] bg-[color:var(--color-card)]">
@@ -601,7 +601,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               value={statusFilter || "__all__"}
               onValueChange={(value) => {
                 setPage(0);
-                setStatusFilter(value === "__all__" ? "" : value);
+                setStatusFilter(value === "__all__" ? "" : (value ?? ""));
               }}
             >
               <SelectTrigger className="min-w-[11rem] bg-[color:var(--color-card)]">
@@ -657,7 +657,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                         variant="outline"
                         className={
                           STATUS_BADGE_CLASSES[log.status] ||
-                          STATUS_BADGE_CLASSES.CANCELLED
+                          STATUS_BADGE_CLASSES['CANCELLED']
                         }
                       >
                         {STATUS_LABELS[log.status] || log.status}

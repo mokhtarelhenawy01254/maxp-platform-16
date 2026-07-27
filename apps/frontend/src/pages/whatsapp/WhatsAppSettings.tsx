@@ -1569,9 +1569,9 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
                       onClick={() => {
                         let defaultKeep = true;
-                        if (session.metadata) {
+                        if ((session as any).metadata) {
                           try {
-                            const meta = JSON.parse(session.metadata);
+                            const meta = JSON.parse((session as any).metadata);
                             if (typeof meta.keepHistoryOnDelete === "boolean") {
                               defaultKeep = meta.keepHistoryOnDelete;
                             }
@@ -1991,8 +1991,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderPrivacyTab = () => (
     <div className="space-y-4">
       <WhatsAppSurfaceCard
-        title={t("whatsappSettings.privacySettings")}
-        description={t("whatsappSettings.privacySettings")}
+        title={t("whatsappSettings.privacySettings") as string}
+        description={t("whatsappSettings.privacySettings") as string}
         action={
           <SessionScopeSelector
             label={t("whatsappSettings.selectSession")}
@@ -2013,8 +2013,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
               <WhatsAppSurfaceCard
-                title={t("whatsappSettings.privacySettings")}
-                description={currentScopedSession?.name || t("whatsappSettings.privacy")}
+                title={t("whatsappSettings.privacySettings") as string}
+                description={currentScopedSession?.name || t("whatsappSettings.privacy") as string}
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 <div className="grid gap-4 md:grid-cols-2">
