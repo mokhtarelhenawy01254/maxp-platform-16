@@ -776,7 +776,8 @@ function getErrorMessage(reason, retryable = false) {
 async function publishTemplateToMeta(req, res) {
   try {
     const { companyId } = req.user;
-    const { templateId, sessionId } = req.body;
+    const templateId = req.params.id || req.body.templateId;
+    const { sessionId } = req.body;
 
     if (!templateId || !sessionId) {
       return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
