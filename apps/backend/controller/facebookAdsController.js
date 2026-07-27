@@ -5057,10 +5057,10 @@ const getDecisionSummary = async (req, res) => {
 
   try {
     const companyId = req.user?.companyId;
-    const { startDate, endDate, adAccountId, limit = 10 } = req.query;
+    const { startDate, endDate, adAccountId, limit = 5 } = req.query;
     const prisma = getSharedPrismaClient();
     const dateRange = normalizeReportDateRange(startDate, endDate);
-    const normalizedLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+    const normalizedLimit = Math.min(10, Math.max(1, Number(limit) || 5));
     const accountReference = String(adAccountId || "").trim();
     const normalizedAccountReference = accountReference.replace(/^act_/i, "");
 
