@@ -27,8 +27,6 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-export type ReturnReceivedStatus = "PENDING_RECEIVE" | "IN_TRANSIT" | "RECEIVED" | "INSPECTED" | "RESTOCKED";
-
 export interface ReturnRequest {
   id: string;
   orderId: string;
@@ -43,12 +41,6 @@ export interface ReturnRequest {
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionReason?: string;
-  trackingNumber?: string;
-  receivedStatus?: ReturnReceivedStatus;
-  receivedAt?: string;
-  productCondition?: string;
-  shippingReturnCost?: number;
-  settlementAmount?: number;
   createdAt: string;
   customer?: {
     firstName: string;
@@ -117,10 +109,6 @@ export const returnService = {
   updateSettings: (data: any) =>
     apiClient.put<ReturnSettingsData>("/returns/settings", data),
 
-  // Batch Operations
-  batchReceive: (ids: string[], productCondition?: string) =>
-    apiClient.put("/returns/batch/receive", { ids, productCondition }),
-
   // Details & Logs
   addContactAttempt: (
     id: string,
@@ -161,7 +149,6 @@ export interface ReviewDisplayConfig {
   showDateColumn: boolean;
   showActionsColumn: boolean;
   showTrackingColumn?: boolean;
-  showReceivedStatusColumn?: boolean;
   visibleOrderStatuses?: string[];
   ordersStartDate?: string;
 }
