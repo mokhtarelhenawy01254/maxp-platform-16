@@ -212,6 +212,37 @@ async function postWebhook(req, res) {
     for (const entry of entries) {
       const changes = entry.changes || [];
       for (const change of changes) {
+        // ── Handle template status updates from Meta ────────────────
+        if (change.field === 'message_template_status_update') {
+          const value = change.value || {};
+          const templateName = value.message_template_name;
+          const event = value.event; // APPROVED, PENDING, REJECTED, FLAGGED
+          const reason = value.reason || '';
+
+          if (templateName && event) {
+            const statusMap = {
+              APPROVED: 'APPROVED',
+              PENDING: 'PENDING',
+              REJECTED: 'REJECTED',
+              FLAGGED: 'FLAGGED'
+            };
+            const mappedStatus = statusMap[event] || event;
+
+            try {
+              const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.updateMany({
+                where: { metaTemplateName: templateName },
+                data: { metaTemplateStatus: mappedStatus, updatedAt: new Date() }
+              });
+              if (updated.count > 0) {
+                console.log(`☁️ [TEMPLATE-STATUS] "${templateName}" → ${mappedStatus}${reason ? ': ' + reason : ''}`);
+              }
+            } catch (statusErr) {
+              console.warn(`⚠️ [TEMPLATE-STATUS] Failed to update "${templateName}": ${statusErr.message}`);
+            }
+          }
+          continue;
+        }
+
         if (change.field !== 'messages') continue;
 
         const value = change.value || {};
