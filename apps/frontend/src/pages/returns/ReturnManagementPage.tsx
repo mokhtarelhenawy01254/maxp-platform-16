@@ -12,10 +12,14 @@ import {
   CheckCircle,
   Clock,
   Eye,
+  Edit,
   CalendarDays,
   CheckSquare,
   Square,
+  Package,
+  XCircle,
 } from "lucide-react";
+import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
 const RETURN_STATUSES = ["PENDING", "APPROVED", "REJECTED", "COMPLETED"] as const;
@@ -34,9 +38,13 @@ const ReturnManagementPage: React.FC = () => {
 
   // Filters & Search
   const [returnStatusFilter, setReturnStatusFilter] = useState<string>("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Order statuses for secondary filter
+  const [orderStatuses, setOrderStatuses] = useState<{ code: string; label: string }[]>([]);
 
   // Batch Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -47,11 +55,25 @@ const ReturnManagementPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  // Edit Reason Modal State
+  const [showEditReasonModal, setShowEditReasonModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<ReturnRequest | null>(null);
+  const [editForm, setEditForm] = useState({
+    reasonId: "",
+    responsibleParty: "OTHER" as "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER",
+    customerNotes: "",
+    adminNotes: "",
+  });
+  const [editCategories, setEditCategories] = useState<any[]>([]);
+  const [editReasons, setEditReasons] = useState<any[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page, limit: 20 };
       if (returnStatusFilter) params.status = returnStatusFilter;
+      if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
@@ -69,11 +91,37 @@ const ReturnManagementPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, returnStatusFilter, dateFrom, dateTo]);
+  }, [searchTerm, returnStatusFilter, orderStatusFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchData();
-  }, [searchTerm, returnStatusFilter, dateFrom, dateTo, page, displayConfig]);
+  }, [searchTerm, returnStatusFilter, orderStatusFilter, dateFrom, dateTo, page, displayConfig]);
+
+  // Load order statuses for secondary filter
+  useEffect(() => {
+    apiClient.get("/order-status", { _skipErrorToast: true })
+      .then((res) => {
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          const fetched = res.data.data
+            .filter((s: any) => s.statusType !== "payment")
+            .map((s: any) => ({ code: s.code, label: s.name || s.code }));
+          if (fetched.length > 0) setOrderStatuses(fetched);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load categories/reasons for Edit Modal
+  const fetchEditReasons = async () => {
+    try {
+      const [catRes, reasonRes] = await Promise.all([
+        returnService.getCategories(),
+        returnService.getReasons(),
+      ]);
+      setEditCategories(catRes.data);
+      setEditReasons(reasonRes.data);
+    } catch { /* ignore */ }
+  };
 
   // Load display settings
   useEffect(() => {
@@ -204,6 +252,27 @@ const ReturnManagementPage: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* Secondary: order status filter */}
+        {orderStatuses.length > 0 && (
+          <>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <Package size={16} />
+              <span className="text-xs font-medium whitespace-nowrap">{t('returns.k_18')}</span>
+            </div>
+            <select
+              value={orderStatusFilter}
+              onChange={(e) => setOrderStatusFilter(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+            >
+              <option value="">{t('returns.k_13')}</option>
+              {orderStatuses.map((s) => (
+                <option key={s.code} value={s.code}>{s.label}</option>
+              ))}
+            </select>
+          </>
+        )}
 
         <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
 
@@ -484,11 +553,21 @@ const ReturnManagementPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium pl-6">
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={() => setSelectedRequest(request)}
+                          onClick={() => {
+                            setEditingRequest(request);
+                            setEditForm({
+                              reasonId: request.reasonId || "",
+                              responsibleParty: request.responsibleParty || "OTHER",
+                              customerNotes: request.customerNotes || "",
+                              adminNotes: request.adminNotes || "",
+                            });
+                            fetchEditReasons();
+                            setShowEditReasonModal(true);
+                          }}
                           className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300"
-                          title={t('returns.k_159')}
+                          title={t('returns.k_23')}
                         >
-                          <Eye size={18} />
+                          <Edit size={18} />
                         </button>
 
                         <button
@@ -548,6 +627,143 @@ const ReturnManagementPage: React.FC = () => {
             >
               {t('returns.k_151')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Reason Modal (Quick Edit) */}
+      {showEditReasonModal && editingRequest && (
+        <div
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
+          onClick={() => setShowEditReasonModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {t('returns.k_159')}
+              </h2>
+              <button
+                onClick={() => setShowEditReasonModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <XCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('returns.k_154')}
+                </label>
+                <select
+                  value={editForm.reasonId}
+                  onChange={(e) => {
+                    const selectedReason = editReasons.find((r) => r.id === e.target.value);
+                    setEditForm({
+                      ...editForm,
+                      reasonId: e.target.value,
+                      responsibleParty: selectedReason?.category?.defaultRole || editForm.responsibleParty,
+                    });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">{t('returns.k_30')}</option>
+                  {editCategories.map((cat: any) => (
+                    <optgroup key={cat.id} label={cat.name}>
+                      {editReasons.filter((r: any) => r.categoryId === cat.id).map((reason: any) => (
+                        <option key={reason.id} value={reason.id}>
+                          {reason.reason}{reason.description && ` - ${reason.description}`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('returns.k_59')}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["CUSTOMER", "STORE", "SHIPPING", "OTHER"].map((party) => (
+                    <button
+                      key={party}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, responsibleParty: party as any })}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        editForm.responsibleParty === party
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {party === "CUSTOMER" ? t('returns.k_32') : party === "STORE" ? t('returns.k_33') : party === "SHIPPING" ? t('returns.k_34') : t('returns.k_31')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('returns.k_156')}
+                </label>
+                <textarea
+                  value={editForm.customerNotes}
+                  onChange={(e) => setEditForm({ ...editForm, customerNotes: e.target.value })}
+                  rows={3}
+                  placeholder={t('returns.k_35')}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('returns.k_157')}
+                </label>
+                <textarea
+                  value={editForm.adminNotes}
+                  onChange={(e) => setEditForm({ ...editForm, adminNotes: e.target.value })}
+                  rows={3}
+                  placeholder={t('returns.k_36')}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
+                <button
+                  onClick={() => setShowEditReasonModal(false)}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  {t('returns.k_158')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!editForm.reasonId) { toast.error(t('returns.k_42')); return; }
+                    setEditSaving(true);
+                    try {
+                      await returnService.updateRequest(editingRequest.id, {
+                        reasonId: editForm.reasonId,
+                        responsibleParty: editForm.responsibleParty,
+                        customerNotes: editForm.customerNotes,
+                        adminNotes: editForm.adminNotes,
+                      });
+                      toast.success(t('returns.k_43'));
+                      setShowEditReasonModal(false);
+                      setEditingRequest(null);
+                      fetchData();
+                    } catch (error: any) {
+                      toast.error(error.response?.data?.error || t('returns.k_44'));
+                    } finally { setEditSaving(false); }
+                  }}
+                  disabled={editSaving}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {editSaving ? t('returns.k_45') : t('returns.k_46')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
