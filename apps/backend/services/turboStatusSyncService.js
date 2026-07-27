@@ -205,6 +205,13 @@ async function syncTurboStatusToOrder({
       turboShipmentStatus: canonicalTurboStatus,
       turboMetadata: JSON.stringify(updatedMetadata),
       metadata: JSON.stringify(updatedMetadata),
+      turboCaptainName: payload.captain_name || payload.captain || null,
+      turboCaptainPhone: payload.captain_number1 || null,
+      turboBranchName: payload.branch_name || payload.branch || null,
+      turboBranchPhone: payload.branch_number1 || null,
+      turboDelayReason: payload.delay_reason || null,
+      turboReturnReason: payload.return_reason || payload.return_status_text || null,
+      turboExpectedBranch: payload.expected_branch || null,
       updatedAt: new Date()
     };
 
@@ -325,6 +332,13 @@ async function syncTurboStatusToOrder({
   const updateData = {
     turboShipmentStatus: canonicalTurboStatus,
     turboMetadata: JSON.stringify(turboMetaObj),
+    turboCaptainName: payload.captain_name || payload.captain || null,
+    turboCaptainPhone: payload.captain_number1 || null,
+    turboBranchName: payload.branch_name || payload.branch || null,
+    turboBranchPhone: payload.branch_number1 || null,
+    turboDelayReason: payload.delay_reason || null,
+    turboReturnReason: payload.return_reason || payload.return_status_text || null,
+    turboExpectedBranch: payload.expected_branch || null,
     updatedAt: new Date()
   };
 

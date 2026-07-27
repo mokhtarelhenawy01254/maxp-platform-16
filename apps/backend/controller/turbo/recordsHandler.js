@@ -33,7 +33,7 @@ const getRecords = async (req, res) => {
     }
 
     const [orders, total] = await Promise.all([
-      safeQuery(() => prisma.order.findMany({ where, select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true, turboMetadata: true, createdAt: true, shipping: true, paymentMethod: true, shippingAddress: true, company: { select: { turboEnabled: true, turboApiKey: true } } }, orderBy: { createdAt: 'desc' }, skip, take: limitNum }), 3),
+      safeQuery(() => prisma.order.findMany({ where, select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true, turboMetadata: true, turboCaptainName: true, turboCaptainPhone: true, turboBranchName: true, turboBranchPhone: true, turboDelayReason: true, turboReturnReason: true, turboExpectedBranch: true, createdAt: true, shipping: true, paymentMethod: true, shippingAddress: true, company: { select: { turboEnabled: true, turboApiKey: true } } }, orderBy: { createdAt: 'desc' }, skip, take: limitNum }), 3),
       safeQuery(() => prisma.order.count({ where }), 3)
     ]);
 
@@ -108,7 +108,7 @@ const getRecords = async (req, res) => {
     const records = orders.map(o => {
       const key = o.turboShipmentId || o.turboTrackingNumber;
       const ls = turboStatuses && key && turboStatuses[key] ? { status: turboStatuses[key].status, statusCode: turboStatuses[key].statusCode, internalStatus: turboStatuses[key].internalStatus, captain: turboStatuses[key].captain, captainNumber1: turboStatuses[key].captainNumber1, branch: turboStatuses[key].branch, receivedAmount: turboStatuses[key].receivedAmount, returnReason: turboStatuses[key].returnReason, delayReason: turboStatuses[key].delayReason } : null;
-      return { id: o.id, orderNumber: o.orderNumber, customerName: o.customerName, customerPhone: o.customerPhone, total: o.total, shipping: o.shipping, paymentMethod: o.paymentMethod, status: o.status, turboShipmentId: o.turboShipmentId, turboTrackingNumber: o.turboTrackingNumber, turboShipmentStatus: o.turboShipmentStatus || ls?.internalStatus || null, turboLiveStatus: ls, governorate: o.shippingAddress?.governorate || null, city: o.shippingAddress?.city || null, createdAt: o.createdAt };
+      return { id: o.id, orderNumber: o.orderNumber, customerName: o.customerName, customerPhone: o.customerPhone, total: o.total, shipping: o.shipping, paymentMethod: o.paymentMethod, status: o.status, turboShipmentId: o.turboShipmentId, turboTrackingNumber: o.turboTrackingNumber, turboShipmentStatus: o.turboShipmentStatus || ls?.internalStatus || null, turboLiveStatus: ls, turboCaptainName: o.turboCaptainName, turboCaptainPhone: o.turboCaptainPhone, turboBranchName: o.turboBranchName, turboBranchPhone: o.turboBranchPhone, turboDelayReason: o.turboDelayReason, turboReturnReason: o.turboReturnReason, turboExpectedBranch: o.turboExpectedBranch, governorate: o.shippingAddress?.governorate || null, city: o.shippingAddress?.city || null, createdAt: o.createdAt };
     });
 
     const statusCountsRaw = await safeQuery(() => prisma.order.groupBy({ by: ['turboShipmentStatus'], where: baseWhere, _count: { id: true } }), 2).catch(() => []);
