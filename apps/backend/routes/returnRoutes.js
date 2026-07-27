@@ -24,9 +24,6 @@ router.put('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order
 router.get('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnSettings);
 router.put('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnSettings);
 
-// Batch Operations
-router.put('/batch/receive', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.batchReceive);
-
 // Return Operations (Contact & History)
 router.post('/requests/:id/contact', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.addContactAttempt);
 router.get('/requests/:id/contacts', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getContactHistory);
