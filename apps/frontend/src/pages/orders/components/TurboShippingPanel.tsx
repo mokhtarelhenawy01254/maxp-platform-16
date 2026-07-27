@@ -141,13 +141,53 @@ const TurboShippingPanel: React.FC<TurboShippingPanelProps> = ({
                   </span>
                 </div>
               )}
-              {turboTrackingData?.branch && (
+              {(order.turboCaptainName || turboTrackingData?.captain) && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    الفرع المتوقع:
+                    المندوب:
                   </span>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {turboTrackingData.branch}
+                  <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                    {order.turboCaptainName || turboTrackingData?.captain}
+                    {(order.turboCaptainPhone || turboTrackingData?.captainNumber1) && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ltr">
+                        ({order.turboCaptainPhone || turboTrackingData?.captainNumber1})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {(order.turboBranchName || turboTrackingData?.branch) && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    الفرع:
+                  </span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                    {order.turboBranchName || turboTrackingData?.branch}
+                    {(order.turboBranchPhone || turboTrackingData?.branchNumber1) && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ltr">
+                        ({order.turboBranchPhone || turboTrackingData?.branchNumber1})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {order.turboDelayReason && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    سبب التأخير:
+                  </span>
+                  <span className="text-sm text-amber-600 dark:text-amber-400">
+                    {order.turboDelayReason}
+                  </span>
+                </div>
+              )}
+              {order.turboReturnReason && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    سبب الارتجاع:
+                  </span>
+                  <span className="text-sm text-red-600 dark:text-red-400">
+                    {order.turboReturnReason}
                   </span>
                 </div>
               )}

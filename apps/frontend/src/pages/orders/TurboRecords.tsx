@@ -454,20 +454,27 @@ const TurboRecords: React.FC = () => {
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTurboStatusColor(order.turboShipmentStatus || '')}`}>
                                                     {getTurboStatusDisplay(order.turboShipmentStatus || '').label}
                                                 </span>
-                                                {order.turboLiveStatus && (
+                                                {(order.turboLiveStatus || order.turboCaptainName) && (
                                                     <span className="text-xs text-gray-400">
-                                                        {order.turboLiveStatus.status}
-                                                        {order.turboLiveStatus.captain && ` - ${order.turboLiveStatus.captain}`}
+                                                        {order.turboLiveStatus?.status || order.turboShipmentStatus}
+                                                        {order.turboCaptainName && ` - مندوب: ${order.turboCaptainName}`}
+                                                        {order.turboCaptainName && order.turboCaptainPhone && ` (${order.turboCaptainPhone})`}
+                                                        {!order.turboCaptainName && order.turboLiveStatus?.captain && ` - ${order.turboLiveStatus.captain}`}
                                                     </span>
                                                 )}
-                                                {order.turboLiveStatus?.returnReason && (
+                                                {order.turboBranchName && (
+                                                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 font-medium">
+                                                        فرع: {order.turboBranchName}{order.turboBranchPhone ? ` (${order.turboBranchPhone})` : ''}
+                                                    </span>
+                                                )}
+                                                {(order.turboReturnReason || order.turboLiveStatus?.returnReason) && (
                                                     <span className="text-xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 font-medium">
-                                                        {t('orders.k_39')} {order.turboLiveStatus.returnReason}
+                                                        {t('orders.k_39')} {order.turboReturnReason || order.turboLiveStatus?.returnReason}
                                                     </span>
                                                 )}
-                                                {order.turboLiveStatus?.delayReason && (
+                                                {(order.turboDelayReason || order.turboLiveStatus?.delayReason) && (
                                                     <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 font-medium">
-                                                        {t('orders.k_40')} {order.turboLiveStatus.delayReason}
+                                                        {t('orders.k_40')} {order.turboDelayReason || order.turboLiveStatus?.delayReason}
                                                     </span>
                                                 )}
                                             </div>
