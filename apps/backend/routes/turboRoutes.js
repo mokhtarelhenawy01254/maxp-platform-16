@@ -183,6 +183,7 @@ router.get('/tickets', verifyToken.authenticateToken, checkAppAccess('order-ship
  */
 const captainStatsController = require('../controller/turbo/captainStatsController');
 router.get('/captains/stats', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), captainStatsController.getCaptainStats);
+router.get('/captains/:name/orders', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), captainStatsController.getCaptainOrders);
 
 /**
  * GET /api/turbo/debug/search/:code
