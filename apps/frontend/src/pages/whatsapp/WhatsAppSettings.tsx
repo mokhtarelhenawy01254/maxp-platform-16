@@ -1340,7 +1340,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         <Button
           className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
           onClick={() => setCreateSessionDialogOpen(true)}
-          disabled={sessions.length >= (settings?.maxSessions || 3)}
+          disabled={sessions.length >= (settings?.maxSessions || 9999)}
         >
           <Plus className="size-4" />
           {t("whatsappSettings.addSession")}
@@ -1394,7 +1394,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             <Button
               className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
               onClick={() => setCreateSessionDialogOpen(true)}
-              disabled={sessions.length >= (settings?.maxSessions || 3)}
+              disabled={sessions.length >= (settings?.maxSessions || 9999)}
             >
               <Plus className="size-4" />
               {t("whatsappSettings.addSession")}

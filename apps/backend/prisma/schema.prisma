@@ -7966,7 +7966,7 @@ model WhatsAppSettings {
   id                   String   @id @default(cuid())
   companyId            String   @unique
   isEnabled            Boolean  @default(true)
-  maxSessions          Int      @default(3)
+  maxSessions          Int      @default(9999)
   notificationSound    Boolean  @default(true)
   browserNotifications Boolean  @default(true)
   defaultAIMode        String   @default("suggest")
