@@ -14,8 +14,6 @@ import {
   Eye,
   Edit,
   CalendarDays,
-  CheckSquare,
-  Square,
   Package,
   XCircle,
 } from "lucide-react";
@@ -42,10 +40,6 @@ const ReturnManagementPage: React.FC = () => {
 
   // Order statuses for secondary filter
   const [orderStatuses, setOrderStatuses] = useState<{ code: string; label: string }[]>([]);
-
-  // Batch Selection
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [batchLoading, setBatchLoading] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -129,38 +123,6 @@ const ReturnManagementPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === requests.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(requests.map((r) => r.id)));
-    }
-  };
-
-  const handleBatchReceive = async () => {
-    if (!selectedIds.size) return;
-    if (!confirm(`تأكيد استلام ${selectedIds.size} شحنة في المخزن؟`)) return;
-    setBatchLoading(true);
-    try {
-      await returnService.batchReceive(Array.from(selectedIds));
-      toast.success(`تم تأكيد استلام ${selectedIds.size} شحنة`);
-      setSelectedIds(new Set());
-      fetchData();
-    } catch {
-      toast.error("فشل في تأكيد الاستلام");
-    } finally {
-      setBatchLoading(false);
-    }
-  };
 
   const getRatingBadge = (rating: string | undefined) => {
     if (!rating) return null;
@@ -273,37 +235,10 @@ const ReturnManagementPage: React.FC = () => {
       </div>
       )}
 
-      {/* Batch Action Bar */}
-      {selectedIds.size > 0 && (
-        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-3 flex items-center gap-4">
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            تم اختيار {selectedIds.size} شحنة
-          </span>
-          <button
-            onClick={handleBatchReceive}
-            disabled={batchLoading}
-            className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-          >
-            {batchLoading ? "جاري..." : "📦 تأكيد استلام الكل"}
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="px-3 py-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm"
-          >
-            إلغاء التحديد
-          </button>
-        </div>
-      )}
-
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th className="px-4 py-3 text-right w-10">
-                <button onClick={toggleSelectAll} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  {selectedIds.size === requests.length ? <CheckSquare size={18} /> : <Square size={18} />}
-                </button>
-              </th>
               {displayConfig?.showOrderColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t('returns.k_143')}
@@ -327,11 +262,6 @@ const ReturnManagementPage: React.FC = () => {
               {displayConfig?.showTrackingColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   رقم التتبع
-                </th>
-              )}
-              {displayConfig?.showReceivedStatusColumn !== false && (
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  حالة الاستلام
                 </th>
               )}
               {displayConfig?.showReviewColumn !== false && (
@@ -374,13 +304,8 @@ const ReturnManagementPage: React.FC = () => {
               requests.map((request) => (
                 <tr
                   key={request.id}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${selectedIds.has(request.id) ? "bg-blue-50 dark:bg-blue-900/10" : ""}`}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <td className="px-4 py-4">
-                    <button onClick={() => toggleSelect(request.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      {selectedIds.has(request.id) ? <CheckSquare size={18} className="text-blue-600" /> : <Square size={18} />}
-                    </button>
-                  </td>
                   {displayConfig?.showOrderColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -457,20 +382,6 @@ const ReturnManagementPage: React.FC = () => {
                   {displayConfig?.showTrackingColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" dir="ltr">
                       {request.trackingNumber || "-"}
-                    </td>
-                  )}
-                  {displayConfig?.showReceivedStatusColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {(() => {
-                        const rs = request.receivedStatus;
-                        if (rs === "RECEIVED" || rs === "INSPECTED" || rs === "RESTOCKED") {
-                          return <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full text-xs">📦 وصل</span>;
-                        }
-                        if (rs === "IN_TRANSIT") {
-                          return <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">🚚 في الطريق</span>;
-                        }
-                        return <span className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full text-xs">⏳ قيد الانتظار</span>;
-                      })()}
                     </td>
                   )}
                   {displayConfig?.showReviewColumn !== false && (

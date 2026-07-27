@@ -114,18 +114,6 @@ const getDisplayFields = (t: any): {
     section: "columns",
   },
   {
-    key: "showTrackingColumn",
-    label: "رقم التتبع",
-    description: "رقم تتبع الشحنة الراجعة",
-    section: "columns",
-  },
-  {
-    key: "showReceivedStatusColumn",
-    label: "حالة الاستلام",
-    description: "حالة وصول الشحنة للمخزن",
-    section: "columns",
-  },
-  {
     key: "showFilterBar",
     label: t('returns.k_69'),
     description: t('returns.k_70'),
@@ -201,8 +189,6 @@ const ReturnSettingsPage: React.FC = () => {
     showReviewColumn: true,
     showDateColumn: true,
     showActionsColumn: true,
-    showTrackingColumn: true,
-    showReceivedStatusColumn: true,
   }), [ORDER_STATUS_FIELDS]);
   const [activeTab, setActiveTab] = useState<"display" | "reasons">("display");
 

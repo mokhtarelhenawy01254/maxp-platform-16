@@ -11,8 +11,6 @@ import {
   Phone,
   MessageCircle,
   Clock,
-  CheckCircle,
-  XCircle,
   Shield,
   Calendar,
 } from "lucide-react";
@@ -134,16 +132,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     }
   };
 
-  const getReceivedBadge = (rs: string | undefined) => {
-    if (rs === "RECEIVED" || rs === "INSPECTED" || rs === "RESTOCKED") {
-      return <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 📦 وصل</span>;
-    }
-    if (rs === "IN_TRANSIT") {
-      return <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><CheckCircle size={12} /> 🚚 في الطريق</span>;
-    }
-    return <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs flex items-center gap-1"><Clock size={12} /> ⏳ قيد الانتظار</span>;
-  };
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
@@ -155,7 +143,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
           <div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
               {t('returns.k_189')}{request.order?.orderNumber}
-              {getReceivedBadge(request.receivedStatus)}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(request.createdAt).toLocaleString("ar-EG")}
@@ -266,42 +253,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Tracking Info */}
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  🚚 معلومات التتبع
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">رقم التتبع:</span>
-                    <span className="mr-2 font-medium text-gray-900 dark:text-white" dir="ltr">
-                      {request.trackingNumber || "-"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">حالة الاستلام:</span>
-                    <span className="mr-2 font-medium">
-                      {request.receivedStatus === "RECEIVED" || request.receivedStatus === "INSPECTED" || request.receivedStatus === "RESTOCKED" ? "📦 وصل المخزن" :
-                       request.receivedStatus === "IN_TRANSIT" ? "🚚 في الطريق" : "⏳ قيد الانتظار"}
-                    </span>
-                  </div>
-                  {request.receivedAt && (
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">تاريخ الاستلام:</span>
-                      <span className="mr-2 font-medium text-gray-900 dark:text-white">
-                        {new Date(request.receivedAt).toLocaleDateString("ar-EG")}
-                      </span>
-                    </div>
-                  )}
-                  {request.productCondition && (
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">حالة المنتج:</span>
-                      <span className="mr-2 font-medium text-gray-900 dark:text-white">{request.productCondition}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 

@@ -838,43 +838,5 @@ exports.getActivityLog = async (req, res) => {
 };
 
 // 4. Batch Operations
-exports.batchReceive = async (req, res) => {
-    try {
-        const { ids, productCondition } = req.body;
-        const companyId = req.user.effectiveCompanyId || req.user.companyId;
-
-        if (!Array.isArray(ids) || !ids.length) {
-            return res.status(400).json({ error: 'ids must be a non-empty array' });
-        }
-
-        // Verify all requests belong to company
-        const requests = await getPrisma().returnRequest.findMany({
-            where: { id: { in: ids }, companyId }
-        });
-
-        if (requests.length !== ids.length) {
-            return res.status(403).json({ error: 'Some requests not found or access denied' });
-        }
-
-        const [updated] = await Promise.all([
-            getPrisma().returnRequest.updateMany({
-                where: { id: { in: ids }, companyId },
-                data: {
-                    receivedStatus: 'RECEIVED',
-                    receivedAt: new Date(),
-                    productCondition: productCondition || null
-                }
-            }),
-            ...requests.map(r =>
-                logReturnActivity(getPrisma(), r.id, req.user.id, 'BATCH_RECEIVED', { count: ids.length })
-            )
-        ]);
-
-        res.json({ success: true, count: updated.count });
-    } catch (error) {
-        console.error('❌ [BATCH_RECEIVE] ERROR:', error.message);
-        res.status(500).json({ error: 'Failed to batch receive' });
-    }
-};
 
 

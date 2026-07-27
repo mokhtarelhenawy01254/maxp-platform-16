@@ -78,6 +78,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },
     { text: t("superAdmin.sidebar.superAdminUsers"), icon: <Shield className="size-5" />, path: "/super-admin/users" },
     { text: t("superAdmin.sidebar.partners"), icon: <Users className="size-5" />, path: "/super-admin/partner-management" },
+    { text: t("superAdmin.sidebar.uiTemplates"), icon: <Palette className="size-5" />, path: "/super-admin/ui-templates" },
   ]},
   { title: t("superAdmin.sidebar.marketingLinks"), icon: <Tag className="size-5" />, items: [
     { text: t("superAdmin.sidebar.marketingLinksCenter"), icon: <Globe className="size-5" />, path: "/super-admin/marketing-links" },

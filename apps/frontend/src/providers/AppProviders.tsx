@@ -9,6 +9,8 @@ import { TimerProvider } from "../contexts/TimerContext";
 import { ThemeProvider } from "../hooks/useTheme";
 import { usePlatformSiteMetaPixel } from "../hooks/usePlatformSiteMetaPixel";
 import { VisualThemeProvider } from "../contexts/VisualThemeContext";
+import { TemplateProvider } from "../templates/TemplateProvider";
+import "../templates/template-2/template.css";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -62,8 +64,12 @@ const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
             React.createElement(
               VisualThemeProvider,
               null,
-              toastNode,
-              content,
+              React.createElement(
+                TemplateProvider,
+                null,
+                toastNode,
+                content,
+              ),
             ),
           ),
         ),
