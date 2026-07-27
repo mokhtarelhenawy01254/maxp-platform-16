@@ -119,6 +119,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     routes: [
       { path: "/settings/turbo", label: "إعدادات Turbo" },
       { path: "/orders/turbo-records", label: "سجلات Turbo" },
+      { path: "/orders/turbo-captains", label: "تقارير المندوبين" },
       { path: "/tickets", label: "تذاكر Turbo" },
       { path: "/shipping-companies", label: "شركات الشحن" },
     ],
