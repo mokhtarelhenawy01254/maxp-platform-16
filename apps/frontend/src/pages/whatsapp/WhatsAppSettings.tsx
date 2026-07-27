@@ -1011,6 +1011,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         {
           phoneNumber: session.phoneNumber || undefined,
           preferPairingCode: Boolean(session.phoneNumber),
+          importHistory: true,
         },
         withCompanyConfig(),
       );

@@ -744,6 +744,18 @@ async function connectSession(req, res) {
             !hasRegisteredAuthState(session);
         const shouldImportHistory = toBooleanOption(importHistory) || toBooleanOption(syncFullHistory);
 
+        // حفظ إعداد المزامنة في metadata ليبقى ثابتاً عبر إعادة الاتصال
+        if (shouldImportHistory && session.provider === 'BAILEYS') {
+            const currentMetadata = parseJsonSafely(session.metadata, {});
+            if (!currentMetadata.importHistoryOnLink) {
+                currentMetadata.importHistoryOnLink = true;
+                await getSharedPrismaClient().whatsAppSession.update({
+                    where: { id },
+                    data: { metadata: JSON.stringify(currentMetadata), updatedAt: new Date() }
+                });
+            }
+        }
+
         // بدء الاتصال مع إجبار socket جديد حتى لا يرجع نفس الجلسة الميتة من الذاكرة
         let sessionData = await WhatsAppManager.reconnectSession(id, companyId, 0, {
             resetAuth: needsFreshLink,

@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Settings as SettingsIcon, PhoneCall, Loader2, CheckCircle2, AlertCircle, X, Save, Trash2, ChevronLeft } from 'lucide-react';
+import { RefreshCw, Settings as SettingsIcon, PhoneCall, Loader2, CheckCircle2, AlertCircle, X, Save, Trash2 } from 'lucide-react';
 import { useRoutingWorkspace } from './hooks/useRoutingWorkspace';
 import NumberSidebar from './components/NumberSidebar';
 import WorkspaceStats from './components/WorkspaceStats';

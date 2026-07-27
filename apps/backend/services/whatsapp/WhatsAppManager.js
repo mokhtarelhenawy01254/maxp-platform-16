@@ -1762,16 +1762,6 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         updatedAt: new Date()
     };
 
-    for (const contact of contacts) {
-        try {
-            await upsertHistoryContact(sessionId, contact.jid || contact.id || contact.lid, {
-                name: contact.name || contact.notify || contact.verifiedName
-            });
-        } catch (error) {
-            console.warn(`⚠️ Failed to import WhatsApp history contact for ${sessionId}:`, error.message);
-        }
-    }
-
     for (const chat of chats) {
         try {
             await upsertHistoryContact(sessionId, chat.id, {

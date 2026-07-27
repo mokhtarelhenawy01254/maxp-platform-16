@@ -23,11 +23,7 @@ const STATUS_DOT: Record<string, string> = {
   ERROR: 'bg-destructive',
 };
 
-const STATUS_ICONS: Record<string, React.ElementType> = {
-  CONNECTED: Wifi,
-  DISCONNECTED: WifiOff,
-  CONNECTING: Loader2,
-};
+
 
 const NumberSidebar: React.FC<NumberSidebarProps> = ({
   numbers,
@@ -121,7 +117,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
             number.session.name ||
             number.session.profileName ||
             number.session.phoneNumber;
-          const StatusIcon = STATUS_ICONS[NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus];
+
           const norm = NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus;
           const dotColor = STATUS_DOT[norm] || 'bg-muted';
 

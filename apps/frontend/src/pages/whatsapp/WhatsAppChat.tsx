@@ -18,8 +18,6 @@ import {
   Loader2,
   MapPin,
   MousePointerSquare,
-  PanelRightClose,
-  PanelRightOpen,
   Phone,
   PlusCircle,
   Reply,
@@ -34,7 +32,6 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/apiClient';
 import { indexedDBStorage } from '../../services/indexedDBStorage';
@@ -51,16 +48,16 @@ import LabelsDialog from '../../components/whatsapp/LabelsDialog';
 import BroadcastDialog from '../../components/whatsapp/BroadcastDialog';
 import PrivacySettingsDialog from '../../components/whatsapp/PrivacySettingsDialog';
 import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDialog';
-import AudioRecorder from './components/AudioRecorder';
+
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import { useAuth } from '../../hooks/useAuthSimple';
-import MessageBubble from './components/MessageBubble';
+
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
 import ChatRightPanel from './components/ChatRightPanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { config } from '../../config';
+
 import {
   useWhatsAppSessions,
   useWhatsAppConversations,
@@ -91,7 +88,6 @@ import {
   useArchiveConversation
 } from '../../hooks/useWhatsAppMutations';
 import {
-  useVirtualConversations,
   useVirtualMessages,
   useInfiniteScroll
 } from '../../hooks/useVirtualScroll';
@@ -214,6 +210,7 @@ const WhatsAppChatContent: React.FC = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  void messagesEndRef.current;
   const fileInputRef = useRef<HTMLInputElement>(null);
   // const conversationsListRef = useRef<HTMLDivElement>(null); // Moved to ChatSidebar
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -228,20 +225,24 @@ const WhatsAppChatContent: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   // const [searchQuery, setSearchQuery] = useState(''); // Moved to ChatSidebar
-  const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  const [_showQuickReplies, setShowQuickReplies] = useState(false);
+  void setShowQuickReplies;
+  const [_contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
+  void setContactMenuAnchor;
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') !== 'false');
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [_aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  void setAiSuggestion;
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageContextMenu, setMessageContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
   const [selectedMessageForMenu, setSelectedMessageForMenu] = useState<Message | null>(null);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [editMessageText, setEditMessageText] = useState('');
+  const [_editingMessage, setEditingMessage] = useState<Message | null>(null);
+  void setEditingMessage;
+  const [_editMessageText, _setEditMessageText] = useState('');
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const [selectedContactsForForward, setSelectedContactsForForward] = useState<string[]>([]);
-  const [messageInfoDialogOpen, setMessageInfoDialogOpen] = useState(false);
-  const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
+  const [_messageInfoDialogOpen, _setMessageInfoDialogOpen] = useState(false);
+  const [_selectedMessageForInfo, _setSelectedMessageForInfo] = useState<Message | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [checkNumberDialogOpen, setCheckNumberDialogOpen] = useState(false);
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
@@ -249,19 +250,19 @@ const WhatsAppChatContent: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [_highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const pendingScrollMessageIdRef = useRef<string | null>(null);
   const isSearchingForMessageRef = useRef(false);
 
   // — Swipe gesture handler for mobile back navigation —
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const handleChatTouchStart = useCallback((e: ReactTouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() };
+    touchStartRef.current = { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY, time: Date.now() };
   }, []);
   const handleChatTouchEnd = useCallback((e: ReactTouchEvent) => {
     if (!touchStartRef.current || !selectedContact) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+    const deltaX = e.changedTouches[0]!.clientX - touchStartRef.current.x;
+    const deltaY = Math.abs(e.changedTouches[0]!.clientY - touchStartRef.current.y);
     const elapsed = Date.now() - touchStartRef.current.time;
     // Only trigger on horizontal swipe (>80px), not vertical, within 400ms
     const isRtl = document.documentElement.dir === 'rtl';
@@ -435,26 +436,7 @@ const WhatsAppChatContent: React.FC = () => {
     return messages.filter(m => m.messageType !== 'REACTION');
   }, [messages]);
 
-  // Aggregate reactions by original message ID
-  const reactionsMap = useMemo(() => {
-    const map = new Map<string, Array<{ emoji: string, sender: string, fromMe: boolean }>>();
-    messages.forEach(m => {
-      if (m.messageType === 'REACTION' && m.quotedMessageId && m.content) {
-        const targetId = m.quotedMessageId;
-        if (!map.has(targetId)) {
-          map.set(targetId, []);
-        }
-        // Use participant for group members, or derive sender name
-        // For now, we store basic info.
-        map.get(targetId)?.push({
-          emoji: m.content,
-          sender: m.fromMe ? 'You' : (m.participant || m.remoteJid),
-          fromMe: m.fromMe
-        });
-      }
-    });
-    return map;
-  }, [messages]);
+
 
   // Helper to get a valid session ID for API calls (never 'all')
   const activeSessionId = useMemo(() => {
@@ -477,7 +459,7 @@ const WhatsAppChatContent: React.FC = () => {
     return firstReal?.id || '';
   }, [selectedSession, sessions]);
 
-  const { data: quickReplies = [] } = useWhatsAppQuickReplies();
+  const { data: _quickReplies = [] } = useWhatsAppQuickReplies();
 
   // Mutations
   const sendMessageMutation = useSendMessage();
@@ -524,9 +506,9 @@ const WhatsAppChatContent: React.FC = () => {
 
   const {
     virtualizer: messagesVirtualizer,
-    isAtBottom,
-    scrollToBottom: scrollToBottomFn,
-    scrollToTop: scrollToTopFn
+    isAtBottom: _isAtBottom,
+    scrollToBottom: _scrollToBottomFn,
+    scrollToTop: _scrollToTopFn
   } = useVirtualMessages(
     visibleMessages,
     messagesContainerRef,
@@ -564,6 +546,7 @@ const WhatsAppChatContent: React.FC = () => {
       }
     }
   }, [visibleMessages, messagesVirtualizer, hasMoreMessages, fetchNextMessagesPage]);
+  void handleScrollToMessage;
 
   // Effect: when messages update, check if pending scroll target is now loaded
   useEffect(() => {
@@ -587,14 +570,15 @@ const WhatsAppChatContent: React.FC = () => {
       pendingScrollMessageIdRef.current = null;
       isSearchingForMessageRef.current = false;
     }
+    return undefined;
   }, [visibleMessages, hasMoreMessages, loadingMessages, fetchNextMessagesPage, messagesVirtualizer]);
 
   const fetchUserProfile = useCallback(async () => {
     if (!selectedSession || selectedSession === 'all') return;
     try {
       const response = await api.get('/whatsapp/profile', { params: { sessionId: selectedSession } });
-      if (response.data.success) {
-        const profile = response.data.profile || {};
+      if ((response as any).data.success) {
+        const profile = (response as any).data.profile || {};
         setCurrentUserProfile({
           name: profile.name || profile.profileName || '',
           status: profile.status || profile.profileStatus || '',
@@ -615,7 +599,7 @@ const WhatsAppChatContent: React.FC = () => {
   // Auto-select first session when sessions load
   useEffect(() => {
     if (sessions.length > 0 && !selectedSession) {
-      setSelectedSession(sessions[0].id);
+      setSelectedSession(sessions[0]!.id);
     }
   }, [sessions, selectedSession]);
 
@@ -1105,7 +1089,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.error('لم يتم العثور على محادثة نشطة لهذا الرقم للتحكم في الرد الآلي');
       return;
     }
-    const conversationId = contact.customer.conversations[0].id;
+    const conversationId = contact.customer.conversations[0]!.id;
     try {
       await api.put(`/conversations/${conversationId}`, {
         aiEnabled,
@@ -1114,7 +1098,8 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(aiEnabled ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
       
       // Update selectedContact local state
-      setSelectedContact((prev: Contact | null) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedContact(((prev: Contact | null) => {
         if (!prev || prev.id !== contact.id) return prev;
         return {
           ...prev,
@@ -1128,7 +1113,7 @@ const WhatsAppChatContent: React.FC = () => {
             ] : []
           } : null
         };
-      });
+      }) as any);
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "conversations"] });
@@ -1396,16 +1381,7 @@ const WhatsAppChatContent: React.FC = () => {
   };
 
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <Clock3 className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'SENT': return <Check className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'DELIVERED': return <CheckCheck className="size-4 text-[color:var(--color-muted-foreground)]" />;
-      case 'READ': return <CheckCheck className="size-4 text-[color:var(--color-primary)]" />;
-      case 'ERROR': return <AlertCircle className="size-4 text-rose-600" />;
-      default: return <Clock3 className="size-4 text-[color:var(--color-muted-foreground)]" />;
-    }
-  };
+
 
 
   const handleMessageContextMenu = (event: React.MouseEvent, message: Message) => {
@@ -1443,10 +1419,10 @@ const WhatsAppChatContent: React.FC = () => {
   const loadNotificationSettings = async () => {
     try {
       const res = await api.get('/whatsapp/settings');
-      if (res.data.settings) {
+      if ((res as any).data.settings) {
         setNotificationSettings({
-          notificationSound: res.data.settings.notificationSound !== false,
-          browserNotifications: res.data.settings.browserNotifications !== false
+          notificationSound: (res as any).data.settings.notificationSound !== false,
+          browserNotifications: (res as any).data.settings.browserNotifications !== false
         });
       }
     } catch (e) {
@@ -1535,24 +1511,7 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
-  const handleUnstarMessage = async (message: Message) => {
-    if (!selectedSession || !selectedContact) return;
-    const targetSessionId = selectedContact.sessionId || selectedSession;
-    try {
-      await api.post('/whatsapp/messages/unstar', {
-        sessionId: targetSessionId,
-        key: {
-          remoteJid: message.remoteJid,
-          id: message.messageId,
-          fromMe: message.fromMe
-        }
-      });
-      toast.success('تم إلغاء تمييز الرسالة');
-      setMessageContextMenu(null);
-    } catch (error) {
-      toast.error('فشل إلغاء تمييز الرسالة');
-    }
-  };
+
 
   // ==================== Labels ====================
   // const loadLabels = async () => {
@@ -1565,21 +1524,7 @@ const WhatsAppChatContent: React.FC = () => {
   //   }
   // };
 
-  const handleLabelChat = async (labelId: string) => {
-    if (!selectedSession || !selectedContactForLabel) return;
-    try {
-      await api.post('/whatsapp/labels/chat', {
-        sessionId: selectedSession,
-        jid: selectedContactForLabel.jid,
-        labelId
-      });
-      toast.success('تم إضافة العلامة للمحادثة');
-      setLabelDialogOpen(false);
-      setSelectedContactForLabel(null);
-    } catch (error) {
-      toast.error('فشل إضافة العلامة');
-    }
-  };
+
 
   // ==================== Polls ====================
   const handleSendPoll = async () => {
@@ -1669,7 +1614,7 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession || selectedSession === 'all') return;
     try {
       const res = await api.get('/whatsapp/catalog/products', { params: { sessionId: selectedSession } });
-      setProducts(res.data.products || []);
+      setProducts((res as any).data.products || []);
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -1705,7 +1650,7 @@ const WhatsAppChatContent: React.FC = () => {
       const res = await api.get('/whatsapp/messages/starred', {
         params: { sessionId: targetSessionId, jid: selectedContact.jid }
       });
-      setStarredMessages(res.data.messages || []);
+      setStarredMessages((res as any).data.messages || []);
       setStarredMessagesOpen(true);
     } catch (error) {
       toast.error('فشل تحميل الرسائل المميزة');
@@ -1768,7 +1713,7 @@ const WhatsAppChatContent: React.FC = () => {
       const res = await api.get('/whatsapp-templates/templates', {
         params: { sessionId }
       });
-      const allTemplates = res.data?.templates || res.data?.data || [];
+      const allTemplates = (res as any).data?.templates || (res as any).data?.data || [];
       setTemplates(allTemplates.filter((t: any) => t.status === 'APPROVED'));
     } catch (error) {
       toast.error('فشل تحميل القوالب');
@@ -1798,7 +1743,7 @@ const WhatsAppChatContent: React.FC = () => {
   const handleSendTemplate = async () => {
     if (!selectedSession || !selectedContact || !selectedTemplate) return;
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
-    if (!targetSessionId) return toast.error('الرجاء اختيار جلسة واتساب محددة');
+    if (!targetSessionId) { toast.error('الرجاء اختيار جلسة واتساب محددة'); return; }
     const bodyComponent = selectedTemplate.components?.find((c: any) => c.type === 'BODY');
     const params: Record<string, any> = {
       name: selectedTemplate.name,
@@ -1809,13 +1754,13 @@ const WhatsAppChatContent: React.FC = () => {
       const varParams = Object.keys(templateVariables)
         .sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')))
         .map((key) => ({ type: 'text', text: templateVariables[key] }));
-      params.components = [{ type: 'BODY', parameters: varParams }];
+      params['components'] = [{ type: 'BODY', parameters: varParams }];
     } else {
-      params.components = [];
+      params['components'] = [];
     }
     const bodyText = bodyComponent?.text || '';
     const templateBody = bodyText && Object.keys(templateVariables).length > 0
-      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_, n) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
+      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_: string, n: string) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
       : bodyText;
     try {
       await sendTemplateMutation.mutateAsync({
