@@ -159,18 +159,52 @@ const waitForSessionLinkState = async (sessionId, maxAttempts = 240, pollInterva
     return finalSession;
 };
 
-const resolveActiveSessionId = async (companyId, sessionId) => {
+const resolveActiveSessionId = async (companyId, sessionId, options = {}) => {
+    const { contactId } = options;
+
     if (sessionId && sessionId !== 'all') {
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
             where: { id: sessionId, companyId }
         });
         if (!session) throw new Error('الجلسة غير موجودة أو لا تنتمي لهذه الشركة');
 
-        if (session.provider !== 'META_CLOUD') {
-            const inMemory = WhatsAppManager.getSession(sessionId);
-            if (!inMemory || inMemory.status !== 'connected') {
-                throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+        const isMetaCloud = session.provider === 'META_CLOUD';
+        const memSession = WhatsAppManager.getSession(sessionId);
+        const isAvailable = isMetaCloud
+            ? session.status === 'CONNECTED' && !!session.metaAccessToken
+            : !!(memSession && memSession.status === 'connected');
+
+        if (!isAvailable) {
+            // Try safe auto-migration: old session is dead, try to find a connected one
+            const connectedSessions = await getSharedPrismaClient().whatsAppSession.findMany({
+                where: { companyId, status: 'CONNECTED' },
+                select: { id: true, provider: true, name: true, metaDisplayPhoneNumber: true, phoneNumber: true, metaAccessToken: true }
+            });
+
+            const viableSessions = connectedSessions.filter(s => {
+                if (s.provider === 'META_CLOUD') return !!s.metaAccessToken;
+                const mem = WhatsAppManager.getSession(s.id);
+                return mem?.status === 'connected';
+            });
+
+            if (viableSessions.length === 1 && contactId) {
+                // Safe: exactly one working session, auto-migrate contact
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contactId },
+                    data: { sessionId: viableSessions[0].id, updatedAt: new Date() }
+                }).catch(() => {});
+                console.log(`↪️ [SESSION-FAILOVER] Auto-migrated contact ${contactId} from session ${sessionId} to ${viableSessions[0].id}`);
+                return viableSessions[0].id;
             }
+
+            const availableList = viableSessions.map(s =>
+                s.provider === 'META_CLOUD' ? `${s.name || s.metaDisplayPhoneNumber || s.id} (Cloud)` : `${s.name || s.phoneNumber || s.id}`
+            ).join('، ') || 'لا توجد';
+
+            const error = new Error(`الجلسة غير متصلة حالياً. الجلسات المتاحة: ${availableList}. يمكنك تغيير الجلسة من قائمة جهات الاتصال.`);
+            error.code = 'WA_SESSION_NOT_READY';
+            error.availableSessions = viableSessions.map(s => ({ id: s.id, name: s.name, provider: s.provider }));
+            throw error;
         }
 
         return sessionId;
@@ -1045,14 +1079,14 @@ async function getMessages(req, res) {
 async function sendMessage(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, to, text, quotedMessageId } = req.body;
+        const { sessionId, to, text, quotedMessageId, contactId } = req.body;
 
         if (!sessionId || !to || !text) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        // Resolve virtual session ID and verify ownership
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        // Resolve virtual session ID with optional auto-failover for contacts
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId, { contactId });
 
         const message = await WhatsAppMessageHandler.sendText(targetSessionId, to, text, {
             quotedMessageId,
@@ -1062,7 +1096,12 @@ async function sendMessage(req, res) {
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending message:', error);
-        res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال الرسالة' });
+        const statusCode = error.code === 'WA_SESSION_NOT_READY' ? 409 : 500;
+        res.status(statusCode).json({
+            error: error.message || 'حدث خطأ أثناء إرسال الرسالة',
+            code: error.code,
+            availableSessions: error.availableSessions
+        });
     }
 }
 
@@ -1436,6 +1475,56 @@ async function linkCustomer(req, res) {
     } catch (error) {
         console.error('❌ Error linking customer:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء ربط العميل' });
+    }
+}
+
+/**
+ * تغيير الجلسة المرتبطة بجهة اتصال
+ * PUT /api/whatsapp/contacts/:id/reassign-session
+ */
+async function reassignContactSession(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'sessionId مطلوب' });
+        }
+
+        // التحقق من ملكية جهة الاتصال
+        const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+            where: { id },
+            include: {
+                whatsAppSession: { select: { companyId: true } }
+            }
+        });
+
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
+            return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
+        }
+
+        // التحقق من أن الجلسة الجديدة تتبع نفس الشركة
+        const newSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId }
+        });
+
+        if (!newSession) {
+            return res.status(400).json({ error: 'الجلسة الجديدة غير موجودة أو لا تنتمي لهذه الشركة' });
+        }
+
+        const updatedContact = await getSharedPrismaClient().whatsAppContact.update({
+            where: { id },
+            data: { sessionId, updatedAt: new Date() },
+            select: { id: true, phoneNumber: true, name: true, pushName: true, sessionId: true }
+        });
+
+        console.log(`↪️ [REASSIGN] Contact ${id} (${updatedContact.phoneNumber || updatedContact.name || ''}) reassigned from session ${contact.sessionId} to ${sessionId}`);
+
+        res.json({ success: true, contact: updatedContact });
+    } catch (error) {
+        console.error('❌ Error reassigning contact session:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء تغيير الجلسة' });
     }
 }
 
@@ -3977,6 +4066,7 @@ module.exports = {
     // Contacts
     updateContact,
     linkCustomer,
+    reassignContactSession,
 
     // Quick Replies
     getQuickReplies,

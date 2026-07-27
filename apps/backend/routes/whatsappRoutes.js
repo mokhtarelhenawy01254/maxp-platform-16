@@ -394,6 +394,9 @@ router.put('/contacts/:id', verifyToken.authenticateToken, checkAppAccess('whats
 // ربط جهة اتصال بعميل
 router.post('/contacts/:id/link-customer', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.linkCustomer);
 
+// تغيير الجلسة المرتبطة بجهة اتصال
+router.put('/contacts/:id/reassign-session', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.reassignContactSession);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 الردود السريعة
 // ═══════════════════════════════════════════════════════════════════════════════
