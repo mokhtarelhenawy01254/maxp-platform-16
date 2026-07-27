@@ -30,6 +30,7 @@
     "avgSavings": "Average savings",
     "bestDeal": "Best Deal",
     "bundleLabel": "Bundle",
+    "savePercent": "Save {{percent}}%",
     "currencyPerMonth": "/month",
     "currencySymbol": "EGP",
     "includedTools": "Included Tools",
@@ -55,6 +56,26 @@
     "startTrial": "Start Free Trial",
     "subscribeNow": "Subscribe Now",
     "requestDemo": "Request a Demo",
-    "trialTerms": "Free trial with no payment required. Cancel anytime."
+    "trialTerms": "Free trial with no payment required. Cancel anytime.",
+    "name": {
+      "ai-inbox-bundle": "AI Inbox Bundle",
+      "messaging-bundle": "Messaging Bundle"
+    },
+    "desc": {
+      "ai-inbox-bundle": "Complete AI-powered customer communication suite",
+      "messaging-bundle": "All-in-one messaging and conversation management"
+    },
+    "app": {
+      "whatsapp-business": "WhatsApp Business",
+      "telegram-business": "Telegram Pro",
+      "facebook-pages-connect": "Facebook Pages",
+      "order-core": "Order Management",
+      "inventory-pro": "Inventory Management",
+      "crm-basic": "CRM Basic",
+      "ai-chat-basic": "AI Chat Basic",
+      "ai-chat-pro": "AI Chat Pro",
+      "store-basic": "Online Store",
+      "facebook-ads-pro": "Facebook Ads Pro"
+    }
   }
 }

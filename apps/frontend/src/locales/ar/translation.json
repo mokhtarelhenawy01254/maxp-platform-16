@@ -1278,6 +1278,7 @@
       "avgSavings": "متوسط التوفير",
       "bestDeal": "أفضل عرض",
       "bundleLabel": "باقة",
+      "savePercent": "وفر {{percent}}%",
       "currencyPerMonth": "/ شهرياً",
       "currencySymbol": "ج.م",
       "includedTools": "الأدوات المضمنة",
@@ -1303,7 +1304,27 @@
       "startTrial": "ابدأ النسخة التجريبية",
       "subscribeNow": "اشترك الآن",
       "requestDemo": "طلب عرض توضيحي",
-      "trialTerms": "نسخة تجريبية مجانية بدون دفع. يمكنك الإلغاء في أي وقت."
+      "trialTerms": "نسخة تجريبية مجانية بدون دفع. يمكنك الإلغاء في أي وقت.",
+      "name": {
+        "ai-inbox-bundle": "باقة الذكاء الاصطناعي للتواصل",
+        "messaging-bundle": "باقة المراسلة الشاملة"
+      },
+      "desc": {
+        "ai-inbox-bundle": "حزمة تواصل متكاملة مع العملاء مدعومة بالذكاء الاصطناعي",
+        "messaging-bundle": "إدارة المحادثات والرسائل من مكان واحد"
+      },
+      "app": {
+        "whatsapp-business": "واتساب بزنس",
+        "telegram-business": "تيليجرام برو",
+        "facebook-pages-connect": "صفحات فيسبوك",
+        "order-core": "إدارة الطلبات",
+        "inventory-pro": "إدارة المخزون",
+        "crm-basic": "CRM أساسي",
+        "ai-chat-basic": "محادثة ذكية أساسية",
+        "ai-chat-pro": "محادثة ذكية احترافية",
+        "store-basic": "متجر إلكتروني",
+        "facebook-ads-pro": "إعلانات فيسبوك احترافية"
+      }
     }
   },
   "bosta": {
@@ -6700,6 +6721,13 @@
     "bulkItemPrice": "السعر",
     "bulkItemTotal": "الإجمالي",
     "bulkItemStatus": "الحالة",
+    "bulkItemPhone": "رقم الهاتف",
+    "bulkItemCity": "المدينة",
+    "bulkItemGovernorate": "المحافظة",
+    "bulkItemSKU": "SKU",
+    "bulkItemSize": "المقاس",
+    "bulkItemColor": "اللون",
+    "bulkItemNotes": "ملاحظات",
     "draft": "مسودة",
     "scheduled": "مجدول",
     "onHold": "معلق",

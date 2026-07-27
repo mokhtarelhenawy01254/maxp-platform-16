@@ -207,8 +207,12 @@ export default function Bundles() {
                     </div>
 
                     <div className="p-6">
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{bundle.name}</h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm leading-relaxed">{bundle.description}</p>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        {t("billing.bundles.name." + bundle.slug, { defaultValue: bundle.name })}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm leading-relaxed">
+                        {t("billing.bundles.desc." + bundle.slug, { defaultValue: bundle.description })}
+                      </p>
 
                       <div className="mb-6">
                         <div className="flex items-baseline gap-2 mb-2">
@@ -232,7 +236,7 @@ export default function Bundles() {
                           {bundle.apps.map((app) => (
                             <div key={app.id} className="flex items-center gap-2 text-sm">
                               <Check size={16} className="text-green-600 flex-shrink-0" />
-                              <span className="text-gray-700 dark:text-gray-300">{app.name}</span>
+                              <span className="text-gray-700 dark:text-gray-300">{t("billing.bundles.app." + app.slug, { defaultValue: app.name })}</span>
                             </div>
                           ))}
                         </div>
