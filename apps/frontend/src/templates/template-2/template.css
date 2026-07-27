@@ -1,0 +1,136 @@
+/* Linear-inspired Template 2 — Dark-first design system */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+
+[data-template="template-2"] {
+  --color-primary: #5e6ad2;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #828fff;
+  --color-secondary-foreground: #ffffff;
+  --color-tertiary: #a78bfa;
+  --color-tertiary-foreground: #ffffff;
+  --color-background: #0f1011;
+  --color-foreground: #f7f8f8;
+  --color-muted: #18191a;
+  --color-muted-foreground: #8a8f98;
+  --color-border: #23252a;
+  --color-input: rgba(255, 255, 255, 0.05);
+  --color-ring: #5e6ad2;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+  --color-success: #14b87a;
+  --color-success-foreground: #ffffff;
+  --color-card: #0f1011;
+  --color-card-foreground: #f7f8f8;
+  --color-accent: #23252a;
+  --color-accent-foreground: #f7f8f8;
+  --color-info: #5e6ad2;
+  --color-info-foreground: #ffffff;
+
+  --theme-font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --theme-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --theme-radius: 8px;
+
+  --app-bg-gradient: none;
+  --app-bg-glow: none;
+  --app-header-bg: rgba(15, 16, 17, 0.8);
+  --app-header-border: #23252a;
+  --app-rail-bg: #08090a;
+  --app-rail-border: #23252a;
+  --app-panel-bg: #0f1011;
+  --app-panel-border: #23252a;
+
+  --shell-control-bg: rgba(255, 255, 255, 0.05);
+  --shell-control-hover: rgba(255, 255, 255, 0.1);
+  --shell-control-border: rgba(255, 255, 255, 0.08);
+  --shell-overlay-bg: #18191a;
+  --shell-overlay-border: #23252a;
+  --shell-overlay-foreground: #f7f8f8;
+  --shell-overlay-edge: rgba(255, 255, 255, 0.06);
+  --shell-control-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 4px 4px rgba(0, 0, 0, 0.1);
+  --shell-overlay-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  --shell-focus-ring: rgba(94, 106, 210, 0.25);
+  --shell-scrollbar-track: rgba(255, 255, 255, 0.04);
+  --shell-scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --shell-scrollbar-thumb-hover: rgba(255, 255, 255, 0.12);
+
+  --whatsapp-bg: #0f1011;
+  --whatsapp-surface: #18191a;
+  --whatsapp-surface-hover: #23252a;
+  --whatsapp-surface-active: #2a2c30;
+  --whatsapp-surface-strong: #23252a;
+  --whatsapp-surface-elevated: #1c1e20;
+  --whatsapp-surface-overlay: #18191a;
+  --whatsapp-surface-muted: #18191a;
+  --whatsapp-input-bg: rgba(255, 255, 255, 0.05);
+  --whatsapp-typing-bg: #18191a;
+  --whatsapp-message-outgoing: #1f3a3f;
+  --whatsapp-message-outgoing-text: #e9edef;
+  --whatsapp-message-incoming: #23252a;
+  --whatsapp-message-incoming-text: #e9edef;
+  --whatsapp-bubble-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  --radius: 0.5rem;
+}
+
+/* Override shadcn button for 9999px radius (Linear pill style) */
+[data-template="template-2"] [data-slot="button"] {
+  border-radius: 9999px !important;
+}
+
+[data-template="template-2"] .business-shell-root {
+  background: #0f1011;
+}
+
+[data-template="template-2"] .business-shell-header {
+  border-bottom: 1px solid #23252a;
+  background: rgba(15, 16, 17, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-template="template-2"] .app-header-theme {
+  border-bottom: 1px solid #23252a;
+}
+
+/* Linear-style cards */
+[data-template="template-2"] [data-slot="card"] {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: #0f1011;
+  box-shadow: none;
+}
+
+[data-template="template-2"] [data-slot="card"]:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Input fields */
+[data-template="template-2"] input,
+[data-template="template-2"] textarea,
+[data-template="template-2"] select {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+[data-template="template-2"] input:focus,
+[data-template="template-2"] textarea:focus,
+[data-template="template-2"] select:focus {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.1) !important;
+}
+
+/* Remove smooth transitions for template switch — instant */
+[data-template="template-2"] html,
+[data-template="template-2"] html *,
+[data-template="template-2"] html *::before,
+[data-template="template-2"] html *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 100ms;
+  transition-timing-function: ease-out;
+}

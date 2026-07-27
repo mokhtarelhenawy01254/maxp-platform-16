@@ -28,6 +28,8 @@ import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
+import { useTemplate } from "../../templates/useTemplate";
+import TemplateSlot from "../../templates/TemplateSlot";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -71,6 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const { currentTheme } = useVisualTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const { templateId } = useTemplate();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isI18nReady, setIsI18nReady] = useState(i18n.isInitialized);
@@ -558,6 +561,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         className={isAppsDashboard ? 'app-dashboard-root' : 'app-dashboard-app-root'}
         data-theme={BUSINESS_THEME_ID}
         data-visual-theme={shellThemeId}
+        data-template={templateId}
       >
         {isAppsDashboard && headerBlock}
         {isAppsDashboard ? (
@@ -587,7 +591,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const isAppSubRoute = location.pathname.startsWith('/apps/') && location.pathname !== '/apps';
   if (isAppSubRoute) {
     return (
-      <div className="app-dashboard-app-root" data-theme={BUSINESS_THEME_ID} data-visual-theme={shellThemeId}>
+      <div className="app-dashboard-app-root" data-theme={BUSINESS_THEME_ID} data-visual-theme={shellThemeId} data-template={templateId}>
         {headerBlock}
         <AppShell allSections={menuSections}>
           {children}
@@ -601,22 +605,40 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       className="business-shell-root"
       data-theme={BUSINESS_THEME_ID}
       data-visual-theme={shellThemeId}
+      data-template={templateId}
     >
       {isHorizontalLayout ? (
         <div className="flex flex-col h-screen w-full overflow-hidden">
           <div className="hidden lg:block">
-            <SidebarLayoutFactory
-              layout={currentLayout}
-              isCollapsed={isSidebarCollapsed}
-              toggleSidebar={toggleSidebar}
-              sections={filteredSections}
-              collapsedSections={collapsedSections}
-              toggleSection={toggleSection}
-              currentPath={sidebarCurrentPath}
-              t={t}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-            />
+            <TemplateSlot
+              name="sidebar"
+              props={{
+                layout: currentLayout,
+                isCollapsed: isSidebarCollapsed,
+                mobileMode: false,
+                toggleSidebar,
+                sections: filteredSections,
+                collapsedSections,
+                toggleSection,
+                currentPath: sidebarCurrentPath,
+                t,
+                searchQuery,
+                setSearchQuery,
+              }}
+            >
+              <SidebarLayoutFactory
+                layout={currentLayout}
+                isCollapsed={isSidebarCollapsed}
+                toggleSidebar={toggleSidebar}
+                sections={filteredSections}
+                collapsedSections={collapsedSections}
+                toggleSection={toggleSection}
+                currentPath={sidebarCurrentPath}
+                t={t}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+              />
+            </TemplateSlot>
           </div>
 
           {/* Mobile drawer for horizontal layout */}
@@ -640,24 +662,40 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                 aria-modal="true"
                 aria-label={t("sidebar.navigation") || "Navigation"}
               >
-                <ThreeTierSidebar
-                  isCollapsed={false}
-                  mobileMode={true}
-                  toggleSidebar={() => setIsMobileMenuOpen(false)}
-                  sections={filteredSections}
-                  collapsedSections={collapsedSections}
-                  toggleSection={toggleSection}
-                  currentPath={sidebarCurrentPath}
-                  t={t}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                />
+                <TemplateSlot
+                  name="sidebar"
+                  props={{
+                    isCollapsed: false,
+                    mobileMode: true,
+                    toggleSidebar: () => setIsMobileMenuOpen(false),
+                    sections: filteredSections,
+                    collapsedSections,
+                    toggleSection,
+                    currentPath: sidebarCurrentPath,
+                    t,
+                    searchQuery,
+                    setSearchQuery,
+                  }}
+                >
+                  <ThreeTierSidebar
+                    isCollapsed={false}
+                    mobileMode={true}
+                    toggleSidebar={() => setIsMobileMenuOpen(false)}
+                    sections={filteredSections}
+                    collapsedSections={collapsedSections}
+                    toggleSection={toggleSection}
+                    currentPath={sidebarCurrentPath}
+                    t={t}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                  />
+                </TemplateSlot>
               </div>
             </div>
           ) : null}
 
           <div className="flex-1 w-full flex flex-col overflow-hidden">
-            {headerBlock}
+            <TemplateSlot name="header">{headerBlock}</TemplateSlot>
 
              <main
                  className={`business-shell-main flex-1 flex flex-col ${
@@ -682,62 +720,96 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
          </div>
        ) : (
          <div className="flex w-full h-screen overflow-hidden">
-           <div className="hidden lg:block h-full">
-             <SidebarLayoutFactory
-               layout={currentLayout}
-               isCollapsed={isSidebarCollapsed}
-               mobileMode={false}
-               toggleSidebar={toggleSidebar}
-               sections={filteredSections}
-               collapsedSections={collapsedSections}
-               toggleSection={toggleSection}
-               currentPath={sidebarCurrentPath}
-               t={t}
-               searchQuery={searchQuery}
-               setSearchQuery={setSearchQuery}
-             />
-           </div>
+          <div className="hidden lg:block h-full">
+              <TemplateSlot
+                name="sidebar"
+                props={{
+                  layout: currentLayout,
+                  isCollapsed: isSidebarCollapsed,
+                  mobileMode: false,
+                  toggleSidebar,
+                  sections: filteredSections,
+                  collapsedSections,
+                  toggleSection,
+                  currentPath: sidebarCurrentPath,
+                  t,
+                  searchQuery,
+                  setSearchQuery,
+                }}
+              >
+                <SidebarLayoutFactory
+                  layout={currentLayout}
+                  isCollapsed={isSidebarCollapsed}
+                  mobileMode={false}
+                  toggleSidebar={toggleSidebar}
+                  sections={filteredSections}
+                  collapsedSections={collapsedSections}
+                  toggleSection={toggleSection}
+                  currentPath={sidebarCurrentPath}
+                  t={t}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+              </TemplateSlot>
+            </div>
 
-           {/* Mobile drawer: always rendered when mobile, controlled via CSS transitions */}
-           {isMobile ? (
-             <div
-               className="business-mobile-overlay"
-               data-open={isMobileMenuOpen ? "true" : "false"}
-               dir={i18n.dir()}
-             >
-               <div
-                 className="business-mobile-backdrop"
-                 data-open={isMobileMenuOpen ? "true" : "false"}
-                 onClick={() => setIsMobileMenuOpen(false)}
-               />
-               <div
-                 className={`business-mobile-drawer ${
-                   i18n.dir() === "rtl" ? "right-0" : "left-0"
-                 }`}
-                 data-open={isMobileMenuOpen ? "true" : "false"}
-                 role="dialog"
-                 aria-modal="true"
-                 aria-label={t("sidebar.navigation") || "Navigation"}
-               >
-                 <SidebarLayoutFactory
-                   layout={currentLayout}
-                   isCollapsed={false}
-                   mobileMode={true}
-                   toggleSidebar={() => setIsMobileMenuOpen(false)}
-                   sections={filteredSections}
-                    collapsedSections={collapsedSections}
-                    toggleSection={toggleSection}
-                    currentPath={sidebarCurrentPath}
-                    t={t}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                  />
+            {/* Mobile drawer: always rendered when mobile, controlled via CSS transitions */}
+            {isMobile ? (
+              <div
+                className="business-mobile-overlay"
+                data-open={isMobileMenuOpen ? "true" : "false"}
+                dir={i18n.dir()}
+              >
+                <div
+                  className="business-mobile-backdrop"
+                  data-open={isMobileMenuOpen ? "true" : "false"}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                />
+                <div
+                  className={`business-mobile-drawer ${
+                    i18n.dir() === "rtl" ? "right-0" : "left-0"
+                  }`}
+                  data-open={isMobileMenuOpen ? "true" : "false"}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={t("sidebar.navigation") || "Navigation"}
+                >
+                  <TemplateSlot
+                    name="sidebar"
+                    props={{
+                      layout: currentLayout,
+                      isCollapsed: false,
+                      mobileMode: true,
+                      toggleSidebar: () => setIsMobileMenuOpen(false),
+                      sections: filteredSections,
+                      collapsedSections,
+                      toggleSection,
+                      currentPath: sidebarCurrentPath,
+                      t,
+                      searchQuery,
+                      setSearchQuery,
+                    }}
+                  >
+                    <SidebarLayoutFactory
+                      layout={currentLayout}
+                      isCollapsed={false}
+                      mobileMode={true}
+                      toggleSidebar={() => setIsMobileMenuOpen(false)}
+                      sections={filteredSections}
+                      collapsedSections={collapsedSections}
+                      toggleSection={toggleSection}
+                      currentPath={sidebarCurrentPath}
+                      t={t}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                    />
+                  </TemplateSlot>
                 </div>
               </div>
             ) : null}
 
             <div className="flex-1 w-full flex flex-col overflow-hidden">
-               {headerBlock}
+              <TemplateSlot name="header">{headerBlock}</TemplateSlot>
 
                <main
                   className={`business-shell-main flex-1 flex flex-col ${
