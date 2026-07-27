@@ -61,6 +61,7 @@ interface ItemDetail {
   productName: string | null;
   productColor: string | null;
   productSize: string | null;
+  productSku: string | null;
   quantity: number;
   price: number;
   total: number;
@@ -70,6 +71,7 @@ interface ItemDetail {
 interface GroupedVariation {
   productColor: string | null;
   productSize: string | null;
+  productSku: string | null;
   quantity: number;
   total: number;
 }
@@ -277,6 +279,7 @@ const StatusSummaryReport: React.FC = () => {
           g.variations.push({
             productColor: item.productColor,
             productSize: item.productSize,
+            productSku: item.productSku,
             quantity: item.quantity,
             total: item.total,
           });
@@ -289,6 +292,7 @@ const StatusSummaryReport: React.FC = () => {
           variations: [{
             productColor: item.productColor,
             productSize: item.productSize,
+            productSku: item.productSku,
             quantity: item.quantity,
             total: item.total,
           }],
@@ -719,6 +723,7 @@ const StatusSummaryReport: React.FC = () => {
                                                       <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_34')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_35')}</th>
+                                                        <th className="px-3 py-2 font-semibold">{t('reports.k_33')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_44')}</th>
                                                         <th className="px-3 py-2 font-semibold">{t('reports.k_8')}</th>
                                                       </tr>
@@ -742,6 +747,9 @@ const StatusSummaryReport: React.FC = () => {
                                                                 {v.productSize}
                                                               </span>
                                                             ) : "—"}
+                                                          </td>
+                                                          <td className="px-3 py-2 font-mono text-gray-500 dark:text-gray-400">
+                                                            {v.productSku || "—"}
                                                           </td>
                                                           <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{v.quantity}</td>
                                                           <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(v.total)}</td>
