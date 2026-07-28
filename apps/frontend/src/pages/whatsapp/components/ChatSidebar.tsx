@@ -468,7 +468,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <aside
       dir={i18n.dir()}
       className={cn(
-        "whatsapp-theme-transition relative flex h-full max-h-none max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
+        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
         className,
       )}
     >

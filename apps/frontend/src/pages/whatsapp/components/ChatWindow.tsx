@@ -165,7 +165,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div
       className={cn(
-        "whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--app-panel-bg)]",
+        "whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--app-panel-bg)]",
         className,
       )}
       onTouchStart={onTouchStart}
