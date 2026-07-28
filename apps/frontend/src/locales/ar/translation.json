@@ -9761,7 +9761,9 @@
       "perPage": "لكل صفحة",
       "previous": "السابق",
       "next": "التالي"
-    }
+    },
+    "fallbackCustomerName": "[AR] Unknown Customer",
+    "fallbackWarehouseName": "[AR] Unnamed Warehouse"
   },
   "quickStatus": {
     "title": "تغيير سريع للحالة",

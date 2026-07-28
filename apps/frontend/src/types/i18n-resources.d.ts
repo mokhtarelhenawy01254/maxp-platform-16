@@ -9755,6 +9755,8 @@ declare module 'react-i18next' {
           previous: string;
           next: string;
         };
+        fallbackCustomerName: string;
+        fallbackWarehouseName: string;
       };
       quickStatus: {
         title: string;

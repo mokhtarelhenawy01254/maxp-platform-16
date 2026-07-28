@@ -9761,7 +9761,9 @@
       "perPage": "per page",
       "previous": "Previous",
       "next": "Next"
-    }
+    },
+    "fallbackCustomerName": "Unknown Customer",
+    "fallbackWarehouseName": "Unnamed Warehouse"
   },
   "quickStatus": {
     "title": "Quick Status Change",
