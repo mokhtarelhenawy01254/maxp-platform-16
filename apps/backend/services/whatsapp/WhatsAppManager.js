@@ -1776,10 +1776,37 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     };
 
     console.log(`📜 [WHATSAPP-HISTORY] Importing history for session ${sessionId}:`, summary);
-    sessionData.historySync = {
-        ...summary,
-        updatedAt: new Date()
-    };
+    sessionData.historySync = { ...summary, updatedAt: new Date() };
+
+    // ====== Sprint 2: Durable Import Lifecycle ======
+    const prisma = getSharedPrismaClient();
+    try {
+        await prisma.$transaction(async (tx) => {
+            const imp = await tx.whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId }
+            });
+            if (imp && !['REQUESTED', 'IN_PROGRESS'].includes(imp.status)) {
+                console.log(`⏭️ [HISTORY] Session ${sessionId} history import status is ${imp.status}, skipping batch`);
+                throw new Error('__SKIP_BATCH__');
+            }
+            if (!imp || imp.status === 'NOT_REQUESTED') {
+                await tx.whatsAppSessionHistoryImport.upsert({
+                    where: { sessionId },
+                    create: { sessionId, status: 'IN_PROGRESS', startedAt: new Date(), requestedAt: new Date() },
+                    update: { status: 'IN_PROGRESS', startedAt: new Date(), lastError: null }
+                });
+            } else if (imp.status === 'REQUESTED') {
+                await tx.whatsAppSessionHistoryImport.update({
+                    where: { sessionId },
+                    data: { status: 'IN_PROGRESS', startedAt: new Date(), lastError: null }
+                });
+            }
+        });
+    } catch (e) {
+        if (e.message === '__SKIP_BATCH__') return;
+        throw e;
+    }
+    // ====== End Sprint 2 ======
 
     // بناء mapping من LID → رقم تلفون (من protobuf الرسمي)
     const lidToPhoneMap = {};
@@ -1798,6 +1825,7 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         if (c.id) contactsByJid[c.id] = c;
         if (c.lid) contactsByJid[c.lid] = c;
     }
+    let importedChats = 0;
     for (const chat of chats) {
         const chatTimestamp = chat.conversationTimestamp || chat.lastMessageRecvTimestamp;
         if (!chatTimestamp) continue;
@@ -1807,6 +1835,7 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
                 name: contactMeta.name || chat.name || contactMeta.notify || contactMeta.verifiedName,
                 lastMessageAt: timestampToDate(chatTimestamp)
             });
+            importedChats++;
         } catch (error) {
             console.warn(`⚠️ Failed to import WhatsApp history chat for ${sessionId}:`, error.message);
         }
@@ -1832,23 +1861,43 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         ...summary
     });
 
-    // عند اكتمال المزامنة (isLatest = true)، نحدث حالة الجلسة عشان نعرف إن المزامنة خلصت
-    if (history?.isLatest) {
-        sessionData.syncFullHistory = false;
+    // ====== Sprint 2: تحديث counters + completion ======
+    try {
+        await prisma.whatsAppSessionHistoryImport.update({
+            where: { sessionId },
+            data: {
+                chatsCount: { increment: importedChats },
+                contactsCount: contacts.length,
+                lastProgress: history?.progress ?? null
+            }
+        });
+
+        if (history?.isLatest) {
+            sessionData.syncFullHistory = false;
+            await prisma.whatsAppSessionHistoryImport.update({
+                where: { sessionId },
+                data: { status: 'COMPLETED', completedAt: new Date() }
+            });
+            // نظف metadata القديمة
+            await prisma.whatsAppSession.update({
+                where: { id: sessionId },
+                data: { metadata: {
+                    ...parseJsonSafely((await prisma.whatsAppSession.findUnique({ where: { id: sessionId }, select: { metadata: true } }))?.metadata, {}),
+                    importHistoryOnLink: false,
+                    historySyncedAt: new Date().toISOString()
+                }, updatedAt: new Date() }
+            });
+            console.log(`✅ [HISTORY] Session ${sessionId} history import completed`);
+        }
+    } catch (error) {
+        console.error(`❌ [HISTORY] Failed to update import state for ${sessionId}:`, error.message);
         try {
-            const sessionRecord = await getSharedPrismaClient().whatsAppSession.findUnique({
-                where: { id: sessionId },
-                select: { metadata: true }
+            await prisma.whatsAppSessionHistoryImport.update({
+                where: { sessionId },
+                data: { status: 'FAILED', failedAt: new Date(), lastError: error.message?.substring(0, 500) }
             });
-            const currentMeta = parseJsonSafely(sessionRecord?.metadata, {});
-            currentMeta.historySyncedAt = new Date().toISOString();
-            currentMeta.importHistoryOnLink = false;
-            await getSharedPrismaClient().whatsAppSession.update({
-                where: { id: sessionId },
-                data: { metadata: JSON.stringify(currentMeta), updatedAt: new Date() }
-            });
-        } catch (error) {
-            console.warn(`⚠️ Failed to update history sync completion for ${sessionId}:`, error.message);
+        } catch (e2) {
+            console.error(`❌ [HISTORY] Failed to mark import as FAILED for ${sessionId}:`, e2.message);
         }
     }
 
@@ -3538,9 +3587,20 @@ async function restoreAllSessions() {
         for (const session of toRestore) {
             try {
                 const weight = session.isDefault ? 3 : 1;
-                const metadata = parseJsonSafely(session.metadata, {});
 
-                const enableHistorySync = metadata.importHistoryOnLink === true && (session.status === 'QR_PENDING' || session.status === 'CONNECTING');
+                // Sprint 2: نستخدم HistoryImport state بدل metadata.importHistoryOnLink
+                let enableHistorySync = false;
+                try {
+                    const historyImport = await getSharedPrismaClient().whatsAppSessionHistoryImport.findUnique({
+                        where: { sessionId: session.id },
+                        select: { status: true }
+                    });
+                    enableHistorySync = historyImport && ['REQUESTED', 'IN_PROGRESS'].includes(historyImport.status);
+                } catch (e) {
+                    // Fallback للجلسات القديمة (backfill خلصها)
+                    const metadata = parseJsonSafely(session.metadata, {});
+                    enableHistorySync = metadata.importHistoryOnLink === true && (session.status === 'QR_PENDING' || session.status === 'CONNECTING');
+                }
 
                 WA_LOG.restore(`Restoring session ${session.id} (status=${session.status}, phone=${session.phoneNumber || '?'})`);
 
