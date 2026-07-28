@@ -39,6 +39,22 @@ const initBaileys = async () => {
     downloadMediaMessage = baileys.downloadMediaMessage;
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
+
+    // Patch Baileys' processHistoryMessage to include phoneNumberToLidMappings from the raw protobuf
+    try {
+        const historyModule = await import('@whiskeysockets/baileys/lib/Utils/history.js');
+        const origProcess = historyModule.processHistoryMessage;
+        historyModule.processHistoryMessage = (item) => {
+            const result = origProcess(item);
+            const mappings = item?.phoneNumberToLidMappings;
+            if (mappings && mappings.length > 0) {
+                result.phoneNumberToLidMappings = mappings;
+            }
+            return result;
+        };
+    } catch (e) {
+        console.warn('⚠️ [BAILEYS-PATCH] Could not patch processHistoryMessage:', e.message);
+    }
 };
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
@@ -1774,13 +1790,28 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         updatedAt: new Date()
     };
 
-    // نخزن بس الـ chats اللي فعلاً عندهم رسايل — عشان contacts address book ميتخزنوش
+    // بناء mapping من LID → رقم تلفون (من protobuf الرسمي)
+    const lidToPhoneMap = {};
+    if (history?.phoneNumberToLidMappings) {
+        for (const m of history.phoneNumberToLidMappings) {
+            if (m.lidJid && m.pnJid) lidToPhoneMap[m.lidJid] = m.pnJid;
+        }
+    }
+    if (Object.keys(lidToPhoneMap).length > 0) {
+        console.log(`📜 [WHATSAPP-HISTORY] Found ${Object.keys(lidToPhoneMap).length} LID→Phone mappings`);
+    }
+
+    // نخزن بس الـ chats اللي عندهم timestamp (محادثات حقيقية) — مش address book
+    const contactsByJid = {};
+    for (const c of contacts) { contactsByJid[c.id || c.lid] = c; }
     for (const chat of chats) {
-        if (!chat.messages?.length) continue;
+        const chatTimestamp = chat.conversationTimestamp || chat.lastMessageRecvTimestamp;
+        if (!chatTimestamp) continue;
+        const contactMeta = contactsByJid[chat.id] || contactsByJid[chat.lidJid] || {};
         try {
             await upsertHistoryContact(sessionId, chat.id, {
-                name: chat.name,
-                lastMessageAt: timestampToDate(chat.conversationTimestamp || chat.lastMessageRecvTimestamp)
+                name: contactMeta.name || chat.name || contactMeta.notify || contactMeta.verifiedName,
+                lastMessageAt: timestampToDate(chatTimestamp)
             });
         } catch (error) {
             console.warn(`⚠️ Failed to import WhatsApp history chat for ${sessionId}:`, error.message);
@@ -1790,7 +1821,8 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     if (messages.length > 0) {
         await handleIncomingMessages(sessionId, companyId, {
             messages,
-            type: 'append'
+            type: 'append',
+            lidToPhoneMap
         }, sock, {
             importHistory: true,
             skipRealtimeEvents: true,
@@ -1833,7 +1865,7 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
  * معالجة الرسائل الواردة
  */
 async function handleIncomingMessages(sessionId, companyId, m, sock, options = {}) {
-    const { messages, type } = m;
+    const { messages, type, lidToPhoneMap } = m;
     const io = getIO();
     const importHistory = Boolean(options.importHistory);
 
@@ -1872,20 +1904,30 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             // Handle @lid (Linked Device ID) by folding it into the phone JID when we know the mapping.
             if (remoteJid && isLinkedDeviceJid(remoteJid)) {
                 const lidJid = normalizeWhatsAppContactIdentity(remoteJid).normalizedJid;
-                const resolvedJid = await resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, { fromMe });
-
-                if (resolvedJid && resolvedJid !== lidJid) {
-                    await mergeLinkedDeviceConversation(sessionId, lidJid, resolvedJid, {
+                // 1. Use official PhoneNumberToLIDMapping from WhatsApp protobuf (fastest, most reliable)
+                const mappedPhone = lidToPhoneMap?.[lidJid] || lidToPhoneMap?.[remoteJid];
+                if (mappedPhone) {
+                    await mergeLinkedDeviceConversation(sessionId, lidJid, mappedPhone, {
                         pushName: msg.pushName
                     });
-                    remoteJid = resolvedJid;
-                } else if (fromMe) {
-                    // A first outgoing linked-device message can arrive before any phone mapping exists.
-                    // Keep it temporarily; the next inbound with senderPn will merge it back.
-                    console.log(`⚠️ Outgoing message to unresolved LID ${remoteJid}. Keeping LID until a phone mapping is known.`);
+                    remoteJid = mappedPhone;
                 } else {
-                    console.log(`⚠️ Skipping message from LID without participant/senderPn: ${remoteJid}`);
-                    continue;
+                    // 2. Fall back to heuristic search in message metadata
+                    const resolvedJid = await resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, { fromMe });
+                    if (resolvedJid && resolvedJid !== lidJid) {
+                        await mergeLinkedDeviceConversation(sessionId, lidJid, resolvedJid, {
+                            pushName: msg.pushName
+                        });
+                        remoteJid = resolvedJid;
+                    } else if (fromMe) {
+                        console.log(`⚠️ Outgoing message to unresolved LID ${remoteJid}. Keeping LID until a phone mapping is known.`);
+                    } else if (importHistory) {
+                        // في history sync، نخزن الرسالة مع LID بدل ما نسكت — عشان نرجع نresolveها بعدين
+                        console.log(`⚠️ History message from unresolved LID ${remoteJid}. Storing with LID for later resolution.`);
+                    } else {
+                        console.log(`⚠️ Skipping message from LID without participant/senderPn: ${remoteJid}`);
+                        continue;
+                    }
                 }
             }
 
@@ -1905,7 +1947,18 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const messageContent = await extractMessageContent(msg, sock, sessionId, {
                 skipMediaDownload: Boolean(options.skipMediaDownload)
             });
-            if (!messageContent) continue;
+            if (!messageContent) {
+                if (importHistory) {
+                    // نخزن الرسالة غير المدعومة كـ placeholder عشان ما نضيعش حاجة
+                    const savedMsg = await prisma.whatsAppMessage.upsert({
+                        where: { messageId },
+                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), updatedAt: new Date() },
+                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
+                    });
+                    console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder`);
+                }
+                continue;
+            }
 
             const messageStatusFromPayload = getMessageStatusFromBaileysStatus(msg.status);
             const initialMessageStatus = messageStatusFromPayload || (fromMe ? 'SENT' : 'DELIVERED');
@@ -2636,9 +2689,23 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
 
         // Only update chat metadata if it's NOT a background participant update
         if (!isGroupParticipant) {
-            updateData.lastMessageAt = lastMessageAt || new Date();
-            if (lastMessagePreview !== undefined) {
-                updateData.lastMessagePreview = lastMessagePreview;
+            // Monotonic update: لا نحدث lastMessageAt/preview لو الرسالة الجديدة أقدم من الموجودة
+            if (lastMessageAt) {
+                const existingContact = await getSharedPrismaClient().whatsAppContact.findUnique({
+                    where: { sessionId_jid: { sessionId, jid: remoteJid } },
+                    select: { lastMessageAt: true }
+                });
+                if (existingContact?.lastMessageAt && existingContact.lastMessageAt > lastMessageAt) {
+                    // الرسالة الجديدة أقدم — نحتفظ بالبيانات القديمة
+                    updateData.lastMessageAt = existingContact.lastMessageAt;
+                } else {
+                    updateData.lastMessageAt = lastMessageAt;
+                    if (lastMessagePreview !== undefined) {
+                        updateData.lastMessagePreview = lastMessagePreview;
+                    }
+                }
+            } else {
+                updateData.lastMessageAt = new Date();
             }
             if (incrementCounters) {
                 updateData.totalMessages = { increment: 1 };
