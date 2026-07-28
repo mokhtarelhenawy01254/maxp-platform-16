@@ -610,7 +610,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             senderName:
               msg.senderName ||
               msg.sender?.name ||
-              (msg.isFromCustomer ? "العميل" : "موظف"),
+              (msg.isFromCustomer ? t("facebookInbox.customer") : t("facebookInbox.employee")),
             timestamp: new Date(msg.timestamp || msg.createdAt || Date.now()),
             type: (msg.type || "text") as InboxMessage["type"],
             isFromCustomer: msg.isFromCustomer || false,
@@ -1024,7 +1024,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         // Update state
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: messageContent || "📷 صورة",
+          lastMessage: messageContent || t("facebookInbox.photo"),
           lastMessageTime: new Date(),
         });
 
@@ -1134,7 +1134,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         if (successCount > 0) {
           updateSelectedConversation({
             lastMessageIsFromCustomer: false,
-            lastMessage: `📷 ${successCount} صورة`,
+            lastMessage: t("facebookInbox.photos", { count: successCount }),
             lastMessageTime: new Date(),
           });
 
@@ -1901,9 +1901,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
     : showProfilePanel;
   const profilePanelToggleTitle = isWideDesktop
     ? isProfilePanelActive
-      ? "إخفاء بيانات العميل"
-      : "إظهار بيانات العميل"
-    : "بيانات العميل";
+      ? t("facebookInbox.hideCustomerData")
+      : t("facebookInbox.showCustomerData")
+    : t("facebookInbox.customerData");
 
   const handleBackToConversationList = useCallback(() => {
     setShowSidebar(true);
@@ -2107,7 +2107,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             ) : filteredConversations.length === 0 ? (
               <div className="business-inbox-empty p-8">
                 <div className="text-6xl mb-4">💬</div>
-                <p>لا توجد محادثات</p>
+                <p>{t("facebookInbox.noConversations")}</p>
               </div>
             ) : (
               <div>
@@ -2159,7 +2159,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   <button
                     onClick={handleBackToConversationList}
                     className="md:hidden business-chip-button p-2 rounded-lg transition-colors"
-                    title="رجوع للمحادثات"
+                    title={t("facebookInbox.backToConversations")}
                   >
                     <ArrowRight size={20} />
                   </button>
@@ -2217,7 +2217,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           }
                           className="business-icon-button rounded-xl transition-colors"
                           data-tone={showMobileActionMenu ? "primary" : undefined}
-                          title="المزيد"
+                          title={t("facebookInbox.more")}
                           aria-expanded={showMobileActionMenu}
                         >
                           <MoreHorizontal size={18} />
@@ -2259,7 +2259,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                             onClick={() => setShowDesktopMoreMenu((current) => !current)}
                             className="business-icon-button rounded-xl transition-colors"
                             data-tone={showDesktopMoreMenu ? "primary" : undefined}
-                            title="المزيد من الإجراءات"
+                            title={t("facebookInbox.moreActions")}
                             aria-expanded={showDesktopMoreMenu}
                           >
                             <MoreHorizontal size={18} />
@@ -2270,7 +2270,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                               <div
                                 className="fixed inset-0 z-20"
                                 onClick={() => setShowDesktopMoreMenu(false)}
-                                aria-label="إغلاق القائمة"
+                                aria-label={t("facebookInbox.closeMenu")}
                               />
                               <div className="business-dropdown-surface absolute left-0 top-full z-30 mt-2 p-2 w-56 flex flex-col gap-1">
                                 <button
@@ -2282,7 +2282,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <ShoppingCartIcon className="h-5 w-5" />
-                                  <span>إنشاء طلب سريع</span>
+                                  <span>{t("facebookInbox.createQuickOrder")}</span>
                                 </button>
 
                                 <button
@@ -2314,7 +2314,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <StickyNote className="h-5 w-5" />
-                                  <span>{showNotes ? "إخفاء الملاحظات" : "عرض الملاحظات"}</span>
+                                  <span>{showNotes ? t("facebookInbox.hideNotes") : t("facebookInbox.showNotes")}</span>
                                 </button>
 
                                 <button
@@ -2326,7 +2326,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <ClockIcon className="h-5 w-5" />
-                                  <span>غفوة المحادثة</span>
+                                  <span>{t("facebookInbox.snooze")}</span>
                                 </button>
 
                                 <div className="h-px my-1" style={{ background: "var(--business-muted-line)" }} />
@@ -2341,7 +2341,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                   }}
                                 >
                                   <TrashIcon className="h-5 w-5" />
-                                  <span>حذف المحادثة</span>
+                                  <span>{t("facebookInbox.deleteConversation")}</span>
                                 </button>
                               </div>
                             </>
@@ -2378,7 +2378,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           onClick={() => setShowQuickOrderModal(true)}
                           className="business-icon-button rounded-xl transition-colors"
                           data-tone="warning"
-                          title="إنشاء طلب سريع"
+                          title={t("facebookInbox.createQuickOrder")}
                         >
                           <ShoppingCartIcon className="h-5 w-5" />
                         </button>
@@ -2440,7 +2440,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       type="button"
                       className="fixed inset-0 z-20 bg-black/10 md:hidden"
                       onClick={() => setShowMobileActionMenu(false)}
-                      aria-label="إغلاق قائمة الإجراءات"
+                      aria-label={t("facebookInbox.closeMenu")}
                     />
                     <div className="business-inbox-mobile-action-menu business-dropdown-surface absolute inset-x-3 top-full z-30 mt-2 p-2 md:hidden">
                       <button
@@ -2452,7 +2452,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <ShoppingCartIcon className="h-5 w-5" />
-                        <span>إنشاء طلب سريع</span>
+                        <span>{t("facebookInbox.createQuickOrder")}</span>
                       </button>
 
                       <button
@@ -2481,7 +2481,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         onClick={handleToggleNotesPanel}
                       >
                         <StickyNote size={18} />
-                        <span>{showNotes ? "إخفاء الملاحظات" : "عرض الملاحظات"}</span>
+                        <span>{showNotes ? t("facebookInbox.hideNotes") : t("facebookInbox.showNotes")}</span>
                       </button>
 
                       <button
@@ -2493,7 +2493,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <CheckCircleIcon className="h-5 w-5" />
-                        <span>تحديد كمنتهي</span>
+                        <span>{t("facebookInbox.markAsDone")}</span>
                       </button>
 
                       <button
@@ -2507,8 +2507,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         <StarIcon className="h-5 w-5" />
                         <span>
                           {selectedConversation.priority
-                            ? "إلغاء الأولوية"
-                            : "تحديد كأولوية"}
+        ? t("facebookInbox.clearPriority")
+        : t("facebookInbox.setPriority")}
                         </span>
                       </button>
 
@@ -2521,7 +2521,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <ClockIcon className="h-5 w-5" />
-                        <span>غفوة المحادثة</span>
+                        <span>{t("facebookInbox.snooze")}</span>
                       </button>
 
                       <button
@@ -2534,7 +2534,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         }}
                       >
                         <TrashIcon className="h-5 w-5" />
-                        <span>حذف المحادثة</span>
+                        <span>{t("facebookInbox.deleteConversation")}</span>
                       </button>
                     </div>
                   </>
@@ -2631,7 +2631,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                     color: "white",
                     borderColor: "transparent",
                   }}
-                  title="عرض المحادثات"
+                  title={t("facebookInbox.showConversations")}
                 >
                   <Menu size={24} />
                 </button>
@@ -2640,13 +2640,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   className="text-lg font-medium mb-2"
                   style={{ color: "var(--color-foreground)" }}
                 >
-                  اختر محادثة
+                  {t("facebookInbox.selectConversation")}
                 </h3>
                 <p
                   className="text-sm"
                   style={{ color: "var(--color-muted-foreground)" }}
                 >
-                  اختر محادثة من القائمة
+                  {t("facebookInbox.selectConversationHint")}
                 </p>
               </div>
             </div>
@@ -2720,7 +2720,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 type="button"
                 onClick={() => setShowProfilePanel(false)}
                 className="business-icon-button absolute left-3 top-3 z-40 rounded-full"
-                title="إغلاق بيانات العميل"
+                title={t("facebookInbox.closeCustomerData")}
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -2794,7 +2794,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             color: "color-mix(in srgb, var(--business-warning) 78%, black)",
           }}
         >
-          ⚠️ غير متصل
+              {t("facebookInbox.disconnected")}
         </div>
       )}
 
@@ -2821,14 +2821,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
               className="text-lg font-semibold mb-4"
               style={{ color: "var(--color-foreground)" }}
             >
-              حظر العميل على صفحة الفيس بوك
+              {t("facebookInbox.blockOnFacebook")}
             </h3>
             <p
               className="text-sm mb-4"
               style={{ color: "var(--color-muted-foreground)" }}
             >
-              سيتم حظر هذا العميل على صفحة الفيس بوك المحددة ولن يتم استقبال
-              رسائله.
+              {t("facebookInbox.blockOnFacebookDesc")}
             </p>
 
             <div className="mb-4">
@@ -2836,14 +2835,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 className="block text-sm font-medium mb-2"
                 style={{ color: "var(--color-foreground)" }}
               >
-                سبب الحظر (اختياري)
+                {t("facebookInbox.blockReason")}
               </label>
               <textarea
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
                 className="business-chat-input"
                 rows={3}
-                placeholder="أدخل سبب الحظر..."
+                placeholder={t("facebookInbox.blockReasonPlaceholder")}
               />
             </div>
 
@@ -2855,7 +2854,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 }}
                 className="business-chip-button px-4 py-2 rounded-lg"
               >
-                إلغاء
+                {t("facebookInbox.cancel")}
               </button>
               <button
                 onClick={handleBlockCustomer}
@@ -2867,7 +2866,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   color: "white",
                 }}
               >
-                {blocking ? "جاري الحظر..." : "تأكيد الحظر"}
+                {blocking ? t("facebookInbox.blocking") : t("facebookInbox.confirmBlock")}
               </button>
             </div>
           </div>
@@ -2890,7 +2889,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               style={{ color: "var(--business-danger)" }}
             />
             <p className="text-sm" style={{ color: "var(--business-danger)" }}>
-              ⚠️ هذا العميل محظور على صفحة الفيس بوك - لن يتم استقبال رسائله
+              {t("facebookInbox.customerBlocked")}
             </p>
           </div>
         </div>
