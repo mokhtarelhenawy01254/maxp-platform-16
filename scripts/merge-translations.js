@@ -3,6 +3,20 @@ const path = require('path');
 
 const LOCALES_DIR = path.join(__dirname, '../apps/frontend/src/locales');
 
+function findJsonFiles(dir) {
+  const results = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findJsonFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.startsWith('.')) {
+      results.push(fullPath);
+    }
+  }
+  return results.sort();
+}
+
 function getKeys(obj, prefix = '') {
   let keys = [];
   for (const key of Object.keys(obj)) {
@@ -23,19 +37,18 @@ function mergeFiles(lang) {
     return;
   }
 
-  const files = fs.readdirSync(sectionsDir).filter(f => f.endsWith('.json'));
+  const files = findJsonFiles(sectionsDir);
   const merged = {};
 
-  files.sort().forEach(file => {
-    const sectionName = path.basename(file, '.json');
-    const content = JSON.parse(fs.readFileSync(path.join(sectionsDir, file), 'utf8'));
+  files.forEach(filePath => {
+    const sectionName = path.parse(filePath).name;
+    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     merged[sectionName] = content;
   });
 
   const outputPath = path.join(LOCALES_DIR, lang, 'translation.json');
   const output = JSON.stringify(merged, null, 2);
 
-  // Warn if translation.json was manually edited (has keys not in sections)
   if (fs.existsSync(outputPath)) {
     const existing = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
     const existingKeys = new Set(getKeys(existing));
@@ -44,9 +57,7 @@ function mergeFiles(lang) {
 
     if (lostKeys.length > 0) {
       console.warn(`⚠️  WARNING: ${lang}/translation.json has ${lostKeys.length} key(s) not found in sections/.`);
-      console.warn(`   These keys were likely edited directly in translation.json and will be OVERWRITTEN.`);
-      console.warn(`   To keep them, add them to the matching file in sections/ or create a new section file.`);
-      // Backup
+      console.warn(`   These keys will be OVERWRITTEN.`);
       const backupPath = outputPath.replace('.json', '.backup.json');
       fs.writeFileSync(backupPath, JSON.stringify(existing, null, 2), 'utf8');
       console.warn(`   Backup saved to ${lang}/translation.backup.json`);
@@ -54,7 +65,8 @@ function mergeFiles(lang) {
   }
 
   fs.writeFileSync(outputPath, output, 'utf8');
-  console.log(`✓ Merged ${files.length} sections into ${lang}/translation.json (${getKeys(merged).length} keys)`);
+  const allKeys = getKeys(merged);
+  console.log(`  ${files.length} files → ${allKeys.length} keys`);
 }
 
 function setKey(obj, keyPath, value) {
@@ -73,16 +85,21 @@ function syncArFromEn() {
 
   if (!fs.existsSync(enSectionsDir) || !fs.existsSync(arSectionsDir)) return [];
 
-  const enFiles = fs.readdirSync(enSectionsDir).filter(f => f.endsWith('.json'));
+  const enFiles = findJsonFiles(enSectionsDir);
   let filled = 0;
 
-  enFiles.forEach(file => {
-    const enPath = path.join(enSectionsDir, file);
-    const arPath = path.join(arSectionsDir, file);
+  enFiles.forEach(enPath => {
+    const relPath = path.relative(enSectionsDir, enPath);
+    const arPath = path.join(arSectionsDir, relPath);
+    const arDir = path.dirname(arPath);
 
     const enContent = JSON.parse(fs.readFileSync(enPath, 'utf8'));
     let arContent = fs.existsSync(arPath) ? JSON.parse(fs.readFileSync(arPath, 'utf8')) : {};
     let changed = false;
+
+    if (!fs.existsSync(arDir)) {
+      fs.mkdirSync(arDir, { recursive: true });
+    }
 
     const enKeys = getKeys(enContent);
     const arKeys = new Set(getKeys(arContent));
@@ -130,7 +147,9 @@ function reportMissingKeys(filled) {
 
 console.log('Merging translations...');
 const filled = syncArFromEn();
+console.log(`\nEN:`);
 mergeFiles('en');
+console.log(`\nAR:`);
 mergeFiles('ar');
 reportMissingKeys(filled);
-console.log('Done!');
+console.log('\nDone!');
