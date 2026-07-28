@@ -2429,7 +2429,7 @@ const WhatsAppChatContent: React.FC = () => {
               session: { name: '', phoneNumber: '' },
               customer: null,
               isNewsletter: false,
-              window: { open: false, closedAt: null }
+              window: { isOpen: false, remainingSeconds: 0, remainingLabel: '', windowExpiresAt: null }
             };
             setSelectedContact(newContact);
           }

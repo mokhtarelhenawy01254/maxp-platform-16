@@ -22,7 +22,6 @@ import {
   Tag,
   Trash2,
   Users,
-  Video,
   XCircle,
   HelpCircle,
   Briefcase,
@@ -596,7 +595,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         ]);
 
       if (sessionsResponse.status === "fulfilled") {
-        setSessions(sessionsResponse.value.data.sessions || []);
+        setSessions((sessionsResponse.value as any).data.sessions || []);
       } else {
         setSessions([]);
         showError(
@@ -606,7 +605,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       }
 
       if (settingsResponse.status === "fulfilled") {
-        setSettings(settingsResponse.value.data.settings || null);
+        setSettings((settingsResponse.value as any).data.settings || null);
       } else {
         setSettings(null);
         showError(
@@ -616,7 +615,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       }
 
       if (quickRepliesResponse.status === "fulfilled") {
-        setQuickReplies(quickRepliesResponse.value.data.quickReplies || []);
+        setQuickReplies((quickRepliesResponse.value as any).data.quickReplies || []);
       } else {
         setQuickReplies([]);
         showError(
@@ -638,7 +637,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
            withCompanyConfig({ params: { sessionId } }),
          );
 
-         setBusinessProfile(profileResponse.data.profile || null);
+         setBusinessProfile((profileResponse as any).data.profile || null);
        } catch (error) {
         showError(error, t("whatsappSettings.dialogs.errorLoading"));
       } finally {
@@ -663,8 +662,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           ),
         ]);
 
-        setPrivacySettings(privacyResponse.data.settings || null);
-        setBlocklist(blocklistResponse.data.blocklist || []);
+        setPrivacySettings((privacyResponse as any).data.settings || null);
+        setBlocklist((blocklistResponse as any).data.blocklist || []);
       } catch (error) {
         showError(error, t("whatsappSettings.dialogs.errorLoading"));
       } finally {
@@ -682,7 +681,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           "/whatsapp/labels",
           withCompanyConfig({ params: { sessionId } }),
         );
-        setLabels(response.data.labels || []);
+        setLabels((response as any).data.labels || []);
       } catch (error) {
         showError(error, t("whatsappSettings.dialogs.errorLoading"));
       } finally {
@@ -929,39 +928,39 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       };
 
       if (newSessionProvider === "BAILEYS" && newPhoneNumber.trim()) {
-        payload.phoneNumber = newPhoneNumber.trim();
+        payload['phoneNumber'] = newPhoneNumber.trim();
       }
       if (newSessionProvider === "BAILEYS" && newImportHistory) {
-        payload.importHistory = true;
+        payload['importHistory'] = true;
       }
       if (newSessionProvider === "BAILEYS") {
-        payload.keepHistoryOnDelete = newKeepHistoryOnDelete;
+        payload['keepHistoryOnDelete'] = newKeepHistoryOnDelete;
       }
 
       if (newSessionProvider === "META_CLOUD") {
         if (newMetaPhoneNumberId.trim()) {
-          payload.metaPhoneNumberId = newMetaPhoneNumberId.trim();
+          payload['metaPhoneNumberId'] = newMetaPhoneNumberId.trim();
         }
         if (newMetaWabaId.trim()) {
-          payload.metaWabaId = newMetaWabaId.trim();
+          payload['metaWabaId'] = newMetaWabaId.trim();
         }
         if (newMetaBusinessId.trim()) {
-          payload.metaBusinessId = newMetaBusinessId.trim();
+          payload['metaBusinessId'] = newMetaBusinessId.trim();
         }
         if (newMetaAccessToken.trim()) {
-          payload.metaAccessToken = newMetaAccessToken.trim();
+          payload['metaAccessToken'] = newMetaAccessToken.trim();
         }
         if (newMetaApiVersion.trim()) {
-          payload.metaApiVersion = newMetaApiVersion.trim();
+          payload['metaApiVersion'] = newMetaApiVersion.trim();
         }
         if (newMetaWebhookVerifyToken.trim()) {
-          payload.metaWebhookVerifyToken = newMetaWebhookVerifyToken.trim();
+          payload['metaWebhookVerifyToken'] = newMetaWebhookVerifyToken.trim();
         }
         if (newMetaWebhookSecret.trim()) {
-          payload.metaWebhookSecret = newMetaWebhookSecret.trim();
+          payload['metaWebhookSecret'] = newMetaWebhookSecret.trim();
         }
         if (newMetaDisplayPhoneNumber.trim()) {
-          payload.metaDisplayPhoneNumber = newMetaDisplayPhoneNumber.trim();
+          payload['metaDisplayPhoneNumber'] = newMetaDisplayPhoneNumber.trim();
         }
       }
 
@@ -970,7 +969,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         payload,
         withCompanyConfig(),
       );
-      const createdSession = response.data.session;
+      const createdSession = (response as any).data.session;
 
       setSessions((previous) => [...previous, createdSession]);
       setCreateSessionDialogOpen(false);
@@ -1010,7 +1009,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         },
         withCompanyConfig(),
       );
-      const updatedSession = response.data.session;
+      const updatedSession = (response as any).data.session;
       if (updatedSession) {
         setSessions((previous) =>
           previous.map((item) =>
