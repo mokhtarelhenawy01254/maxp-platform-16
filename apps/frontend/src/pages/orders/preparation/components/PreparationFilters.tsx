@@ -392,7 +392,7 @@ const PreparationFilters = ({
                     {p.name}
                   </div>
                 ))}
-              </select>
+              </div>
             )}
 
             {selectedProductVariants.length > 0 && (
