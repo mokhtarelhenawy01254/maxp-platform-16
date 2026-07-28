@@ -3037,7 +3037,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     statusBadgeClasses[
                       (editingSession.liveStatus ||
                         editingSession.status ||
-                        "DISCONNECTED").toUpperCase()
+                        "DISCONNECTED").toUpperCase() as keyof typeof statusBadgeClasses
                     ] || statusBadgeClasses.DISCONNECTED,
                   )}
                 >
@@ -3378,7 +3378,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     shortcut: event.target.value,
                   }))
                 }
-                placeholder={t("whatsappSettings.dialogs.shortcutPlaceholder")}
+                placeholder={t("whatsappSettings.dialogs.shortcutPlaceholder") as string}
                 className="h-11 bg-[color:var(--color-card)]"
               />
               <p className="text-sm text-[color:var(--color-muted-foreground)]">
@@ -3393,7 +3393,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 onValueChange={(value) =>
                   setQuickReplyForm((previous) => ({
                     ...previous,
-                    category: value,
+                    category: value ?? '',
                   }))
                 }
               >
