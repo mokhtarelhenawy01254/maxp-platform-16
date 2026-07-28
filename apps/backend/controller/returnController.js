@@ -498,7 +498,11 @@ exports.updateReturnRequest = async (req, res) => {
 
         if (isReviewed && !oldRequest.isReviewed) {
             await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', {});
-            await calculateCustomerScore(updatedRequest.customerId, req.user.companyId);
+            try {
+                await calculateCustomerScore(updatedRequest.customerId, req.user.companyId);
+            } catch (scoreError) {
+                console.error('⚠️ [SCORE] Failed to calculate customer score:', scoreError?.message);
+            }
             try {
                 await cashbackService.reverseCashbackForReturn({
                     returnRequestId: updatedRequest.id,
@@ -516,8 +520,9 @@ exports.updateReturnRequest = async (req, res) => {
 
         res.json(updatedRequest);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to update return request' });
+        console.error('❌ updateReturnRequest ERROR:', error?.message || error);
+        console.error(error?.stack?.split('\n').slice(0, 5).join('\n'));
+        res.status(500).json({ error: 'Failed to update return request', details: error?.message });
     }
 };
 
