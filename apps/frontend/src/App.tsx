@@ -12,7 +12,6 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
@@ -4366,9 +4365,7 @@ const AppContent = () => {
                   path="/analytics/orders/products"
                   element={
                     <Layout>
-                      <ErrorBoundary>
-                        <ProductsAnalyticsPage />
-                      </ErrorBoundary>
+                      <ProductsAnalyticsPage />
                     </Layout>
                   }
                 />
