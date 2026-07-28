@@ -867,7 +867,8 @@ async function getConversations(req, res) {
 
         const where = {
             sessionId: { in: sessionIds },
-            isArchived: archived === 'true'
+            isArchived: archived === 'true',
+            totalMessages: { gt: 0 }
         };
 
         if (search) {
