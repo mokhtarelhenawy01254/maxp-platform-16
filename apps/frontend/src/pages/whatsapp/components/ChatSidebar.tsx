@@ -110,6 +110,8 @@ interface ChatSidebarProps {
   // Bulk actions
   onBulkDelete?: (jids: string[], sessionId: string) => void;
   onDeleteAll?: (sessionId?: string) => void;
+  // تصنيفات واتساب
+  labels?: { id: string; name: string; color: string }[];
 }
 
 type SidebarFilter = "all" | "unread" | "groups" | "statuses";
@@ -238,6 +240,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onRetryConversations,
   onBulkDelete,
   onDeleteAll,
+  labels,
 }) => {
   const { t, i18n } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -356,6 +359,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
     return format(date, "dd/MM/yyyy");
   };
+
+  // خريطة للتصنيفات: labelId -> { name, color }
+  const labelsMap = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    if (labels) {
+      labels.forEach(l => map.set(l.id, { name: l.name, color: l.color }));
+    }
+    return map;
+  }, [labels]);
 
   const filteredConversations = useMemo(() => {
     let filtered = conversations;
@@ -971,6 +983,26 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                 >
                                   {t("whatsapp.window.channel")}
                                 </Badge>
+                              ) : null}
+                              {contact.labels && contact.labels.length > 0 ? (
+                                <div className="flex -space-x-1 rtl:space-x-reverse">
+                                  {contact.labels.slice(0, 3).map(labelId => {
+                                    const labelDef = labelsMap.get(labelId);
+                                    return labelDef ? (
+                                      <span
+                                        key={labelId}
+                                        className="inline-block size-2 rounded-full border border-white ring-1 ring-white/50"
+                                        style={{ backgroundColor: labelDef.color }}
+                                        title={labelDef.name}
+                                      />
+                                    ) : null;
+                                  })}
+                                  {contact.labels.length > 3 ? (
+                                    <span className="text-[9px] leading-none text-[color:var(--color-muted-foreground)]">
+                                      +{contact.labels.length - 3}
+                                    </span>
+                                  ) : null}
+                                </div>
                               ) : null}
                             </div>
                           </div>

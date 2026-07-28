@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   returnService,
   ReturnRequest,
@@ -28,6 +28,16 @@ const ReturnManagementPage: React.FC = () => {
   // Display Config
   const [displayConfig, setDisplayConfig] =
     useState<ReviewDisplayConfig | null>(null);
+
+  // Categories for responsible party names
+  const [categories, setCategories] = useState<any[]>([]);
+  const responsiblePartyLabel = useMemo(() => {
+    const m: Record<string, string> = {};
+    categories.forEach((cat: any) => {
+      if (!m[cat.defaultRole]) m[cat.defaultRole] = cat.name;
+    });
+    return (role: string) => m[role] || role;
+  }, [categories]);
 
   // Filters & Search
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
@@ -98,6 +108,11 @@ const ReturnManagementPage: React.FC = () => {
         if (config) setDisplayConfig(config);
       })
       .catch(() => {});
+  }, []);
+
+  // Load categories for responsible party names
+  useEffect(() => {
+    returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
   }, []);
 
   const getRatingBadge = (rating: string | undefined) => {
@@ -372,7 +387,7 @@ const ReturnManagementPage: React.FC = () => {
                               : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
-                        {request.responsibleParty}
+                        {responsiblePartyLabel(request.responsibleParty)}
                       </span>
                     </td>
                   )}

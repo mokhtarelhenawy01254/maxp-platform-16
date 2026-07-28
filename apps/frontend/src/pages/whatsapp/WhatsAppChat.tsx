@@ -341,6 +341,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
+  const [labels, setLabels] = useState<{id: string; name: string; color: string}[]>([]);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [pollData, setPollData] = useState({ question: '', options: ['', ''], selectableCount: 1 });
 
@@ -633,6 +634,14 @@ const WhatsAppChatContent: React.FC = () => {
       setSelectedSession(sessions[0]!.id);
     }
   }, [sessions, selectedSession]);
+
+  // جلب التصنيفات للمستخدم النشط
+  useEffect(() => {
+    if (!activeSessionId) return;
+    api.get('/whatsapp/labels', { params: { sessionId: activeSessionId } })
+      .then(res => setLabels(res.data.labels || []))
+      .catch(err => console.error('Error loading labels:', err));
+  }, [activeSessionId]);
 
   // Load initial data (notification settings)
   useEffect(() => {
@@ -2025,6 +2034,7 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenLabels={() => setLabelDialogOpen(true)}
         onBulkDelete={handleBulkDeleteChats}
         onDeleteAll={handleDeleteAllChats}
+        labels={labels}
       />
 
       <div className="relative flex min-w-0 flex-1">

@@ -1814,6 +1814,25 @@ declare module 'react-i18next' {
         csvExport: string;
         sortAsc: string;
         sortDesc: string;
+        periodToday: string;
+        periodYesterday: string;
+        periodTwoWeeks: string;
+        periodTwoMonths: string;
+        periodSixMonths: string;
+        periodTwoYears: string;
+        periodAll: string;
+        views: string;
+        addToCarts: string;
+        conversionRate: string;
+        stock: string;
+        funnelTitle: string;
+        funnelViews: string;
+        funnelCart: string;
+        funnelSales: string;
+        highStock: string;
+        lowStock: string;
+        outOfStock: string;
+        variants: string;
       };
       profitAnalytics: {
         title: string;
