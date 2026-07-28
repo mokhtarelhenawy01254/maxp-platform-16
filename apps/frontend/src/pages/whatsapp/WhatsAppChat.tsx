@@ -5,12 +5,9 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react';
 import {
-  AlertCircle,
   Ban,
   BarChart3,
   Check,
-  CheckCheck,
-  Clock3,
   Copy,
   Forward,
   List as ListIcon,
@@ -1803,7 +1800,7 @@ const WhatsAppChatContent: React.FC = () => {
   };
 
   // ==================== Group Advanced Features ====================
-  const handleToggleEphemeral = async (duration: number) => {
+  const _handleToggleEphemeral = async (duration: number) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
       await api.post(`/whatsapp/groups/${selectedContact.jid}/ephemeral`, {
@@ -1816,7 +1813,7 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
-  const handleUpdateGroupPicture = async (file: File) => {
+  const _handleUpdateGroupPicture = async (file: File) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
       const formData = new FormData();
@@ -1831,7 +1828,7 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
-  const handleAcceptGroupInvite = async (inviteCode: string) => {
+  const _handleAcceptGroupInvite = async (inviteCode: string) => {
     if (!selectedSession) return;
     try {
       await api.post('/whatsapp/groups/invite/accept', {
@@ -1845,7 +1842,7 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
-  const handleGetUrlInfo = async (url: string) => {
+  const _handleGetUrlInfo = async (url: string) => {
     if (!selectedSession) return null;
     try {
       const res = await api.get('/whatsapp/url-info', {
@@ -1860,7 +1857,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Order/Cart functions removed - using QuickOrderModal (same as Facebook inbox)
 
-  const sendQuickReply = async (qr: QuickReply) => {
+  const _sendQuickReply = async (qr: QuickReply) => {
     if (!selectedSession || !selectedContact) return;
     try {
       await api.post('/whatsapp/messages/send', {
@@ -2048,8 +2045,8 @@ const WhatsAppChatContent: React.FC = () => {
         content={confirmData.content}
         onConfirm={confirmData.onConfirm}
         onCancel={() => setConfirmData(prev => ({ ...prev, open: false }))}
-        confirmLabel={t('whatsapp.dialogs.confirm')}
-        cancelLabel={t('whatsapp.dialogs.cancel')}
+        confirmLabel={t('whatsapp.dialogs.confirm') as string}
+        cancelLabel={t('whatsapp.dialogs.cancel') as string}
       />
 
       {messageContextMenu ? (
@@ -2386,7 +2383,7 @@ const WhatsAppChatContent: React.FC = () => {
         onClose={() => setCreateGroupDialogOpen(false)}
         sessionId={activeSessionId}
         contacts={conversations}
-        onGroupCreated={(group) => {
+        onGroupCreated={(_group) => {
           queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
           // Optionally select the new group
           // setSelectedContact(group); 
@@ -2430,7 +2427,9 @@ const WhatsAppChatContent: React.FC = () => {
               isMuted: false,
               isBlocked: false,
               session: { name: '', phoneNumber: '' },
-              customer: null
+              customer: null,
+              isNewsletter: false,
+              window: { open: false, closedAt: null }
             };
             setSelectedContact(newContact);
           }
@@ -2766,7 +2765,7 @@ const WhatsAppChatContent: React.FC = () => {
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
-                              newSections[sIndex].rows[rIndex] = { ...row, title: e.target.value };
+                              newSections[sIndex]!.rows[rIndex] = { ...row, title: e.target.value };
                               setListData((prev) => ({ ...prev, sections: newSections }));
                             }
                           }}
@@ -2778,7 +2777,7 @@ const WhatsAppChatContent: React.FC = () => {
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
-                              newSections[sIndex].rows[rIndex] = { ...row, description: e.target.value };
+                              newSections[sIndex]!.rows[rIndex] = { ...row, description: e.target.value };
                               setListData((prev) => ({ ...prev, sections: newSections }));
                             }
                           }}
@@ -2792,7 +2791,7 @@ const WhatsAppChatContent: React.FC = () => {
                             onClick={() => {
                               const newSections = [...listData.sections];
                               if (newSections[sIndex]) {
-                                newSections[sIndex].rows = section.rows.filter((_, itemIndex) => itemIndex !== rIndex);
+                                newSections[sIndex]!.rows = section.rows.filter((_, itemIndex) => itemIndex !== rIndex);
                                 setListData((prev) => ({ ...prev, sections: newSections }));
                               }
                             }}
@@ -2808,7 +2807,7 @@ const WhatsAppChatContent: React.FC = () => {
                       onClick={() => {
                         const newSections = [...listData.sections];
                         if (newSections[sIndex]) {
-                          newSections[sIndex].rows.push({
+                          newSections[sIndex]!.rows.push({
                             id: String(section.rows.length + 1),
                             title: '',
                             description: '',
@@ -3146,7 +3145,7 @@ const WhatsAppChatContent: React.FC = () => {
                       )}
                       {comp.type === 'BODY' && (
                         <p className="whitespace-pre-wrap text-sm leading-6 text-[color:var(--color-foreground)]">
-                          {comp.text?.replace(/\{\{(\d+)\}\}/g, (_, num) =>
+                          {comp.text?.replace(/\{\{(\d+)\}\}/g, (_: string, num: string) =>
                             templateVariables[`{{${num}}}`] || `{{${num}}}`
                           )}
                         </p>
