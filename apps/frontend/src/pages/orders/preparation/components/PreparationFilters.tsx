@@ -138,8 +138,13 @@ const PreparationFilters = ({
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const [showAdvanced, setShowAdvanced] = useState(false);
+<<<<<<< HEAD
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+=======
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+>>>>>>> 07774d0956e84a5e04842f3133e6aee6179fb877
   const productInputRef = useRef<HTMLInputElement>(null);
   const productSuggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -395,7 +400,11 @@ const PreparationFilters = ({
                     {p.name}
                   </div>
                 ))}
+<<<<<<< HEAD
               </div>
+=======
+              </select>
+>>>>>>> 07774d0956e84a5e04842f3133e6aee6179fb877
             )}
 
             {selectedProductVariants.length > 0 && (
