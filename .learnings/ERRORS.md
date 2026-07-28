@@ -4,6 +4,32 @@ Command failures and integration errors.
 
 ---
 
+## [ERR-20260728-001] baileys_module_probe
+
+**Logged**: 2026-07-28T00:00:00+03:00
+**Priority**: low
+**Status**: pending
+**Area**: tests
+
+### Summary
+Direct standalone ESM import of Baileys history utilities failed before the module namespace mutability probe could run.
+
+### Error
+`TypeError: Cannot read properties of undefined (reading 'connectionReplaced')` from Baileys `generics.js` during direct `node --input-type=module` import.
+
+### Context
+- The production service loads Baileys through its normal socket initialization path.
+- The failed command was a read-only review probe; no project code or dependency state changed.
+
+### Suggested Fix
+Verify the history-mapping integration through an application-level test or a version-pinned patch test, not a standalone direct import.
+
+### Metadata
+- Reproducible: yes
+- Related Files: apps/backend/services/whatsapp/WhatsAppManager.js
+
+---
+
 ## [ERR-20260702-001] schedule_job_tool
 
 **Logged**: 2026-07-02T12:00:00Z
