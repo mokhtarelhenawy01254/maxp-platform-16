@@ -40,21 +40,6 @@ const initBaileys = async () => {
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
 
-    // Patch Baileys' processHistoryMessage to include phoneNumberToLidMappings from the raw protobuf
-    try {
-        const historyModule = await import('@whiskeysockets/baileys/lib/Utils/history.js');
-        const origProcess = historyModule.processHistoryMessage;
-        historyModule.processHistoryMessage = (item) => {
-            const result = origProcess(item);
-            const mappings = item?.phoneNumberToLidMappings;
-            if (mappings && mappings.length > 0) {
-                result.phoneNumberToLidMappings = mappings;
-            }
-            return result;
-        };
-    } catch (e) {
-        console.warn('⚠️ [BAILEYS-PATCH] Could not patch processHistoryMessage:', e.message);
-    }
 };
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
@@ -1738,7 +1723,16 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
     }
 
     if (lastMessageAt) {
-        updateData.lastMessageAt = lastMessageAt;
+        // Monotonic: لا نحدث لو القيمة الموجودة أحدث
+        const existing = await prisma.whatsAppContact.findUnique({
+            where: { sessionId_jid: { sessionId, jid: normalizedJid } },
+            select: { lastMessageAt: true }
+        });
+        if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
+            // نحتفظ بالتاريخ القديم
+        } else {
+            updateData.lastMessageAt = lastMessageAt;
+        }
     }
 
     return await prisma.whatsAppContact.upsert({
@@ -1803,7 +1797,10 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
 
     // نخزن بس الـ chats اللي عندهم timestamp (محادثات حقيقية) — مش address book
     const contactsByJid = {};
-    for (const c of contacts) { contactsByJid[c.id || c.lid] = c; }
+    for (const c of contacts) {
+        if (c.id) contactsByJid[c.id] = c;
+        if (c.lid) contactsByJid[c.lid] = c;
+    }
     for (const chat of chats) {
         const chatTimestamp = chat.conversationTimestamp || chat.lastMessageRecvTimestamp;
         if (!chatTimestamp) continue;
@@ -1949,11 +1946,19 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             });
             if (!messageContent) {
                 if (importHistory) {
-                    // نخزن الرسالة غير المدعومة كـ placeholder عشان ما نضيعش حاجة
-                    const savedMsg = await prisma.whatsAppMessage.upsert({
+                    const prisma = getSharedPrismaClient();
+                    await prisma.whatsAppMessage.upsert({
                         where: { messageId },
                         update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), updatedAt: new Date() },
                         create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
+                    });
+                    await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
+                        isOutgoing: fromMe,
+                        suppressUnread: true,
+                        incrementCounters: true,
+                        lastMessageAt: messageTimestamp,
+                        lastMessagePreview: 'رسالة غير مدعومة',
+                        skipProfilePic: true
                     });
                     console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder`);
                 }
@@ -1965,7 +1970,6 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
             // console.log(`📩 New message in session ${sessionId}: ${messageContent.type} from ${remoteJid}`);
 
-            // حفظ الرسالة في قاعدة البيانات
             // حفظ الرسالة في قاعدة البيانات
             const prisma = getSharedPrismaClient();
             const existingMessage = await prisma.whatsAppMessage.findUnique({
