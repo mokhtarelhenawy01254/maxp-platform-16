@@ -190,6 +190,7 @@ const getUnifiedConversations = async (req, res) => {
         // 2. Also fetch WhatsApp contacts if platform includes whatsapp
         // ──────────────────────────────────────────────────────────
         let whatsappContacts = [];
+        const warnings = [];
         const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
         const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
 
@@ -284,6 +285,7 @@ const getUnifiedConversations = async (req, res) => {
                 }
             } catch (waErr) {
                 console.error('⚠️ [UNIFIED] Error fetching WhatsApp contacts:', waErr.message);
+                warnings.push({ platform: 'whatsapp', message: 'تعذر تحميل محادثات واتساب، قد تكون بعض المحادثات غير مكتملة' });
             }
         }
 
@@ -415,6 +417,7 @@ const getUnifiedConversations = async (req, res) => {
         res.json({
             success: true,
             data: allConversations,
+            warnings: warnings.length > 0 ? warnings : undefined,
             pagination: {
                 total: totalCount + whatsappContacts.length,
                 page: parseInt(page),

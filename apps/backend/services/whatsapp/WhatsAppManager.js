@@ -1806,6 +1806,26 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         ...summary
     });
 
+    // عند اكتمال المزامنة (isLatest = true)، نحدث حالة الجلسة عشان نعرف إن المزامنة خلصت
+    if (history?.isLatest) {
+        sessionData.syncFullHistory = false;
+        try {
+            const sessionRecord = await getSharedPrismaClient().whatsAppSession.findUnique({
+                where: { id: sessionId },
+                select: { metadata: true }
+            });
+            const currentMeta = parseJsonSafely(sessionRecord?.metadata, {});
+            currentMeta.historySyncedAt = new Date().toISOString();
+            currentMeta.importHistoryOnLink = false;
+            await getSharedPrismaClient().whatsAppSession.update({
+                where: { id: sessionId },
+                data: { metadata: JSON.stringify(currentMeta), updatedAt: new Date() }
+            });
+        } catch (error) {
+            console.warn(`⚠️ Failed to update history sync completion for ${sessionId}:`, error.message);
+        }
+    }
+
     await logEvent(sessionId, companyId, 'history_sync_imported', summary);
 }
 
