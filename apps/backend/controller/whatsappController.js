@@ -897,7 +897,8 @@ async function getConversations(req, res) {
         const where = {
             sessionId: { in: sessionIds },
             isArchived: archived === 'true',
-            totalMessages: { gt: 0 }
+            totalMessages: { gt: 0 },
+            NOT: { jid: { contains: '@lid' } }
         };
 
         if (search) {
@@ -4854,6 +4855,5 @@ async function facebookEmbeddedConnect(req, res) {
         res.status(500).json({ error: errorMsg });
     }
 }
-
 
 

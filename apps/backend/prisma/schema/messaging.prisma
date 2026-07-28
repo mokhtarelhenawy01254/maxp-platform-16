@@ -227,6 +227,7 @@ model WhatsAppMessage {
   updatedAt       DateTime        @updatedAt
   senderId        String?
   participant     String?
+  isHidden        Boolean         @default(false)
   user            User?           @relation(fields: [senderId], references: [id])
   whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -308,6 +309,7 @@ model WhatsAppSession {
   assignment             WhatsAppNumberAssignment?
   moderatorNotifications ModeratorNotification[]
   historyImport          WhatsAppSessionHistoryImport?
+  lidMappings            WhatsAppLidMapping[]
 
   @@index([companyId])
   @@index([phoneNumber])
@@ -397,4 +399,19 @@ model WhatsAppSessionHistoryImport {
   @@index([status])
   @@index([sessionId, status])
   @@map("whatsapp_session_history_imports")
+}
+
+model WhatsAppLidMapping {
+  id              String          @id @default(cuid())
+  sessionId       String
+  lidJid          String
+  phoneJid        String
+  source          String          @default("HISTORY_SYNC")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, lidJid])
+  @@index([sessionId, phoneJid])
+  @@map("whatsapp_lid_mappings")
 }

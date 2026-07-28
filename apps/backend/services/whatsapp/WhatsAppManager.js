@@ -2116,7 +2116,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (remoteJid && isLinkedDeviceJid(remoteJid)) {
                 const lidJid = normalizeWhatsAppContactIdentity(remoteJid).normalizedJid;
                 // 1. Use official PhoneNumberToLIDMapping from WhatsApp protobuf (fastest, most reliable)
-                const mappedPhone = lidToPhoneMap?.[lidJid] || lidToPhoneMap?.[remoteJid];
+                const mappedPhone =
+                    lidToPhoneMap?.[lidJid] ||
+                    lidToPhoneMap?.[remoteJid] ||
+                    await getPersistedLidMapping(sessionId, lidJid);
                 if (mappedPhone) {
                     await mergeLinkedDeviceConversation(sessionId, lidJid, mappedPhone, {
                         pushName: msg.pushName
@@ -2161,6 +2164,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (!messageContent) {
                 if (importHistory) {
                     const prisma = getSharedPrismaClient();
+                    const isHidden = isHistorySystemMessage(msg);
                     const existingMsg = await prisma.whatsAppMessage.findUnique({
                         where: { messageId },
                         select: { id: true }
@@ -2168,12 +2172,39 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     const isNew = !existingMsg;
                     await prisma.whatsAppMessage.upsert({
                         where: { messageId },
-                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), updatedAt: new Date() },
-                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
+                        update: {
+                            remoteJid,
+                            fromMe,
+                            messageType: isHidden ? 'HISTORY_SYSTEM' : 'UNSUPPORTED',
+                            content: isHidden ? null : 'رسالة غير مدعومة',
+                            isHidden,
+                            metadata: JSON.stringify(msg),
+                            updatedAt: new Date()
+                        },
+                        create: {
+                            sessionId,
+                            messageId,
+                            remoteJid,
+                            fromMe,
+                            messageType: isHidden ? 'HISTORY_SYSTEM' : 'UNSUPPORTED',
+                            content: isHidden ? null : 'رسالة غير مدعومة',
+                            isHidden,
+                            metadata: JSON.stringify(msg),
+                            timestamp: messageTimestamp,
+                            status: fromMe ? 'SENT' : 'DELIVERED',
+                            updatedAt: new Date()
+                        }
                     });
-                    // لا ننشئ contact للرسائل غير المدعومة عشان ما تظهرش محادثات فاضية في الـ inbox
-                    // الـ contact بيتخلق بس لو في رسالة حقيقية (content مش null)
-                    console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder (new=${isNew})`);
+                    if (!isHidden) {
+                        await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
+                            isOutgoing: fromMe,
+                            suppressUnread: true,
+                            incrementCounters: isNew,
+                            lastMessageAt: messageTimestamp,
+                            lastMessagePreview: 'رسالة غير مدعومة',
+                            skipProfilePic: true
+                        });
+                    }
                 }
                 continue;
             }
@@ -4978,6 +5009,7 @@ module.exports = {
         classifySessionSocketHealth,
         getSocketReadyState,
         getProfileSessionSnapshot,
+        isHistorySystemMessage,
         // Sprint 2: History import lifecycle helpers
         HISTORY_BATCH_SIZE,
         historyYield,

@@ -207,7 +207,8 @@ const getUnifiedConversations = async (req, res) => {
                     const waWhere = {
                         sessionId: { in: sessionIds },
                         isArchived: false,
-                        totalMessages: { gt: 0 }
+                        totalMessages: { gt: 0 },
+                        NOT: { jid: { contains: '@lid' } }
                     };
 
                     if (isPinned === 'true') {
