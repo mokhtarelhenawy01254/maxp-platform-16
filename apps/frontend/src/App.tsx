@@ -20,10 +20,13 @@ const SYSTEM_STATUS_LABELS: Record<string, string> = {
   ON_HOLD_PREP: "تجهيز معلق", NOT_SHIPPED: "لم يتم الشحن", COMPLETED: "مكتمل",
   FAILED: "فشل", STOCK_SHORTAGE: "عجز مخزون", PENDING_CANCELLATION: "بانتظار الإلغاء",
 };
-(window as any).getStatusText = (s: string) => {
+const _getStatusText = (s: string) => {
   const key = (s || "PENDING").toUpperCase().trim().replace(/\s+/g, "_");
   return SYSTEM_STATUS_LABELS[key] || key.replace(/_/g, " ");
 };
+(window as any).getStatusText = _getStatusText;
+// reference to prevent Rollup tree-shaking (needed by old deployed route bundles)
+console.debug("status helper ready", typeof _getStatusText);
 
 // Providers
 import AppProviders from "./providers/AppProviders";
