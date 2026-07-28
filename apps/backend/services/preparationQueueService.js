@@ -80,14 +80,18 @@ const updatePreparationOrderStatus = async ({
   userName,
 }) => {
   const normalizedStatus = String(status || '').trim().toUpperCase();
+  const prisma = getSharedPrismaClient();
 
   if (!PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
-    const error = new Error(`الحالة "${normalizedStatus}" غير مسموح بها في قائمة التجهيز`);
-    error.statusCode = 400;
-    throw error;
+    const customStatus = await prisma.orderStatusConfig.findFirst({
+      where: { companyId, code: normalizedStatus, statusType: 'preparation', isActive: true },
+    });
+    if (!customStatus) {
+      const error = new Error(`الحالة "${normalizedStatus}" غير مسموح بها في قائمة التجهيز`);
+      error.statusCode = 400;
+      throw error;
+    }
   }
-
-  const prisma = getSharedPrismaClient();
 
   const order = await prisma.order.findFirst({
     where: {
