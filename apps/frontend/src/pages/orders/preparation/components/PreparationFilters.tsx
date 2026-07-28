@@ -356,16 +356,16 @@ const PreparationFilters = ({
                 ref={productSuggestionsRef}
                 className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
               >
-                <option value="">
-                  {productsLoading ? "جاري التحميل..." : "اختر المنتج"}
-                </option>
+                <div className="px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 cursor-pointer" onClick={() => { setLocalProductFilter(""); onProductFilterChange(""); setShowProductSuggestions(false); }}>
+                  {t("preparation.filters.allProducts") || t("common.loading")}
+                </div>
                 {products.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <div key={p.id} className="px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer" onClick={() => { setLocalProductFilter(p.name); onProductFilterChange(p.id); setShowProductSuggestions(false); }}>
                     {p.name}
-                  </option>
+                  </div>
                 ))}
-              </select>
-            </div>
+              </div>
+            )}
 
             {selectedProductVariants.length > 0 && (
               <div className="relative min-w-[140px]">
