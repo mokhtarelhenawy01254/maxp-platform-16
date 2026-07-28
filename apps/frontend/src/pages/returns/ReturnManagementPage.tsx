@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import {
   Filter,
   RefreshCw,
-  CheckCircle,
   Clock,
   Eye,
   CalendarDays,
@@ -148,7 +147,7 @@ const ReturnManagementPage: React.FC = () => {
       </div>
 
       {/* Review Tabs */}
-      <div className="flex gap-1 mb-4 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 w-fit">
+      <div className="flex gap-1 mb-4 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 w-full sm:w-fit">
         <button
           onClick={() => setReviewTab("pending")}
           className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -238,6 +237,7 @@ const ReturnManagementPage: React.FC = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
@@ -264,11 +264,6 @@ const ReturnManagementPage: React.FC = () => {
               {displayConfig?.showTrackingColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   رقم التتبع
-                </th>
-              )}
-              {displayConfig?.showReviewColumn !== false && (
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t('returns.k_63')}
                 </th>
               )}
               {displayConfig?.showDateColumn !== false && (
@@ -386,19 +381,6 @@ const ReturnManagementPage: React.FC = () => {
                       {request.trackingNumber || "-"}
                     </td>
                   )}
-                  {displayConfig?.showReviewColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {request.isReviewed ? (
-                        <span className="text-green-600 dark:text-green-400 text-xs flex items-center gap-1">
-                          <CheckCircle size={14} /> {t('returns.k_147')}
-                        </span>
-                      ) : (
-                        <span className="text-orange-500 dark:text-orange-400 text-xs flex items-center gap-1">
-                          <Clock size={14} /> {t('returns.k_148')}
-                        </span>
-                      )}
-                    </td>
-                  )}
                   {displayConfig?.showDateColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {new Date(request.createdAt).toLocaleDateString()}
@@ -423,6 +405,7 @@ const ReturnManagementPage: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Pagination */}

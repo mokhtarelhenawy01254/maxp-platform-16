@@ -1,0 +1,22 @@
+{
+  "title": "Product Analytics",
+  "subtitle": "Product Performance & Sales",
+  "fetchError": "Error fetching data",
+  "retry": "Retry",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last90Days": "Last 90 Days",
+  "lastYear": "Last Year",
+  "totalProducts": "Total Products",
+  "topProducts": "Top Selling Products",
+  "topProductsDetails": "Top Products Details",
+  "lowPerforming": "Low Performing Products",
+  "product": "Product",
+  "sales": "Sales",
+  "revenue": "Revenue",
+  "noTopProducts": "No sales in this period",
+  "noTopProductsDesc": "No product sales have been recorded for the selected period",
+  "noLowPerforming": "No low performing products",
+  "noLowPerformingDesc": "All products are performing well in this period",
+  "ordersCount": "Order Count"
+}

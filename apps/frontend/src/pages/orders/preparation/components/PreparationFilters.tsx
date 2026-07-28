@@ -309,39 +309,52 @@ const PreparationFilters = ({
 
       {/* Toggle filter buttons + Product filter */}
       {visibleFilterSections.includes("toggleButtons") && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2.5">
-          <button
-            onClick={() =>
-              onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
-            }
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              notPrintedFilter === "not_printed"
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {t("preparation.filters.notPrinted")}
-          </button>
-          <button
-            onClick={() =>
-              onNoShippingCodeFilterChange(noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code")
-            }
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              noShippingCodeFilter === "no_shipping_code"
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {t("preparation.filters.noShippingCode")}
-          </button>
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5">
+          <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
+            <button
+              onClick={() =>
+                onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
+              }
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition max-sm:flex-1 ${
+                notPrintedFilter === "not_printed"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {t("preparation.filters.notPrinted")}
+            </button>
+            <button
+              onClick={() =>
+                onNoShippingCodeFilterChange(noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code")
+              }
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition max-sm:flex-1 ${
+                noShippingCodeFilter === "no_shipping_code"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {t("preparation.filters.noShippingCode")}
+            </button>
+          </div>
 
-          <div className="relative mr-auto flex items-center gap-2">
-            <div className="relative min-w-[180px]">
-              <select
-                value={productIdFilter}
-                onChange={(e) => onProductIdFilterChange(e.target.value)}
-                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
-                disabled={productsLoading}
+          <div className="relative mr-auto w-full sm:min-w-[180px] sm:max-w-[260px] max-sm:mt-1">
+            <input
+              ref={productInputRef}
+              value={localProductFilter}
+              onChange={(e) => {
+                setLocalProductFilter(e.target.value);
+                onProductFilterChange(e.target.value);
+                setShowProductSuggestions(true);
+              }}
+              onFocus={() => setShowProductSuggestions(true)}
+              placeholder={t("preparation.filters.productPlaceholder")}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            {showProductSuggestions && (
+              <div
+                ref={productSuggestionsRef}
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
               >
                 <option value="">
                   {productsLoading ? "جاري التحميل..." : "اختر المنتج"}
@@ -371,12 +384,38 @@ const PreparationFilters = ({
               </div>
             )}
           </div>
+
+          <div className="relative sm:min-w-[120px] max-sm:w-full">
+            <select
+              value={productColorFilter}
+              onChange={(e) => onProductColorFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">اللون (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.color).filter(Boolean))).map((color, idx) => (
+                <option key={idx} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative sm:min-w-[120px] max-sm:w-full">
+            <select
+              value={productSizeFilter}
+              onChange={(e) => onProductSizeFilterChange(e.target.value)}
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+            >
+              <option value="">المقاس (الكل)</option>
+              {Array.from(new Set(productSuggestions.map(s => s.size).filter(Boolean))).map((size, idx) => (
+                <option key={idx} value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
       {/* Advanced filters (collapsible) */}
       {showAdvanced && visibleFilterSections.includes("advanced") && (
-        <div className="grid grid-cols-2 gap-2 border-t border-gray-50 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-1 gap-3 border-t border-gray-50 p-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           <div className="space-y-1">
             <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.warehouse")}</label>
             <select

@@ -322,6 +322,8 @@ export default defineConfig(({ mode }) => {
           find: 'use-sync-external-store',
           replacement: resolve(FRONTEND_NODE_MODULES, 'use-sync-external-store'),
         },
+        { find: 'react-router', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router') },
+        { find: 'react-router-dom', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router-dom') },
         { find: '@', replacement: resolve(__dirname, 'src') },
       ],
     },

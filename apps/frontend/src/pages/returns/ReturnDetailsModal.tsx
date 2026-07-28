@@ -49,7 +49,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     request.responsibleParty,
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
-  const [isReviewed, setIsReviewed] = useState(request.isReviewed);
+  const isReviewed = true;
   const [submittingReview, setSubmittingReview] = useState(false);
 
   // Categories & Reasons for dropdown
@@ -137,7 +137,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
       className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
       dir="rtl"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col shadow-xl">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col shadow-xl mx-2 md:mx-0">
         {/* Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-lg">
           <div>
@@ -182,7 +182,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800">
           {activeTab === "details" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
                     {t('returns.k_193')}
@@ -262,7 +262,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                   <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
                     💰 التسوية المالية
                   </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {request.order?.codDepositPaid && (
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">دفعة مسبقة (COD Deposit):</span>
@@ -394,21 +394,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                   />
                 </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="isReviewed"
-                    checked={isReviewed}
-                    onChange={(e) => setIsReviewed(e.target.checked)}
-                    className="rounded text-blue-600 dark:text-blue-400"
-                  />
-                  <label
-                    htmlFor="isReviewed"
-                    className="text-xs font-bold text-gray-700 dark:text-gray-300"
-                  >
-                    {t('returns.k_208')}
-                  </label>
-                </div>
               </div>
             </div>
           )}
@@ -423,7 +408,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                   <Phone size={16} /> {t('returns.k_209')}
                 </h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                       {t('returns.k_210')}

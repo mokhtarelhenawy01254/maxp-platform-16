@@ -93,7 +93,7 @@ const PreparationOrderCard = ({
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md hover:border-gray-300 ${
+      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 active:scale-[0.99] hover:shadow-md hover:border-gray-300 ${
         shortageFollowUpVisual?.cardClass || "border-gray-200"
       }`}
     >
