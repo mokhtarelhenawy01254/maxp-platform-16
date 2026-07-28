@@ -321,6 +321,19 @@ const WhatsAppChatContent: React.FC = () => {
     };
   }, [selectedContact]);
 
+  // — Push history state on chat open so browser back returns to chat list, not previous page —
+  useEffect(() => {
+    if (!selectedContact) return;
+    window.history.replaceState({ waChatOpen: true }, '');
+    const handlePopState = () => {
+      if (selectedContact) {
+        setSelectedContact(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedContact]);
+
   // Persist right panel visibility
   useEffect(() => {
     localStorage.setItem('whatsappChatRightPanelVisible', String(showRightPanel));

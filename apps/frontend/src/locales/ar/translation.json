@@ -1816,11 +1816,7 @@
     "noTopProductsDesc": "لم يتم تسجيل أي مبيعات للمنتجات في الفترة المحددة",
     "noLowPerforming": "لا توجد منتجات ضعيفة الأداء",
     "noLowPerformingDesc": "جميع المنتجات تحقق أداء جيد في هذه الفترة",
-    "ordersCount": "عدد الطلبات",
-    "custom": "مخصص",
-    "csvExport": "تصدير CSV",
-    "sortAsc": "تصاعدي",
-    "sortDesc": "تنازلي"
+    "ordersCount": "عدد الطلبات"
   },
   "profitAnalytics": {
     "title": "تحليلات الربحية",
@@ -3355,10 +3351,6 @@
       "selectAll": "تحديد الكل",
       "deselectAll": "إلغاء الكل",
       "bulkDelete": "حذف متعدد",
-      "deleteAllChats": "حذف كل المحادثات",
-      "deleteAllChatsTitle": "حذف كل المحادثات",
-      "deleteAllChatsContent": "هل أنت متأكد من حذف جميع المحادثات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
-      "deleteAllChatsSuccess": "تم حذف جميع المحادثات بنجاح",
       "clearChatTitle": "مسح محتوى المحادثة",
       "clearChatContent": "هل أنت متأكد من مسح جميع الرسائل في هذه المحادثة؟",
       "confirm": "تأكيد",
@@ -7570,9 +7562,6 @@
       },
       "legal": {
         "description": "الشروط والأحكام والخصوصية"
-      },
-      "service-requests": {
-        "description": "إدارة طلبات الخدمات من العملاء"
       }
     }
   },
@@ -11824,8 +11813,6 @@
     "wholesale": "البيع بالجملة",
     "formsBuilder": "نماذج التسجيل",
     "forms": "النماذج",
-    "serviceRequests": "طلبات الخدمات",
-    "serviceOrders": "إدارة الطلبات",
     "wholesaleRail": "الجملة",
     "wholesaleCustomers": "عملاء الجملة",
     "priceLists": "قوائم الأسعار",

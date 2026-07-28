@@ -1074,7 +1074,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: "📷 صورة",
+          lastMessage: t("facebookInbox.photo"),
           lastMessageTime: new Date(),
         });
 

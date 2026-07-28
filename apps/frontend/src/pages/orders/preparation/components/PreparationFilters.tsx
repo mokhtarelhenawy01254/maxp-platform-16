@@ -372,12 +372,12 @@ const PreparationFilters = ({
               >
                 {productsLoading && (
                   <div className="px-3 py-1.5 text-xs text-gray-400">
-                    جاري التحميل...
+                    {t("common.loading")}
                   </div>
                 )}
                 {!productsLoading && products.length === 0 && (
                   <div className="px-3 py-1.5 text-xs text-gray-400">
-                    اختر المنتج
+                    {t("preparation.filters.noProductResults")}
                   </div>
                 )}
                 {!productsLoading && products.map((p) => (

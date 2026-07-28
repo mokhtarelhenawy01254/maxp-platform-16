@@ -1816,11 +1816,7 @@
     "noTopProductsDesc": "No product sales have been recorded for the selected period",
     "noLowPerforming": "No low performing products",
     "noLowPerformingDesc": "All products are performing well in this period",
-    "ordersCount": "Order Count",
-    "custom": "Custom",
-    "csvExport": "Export CSV",
-    "sortAsc": "Ascending",
-    "sortDesc": "Descending"
+    "ordersCount": "Order Count"
   },
   "profitAnalytics": {
     "title": "Profit Analytics",
@@ -3355,10 +3351,6 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "bulkDelete": "Delete Multiple",
-      "deleteAllChats": "Delete All Conversations",
-      "deleteAllChatsTitle": "Delete All Conversations",
-      "deleteAllChatsContent": "Are you sure you want to delete all conversations permanently? This action cannot be undone.",
-      "deleteAllChatsSuccess": "All conversations deleted successfully",
       "clearChatTitle": "Clear Chat Content",
       "clearChatContent": "Are you sure you want to clear all messages in this chat?",
       "confirm": "Confirm",
@@ -7570,9 +7562,6 @@
       },
       "legal": {
         "description": "Terms, conditions, and privacy"
-      },
-      "service-requests": {
-        "description": "Manage service requests from customers"
       }
     }
   },
@@ -11824,8 +11813,6 @@
     "turboRecords": "Turbo Records",
     "turboCaptains": "Captains Reports",
     "wholesale": "Wholesale",
-    "serviceRequests": "Service Requests",
-    "serviceOrders": "Manage Orders",
     "wholesaleRail": "Wholesale",
     "wholesaleCustomers": "Wholesale Customers",
     "priceLists": "Price Lists",
