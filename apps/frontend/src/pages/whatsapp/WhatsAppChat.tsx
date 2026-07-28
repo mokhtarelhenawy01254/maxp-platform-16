@@ -246,7 +246,7 @@ const WhatsAppChatContent: React.FC = () => {
   const [_contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
   void setContactMenuAnchor;
   const [showContactInfo, setShowContactInfo] = useState(false);
-  const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') !== 'false');
+  const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') === 'true');
   const [_aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   void setAiSuggestion;
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
@@ -1814,11 +1814,11 @@ const WhatsAppChatContent: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      toast.error('فشل إلغاء حظر جهة الاتصال');
-    }
+}
   };
 
   // ==================== Group Advanced Features ====================
+
   const _handleToggleEphemeral = async (duration: number) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
@@ -1889,6 +1889,12 @@ const WhatsAppChatContent: React.FC = () => {
       console.error(error);
     }
   };
+
+  void _handleToggleEphemeral;
+  void _handleUpdateGroupPicture;
+  void _handleAcceptGroupInvite;
+  void _handleGetUrlInfo;
+  void _sendQuickReply;
 
 
   const getParticipantName = (participantJid: string) => {
@@ -1965,14 +1971,14 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenNewGroup={() => setCreateGroupDialogOpen(true)}
         onOpenPrivacySettings={() => setPrivacyDialogOpen(true)}
         onOpenBusinessProfile={() => setBusinessProfileDialogOpen(true)}
+        onSyncHistory={handleSyncHistory}
+        isSyncingHistory={isSyncingHistory}
         onPinChat={handlePinChat}
         onArchiveChat={handleArchiveChat}
         onDeleteChat={handleDeleteChat}
         onBlockContact={handleBlockContact}
         onMuteChat={handleMuteChat}
         onMarkAsRead={handleMarkUnread}
-        onSyncHistory={handleSyncHistory}
-        isSyncingHistory={isSyncingHistory}
         onLoadMore={fetchNextConversationsPage}
         conversationsError={conversationsError}
         onRetryConversations={() => refetchConversations()}
@@ -1983,11 +1989,11 @@ const WhatsAppChatContent: React.FC = () => {
         onBulkDelete={handleBulkDeleteChats}
       />
 
-      <div className="flex min-w-0 flex-1">
+      <div className="relative flex min-w-0 flex-1">
         <ChatWindow
           showRightPanel={showRightPanel}
           onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}
-          className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden")}
+          className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden", showRightPanel && "max-lg:hidden")}
           selectedContact={selectedContact}
           messages={visibleMessages}
           loadingMessages={loadingMessages}
@@ -2049,14 +2055,22 @@ const WhatsAppChatContent: React.FC = () => {
           messagesError={messagesError}
           onRetryMessages={() => refetchMessages()}
         />
-        {selectedContact && showRightPanel ? (
-          <ChatRightPanel
-            contact={selectedContact}
-            onOpenOrder={() => setShowQuickOrderModal(true)}
-            onOpenTasks={() => setShowQuickCreateTaskModal(true)}
-            onClose={() => setShowRightPanel(false)}
-          />
-        ) : null}
+        {selectedContact && showRightPanel && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/20 max-lg:block lg:hidden"
+              onClick={() => setShowRightPanel(false)}
+            />
+            <div className="chat-right-panel-container">
+              <ChatRightPanel
+                contact={selectedContact}
+                onOpenOrder={() => setShowQuickOrderModal(true)}
+                onOpenTasks={() => setShowQuickCreateTaskModal(true)}
+                onClose={() => setShowRightPanel(false)}
+              />
+            </div>
+          </>
+        )}
       </div>
       </div>
 

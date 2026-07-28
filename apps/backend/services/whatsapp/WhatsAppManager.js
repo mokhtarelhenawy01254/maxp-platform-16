@@ -1760,6 +1760,9 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             // ✅ Sync Profile Automatically
             syncProfile(sessionId).catch(err => WA_LOG.warn(sessionId, `Profile sync failed: ${err.message}`));
 
+            // ✅ Fetch missing contact profile pictures in background
+            fetchMissingProfilePics(sessionId).catch(err => WA_LOG.warn(sessionId, `Fetch missing profile pics failed: ${err.message}`));
+
             // ✅ Migrate old history if an older session for same phone number exists
             if (phoneNumber) {
                 migrateOldSessionHistory(companyId, phoneNumber, sessionId).catch(err => WA_LOG.warn(sessionId, `History migration failed: ${err.message}`));
@@ -1877,9 +1880,6 @@ const HISTORY_BATCH_SIZE = parseInt(process.env.WHATSAPP_HISTORY_BATCH_SIZE || '
 // Yield to event loop between history batches so the Node.js event loop can breathe
 const historyYield = () => new Promise(resolve => setImmediate(resolve));
 
-async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
-    const sessionData = activeSessions.get(sessionId);
-    if (!sessionData?.syncFullHistory) {
 function normalizeHistoryProgress(progress) {
     if (progress === null || progress === undefined || progress === '') return null;
     const value = Number(progress);
@@ -1939,6 +1939,9 @@ async function finalizeHistoryImport(sessionId, companyId) {
     });
 }
 
+async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
+    const sessionData = activeSessions.get(sessionId);
+    if (!sessionData?.syncFullHistory) {
         return;
     }
 
@@ -2133,10 +2136,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
     const { messages, type, lidToPhoneMap } = m;
     const io = getIO();
     const importHistory = Boolean(options.importHistory);
+    const result = { created: 0, unsupported: 0, skipped: 0, failed: 0 };
 
     if (!Array.isArray(messages) || messages.length === 0) return result;
 
-    const result = { created: 0, unsupported: 0, skipped: 0, failed: 0 };
     for (const msg of messages) {
         try {
             let remoteJid = msg.key.remoteJid;
@@ -2146,21 +2149,21 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             // Move messageId check BEFORE the upsert-type gate so we can feed it to the filter.
             if (!messageId) {
                 console.warn(`⚠️ Skipping WhatsApp message without id in session ${sessionId}`);
+                result.skipped++;
                 continue;
             }
 
-                result.skipped++;
             if (!(await shouldProcessMessageUpsertType(type, fromMe, messageId, { importHistory }))) {
+                result.skipped++;
                 continue;
             }
 
-                result.skipped++;
             if (!shouldProcessIncomingMessage(msg)) {
                 console.warn(`⚠️ Skipping WhatsApp message with future timestamp in session ${sessionId}`);
+                result.skipped++;
                 continue;
             }
 
-                result.skipped++;
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
@@ -2264,12 +2267,12 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             lastMessagePreview: 'رسالة غير مدعومة',
                             skipProfilePic: true
                         });
+                        result.unsupported += isNew ? 1 : 0;
                     }
+                    result.created += isNew ? 1 : 0;
                 }
                 continue;
-                        result.unsupported += isNew ? 1 : 0;
             }
-                    result.created += isNew ? 1 : 0;
 
             const messageStatusFromPayload = getMessageStatusFromBaileysStatus(msg.status);
             const initialMessageStatus = messageStatusFromPayload || (fromMe ? 'SENT' : 'DELIVERED');
@@ -2320,10 +2323,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     updatedAt: new Date()
                 }
             });
+            result.created += isNewMessage ? 1 : 0;
 
             if (messageStatusFromPayload) {
                 const updatedCount = await updateMessageDeliveryStatus(messageId, messageStatusFromPayload);
-            result.created += isNewMessage ? 1 : 0;
                 if (updatedCount > 0) {
                     savedMessage.status = messageStatusFromPayload;
                 }
@@ -2628,16 +2631,16 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
         } catch (error) {
+            result.failed++;
             console.error(`❌ Error processing message:`, error);
             await logEvent(sessionId, companyId, 'message_error', { error: error.message }, 'error');
         }
-            result.failed++;
     }
+
+    return result;
 }
 
 /**
-
-    return result;
  * معالجة تحديثات الحالة (Status Updates)
  */
 async function handleStatusUpdate(sessionId, companyId, msg, sock) {
@@ -3187,20 +3190,72 @@ async function handleContactsUpdate(sessionId, companyId, updates) {
     for (const update of updates) {
         try {
             if (update.id) {
-                await getSharedPrismaClient().whatsAppContact.updateMany({
-                    where: {
-                        sessionId,
-                        jid: update.id
-                    },
-                    data: {
-                        name: update.notify || update.name,
-                        profilePicUrl: update.imgUrl
-                    }
-                });
+                const data = {};
+                if (update.notify || update.name) data.name = update.notify || update.name;
+                if (update.imgUrl) data.profilePicUrl = update.imgUrl;
+
+                if (Object.keys(data).length > 0) {
+                    await getSharedPrismaClient().whatsAppContact.updateMany({
+                        where: { sessionId, jid: update.id },
+                        data
+                    });
+                }
             }
         } catch (error) {
             console.error('❌ Error updating contact:', error);
         }
+    }
+}
+
+/**
+ * جلب صور البروفايل المفقودة لجهات الاتصال
+ */
+async function fetchMissingProfilePics(sessionId) {
+    const session = getSession(sessionId);
+    if (!session || session.status !== 'connected' || !session.sock) {
+        WA_LOG.warn(sessionId, 'Cannot fetch missing profile pics: session not connected');
+        return;
+    }
+
+    try {
+        const prisma = getSharedPrismaClient();
+        const contacts = await prisma.whatsAppContact.findMany({
+            where: {
+                sessionId,
+                profilePicUrl: null,
+                jid: { endsWith: '@s.whatsapp.net' }
+            },
+            select: { id: true, jid: true },
+            take: 50
+        });
+
+        if (contacts.length === 0) return;
+
+        WA_LOG.info(sessionId, `Fetching profile pics for ${contacts.length} contacts`);
+        let fetched = 0;
+
+        for (const contact of contacts) {
+            try {
+                const url = await session.sock.profilePictureUrl(contact.jid, 'image');
+                if (url) {
+                    await prisma.whatsAppContact.update({
+                        where: { id: contact.id },
+                        data: { profilePicUrl: url, updatedAt: new Date() }
+                    });
+                    fetched++;
+                }
+                // Rate limit: wait 200ms between requests
+                await new Promise(r => setTimeout(r, 200));
+            } catch {
+                // No profile pic or unavailable — skip
+            }
+        }
+
+        if (fetched > 0) {
+            WA_LOG.ok(sessionId, `Fetched ${fetched}/${contacts.length} missing profile pics`);
+        }
+    } catch (error) {
+        WA_LOG.error(sessionId, `Error fetching missing profile pics: ${error.message}`);
     }
 }
 
@@ -3323,61 +3378,6 @@ async function reconnectSession(sessionId, companyId, attempt = 0, options = {})
         throw error;
     }
 }
-
-/**
- * إرسال رسالة نصية
- */
-async function sendTextMessage(sessionId, to, text, options = {}) {
-    const session = activeSessions.get(sessionId);
-    if (!session || session.status !== 'connected') {
-        throw new Error('Session not connected');
-    }
-
-    const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
-
-    const result = await session.sock.sendMessage(jid, {
-        text,
-        ...options
-    });
-
-    // إذا تم تمرير userId، قم بتحديث الرسالة
-    if (options.userId && result.key.id) {
-        try {
-            await getSharedPrismaClient().whatsAppMessage.upsert({
-                where: { messageId: result.key.id },
-                update: { senderId: options.userId },
-                create: {
-                    sessionId,
-                    remoteJid: jid,
-                    messageId: result.key.id,
-                    fromMe: true,
-                    messageType: 'TEXT',
-                    content: text,
-                    timestamp: new Date(),
-                    senderId: options.userId,
-                    status: 'SENT'
-                }
-            });
-        } catch (e) {
-            console.error('Failed to save senderId for message:', e);
-        }
-    }
-
-    return result;
-}
-
-/**
- * إرسال رسالة وسائط
- */
-async function sendMediaMessage(sessionId, to, media, options = {}) {
-    const session = activeSessions.get(sessionId);
-    if (!session || session.status !== 'connected') {
-        throw new Error('Session not connected');
-    }
-
-    const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
-
-    const result = await session.sock.sendMessage(jid, media, options);
 
 async function requestHistorySync(sessionId, companyId) {
     const prisma = getSharedPrismaClient();
@@ -3509,6 +3509,61 @@ async function syncPendingHistoryMedia(sessionId, companyId) {
         historyMediaSyncJobs.delete(sessionId);
     }
 }
+
+/**
+ * إرسال رسالة نصية
+ */
+async function sendTextMessage(sessionId, to, text, options = {}) {
+    const session = activeSessions.get(sessionId);
+    if (!session || session.status !== 'connected') {
+        throw new Error('Session not connected');
+    }
+
+    const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
+
+    const result = await session.sock.sendMessage(jid, {
+        text,
+        ...options
+    });
+
+    // إذا تم تمرير userId، قم بتحديث الرسالة
+    if (options.userId && result.key.id) {
+        try {
+            await getSharedPrismaClient().whatsAppMessage.upsert({
+                where: { messageId: result.key.id },
+                update: { senderId: options.userId },
+                create: {
+                    sessionId,
+                    remoteJid: jid,
+                    messageId: result.key.id,
+                    fromMe: true,
+                    messageType: 'TEXT',
+                    content: text,
+                    timestamp: new Date(),
+                    senderId: options.userId,
+                    status: 'SENT'
+                }
+            });
+        } catch (e) {
+            console.error('Failed to save senderId for message:', e);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * إرسال رسالة وسائط
+ */
+async function sendMediaMessage(sessionId, to, media, options = {}) {
+    const session = activeSessions.get(sessionId);
+    if (!session || session.status !== 'connected') {
+        throw new Error('Session not connected');
+    }
+
+    const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
+
+    const result = await session.sock.sendMessage(jid, media, options);
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -5097,6 +5152,8 @@ module.exports = {
     // Connection
     restoreAllSessions,
     reconnectSession,
+    requestHistorySync,
+    syncPendingHistoryMedia,
     emitSessionStatusesForCompany,
     emitAllSessionStatuses,
     verifySessionHealth,
@@ -5122,6 +5179,9 @@ module.exports = {
     muteChat,
     markChatUnread,
     clearChat,
+
+    // Profile Pics
+    fetchMissingProfilePics,
 
     // Contacts
     updateContact,
@@ -5152,8 +5212,6 @@ module.exports = {
     getBusinessHours,
     setBusinessHours,
     getProfile,
-    requestHistorySync,
-    syncPendingHistoryMedia,
     syncProfile,
 
     // Broadcast
@@ -5212,6 +5270,7 @@ module.exports = {
         // Sprint 2: History import lifecycle helpers
         HISTORY_BATCH_SIZE,
         historyYield,
+        normalizeHistoryProgress,
         requestReconnect,
         getReconnectState,
         hasPendingReconnect,

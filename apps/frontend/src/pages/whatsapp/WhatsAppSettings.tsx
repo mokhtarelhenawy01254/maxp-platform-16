@@ -350,7 +350,7 @@ function SessionScopeSelector({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Select value={value} onValueChange={onValueChange}>
+      <Select value={value} onValueChange={(v) => onValueChange(v ?? '')}>
         <SelectTrigger className="min-w-[15rem] bg-[color:var(--color-card)]">
           <SelectValue placeholder={label} />
         </SelectTrigger>
@@ -383,6 +383,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   superAdminMode = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const ts = (key: string, opts?: Record<string, unknown>) => (t(key, opts as any) as unknown) as string;
   const navigate = useNavigate();
   const { socket } = useSocket();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -749,7 +750,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       return;
     }
 
-    const nextSessionId = connectedSessions[0].id;
+    const nextSessionId = connectedSessions[0]?.id ?? '';
     setScopedSessionId(nextSessionId);
 
     if (tabsRequiringScopedSession.has(activeTab)) {
@@ -1126,7 +1127,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         );
         setQuickReplies((previous) => [
           ...previous,
-          response.data.quickReply,
+          (response as any).data.quickReply,
         ]);
       }
 
@@ -1229,7 +1230,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         },
         withCompanyConfig(),
       );
-      setLabels((previous) => [...previous, response.data.label]);
+      setLabels((previous) => [...previous, (response as any).data.label]);
       setLabelDialogOpen(false);
       setLabelForm({ name: "", color: "#25D366" });
       toast.success(t("whatsappSettings.dialogs.labelCreated"));
@@ -1380,8 +1381,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderSessionsTab = () => (
     <div className="space-y-3 sm:space-y-4">
       <WhatsAppSurfaceCard
-        title={t("whatsappSettings.sidebarTitle")}
-        description={t("whatsappSettings.description")}
+        title={ts("whatsappSettings.sidebarTitle")}
+        description={ts("whatsappSettings.description")}
         action={
           <div className="flex flex-wrap gap-2">
             <Button
@@ -1477,8 +1478,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       variant="outline"
                       className={cn(
                         "rounded-full shrink-0 text-[11px] sm:text-xs",
-                        statusBadgeClasses[statusValue] ||
-                          statusBadgeClasses.DISCONNECTED,
+                        statusBadgeClasses[statusValue as keyof typeof statusBadgeClasses] ||
+                          statusBadgeClasses['DISCONNECTED'],
                       )}
                     >
                       {getStatusText(statusValue)}
@@ -1521,7 +1522,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-5 sm:gap-2 sm:pt-4">
                   {session.historyImport && ['REQUESTED', 'IN_PROGRESS'].includes(session.historyImport.status) ? (
                     <div className="mt-3 rounded-xl border border-sky-300/60 bg-sky-500/10 px-3 py-2 text-xs text-sky-900 dark:border-sky-500/40 dark:text-sky-100">
                       <div className="flex items-center justify-between gap-3">
@@ -1537,6 +1537,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </div>
                   ) : null}
 
+                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-5 sm:gap-2 sm:pt-4">
                     {isConnectedStatus(statusValue) ? (
                       <Button
                         variant="outline"
@@ -1585,9 +1586,10 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
                       onClick={() => {
                         let defaultKeep = true;
-                        if (session.metadata) {
+                        const sessMeta = (session as any).metadata;
+                        if (sessMeta) {
                           try {
-                            const meta = JSON.parse(session.metadata);
+                            const meta = JSON.parse(sessMeta);
                             if (typeof meta.keepHistoryOnDelete === "boolean") {
                               defaultKeep = meta.keepHistoryOnDelete;
                             }
@@ -1626,8 +1628,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     return (
       <div className="space-y-4">
         <WhatsAppSurfaceCard
-          title={t("whatsappSettings.notifications")}
-          description={t("whatsappSettings.autoNotificationsDesc")}
+          title={ts("whatsappSettings.notifications")}
+          description={ts("whatsappSettings.autoNotificationsDesc")}
         >
           <div className="space-y-4">
             <SettingsToggle
@@ -1696,8 +1698,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
   const renderQuickRepliesTab = () => (
     <WhatsAppSurfaceCard
-      title={t("whatsappSettings.quickReplies")}
-      description={t("whatsappSettings.quickReplies")}
+      title={ts("whatsappSettings.quickReplies")}
+      description={ts("whatsappSettings.quickReplies")}
       action={
         <Button
           className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
@@ -1802,8 +1804,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderBusinessTab = () => (
     <div className="space-y-4">
       <WhatsAppSurfaceCard
-        title={t("whatsappSettings.businessProfile")}
-        description={t("whatsappSettings.businessProfileAlert")}
+        title={ts("whatsappSettings.businessProfile")}
+        description={ts("whatsappSettings.businessProfileAlert")}
         action={
           <SessionScopeSelector
             label={t("whatsappSettings.selectSession")}
@@ -1824,8 +1826,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
               <WhatsAppSurfaceCard
-                title={t("whatsappSettings.businessInfo")}
-                description={currentScopedSession?.name || t("whatsappSettings.businessProfile")}
+                title={ts("whatsappSettings.businessInfo")}
+                description={currentScopedSession?.name || ts("whatsappSettings.businessProfile")}
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 <div className="space-y-4">
@@ -1885,12 +1887,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       value={businessProfile.category || "OTHER"}
                       onValueChange={(value) =>
                         setBusinessProfile((previous) =>
-                          previous ? { ...previous, category: value } : previous,
+                          previous ? { ...previous, category: value ?? '' } : previous,
                         )
                       }
                     >
                       <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
-                        <SelectValue placeholder={t("whatsappSettings.category")} />
+                        <SelectValue placeholder={ts("whatsappSettings.category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {businessCategoryKeys.map((categoryKey) => (
@@ -1907,8 +1909,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </WhatsAppSurfaceCard>
 
               <WhatsAppSurfaceCard
-                title={t("whatsappSettings.websites")}
-                description={t("whatsappSettings.addWebsite")}
+                title={ts("whatsappSettings.websites")}
+                description={ts("whatsappSettings.addWebsite")}
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 <div className="space-y-3">
@@ -2007,8 +2009,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderPrivacyTab = () => (
     <div className="space-y-4">
       <WhatsAppSurfaceCard
-        title={t("whatsappSettings.privacySettings")}
-        description={t("whatsappSettings.privacySettings")}
+        title={ts("whatsappSettings.privacySettings")}
+        description={ts("whatsappSettings.privacySettings")}
         action={
           <SessionScopeSelector
             label={t("whatsappSettings.selectSession")}
@@ -2029,8 +2031,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
               <WhatsAppSurfaceCard
-                title={t("whatsappSettings.privacySettings")}
-                description={currentScopedSession?.name || t("whatsappSettings.privacy")}
+                title={ts("whatsappSettings.privacySettings")}
+                description={currentScopedSession?.name || ts("whatsappSettings.privacy")}
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 <div className="grid gap-4 md:grid-cols-2">
@@ -2079,8 +2081,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </WhatsAppSurfaceCard>
 
               <WhatsAppSurfaceCard
-                title={t("whatsappSettings.blocklist")}
-                description={t("whatsappSettings.noBlocked")}
+                title={ts("whatsappSettings.blocklist")}
+                description={ts("whatsappSettings.noBlocked")}
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 {blocklist.length === 0 ? (
@@ -2137,8 +2139,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
   const renderLabelsTab = () => (
     <WhatsAppSurfaceCard
-      title={t("whatsappSettings.manageLabels")}
-      description={t("whatsappSettings.manageLabels")}
+      title={ts("whatsappSettings.manageLabels")}
+      description={ts("whatsappSettings.manageLabels")}
       action={
         <div className="flex flex-wrap items-center gap-2">
           <SessionScopeSelector
@@ -2228,11 +2230,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     return (
       <WhatsAppPageShell
         title={pageTitle}
-        description={t("whatsappSettings.description")}
+        description={ts("whatsappSettings.description")}
         icon={Smartphone}
         actions={shellActions}
         backHref={workspaceHref}
-        backLabel={t("common.back")}
+        backLabel={ts("common.back")}
         eyebrow={eyebrow}
       >
       <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -2251,11 +2253,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   return (
     <WhatsAppPageShell
       title={pageTitle}
-      description={t("whatsappSettings.description")}
+      description={ts("whatsappSettings.description")}
       icon={Smartphone}
       actions={shellActions}
       backHref={workspaceHref}
-      backLabel={t("common.back")}
+      backLabel={ts("common.back")}
       eyebrow={eyebrow}
     >
       <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -2313,8 +2315,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">
         <WhatsAppSurfaceCard
           className="hidden xl:block"
-          title={t("whatsappSettings.sidebarTitle")}
-          description={t("whatsappSettings.description")}
+          title={ts("whatsappSettings.sidebarTitle")}
+          description={ts("whatsappSettings.description")}
         >
           <div className="space-y-2">
             {tabs.map((tab) => {
@@ -2437,7 +2439,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     autoFocus
                     value={newSessionName}
                     onChange={(event) => setNewSessionName(event.target.value)}
-                    placeholder={t("whatsappSettings.dialogs.sessionNamePlaceholder") as string}
+                    placeholder={ts("whatsappSettings.dialogs.sessionNamePlaceholder") as string}
                     className="h-11 bg-[color:var(--color-card)]"
                   />
                 </div>
@@ -2512,7 +2514,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     id="session-phone"
                     value={newPhoneNumber}
                     onChange={(event) => setNewPhoneNumber(event.target.value)}
-                    placeholder={t("whatsappSettings.dialogs.phoneNumberPlaceholder") as string}
+                    placeholder={ts("whatsappSettings.dialogs.phoneNumberPlaceholder") as string}
                     className="h-11 bg-[color:var(--color-card)]"
                   />
                   <p className="text-sm text-[color:var(--color-muted-foreground)]">
@@ -3059,7 +3061,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       (editingSession.liveStatus ||
                         editingSession.status ||
                         "DISCONNECTED").toUpperCase() as keyof typeof statusBadgeClasses
-                    ] || statusBadgeClasses.DISCONNECTED,
+                    ] || statusBadgeClasses['DISCONNECTED'],
                   )}
                 >
                   {getStatusText(
@@ -3399,7 +3401,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     shortcut: event.target.value,
                   }))
                 }
-                placeholder={t("whatsappSettings.dialogs.shortcutPlaceholder") as string}
+                placeholder={ts("whatsappSettings.dialogs.shortcutPlaceholder") as string}
                 className="h-11 bg-[color:var(--color-card)]"
               />
               <p className="text-sm text-[color:var(--color-muted-foreground)]">
@@ -3419,7 +3421,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 }
               >
                 <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
-                  <SelectValue placeholder={t("whatsappSettings.dialogs.category")} />
+                  <SelectValue placeholder={ts("whatsappSettings.dialogs.category")} />
                 </SelectTrigger>
                 <SelectContent>
                   {quickReplyCategoryKeys.map((categoryKey) => (

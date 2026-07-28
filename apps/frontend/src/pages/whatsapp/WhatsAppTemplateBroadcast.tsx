@@ -65,7 +65,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
   const [selectedTag, setSelectedTag] = useState("");
 
-  const [_scheduleAt, _setScheduleAt] = useState("");
+  const [scheduleAt, setScheduleAt] = useState("");
   const [templateVars, _setTemplateVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -81,7 +81,9 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
   // Analytics
   const [_analytics, _setAnalytics] = useState<any>(null);
-  const [_selectedCampaign, _setSelectedCampaign] = useState<Campaign | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  void selectedCampaign;
+  void setSelectedCampaign;
 
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
@@ -765,7 +767,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                             setLoadingMembers(true);
                             try {
                               const res = await apiClient.get(`/whatsapp/lead-categories/${cat.id}/contacts`, withCompanyConfig());
-                              setListMembers(prev => ({ ...prev, [cat.id]: res.data?.data || [] }));
+                              setListMembers(prev => ({ ...prev, [cat.id]: (res as any).data?.data || [] }));
                             } catch { }
                             finally { setLoadingMembers(false); }
                           }

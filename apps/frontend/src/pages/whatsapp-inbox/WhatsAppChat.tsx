@@ -123,6 +123,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [correctionText, setCorrectionText] = useState('');
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentRole = useMemo(() => {

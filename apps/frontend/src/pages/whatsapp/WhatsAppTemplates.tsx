@@ -65,10 +65,7 @@ interface Template {
 
 type NoticeTone = "success" | "error" | "warning" | "info";
 
-type _NoticeState = {
-  tone: NoticeTone;
-  message: string;
-} | null;
+
 
 type TemplateFormState = {
   name: string;
@@ -324,7 +321,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     }
     setPublishingId(templateId);
     try {
-      const _res = await apiClient.post(
+      void apiClient.post(
         `/whatsapp-notifications/templates/${templateId}/publish`,
         { sessionId: selectedMetaSession },
         withCompanyConfig(),
@@ -562,7 +559,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
               ? i18n.language === "ar"
                 ? "قوالب تسجيل الشركات"
                 : "Company signup templates"
-              : t("whatsappNotifications.tabs.templates")
+              : (t("whatsappNotifications.tabs.templates") as unknown as string)
           }
           description={
             superAdminMode
@@ -675,7 +672,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                             variant="outline"
                             className={
                               categoryBadgeClasses[template.category as keyof typeof categoryBadgeClasses] ||
-                              categoryBadgeClasses.SYSTEM
+                              categoryBadgeClasses['SYSTEM']
                             }
                           >
                             {CATEGORY_LABELS[
