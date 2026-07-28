@@ -342,17 +342,22 @@ const WhatsAppChatContent: React.FC = () => {
     };
   }, [selectedContact]);
 
-  // — Push history state on chat open so browser back returns to chat list, not previous page —
+  // — Hash-based navigation: browser back returns to chat list (works in PWA & browser) —
   useEffect(() => {
-    if (!selectedContact) return;
-    window.history.pushState({ waChatOpen: true }, '');
-    const handlePopState = () => {
-      if (selectedContact) {
+    if (!selectedContact) {
+      if (window.location.hash === '#chat') {
+        window.history.back();
+      }
+      return;
+    }
+    window.location.hash = 'chat';
+    const onHashChange = () => {
+      if (window.location.hash !== '#chat' && selectedContact) {
         setSelectedContact(null);
       }
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, [selectedContact]);
 
   // Persist right panel visibility
@@ -2113,13 +2118,9 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenTemplate={handleOpenTemplateDialog}
           onBackToList={() => {
             if (typeof document.startViewTransition === 'function') {
-              document.startViewTransition(() => {
-                setSelectedContact(null);
-                window.history.back();
-              });
+              document.startViewTransition(() => setSelectedContact(null));
             } else {
               setSelectedContact(null);
-              window.history.back();
             }
           }}
           onTouchStart={handleChatTouchStart}

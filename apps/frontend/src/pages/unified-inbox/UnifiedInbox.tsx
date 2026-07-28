@@ -599,17 +599,22 @@ const UnifiedInbox: React.FC = () => {
     }
   }, []);
 
-  // — Push history state on conversation open so browser back returns to list —
+  // — Hash-based navigation: browser back returns to conversation list (works in PWA) —
   useEffect(() => {
-    if (!selectedConversation) return;
-    window.history.pushState({ uiChatOpen: true }, '');
-    const handlePopState = () => {
-      if (selectedConversation) {
+    if (!selectedConversation) {
+      if (window.location.hash === '#chat') {
+        window.history.back();
+      }
+      return;
+    }
+    window.location.hash = 'chat';
+    const onHashChange = () => {
+      if (window.location.hash !== '#chat' && selectedConversation) {
         setSelectedConversation(null);
       }
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, [selectedConversation]);
 
   // ──────────────────────────────────────────────────────────
@@ -1522,7 +1527,7 @@ const UnifiedInbox: React.FC = () => {
                   <div className="flex items-center gap-1 sm:gap-3">
                     {/* Mobile back button */}
                     <button
-                      onClick={() => { setSelectedConversation(null); window.history.back(); }}
+                      onClick={() => setSelectedConversation(null)}
                       className="lg:hidden business-chip-button shrink-0"
                       aria-label={t("unifiedInbox.backToList", "رجوع")}
                     >
