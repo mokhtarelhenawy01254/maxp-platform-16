@@ -29,6 +29,16 @@ const ReturnManagementPage: React.FC = () => {
   const [displayConfig, setDisplayConfig] =
     useState<ReviewDisplayConfig | null>(null);
 
+  // Categories for responsible party names
+  const [categories, setCategories] = useState<any[]>([]);
+  const responsiblePartyLabel = (() => {
+    const m: Record<string, string> = {};
+    categories.forEach((cat: any) => {
+      if (!m[cat.defaultRole]) m[cat.defaultRole] = cat.name;
+    });
+    return (role: string) => m[role] || role;
+  })();
+
   // Filters & Search
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,6 +108,11 @@ const ReturnManagementPage: React.FC = () => {
         if (config) setDisplayConfig(config);
       })
       .catch(() => {});
+  }, []);
+
+  // Load categories for responsible party names
+  useEffect(() => {
+    returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
   }, []);
 
   const getRatingBadge = (rating: string | undefined) => {
@@ -372,7 +387,7 @@ const ReturnManagementPage: React.FC = () => {
                               : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
-                        {request.responsibleParty}
+                        {responsiblePartyLabel(request.responsibleParty)}
                       </span>
                     </td>
                   )}
