@@ -68,18 +68,22 @@ sync_frontend_dist() {
   sudo mkdir -p /var/www/frontend2/dist
 
   # Publish immutable hashed assets before the HTML entrypoint.
-  # This prevents Vite lazy chunks from 404ing while a deploy is in progress.
-  sudo rsync -a --exclude 'index.html' \
-    "$source_dir/" /var/www/frontend2/dist/
+  sudo rsync -a -v --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/ 2>&1
+
   sudo rm -rf /var/www/frontend2/dist/products
-  sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
-  # Keep old hashed chunks so cached browsers don't 404 on previous-build
-  # lazy chunks. Old index.html references are gone; old chunks are inert
-  # but harmless on disk and essential for cache-in-flight compatibility.
-  # (The first sync already uploaded new assets + this re-sync is now a no-op
-  # that ensures the chown below covers any leftover files we didn't delete.)
-  sudo rsync -a --exclude 'index.html' \
-    "$source_dir/" /var/www/frontend2/dist/
+
+  echo "📄 Copying new index.html..."
+  echo "   Source: $source_dir/index.html"
+  echo "   Dest:   /var/www/frontend2/dist/index.html"
+  ls -la "$source_dir/index.html" 2>&1
+  sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  ls -la /var/www/frontend2/dist/index.html 2>&1
+  echo "   New index.html hash refs:"
+  grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html || echo "   (no index refs found)"
+
+  sudo rsync -a -v --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/ 2>&1
   sudo chown -R $USER:$USER /var/www/frontend2/dist
 }
 
