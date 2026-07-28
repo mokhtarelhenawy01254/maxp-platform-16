@@ -300,24 +300,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     };
 
     return (
-      <div className="w-full px-2 py-0.5">
+      <div className="w-full px-space-2 py-space-0">
         {shouldShowDateSeparator(message, previousMessage) ? (
-          <div className="mb-2 flex justify-center">
-            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-1 text-xs text-[color:var(--color-muted-foreground)] shadow-sm">
+          <div className="mb-space-2 flex justify-center">
+            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-space-3 py-space-1 text-xs text-[color:var(--color-muted-foreground)] shadow-xs">
               {getDateSeparatorText(message.timestamp)}
             </div>
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            "flex w-full px-1.5",
-            message.fromMe ? "justify-end" : "justify-start",
-          )}
-        >
           <div
             className={cn(
-              "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2",
+              "flex w-full px-space-1",
+              message.fromMe ? "justify-end" : "justify-start",
+            )}
+          >
+            <div
+              className={cn(
+                "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-space-2 py-space-1 shadow-xs sm:px-space-3 sm:py-space-2",
               "border border-transparent",
               message.fromMe
               ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"

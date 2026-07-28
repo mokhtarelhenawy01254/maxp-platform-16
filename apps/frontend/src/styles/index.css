@@ -167,6 +167,27 @@ html *::after {
   --theme-font-body: "Manrope", "Geist Variable", sans-serif;
   --theme-radius: 14px;
 
+  /* Spacing Scale (6px base — inspired by GPTConnect) */
+  --space-1: 6px;
+  --space-2: 12px;
+  --space-3: 18px;
+  --space-4: 24px;
+  --space-5: 30px;
+  --space-6: 36px;
+  --space-7: 42px;
+  --space-8: 48px;
+  --space-9: 54px;
+  --space-10: 60px;
+  --space-11: 66px;
+  --space-12: 72px;
+
+  /* Elevation / Shadow Scale */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.14);
+
   /* App Shell Backgrounds (Managed by Appearance Settings) */
   --app-bg-gradient: linear-gradient(
     135deg,
@@ -401,6 +422,25 @@ html *::after {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Spacing Scale (Tailwind utilities: p-space-1, gap-space-2, etc.) */
+  --spacing-space-1: var(--space-1);
+  --spacing-space-2: var(--space-2);
+  --spacing-space-3: var(--space-3);
+  --spacing-space-4: var(--space-4);
+  --spacing-space-5: var(--space-5);
+  --spacing-space-6: var(--space-6);
+  --spacing-space-7: var(--space-7);
+  --spacing-space-8: var(--space-8);
+  --spacing-space-9: var(--space-9);
+  --spacing-space-10: var(--space-10);
+  --spacing-space-11: var(--space-11);
+  --spacing-space-12: var(--space-12);
+
+  /* Shadow Scale (custom — doesn't override Tailwind defaults) */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-raised: 0 4px 16px rgba(0, 0, 0, 0.09);
 }
 
 .dark {

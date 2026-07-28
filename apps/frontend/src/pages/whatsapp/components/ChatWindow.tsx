@@ -141,12 +141,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return (
       <div
         className={cn(
-          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:var(--color-muted)] px-6 text-center",
+          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:var(--color-muted)] px-space-6 text-center",
           className,
         )}
       >
-        <div className="max-w-sm space-y-4">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-md">
+        <div className="max-w-sm space-y-space-4">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-raised">
             <Send className="size-7" />
           </div>
           <p className="text-lg font-semibold text-[color:var(--color-foreground)]">
@@ -171,8 +171,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="wa-glass-header flex items-center justify-between gap-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-3 py-1.5">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="wa-glass-header flex items-center justify-between gap-space-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-space-3 py-space-1">
+        <div className="flex min-w-0 items-center gap-space-2">
           {onBackToList ? (
             <Button
               variant="ghost"
