@@ -303,6 +303,27 @@ const WhatsAppChatContent: React.FC = () => {
     }
   }, []);
 
+  // — Fix AppShell intermediate wrapper height (same pattern as FacebookInbox) —
+  useEffect(() => {
+    const appContent = document.querySelector(".app-shell-content");
+    if (appContent) {
+      appContent.style.overflow = "hidden";
+
+      const root = document.querySelector(".whatsapp-workspace-root");
+      if (root && root.parentElement) {
+        root.parentElement.classList.add("h-full");
+      }
+
+      return () => {
+        appContent.style.overflow = "";
+        if (root && root.parentElement) {
+          root.parentElement.classList.remove("h-full");
+        }
+      };
+    }
+    return undefined;
+  }, []);
+
   // — Mobile layout: hide app-shell header + remove padding when chat is open —
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)');
@@ -1994,7 +2015,7 @@ const WhatsAppChatContent: React.FC = () => {
 
 
   return (
-    <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
+    <div className="whatsapp-workspace-root whatsapp-theme-transition flex min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
       <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
       {/* Sidebar */}
