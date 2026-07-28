@@ -18,5 +18,9 @@
   "noTopProductsDesc": "No product sales have been recorded for the selected period",
   "noLowPerforming": "No low performing products",
   "noLowPerformingDesc": "All products are performing well in this period",
-  "ordersCount": "Order Count"
+  "ordersCount": "Order Count",
+  "custom": "Custom",
+  "csvExport": "Export CSV",
+  "sortAsc": "Ascending",
+  "sortDesc": "Descending"
 }

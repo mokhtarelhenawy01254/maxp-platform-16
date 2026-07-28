@@ -138,6 +138,10 @@ const PreparationFilters = ({
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const productSuggestionsRef = useRef<HTMLSelectElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isInitialMount = useRef(true);
@@ -156,6 +160,16 @@ const PreparationFilters = ({
     }, 300);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (productSuggestionsRef.current && !productSuggestionsRef.current.contains(e.target as Node) && !productInputRef.current?.contains(e.target as Node)) {
+        setShowProductSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const selectedProduct = useMemo(() => {
     if (!productIdFilter) return null;
@@ -207,7 +221,7 @@ const PreparationFilters = ({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white shadow-sm">
       {/* Top bar: Tabs & Search Controls */}
       <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between">
         
@@ -354,13 +368,27 @@ const PreparationFilters = ({
             {showProductSuggestions && (
               <div
                 ref={productSuggestionsRef}
-                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg text-xs"
               >
-                <div className="px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 cursor-pointer" onClick={() => { setLocalProductFilter(""); onProductFilterChange(""); setShowProductSuggestions(false); }}>
-                  {t("preparation.filters.allProducts") || t("common.loading")}
-                </div>
-                {products.map((p) => (
-                  <div key={p.id} className="px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer" onClick={() => { setLocalProductFilter(p.name); onProductFilterChange(p.id); setShowProductSuggestions(false); }}>
+                {productsLoading && (
+                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                    {t("common.loading")}
+                  </div>
+                )}
+                {!productsLoading && products.length === 0 && (
+                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                    {t("preparation.filters.noProductResults")}
+                  </div>
+                )}
+                {!productsLoading && products.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      onProductFilterChange(p.name);
+                      setShowProductSuggestions(false);
+                    }}
+                    className="cursor-pointer px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50"
+                  >
                     {p.name}
                   </div>
                 ))}
