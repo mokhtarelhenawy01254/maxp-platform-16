@@ -308,7 +308,7 @@ const MerchantOperationsSummary = ({
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-gray-100">
-        <table className="min-w-full divide-y divide-gray-100 text-sm">
+        <table className="min-w-full divide-y divide-gray-100 text-sm max-sm:hidden">
           <thead className="bg-gray-50 text-gray-500">
             <tr>
               <th className="px-4 py-3 text-right font-medium">{t("merchant.table.order")}</th>
@@ -365,6 +365,45 @@ const MerchantOperationsSummary = ({
             )}
           </tbody>
         </table>
+
+        {/* Mobile card view for merchant operations */}
+        <div className="divide-y divide-gray-100 sm:hidden">
+          {rows.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-gray-500">
+              {t("merchant.table.noOrders")}
+            </div>
+          ) : (
+            rows.map((row) => (
+              <div key={row.id} className="space-y-2 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-gray-900">{row.orderNumber}</p>
+                  <span
+                    className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_CLASSES[row.operationStatus]}`}
+                  >
+                    {t(STATUS_LABEL_KEYS[row.operationStatus])}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {row.customerName} • {formatDate(row.createdAt)}
+                </p>
+                <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
+                  <div className="rounded-lg bg-gray-50 px-2 py-1.5">
+                    <p className="text-gray-400">{t("merchant.table.pieces")}</p>
+                    <p className="font-semibold text-gray-900">{toNumber(row.pieces)}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-2 py-1.5">
+                    <p className="text-gray-400">{t("merchant.table.expected")}</p>
+                    <p className="font-semibold text-gray-900">{formatPrice(row.expectedAmount)}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 px-2 py-1.5">
+                    <p className="text-emerald-600">{t("merchant.table.due")}</p>
+                    <p className="font-semibold text-emerald-700">{formatPrice(row.payableAmount)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </section>
   );

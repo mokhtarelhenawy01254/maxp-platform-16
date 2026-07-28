@@ -34,6 +34,10 @@ import {
   getApiErrorMessage,
   buildShortageHoldDetails,
   getEffectivePreparationStatus,
+  getNextStatus,
+  getQuickActionLabel,
+  getShortageFollowUpState,
+  getShortageFollowUpVisual,
   mergePlainObjects,
   parseMaybeJsonObject,
   toNumber,
@@ -51,6 +55,7 @@ import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState, type PreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
+import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
@@ -1427,8 +1432,8 @@ const PreparationQueue: React.FC = () => {
         </div>
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100">
             <input
               type="checkbox"
               checked={allVisibleSelected}
@@ -1439,16 +1444,32 @@ const PreparationQueue: React.FC = () => {
           </label>
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('preparation.k_4')}</span>
           {inventoryLoading && (
-            <div className="mr-auto flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
+            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
               <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
               {t('preparation.checkingInventory')}
             </div>
           )}
           {!inventoryLoading && loading && (
-            <div className="mr-auto h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+            <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
           )}
 
-          <div className="relative" data-column-settings>
+          <div className="mr-auto hidden sm:block" />
+
+          <div className="relative flex items-center gap-2" data-column-settings>
+            <button
+              type="button"
+              onClick={() => setShowFilters((prev) => !prev)}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition ${
+                showFilters
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              }`}
+              title={showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </button>
             <button
               type="button"
               onClick={() => setColumnSettingsOpen((prev) => !prev)}
@@ -1536,51 +1557,148 @@ const PreparationQueue: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="mt-3">
-            <PreparationOrdersTable
-              orders={paginatedOrders}
-              statusSelections={statusSelections}
-              statusOptions={statusOptions}
-              statusLabelMap={statusLabelMap}
-              selectedSet={selectedSet}
-              rowUpdatingId={rowUpdatingId}
-              shortageSavingOrderId={shortageSavingOrderId}
-              selectedWarehouseId={selectedWarehouseId}
-              enabledQcChecks={enabledQcChecks}
-              qcChecklistState={qcChecklistState}
-              shortageHoldDrafts={shortageHoldDrafts}
-              transferingItemKey={transferingItemKey}
-              printingOrderNumber={printingOrderNumber}
-              preparationSettings={preparationSettings}
-              visibleColumns={visibleColumns}
-              formatPrice={formatPrice}
-              formatDate={formatDate}
-              onToggleSelection={toggleOrderSelection}
-              onQuickTransfer={(orderNumber, item) =>
-                void handleQuickTransfer(orderNumber, item)
-              }
-              onShortageFieldChange={handleShortageFieldChange}
-              onSaveShortageHoldDetails={saveShortageHoldDetails}
-              onQcCheckToggle={handleQcCheckToggle}
-              onStatusSelectionChange={uiActions.setStatusSelection}
-              onSingleStatusUpdate={(orderNumber, nextStatus) =>
-                void handleSingleStatusUpdate(orderNumber, nextStatus)
-              }
-              onMarkAsShortageHold={(orderNumber) =>
-                void handleMarkAsShortageHold(orderNumber)
-              }
-              onReleaseShortageHold={(orderNumber) =>
-                void handleReleaseShortageHold(orderNumber)
-              }
-              onPrintPreparationSlip={(orderNumber) =>
-                void handlePrintPreparationSlip(orderNumber)
-              }
-            />
-          </div>
+          <>
+            {/* Mobile card view */}
+            <div className="space-y-3 md:hidden">
+              {paginatedOrders.map((order) => {
+                const shortageHoldDetails =
+                  shortageHoldDrafts[order.orderNumber] ||
+                  buildShortageHoldDetails(order.metadata);
+                const shortageFollowUpState = getShortageFollowUpState(
+                  shortageHoldDetails.followUpDate,
+                  order.stage,
+                );
+                const shortageFollowUpVisual = getShortageFollowUpVisual(
+                  shortageFollowUpState,
+                );
+                const nextStatus = getNextStatus(
+                  order.stage,
+                  preparationSettings.handoffStatus,
+                  preparationSettings.startingStatus,
+                );
+                const currentStageStatus =
+                  order.stage === "WAITING"
+                    ? preparationSettings.startingStatus
+                    : order.stage === "PREPARING"
+                      ? "PREPARING"
+                      : order.stage === "QUALITY_CHECK"
+                        ? "QUALITY_CHECK"
+                        : order.stage === "PACKAGED"
+                          ? "PACKAGED"
+                          : order.stage === "STOCK_SHORTAGE"
+                            ? SHORTAGE_HOLD_STATUS
+                            : preparationSettings.handoffStatus;
+                const defaultTargetStatus = nextStatus || currentStageStatus;
+                const currentSelection =
+                  statusSelections[order.orderNumber] || defaultTargetStatus;
+                const actionLabel =
+                  statusSelections[order.orderNumber] &&
+                  statusSelections[order.orderNumber] !== defaultTargetStatus
+                    ? "تطبيق المرحلة المختارة"
+                    : getQuickActionLabel(order.stage);
+                const qcCompleted = enabledQcChecks.every(
+                  (key) => qcChecklistState[order.orderNumber]?.[key] === true,
+                );
+                const rowBusy =
+                  rowUpdatingId === order.orderNumber ||
+                  shortageSavingOrderId === order.orderNumber;
+                const hasShortageContext =
+                  order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
+
+                return (
+                  <PreparationOrderCard
+                    key={order.orderNumber}
+                    order={order}
+                    selected={selectedSet.has(order.orderNumber)}
+                    statusOptions={statusOptions}
+                    statusLabelMap={statusLabelMap}
+                    currentSelection={currentSelection}
+                    actionLabel={actionLabel}
+                    qcCompleted={qcCompleted}
+                    rowBusy={rowBusy}
+                    hasShortageContext={hasShortageContext}
+                    selectedWarehouseId={selectedWarehouseId}
+                    enabledQcChecks={enabledQcChecks}
+                    qcChecklist={qcChecklistState[order.orderNumber]}
+                    shortageHoldDetails={shortageHoldDetails}
+                    shortageFollowUpVisual={shortageFollowUpVisual}
+                    transferingItemKey={transferingItemKey}
+                    printingOrderNumber={printingOrderNumber}
+                    preparationSettings={preparationSettings}
+                    formatPrice={formatPrice}
+                    formatDate={formatDate}
+                    onToggleSelection={toggleOrderSelection}
+                    onQuickTransfer={(orderNumber, item) =>
+                      void handleQuickTransfer(orderNumber, item)
+                    }
+                    onShortageFieldChange={handleShortageFieldChange}
+                    onSaveShortageHoldDetails={saveShortageHoldDetails}
+                    onQcCheckToggle={handleQcCheckToggle}
+                    onStatusSelectionChange={uiActions.setStatusSelection}
+                    onSingleStatusUpdate={(orderNumber, nextStatus) =>
+                      void handleSingleStatusUpdate(orderNumber, nextStatus)
+                    }
+                    onMarkAsShortageHold={(orderNumber) =>
+                      void handleMarkAsShortageHold(orderNumber)
+                    }
+                    onReleaseShortageHold={(orderNumber) =>
+                      void handleReleaseShortageHold(orderNumber)
+                    }
+                    onPrintPreparationSlip={(orderNumber) =>
+                      void handlePrintPreparationSlip(orderNumber)
+                    }
+                  />
+                );
+              })}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="mt-3 hidden md:block">
+              <PreparationOrdersTable
+                orders={paginatedOrders}
+                statusSelections={statusSelections}
+                statusOptions={statusOptions}
+                statusLabelMap={statusLabelMap}
+                selectedSet={selectedSet}
+                rowUpdatingId={rowUpdatingId}
+                shortageSavingOrderId={shortageSavingOrderId}
+                selectedWarehouseId={selectedWarehouseId}
+                enabledQcChecks={enabledQcChecks}
+                qcChecklistState={qcChecklistState}
+                shortageHoldDrafts={shortageHoldDrafts}
+                transferingItemKey={transferingItemKey}
+                printingOrderNumber={printingOrderNumber}
+                preparationSettings={preparationSettings}
+                visibleColumns={visibleColumns}
+                formatPrice={formatPrice}
+                formatDate={formatDate}
+                onToggleSelection={toggleOrderSelection}
+                onQuickTransfer={(orderNumber, item) =>
+                  void handleQuickTransfer(orderNumber, item)
+                }
+                onShortageFieldChange={handleShortageFieldChange}
+                onSaveShortageHoldDetails={saveShortageHoldDetails}
+                onQcCheckToggle={handleQcCheckToggle}
+                onStatusSelectionChange={uiActions.setStatusSelection}
+                onSingleStatusUpdate={(orderNumber, nextStatus) =>
+                  void handleSingleStatusUpdate(orderNumber, nextStatus)
+                }
+                onMarkAsShortageHold={(orderNumber) =>
+                  void handleMarkAsShortageHold(orderNumber)
+                }
+                onReleaseShortageHold={(orderNumber) =>
+                  void handleReleaseShortageHold(orderNumber)
+                }
+                onPrintPreparationSlip={(orderNumber) =>
+                  void handlePrintPreparationSlip(orderNumber)
+                }
+              />
+            </div>
+          </>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5">
+          <div className="flex flex-wrap items-center gap-3 max-sm:justify-center">
             <p className="text-xs text-gray-400">
               {t('preparation.pagination.pageInfo', { page: pagination.page, totalPages, count: currentPageCount })}
             </p>
@@ -1604,11 +1722,11 @@ const PreparationQueue: React.FC = () => {
             </label>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2 max-sm:w-full">
             <button
               onClick={uiActions.goToPreviousPage}
               disabled={pagination.page === 1}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRightIcon className="h-3.5 w-3.5" />
               {t('preparation.pagination.previous')}
@@ -1617,7 +1735,7 @@ const PreparationQueue: React.FC = () => {
             <button
               onClick={() => uiActions.goToNextPage(totalPages)}
               disabled={pagination.page === totalPages}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t('preparation.pagination.next')}
               <ChevronLeftIcon className="h-3.5 w-3.5" />

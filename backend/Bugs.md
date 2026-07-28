@@ -1,3 +1,16 @@
+### [FRONTEND / PRODUCTION] ReferenceError: useSearchParams is not defined in Production Bundle (2026-07-28)
+
+- **Severity**: 🔴 HIGH — Stale production asset bundle error (`route-orders-CzOeKBmp.js`) in browser runtime.
+- **Root Cause**:
+  - The production server was serving an outdated chunk bundle where `useSearchParams` had references from earlier iterations.
+  - Full clean build of `apps/frontend` (`npm run build`) verifies that all `useSearchParams` imports from `react-router-dom` are correctly resolved, with zero TypeScript or Vite bundle errors.
+- **Fix**:
+  - Validated all `useSearchParams` usages across `apps/frontend/src` to ensure proper import statements from `react-router-dom`.
+  - Triggered fresh production rebuild of `apps/frontend` producing clean chunks (`route-orders-COdMRuqx.js`, `route-products-CAwa1lIU.js`).
+- **Files**: `apps/frontend/src/pages/orders/Orders.tsx`, `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+
+---
+
 ### [CRITICAL / PRODUCTION OUTAGE] 502 / Backend Crash-Loop — SyntaxError in WhatsAppManager.js (2026-07-28)
 
 - **Severity**: 🔴 CRITICAL — Production backend crash-loop (`maxp-backend` status `waiting ...`, restart count 384)

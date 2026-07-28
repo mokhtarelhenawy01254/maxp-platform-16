@@ -57,7 +57,7 @@ const PreparationBulkActions = ({
   const { t } = useTranslation();
 
   return (
-    <><div className="flex flex-wrap items-center gap-2">
+    <><div className="flex flex-wrap items-center gap-2 max-sm:flex-col max-sm:items-stretch">
       {!compact && (
         <>
           <span className="text-sm font-semibold text-gray-700">{t("preparation.bulkActions.title")}</span>
@@ -69,11 +69,11 @@ const PreparationBulkActions = ({
 
           <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block" />
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 max-sm:w-full max-sm:justify-stretch">
             <button
               onClick={onSelectAll}
               disabled={totalVisibleOrders === 0}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
             >
               <Squares2X2Icon className="h-4 w-4" />
               {allVisibleSelected ? t("preparation.bulkActions.deselectAll") : t("preparation.bulkActions.selectAll")}
@@ -81,7 +81,7 @@ const PreparationBulkActions = ({
             <button
               onClick={onClearSelection}
               disabled={selectedOrdersCount === 0}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
             >
               <XCircleIcon className="h-4 w-4" />
               {t("preparation.bulkActions.clearSelection")}
@@ -103,7 +103,7 @@ const PreparationBulkActions = ({
           value={bulkStatus}
           onChange={(e) => onBulkStatusChange(e.target.value)}
           disabled={!preparationEnabled || !bulkStatusUpdateEnabled}
-          className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white sm:max-w-xs"
+          className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white sm:max-w-xs max-sm:w-full"
         >
           <option value="">{t("preparation.bulkActions.targetStage")}</option>
           {statusOptions.map((status) => (
@@ -123,7 +123,7 @@ const PreparationBulkActions = ({
             selectedOrdersCount === 0 ||
             bulkUpdating
           }
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
         >
           {bulkUpdating ? (
             <ArrowPathIcon className="h-4 w-4 animate-spin" />
@@ -143,7 +143,7 @@ const PreparationBulkActions = ({
             totalVisibleOrders === 0 ||
             bulkUpdating
           }
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gray-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
         >
           {bulkUpdating ? (
             <ArrowPathIcon className="h-4 w-4 animate-spin" />
@@ -157,7 +157,7 @@ const PreparationBulkActions = ({
         <button
           onClick={onClear}
           disabled={selectedOrdersCount === 0 && !bulkStatus}
-          className="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 max-sm:flex-1"
         >
           {t("preparation.bulkActions.clearFilters")}
         </button>
@@ -167,7 +167,7 @@ const PreparationBulkActions = ({
           <button
             onClick={onPrintInvoices}
             disabled={selectedOrdersCount === 0 || printingInvoices}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
           >
             {printingInvoices ? (
               <ArrowPathIcon className="h-4 w-4 animate-spin" />
@@ -183,7 +183,7 @@ const PreparationBulkActions = ({
         <button
           onClick={onSendToTurbo}
           disabled={selectedOrdersCount === 0 || sendingToTurbo}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
         >
           {sendingToTurbo ? (
             <ArrowPathIcon className="h-4 w-4 animate-spin" />
