@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { getBestContactDisplayName } from '../whatsappContactDisplay';
 
 type Tab = 'info' | 'orders' | 'activity';
 
@@ -227,7 +228,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   if (!contact) return null;
 
   const ltv = calculateLTV();
-  const displayName = contact.name || contact.pushName || contact.jid;
+  const displayName = getBestContactDisplayName(contact);
   const statusInfo = contact.customer?.status ? STATUS_MAP[contact.customer.status] : null;
 
   const avatarSrc = !avatarError

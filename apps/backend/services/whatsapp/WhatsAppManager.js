@@ -1018,6 +1018,51 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
     }
 }
 
+function isHistorySystemMessage(msg) {
+    const message = msg?.message || {};
+    return Boolean(
+        msg?.messageStubType ||
+        message.protocolMessage ||
+        message.senderKeyDistributionMessage ||
+        message.messageContextInfo
+    );
+}
+
+async function persistHistoryLidMappings(sessionId, mappings = []) {
+    const prisma = getSharedPrismaClient();
+    if (!prisma.whatsAppLidMapping || !Array.isArray(mappings)) return {};
+
+    const resolved = {};
+    for (const mapping of mappings) {
+        const lidJid = String(mapping?.lidJid || '').trim();
+        const phoneJid = normalizePhoneJid(mapping?.pnJid);
+        if (!lidJid || !phoneJid) continue;
+
+        await prisma.whatsAppLidMapping.upsert({
+            where: { sessionId_lidJid: { sessionId, lidJid } },
+            create: { sessionId, lidJid, phoneJid },
+            update: { phoneJid, updatedAt: new Date() }
+        });
+
+        resolved[lidJid] = phoneJid;
+        await mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid);
+    }
+
+    return resolved;
+}
+
+async function getPersistedLidMapping(sessionId, lidJid) {
+    const prisma = getSharedPrismaClient();
+    if (!prisma.whatsAppLidMapping || !sessionId || !lidJid) return null;
+
+    const mapping = await prisma.whatsAppLidMapping.findUnique({
+        where: { sessionId_lidJid: { sessionId, lidJid } },
+        select: { phoneJid: true }
+    });
+
+    return normalizePhoneJid(mapping?.phoneJid);
+}
+
 async function shouldProcessMessageUpsertType(type, fromMe, messageId, options = {}) {
     if (type === 'notify') return true;
 
@@ -1882,12 +1927,10 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     // ====== End Sprint 2 ======
 
     // بناء mapping من LID → رقم تلفون (من protobuf الرسمي)
-    const lidToPhoneMap = {};
-    if (history?.phoneNumberToLidMappings) {
-        for (const m of history.phoneNumberToLidMappings) {
-            if (m.lidJid && m.pnJid) lidToPhoneMap[m.lidJid] = m.pnJid;
-        }
-    }
+    const lidToPhoneMap = await persistHistoryLidMappings(
+        sessionId,
+        history?.phoneNumberToLidMappings || []
+    );
     if (Object.keys(lidToPhoneMap).length > 0) {
         console.log(`📜 [WHATSAPP-HISTORY] Found ${Object.keys(lidToPhoneMap).length} LID→Phone mappings`);
     }
@@ -2125,17 +2168,11 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     const isNew = !existingMsg;
                     await prisma.whatsAppMessage.upsert({
                         where: { messageId },
-                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', content: 'رسالة غير مدعومة', metadata: JSON.stringify(msg), updatedAt: new Date() },
-                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', content: 'رسالة غير مدعومة', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
+                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), updatedAt: new Date() },
+                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
                     });
-                    await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
-                        isOutgoing: fromMe,
-                        suppressUnread: true,
-                        incrementCounters: isNew,
-                        lastMessageAt: messageTimestamp,
-                        lastMessagePreview: 'رسالة غير مدعومة',
-                        skipProfilePic: true
-                    });
+                    // لا ننشئ contact للرسائل غير المدعومة عشان ما تظهرش محادثات فاضية في الـ inbox
+                    // الـ contact بيتخلق بس لو في رسالة حقيقية (content مش null)
                     console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder (new=${isNew})`);
                 }
                 continue;
