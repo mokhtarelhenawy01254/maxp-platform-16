@@ -220,6 +220,7 @@ const getErrorMessage = (error: unknown, t: (key: string) => string) => {
 const OrderInvoices: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const paymentStatusMeta = useMemo(() => createPaymentStatusMeta(t), [t]);
 
   const [invoices, setInvoices] = useState<OrderInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,7 +377,7 @@ const OrderInvoices: React.FC = () => {
 
   const paginationPages = getVisiblePages(currentPage, totalPages);
   const activeFilterLabels = [
-    paymentStatus ? t(getPaymentStatusMeta(paymentStatus).labelKey) : null,
+    paymentStatus ? t(getPaymentStatusMeta(paymentStatus, paymentStatusMeta).labelKey) : null,
     dateFrom ? t("orders.orderInvoices_filterFromDate", { date: formatDate(dateFrom) }) : null,
     dateTo ? t("orders.orderInvoices_filterToDate", { date: formatDate(dateTo) }) : null,
   ].filter((label): label is string => Boolean(label));

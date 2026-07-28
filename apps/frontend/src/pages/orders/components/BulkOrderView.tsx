@@ -26,10 +26,13 @@ interface BulkOrderDetail {
   executedAt?: string;
   items: Array<{
     id: string;
+    orderNumber?: string;
     customerName?: string;
     customerPhone?: string;
     city?: string;
+    area?: string;
     governorate?: string;
+    address?: string;
     productName?: string;
     sku?: string;
     size?: string;
@@ -37,6 +40,9 @@ interface BulkOrderDetail {
     quantity: number;
     price: number;
     total: number;
+    collectAmount?: number;
+    deliverAmount?: number;
+    returnContent?: string;
     status: string;
     notes?: string;
   }>;
@@ -117,6 +123,7 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
 
   const totalQty = data?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
   const totalPrice = data?.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0;
+  const totalCOD = data?.items.reduce((sum, item) => sum + Number(item.collectAmount || 0), 0) || 0;
 
   if (loading) {
     return (
@@ -229,25 +236,28 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  الكود
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCustomer")}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCity")}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemArea") || "Area"}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemGovernorate")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left min-w-[120px] max-w-[180px]">
+                  {t("orders.bulkItemAddress") || "Address"}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemProduct")}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
-                  {t("orders.bulkItemSKU")}
-                </th>
-                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
-                  {t("orders.bulkItemSize")}
-                </th>
-                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
-                  {t("orders.bulkItemColor")}
+                  COD
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemQuantity")}
@@ -257,6 +267,15 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemTotal")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSKU")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemSize")}
+                </th>
+                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
+                  {t("orders.bulkItemColor")}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemStatus")}
@@ -269,13 +288,16 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td colSpan={16} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                     {t("orders.bulkNoItems")}
                   </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td className="px-3 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                      {item.orderNumber || "-"}
+                    </td>
                     <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <div>
                         <p className="font-medium">{item.customerName || "-"}</p>
@@ -288,10 +310,26 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
                       {item.city || "-"}
                     </td>
                     <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {item.area || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       {item.governorate || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[180px] truncate" title={item.address || ""}>
+                      {item.address || "-"}
                     </td>
                     <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       {item.productName || "-"}
+                    </td>
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      {Number(item.collectAmount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
+                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
+                      {Number(item.price).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      {Number(item.total).toFixed(2)}
                     </td>
                     <td className="px-3 py-3 text-sm font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap">
                       {item.sku || "-"}
@@ -311,13 +349,6 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
                       ) : (
                         "-"
                       )}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">{item.quantity}</td>
-                    <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                      {Number(item.price).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {Number(item.total).toFixed(2)}
                     </td>
                     <td className="px-3 py-3">{getStatusBadge(item.status)}</td>
                     <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[120px] truncate" title={item.notes || ""}>
@@ -340,6 +371,9 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
               </span>
               <span className="text-gray-600 dark:text-gray-400">
                 {t("orders.bulkItemTotal")}: <span className="text-indigo-700 dark:text-indigo-300 font-bold">{Number(totalPrice).toFixed(2)}</span>
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                COD: <span className="text-indigo-700 dark:text-indigo-300 font-bold">{Number(totalCOD).toFixed(2)}</span>
               </span>
             </div>
           </div>

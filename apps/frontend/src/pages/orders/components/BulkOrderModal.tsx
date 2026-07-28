@@ -5,16 +5,23 @@ import { apiClient } from "../../../services/apiClient";
 
 interface BulkOrderItem {
   row: number;
+  orderNumber?: string;
   customerName: string;
   customerPhone: string;
   city: string;
+  area?: string;
   governorate: string;
+  address?: string;
   productName: string;
   sku: string;
   size: string;
   color: string;
   quantity: number;
   price: number;
+  total?: number;
+  collectAmount?: number;
+  deliverAmount?: number;
+  returnContent?: string;
   notes: string;
 }
 
@@ -263,11 +270,10 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemCustomer")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemPhone")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemCity")}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemArea") || "Area"}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemGovernorate")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemProduct")}</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemSKU")}</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemSize")}</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemColor")}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">COD</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemQuantity")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemNotes")}</th>
                     </tr>
@@ -278,28 +284,12 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.customerName || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.customerPhone || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.city || "-"}</td>
+                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.area || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.governorate || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.productName || "-"}</td>
-                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.sku || "-"}</td>
-                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.size || "-"}</td>
-                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
-                          {i.color ? (
-                            <span className="inline-flex items-center gap-1">
-                              <span className="inline-block w-3 h-3 rounded-full border border-gray-300 dark:border-gray-500 flex-shrink-0"
-                                style={{ backgroundColor: {
-                                  'black':'#000','white':'#fff','red':'#ef4444','blue':'#3b82f6',
-                                  'green':'#22c55e','yellow':'#eab308','orange':'#f97316',
-                                  'purple':'#a855f7','pink':'#ec4899','gray':'#6b7280','grey':'#6b7280',
-                                  'brown':'#92400e','navy':'#1e3a5f','beige':'#f5f0e1','gold':'#f59e0b',
-                                  'silver':'#cbd5e1',
-                                }[i.color?.toLowerCase()] || '#d1d5db' }}
-                              />
-                              {i.color}
-                            </span>
-                          ) : "-"}
-                        </td>
+                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{Number(i.collectAmount || 0) > 0 ? Number(i.collectAmount).toFixed(2) : "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.quantity}</td>
-                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 max-w-[120px] truncate">{i.notes || "-"}</td>
+                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 max-w-[80px] truncate">{i.notes || "-"}</td>
                       </tr>
                     ))}
                   </tbody>

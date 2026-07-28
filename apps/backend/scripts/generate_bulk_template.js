@@ -7,19 +7,20 @@ const ALT_ROW_COLOR = 'F0F4F8';
 const BORDER_COLOR = 'CBD5E1';
 const ACCENT_COLOR = '3B82F6';
 
-const headerRowEn = ['Customer Name', 'Phone', 'City', 'Governorate', 'Product Name', 'SKU', 'Size', 'Color', 'Quantity', 'Price', 'Notes'];
+const headerRowEn = ['Order Code', 'Customer Name', 'Phone', 'City', 'Area', 'Governorate', 'Address', 'Product Name', 'SKU', 'Size', 'Color', 'Quantity', 'Price', 'COD', 'Notes'];
 const NCOLS = headerRowEn.length;
 
 const sampleData = [
-  ['Ahmed Mohamed', '01001234567', 'Nasr City', 'Cairo', 'Nike Air Max 270', 'NIKE-AM270-BLK', '42', 'Black', 2, 150.00, 'توصيل سريع'],
-  ['Sara Ali', '01112223333', 'Mohandessin', 'Giza', 'Adidas Ultraboost', 'AD-UBS-WHT', '38', 'White', 1, 200.00, ''],
-  ['Mohamed Khaled', '01009998877', 'Maadi', 'Cairo', 'Puma T-Shirt', 'PU-TS-RED', 'L', 'Red', 3, 75.50, 'مقاس كبير'],
+  ['38124947', 'Ahmed Mohamed', '01001234567', 'Nasr City', 'الحي السابع', 'Cairo', 'العبور فيلا 38', 'Nike Air Max 270', 'NIKE-AM270-BLK', '42', 'Black', 2, 150.00, 300.00, 'توصيل سريع'],
+  ['38124946', 'Sara Ali', '01112223333', 'Mohandessin', '', 'Giza', '٣شارع عبد الحميد', 'Adidas Ultraboost', 'AD-UBS-WHT', '38', 'White', 1, 200.00, 200.00, ''],
+  ['38124943', 'Mohamed Khaled', '01009998877', 'Maadi', 'بئر ام سلطان', 'Cairo', '46 ش كامل همام', 'Puma T-Shirt', 'PU-TS-RED', 'L', 'Red', 3, 75.50, 226.50, 'مقاس كبير'],
 ];
 
 const COL_WIDTHS = [
-  { wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 18 },
-  { wch: 28 }, { wch: 22 }, { wch: 10 }, { wch: 14 },
-  { wch: 10 }, { wch: 12 }, { wch: 24 },
+  { wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 16 },
+  { wch: 16 }, { wch: 16 }, { wch: 32 }, { wch: 28 },
+  { wch: 22 }, { wch: 8 }, { wch: 12 }, { wch: 10 },
+  { wch: 12 }, { wch: 12 }, { wch: 24 },
 ];
 
 const headerStyle = {
@@ -65,14 +66,14 @@ function createOrdersSheet() {
       const dataIdx = R - 1;
       const isData = dataIdx >= 0;
       const isEven = dataIdx % 2 === 0;
-      const isNumeric = C === 8 || C === 9;
+      const isNumeric = C === 11 || C === 12 || C === 13;
 
       if (isHeader) {
         ws[addr].s = headerStyle;
       } else if (isData) {
         ws[addr].s = dataRowStyle(isEven, isNumeric);
         if (isNumeric && ws[addr].t === 'n') {
-          ws[addr].z = C === 9 ? '#,##0.00' : '0';
+          ws[addr].z = (C === 12 || C === 13) ? '#,##0.00' : '0';
         }
       }
     }
@@ -89,36 +90,38 @@ function createInstructionsSheet() {
     ['1. Fill in your order data in the "Orders" sheet, starting from row 2 (below the header).'],
     ['2. Delete the sample data rows (rows 2-4) before adding your own.'],
     ['3. DO NOT modify or delete the header row (row 1).'],
-    ['4. Quantity and Price MUST be numbers only. Do not add currency symbols.'],
-    ['5. Notes column is optional - you can leave it empty.'],
-    ['6. Save the file and upload it from the Bulk Orders page.'],
-    ['7. Supported formats: .xlsx, .xls, .csv'],
+    ['4. Columns: Customer Name, Phone, City, Area, Governorate, Address, Product Name, SKU, Size, Color, Quantity, Price, COD, Notes.'],
+    ['5. Quantity, Price, and COD MUST be numbers only. Do not add currency symbols.'],
+    ['6. Area, Address, and Notes columns are optional.'],
+    ['7. Save the file and upload it from the Bulk Orders page.'],
+    ['8. Supports both English and Arabic column headers (.xlsx, .xls, .csv).'],
     [''],
     ['عربي:'],
     ['-١ .املأ بيانات الطلبات في ورقة "Orders" بدءاً من الصف ٢ (أسفل العنوان)'],
     ['-٢ .احذف صفوف بيانات العينة (الصفوف ٢-٤) قبل إضافة بياناتك'],
     ['-٣ .لا تقم بتعديل أو حذف صف العنوان (الصف ١)'],
-    ['-٤ .الكمية والسعر يجب أن يكونا أرقاماً فقط. لا تضف رموز العملة'],
-    ['-٥ .عمود الملاحظات اختياري - يمكنك تركه فارغاً'],
-    ['-٦ .احفظ الملف وارفعه من صفحة الطلبات المجمعة'],
-    ['-٧ .الصيغ المدعومة: xlsx. , xls. , csv.'],
+    ['-٤ .الأعمدة: اسم العميل، الهاتف، المدينة، المنطقة، المحافظة، العنوان، اسم المنتج، SKU، المقاس، اللون، الكمية، السعر، المبلغ، ملاحظات'],
+    ['-٥ .الكمية والسعر والمبلغ يجب أن يكونا أرقاماً فقط. لا تضف رموز العملة'],
+    ['-٦ .حقول المنطقة والعنوان والملاحظات اختيارية'],
+    ['-٧ .احفظ الملف وارفعه من صفحة الطلبات المجمعة'],
+    ['-٨ .يدعم العناوين بالإنجليزية والعربية (xlsx. , xls. , csv.)'],
     [''],
-    ['COLUMN NAMES (English / Arabic) / أسماء الأعمدة (إنجليزي / عربي):'],
+    ['COLUMN MAPPING / خريطة الأعمدة (النظام يتعرف على كلا الإسمين):'],
     [''],
-    ['Customer Name    =    اسم العميل'],
-    ['Phone            =    الهاتف'],
-    ['City             =    المدينة'],
-    ['Governorate      =    المحافظة'],
-    ['Product Name     =    اسم المنتج'],
-    ['SKU              =    SKU'],
-    ['Size             =    المقاس'],
-    ['Color            =    اللون'],
-    ['Quantity         =    الكمية'],
-    ['Price            =    السعر'],
-    ['Notes            =    ملاحظات'],
-    [''],
-    ['NOTE: You can use EITHER English OR Arabic column headers in your own files.'],
-    ['ملاحظة: يمكنك استخدام العناوين بالإنجليزية أو العربية في ملفاتك.'],
+    ['Customer Name  =  اسم العميل  /  اسم المستلم'],
+    ['Phone          =  الهاتف  /  رقم الهاتف'],
+    ['City           =  المدينة'],
+    ['Area           =  المنطقة'],
+    ['Governorate    =  المحافظة'],
+    ['Address        =  العنوان'],
+    ['Product Name   =  اسم المنتج  /  المنتج  /  محتوى الطلب'],
+    ['SKU            =  SKU'],
+    ['Size           =  المقاس'],
+    ['Color          =  اللون'],
+    ['Quantity       =  الكمية'],
+    ['Price          =  السعر'],
+    ['COD            =  المبلغ المطلوب تحصيله'],
+    ['Notes          =  ملاحظات'],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(instructions);

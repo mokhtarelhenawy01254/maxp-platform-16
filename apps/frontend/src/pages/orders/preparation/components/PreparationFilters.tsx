@@ -182,6 +182,37 @@ const PreparationFilters = ({
     return variants;
   }, [selectedProduct]);
 
+  const { availableColors, availableSizes } = useMemo(() => {
+    if (!productIdFilter || selectedProductVariants.length === 0) {
+      return { availableColors: [] as string[], availableSizes: [] as string[] };
+    }
+    const colors = new Set<string>();
+    const sizes = new Set<string>();
+    selectedProductVariants.forEach((v) => {
+      if (!v.name) return;
+      const pipePattern = /([^:]+):\s*([^|]+)/g;
+      let match: RegExpExecArray | null;
+      const attrs: Record<string, string> = {};
+      while ((match = pipePattern.exec(v.name)) !== null) {
+        if (match[1] && match[2]) attrs[match[1].trim()] = match[2].trim();
+      }
+      if (attrs["اللون"] || attrs["المقاس"]) {
+        if (attrs["اللون"]) colors.add(attrs["اللون"]);
+        if (attrs["المقاس"]) sizes.add(attrs["المقاس"]);
+        return;
+      }
+      const parts = v.name.split(/\s*[-–]\s*/);
+      if (parts.length >= 2 && parts[0] && parts[1]) {
+        colors.add(parts[0].trim());
+        sizes.add(parts[1].trim());
+      } else if (parts.length === 1 && parts[0] && v.type) {
+        if (v.type === "color") colors.add(parts[0].trim());
+        else if (v.type === "size") sizes.add(parts[0].trim());
+      }
+    });
+    return { availableColors: [...colors], availableSizes: [...sizes] };
+  }, [productIdFilter, selectedProductVariants]);
+
   const filteredProductSuggestions: ProductSuggestion[] = [];
 
   const handleProductSuggestionSelect = (_suggestion: ProductSuggestion) => {
@@ -358,6 +389,11 @@ const PreparationFilters = ({
               onChange={(e) => {
                 setLocalProductFilter(e.target.value);
                 onProductFilterChange(e.target.value);
+                if (e.target.value === "") {
+                  onProductIdFilterChange("");
+                  onProductColorFilterChange("");
+                  onProductSizeFilterChange("");
+                }
                 setShowProductSuggestions(true);
               }}
               onFocus={() => setShowProductSuggestions(true)}
@@ -388,6 +424,9 @@ const PreparationFilters = ({
                     key={p.id}
                     onClick={() => {
                       onProductFilterChange(p.name);
+                      onProductIdFilterChange(p.id);
+                      onProductColorFilterChange("");
+                      onProductSizeFilterChange("");
                       setShowProductSuggestions(false);
                     }}
                     className="cursor-pointer px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50"
@@ -416,31 +455,35 @@ const PreparationFilters = ({
             )}
           </div>
 
-          <div className="relative sm:min-w-[120px] max-sm:w-full">
-            <select
-              value={productColorFilter}
-              onChange={(e) => onProductColorFilterChange(e.target.value)}
-              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
-            >
-              <option value="">اللون (الكل)</option>
-              {Array.from(new Set(productSuggestions.map(s => s.color).filter(Boolean))).map((color, idx) => (
-                <option key={idx} value={color}>{color}</option>
-              ))}
-            </select>
-          </div>
+          {productIdFilter && availableColors.length > 0 && (
+            <div className="relative sm:min-w-[120px] max-sm:w-full">
+              <select
+                value={productColorFilter}
+                onChange={(e) => onProductColorFilterChange(e.target.value)}
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+              >
+                <option value="">اللون (الكل)</option>
+                {availableColors.map((color, idx) => (
+                  <option key={idx} value={color}>{color}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          <div className="relative sm:min-w-[120px] max-sm:w-full">
-            <select
-              value={productSizeFilter}
-              onChange={(e) => onProductSizeFilterChange(e.target.value)}
-              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
-            >
-              <option value="">المقاس (الكل)</option>
-              {Array.from(new Set(productSuggestions.map(s => s.size).filter(Boolean))).map((size, idx) => (
-                <option key={idx} value={size}>{size}</option>
-              ))}
-            </select>
-          </div>
+          {productIdFilter && availableSizes.length > 0 && (
+            <div className="relative sm:min-w-[120px] max-sm:w-full">
+              <select
+                value={productSizeFilter}
+                onChange={(e) => onProductSizeFilterChange(e.target.value)}
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+              >
+                <option value="">المقاس (الكل)</option>
+                {availableSizes.map((size, idx) => (
+                  <option key={idx} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 
