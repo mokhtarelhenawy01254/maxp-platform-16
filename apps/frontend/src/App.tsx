@@ -7,6 +7,23 @@ import {
   shouldRedirectAffiliateToDashboard,
   shouldRedirectMerchantToPortal,
 } from "./utils/merchantAccess";
+// fallback for old deployed bundles that reference undefined getStatusText
+const SYSTEM_STATUS_LABELS: Record<string, string> = {
+  PENDING: "قيد الانتظار", DRAFT: "مسودة", CONFIRMED: "مؤكد", SCHEDULED: "طلب مجدول",
+  ON_HOLD: "معلق", PROCESSING: "قيد التجهيز", SHIPPED: "تم الشحن", DELIVERED: "تم التسليم",
+  CANCELLED: "ملغي", DUPLICATE_ORDER: "طلب مكرر", REFUNDED: "مسترد",
+  PARTIALLY_REFUNDED: "مسترد جزئياً", RETURNED: "مرتجع", PARTIALLY_RETURNED: "مرتجع جزئي",
+  PARTIALLY_DELIVERED: "تسليم جزئي", EXCHANGED: "استبدال", TRASH: "سلة المحذوفات",
+  TRASH_ORDER: "سلة المحذوفات", READY_TO_SHIP: "جاهز للشحن", OUT_FOR_DELIVERY: "خرج للتسليم",
+  LOST: "مفقود", PENDING_PREPARATION: "بانتظار التجهيز", PREPARING: "قيد التجهيز",
+  READY: "جاهز للشحن", QUALITY_CHECK: "فحص الجودة", PACKAGED: "تم التعبئة",
+  ON_HOLD_PREP: "تجهيز معلق", NOT_SHIPPED: "لم يتم الشحن", COMPLETED: "مكتمل",
+  FAILED: "فشل", STOCK_SHORTAGE: "عجز مخزون", PENDING_CANCELLATION: "بانتظار الإلغاء",
+};
+(window as any).getStatusText = (s: string) => {
+  const key = (s || "PENDING").toUpperCase().trim().replace(/\s+/g, "_");
+  return SYSTEM_STATUS_LABELS[key] || key.replace(/_/g, " ");
+};
 
 // Providers
 import AppProviders from "./providers/AppProviders";
