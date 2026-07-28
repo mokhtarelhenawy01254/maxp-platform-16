@@ -95,17 +95,39 @@ function clearReconnectTimer(sessionId) {
 
 // ponytail: simple lock prevents concurrent reconnect for same session
 const reconnectInProgress = new Set();
+const reconnectTimerSet = new Set(); // Sprint 3.3: tracks pending timers too
 
 function isReconnecting(sessionId) {
     return reconnectInProgress.has(sessionId);
 }
 
+function hasPendingReconnect(sessionId) {
+    return reconnectInProgress.has(sessionId) || reconnectTimerSet.has(sessionId);
+}
+
 function markReconnecting(sessionId) {
     reconnectInProgress.add(sessionId);
+    reconnectTimerSet.delete(sessionId);
+}
+
+function markReconnectScheduled(sessionId) {
+    reconnectTimerSet.add(sessionId);
 }
 
 function clearReconnecting(sessionId) {
     reconnectInProgress.delete(sessionId);
+    reconnectTimerSet.delete(sessionId);
+}
+
+// Sprint 3.3: Reconnect coordinator — يستدعى بدل health check + socket close مباشرة
+// بيضمن إن reconnect واحد بس يشتغل لكل session
+async function requestReconnect(sessionId, companyId, options = {}, delayMs = 1000, source = 'unknown') {
+    if (hasPendingReconnect(sessionId)) {
+        WA_LOG.reconnect(sessionId, `Reconnect already pending (source=${source}), skipping duplicate`);
+        return;
+    }
+    WA_LOG.reconnect(sessionId, `Reconnect requested (source=${source})`);
+    scheduleReconnectSession(sessionId, companyId, options, delayMs, 0);
 }
 
 function cleanupSocketListeners(sock) {
@@ -334,9 +356,9 @@ async function runHealthCheck() {
                             source: 'health_check'
                         });
 
-                        scheduleReconnectSession(sessionId, companyId, {
+                        requestReconnect(sessionId, companyId, {
                             syncFullHistory: session.syncFullHistory || false
-                        }, 1000);
+                        }, 1000, 'health_check');
                     }
                 } else if (session.status === 'connecting') {
                     // Check if we've been connecting too long
@@ -356,9 +378,9 @@ async function runHealthCheck() {
                             session.sock = null;
                         }
                         cleanupSessionState(sessionId, session.companyId);
-                        scheduleReconnectSession(sessionId, companyId, {
+                        requestReconnect(sessionId, companyId, {
                             syncFullHistory: session.syncFullHistory || false
-                        }, 500);
+                        }, 500, 'health_check_stuck');
                     } else if (elapsed > HEALTH_CHECK_WARN_THRESHOLD) {
                         WA_LOG.health(sessionId, `Still connecting after ${Math.round(elapsed/1000)}s`);
                     }
@@ -425,6 +447,7 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
         return;
     }
     clearReconnectTimer(sessionId);
+    markReconnectScheduled(sessionId);
 
     // Enforce minimum cooldown between reconnects
     const lastTime = lastReconnectTime.get(sessionId);
@@ -1546,9 +1569,9 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 sessionHealthChecks.delete(sessionId);
                 // 440 = connectionReplaced — back off harder to break the death spiral
                 const reconnectDelay = statusCode === 440 ? 30000 : 3000;
-                scheduleReconnectSession(sessionId, companyId, {
+                requestReconnect(sessionId, companyId, {
                     syncFullHistory: currentData.syncFullHistory
-                }, reconnectDelay);
+                }, reconnectDelay, 'socket_close');
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
                 const storedPhoneNumber = normalizePhoneNumber(sessionData?.phoneNumber);
@@ -4876,6 +4899,8 @@ module.exports = {
         // Sprint 2: History import lifecycle helpers
         HISTORY_BATCH_SIZE,
         historyYield,
+        requestReconnect,
+        hasPendingReconnect,
         getSessionHistoryImportState: async (prisma, sessionId) => {
             try {
                 const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
