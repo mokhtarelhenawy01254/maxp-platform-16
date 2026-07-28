@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Setup SSH Key
         uses: ./.github/actions/setup-ssh
         with:
