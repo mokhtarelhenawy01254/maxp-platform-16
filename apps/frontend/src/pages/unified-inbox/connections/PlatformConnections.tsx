@@ -100,7 +100,9 @@ const PlatformConnections: React.FC = () => {
   const [waPhone, setWaPhone] = useState("");
   const [waPairingMode, setWaPairingMode] = useState(true);
   const [waErr, setWaErr] = useState<string | null>(null);
+  const waIdRef = useRef<string | null>(null);
   const waQrRef = useRef<((d: { sessionId: string; qr: string }) => void) | null>(null);
+  const waPcRef = useRef<((d: { sessionId: string; pairingCode: string }) => void) | null>(null);
   const waConnRef = useRef<((d: { sessionId: string; status: string }) => void) | null>(null);
 
   // Telegram modal
@@ -163,32 +165,45 @@ const PlatformConnections: React.FC = () => {
   const openWa = useCallback(() => {
     setShowWa(true); setWaStep("form"); setWaId(null); setWaQr(null); setWaPairing(null);
     setWaName(""); setWaPhone(""); setWaPairingMode(true); setWaErr(null);
+    waIdRef.current = null;
   }, []);
   const closeWa = useCallback(() => {
     setShowWa(false);
     if (waQrRef.current) socketService.off("whatsapp:qr", waQrRef.current);
+    if (waPcRef.current) socketService.off("whatsapp:pairing_code", waPcRef.current);
     if (waConnRef.current) socketService.off("whatsapp:connection", waConnRef.current);
   }, []);
 
   const waCreate = useCallback(async () => {
     if (!waName.trim()) return;
     setWaLoading(true); setWaErr(null);
+    // register socket listeners early to avoid race condition
+    const qh = (d: { sessionId: string; qr: string }) => { if (d.sessionId === waIdRef.current && d.qr) { setWaQr(d.qr); setWaStep("qr"); } };
+    const pc = (d: { sessionId: string; pairingCode: string }) => { if (d.sessionId === waIdRef.current && d.pairingCode) { setWaPairing(d.pairingCode); setWaStep("qr"); } };
+    const ch = (d: { sessionId: string; status: string }) => {
+      if (d.sessionId !== waIdRef.current) return;
+      if (d.status === "CONNECTED" || d.status === "connected") { setWaStep("done"); setTimeout(() => { closeWa(); load(); }, 1500); }
+      else if (d.status === "FAILED" || d.status === "DISCONNECTED" || d.status === "error") { setWaErr("فشل الاتصال"); setWaStep("error"); }
+    };
+    waQrRef.current = qh; waPcRef.current = pc; waConnRef.current = ch;
+    socketService.on("whatsapp:qr", qh); socketService.on("whatsapp:pairing_code", pc); socketService.on("whatsapp:connection", ch);
     try {
-      const body: Record<string, string | boolean> = { name: waName.trim(), provider: "BAILEYS" };
+      const body: Record<string, string | boolean> = { name: waName.trim(), provider: "BAILEYS", importHistory: true };
       if (waPairingMode && waPhone.trim()) { body.phoneNumber = waPhone.trim(); body.usePairingCode = true; }
       const r = await apiClient.post("/api/v1/whatsapp/sessions", body);
       if (r.data?.success) {
         const s = r.data.session;
-        setWaId(s.id);
-        const qh = (d: { sessionId: string; qr: string }) => { if (d.sessionId === s.id && d.qr) { setWaQr(d.qr); setWaStep("qr"); } };
-        const ch = (d: { sessionId: string; status: string }) => { if (d.sessionId === s.id && (d.status === "CONNECTED" || d.status === "connected")) { setWaStep("done"); setTimeout(() => { closeWa(); load(); }, 1500); } };
-        waQrRef.current = qh; waConnRef.current = ch;
-        socketService.on("whatsapp:qr", qh); socketService.on("whatsapp:connection", ch);
-        if (s.qrCode) { setWaQr(s.qrCode); setWaStep("qr"); }
+        setWaId(s.id); waIdRef.current = s.id;
+        if (s.status === "CONNECTED" || s.status === "connected") { setWaStep("done"); setTimeout(() => { closeWa(); load(); }, 1500); }
+        else if (s.qrCode) { setWaQr(s.qrCode); setWaStep("qr"); }
         else if (s.pairingCode) { setWaPairing(s.pairingCode); setWaStep("qr"); }
         else setWaStep("qr");
-      } else { setWaErr(r.data?.message || "فشل إنشاء الجلسة"); setWaStep("error"); }
+      } else {
+        setWaErr(r.data?.message || "فشل إنشاء الجلسة"); setWaStep("error");
+        socketService.off("whatsapp:qr", qh); socketService.off("whatsapp:pairing_code", pc); socketService.off("whatsapp:connection", ch);
+      }
     } catch (err: unknown) {
+      socketService.off("whatsapp:qr", qh); socketService.off("whatsapp:pairing_code", pc); socketService.off("whatsapp:connection", ch);
       const e = err as { response?: { data?: { message?: string } }; message?: string };
       setWaErr(e?.response?.data?.message || e?.message || "فشل إنشاء الجلسة"); setWaStep("error");
     } finally { setWaLoading(false); }

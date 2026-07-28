@@ -82,7 +82,7 @@ export default function AgentGuardrailsTab({
       setRules(data || []);
     } catch (err: any) {
       console.error("Failed to fetch guardrail rules", err);
-      setError(err.message || "Failed to load rules");
+      setError(err.message || t("agentProfiles.guardrails.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -135,12 +135,12 @@ export default function AgentGuardrailsTab({
 
       if (!res.ok) throw new Error("Failed to create rule");
 
-      toast.success("تم توليد قاعدة العمل وتفعيلها بنجاح 🛡️");
+      toast.success(t("agentProfiles.guardrails.saveSuccess"));
       setFeedbackText("");
       setConflictWarning(null);
       fetchRules();
     } catch (err: any) {
-      toast.error(err.message || "فشلت عملية إنشاء القاعدة");
+      toast.error(err.message || t("agentProfiles.guardrails.saveFailed"));
     } finally {
       setSavingRule(false);
     }
@@ -168,11 +168,11 @@ export default function AgentGuardrailsTab({
 
       if (!res.ok) throw new Error("Failed to update rule");
 
-      toast.success("تم تحديث تفاصيل قاعدة العمل");
+      toast.success(t("agentProfiles.guardrails.updateSuccess"));
       setEditingRule(null);
       fetchRules();
     } catch (err: any) {
-      toast.error(err.message || "فشلت عملية تحديث القاعدة");
+      toast.error(err.message || t("agentProfiles.guardrails.updateFailed"));
     } finally {
       setSavingRule(false);
     }
@@ -195,9 +195,9 @@ export default function AgentGuardrailsTab({
       });
 
       if (!res.ok) throw new Error();
-      toast.success(newStatus ? "تم تفعيل القاعدة" : "تم إلغاء تفعيل القاعدة");
+      toast.success(newStatus ? t("agentProfiles.guardrails.toggleOn") : t("agentProfiles.guardrails.toggleOff"));
     } catch {
-      toast.error("فشل تعديل حالة القاعدة");
+      toast.error(t("agentProfiles.guardrails.toggleFailed"));
       // Rollback
       setRules(prev => prev.map(r => r.id === rule.id ? { ...r, isActive: rule.isActive } : r));
     }
@@ -205,7 +205,7 @@ export default function AgentGuardrailsTab({
 
   // 5. Delete rule
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm("هل أنت متأكد من رغبتك في حذف قاعدة العمل هذه نهائياً؟")) return;
+    if (!confirm(t("agentProfiles.guardrails.deleteConfirm"))) return;
     try {
       const res = await fetch(buildApiUrl(`ai-admin/agents/${agentId}/guardrails/${ruleId}`), {
         method: "DELETE",
@@ -215,10 +215,10 @@ export default function AgentGuardrailsTab({
         }
       });
       if (!res.ok) throw new Error();
-      toast.success("تم حذف القاعدة");
+      toast.success(t("agentProfiles.guardrails.deleteSuccess"));
       fetchRules();
     } catch {
-      toast.error("فشل حذف القاعدة");
+      toast.error(t("agentProfiles.guardrails.deleteFailed"));
     }
   };
 
@@ -235,16 +235,16 @@ export default function AgentGuardrailsTab({
           <div>
             <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
               <Shield className="size-5 text-primary" />
-              قواعد السلوك والتحكيم الديناميكي
+              {t("agentProfiles.guardrails.title")}
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              قم بضبط محددات عمل الوكيل البشري ومنعه من خرق سياسات المحل كـ (أوقات التسجيل، الأسعار، الحجوزات) من خلال كتابة التوجيهات ببساطة.
+              {t("agentProfiles.guardrails.desc")}
             </p>
           </div>
           
           <Button variant="outline" size="sm" onClick={fetchRules} className="shrink-0 flex items-center gap-1.5">
             <RefreshCw className="size-3.5" />
-            تحديث القائمة
+            {t("agentProfiles.guardrails.refresh")}
           </Button>
         </div>
 
@@ -252,12 +252,12 @@ export default function AgentGuardrailsTab({
         <div className="bg-card p-4 rounded-xl border border-border">
           <h4 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
             <Plus className="size-4 text-green-500" />
-            إضافة قاعدة جديدة بالعامية أو الفصحى
+            {t("agentProfiles.guardrails.addTitle")}
           </h4>
           
           <div className="flex gap-2">
             <Textarea
-              placeholder="مثال: 'ممنوع ندي خصم أكتر من 10% يوم الجمعة' أو 'السبت صالون سيدات فقط فماتحجزش لرجالة'"
+              placeholder={t("agentProfiles.guardrails.inputPlaceholder")}
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
               className="resize-none h-16 text-sm text-right"
@@ -277,7 +277,7 @@ export default function AgentGuardrailsTab({
               ) : (
                 <Bot className="size-4" />
               )}
-              <span>حفظ وتوليد</span>
+              <span>{t("agentProfiles.guardrails.saveBtn")}</span>
             </Button>
           </div>
         </div>
@@ -287,14 +287,14 @@ export default function AgentGuardrailsTab({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <Loader2 className="size-8 animate-spin text-primary" />
-              <span className="text-sm">جاري تحميل قواعد العمل...</span>
+              <span className="text-sm">{t("agentProfiles.guardrails.loading")}</span>
             </div>
           ) : rules.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
               <ShieldAlert className="size-10 text-muted-foreground/60" />
               <div className="text-center">
-                <p className="font-semibold text-sm">لا توجد قواعد سلوك مضافة حالياً</p>
-                <p className="text-xs mt-1 text-muted-foreground/80">اكتب أول توجيه في الحقل أعلاه لتأمين وتعديل سلوك الوكيل.</p>
+                <p className="font-semibold text-sm">{t("agentProfiles.guardrails.emptyTitle")}</p>
+                <p className="text-xs mt-1 text-muted-foreground/80">{t("agentProfiles.guardrails.emptyDesc")}</p>
               </div>
             </div>
           ) : (
@@ -302,12 +302,12 @@ export default function AgentGuardrailsTab({
               <table className="w-full text-right text-xs">
                 <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
                   <tr>
-                    <th className="p-3 w-1/4">الموقف المحظور (Excuse)</th>
-                    <th className="p-3 w-1/4">الرد المنطقي والمانع (Rebuttal)</th>
-                    <th className="p-3 w-1/4">التصرف المطلوب (Action)</th>
-                    <th className="p-3 text-center">المصدر</th>
-                    <th className="p-3 text-center">الحالة</th>
-                    <th className="p-3 text-center">إجراءات</th>
+                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colExcuse")}</th>
+                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colRebuttal")}</th>
+                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colAction")}</th>
+                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colSource")}</th>
+                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colStatus")}</th>
+                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -318,13 +318,13 @@ export default function AgentGuardrailsTab({
                       <td className="p-3 text-muted-foreground align-top whitespace-pre-wrap">{rule.action}</td>
                       <td className="p-3 text-center align-top whitespace-nowrap">
                         {rule.source === "template_default" && (
-                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none">قالب</Badge>
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none">{t("agentProfiles.guardrails.sourceTemplate")}</Badge>
                         )}
                         {rule.source === "merchant_manual" && (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-none">يدوي</Badge>
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-none">{t("agentProfiles.guardrails.sourceManual")}</Badge>
                         )}
                         {rule.source === "correction_auto" && (
-                          <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-none">تعلم</Badge>
+                          <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-none">{t("agentProfiles.guardrails.sourceLearning")}</Badge>
                         )}
                       </td>
                       <td className="p-3 text-center align-top">
@@ -368,14 +368,14 @@ export default function AgentGuardrailsTab({
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <Edit2 className="size-5 text-primary" />
-              تعديل تفاصيل قاعدة السلوك
+              {t("agentProfiles.guardrails.editTitle")}
             </DialogTitle>
           </DialogHeader>
           
           {editingRule && (
             <div className="flex flex-col gap-4 py-4 text-xs">
               <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-foreground">الموقف المحظور (Excuse)</label>
+                <label className="font-semibold text-foreground">{t("agentProfiles.guardrails.editExcuse")}</label>
                 <Textarea
                   value={editingRule.excuse}
                   onChange={(e) => setEditingRule({ ...editingRule, excuse: e.target.value })}
@@ -384,7 +384,7 @@ export default function AgentGuardrailsTab({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-foreground">الرد المنطقي والمانع (Rebuttal)</label>
+                <label className="font-semibold text-foreground">{t("agentProfiles.guardrails.editRebuttal")}</label>
                 <Textarea
                   value={editingRule.rebuttal}
                   onChange={(e) => setEditingRule({ ...editingRule, rebuttal: e.target.value })}
@@ -393,7 +393,7 @@ export default function AgentGuardrailsTab({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-foreground">التصرف المطلوب (Action)</label>
+                <label className="font-semibold text-foreground">{t("agentProfiles.guardrails.editAction")}</label>
                 <Textarea
                   value={editingRule.action}
                   onChange={(e) => setEditingRule({ ...editingRule, action: e.target.value })}
@@ -405,11 +405,11 @@ export default function AgentGuardrailsTab({
 
           <DialogFooter className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditingRule(null)}>
-              إلغاء
+              {t("agentProfiles.guardrails.cancel")}
             </Button>
             <Button size="sm" onClick={handleUpdateRuleFields} disabled={savingRule}>
               {savingRule && <Loader2 className="size-3 animate-spin mr-1.5" />}
-              حفظ التعديلات
+              {t("agentProfiles.guardrails.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -421,29 +421,29 @@ export default function AgentGuardrailsTab({
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-amber-600 flex items-center gap-2">
               <AlertTriangle className="size-5 text-amber-500" />
-              تنبيه تضارب القواعد!
+              {t("agentProfiles.guardrails.conflictTitle")}
             </DialogTitle>
           </DialogHeader>
 
           {conflictWarning && (
             <div className="py-3 text-xs leading-relaxed flex flex-col gap-3">
               <p className="font-semibold text-foreground/90">
-                لقد وجدنا تشابهاً دلالياً مع قاعدة مسجلة مسبقاً، يرجى مراجعة التضارب أدناه لتفادي ارتباك الذكاء الاصطناعي:
+                {t("agentProfiles.guardrails.conflictDesc")}
               </p>
               
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex flex-col gap-2">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-amber-600 dark:text-amber-500">القاعدة القديمة المشابهة:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-500">{t("agentProfiles.guardrails.conflictOld")}</span>
                   <span className="text-muted-foreground whitespace-pre-wrap">{conflictWarning.conflictingRule.excuse}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 border-t border-amber-500/10 pt-1.5">
-                  <span className="font-bold text-amber-600 dark:text-amber-500">الرد القديم:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-500">{t("agentProfiles.guardrails.conflictOldRebuttal")}</span>
                   <span className="text-muted-foreground whitespace-pre-wrap">{conflictWarning.conflictingRule.rebuttal}</span>
                 </div>
               </div>
 
               <div className="bg-muted p-3 rounded-lg flex flex-col gap-1">
-                <span className="font-semibold">توجيهك الجديد المقترح:</span>
+                <span className="font-semibold">{t("agentProfiles.guardrails.conflictNew")}</span>
                 <span className="text-foreground whitespace-pre-wrap">"{conflictWarning.newExcuse}"</span>
               </div>
             </div>
@@ -451,7 +451,7 @@ export default function AgentGuardrailsTab({
 
           <DialogFooter className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setConflictWarning(null)}>
-              تعديل المدخل الجديد
+              {t("agentProfiles.guardrails.conflictEditBtn")}
             </Button>
             <Button
               variant="destructive"
@@ -461,7 +461,7 @@ export default function AgentGuardrailsTab({
               disabled={savingRule}
             >
               {savingRule && <Loader2 className="size-3 animate-spin mr-1.5" />}
-              تجاهل وحفظ القاعدة على أي حال
+              {t("agentProfiles.guardrails.conflictForceBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>

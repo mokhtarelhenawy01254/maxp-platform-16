@@ -1,27 +1,27 @@
 model Conversation {
-  id                        String               @id @default(cuid())
+  id                        String                      @id @default(cuid())
   customerId                String
   assignedUserId            String?
-  channel                   String               @default("WHATSAPP")
-  status                    String               @default("ACTIVE")
+  channel                   String                      @default("WHATSAPP")
+  status                    String                      @default("ACTIVE")
   subject                   String?
-  priority                  Int                  @default(1)
+  priority                  Int                         @default(1)
   tags                      String?
   lastMessageAt             DateTime?
   lastMessagePreview        String?
-  isRead                    Boolean              @default(false)
-  isPinned                  Boolean              @default(false)
+  isRead                    Boolean                     @default(false)
+  isPinned                  Boolean                     @default(false)
   metadata                  String?
   companyId                 String
-  createdAt                 DateTime             @default(now())
-  updatedAt                 DateTime             @updatedAt
-  aiEnabled                 Boolean              @default(true)
-  lastMessageIsFromCustomer Boolean              @default(false)
-  unreadCount               Int                  @default(0)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  aiEnabled                 Boolean                     @default(true)
+  lastMessageIsFromCustomer Boolean                     @default(false)
+  unreadCount               Int                         @default(0)
   broadcastRecipients       BroadcastRecipient[]
-  user                      User?                @relation(fields: [assignedUserId], references: [id])
-  company                   Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer                  Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user                      User?                       @relation(fields: [assignedUserId], references: [id])
+  company                   Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer                  Customer                    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   messages                  Message[]
   orders                    Order[]
   notes                     ConversationModeratorNote[]
@@ -146,34 +146,34 @@ model SentMessageStat {
 }
 
 model WhatsAppContact {
-  id                    String          @id @default(cuid())
-  sessionId             String
-  jid                   String
-  phoneNumber           String
-  name                  String?
-  pushName              String?
-  profilePicUrl         String?
-  isGroup               Boolean         @default(false)
-  isBlocked             Boolean         @default(false)
-  customerId            String?
-  category              String?         @default("LEAD")
-  leadCategoryId        String?
-  tags                  String?
-  notes                 String?
-  lastMessageAt         DateTime?
-  lastCustomerMessageAt DateTime?
-  unreadCount           Int             @default(0)
-  totalMessages         Int             @default(0)
-  isArchived            Boolean         @default(false)
-  isPinned              Boolean         @default(false)
-  isMuted               Boolean         @default(false)
-  lastMessagePreview    String?
-  lastMessageIsFromMe   Boolean         @default(false)
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  customer               Customer?       @relation(fields: [customerId], references: [id])
-  leadCategory           LeadCategory?   @relation(fields: [leadCategoryId], references: [id])
-  whatsAppSession        WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id                      String                   @id @default(cuid())
+  sessionId               String
+  jid                     String
+  phoneNumber             String
+  name                    String?
+  pushName                String?
+  profilePicUrl           String?
+  isGroup                 Boolean                  @default(false)
+  isBlocked               Boolean                  @default(false)
+  customerId              String?
+  category                String?                  @default("LEAD")
+  leadCategoryId          String?
+  tags                    String?
+  notes                   String?
+  lastMessageAt           DateTime?
+  lastCustomerMessageAt   DateTime?
+  unreadCount             Int                      @default(0)
+  totalMessages           Int                      @default(0)
+  isArchived              Boolean                  @default(false)
+  isPinned                Boolean                  @default(false)
+  isMuted                 Boolean                  @default(false)
+  lastMessagePreview      String?
+  lastMessageIsFromMe     Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  customer                Customer?                @relation(fields: [customerId], references: [id])
+  leadCategory            LeadCategory?            @relation(fields: [leadCategoryId], references: [id])
+  whatsAppSession         WhatsAppSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   leadFollowUpEnrollments LeadFollowUpEnrollment[]
 
   @@unique([sessionId, jid])
@@ -227,6 +227,7 @@ model WhatsAppMessage {
   updatedAt       DateTime        @updatedAt
   senderId        String?
   participant     String?
+  isHidden        Boolean         @default(false)
   user            User?           @relation(fields: [senderId], references: [id])
   whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -266,47 +267,49 @@ model WhatsAppQuickReply {
 }
 
 model WhatsAppSession {
-  id                  String                 @id @default(cuid())
-  companyId           String
-  name                String
-  phoneNumber         String?
-  provider            WhatsAppProvider       @default(BAILEYS)
-  status              WhatsAppSessionsStatus @default(DISCONNECTED)
-  lastConnectedAt     DateTime?
-  lastDisconnectedAt  DateTime?
-  authState           String?
-  isDefault           Boolean                @default(false)
-  aiEnabled           Boolean                @default(true)
-  autoReply           Boolean                @default(false)
-  aiMode              String                 @default("suggest")
-  welcomeMessage      String?
-  awayMessage         String?
-  workingHoursEnabled Boolean                @default(false)
-  workingHours        String?
-  loadBalanceWeight   Int                    @default(1)
-  metadata            String?
-  metaPhoneNumberId   String?
-  metaWabaId          String?
-  metaBusinessId      String?
-  metaAccessToken     String?                @db.Text
-  metaTokenExpiresAt  DateTime?
+  id                     String                        @id @default(cuid())
+  companyId              String
+  name                   String
+  phoneNumber            String?
+  provider               WhatsAppProvider              @default(BAILEYS)
+  status                 WhatsAppSessionsStatus        @default(DISCONNECTED)
+  lastConnectedAt        DateTime?
+  lastDisconnectedAt     DateTime?
+  authState              String?
+  isDefault              Boolean                       @default(false)
+  aiEnabled              Boolean                       @default(true)
+  autoReply              Boolean                       @default(false)
+  aiMode                 String                        @default("suggest")
+  welcomeMessage         String?
+  awayMessage            String?
+  workingHoursEnabled    Boolean                       @default(false)
+  workingHours           String?
+  loadBalanceWeight      Int                           @default(1)
+  metadata               String?
+  metaPhoneNumberId      String?
+  metaWabaId             String?
+  metaBusinessId         String?
+  metaAccessToken        String?                       @db.Text
+  metaTokenExpiresAt     DateTime?
   metaWebhookVerifyToken String?
-  metaWebhookSecret   String?
+  metaWebhookSecret      String?
   metaDisplayPhoneNumber String?
-  metaQualityRating   String?
-  metaMessagingLimit  String?
-  metaApiVersion      String?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
-  profileName         String?
-  profilePictureUrl   String?
-  profileStatus       String?
-  whatsAppContacts    WhatsAppContact[]
-  whatsAppMessages    WhatsAppMessage[]
-  company             Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  whatsAppStatuses    WhatsAppStatus[]
-  assignment          WhatsAppNumberAssignment?
+  metaQualityRating      String?
+  metaMessagingLimit     String?
+  metaApiVersion         String?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  profileName            String?
+  profilePictureUrl      String?
+  profileStatus          String?
+  whatsAppContacts       WhatsAppContact[]
+  whatsAppMessages       WhatsAppMessage[]
+  company                Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  whatsAppStatuses       WhatsAppStatus[]
+  assignment             WhatsAppNumberAssignment?
   moderatorNotifications ModeratorNotification[]
+  historyImport          WhatsAppSessionHistoryImport?
+  lidMappings            WhatsAppLidMapping[]
 
   @@index([companyId])
   @@index([phoneNumber])
@@ -361,4 +364,54 @@ model WhatsAppStatus {
   @@index([sessionId])
   @@index([timestamp])
   @@map("whatsapp_statuses")
+}
+
+enum WhatsAppHistoryImportStatus {
+  NOT_REQUESTED
+  REQUESTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model WhatsAppSessionHistoryImport {
+  id                  String                      @id @default(cuid())
+  sessionId           String                      @unique
+  status              WhatsAppHistoryImportStatus @default(NOT_REQUESTED)
+  requestedAt         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  failedAt            DateTime?
+  lastError           String?
+  importedMessages    Int                         @default(0)
+  unsupportedMessages Int                         @default(0)
+  skippedMessages     Int                         @default(0)
+  failedMessages      Int                         @default(0)
+  chatsCount          Int                         @default(0)
+  contactsCount       Int                         @default(0)
+  lastProgress        Float?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([sessionId, status])
+  @@map("whatsapp_session_history_imports")
+}
+
+model WhatsAppLidMapping {
+  id              String          @id @default(cuid())
+  sessionId       String
+  lidJid          String
+  phoneJid        String
+  source          String          @default("HISTORY_SYNC")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, lidJid])
+  @@index([sessionId, phoneJid])
+  @@map("whatsapp_lid_mappings")
 }

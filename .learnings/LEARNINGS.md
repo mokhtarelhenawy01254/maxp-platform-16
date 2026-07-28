@@ -6,6 +6,29 @@ Corrections, insights, and knowledge gaps captured during development.
 
 ---
 
+## [LRN-20260728-001] correction
+
+**Logged**: 2026-07-28T00:00:00+03:00
+**Priority**: high
+**Status**: pending
+**Area**: backend
+
+### Summary
+Do not infer Baileys history payload shape solely from public `Chat` types when the runtime history processor mutates the payload.
+
+### Details
+The initial history-sync plan incorrectly treated `chat.messages` as absent. In Baileys 6.7.23, `processHistoryMessage` removes the full message array but restores the most recent message on each chat before emitting `messaging-history.set`. Completion semantics also require distinguishing raw history notifications from the event-buffer's consolidated payload: `isLatest` is calculated from local processed credentials, then retained while the buffer merges events. The HistorySync protobuf additionally exposes official phone-number-to-LID mappings that this Baileys version does not forward.
+
+### Suggested Action
+Before changing history import logic, inspect the installed Baileys runtime pipeline (`history.js`, `process-message.js`, and `event-buffer.js`), preserve the zero-message contact filter, and add a maintained adapter/patch path for `phoneNumberToLidMappings`.
+
+### Metadata
+- Source: user_feedback
+- Related Files: apps/backend/services/whatsapp/WhatsAppManager.js, apps/backend/node_modules/@whiskeysockets/baileys/lib/Utils/history.js, apps/backend/node_modules/@whiskeysockets/baileys/lib/Utils/event-buffer.js
+- Tags: baileys, history-sync, lid, correction
+
+---
+
 ## [LRN-20260702-001] knowledge_gap
 
 **Logged**: 2026-07-02T12:00:00Z

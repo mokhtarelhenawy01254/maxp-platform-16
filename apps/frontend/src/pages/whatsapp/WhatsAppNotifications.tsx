@@ -7,18 +7,13 @@ import {
   Bell,
   Briefcase,
   CheckCircle,
-  Clock,
-  DollarSign,
   Edit,
-  Eye,
   FileText,
-  Gift,
   Megaphone,
   Package,
   Plus,
   RefreshCw,
   Save,
-  Search,
   Send,
   Settings,
   ShoppingCart,
@@ -49,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+// Separator removed (unused)
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -183,7 +178,7 @@ type TabId =
   | "hr"
   | "tasks";
 
-const categoryBadgeClasses: Record<string, string> = {
+const _categoryBadgeClasses: Record<string, string> = {
   ORDERS:
     "border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200",
   PRODUCTS:
@@ -198,6 +193,7 @@ const categoryBadgeClasses: Record<string, string> = {
   SYSTEM:
     "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:text-slate-200",
 };
+void _categoryBadgeClasses;
 
 const sessionStatusClasses: Record<string, string> = {
   CONNECTED:
@@ -322,7 +318,7 @@ function SectionHeader({
   );
 }
 
-function TemplateMetric({
+function _TemplateMetric({
   icon: Icon,
   label,
   value,
@@ -345,6 +341,7 @@ function TemplateMetric({
     </div>
   );
 }
+void _TemplateMetric;
 
 interface WhatsAppNotificationsProps {
   companyId?: string;
@@ -358,6 +355,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   superAdminMode = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const ts = (key: string, opts?: Record<string, unknown>) => (t(key, opts as any) as unknown) as string;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const pageTitle = companyName
@@ -568,7 +566,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [templateSearch, setTemplateSearch] = useState("");
+  const [templateSearch, _setTemplateSearch] = useState("");
   const [templateCategory, setTemplateCategory] = useState("ALL");
   const [templateForm, setTemplateForm] =
     useState<TemplateFormState>(() => createEmptyTemplateForm(superAdminMode));
@@ -593,8 +591,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       "/whatsapp-notifications/settings",
       withCompanyConfig(),
     );
-    setSettings(response.data.settings);
-    setSessions(response.data.sessions || []);
+    setSettings((response as any).data.settings);
+    setSessions((response as any).data.sessions || []);
   }, [withCompanyConfig]);
 
   const fetchTemplates = useCallback(async () => {
@@ -602,7 +600,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       "/whatsapp-notifications/templates",
       withCompanyConfig(),
     );
-    setTemplates(response.data.templates || []);
+    setTemplates((response as any).data.templates || []);
   }, [withCompanyConfig]);
 
   const refreshPageData = useCallback(async () => {
@@ -800,7 +798,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       );
       showNotice(
         "success",
-        response.data?.message ||
+        (response as any).data?.message ||
           (i18n.language === "ar"
             ? "تم إرسال الإشعار الاختباري بنجاح."
             : "Test notification sent successfully."),
@@ -1134,11 +1132,12 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       .filter(Boolean).length;
   }, [settings?.companyLifecycleAdminPhones]);
 
-  const openCreateTemplateDialog = () => {
+  const _openCreateTemplateDialog = () => {
     setEditingTemplate(null);
     setTemplateForm(createEmptyTemplateForm(superAdminMode));
     setTemplateDialogOpen(true);
   };
+  void _openCreateTemplateDialog;
 
   if (loading) {
     return (
@@ -1147,7 +1146,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         description={pageDescription}
         icon={Bell}
         backHref={settingsHref}
-        backLabel={t("common.back")}
+        backLabel={ts("common.back") as string}
         eyebrow={eyebrow}
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -1171,7 +1170,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         description={pageDescription}
         icon={Bell}
         backHref={settingsHref}
-        backLabel={t("common.back")}
+        backLabel={ts("common.back") as string}
         eyebrow={eyebrow}
         actions={
           <Button
@@ -1203,7 +1202,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       description={pageDescription}
       icon={Bell}
       backHref={settingsHref}
-      backLabel={t("common.back")}
+      backLabel={ts("common.back") as string}
       eyebrow={eyebrow}
       actions={
         <>
@@ -1264,7 +1263,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               : t("whatsappNotifications.tabs.general")
           }
           value={settings.isEnabled ? (i18n.language === "ar" ? "مفعّل" : "Enabled") : (i18n.language === "ar" ? "متوقف" : "Paused")}
-          hint={currentSession?.name || t("whatsappNotifications.general.selectSession")}
+          hint={currentSession?.name || ts("whatsappNotifications.general.selectSession")}
           icon={Bell}
           tone={settings.isEnabled ? "success" : "danger"}
         />
@@ -1342,7 +1341,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-4">
               <WhatsAppSurfaceCard
-                title={t("whatsappNotifications.general.enableNotifications")}
+                title={ts("whatsappNotifications.general.enableNotifications")}
                 description={pageDescription}
                 action={<Switch checked={settings.isEnabled} onCheckedChange={(checked) => updateSetting("isEnabled", checked)} />}
               >
@@ -1375,7 +1374,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           id="default-session"
                           className="h-11 bg-[color:var(--color-card)]"
                         >
-                          <SelectValue placeholder={t("whatsappNotifications.general.selectSession")} />
+                          <SelectValue placeholder={ts("whatsappNotifications.general.selectSession")} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">
@@ -1404,9 +1403,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           </p>
                           <Badge
                             variant="outline"
-                            className={sessionStatusClasses[currentSession.status || "DISCONNECTED"] || sessionStatusClasses.DISCONNECTED}
+                            className={sessionStatusClasses[currentSession.status || "DISCONNECTED"] || sessionStatusClasses['DISCONNECTED']}
                           >
-                            {STATUS_LABELS[currentSession.status || "DISCONNECTED"] || STATUS_LABELS.DISCONNECTED}
+                            {(STATUS_LABELS as Record<string, string>)[currentSession.status || "DISCONNECTED"] || (STATUS_LABELS as Record<string, string>)['DISCONNECTED']}
                           </Badge>
                         </div>
                       ) : (
@@ -1458,7 +1457,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 <div className="space-y-5">
                   <FeatureToggle
                     label={t("whatsappNotifications.general.quietHours")}
-                    description={t("whatsappNotifications.general.quietHoursDesc")}
+                    description={ts("whatsappNotifications.general.quietHoursDesc")}
                     checked={settings.quietHoursEnabled}
                     onCheckedChange={(checked) =>
                       updateSetting("quietHoursEnabled", checked)
@@ -1526,8 +1525,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
             <div className="space-y-4">
               <WhatsAppSurfaceCard
-                title={t("whatsappJourney.title")}
-                description={t("whatsappJourney.subtitle")}
+                title={ts("whatsappJourney.title")}
+                description={ts("whatsappJourney.subtitle")}
                 action={
                   <Button
                     variant="outline"
@@ -1582,9 +1581,9 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         </div>
                         <Badge
                           variant="outline"
-                          className={sessionStatusClasses[session.status || "DISCONNECTED"] || sessionStatusClasses.DISCONNECTED}
+                          className={sessionStatusClasses[session.status || "DISCONNECTED"] || sessionStatusClasses['DISCONNECTED']}
                         >
-                          {STATUS_LABELS[session.status || "DISCONNECTED"] || STATUS_LABELS.DISCONNECTED}
+                          {(STATUS_LABELS as Record<string, string>)[session.status || "DISCONNECTED"] || (STATUS_LABELS as Record<string, string>)['DISCONNECTED']}
                         </Badge>
                       </div>
                     ))
@@ -1601,7 +1600,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="orders" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.orders.title")}
+            title={ts("whatsappNotifications.orders.title")}
             description={
               i18n.language === "ar"
                 ? "شغّل أو أوقف رسائل الطلبات حسب كل مرحلة تشغيل."
@@ -1611,7 +1610,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={Package}
-                title={t("whatsappNotifications.orders.title")}
+                title={ts("whatsappNotifications.orders.title")}
                 description={pageDescription}
                 checked={settings.orderNotificationsEnabled}
                 onCheckedChange={(checked) =>
@@ -1638,13 +1637,13 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           </WhatsAppSurfaceCard>
 
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.orders.paymentReminder")}
-            description={t("whatsappNotifications.orders.paymentReminderDesc")}
+            title={ts("whatsappNotifications.orders.paymentReminder")}
+            description={ts("whatsappNotifications.orders.paymentReminderDesc")}
           >
             <div className="space-y-4">
               <FeatureToggle
                 label={t("whatsappNotifications.orders.paymentReminder")}
-                description={t("whatsappNotifications.orders.paymentReminderDesc")}
+                description={ts("whatsappNotifications.orders.paymentReminderDesc")}
                 checked={settings.paymentReminderEnabled}
                 onCheckedChange={(checked) =>
                   updateSetting("paymentReminderEnabled", checked)
@@ -1678,7 +1677,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="products" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.products.title")}
+            title={ts("whatsappNotifications.products.title")}
             description={
               i18n.language === "ar"
                 ? "فعّل التنبيهات المرتبطة بتوافر المنتجات، انخفاض السعر، ووصول الجديد."
@@ -1688,7 +1687,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={ShoppingCart}
-                title={t("whatsappNotifications.products.title")}
+                title={ts("whatsappNotifications.products.title")}
                 description={pageDescription}
                 checked={settings.productNotificationsEnabled}
                 onCheckedChange={(checked) =>
@@ -1718,14 +1717,14 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="abandoned-cart" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.abandonedCart.title")}
-            description={t("whatsappNotifications.abandonedCart.desc")}
+            title={ts("whatsappNotifications.abandonedCart.title")}
+            description={ts("whatsappNotifications.abandonedCart.desc")}
           >
             <div className="space-y-4">
               <SectionHeader
                 icon={ShoppingCart}
-                title={t("whatsappNotifications.abandonedCart.title")}
-                description={t("whatsappNotifications.abandonedCart.desc")}
+                title={ts("whatsappNotifications.abandonedCart.title")}
+                description={ts("whatsappNotifications.abandonedCart.desc")}
                 checked={settings.abandonedCartEnabled}
                 onCheckedChange={(checked) =>
                   updateSetting("abandonedCartEnabled", checked)
@@ -1809,13 +1808,13 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
           {settings.abandonedCartEnabled ? (
             <WhatsAppSurfaceCard
-              title={t("whatsappNotifications.abandonedCart.incentiveDiscount")}
-              description={t("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
+              title={ts("whatsappNotifications.abandonedCart.incentiveDiscount")}
+              description={ts("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
             >
               <div className="space-y-4">
                 <FeatureToggle
                   label={t("whatsappNotifications.abandonedCart.incentiveDiscount")}
-                  description={t("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
+                  description={ts("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
                   checked={settings.abandonedCartDiscountEnabled}
                   onCheckedChange={(checked) =>
                     updateSetting("abandonedCartDiscountEnabled", checked)
@@ -1853,7 +1852,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="marketing" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.marketing.title")}
+            title={ts("whatsappNotifications.marketing.title")}
             description={
               i18n.language === "ar"
                 ? "أدِر رسائل التسويق الموسمية والحملات المباشرة من نفس المساحة."
@@ -1863,8 +1862,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={Megaphone}
-                title={t("whatsappNotifications.marketing.title")}
-                description={t("whatsappNotifications.marketing.complianceWarning")}
+                title={ts("whatsappNotifications.marketing.title")}
+                description={ts("whatsappNotifications.marketing.complianceWarning")}
                 checked={settings.marketingNotificationsEnabled}
                 onCheckedChange={(checked) =>
                   updateSetting("marketingNotificationsEnabled", checked)
@@ -2021,7 +2020,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           onValueChange={(value) =>
                             updateSetting(
                               "companyLifecycleAdminRoutingMode",
-                              value,
+                              value ?? "AUTO",
                             )
                           }
                         >
@@ -2083,7 +2082,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
         <TabsContent value="hr" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappNotifications.hr.title")}
+            title={ts("whatsappNotifications.hr.title")}
             description={
               i18n.language === "ar"
                 ? "اضبط التنبيهات الموجهة للموظفين والعمليات البشرية اليومية."
@@ -2093,7 +2092,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             <div className="space-y-4">
               <SectionHeader
                 icon={Users}
-                title={t("whatsappNotifications.hr.title")}
+                title={ts("whatsappNotifications.hr.title")}
                 description={pageDescription}
                 checked={settings.hrNotificationsEnabled}
                 onCheckedChange={(checked) =>
@@ -2191,7 +2190,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               <Label htmlFor="test-event">
                 {t("whatsappNotifications.test.eventLabel")}
               </Label>
-              <Select value={testEventType} onValueChange={setTestEventType}>
+              <Select value={testEventType} onValueChange={(v) => setTestEventType(v ?? '')}>
                 <SelectTrigger id="test-event" className="h-11 bg-[color:var(--color-card)]">
                   <SelectValue />
                 </SelectTrigger>
@@ -2292,7 +2291,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   onValueChange={(value) =>
                     setTemplateForm((current) => ({
                       ...current,
-                      category: value,
+                      category: value ?? '',
                     }))
                   }
                 >
@@ -2318,7 +2317,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   onValueChange={(value) =>
                     setTemplateForm((current) => ({
                       ...current,
-                      eventType: value === "__none__" ? "" : value,
+                      eventType: value === "__none__" ? "" : (value ?? ''),
                     }))
                   }
                   disabled={Boolean(editingTemplate)}

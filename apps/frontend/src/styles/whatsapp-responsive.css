@@ -140,7 +140,7 @@
 /* ── 8. Filter Pills — Horizontal Scroll on Mobile ── */
 .wa-filter-strip {
   display: flex;
-  gap: 0.375rem;
+  gap: var(--space-1, 6px);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -159,11 +159,11 @@
 
 /* ── 9. Safe-Area Insets ── */
 .wa-safe-bottom {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--space-1, 6px) + env(safe-area-inset-bottom, 0px));
 }
 
 .wa-input-bar {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--space-1, 6px) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── 10. Overscroll Contain — Messages Area ── */
@@ -498,6 +498,27 @@
 @media (min-width: 1024px) {
   .routing-workspace-grid {
     grid-template-columns: 320px 1fr;
+  }
+}
+
+/* ── Chat Right Panel — Mobile Overlay ── */
+@media (max-width: 1023px) {
+  .chat-right-panel-container {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-card, hsl(0 0% 100%));
+    animation: wa-tray-up 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .chat-right-panel-container > aside {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    flex: 1;
+    min-height: 0;
   }
 }
 

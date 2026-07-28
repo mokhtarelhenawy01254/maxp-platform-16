@@ -178,6 +178,14 @@ router.get('/tickets/:id', verifyToken.authenticateToken, checkAppAccess('order-
 router.get('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTickets);
 
 /**
+ * GET /api/turbo/captains/stats
+ * إحصائيات المندوبين - نسب التسليم والمرتجعات
+ */
+const captainStatsController = require('../controller/turbo/captainStatsController');
+router.get('/captains/stats', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), captainStatsController.getCaptainStats);
+router.get('/captains/:name/orders', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), captainStatsController.getCaptainOrders);
+
+/**
  * GET /api/turbo/debug/search/:code
  * DEBUG: Test search-order directly and return raw Turbo API response
  * TEMP - Remove after debugging

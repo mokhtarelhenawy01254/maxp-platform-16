@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2, ChevronDown, ChevronRight, Clock, Globe, Loader2, MessageSquare,
-  Plus, RefreshCw, Save, Sparkles, Trash2, Users, Zap, Settings2, Link2, Layers,
+  Plus, RefreshCw, Save, Sparkles, Trash2, Users, Zap, Settings2, Layers,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
@@ -116,41 +116,41 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadCategories = useCallback(async () => {
-    try { const r = await apiClient.get("/whatsapp/lead-categories", wc()); setCategories(r.data.data || []); } catch { /* */ }
+    try { const r = await apiClient.get("/whatsapp/lead-categories", wc()); setCategories((r as any).data.data || []); } catch { /* */ }
   }, [wc]);
 
   const loadSettings = useCallback(async () => {
-    try { const r = await apiClient.get(`${lfBase}/settings`, wc()); setSettings(r.data.data); } catch { /* */ }
+    try { const r = await apiClient.get(`${lfBase}/settings`, wc()); setSettings((r as any).data.data); } catch { /* */ }
   }, [wc]);
 
   const loadFlows = useCallback(async () => {
-    try { const r = await apiClient.get(`${apiBase}/flows`, wc()); setFlows(r.data.data || []); } catch { /* */ }
+    try { const r = await apiClient.get(`${apiBase}/flows`, wc()); setFlows((r as any).data.data || []); } catch { /* */ }
   }, [wc]);
 
   const loadStats = useCallback(async () => {
-    try { const r = await apiClient.get(`${lfBase}/stats`, wc()); setStats(r.data.data); } catch { /* */ }
+    try { const r = await apiClient.get(`${lfBase}/stats`, wc()); setStats((r as any).data.data); } catch { /* */ }
   }, [wc]);
 
   const loadCategoryStats = useCallback(async () => {
-    try { const r = await apiClient.get(`${lfBase}/category-stats`, wc()); setCategoryStats(r.data.data || []); } catch { /* */ }
+    try { const r = await apiClient.get(`${lfBase}/category-stats`, wc()); setCategoryStats((r as any).data.data || []); } catch { /* */ }
   }, [wc]);
 
   const loadJourneys = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (monFilter.status) params.status = monFilter.status;
-      if (monFilter.flowId) params.flowId = monFilter.flowId;
+      if (monFilter.status) params['status'] = monFilter.status;
+      if (monFilter.flowId) params['flowId'] = monFilter.flowId;
       const r = await apiClient.get(`${apiBase}/journeys`, wc({ params }));
-      setJourneys(r.data.data || []);
+      setJourneys((r as any).data.data || []);
     } catch { /* */ }
   }, [wc, monFilter]);
 
   const loadEnrollments = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (monFilter.status) params.status = monFilter.status;
+      if (monFilter.status) params['status'] = monFilter.status;
       const r = await apiClient.get(`${lfBase}/enrollments`, wc({ params }));
-      setEnrollments(r.data.data || []);
+      setEnrollments((r as any).data.data || []);
     } catch { /* */ }
   }, [wc, monFilter.status]);
 
@@ -167,7 +167,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   }, [activeTab, loadJourneys, loadEnrollments]);
 
   const loadSteps = useCallback(async (flowId: string) => {
-    try { const r = await apiClient.get(`${apiBase}/flows/${flowId}/steps`, wc()); return r.data.data || []; }
+    try { const r = await apiClient.get(`${apiBase}/flows/${flowId}/steps`, wc()); return (r as any).data.data || []; }
     catch { /* */ return []; }
   }, [wc]);
 
@@ -186,7 +186,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
         name: newFlowName.trim(),
         isGeneral: newFlowScope === "GENERAL"
       }, wc());
-      setFlows(prev => [r.data.data, ...prev]);
+      setFlows(prev => [(r as any).data.data, ...prev]);
       setNewFlowName(""); setNewFlowScope("TARGETED"); setNewFlowCategoryIds([]); setShowNewFlow(false);
     } catch (err: any) {
       const msg = err?.response?.data?.message;
@@ -257,7 +257,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
     try {
       await apiClient.put(`${lfBase}/settings`, settings, wc());
       const r = await apiClient.get(`${lfBase}/stats`, wc());
-      setStats(r.data.data);
+      setStats((r as any).data.data);
     } catch { /* */ } finally { setSaving(null); }
   };
 
@@ -285,7 +285,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                   if (local.delayUnit === "HOURS") setLocal({ ...local, delayHours: v });
                   else setLocal({ ...local, delayDays: v });
                 }} />
-              <Select value={local.delayUnit} onValueChange={(v) => setLocal({ ...local, delayUnit: v })}>
+              <Select value={local.delayUnit} onValueChange={(v) => setLocal({ ...local, delayUnit: v ?? '' })}>
                 <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="HOURS">{tx("steps.hours")}</SelectItem>
@@ -314,7 +314,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
 
   return (
     <WhatsAppPageShell
-      title={tx("title")} subtitle={tx("subtitle")} icon={Zap}
+      title={tx("title")} description={tx("subtitle") as string} icon={Zap}
       actions={
         <div className="flex items-center gap-2">
           <Button variant="outline" className="rounded-full" onClick={loadData} disabled={loading}>
@@ -764,7 +764,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                 title={tx("tabs.monitoring")}
                 action={
                   <div className="flex gap-2">
-                    <Select value={monFilter.status} onValueChange={(v) => setMonFilter(p => ({ ...p, status: v }))}>
+                    <Select value={monFilter.status} onValueChange={(v) => setMonFilter(p => ({ ...p, status: v ?? '' }))}>
                       <SelectTrigger className="h-9 min-w-[8rem] rounded-full"><SelectValue placeholder={tx("monitoring.allStatuses")} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">{tx("monitoring.allStatuses")}</SelectItem>
@@ -773,7 +773,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={monFilter.flowId} onValueChange={(v) => setMonFilter(p => ({ ...p, flowId: v }))}>
+                    <Select value={monFilter.flowId} onValueChange={(v) => setMonFilter(p => ({ ...p, flowId: v ?? '' }))}>
                       <SelectTrigger className="h-9 min-w-[8rem] rounded-full"><SelectValue placeholder={tx("monitoring.allFlows")} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">{tx("monitoring.allFlows")}</SelectItem>
@@ -805,7 +805,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                       <TableBody>
                         {/* Journeys (from flows) */}
                         {journeys.filter(j => !monFilter.flowId || j.flowId === monFilter.flowId).map((j) => {
-                          const cfg = statusCfg[j.status] || statusCfg.CANCELLED;
+                          const cfg = statusCfg[j.status] ?? statusCfg['CANCELLED'] ?? { dot: '', bg: '' };
                           const name = j.customer.firstName ? `${j.customer.firstName} ${j.customer.lastName || ""}` : j.customer.phone;
                           const totalSteps = j.flow.steps?.length || 1;
                           return (
@@ -831,7 +831,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                         })}
                         {/* Legacy enrollments */}
                         {enrollments.map((e) => {
-                          const cfg = statusCfg[e.status] || statusCfg.CANCELLED;
+                          const cfg = statusCfg[e.status] ?? statusCfg['CANCELLED'] ?? { dot: '', bg: '' };
                           const name = e.customer.firstName ? `${e.customer.firstName} ${e.customer.lastName || ""}` : e.whatsAppContact.name || e.whatsAppContact.pushName || e.whatsAppContact.phoneNumber;
                           return (
                             <TableRow key={e.id} className="hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]">

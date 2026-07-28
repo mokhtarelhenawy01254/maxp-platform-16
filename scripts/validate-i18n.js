@@ -5,6 +5,20 @@ const LOCALES_DIR = path.join(__dirname, "../apps/frontend/src/locales");
 
 let exitCode = 0;
 
+function findJsonFiles(dir) {
+  const results = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findJsonFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.startsWith('.')) {
+      results.push(path.parse(entry.name).name);
+    }
+  }
+  return results.sort();
+}
+
 function checkLang(lang) {
   const sectionsDir = path.join(LOCALES_DIR, lang, "sections");
   const translationPath = path.join(LOCALES_DIR, lang, "translation.json");
@@ -18,11 +32,7 @@ function checkLang(lang) {
     return;
   }
 
-  const sectionFiles = fs
-    .readdirSync(sectionsDir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => path.basename(f, ".json"));
-
+  const sectionFiles = findJsonFiles(sectionsDir);
   const translation = JSON.parse(fs.readFileSync(translationPath, "utf8"));
   const translationKeys = Object.keys(translation);
 
@@ -35,23 +45,19 @@ function checkLang(lang) {
 
   if (missingSections.length > 0) {
     console.log(
-      `[${lang}] Sections without translation.json key: ${missingSections.join(
-        ", "
-      )}`
+      `[${lang}] Sections without translation.json key: ${missingSections.join(", ")}`
     );
   }
 
   if (extraSections.length > 0) {
     console.log(
-      `[${lang}] Keys in translation.json without section file: ${extraSections.join(
-        ", "
-      )}`
+      `[${lang}] Keys in translation.json without section file: ${extraSections.join(", ")}`
     );
     exitCode = 1;
   }
 
   console.log(
-    `[${lang}] ✓ ${sectionFiles.length} section files, ${translationKeys.length} top-level keys in translation.json`
+    `[${lang}] ✓ ${sectionFiles.length} section files, ${translationKeys.length} top-level keys`
   );
 }
 

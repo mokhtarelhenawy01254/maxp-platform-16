@@ -65,10 +65,7 @@ interface Template {
 
 type NoticeTone = "success" | "error" | "warning" | "info";
 
-type NoticeState = {
-  tone: NoticeTone;
-  message: string;
-} | null;
+
 
 type TemplateFormState = {
   name: string;
@@ -293,7 +290,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         "/whatsapp-notifications/templates",
         withCompanyConfig(),
       );
-      setTemplates(response.data.templates || []);
+      setTemplates((response as any).data.templates || []);
     } catch (error) {
       console.error("Error loading WhatsApp templates:", error);
       showNotice(
@@ -308,10 +305,10 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   const fetchMetaSessions = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
-      const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = res.data?.sessions || [];
+      const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = (res as any).data?.sessions || [];
       const cloudSessions = list.filter(s => s.provider === 'META_CLOUD');
       setMetaSessions(cloudSessions);
-      if (cloudSessions.length > 0 && !selectedMetaSession) {
+      if (cloudSessions.length > 0 && cloudSessions[0] && !selectedMetaSession) {
         setSelectedMetaSession(cloudSessions[0].id);
       }
     } catch { /* ignore */ }
@@ -324,7 +321,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     }
     setPublishingId(templateId);
     try {
-      const res = await apiClient.post(
+      void apiClient.post(
         `/whatsapp-notifications/templates/${templateId}/publish`,
         { sessionId: selectedMetaSession },
         withCompanyConfig(),
@@ -520,7 +517,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       actions={
         <div className="flex items-center gap-2">
           {metaSessions.length > 0 ? (
-            <Select value={selectedMetaSession} onValueChange={setSelectedMetaSession}>
+            <Select value={selectedMetaSession} onValueChange={(v) => setSelectedMetaSession(v ?? '')}>
               <SelectTrigger className="h-9 w-auto min-w-[140px] rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-xs">
                 <Globe className="size-3 me-1" />
                 <SelectValue placeholder={i18n.language === 'ar' ? 'جلسة ميتا' : 'Meta session'} />
@@ -562,7 +559,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
               ? i18n.language === "ar"
                 ? "قوالب تسجيل الشركات"
                 : "Company signup templates"
-              : t("whatsappNotifications.tabs.templates")
+              : (t("whatsappNotifications.tabs.templates") as unknown as string)
           }
           description={
             superAdminMode
@@ -620,7 +617,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                     <Input
                       value={templateSearch}
                       onChange={(event) => setTemplateSearch(event.target.value)}
-                      placeholder={t("common.search")}
+                      placeholder={String(t("common.search"))}
                       className="h-11 rounded-full bg-[color:var(--color-card)] pl-10"
                     />
                   </div>
@@ -674,8 +671,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                           <Badge
                             variant="outline"
                             className={
-                              categoryBadgeClasses[template.category] ||
-                              categoryBadgeClasses.SYSTEM
+                              categoryBadgeClasses[template.category as keyof typeof categoryBadgeClasses] ||
+                              categoryBadgeClasses['SYSTEM']
                             }
                           >
                             {CATEGORY_LABELS[
@@ -863,7 +860,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                     <Select
                       value={templateForm.category}
                       onValueChange={(val) =>
-                        setTemplateForm((prev) => ({ ...prev, category: val }))
+                        setTemplateForm((prev) => ({ ...prev, category: val ?? '' }))
                       }
                       disabled={superAdminMode}
                     >
@@ -887,7 +884,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                     <Select
                       value={templateForm.eventType}
                       onValueChange={(val) =>
-                        setTemplateForm((prev) => ({ ...prev, eventType: val }))
+                        setTemplateForm((prev) => ({ ...prev, eventType: val ?? '' }))
                       }
                     >
                       <SelectTrigger className="h-12 bg-[color:var(--color-muted)]">

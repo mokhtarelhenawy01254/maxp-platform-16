@@ -231,7 +231,7 @@ const WhatsAppMetaTemplates: React.FC<{
   companyName?: string;
   superAdminMode?: boolean;
 }> = ({ companyId, companyName, superAdminMode = false }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -274,7 +274,7 @@ const WhatsAppMetaTemplates: React.FC<{
   const fetchSessions = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
-      const metaSessions = (res.data?.sessions || []).filter(
+      const metaSessions = ((res as any).data?.sessions || []).filter(
         (s: any) => s.provider === "META_CLOUD" || s.metaWabaId,
       );
       setSessions(metaSessions);
@@ -292,7 +292,7 @@ const WhatsAppMetaTemplates: React.FC<{
         `/whatsapp-templates/templates?sessionId=${selectedSessionId}`,
         withCompanyConfig(),
       );
-      setTemplates(res.data?.templates || []);
+      setTemplates((res as any).data?.templates || []);
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل تحميل القوالب");
     } finally {
@@ -456,7 +456,7 @@ const WhatsAppMetaTemplates: React.FC<{
     const groups: Record<string, MetaTemplate[]> = {};
     for (const t of filteredTemplates) {
       if (!groups[t.name]) groups[t.name] = [];
-      groups[t.name].push(t);
+      groups[t.name]!.push(t);
     }
     return groups;
   }, [filteredTemplates]);
@@ -466,7 +466,7 @@ const WhatsAppMetaTemplates: React.FC<{
   };
 
   const applyLibraryTemplate = useCallback((libTpl: typeof templateLibrary[number]) => {
-    const lang = libTpl.languages[0];
+    const lang = libTpl.languages[0]!;
     setForm({
       name: libTpl.name,
       language: lang.code,
@@ -499,7 +499,7 @@ const WhatsAppMetaTemplates: React.FC<{
     const groups: Record<string, typeof templateLibrary> = {};
     for (const t of filteredLibrary) {
       if (!groups[t.category]) groups[t.category] = [];
-      groups[t.category].push(t);
+      groups[t.category]!.push(t);
     }
     return groups;
   }, [filteredLibrary]);
@@ -514,11 +514,11 @@ const WhatsAppMetaTemplates: React.FC<{
       description="إدارة قوالب واتساب بزنس المسجلة في Meta Cloud API"
       icon={Globe}
       backHref="/whatsapp"
-      backLabel={t("common.back")}
+      backLabel={t("common.back") as string}
       eyebrow={superAdminMode ? `Company: ${companyName}` : "WhatsApp Workspace"}
       actions={
         <div className="flex gap-2">
-          <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+          <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
             <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
               <SelectValue placeholder="اختر جلسة">
                 {(value: string | null) => {
@@ -587,9 +587,10 @@ const WhatsAppMetaTemplates: React.FC<{
               {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
                 const expanded = expandedGroups[groupName] !== false;
                 const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
-                const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : uniqueStatuses[0];
+                const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
                 const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
-                const languages = groupTemplates.map(t => t.language).join(", ");
+                const _languages = groupTemplates.map(t => t.language).join(", ");
+                void _languages;
                 return (
                   <React.Fragment key={groupName}>
                     <TableRow className="cursor-pointer hover:bg-[var(--color-muted)]" onClick={() => toggleGroup(groupName)}>
@@ -614,21 +615,21 @@ const WhatsAppMetaTemplates: React.FC<{
                       <TableCell>
                         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const t = groupTemplates[0];
-                            setViewTemplate(t);
+                            const tmpl = groupTemplates[0];
+                            if (tmpl) setViewTemplate(tmpl);
                           }}>
                             <FileText className="size-4" />
                           </Button>
                           <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const t = groupTemplates[0];
-                            const headerComponent = t.components?.find((c) => c.type === "HEADER");
-                            const bodyComponent = t.components?.find((c) => c.type === "BODY");
-                            const footerComponent = t.components?.find((c) => c.type === "FOOTER");
-                            const buttonsComponent = t.components?.find((c) => c.type === "BUTTONS");
+                            const tmpl = groupTemplates[0]!;
+                            const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                            const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                            const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                            const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
                             setEditForm({
-                              name: t.name,
-                              language: t.language,
-                              category: t.category,
+                              name: tmpl.name,
+                              language: tmpl.language,
+                              category: tmpl.category,
                               headerFormat: headerComponent?.format || "TEXT",
                               headerText: headerComponent?.text || "",
                               bodyText: bodyComponent?.text || "",
@@ -735,7 +736,7 @@ const WhatsAppMetaTemplates: React.FC<{
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>اللغة</Label>
-                  <Select value={form.language} onValueChange={(v) => setForm((p) => ({ ...p, language: v }))}>
+                  <Select value={form.language} onValueChange={(v) => setForm((p) => ({ ...p, language: v ?? '' }))}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>
@@ -748,7 +749,7 @@ const WhatsAppMetaTemplates: React.FC<{
                 </div>
                 <div className="space-y-2">
                   <Label>التصنيف</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
+                  <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v ?? '' }))}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -759,7 +760,7 @@ const WhatsAppMetaTemplates: React.FC<{
               <div className="space-y-2">
                 <Label>رأس الرسالة (اختياري)</Label>
                 <div className="flex gap-2">
-                  <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v }))}>
+                  <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v ?? '' }))}>
                     <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
@@ -1014,7 +1015,7 @@ const WhatsAppMetaTemplates: React.FC<{
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>التصنيف</Label>
-                <Select value={editForm.category} onValueChange={(v) => setEditForm((p) => p ? { ...p, category: v } : null)}>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm((p) => p ? { ...p, category: v ?? '' } : null)}>
                   <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -1023,7 +1024,7 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
               <div className="space-y-2">
                 <Label>اللغة</Label>
-                <Select value={editForm.language} onValueChange={(v) => setEditForm((p) => p ? { ...p, language: v } : null)}>
+                <Select value={editForm.language} onValueChange={(v) => setEditForm((p) => p ? { ...p, language: v ?? '' } : null)}>
                   <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
@@ -1037,7 +1038,7 @@ const WhatsAppMetaTemplates: React.FC<{
               <div className="space-y-2">
                 <Label>رأس الرسالة (اختياري)</Label>
                 <div className="flex gap-2">
-                  <Select value={editForm.headerFormat} onValueChange={(v) => setEditForm((p) => p ? { ...p, headerFormat: v } : null)}>
+                  <Select value={editForm.headerFormat} onValueChange={(v) => setEditForm((p) => p ? { ...p, headerFormat: v ?? '' } : null)}>
                     <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="TEXT">TEXT</SelectItem>
@@ -1188,7 +1189,7 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
             ) : (
               Object.entries(libraryByCategory).map(([category, templates]) => {
-                const style = CATEGORY_STYLE[category];
+                const style = CATEGORY_STYLE[category]!;
                 return (
                   <section key={category}>
                     <div className={`sticky top-0 z-10 mb-3 flex items-center gap-2 rounded-2xl p-2.5 ${style.sectionBg} backdrop-blur-sm`}>

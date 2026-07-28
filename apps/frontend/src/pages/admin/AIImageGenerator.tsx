@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -567,6 +568,7 @@ const detectVerticalFromCompany = (company: any | null): Vertical => {
 };
 
 const AIImageGenerator: React.FC = () => {
+  const { t } = useTranslation();
   const { company } = useCompany();
   const [form, setForm] = useState<FormData>(() => {
     const draft = loadDraft();
@@ -618,16 +620,13 @@ const AIImageGenerator: React.FC = () => {
 
   type SectionKey = "branding" | "layout" | "campaign" | "output";
 
-  const SECTIONS: {
-    key: SectionKey;
-    title: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  }[] = [
-    { key: "branding", title: "الهوية", icon: Info },
-    { key: "layout", title: "التنسيق", icon: Grid3X3 },
-    { key: "campaign", title: "الحملة", icon: Sparkles },
-    { key: "output", title: "التوليد", icon: Wand2 },
+  const sectionsData = [
+    { key: "branding" as SectionKey, keyT: "sections.branding", icon: Info },
+    { key: "layout" as SectionKey, keyT: "sections.layout", icon: Grid3X3 },
+    { key: "campaign" as SectionKey, keyT: "sections.campaign", icon: Sparkles },
+    { key: "output" as SectionKey, keyT: "sections.output", icon: Wand2 },
   ];
+  const SECTIONS = sectionsData.map((s) => ({ ...s, title: t(`aiImageGenerator.${s.keyT}`) }));
 
   const [activeSection, setActiveSection] = useState<SectionKey>("branding");
 
@@ -858,7 +857,7 @@ const AIImageGenerator: React.FC = () => {
 
   const generateCaption = useCallback(async () => {
     if (!canGenerate) {
-      toast.error("من فضلك أدخل اسم المنتج أو العنوان الرئيسي لتوليد الكابشن");
+      toast.error(t("aiImageGenerator.toasts.captionRequired"));
       return;
     }
     try {
@@ -872,12 +871,12 @@ const AIImageGenerator: React.FC = () => {
       });
       if (res.data?.success && res.data?.data) {
         setGeneratedCaption(res.data.data);
-        toast.success("تم توليد الكابشن والهاشتاجات");
+        toast.success(t("aiImageGenerator.toasts.captionGenerated"));
       } else {
-        toast.error(res.data?.message || "فشل توليد الكابشن");
+        toast.error(res.data?.message || t("aiImageGenerator.toasts.captionFailed"));
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || err.message || "فشل توليد الكابشن");
+      toast.error(err?.response?.data?.message || err.message || t("aiImageGenerator.toasts.captionFailed"));
     }
   }, [canGenerate, form, brandIdentity, buildPromptJson]);
 
@@ -950,8 +949,8 @@ const AIImageGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!canGenerate) {
-      toast.error("من فضلك أدخل اسم المنتج أو العنوان الرئيسي");
-      setMessage({ type: "error", text: "من فضلك أدخل اسم المنتج أو العنوان الرئيسي" });
+      toast.error(t("aiImageGenerator.toasts.generateRequired"));
+      setMessage({ type: "error", text: t("aiImageGenerator.toasts.generateRequired") });
       return;
     }
     setLoading(true);
@@ -985,10 +984,10 @@ const AIImageGenerator: React.FC = () => {
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
-        toast.success("تم توليد الصورة بنجاح");
+        toast.success(t("aiImageGenerator.toasts.imageGenerated"));
         fetchGallery();
       } else {
-        const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
+        const text = res.data?.data?.message || res.data?.message || t("aiImageGenerator.toasts.imageNotReceived");
         toast.error(text);
         setMessage({ type: "error", text });
       }
@@ -997,7 +996,7 @@ const AIImageGenerator: React.FC = () => {
         err?.response?.data?.message ||
         err?.response?.data?.data?.message ||
         err.message ||
-        "فشل في توليد الصورة";
+        t("aiImageGenerator.toasts.imageFailed");
       toast.error(text);
       setMessage({ type: "error", text });
     } finally {
@@ -1011,15 +1010,15 @@ const AIImageGenerator: React.FC = () => {
     a.href = imageUrl;
     a.download = `maxp-ai-${Date.now()}.${form.format}`;
     a.click();
-    toast.success("تم بدء التحميل");
+    toast.success(t("aiImageGenerator.toasts.downloadStarted"));
   };
 
   const handleCopyCaption = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("تم نسخ النص");
+      toast.success(t("aiImageGenerator.toasts.textCopied"));
     } catch {
-      toast.error("فشل النسخ");
+      toast.error(t("aiImageGenerator.toasts.copyFailed"));
     }
   };
 
@@ -1027,9 +1026,9 @@ const AIImageGenerator: React.FC = () => {
     if (!imageUrl) return;
     try {
       await navigator.clipboard.writeText(window.location.origin + imageUrl);
-      toast.success("تم نسخ الرابط");
+      toast.success(t("aiImageGenerator.toasts.linkCopied"));
     } catch {
-      toast.error("فشل نسخ الرابط");
+      toast.error(t("aiImageGenerator.toasts.linkCopyFailed"));
     }
   };
 
@@ -1076,10 +1075,10 @@ const AIImageGenerator: React.FC = () => {
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
-        toast.success("تم توليد الصورة بنجاح");
+        toast.success(t("aiImageGenerator.toasts.imageGenerated"));
         fetchGallery();
       } else {
-        const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
+        const text = res.data?.data?.message || res.data?.message || t("aiImageGenerator.toasts.imageNotReceived");
         toast.error(text);
         setMessage({ type: "error", text });
       }
@@ -1088,7 +1087,7 @@ const AIImageGenerator: React.FC = () => {
         err?.response?.data?.message ||
         err?.response?.data?.data?.message ||
         err.message ||
-        "فشل في توليد الصورة";
+        t("aiImageGenerator.toasts.imageFailed");
       toast.error(text);
       setMessage({ type: "error", text });
     } finally {
@@ -1101,9 +1100,9 @@ const AIImageGenerator: React.FC = () => {
       await apiClient.delete(`/ai-image/${filename}`);
       setGallery((prev) => prev.filter((g) => g.filename !== filename));
       setDeleteDialog({ open: false, url: "", filename: "" });
-      toast.success("تم حذف الصورة");
+      toast.success(t("aiImageGenerator.toasts.imageDeleted"));
     } catch {
-      toast.error("فشل حذف الصورة");
+      toast.error(t("aiImageGenerator.toasts.imageDeleteFailed"));
     }
   };
 
@@ -1119,7 +1118,7 @@ const AIImageGenerator: React.FC = () => {
     setGallerySearch("");
     setUsage(null);
     setGeneratedCaption(null);
-    toast.info("تم تصفير النموذج");
+    toast.info(t("aiImageGenerator.toasts.formReset"));
   };
 
   const formatDate = (date: string | Date) => {
@@ -1146,7 +1145,7 @@ const AIImageGenerator: React.FC = () => {
     });
 
     setPromptTouched(true);
-    toast.success("تم تطبيق إعدادات الصورة المحددة للنموذج والبرومبت");
+    toast.success(t("aiImageGenerator.toasts.settingsApplied"));
   };
 
   const filteredGallery = useMemo(() => {
@@ -1177,16 +1176,16 @@ const AIImageGenerator: React.FC = () => {
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Sparkles className="size-5 text-sky-500" />
-            مصمم صور السوشيال ميديا
+            {t("aiImageGenerator.title")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            أنشئ محتوى بصري احترافي متكيّف مع نوع نشاطك بدون برومبت معقد
+            {t("aiImageGenerator.subtitle")}
           </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400">نوع النشاط</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{t("aiImageGenerator.verticalLabel")}</span>
             <Select
               value={form.vertical}
               onValueChange={(v) => {
@@ -1220,7 +1219,7 @@ const AIImageGenerator: React.FC = () => {
           </div>
           {company && (
             <p className="text-[10px] text-muted-foreground">
-              تم الكشف تلقائياً بناءً على تطبيقات الشركة المفعلة
+              {t("aiImageGenerator.autoDetected")}
             </p>
           )}
         </div>
@@ -1231,10 +1230,10 @@ const AIImageGenerator: React.FC = () => {
         className="h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200/70 bg-transparent p-0 pb-3 dark:border-slate-800"
       >
         <TabsTrigger value="create" className="gap-1.5 !text-sm !font-bold data-active:!text-sky-600">
-          <Wand2 className="size-4" /> إنشاء تصميم
+          <Wand2 className="size-4" /> {t("aiImageGenerator.tabs.create")}
         </TabsTrigger>
         <TabsTrigger value="gallery" className="gap-1.5 !text-sm !font-bold data-active:!text-sky-600">
-          <Grid3X3 className="size-4" /> معرض التصاميم
+          <Grid3X3 className="size-4" /> {t("aiImageGenerator.tabs.gallery")}
           <Badge variant="secondary" className="rounded-full px-1.5 text-[10px] !h-4 !py-0 ms-1">
             {gallery.length}
           </Badge>
@@ -1295,7 +1294,7 @@ const AIImageGenerator: React.FC = () => {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="العنوان الفرعي">
+                <Field label={t("aiImageGenerator.fields.subheadline")}>
                   <Input
                     dir="auto"
                     placeholder={vc.subheadlinePlaceholder}
@@ -1339,7 +1338,7 @@ const AIImageGenerator: React.FC = () => {
               </Field>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field label="صورة المنتج">
+                <Field label={t("aiImageGenerator.fields.productImage")}>
                   {!primaryImagePreview ? (
                     <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-2 dark:bg-slate-900/50">
                       <Input
@@ -1350,7 +1349,7 @@ const AIImageGenerator: React.FC = () => {
                       />
                       <div className="text-center pointer-events-none py-1">
                         <ImageIcon className="mx-auto size-5 text-slate-400 mb-1" />
-                        <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة المنتج</span>
+                        <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">{t("aiImageGenerator.fields.uploadProductImage")}</span>
                       </div>
                     </div>
                   ) : (
@@ -1361,23 +1360,23 @@ const AIImageGenerator: React.FC = () => {
                         className="h-12 w-12 rounded-lg border object-cover bg-white"
                       />
                       <div className="text-xs pr-1">
-                        <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار صورة المنتج</p>
+                        <p className="font-semibold text-slate-700 dark:text-slate-300">{t("aiImageGenerator.fields.productImageSelected")}</p>
                         <button
                           type="button"
                           onClick={() => setPrimaryImageAndDraft(null)}
                           className="text-red-500 hover:underline mt-0.5"
                         >
-                          إزالة
+                          {t("aiImageGenerator.fields.remove")}
                         </button>
                       </div>
                     </div>
                   )}
                 </Field>
 
-                <Field label="نص إضافي قصير">
+                <Field label={t("aiImageGenerator.fields.additionalText")}>
                   <Input
                     dir="auto"
-                    placeholder="متوفر الآن بألوان متعددة"
+                    placeholder={t("aiImageGenerator.fields.additionalTextPlaceholder")}
                     value={form.bodyText}
                     onChange={(e) => update("bodyText", e.target.value)}
                     className={inputCls}
@@ -1432,10 +1431,10 @@ const AIImageGenerator: React.FC = () => {
                       )}
                       <span>
                         {brandKitLoading
-                          ? "جاري تحميل الهوية..."
+                          ? t("aiImageGenerator.fields.brandKitLoading")
                           : isBrandKitLoaded
-                          ? "هوية العلامة محمّلة"
-                          : "لا توجد هوية محفوظة"}
+                          ? t("aiImageGenerator.fields.brandKitLoaded")
+                          : t("aiImageGenerator.fields.brandKitNotFound")}
                       </span>
                       {isBrandKitLoaded && (
                         <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -1464,22 +1463,22 @@ const AIImageGenerator: React.FC = () => {
                         disabled={!isBrandKitLoaded || brandKitLoading}
                       />
                       <Label htmlFor="brand-kit-auto" className="text-[10px] text-slate-500 cursor-pointer">
-                        تطبيق تلقائي
+                        {t("aiImageGenerator.fields.autoApply")}
                       </Label>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="اسم العلامة">
+                    <Field label={t("aiImageGenerator.fields.brandName")}>
                       <Input
                         dir="auto"
-                        placeholder="متجر أزياء أونلاين"
+                        placeholder={t("aiImageGenerator.fields.brandNamePlaceholder")}
                         value={form.brandName}
                         onChange={(e) => update("brandName", e.target.value)}
                         className={inputCls}
                       />
                     </Field>
-                    <Field label="الخط">
+                    <Field label={t("aiImageGenerator.fields.font")}>
                       <Select value={form.headingFont} onValueChange={selectValue("headingFont")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
@@ -1496,9 +1495,9 @@ const AIImageGenerator: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label className="mb-2 block text-[10px] font-semibold text-slate-500">الألوان</Label>
+                    <Label className="mb-2 block text-[10px] font-semibold text-slate-500">{t("aiImageGenerator.fields.colors")}</Label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <Field label="أساسي">
+                      <Field label={t("aiImageGenerator.fields.primary")}>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1513,7 +1512,7 @@ const AIImageGenerator: React.FC = () => {
                           />
                         </div>
                       </Field>
-                      <Field label="ثانوي">
+                      <Field label={t("aiImageGenerator.fields.secondary")}>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1528,7 +1527,7 @@ const AIImageGenerator: React.FC = () => {
                           />
                         </div>
                       </Field>
-                      <Field label="تركيز">
+                      <Field label={t("aiImageGenerator.fields.accent")}>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1553,7 +1552,7 @@ const AIImageGenerator: React.FC = () => {
                 <div className="space-y-4">
                   {/* Platform selection */}
                   <div>
-                    <Label className="mb-2 block text-xs font-semibold text-slate-500">المنصة الإعلانية المستهدفة</Label>
+                    <Label className="mb-2 block text-xs font-semibold text-slate-500">{t("aiImageGenerator.fields.platform")}</Label>
                     <div className="flex flex-wrap gap-2">
                       {PLATFORMS.map((p) => (
                         <button
@@ -1578,7 +1577,7 @@ const AIImageGenerator: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="نسبة أبعاد الصورة">
+                    <Field label={t("aiImageGenerator.fields.aspectRatio")}>
                       <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
@@ -1593,10 +1592,10 @@ const AIImageGenerator: React.FC = () => {
                       </Select>
                     </Field>
 
-                    <Field label="توزيع العناصر (Layout)">
+                    <Field label={t("aiImageGenerator.fields.layout")}>
                       <Select value={form.layout} onValueChange={selectValue("layout")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر التوزيع الافتراضي" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.layoutPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {LAYOUTS.map((l) => (
@@ -1610,10 +1609,10 @@ const AIImageGenerator: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <Field label="المود / الجو العام">
+                    <Field label={t("aiImageGenerator.fields.mood")}>
                       <Select value={form.mood} onValueChange={selectValue("mood")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر المود البصري" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.moodPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {MOODS.map((m) => (
@@ -1624,10 +1623,10 @@ const AIImageGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="ثيم التصميم">
+                    <Field label={t("aiImageGenerator.fields.theme")}>
                       <Select value={form.theme} onValueChange={selectValue("theme")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر الثيم الفني" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.themePlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {THEMES.map((t) => (
@@ -1638,10 +1637,10 @@ const AIImageGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="دعوة للإجراء (CTA)">
+                    <Field label={t("aiImageGenerator.fields.cta")}>
                       <Select value={form.cta} onValueChange={selectValue("cta")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="زر الإجراء" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.ctaPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {vc.ctaOptions.map((c) => (
@@ -1655,10 +1654,10 @@ const AIImageGenerator: React.FC = () => {
                   </div>
 
                   {form.cta === "custom" && (
-                    <Field label="نص الزر المخصص">
+                    <Field label={t("aiImageGenerator.fields.customCta")}>
                       <Input
                         dir="auto"
-                        placeholder="مثال: خصم خاص لك"
+                        placeholder={t("aiImageGenerator.fields.customCtaPlaceholder")}
                         value={form.customCta}
                         onChange={(e) => update("customCta", e.target.value)}
                         className={inputCls}
@@ -1667,7 +1666,7 @@ const AIImageGenerator: React.FC = () => {
                   )}
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="مكان تموضع النصوص">
+                    <Field label={t("aiImageGenerator.fields.textPosition")}>
                       <Select value={form.textPosition} onValueChange={selectValue("textPosition")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
@@ -1681,45 +1680,45 @@ const AIImageGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="محاذاة النصوص">
+                    <Field label={t("aiImageGenerator.fields.textAlignment")}>
                       <Select value={form.textAlignment} onValueChange={selectValue("textAlignment")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="right">يمين</SelectItem>
-                          <SelectItem value="center">منتصف</SelectItem>
-                          <SelectItem value="left">يسار</SelectItem>
+                          <SelectItem value="right">{t("aiImageGenerator.fields.alignRight")}</SelectItem>
+                          <SelectItem value="center">{t("aiImageGenerator.fields.alignCenter")}</SelectItem>
+                          <SelectItem value="left">{t("aiImageGenerator.fields.alignLeft")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="نمط الزوايا">
+                    <Field label={t("aiImageGenerator.fields.cornerStyle")}>
                       <Select value={form.borderRadius} onValueChange={selectValue("borderRadius")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">حادة (لا توجد زوايا)</SelectItem>
-                          <SelectItem value="subtle">ناعمة قليلاً (Subtle)</SelectItem>
-                          <SelectItem value="rounded">دائرية مريحة (Rounded)</SelectItem>
-                          <SelectItem value="pill">بيضاوي كامل (Pill)</SelectItem>
+                          <SelectItem value="none">{t("aiImageGenerator.fields.cornerNone")}</SelectItem>
+                          <SelectItem value="subtle">{t("aiImageGenerator.fields.cornerSubtle")}</SelectItem>
+                          <SelectItem value="rounded">{t("aiImageGenerator.fields.cornerRounded")}</SelectItem>
+                          <SelectItem value="pill">{t("aiImageGenerator.fields.cornerPill")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="نمط الظل البصري">
+                    <Field label={t("aiImageGenerator.fields.shadowStyle")}>
                       <Select value={form.shadow} onValueChange={selectValue("shadow")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">بدون ظل (Flat)</SelectItem>
-                          <SelectItem value="soft">ظل ناعم وخفيف</SelectItem>
-                          <SelectItem value="medium">ظل متوسط</SelectItem>
-                          <SelectItem value="hard">ظل حاد وبارز</SelectItem>
-                          <SelectItem value="glow">ظل متوهج مضيء</SelectItem>
+                          <SelectItem value="none">{t("aiImageGenerator.fields.shadowNone")}</SelectItem>
+                          <SelectItem value="soft">{t("aiImageGenerator.fields.shadowSoft")}</SelectItem>
+                          <SelectItem value="medium">{t("aiImageGenerator.fields.shadowMedium")}</SelectItem>
+                          <SelectItem value="hard">{t("aiImageGenerator.fields.shadowHard")}</SelectItem>
+                          <SelectItem value="glow">{t("aiImageGenerator.fields.shadowGlow")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
@@ -1731,10 +1730,10 @@ const AIImageGenerator: React.FC = () => {
               {activeSection === "campaign" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="الهدف الإعلاني للمنشور">
+                    <Field label={t("aiImageGenerator.fields.campaignPurpose")}>
                       <Select value={form.purpose} onValueChange={selectValue("purpose")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر الهدف التسويقي" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.campaignPurposePlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {vc.purposeOptions.map((p) => (
@@ -1745,10 +1744,10 @@ const AIImageGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="اسم الحملة التسويقية">
+                    <Field label={t("aiImageGenerator.fields.campaignName")}>
                       <Input
                         dir="auto"
-                        placeholder="مثال: حملة تخفيضات صيف 2026"
+                        placeholder={t("aiImageGenerator.fields.campaignNamePlaceholder")}
                         value={form.campaignName}
                         onChange={(e) => update("campaignName", e.target.value)}
                         className={inputCls}
@@ -1757,10 +1756,10 @@ const AIImageGenerator: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="عنصر الاستعجال الزمني">
+                    <Field label={t("aiImageGenerator.fields.urgency")}>
                       <Select value={form.urgency} onValueChange={selectValue("urgency")}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="نوع الاستعجال" />
+                          <SelectValue placeholder={t("aiImageGenerator.fields.urgencyPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {URGENCIES.map((u) => (
@@ -1771,7 +1770,7 @@ const AIImageGenerator: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="رابط الاستهداف (URL)">
+                    <Field label={t("aiImageGenerator.fields.targetUrl")}>
                       <Input
                         dir="ltr"
                         placeholder="https://example.com/promo"
@@ -1782,10 +1781,10 @@ const AIImageGenerator: React.FC = () => {
                     </Field>
                   </div>
 
-                  <Field label="الهاشتاجات">
+                  <Field label={t("aiImageGenerator.fields.hashtags")}>
                     <Input
                       dir="auto"
-                      placeholder="موضة_شتاء, خصم_مميز, متجرنا"
+                      placeholder={t("aiImageGenerator.fields.hashtagsPlaceholder")}
                       value={form.hashtags}
                       onChange={(e) => update("hashtags", e.target.value)}
                       className={inputCls}
@@ -1800,26 +1799,26 @@ const AIImageGenerator: React.FC = () => {
                   {tierConfig && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-500">مستوى الجودة</span>
+                        <span className="text-xs font-semibold text-slate-500">{t("aiImageGenerator.fields.qualityLevel")}</span>
                         <span className={`px-2 py-0.5 rounded text-xs font-bold text-white ${tierConfig.currentTier === 'fast' ? 'bg-green-500' : tierConfig.currentTier === 'balanced' ? 'bg-blue-500' : 'bg-purple-500'}`}>
                           {tierConfig.tiers[tierConfig.currentTier]?.displayName || tierConfig.currentTier}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400">{tierConfig.tiers[tierConfig.currentTier]?.description}</p>
                       <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>اليوم: {tierConfig.dailyUsage} / {tierConfig.dailyLimit}</span>
+                        <span>{t("aiImageGenerator.fields.today")}: {tierConfig.dailyUsage} / {tierConfig.dailyLimit}</span>
                         <span className={tierConfig.dailyUsage >= tierConfig.dailyLimit ? 'text-red-500 font-semibold' : ''}>
-                          {tierConfig.dailyLimit - tierConfig.dailyUsage} متبقي
+                          {tierConfig.dailyLimit - tierConfig.dailyUsage} {t("aiImageGenerator.fields.remaining")}
                         </span>
                       </div>
                       {/* ponytail: tier selector — super admin sets per-company tier, add company-level self-service selector when requested */}
                     </div>
                   )}
-                  {tierConfigLoading && <div className="text-xs text-slate-400 py-2">جاري تحميل الإعدادات...</div>}
+                  {tierConfigLoading && <div className="text-xs text-slate-400 py-2">{t("aiImageGenerator.fields.loadingSettings")}</div>}
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 items-end">
                     <div>
-                      <Label className="mb-2 block text-xs font-semibold text-slate-500">صيغة الصورة</Label>
+                      <Label className="mb-2 block text-xs font-semibold text-slate-500">{t("aiImageGenerator.fields.imageFormat")}</Label>
                       <Select
                         value={form.format}
                         onValueChange={(v) => {
@@ -1841,7 +1840,7 @@ const AIImageGenerator: React.FC = () => {
 
                     <div className="sm:px-3">
                       <Label className="mb-2 block text-xs font-semibold text-slate-500">
-                        جودة الضغط: {form.quality}%
+                        {t("aiImageGenerator.fields.compressionQuality")}: {form.quality}%
                       </Label>
                       <input
                         type="range"
@@ -1861,15 +1860,15 @@ const AIImageGenerator: React.FC = () => {
                         id="transparent-switch"
                       />
                       <Label htmlFor="transparent-switch" className="text-xs font-semibold text-slate-600 cursor-pointer">
-                        خلفية شفافة (PNG فقط)
+                        {t("aiImageGenerator.fields.transparentBg")}
                       </Label>
                     </div>
                   </div>
 
-                  <Field label="تجنّب في الرسم">
+                  <Field label={t("aiImageGenerator.fields.avoidPrompt")}>
                     <Textarea
                       dir="auto"
-                      placeholder="كتابة نصوص غير مفهومة، أيدي مشوهة، خلفية فوضوية..."
+                      placeholder={t("aiImageGenerator.fields.avoidPromptPlaceholder")}
                       value={form.avoidPrompt}
                       onChange={(e) => update("avoidPrompt", e.target.value)}
                       rows={2}
@@ -1877,7 +1876,7 @@ const AIImageGenerator: React.FC = () => {
                     />
                   </Field>
 
-                  <Field label="صورة مرجعية للستايل">
+                  <Field label={t("aiImageGenerator.fields.referenceImage")}>
                     {!referenceImagePreview ? (
                       <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-3 dark:bg-slate-900/50">
                         <Input
@@ -1888,7 +1887,7 @@ const AIImageGenerator: React.FC = () => {
                         />
                         <div className="text-center pointer-events-none py-1">
                           <Sparkles className="mx-auto size-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة مرجعية</span>
+                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">{t("aiImageGenerator.fields.uploadReferenceImage")}</span>
                         </div>
                       </div>
                     ) : (
@@ -1899,13 +1898,13 @@ const AIImageGenerator: React.FC = () => {
                           className="h-12 w-12 rounded-lg border object-cover bg-white"
                         />
                         <div className="text-xs pr-1">
-                          <p className="font-semibold text-slate-700 dark:text-slate-300">الصورة المرجعية جاهزة</p>
+                          <p className="font-semibold text-slate-700 dark:text-slate-300">{t("aiImageGenerator.fields.referenceImageReady")}</p>
                           <button
                             type="button"
                             onClick={() => setReferenceImageAndDraft(null)}
                             className="text-red-500 hover:underline mt-0.5"
                           >
-                            إزالة
+                            {t("aiImageGenerator.fields.remove")}
                           </button>
                         </div>
                       </div>
@@ -1933,14 +1932,14 @@ const AIImageGenerator: React.FC = () => {
                   className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold gap-2 py-5 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-transform disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
-                  {loading ? "جاري التوليد..." : "توليد الصورة"}
+                  {loading ? t("aiImageGenerator.fields.generating") : t("aiImageGenerator.fields.generateImage")}
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={handleReset}
                   disabled={loading}
                   className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 px-3"
-                  title="تصفير الحقول"
+                  title={t("aiImageGenerator.fields.resetForm")}
                 >
                   <RotateCcw className="size-4" />
                 </Button>
@@ -1948,12 +1947,12 @@ const AIImageGenerator: React.FC = () => {
 
               {usage && (
                 <div className="flex flex-wrap items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1.5 text-[10px] text-slate-500">
-                  <span className="font-bold text-slate-700 dark:text-slate-300">Token usage</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{t("aiImageGenerator.fields.tokenUsage")}</span>
                   <div className="flex gap-2 font-mono">
-                    <span>prompt: {usage.prompt_tokens?.toLocaleString()}</span>
-                    <span>completion: {usage.completion_tokens?.toLocaleString()}</span>
+                    <span>{t("aiImageGenerator.fields.promptLabel")}: {usage.prompt_tokens?.toLocaleString()}</span>
+                    <span>{t("aiImageGenerator.fields.completionLabel")}: {usage.completion_tokens?.toLocaleString()}</span>
                     <span className="font-bold text-sky-600 dark:text-sky-400">
-                      total: {usage.total_tokens?.toLocaleString()}
+                      {t("aiImageGenerator.fields.totalLabel")}: {usage.total_tokens?.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1966,8 +1965,8 @@ const AIImageGenerator: React.FC = () => {
                 {loading ? (
                   <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-sky-200/50 dark:border-slate-800 p-6 text-center animate-pulse">
                     <Loader2 className="size-9 animate-spin text-sky-500" />
-                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">جاري توليد إعلانك...</p>
-                    <p className="mt-1 text-[10px] text-slate-400">10–40 ثانية</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">{t("aiImageGenerator.fields.generatingYourAd")}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{t("aiImageGenerator.fields.estimatedTime")}</p>
                   </div>
                 ) : imageUrl ? (
                   <div className="space-y-3">
@@ -1982,17 +1981,17 @@ const AIImageGenerator: React.FC = () => {
                     {/* Image Actions */}
                     <div className="flex flex-wrap gap-1.5">
                       <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={generateCaption} disabled={!canGenerate}>
-                        <MessageSquare className="size-3.5" /> كابشن
+                        <MessageSquare className="size-3.5" /> {t("aiImageGenerator.fields.caption")}
                       </Button>
                       <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleDownload}>
-                        <Download className="size-3.5" /> تحميل
+                        <Download className="size-3.5" /> {t("aiImageGenerator.fields.download")}
                       </Button>
                       <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleCopyUrl}>
-                        <Copy className="size-3.5" /> نسخ الرابط
+                        <Copy className="size-3.5" /> {t("aiImageGenerator.fields.copyLink")}
                       </Button>
                       {lastParams && (
                         <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleRegenerate}>
-                          <RefreshCw className="size-3.5" /> إعادة
+                          <RefreshCw className="size-3.5" /> {t("aiImageGenerator.fields.regenerate")}
                         </Button>
                       )}
                       <DropdownMenu>
@@ -2003,10 +2002,10 @@ const AIImageGenerator: React.FC = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={handleOpenTab}>
-                            <ExternalLink className="size-3.5 ml-1.5" /> فتح بتبويب
+                            <ExternalLink className="size-3.5 ml-1.5" /> {t("aiImageGenerator.fields.openTab")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setImageUrl("")} className="text-red-500 focus:text-red-500">
-                            <Trash2 className="size-3.5 ml-1.5" /> مسح المعاينة
+                            <Trash2 className="size-3.5 ml-1.5" /> {t("aiImageGenerator.fields.clearPreview")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -2018,7 +2017,7 @@ const AIImageGenerator: React.FC = () => {
                           <div className="flex items-start gap-1.5">
                             <Type className="size-3 mt-0.5 text-slate-400" />
                             <div>
-                              <div className="text-[10px] font-semibold text-slate-500">عنوان</div>
+                              <div className="text-[10px] font-semibold text-slate-500">{t("aiImageGenerator.fields.title")}</div>
                               <div className="text-slate-800 dark:text-slate-200">{generatedCaption.headline}</div>
                             </div>
                           </div>
@@ -2026,12 +2025,12 @@ const AIImageGenerator: React.FC = () => {
                         <div className="flex items-start gap-1.5">
                           <FileText className="size-3 mt-0.5 text-slate-400" />
                           <div>
-                            <div className="text-[10px] font-semibold text-slate-500">كابشن</div>
+                            <div className="text-[10px] font-semibold text-slate-500">{t("aiImageGenerator.fields.captionLabel")}</div>
                             <div className="text-slate-800 dark:text-slate-200 leading-relaxed">{generatedCaption.caption}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-slate-500">CTA:</span>
+                          <span className="text-[10px] font-semibold text-slate-500">{t("aiImageGenerator.fields.ctaLabel")}:</span>
                           <span className="font-medium text-sky-700 dark:text-sky-400">{generatedCaption.cta}</span>
                         </div>
                         {generatedCaption.hashtags.length > 0 && (
@@ -2043,7 +2042,7 @@ const AIImageGenerator: React.FC = () => {
                                 variant="secondary"
                                 className="cursor-pointer text-[10px] rounded"
                                 onClick={() => handleCopyCaption(h)}
-                                title="نسخ"
+                                title={t("aiImageGenerator.toasts.copyHint")}
                               >
                                 #{h}
                               </Badge>
@@ -2064,7 +2063,7 @@ const AIImageGenerator: React.FC = () => {
                             void handleCopyCaption(text);
                           }}
                         >
-                          <Copy className="size-3" /> نسخ كل النصوص
+                          <Copy className="size-3" /> {t("aiImageGenerator.fields.copyAllTexts")}
                         </Button>
                       </div>
                     )}
@@ -2072,8 +2071,8 @@ const AIImageGenerator: React.FC = () => {
                 ) : (
                   <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
                     <ImageIcon className="size-10 text-slate-300" />
-                    <p className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-400">جاهز للتوليد</p>
-                    <p className="mt-1 text-[10px] text-slate-400">املأ الحقول المطلوبة واضغط "توليد الصورة"</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-400">{t("aiImageGenerator.fields.readyToGenerate")}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{t("aiImageGenerator.fields.readyToGenerateHint")}</p>
                   </div>
                 )}
               </div>
@@ -2088,7 +2087,7 @@ const AIImageGenerator: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Layers className="size-4 text-slate-400" />
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">كل التصاميم</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("aiImageGenerator.gallery.allDesigns")}</span>
             <Badge variant="secondary" className="rounded-full px-2 text-[10px]">
               {filteredGallery.length}
             </Badge>
@@ -2100,7 +2099,7 @@ const AIImageGenerator: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل المنصات</SelectItem>
+                <SelectItem value="all">{t("aiImageGenerator.gallery.allPlatforms")}</SelectItem>
                 {PLATFORMS.map((p) => (
                   <SelectItem key={p.value} value={p.value}>
                     {p.label}
@@ -2109,7 +2108,7 @@ const AIImageGenerator: React.FC = () => {
               </SelectContent>
             </Select>
             <Input
-              placeholder="ابحث..."
+              placeholder={t("aiImageGenerator.gallery.search")}
               value={gallerySearch}
               onChange={(e) => setGallerySearch(e.target.value)}
               className={`h-8 w-44 text-xs ${inputCls}`}
@@ -2120,7 +2119,7 @@ const AIImageGenerator: React.FC = () => {
               className="h-8 w-8 text-slate-500"
               onClick={fetchGallery}
               disabled={galleryLoading}
-              title="تحديث"
+              title={t("aiImageGenerator.gallery.refresh")}
             >
               <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
             </Button>
@@ -2132,7 +2131,7 @@ const AIImageGenerator: React.FC = () => {
           <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
             <ImageIcon className="size-8 text-slate-300" />
             <p className="mt-2 text-xs">
-              {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد تصاميم بعد"}
+              {gallerySearch || galleryFilter !== "all" ? t("aiImageGenerator.gallery.noResults") : t("aiImageGenerator.gallery.noDesigns")}
             </p>
           </div>
         ) : (
@@ -2179,7 +2178,7 @@ const AIImageGenerator: React.FC = () => {
                       </p>
                     )}
                     <p className="text-[11px] text-muted-foreground truncate leading-tight" title={img.prompt}>
-                      {img.prompt || "تصميم بدون عنوان"}
+                      {img.prompt || t("aiImageGenerator.gallery.untitledDesign")}
                     </p>
                     <p className="text-[10px] text-slate-400 font-mono">
                       {formatDate(img.createdAt)}
@@ -2194,35 +2193,35 @@ const AIImageGenerator: React.FC = () => {
                         setImageUrl(img.url);
                         document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
                       }}
-                      aria-label="عرض"
-                      title="عرض"
+                      aria-label={t("aiImageGenerator.gallery.view")}
+                      title={t("aiImageGenerator.gallery.view")}
                     >
                       <ImageIcon className="size-4" />
                     </button>
                     <button
                       type="button"
-                      aria-label="فتح"
+                      aria-label={t("aiImageGenerator.gallery.open")}
                       className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
                       onClick={() => window.open(img.url, "_blank")}
-                      title="فتح"
+                      title={t("aiImageGenerator.gallery.open")}
                     >
                       <ExternalLink className="size-4" />
                     </button>
                     <button
                       type="button"
-                      aria-label="استنساخ"
+                      aria-label={t("aiImageGenerator.gallery.clone")}
                       className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 transition-colors"
                       onClick={() => handleApplySettings(img)}
-                      title="نسخ الخيارات"
+                      title={t("aiImageGenerator.gallery.copyOptions")}
                     >
                       <Copy className="size-4" />
                     </button>
                     <button
                       type="button"
-                      aria-label="حذف"
+                      aria-label={t("aiImageGenerator.gallery.delete")}
                       className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 transition-colors"
                       onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
-                      title="حذف"
+                      title={t("aiImageGenerator.gallery.delete")}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -2247,10 +2246,10 @@ const AIImageGenerator: React.FC = () => {
           <DialogHeader className="text-right">
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
               <AlertCircle className="size-5 text-red-500" />
-              حذف الصورة من المعرض
+              {t("aiImageGenerator.deleteDialog.title")}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              هل أنت متأكد من رغبتك في حذف هذا التصميم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.
+              {t("aiImageGenerator.deleteDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center p-2 bg-slate-50 dark:bg-slate-900 rounded-xl my-2">
@@ -2269,14 +2268,14 @@ const AIImageGenerator: React.FC = () => {
               onClick={() => setDeleteDialog({ open: false, url: "", filename: "" })}
               className="rounded-xl text-xs h-9"
             >
-              إلغاء الأمر
+              {t("aiImageGenerator.deleteDialog.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => handleDeleteImage(deleteDialog.filename)}
               className="rounded-xl text-xs h-9 font-bold"
             >
-              نعم، احذفها
+              {t("aiImageGenerator.deleteDialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

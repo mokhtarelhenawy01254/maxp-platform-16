@@ -446,7 +446,7 @@ class NumberAssignmentService {
       where: {
         companyId,
         isActive: true,
-        role: { in: ['AGENT', 'MANAGER'] }
+        role: { notIn: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'] }
       },
       select: {
         id: true,

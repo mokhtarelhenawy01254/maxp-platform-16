@@ -237,8 +237,13 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
             include: {
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -526,7 +531,26 @@ async function getSessions(req, res) {
 
         const sessionsWithStatus = filteredSessions.map(mapSessionForResponse);
 
-        res.json({ sessions: sessionsWithStatus });
+        // إضافة حالة استيراد history لكل جلسة
+        const sessionIds = filteredSessions.map(s => s.id);
+        let historyImports = [];
+        try {
+            historyImports = await getSharedPrismaClient().whatsAppSessionHistoryImport.findMany({
+                where: { sessionId: { in: sessionIds } },
+                select: { sessionId: true, status: true, lastProgress: true, importedMessages: true, failedAt: true, lastError: true, completedAt: true }
+            });
+        } catch (e) {
+            // model قد لا يكون موجوداً بعد الـ migration
+        }
+        const historyImportMap = {};
+        for (const hi of historyImports) historyImportMap[hi.sessionId] = hi;
+
+        const result = sessionsWithStatus.map(s => ({
+            ...s,
+            historyImport: historyImportMap[s.id] || null
+        }));
+
+        res.json({ sessions: result });
     } catch (error) {
         console.error('❌ Error getting sessions:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب الجلسات' });
@@ -547,8 +571,13 @@ async function getSession(req, res) {
             include: {
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -560,6 +589,15 @@ async function getSession(req, res) {
 
         const activeSession = WhatsAppManager.getSession(id);
 
+        // إضافة حالة استيراد history
+        let historyImport = null;
+        try {
+            historyImport = await getSharedPrismaClient().whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId: id },
+                select: { status: true, lastProgress: true, importedMessages: true, chatsCount: true, unsupportedMessages: true, lastError: true, requestedAt: true, startedAt: true, completedAt: true, failedAt: true }
+            });
+        } catch (e) { /* model may not exist yet */ }
+
         res.json({
             session: {
                 ...session,
@@ -570,7 +608,8 @@ async function getSession(req, res) {
                 } : session._count,
                 liveStatus: activeSession?.status || getLiveStatusFromDbStatus(session.status, session.provider),
                 qrCode: session.provider === 'META_CLOUD' ? null : (activeSession?.qrCode || null),
-                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null)
+                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null),
+                historyImport
             }
         });
     } catch (error) {
@@ -744,6 +783,18 @@ async function connectSession(req, res) {
             !hasRegisteredAuthState(session);
         const shouldImportHistory = toBooleanOption(importHistory) || toBooleanOption(syncFullHistory);
 
+        // حفظ إعداد المزامنة في metadata ليبقى ثابتاً عبر إعادة الاتصال
+        if (shouldImportHistory && session.provider === 'BAILEYS') {
+            const currentMetadata = parseJsonSafely(session.metadata, {});
+            if (!currentMetadata.importHistoryOnLink) {
+                currentMetadata.importHistoryOnLink = true;
+                await getSharedPrismaClient().whatsAppSession.update({
+                    where: { id },
+                    data: { metadata: JSON.stringify(currentMetadata), updatedAt: new Date() }
+                });
+            }
+        }
+
         // بدء الاتصال مع إجبار socket جديد حتى لا يرجع نفس الجلسة الميتة من الذاكرة
         let sessionData = await WhatsAppManager.reconnectSession(id, companyId, 0, {
             resetAuth: needsFreshLink,
@@ -772,6 +823,30 @@ async function connectSession(req, res) {
     } catch (error) {
         console.error('❌ Error connecting session:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء الاتصال' });
+    }
+}
+
+async function requestHistorySync(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const result = await WhatsAppManager.requestHistorySync(id, companyId);
+
+        res.status(result.alreadyRunning ? 200 : 202).json({
+            success: true,
+            alreadyRunning: result.alreadyRunning,
+            historyImport: { status: result.status },
+            message: result.alreadyRunning
+                ? 'المزامنة تعمل بالفعل لهذه الجلسة'
+                : 'تم طلب مزامنة الرسائل. ستبدأ إعادة الاتصال الآمنة الآن.'
+        });
+    } catch (error) {
+        console.error('❌ Error requesting WhatsApp history sync:', error);
+        res.status(error.message === 'Session not found' ? 404 : 400).json({
+            error: error.message === 'History sync is only available for Baileys sessions'
+                ? 'المزامنة اليدوية للسجل متاحة لجلسات Baileys فقط'
+                : 'تعذر بدء مزامنة الرسائل'
+        });
     }
 }
 
@@ -855,7 +930,9 @@ async function getConversations(req, res) {
 
         const where = {
             sessionId: { in: sessionIds },
-            isArchived: archived === 'true'
+            isArchived: archived === 'true',
+            totalMessages: { gt: 0 },
+            NOT: { jid: { contains: '@lid' } }
         };
 
         if (search) {
@@ -4039,6 +4116,7 @@ module.exports = {
     updateSession,
     deleteSession,
     connectSession,
+    requestHistorySync,
     disconnectSession,
 
     // Conversations & Messages
@@ -4812,6 +4890,3 @@ async function facebookEmbeddedConnect(req, res) {
         res.status(500).json({ error: errorMsg });
     }
 }
-
-
-

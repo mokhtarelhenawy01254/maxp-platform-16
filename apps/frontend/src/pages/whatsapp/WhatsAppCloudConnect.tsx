@@ -76,7 +76,7 @@ const getFacebookOAuthUrl = (config: FacebookConfig, state: string) => {
   return `${base}?${params.toString()}`;
 };
 
-function StepIndicator({
+function _StepIndicator({
   current,
   total,
 }: {
@@ -101,6 +101,8 @@ function StepIndicator({
     </div>
   );
 }
+void _StepIndicator;
+
 
 function RequirementItem({
   checked,
@@ -133,18 +135,19 @@ function RequirementItem({
 }
 
 const WhatsAppCloudConnect: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
+  void i18n;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const processedCode = useRef<Record<string, boolean>>({});
 
   const [step, setStep] = useState<ConnectionStep>("intro");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [_sessionId, setSessionId] = useState<string | null>(null);
   const [sessionName, setSessionName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isLoading, setIsLoading] = useState(false);
   const [fbConfig, setFbConfig] = useState<FacebookConfig | null>(null);
-  const [stateToken, setStateToken] = useState("");
+  const [_stateToken, setStateToken] = useState("");
   const [fbSdkReady, setFbSdkReady] = useState(false);
 
   const embeddedAssetData = useRef<{ wabaId?: string; phoneNumberId?: string; businessId?: string }>({});
@@ -154,7 +157,7 @@ const WhatsAppCloudConnect: React.FC = () => {
   const loadFbConfig = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/facebook/config");
-      setFbConfig(response.data);
+      setFbConfig(response.data as FacebookConfig | null);
     } catch {
       setErrorMessage("تعذر تحميل إعدادات Facebook");
     }
@@ -251,7 +254,7 @@ const WhatsAppCloudConnect: React.FC = () => {
           redirectUri: buildRedirectUri(),
         });
         cleanUrl();
-        setSessionId(response.data.session.id);
+        setSessionId((response as any).data.session.id);
         setStep("success");
       } catch (err: unknown) {
         cleanUrl();
@@ -284,7 +287,7 @@ const WhatsAppCloudConnect: React.FC = () => {
         setIsLoading(true);
         const payload: Record<string, unknown> = { code, sessionName: name, redirectUri: buildRedirectUri() };
         const res = await apiClient.post("/whatsapp/facebook/connect", payload);
-        setSessionId(res.data.session.id);
+        setSessionId((res as any).data.session.id);
         setStep("success");
       } catch (err: unknown) {
         const apiErr = err as { response?: { data?: { error?: string } } };

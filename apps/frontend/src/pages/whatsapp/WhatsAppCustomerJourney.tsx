@@ -19,7 +19,6 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  XCircle,
   Zap,
 } from "lucide-react";
 
@@ -306,7 +305,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         const response = await apiClient.get(
           `/whatsapp/automation/flows/${flowId}/steps`,
         );
-        setSteps(response.data.data ?? []);
+        setSteps((response as any).data.data ?? []);
       } catch (error) {
         setSteps([]);
         if (!isNotFoundError(error)) {
@@ -322,7 +321,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const fetchFlows = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/flows");
-      const nextFlows = response.data.data ?? [];
+      const nextFlows = (response as any).data.data ?? [];
       setFlows(nextFlows);
 
       const nextSelected =
@@ -350,7 +349,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const fetchJourneys = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/journeys");
-      setJourneys(response.data.data ?? []);
+      setJourneys((response as any).data.data ?? []);
     } catch (error) {
       setJourneys([]);
       if (!isNotFoundError(error)) {
@@ -592,7 +591,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         description={t("whatsappJourney.subtitle")}
         icon={Sparkles}
         backHref="/whatsapp/notifications"
-        backLabel={t("common.back")}
+        backLabel={t("common.back") as string}
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -617,7 +616,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
       description={t("whatsappJourney.subtitle")}
       icon={Sparkles}
       backHref="/whatsapp/notifications"
-      backLabel={t("common.back")}
+      backLabel={t("common.back") as string}
       actions={
         <>
           <Button
@@ -705,8 +704,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
             <div className="space-y-4">
               <WhatsAppSurfaceCard
-                title={t("whatsappJourney.tabs.flows")}
-                description={t("whatsappJourney.flows.emptyDesc")}
+                title={t("whatsappJourney.tabs.flows") as string}
+                description={t("whatsappJourney.flows.emptyDesc") as string}
               >
                 <div className="space-y-4">
                   <div className="relative">
@@ -719,7 +718,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     <Input
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder={t("common.search")}
+                      placeholder={t("common.search") as string}
                       className={cn(
                         "h-11 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
                         isRtl ? "pr-10" : "pl-10",
@@ -888,11 +887,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
             </div>
 
             <WhatsAppSurfaceCard
-              title={selectedFlow?.name || t("whatsappJourney.steps.title")}
+              title={(selectedFlow?.name || t("whatsappJourney.steps.title")) as string}
               description={
-                selectedFlow
+                (selectedFlow
                   ? t("whatsappJourney.subtitle")
-                  : t("whatsappJourney.flows.emptyDesc")
+                  : t("whatsappJourney.flows.emptyDesc")) as string
               }
               action={
                 selectedFlow ? (
@@ -1052,8 +1051,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
         <TabsContent value="monitoring" className="space-y-4">
           <WhatsAppSurfaceCard
-            title={t("whatsappJourney.tabs.monitoring")}
-            description={t("whatsappJourney.subtitle")}
+            title={t("whatsappJourney.tabs.monitoring") as string}
+            description={t("whatsappJourney.subtitle") as string}
             action={
               <Button
                 variant="outline"
@@ -1150,8 +1149,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               variant="outline"
                               className={cn(
                                 "rounded-full",
-                                journeyStatusClasses[statusKey] ||
-                                  journeyStatusClasses.CANCELLED,
+                                  journeyStatusClasses[statusKey] ||
+                                  journeyStatusClasses['CANCELLED'],
                               )}
                             >
                               {t(
@@ -1232,7 +1231,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       className={cn(
                         "rounded-full",
                         journeyStatusClasses[selectedJourney.status] ||
-                          journeyStatusClasses.CANCELLED,
+                          journeyStatusClasses['CANCELLED'],
                       )}
                     >
                       {t(

@@ -210,7 +210,7 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
     setFeedback(null);
     setPreviewResult(null);
     if (routingMode === 'NUMBER_OWNER') {
-      setSelectedEmployeeIds(employeeIds.length > 0 ? [employeeIds[0]] : []);
+      setSelectedEmployeeIds(employeeIds.length > 0 ? [employeeIds[0]!] : []);
     } else {
       setSelectedEmployeeIds(employeeIds);
     }

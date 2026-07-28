@@ -141,6 +141,14 @@ jobs:
         run: node scripts/validate-i18n.js
         continue-on-error: false
 
+      - name: Check i18n Consistency (AR vs EN)
+        run: node scripts/i18n-check.js
+        continue-on-error: false
+
+      - name: Generate i18n TypeScript Types
+        run: node scripts/generate-i18n-types.js
+        continue-on-error: false
+
       # Strip dev dependencies after tests (deps already installed above)
       - name: Prune Dev Dependencies
         working-directory: ./apps/backend

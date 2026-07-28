@@ -25,8 +25,6 @@ import {
   User,
   Users,
   VolumeX,
-  Wifi,
-  WifiOff,
   X,
 } from "lucide-react";
 
@@ -47,7 +45,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -95,6 +92,8 @@ interface ChatSidebarProps {
   onOpenNewGroup: () => void;
   onOpenPrivacySettings: () => void;
   onOpenBusinessProfile: () => void;
+  onSyncHistory: () => void;
+  isSyncingHistory?: boolean;
   onPinChat: (contact: Contact) => void;
   onArchiveChat: (contact: Contact) => void;
   onDeleteChat: (contact: Contact) => void;
@@ -221,6 +220,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onOpenNewGroup,
   onOpenPrivacySettings,
   onOpenBusinessProfile,
+  onSyncHistory,
+  isSyncingHistory = false,
   onPinChat,
   onArchiveChat,
   onDeleteChat,
@@ -255,16 +256,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const swipeTouchStartYRef = useRef<number>(0);
   const isSwipingRef = useRef<boolean>(false);
 
-  const handleSwipeTouchStart = (e: React.TouchEvent, contactId: string) => {
-    swipeTouchStartRef.current = e.touches[0].clientX;
-    swipeTouchStartYRef.current = e.touches[0].clientY;
+  const handleSwipeTouchStart = (e: React.TouchEvent, _contactId: string) => {
+    swipeTouchStartRef.current = e.touches[0]!.clientX;
+    swipeTouchStartYRef.current = e.touches[0]!.clientY;
     isSwipingRef.current = true;
   };
 
   const handleSwipeTouchMove = (e: React.TouchEvent, contactId: string) => {
     if (!isSwipingRef.current) return;
-    const diffX = e.touches[0].clientX - swipeTouchStartRef.current;
-    const diffY = Math.abs(e.touches[0].clientY - swipeTouchStartYRef.current);
+    const diffX = e.touches[0]!.clientX - swipeTouchStartRef.current;
+    const diffY = Math.abs(e.touches[0]!.clientY - swipeTouchStartYRef.current);
     
     // If scrolling vertically, do not swipe
     if (diffY > 30 && Math.abs(diffX) < 10) {
@@ -290,7 +291,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  const handleSwipeTouchEnd = (e: React.TouchEvent, contact: Contact) => {
+  const handleSwipeTouchEnd = (_e: React.TouchEvent, _contact: Contact) => {
     isSwipingRef.current = false;
     const isRtl = document.documentElement.dir === 'rtl';
     const threshold = 40;
@@ -550,7 +551,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           ) : null}
           {/* Inline session selector — compact */}
           {sessionOptions.length > 1 ? (
-            <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
+            <Select value={resolvedSessionValue} onValueChange={(v) => v && onSelectSession(v)}>
               <SelectTrigger className="h-7 min-w-0 max-w-[9rem] rounded-lg bg-[var(--whatsapp-surface)] text-[10px] px-2 gap-1">
                 <span className="truncate font-medium text-[color:var(--color-foreground)]">
                   {resolvedSessionValue === "all"
@@ -602,6 +603,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               >
                 <Users className="size-4" />
                 <span>{t("whatsapp.sidebar.newGroup")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onSyncHistory}
+                disabled={!selectedSession || selectedSession === 'all' || isSyncingHistory}
+              >
+                <RefreshCw className={cn("size-4", isSyncingHistory && "animate-spin")} />
+                <span>{isSyncingHistory ? 'جاري طلب المزامنة' : 'مزامنة الرسائل'}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onOpenBroadcast}
@@ -673,8 +681,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t("whatsapp.sidebar.searchPlaceholder")}
-              aria-label={t("whatsapp.sidebar.searchPlaceholder")}
+              placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
+              aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
               className="whatsapp-search-input h-7 rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
             />
             <Button
@@ -691,7 +699,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
                   : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
               )}
-              title={t("whatsapp.sidebar.unread")}
+              title={t("whatsapp.sidebar.unread") as string}
             >
               <Filter className="size-3.5" />
             </Button>
@@ -732,13 +740,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
       </div>
 
-      <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-2 py-1.5 sm:py-2" onScroll={handleScroll}>
+      <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-space-2 py-space-1 sm:py-space-2" onScroll={handleScroll}>
         {filterType === "statuses" ? (
-          <div className="space-y-3">
+          <div className="space-y-space-3">
             <button
               type="button"
               onClick={onAddStatus}
-              className="flex w-full items-center justify-between rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-elevated)] px-4 py-3 text-start shadow-sm transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
+              className="flex w-full items-center justify-between rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-elevated)] px-space-4 py-space-3 text-start shadow-soft transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
             >
               <div>
                 <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
@@ -765,9 +773,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               statuses.map((status) => (
                 <article
                   key={status.id}
-                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-4 py-4 shadow-sm"
+                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-space-4 py-space-4 shadow-soft"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-space-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-[color:var(--color-primary)]">
                       <Camera className="size-5" />
                     </div>
@@ -899,7 +907,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       });
                     }}
                     className={cn(
-                      "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-3 py-1.5 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-2 rounded-none",
+                      "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-space-3 py-space-1 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-space-2 rounded-none",
                       multiSelectMode && isSelectedInMulti
                         ? "bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))]"
                         : !multiSelectMode && isSelected
@@ -910,7 +918,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       transform: !multiSelectMode && isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
                     }}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-space-3">
                       {multiSelectMode ? (
                         <div className={cn(
                           "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",

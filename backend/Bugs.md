@@ -1,3 +1,35 @@
+### [CRITICAL / PRODUCTION OUTAGE] 502 / Backend Crash-Loop — SyntaxError in WhatsAppManager.js (2026-07-28)
+
+- **Severity**: 🔴 CRITICAL — Production backend crash-loop (`maxp-backend` status `waiting ...`, restart count 384)
+- **Root Cause**:
+  - `SyntaxError: Unexpected end of input` in `/var/www/backend2/services/whatsapp/WhatsAppManager.js:5241`.
+  - A closing brace `};` was misplaced before `normalizeHistoryProgress,` at the end of the `__testing` object export on the server, causing Node.js syntax parsing failure upon requiring the module in `WhatsAppMessageHandler.js`.
+- **Fix**:
+  - Synchronized `/var/www/backend2/services/whatsapp/WhatsAppManager.js` with the clean repository source code via SFTP.
+  - Verified syntax with `node -c /var/www/backend2/services/whatsapp/WhatsAppManager.js`.
+  - Restarted PM2 process `maxp-backend` (ID 9), confirmed process `online` status and active WhatsApp socket sessions.
+- **Files**: `apps/backend/services/whatsapp/WhatsAppManager.js`
+
+---
+
+### [FRONTEND / TS STRICTNESS] WhatsApp UI & TS Build Error Resolution (2026-03-09)
+
+- **Severity**: 🟢 LOW — Code health, build pipeline stability, and strict compiler enforcement
+- **Root Cause**:
+  - `apiClient` responses returning `unknown` led to `TS18046` / `TS2538` index & property access errors across WhatsApp components (`WhatsAppChat`, `WhatsAppAnalytics`, `WhatsAppCloudConnect`, `WhatsAppCustomerJourney`, `WhatsAppLeadFollowUp`, `WhatsAppMetaTemplates`, `WhatsAppNotifications`).
+  - i18next `t()` returning `DefaultTFuncReturn` was incompatible with UI component props expecting `string | undefined` (`TS2322`).
+  - Unused Lucide icons, unused functions, and unused state setters triggered strict `TS6133` unused variable warnings.
+  - Bracket notation requirements for `Record<string, string>` index signature access (`TS4111`).
+- **Fix**:
+  1. Applied loose type casting `(res as any)` for `apiClient` response data across all WhatsApp module pages.
+  2. Applied `as string` casts to `t()` translation calls bound to React UI props.
+  3. Cleaned up unused imports, added `void` statements for intentional unused references, and prefixed unused variables/functions with `_`.
+  4. Converted Record property access to bracket notation `params['status']` in `WhatsAppLeadFollowUp`.
+  5. Corrected `onValueChange` handlers to properly handle optional `string` values.
+- **Files Modified**: `WhatsAppChat.tsx`, `WhatsAppAnalytics.tsx`, `WhatsAppCloudConnect.tsx`, `WhatsAppCustomerJourney.tsx`, `WhatsAppLeadFollowUp.tsx`, `WhatsAppMetaTemplates.tsx`, `WhatsAppNotifications.tsx`, `WhatsAppSettings.tsx`, `NumberSidebar.tsx`.
+
+---
+
 ### [INVESTIGATION / TURBO SYNC] Processing Count Discrepancy: MaxP 24 vs Turbo Dashboard 92 (2026-07-25)
 
 - **Severity**: 🟡 MEDIUM — Cosmetic/UX issue, data not wrong but counts mismatch with Turbo dashboard

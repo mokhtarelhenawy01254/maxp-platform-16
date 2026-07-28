@@ -637,6 +637,7 @@ export const getSidebarConfig = (
                 { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings'), requiredPermissions: ['orders.turbo-settings.view'] },
                 { to: '/settings/turbo/status-mapping', icon: ArrowsRightLeftIcon, label: t('sidebar.turboStatusMapping'), requiredPermissions: ['orders.turbo-settings.view'] },
                 { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords'), requiredPermissions: ['orders.turbo.view'] },
+                { to: '/orders/turbo-captains', icon: UserGroupIcon, label: t('sidebar.turboCaptains'), requiredPermissions: ['orders.turbo.view'] },
                 { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets'), requiredPermissions: ['orders.tickets.view'] },
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'] },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },

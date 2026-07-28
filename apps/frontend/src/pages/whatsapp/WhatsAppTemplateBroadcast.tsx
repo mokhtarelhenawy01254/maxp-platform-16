@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, ChartBar, Eye, MousePointerClick, Reply, List, Tag,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,8 +41,9 @@ interface Campaign {
 }
 
 const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: string; superAdminMode?: boolean }>
-= ({ companyId, companyName, superAdminMode = false }) => {
+= ({ companyId, companyName: _companyName, superAdminMode: _superAdminMode = false }) => {
   const { t, i18n } = useTranslation();
+  void i18n;
 
   const [activeTab, setActiveTab] = useState("create");
 
@@ -65,20 +66,24 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [selectedTag, setSelectedTag] = useState("");
 
   const [scheduleAt, setScheduleAt] = useState("");
-  const [templateVars, setTemplateVars] = useState<string[]>([]);
+  const [templateVars, _setTemplateVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
+  void result;
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  void sendProgress;
 
-  const [sendNow, setSendNow] = useState(true);
+  const [_sendNow, _setSendNow] = useState(true);
 
   // Campaigns history
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
   // Analytics
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [_analytics, _setAnalytics] = useState<any>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  void selectedCampaign;
+  void setSelectedCampaign;
 
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
@@ -95,7 +100,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const fetchSessions = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
-      const metaSessions = (res.data?.sessions || []).filter(
+      const metaSessions = ((res as any).data?.sessions || []).filter(
         (s: any) => s.provider === "META_CLOUD" || s.metaWabaId,
       );
       setSessions(metaSessions);
@@ -113,7 +118,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setTemplates([]);
       setSelectedTemplate("");
       const res = await apiClient.get(`/whatsapp-templates/templates?sessionId=${selectedSessionId}`, withCompanyConfig());
-      const approved = (res.data?.templates || []).filter((t: MetaTemplate) => t.status === "APPROVED");
+      const approved = ((res as any).data?.templates || []).filter((t: MetaTemplate) => t.status === "APPROVED");
       setTemplates(approved);
     } catch {
       setTemplates([]);
@@ -124,7 +129,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const fetchCustomerLists = useCallback(async () => {
     try {
       const res = await broadcastService.getCustomerLists();
-      const lists = Array.isArray(res) ? res : res?.data || [];
+      const lists = Array.isArray(res) ? res : (res as any)?.data || [];
       setCustomerLists(lists);
     } catch { }
   }, []);
@@ -132,7 +137,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const fetchLeadCategories = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp/lead-categories", withCompanyConfig());
-      setLeadCategories(res.data?.data || []);
+      setLeadCategories((res as any).data?.data || []);
     } catch { }
   }, [withCompanyConfig]);
 
@@ -178,7 +183,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     if (listId === "manual") return;
     try {
       const res = await broadcastService.getCustomersInList(listId);
-      const customers = Array.isArray(res) ? res : res?.data || [];
+      const customers = Array.isArray(res) ? res : (res as any)?.data || [];
       const phones = customers.map((c: any) => c.phone).filter(Boolean);
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
     } catch { }
@@ -202,7 +207,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     setImportingCategoryId(categoryId);
     try {
       const res = await apiClient.get(`/whatsapp/lead-categories/${categoryId}/contacts`, withCompanyConfig());
-      const contacts = res.data?.data || [];
+      const contacts = (res as any).data?.data || [];
       const phones = contacts.map((c: any) => c.phoneNumber).filter(Boolean);
       if (phones.length === 0) {
         toast.warning(`لا يوجد جهات اتصال في تصنيف "${categoryName}"`);
@@ -245,7 +250,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       const campaignRes = await broadcastService.createCampaign(
         Object.entries(body).reduce((fd, [k, v]) => { if (v !== undefined) fd.append(k, String(v)); return fd; }, new FormData())
       );
-      const campaignId = campaignRes?.data?.id || campaignRes?.id;
+      const campaignId = (campaignRes as any)?.data?.id || (campaignRes as any)?.id;
 
       setSendProgress({ current: 0, total: recipients.length, status: "sending" });
       if (scheduleAt) {
@@ -286,7 +291,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       description="إنشاء وإدارة حملات إرسال قوالب Meta API مع تتبع الفتح والضغط"
       icon={Megaphone}
       backHref="/whatsapp"
-      backLabel={t("common.back")}
+      backLabel={t("common.back") as string}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
@@ -314,7 +319,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
                   <div className="space-y-2">
                     <Label>جلسة واتساب</Label>
-                    <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                    <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder="اختر جلسة">
                           {(value: string | null) => {
@@ -346,8 +351,9 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                   <div className="space-y-2">
                     <Label>القالب (المعتمد فقط)</Label>
                     <Select value={selectedTemplate} onValueChange={(name) => {
-                      setSelectedTemplate(name);
-                      const tpl = templates.find(t => t.name === name);
+                      const selectedName = name ?? '';
+                      setSelectedTemplate(selectedName);
+                      const tpl = templates.find(t => t.name === selectedName);
                       if (tpl) setLanguageCode(tpl.language);
                     }}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="اختر قالباً" /></SelectTrigger>
@@ -361,7 +367,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
                   <div className="space-y-2">
                     <Label>لغة القالب</Label>
-                    <Select value={languageCode} onValueChange={setLanguageCode}>
+                    <Select value={languageCode} onValueChange={(v) => setLanguageCode(v ?? '')}>
                       <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {[...new Set(templates.map(t => t.language))].map(lang => (
@@ -373,7 +379,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
                   <div className="space-y-2">
                     <Label>قائمة العملاء</Label>
-                    <Select value={selectedListId} onValueChange={handleSelectList}>
+                    <Select value={selectedListId} onValueChange={(v) => void handleSelectList(v ?? '')}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="اختر قائمة" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="manual">إدخال يدوي</SelectItem>
@@ -387,7 +393,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                   {availableTags.length > 0 && (
                     <div className="space-y-2">
                       <Label>تصفية بالوسم (Tag)</Label>
-                      <Select value={selectedTag} onValueChange={handleSelectTag}>
+                      <Select value={selectedTag} onValueChange={(v) => void handleSelectTag(v ?? '')}>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="اختر وسماً لتحميل الأرقام" />
                         </SelectTrigger>
@@ -405,7 +411,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
                   <div className="space-y-2">
                     <Label>تصنيف العملاء</Label>
-                    <Select value={selectedLeadCategoryId} onValueChange={setSelectedLeadCategoryId}>
+                    <Select value={selectedLeadCategoryId} onValueChange={(v) => setSelectedLeadCategoryId(v ?? '')}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="جميع التصنيفات" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">جميع التصنيفات</SelectItem>
@@ -761,7 +767,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                             setLoadingMembers(true);
                             try {
                               const res = await apiClient.get(`/whatsapp/lead-categories/${cat.id}/contacts`, withCompanyConfig());
-                              setListMembers(prev => ({ ...prev, [cat.id]: res.data?.data || [] }));
+                              setListMembers(prev => ({ ...prev, [cat.id]: (res as any).data?.data || [] }));
                             } catch { }
                             finally { setLoadingMembers(false); }
                           }
