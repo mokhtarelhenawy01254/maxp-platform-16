@@ -258,7 +258,7 @@ const PreparationFilters = ({
         
         {/* Horizontal Scrollable Tabs */}
         {visibleFilterSections.includes("tabs") && (
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex min-w-0 flex-1 items-center overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => onFilterChange("ALL")}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
@@ -402,21 +402,18 @@ const PreparationFilters = ({
             />
             <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             {showProductSuggestions && (
-              <select
+              <div
                 ref={productSuggestionsRef}
-                size={Math.min(products.length + 1, 6)}
                 className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg text-xs"
-                onChange={(e) => { onProductFilterChange(e.target.value); setShowProductSuggestions(false); }}
-                value=""
               >
                 {productsLoading && (
                   <div className="px-3 py-1.5 text-xs text-gray-400">
-                    جاري التحميل...
+                    {t("common.loading")}
                   </div>
                 )}
                 {!productsLoading && products.length === 0 && (
                   <div className="px-3 py-1.5 text-xs text-gray-400">
-                    اختر المنتج
+                    {t("preparation.filters.noProductResults")}
                   </div>
                 )}
                 {!productsLoading && products.map((p) => (
@@ -434,7 +431,7 @@ const PreparationFilters = ({
                     {p.name}
                   </div>
                 ))}
-              </select>
+              </div>
             )}
 
             {selectedProductVariants.length > 0 && (

@@ -53,6 +53,10 @@ interface DeleteConversationsBulkParams {
   jids: string[];
 }
 
+interface DeleteAllConversationsParams {
+  sessionId?: string;
+}
+
 interface ArchiveConversationParams {
   jid: string;
   sessionId: string;
@@ -476,6 +480,36 @@ export const useArchiveConversation = (
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({
         queryKey: ["whatsapp", "conversations"],
+      });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook to delete all conversations for the company
+ */
+export const useDeleteAllConversations = (
+  options?: Omit<
+    UseMutationOptions<any, Error, DeleteAllConversationsParams>,
+    "mutationFn"
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, DeleteAllConversationsParams>({
+    mutationFn: async (params) => {
+      const response = await api.post(`/whatsapp/chats/delete-all`, {
+        sessionId: params.sessionId,
+      });
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["whatsapp", "conversations"],
+      });
+      queryClient.removeQueries({
+        queryKey: ["whatsapp", "messages"],
       });
     },
     ...options,

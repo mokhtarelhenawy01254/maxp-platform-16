@@ -993,6 +993,9 @@ const ParentBuyPackagePage = React.lazy(
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
+const ServiceOrdersPage = React.lazy(
+  () => import("./pages/admin/ServiceOrdersPage"),
+);
 const PublicFormPage = React.lazy(
   () => import("./pages/public/PublicFormPage"),
 );
@@ -6806,6 +6809,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <FormsBuilderPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/service-orders"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceOrdersPage />
                     </Layout>
                   }
                 />

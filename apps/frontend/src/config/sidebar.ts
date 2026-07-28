@@ -1067,6 +1067,17 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 8️⃣.5️⃣ طلبات الخدمات
+        {
+            id: 'service-requests',
+            title: t('sidebar.serviceRequests'),
+            icon: ClipboardDocumentListIcon,
+            hidden: !isAppActive('service-request-app'),
+            items: [
+                { to: '/admin/service-orders', icon: ClipboardDocumentListIcon, label: t('sidebar.serviceOrders') },
+            ]
+        },
+
         // 9️⃣ إدارة المهام
         {
             id: 'tasks',

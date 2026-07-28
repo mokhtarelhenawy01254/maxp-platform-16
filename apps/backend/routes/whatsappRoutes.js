@@ -509,6 +509,9 @@ router.post('/chats/delete', verifyToken.authenticateToken, checkAppAccess('what
 // حذف محادثات متعددة
 router.post('/chats/delete-bulk', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChatsBulk);
 
+// حذف كل المحادثات
+router.post('/chats/delete-all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteAllChats);
+
 // مسح محتوى المحادثة
 router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.clearChat);
 
@@ -588,6 +591,12 @@ router.post('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-b
 
 // حذف علامة
 router.delete('/labels/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteLabel);
+
+// إضافة علامة لمحادثة (route متوافق مع LabelsDialog)
+router.post('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.addLabelToChat);
+
+// إزالة علامة من محادثة
+router.delete('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.removeLabelFromChat);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⭐ الرسائل المميزة (Starred Messages)
