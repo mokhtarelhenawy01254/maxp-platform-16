@@ -86,48 +86,136 @@ const WA_LOG = {
     restore: (msg, data) => console.log(`♻️ [WA-RESTORE] ${msg}`, data || ''),
 };
 
+// ====== Sprint 3.3: Per-session reconnect coordinator ======
+// يقوم بجدولة وتنفيذ reconnect بشكل حصري لكل session
+const reconnectCoordinator = new Map(); // sessionId -> { phase, timer, reason, requestedAt, sockGeneration, attempt, syncFullHistory }
+
+function getReconnectState(sessionId) {
+    let state = reconnectCoordinator.get(sessionId);
+    if (!state) {
+        state = { phase: 'idle', timer: null, reason: null, requestedAt: null, sockGeneration: 0, attempt: 0, syncFullHistory: false };
+        reconnectCoordinator.set(sessionId, state);
+    }
+    return state;
+}
+
 function clearReconnectTimer(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    if (state && state.timer) {
+        clearTimeout(state.timer);
+        state.timer = null;
+    }
     if (reconnectTimers.has(sessionId)) {
         clearTimeout(reconnectTimers.get(sessionId));
         reconnectTimers.delete(sessionId);
     }
 }
 
-// ponytail: simple lock prevents concurrent reconnect for same session
-const reconnectInProgress = new Set();
-const reconnectTimerSet = new Set(); // Sprint 3.3: tracks pending timers too
-
-function isReconnecting(sessionId) {
-    return reconnectInProgress.has(sessionId);
-}
-
 function hasPendingReconnect(sessionId) {
-    return reconnectInProgress.has(sessionId) || reconnectTimerSet.has(sessionId);
+    const state = reconnectCoordinator.get(sessionId);
+    return !!(state && (state.phase === 'scheduled' || state.phase === 'reconnecting'));
 }
 
-function markReconnecting(sessionId) {
-    reconnectInProgress.add(sessionId);
-    reconnectTimerSet.delete(sessionId);
-}
-
-function markReconnectScheduled(sessionId) {
-    reconnectTimerSet.add(sessionId);
-}
-
-function clearReconnecting(sessionId) {
-    reconnectInProgress.delete(sessionId);
-    reconnectTimerSet.delete(sessionId);
-}
-
-// Sprint 3.3: Reconnect coordinator — يستدعى بدل health check + socket close مباشرة
-// بيضمن إن reconnect واحد بس يشتغل لكل session
-async function requestReconnect(sessionId, companyId, options = {}, delayMs = 1000, source = 'unknown') {
-    if (hasPendingReconnect(sessionId)) {
-        WA_LOG.reconnect(sessionId, `Reconnect already pending (source=${source}), skipping duplicate`);
-        return;
+function releaseReconnectLock(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    if (state) {
+        if (state.timer) {
+            clearTimeout(state.timer);
+            state.timer = null;
+        }
+        state.phase = 'idle';
+        state.attempt = 0;
     }
-    WA_LOG.reconnect(sessionId, `Reconnect requested (source=${source})`);
-    scheduleReconnectSession(sessionId, companyId, options, delayMs, 0);
+    if (reconnectTimers.has(sessionId)) {
+        clearTimeout(reconnectTimers.get(sessionId));
+        reconnectTimers.delete(sessionId);
+    }
+}
+
+// Reconnect coordinator — المسار الوحيد لجدولة reconnect
+// أول من يصل يثبت options والـ timer؛ أي سبب تاني يتم تسجيله كـ coalesced بدون تأثير
+async function requestReconnect(sessionId, companyId, source, options = {}, delayMs = 1000) {
+    const state = getReconnectState(sessionId);
+    
+    if (state.phase === 'scheduled' || state.phase === 'reconnecting') {
+        WA_LOG.reconnect(sessionId, `reconnect_coalesced sessionId=${sessionId} reason=${source} phase=${state.phase} existingReason=${state.reason}`);
+        return; // لا نغير timer أو options الحالية
+    }
+
+    state.phase = 'scheduled';
+    state.reason = source;
+    state.requestedAt = new Date();
+    state.attempt = 0;
+
+    // استنتاج history sync من durable state
+    let syncFullHistory = false;
+    try {
+        const prisma = getSharedPrismaClient();
+        const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
+            where: { sessionId },
+            select: { status: true }
+        });
+        syncFullHistory = imp && (imp.status === 'REQUESTED' || imp.status === 'IN_PROGRESS');
+    } catch (e) { /* model may not exist yet */ }
+
+    WA_LOG.reconnect(sessionId, `reconnect_scheduled sessionId=${sessionId} reason=${source} historySyncEnabled=${syncFullHistory} delay=${delayMs}ms`);
+
+    _scheduleReconnect(sessionId, companyId, { syncFullHistory }, delayMs, source);
+}
+
+function _scheduleReconnect(sessionId, companyId, options, delayMs, source) {
+    const state = getReconnectState(sessionId);
+    clearReconnectTimer(sessionId);
+
+    const lastTime = lastReconnectTime.get(sessionId);
+    const elapsed = lastTime ? Date.now() - lastTime : Infinity;
+    const cooldownRemaining = Math.max(0, RECONNECT_COOLDOWN_MS - elapsed);
+    const baseDelay = Math.max(delayMs, cooldownRemaining);
+    const maxDelay = 300000;
+    const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
+    const actualDelay = Math.min(baseDelay + jitter, maxDelay);
+
+    const timer = setTimeout(async () => {
+        state.phase = 'reconnecting';
+        state.timer = null;
+        state.attempt++;
+        lastReconnectTime.set(sessionId, Date.now());
+
+        WA_LOG.reconnect(sessionId, `reconnect_started sessionId=${sessionId} reason=${source} attempt=${state.attempt} historySyncEnabled=${options.syncFullHistory}`);
+
+        try {
+            await reconnectSession(sessionId, companyId, state.attempt - 1, options);
+            WA_LOG.reconnect(sessionId, `reconnect_completed sessionId=${sessionId} reason=${source} attempt=${state.attempt}`);
+            releaseReconnectLock(sessionId);
+        } catch (error) {
+            WA_LOG.reconnect(sessionId, `reconnect_failed sessionId=${sessionId} reason=${source} attempt=${state.attempt} error=${error.message}`);
+            const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
+            _scheduleReconnect(sessionId, companyId, options, nextDelay, source);
+        }
+    }, actualDelay);
+
+    state.timer = timer;
+    reconnectTimers.set(sessionId, timer);
+}
+
+// For backward compatibility: existing callers that pass options should use requestReconnect instead
+// but we keep this as internal helper (not exported)
+function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
+    const state = getReconnectState(sessionId);
+    if (state.phase === 'scheduled' || state.phase === 'reconnecting') return;
+    state.phase = 'scheduled';
+    state.reason = 'legacy';
+    _scheduleReconnect(sessionId, companyId, options, delayMs, 'legacy');
+}
+
+function getSocketGeneration(sessionId) {
+    const state = reconnectCoordinator.get(sessionId);
+    return state ? state.sockGeneration : 0;
+}
+
+function incrementSocketGeneration(sessionId) {
+    const state = getReconnectState(sessionId);
+    return ++state.sockGeneration;
 }
 
 function cleanupSocketListeners(sock) {
@@ -154,6 +242,7 @@ function cleanupSessionState(sessionId, companyId) {
     lastReconnectTime.delete(sessionId);
     sessionHealthChecks.delete(sessionId);
     untrackCompanySession(companyId, sessionId);
+    releaseReconnectLock(sessionId);
     for (const key of whatsappDisconnectAlertTimestamps.keys()) {
         if (key.startsWith(`${sessionId}:`)) {
             whatsappDisconnectAlertTimestamps.delete(key);
@@ -356,9 +445,7 @@ async function runHealthCheck() {
                             source: 'health_check'
                         });
 
-                        requestReconnect(sessionId, companyId, {
-                            syncFullHistory: session.syncFullHistory || false
-                        }, 1000, 'health_check');
+                        requestReconnect(sessionId, companyId, 'health_check');
                     }
                 } else if (session.status === 'connecting') {
                     // Check if we've been connecting too long
@@ -378,9 +465,7 @@ async function runHealthCheck() {
                             session.sock = null;
                         }
                         cleanupSessionState(sessionId, session.companyId);
-                        requestReconnect(sessionId, companyId, {
-                            syncFullHistory: session.syncFullHistory || false
-                        }, 500, 'health_check_stuck');
+                        requestReconnect(sessionId, companyId, 'health_check_stuck', {}, 500);
                     } else if (elapsed > HEALTH_CHECK_WARN_THRESHOLD) {
                         WA_LOG.health(sessionId, `Still connecting after ${Math.round(elapsed/1000)}s`);
                     }
@@ -442,46 +527,8 @@ function stopSessionHealthCheck() {
     }
 }
 
-function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
-    if (isReconnecting(sessionId)) {
-        return;
-    }
-    clearReconnectTimer(sessionId);
-    markReconnectScheduled(sessionId);
-
-    // Enforce minimum cooldown between reconnects
-    const lastTime = lastReconnectTime.get(sessionId);
-    const elapsed = lastTime ? Date.now() - lastTime : Infinity;
-    const cooldownRemaining = Math.max(0, RECONNECT_COOLDOWN_MS - elapsed);
-
-    // Exponential backoff with jitter for stability
-    const baseDelay = Math.max(delayMs, cooldownRemaining);
-    const maxDelay = 300000; // Cap at 5 minutes to keep attempting indefinitely without overloading
-    const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
-    const actualDelay = Math.min(baseDelay + jitter, maxDelay);
-
-    WA_LOG.reconnect(sessionId, `Scheduling reconnect attempt ${attempt + 1} in ${Math.round(actualDelay)}ms (base: ${baseDelay}ms)`, { 
-        resetAuth: !!options.resetAuth,
-        usePairingCode: !!options.usePairingCode
-    });
-
-    const timer = setTimeout(() => {
-        reconnectTimers.delete(sessionId);
-        lastReconnectTime.set(sessionId, Date.now());
-        markReconnecting(sessionId);
-        reconnectSession(sessionId, companyId, attempt, options).catch((error) => {
-            WA_LOG.error(sessionId, `Scheduled reconnect failed: ${error.message}`);
-            clearReconnecting(sessionId);
-            // Indefinite reconnect for production SaaS stability, capped at maxDelay (5m)
-            const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
-            scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
-        }).finally(() => {
-            clearReconnecting(sessionId);
-        });
-    }, actualDelay);
-
-    reconnectTimers.set(sessionId, timer);
-}
+// Legacy callers that still call scheduleReconnectSession directly
+// are redirected through the coordinator internally from _scheduleReconnect
 
 function normalizePhoneNumber(value) {
     const cleaned = String(value || '').replace(/\D/g, '');
@@ -1569,9 +1616,7 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 sessionHealthChecks.delete(sessionId);
                 // 440 = connectionReplaced — back off harder to break the death spiral
                 const reconnectDelay = statusCode === 440 ? 30000 : 3000;
-                requestReconnect(sessionId, companyId, {
-                    syncFullHistory: currentData.syncFullHistory
-                }, reconnectDelay, 'socket_close');
+                requestReconnect(sessionId, companyId, 'socket_close', {}, reconnectDelay);
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
                 const storedPhoneNumber = normalizePhoneNumber(sessionData?.phoneNumber);
@@ -4900,7 +4945,10 @@ module.exports = {
         HISTORY_BATCH_SIZE,
         historyYield,
         requestReconnect,
+        getReconnectState,
         hasPendingReconnect,
+        releaseReconnectLock,
+        getSocketGeneration,
         getSessionHistoryImportState: async (prisma, sessionId) => {
             try {
                 const imp = await prisma.whatsAppSessionHistoryImport.findUnique({

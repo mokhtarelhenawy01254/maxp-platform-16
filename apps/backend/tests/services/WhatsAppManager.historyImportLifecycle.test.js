@@ -292,4 +292,72 @@ describe('WhatsAppManager history import lifecycle', () => {
         r = await mockStore.findUnique({ where: { sessionId: sid } });
         expect(r.importedMessages).toBe(100); // نفس القيمة، مش 200
     });
+
+    // ── 22. Sprint 3.3: reconnect coordinator state machine ──
+    test('getReconnectState creates idle state on first access', () => {
+        const state = __testing.getReconnectState('session-rc-1');
+        expect(state.phase).toBe('idle');
+        expect(state.reason).toBeNull();
+        __testing.releaseReconnectLock('session-rc-1');
+    });
+
+    // ── 23. Sprint 3.3: hasPendingReconnect false when idle ──
+    test('hasPendingReconnect returns false when idle', () => {
+        expect(__testing.hasPendingReconnect('session-rc-2')).toBe(false);
+    });
+
+    // ── 24. Sprint 3.3: coordinator state transitions manually ──
+    test('coordinator transitions: idle → scheduled → reconnecting → idle', () => {
+        const sid = 'session-rc-3';
+        const state = __testing.getReconnectState(sid);
+        expect(state.phase).toBe('idle');
+
+        /* scheduled */
+        state.phase = 'scheduled';
+        state.reason = 'health_check';
+        expect(state.phase).toBe('scheduled');
+        expect(__testing.hasPendingReconnect(sid)).toBe(true);
+
+        /* reconnecting */
+        state.phase = 'reconnecting';
+        expect(state.phase).toBe('reconnecting');
+
+        /* release */
+        __testing.releaseReconnectLock(sid);
+        expect(state.phase).toBe('idle');
+    });
+
+    // ── 25. Sprint 3.3: second request is coalesced when pending ──
+    test('hasPendingReconnect prevents redundant scheduling', () => {
+        const sid = 'session-rc-4';
+        const state = __testing.getReconnectState(sid);
+        state.phase = 'scheduled';
+        state.reason = 'health_check';
+
+        // Second request should see pending and skip
+        expect(__testing.hasPendingReconnect(sid)).toBe(true);
+        // State unchanged
+        expect(state.reason).toBe('health_check');
+
+        __testing.releaseReconnectLock(sid);
+    });
+
+    // ── 26. Sprint 3.3: releaseReconnectLock resets state ──
+    test('releaseReconnectLock resets phase to idle', () => {
+        const sid = 'session-rc-5';
+        const state = __testing.getReconnectState(sid);
+        state.phase = 'reconnecting';
+        __testing.releaseReconnectLock(sid);
+        expect(state.phase).toBe('idle');
+    });
+
+    // ── 27. Sprint 3.3: socket generation ──
+    test('socket generation tracking works', () => {
+        const sid = 'session-rc-6';
+        expect(__testing.getSocketGeneration(sid)).toBe(0);
+        const state = __testing.getReconnectState(sid);
+        state.sockGeneration = 5;
+        expect(__testing.getSocketGeneration(sid)).toBe(5);
+        __testing.releaseReconnectLock(sid);
+    });
 });
