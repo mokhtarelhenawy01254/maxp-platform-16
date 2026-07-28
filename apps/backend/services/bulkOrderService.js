@@ -279,12 +279,16 @@ const bulkOrderService = {
       const wb = XLSX.utils.book_new();
 
       const infoRows = [
-        [record.operationNumber, record.name],
-        [`Status: ${record.status}`, `Progress: ${record.progress}%`, `Total Orders: ${record.totalOrders}`, `Created: ${new Date(record.createdAt).toLocaleDateString('en-US')}`],
+        [record.operationNumber, record.name, '', '', '', '', '', '', '', '', '', '', ''],
+        [`Status: ${record.status}`, `Progress: ${record.progress}%`, `Total Orders: ${record.totalOrders}`, `Created: ${new Date(record.createdAt).toLocaleDateString('en-US')}`, '', '', '', '', '', '', '', '', ''],
         [],
       ];
+      if (record.description) {
+        infoRows.splice(2, 0, [`Description: ${record.description}`, '', '', '', '', '', '', '', '', '', '', '', '']);
+      }
 
-      const headerRow = ['Customer Name', 'Phone', 'City', 'Governorate', 'Product', 'SKU', 'Size', 'Color', 'Qty', 'Price', 'Total', 'Status', 'Notes'];
+      const headerRowEn = ['Customer Name', 'Phone', 'City', 'Governorate', 'Product', 'SKU', 'Size', 'Color', 'Qty', 'Price', 'Total', 'Status', 'Notes'];
+      const headerRowAr = ['اسم العميل', 'الهاتف', 'المدينة', 'المحافظة', 'المنتج', 'SKU', 'المقاس', 'اللون', 'الكمية', 'السعر', 'الإجمالي', 'الحالة', 'ملاحظات'];
       const dataRows = record.items.map((item) => [
         item.customerName || '', item.customerPhone || '', item.city || '', item.governorate || '',
         item.productName || '', item.sku || '', item.size || '', item.color || '',
@@ -295,7 +299,7 @@ const bulkOrderService = {
       const totalPrice = record.items.reduce((sum, item) => sum + Number(item.total), 0);
       const totalRow = ['', '', '', '', '', '', '', '', totalQty, '', totalPrice, '', ''];
 
-      const allRows = [...infoRows, headerRow, ...dataRows];
+      const allRows = [...infoRows, headerRowEn, headerRowAr, ...dataRows];
       if (dataRows.length > 0) allRows.push(totalRow);
 
       const ws = XLSX.utils.aoa_to_sheet(allRows);
@@ -310,6 +314,10 @@ const bulkOrderService = {
       if (ws['!ref']) {
         const range = XLSX.utils.decode_range(ws['!ref']);
         const totalRowIdx = range.e.r;
+        const infoEndIdx = infoRows.length;
+        const headerEnIdx = infoEndIdx;
+        const headerArIdx = infoEndIdx + 1;
+        const dataStartIdx = infoEndIdx + 2;
 
         for (let R = range.s.r; R <= range.e.r; R++) {
           for (let C = range.s.c; C <= range.e.c; C++) {
@@ -320,8 +328,9 @@ const bulkOrderService = {
               else if (C === 8) ws[addr].z = '0';
             }
 
-            const isInfoRow = R < 3;
-            const isHeader = R === 3;
+            const isInfoRow = R < infoEndIdx;
+            const isHeaderEn = R === headerEnIdx;
+            const isHeaderAr = R === headerArIdx;
             const isTotal = R === totalRowIdx && dataRows.length > 0;
 
             if (isInfoRow) {
@@ -336,7 +345,7 @@ const bulkOrderService = {
                 alignment: { horizontal: C === 8 || C === 9 || C === 10 ? 'center' : 'left', vertical: 'center' },
                 border: { top: { style: 'medium', color: { rgb: '2563EB' } }, bottom: { style: 'thin', color: { rgb: 'E5E7EB' } } },
               };
-            } else if (isHeader) {
+            } else if (isHeaderEn) {
               ws[addr].s = {
                 font: { name: 'Calibri', bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
                 fill: { fgColor: { rgb: '2563EB' }, patternType: 'solid' },
@@ -348,8 +357,20 @@ const bulkOrderService = {
                   right: { style: 'thin', color: { rgb: '1E40AF' } },
                 },
               };
+            } else if (isHeaderAr) {
+              ws[addr].s = {
+                font: { name: 'Calibri', bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '3B82F6' }, patternType: 'solid' },
+                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                border: {
+                  top: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  bottom: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  left: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  right: { style: 'thin', color: { rgb: '1D4ED8' } },
+                },
+              };
             } else {
-              const isEven = (R - 4) % 2 === 0;
+              const isEven = (R - dataStartIdx) % 2 === 0;
               const isNumeric = C === 8 || C === 9 || C === 10;
               ws[addr].s = {
                 font: { name: 'Calibri', sz: 11, color: { rgb: '1F2937' } },
@@ -437,6 +458,23 @@ const bulkOrderService = {
         }
       }
     }
+
+    const HEADER_SIGNATURE_VALUES = [
+      'customer name', 'اسم العميل', 'phone', 'الهاتف', 'city', 'المدينة',
+      'governorate', 'المحافظة', 'product name', 'اسم المنتج', 'product', 'المنتج',
+      'sku', 'size', 'المقاس', 'color', 'اللون', 'colour',
+      'quantity', 'الكمية', 'price', 'السعر', 'notes', 'ملاحظات',
+      'status', 'الحالة', 'total', 'الإجمالي',
+    ];
+
+    records = records.filter((r) => {
+      const values = Object.values(r).map((v) => String(v || '').trim().toLowerCase()).filter((v) => v);
+      if (values.length === 0) return false;
+      const matchCount = values.filter((v) => HEADER_SIGNATURE_VALUES.includes(v)).length;
+      const threshold = Math.max(2, Math.floor(values.length * 0.5));
+      return matchCount < threshold;
+    });
+
     return records.map((r, i) => ({
       row: i + 2,
       orderNumber: String(r['orderNumber'] || r['Order Number'] || r['order_number'] || r['رقم الطلب'] || '').trim(),

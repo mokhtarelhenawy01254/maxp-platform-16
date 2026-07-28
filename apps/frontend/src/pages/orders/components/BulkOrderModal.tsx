@@ -41,30 +41,12 @@ const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderIte
 };
 
 const downloadTemplate = () => {
-  const headers = [
-    "Customer Name",
-    "Phone",
-    "City",
-    "Governorate",
-    "Product Name",
-    "SKU",
-    "Size",
-    "Color",
-    "Quantity",
-    "Price",
-    "Notes",
-  ];
-  const sample = ["Ahmed Mohamed", "01001234567", "Nasr City", "Cairo", "Nike Air Max 270", "NIKE-AM270-BLK", "42", "Black", "2", "150.00", "عاجل - توصيل سريع"];
-  const csvContent = "\uFEFF" + [headers, sample].map((row) => row.map((v) => `"${v}"`).join(",")).join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "bulk_order_template.csv");
+  link.href = "/bulk_order_template.xlsx";
+  link.setAttribute("download", "bulk_order_template.xlsx");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };
 
 const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {

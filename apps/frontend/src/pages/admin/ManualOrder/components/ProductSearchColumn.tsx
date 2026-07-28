@@ -306,7 +306,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
           <input
             id="manual-order-product-search"
             type="text"
-            placeholder={t('manualOrder.k_1')}
+            placeholder={t('manualOrder.k_139')}
             className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
             value={searchQuery}
             onChange={(e) => {

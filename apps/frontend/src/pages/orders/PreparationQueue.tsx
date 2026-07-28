@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ChevronLeftIcon,
@@ -981,7 +980,7 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error(t('preparation.page.unnamedProduct'));
+      toast.error(t('preparation.toasts.bulkNoValidOrders'));
       return;
     }
 
@@ -1057,13 +1056,13 @@ const PreparationQueue: React.FC = () => {
     });
 
     if (validOrders.length === 0) {
-      toast.error(t('preparation.page.unnamedProduct'));
+      toast.error(t('preparation.toasts.bulkNoValidOrders'));
       return;
     }
 
     const confirmed = window.confirm(
       t("preparation.confirm.bulkUpdateAll", {
-        count: totalMatching,
+        count: pagination.total,
         stage: statusLabelMap.get(bulkStatus) || bulkStatus,
       }),
     );
