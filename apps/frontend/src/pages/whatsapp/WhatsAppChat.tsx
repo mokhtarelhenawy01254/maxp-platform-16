@@ -324,7 +324,7 @@ const WhatsAppChatContent: React.FC = () => {
   // — Push history state on chat open so browser back returns to chat list, not previous page —
   useEffect(() => {
     if (!selectedContact) return;
-    window.history.replaceState({ waChatOpen: true }, '');
+    window.history.pushState({ waChatOpen: true }, '');
     const handlePopState = () => {
       if (selectedContact) {
         setSelectedContact(null);
@@ -2092,9 +2092,13 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenTemplate={handleOpenTemplateDialog}
           onBackToList={() => {
             if (typeof document.startViewTransition === 'function') {
-              document.startViewTransition(() => setSelectedContact(null));
+              document.startViewTransition(() => {
+                setSelectedContact(null);
+                window.history.back();
+              });
             } else {
               setSelectedContact(null);
+              window.history.back();
             }
           }}
           onTouchStart={handleChatTouchStart}
