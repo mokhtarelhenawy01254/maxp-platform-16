@@ -103,6 +103,7 @@
   "distributionDate": "Distribution Date",
   "distributedByLabel": "Distributed By",
   "orderModified": "Order data modified",
+  "modificationDetail": "Details: {{reason}}",
   "orderTrashed": "Order moved to trash",
   "scheduledDelivery": "Order scheduled for delivery on {{date}} at {{time}}",
   "scheduledDeliveryWithNotes": "Order scheduled for delivery on {{date}} at {{time}}\n{{notes}}",

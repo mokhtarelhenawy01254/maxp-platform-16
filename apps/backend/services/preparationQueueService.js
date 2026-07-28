@@ -510,6 +510,7 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
             return {
               id: item.id,
               productId: item.productId,
+              variantId: item.variantId || null,
               name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
               productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
               price: item.price,
@@ -704,6 +705,8 @@ const buildPreparationOrderSummary = (
     const size = item.size || itemMetadata.size || itemMetadata.productSize || '';
 
     return {
+      productId: String(item.productId || ''),
+      variantId: item.variantId || null,
       displayName: item.productName || item.name || metadataProductName || 'منتج غير محدد',
       color,
       size,
@@ -868,6 +871,8 @@ const matchesPreparationFilters = ({
   productFilter,
   colorFilter,
   sizeFilter,
+  productIdFilter,
+  variantIdFilter,
 }) => {
   if (!order.warehouseMatch) return false;
 
@@ -919,10 +924,17 @@ const matchesPreparationFilters = ({
     }
   }
 
-  if (productFilter || colorFilter || sizeFilter) {
+  if (productFilter || colorFilter || sizeFilter || productIdFilter || variantIdFilter) {
     const matchesProduct = (order.itemInsights || []).some(
       (item) => {
         let match = true;
+        if (productIdFilter) {
+          match = match && (item.productId && item.productId === productIdFilter);
+        }
+        if (variantIdFilter) {
+          const itemVariantId = String(item.variantId || '');
+          match = match && (itemVariantId === variantIdFilter);
+        }
         if (productFilter) {
           match = match && ((item.displayName && item.displayName.toLowerCase().includes(productFilter)) ||
           (item.color && item.color.toLowerCase().includes(productFilter)) ||
@@ -1194,7 +1206,8 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
           },
           orderItems: {
             include: {
-              product: { select: { id: true, name: true, images: true } }
+              product: { select: { id: true, name: true, images: true } },
+              productVariant: { select: { id: true, name: true, type: true } }
             }
           },
           orderInvoice: {
@@ -1289,6 +1302,8 @@ const getPreparationQueue = async ({ user, query }) => {
   const productFilter = String(query.productFilter || '').trim().toLowerCase();
   const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
   const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
+  const productIdFilter = (query.productId || '').trim();
+  const variantIdFilter = (query.variantId || '').trim();
 
   let affiliateId = query.affiliateId;
   let merchantId = null;
@@ -1416,6 +1431,8 @@ const getPreparationQueue = async ({ user, query }) => {
         productFilter,
         colorFilter,
         sizeFilter,
+        productIdFilter,
+        variantIdFilter,
       });
 
       if (!matchesFilters) {
@@ -1534,6 +1551,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   const productFilter = String(query.productFilter || '').trim().toLowerCase();
   const colorFilter = String(query.colorFilter || '').trim().toLowerCase();
   const sizeFilter = String(query.sizeFilter || '').trim().toLowerCase();
+  const productIdFilter = (query.productId || '').trim();
+  const variantIdFilter = (query.variantId || '').trim();
 
   const normalizedStatus = String(targetStatus || '').trim().toUpperCase();
   if (!normalizedStatus) {
@@ -1636,6 +1655,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
         productFilter,
         colorFilter,
         sizeFilter,
+        productIdFilter,
+        variantIdFilter,
       });
 
       if (!matchesFilters) return;

@@ -277,18 +277,117 @@ const bulkOrderService = {
 
     if (format === 'excel') {
       const wb = XLSX.utils.book_new();
-      const wsData = [
-        ['Operation Number', 'Name', 'Total Orders', 'Created At', 'Status', 'Progress', 'Created By'],
-        [record.operationNumber, record.name, record.totalOrders, record.createdAt, record.status, `${record.progress}%`, record.createdByName],
+
+      const infoRows = [
+        [record.operationNumber, record.name, '', '', '', '', '', '', '', '', '', '', ''],
+        [`Status: ${record.status}`, `Progress: ${record.progress}%`, `Total Orders: ${record.totalOrders}`, `Created: ${new Date(record.createdAt).toLocaleDateString('en-US')}`, '', '', '', '', '', '', '', '', ''],
         [],
-        ['Order Number', 'Customer Name', 'Phone', 'City', 'Governorate', 'Product', 'SKU', 'Size', 'Color', 'Quantity', 'Price', 'Total', 'Status', 'Notes'],
-        ...record.items.map((item) => [
-          item.orderNumber, item.customerName, item.customerPhone, item.city, item.governorate,
-          item.productName, item.sku, item.size, item.color,
-          item.quantity, Number(item.price), Number(item.total), item.status, item.notes,
-        ]),
       ];
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      if (record.description) {
+        infoRows.splice(2, 0, [`Description: ${record.description}`, '', '', '', '', '', '', '', '', '', '', '', '']);
+      }
+
+      const headerRowEn = ['Customer Name', 'Phone', 'City', 'Governorate', 'Product', 'SKU', 'Size', 'Color', 'Qty', 'Price', 'Total', 'Status', 'Notes'];
+      const headerRowAr = ['اسم العميل', 'الهاتف', 'المدينة', 'المحافظة', 'المنتج', 'SKU', 'المقاس', 'اللون', 'الكمية', 'السعر', 'الإجمالي', 'الحالة', 'ملاحظات'];
+      const dataRows = record.items.map((item) => [
+        item.customerName || '', item.customerPhone || '', item.city || '', item.governorate || '',
+        item.productName || '', item.sku || '', item.size || '', item.color || '',
+        item.quantity, Number(item.price), Number(item.total), item.status, item.notes || '',
+      ]);
+
+      const totalQty = record.items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalPrice = record.items.reduce((sum, item) => sum + Number(item.total), 0);
+      const totalRow = ['', '', '', '', '', '', '', '', totalQty, '', totalPrice, '', ''];
+
+      const allRows = [...infoRows, headerRowEn, headerRowAr, ...dataRows];
+      if (dataRows.length > 0) allRows.push(totalRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+      const colWidths = [
+        { wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 18 },
+        { wch: 28 }, { wch: 22 }, { wch: 10 }, { wch: 14 },
+        { wch: 7 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 24 },
+      ];
+      ws['!cols'] = colWidths;
+
+      if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const totalRowIdx = range.e.r;
+        const infoEndIdx = infoRows.length;
+        const headerEnIdx = infoEndIdx;
+        const headerArIdx = infoEndIdx + 1;
+        const dataStartIdx = infoEndIdx + 2;
+
+        for (let R = range.s.r; R <= range.e.r; R++) {
+          for (let C = range.s.c; C <= range.e.c; C++) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[addr]) continue;
+            if (ws[addr].t === 'n') {
+              if (C === 9 || C === 10) ws[addr].z = '#,##0.00';
+              else if (C === 8) ws[addr].z = '0';
+            }
+
+            const isInfoRow = R < infoEndIdx;
+            const isHeaderEn = R === headerEnIdx;
+            const isHeaderAr = R === headerArIdx;
+            const isTotal = R === totalRowIdx && dataRows.length > 0;
+
+            if (isInfoRow) {
+              ws[addr].s = {
+                font: { name: 'Calibri', bold: R === 0, sz: R === 0 ? 14 : 10, color: { rgb: R === 0 ? '1E3A5F' : '6B7280' } },
+                alignment: { horizontal: 'left', vertical: 'center' },
+              };
+            } else if (isTotal) {
+              ws[addr].s = {
+                font: { name: 'Calibri', bold: true, sz: 11, color: { rgb: '1F2937' } },
+                fill: { fgColor: { rgb: 'EFF6FF' }, patternType: 'solid' },
+                alignment: { horizontal: C === 8 || C === 9 || C === 10 ? 'center' : 'left', vertical: 'center' },
+                border: { top: { style: 'medium', color: { rgb: '2563EB' } }, bottom: { style: 'thin', color: { rgb: 'E5E7EB' } } },
+              };
+            } else if (isHeaderEn) {
+              ws[addr].s = {
+                font: { name: 'Calibri', bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '2563EB' }, patternType: 'solid' },
+                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                border: {
+                  top: { style: 'thin', color: { rgb: '1E40AF' } },
+                  bottom: { style: 'thin', color: { rgb: '1E40AF' } },
+                  left: { style: 'thin', color: { rgb: '1E40AF' } },
+                  right: { style: 'thin', color: { rgb: '1E40AF' } },
+                },
+              };
+            } else if (isHeaderAr) {
+              ws[addr].s = {
+                font: { name: 'Calibri', bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '3B82F6' }, patternType: 'solid' },
+                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                border: {
+                  top: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  bottom: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  left: { style: 'thin', color: { rgb: '1D4ED8' } },
+                  right: { style: 'thin', color: { rgb: '1D4ED8' } },
+                },
+              };
+            } else {
+              const isEven = (R - dataStartIdx) % 2 === 0;
+              const isNumeric = C === 8 || C === 9 || C === 10;
+              ws[addr].s = {
+                font: { name: 'Calibri', sz: 11, color: { rgb: '1F2937' } },
+                fill: { fgColor: { rgb: isEven ? 'F8FAFC' : 'FFFFFF' }, patternType: 'solid' },
+                alignment: { horizontal: isNumeric ? 'center' : 'left', vertical: 'center' },
+                border: {
+                  top: { style: 'thin', color: { rgb: 'E5E7EB' } },
+                  bottom: { style: 'thin', color: { rgb: 'E5E7EB' } },
+                  left: { style: 'thin', color: { rgb: 'E5E7EB' } },
+                  right: { style: 'thin', color: { rgb: 'E5E7EB' } },
+                },
+              };
+            }
+          }
+        }
+      }
+
       XLSX.utils.book_append_sheet(wb, ws, 'BulkOrder');
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       return { buffer, filename: `bulk-order-${record.operationNumber}.xlsx` };
@@ -359,20 +458,37 @@ const bulkOrderService = {
         }
       }
     }
+
+    const HEADER_SIGNATURE_VALUES = [
+      'customer name', 'اسم العميل', 'phone', 'الهاتف', 'city', 'المدينة',
+      'governorate', 'المحافظة', 'product name', 'اسم المنتج', 'product', 'المنتج',
+      'sku', 'size', 'المقاس', 'color', 'اللون', 'colour',
+      'quantity', 'الكمية', 'price', 'السعر', 'notes', 'ملاحظات',
+      'status', 'الحالة', 'total', 'الإجمالي',
+    ];
+
+    records = records.filter((r) => {
+      const values = Object.values(r).map((v) => String(v || '').trim().toLowerCase()).filter((v) => v);
+      if (values.length === 0) return false;
+      const matchCount = values.filter((v) => HEADER_SIGNATURE_VALUES.includes(v)).length;
+      const threshold = Math.max(2, Math.floor(values.length * 0.5));
+      return matchCount < threshold;
+    });
+
     return records.map((r, i) => ({
       row: i + 2,
-      orderNumber: String(r['orderNumber'] || r['Order Number'] || r['order_number'] || '').trim(),
-      customerName: String(r['customerName'] || r['Customer Name'] || r['customer_name'] || '').trim(),
-      customerPhone: String(r['customerPhone'] || r['Phone'] || r['phone'] || r['customer_phone'] || '').trim(),
-      city: String(r['city'] || r['City'] || r['town'] || r['Town'] || r['City/Town'] || '').trim(),
-      governorate: String(r['governorate'] || r['Governorate'] || r['govern'] || r['Govern'] || '').trim(),
-      productName: String(r['productName'] || r['Product Name'] || r['product_name'] || r['product'] || '').trim(),
+      orderNumber: String(r['orderNumber'] || r['Order Number'] || r['order_number'] || r['رقم الطلب'] || '').trim(),
+      customerName: String(r['customerName'] || r['Customer Name'] || r['customer_name'] || r['اسم العميل'] || '').trim(),
+      customerPhone: String(r['customerPhone'] || r['Phone'] || r['phone'] || r['customer_phone'] || r['رقم الهاتف'] || r['الهاتف'] || '').trim(),
+      city: String(r['city'] || r['City'] || r['town'] || r['Town'] || r['City/Town'] || r['المدينة'] || r['المنطقة'] || '').trim(),
+      governorate: String(r['governorate'] || r['Governorate'] || r['govern'] || r['Govern'] || r['المحافظة'] || '').trim(),
+      productName: String(r['productName'] || r['Product Name'] || r['product_name'] || r['product'] || r['المنتج'] || r['اسم المنتج'] || '').trim(),
       sku: String(r['sku'] || r['SKU'] || r['Sku'] || '').trim(),
-      size: String(r['size'] || r['Size'] || r['shoeSize'] || r['Shoe Size'] || '').trim(),
-      color: String(r['color'] || r['Color'] || r['colour'] || r['Colour'] || '').trim(),
-      quantity: parseInt(r['quantity'] || r['Quantity'] || '1', 10) || 1,
-      price: parseFloat(r['price'] || r['Price'] || '0') || 0,
-      notes: String(r['notes'] || r['Notes'] || r['note'] || r['Note'] || '').trim(),
+      size: String(r['size'] || r['Size'] || r['shoeSize'] || r['Shoe Size'] || r['المقاس'] || '').trim(),
+      color: String(r['color'] || r['Color'] || r['colour'] || r['Colour'] || r['اللون'] || '').trim(),
+      quantity: parseInt(r['quantity'] || r['Quantity'] || r['الكمية'] || '1', 10) || 1,
+      price: parseFloat(r['price'] || r['Price'] || r['السعر'] || '0') || 0,
+      notes: String(r['notes'] || r['Notes'] || r['note'] || r['Note'] || r['ملاحظات'] || '').trim(),
     }));
   },
 

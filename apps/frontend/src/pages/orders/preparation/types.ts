@@ -10,6 +10,7 @@ export type StageCounts = Record<string, number>;
 export interface SimpleOrderItem {
   id: string;
   productId: string;
+  variantId?: string | null;
   name?: string;
   productName?: string;
   color?: string;

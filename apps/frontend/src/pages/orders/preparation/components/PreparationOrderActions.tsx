@@ -69,7 +69,7 @@ const PreparationOrderActions = ({
         value={currentSelection}
         onChange={(e) => onStatusSelectionChange(order.orderNumber, e.target.value)}
         disabled={!preparationSettings.enabled}
-        className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white sm:max-w-[180px]"
+        className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white sm:max-w-[180px] max-sm:min-h-[40px]"
       >
         {statusOptions.map((status) => (
           <option key={status.code} value={status.code}>
@@ -82,7 +82,7 @@ const PreparationOrderActions = ({
       <button
         onClick={() => onSingleStatusUpdate(order.orderNumber, currentSelection)}
         disabled={!preparationSettings.enabled || rowBusy}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-medium text-white transition active:scale-95 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-[40px] max-sm:flex-1"
       >
         {rowBusy ? (
           <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
@@ -98,7 +98,7 @@ const PreparationOrderActions = ({
           type="button"
           onClick={() => onMarkAsShortageHold(order.orderNumber)}
           disabled={rowBusy}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 transition hover:border-rose-300 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700 transition active:scale-95 hover:border-rose-300 disabled:opacity-50 max-sm:min-h-[40px] max-sm:flex-1"
         >
           <ExclamationTriangleIcon className="h-3.5 w-3.5" />
           {t("preparation.actionLabels.holdShortage")}
@@ -111,7 +111,7 @@ const PreparationOrderActions = ({
           type="button"
           onClick={() => onReleaseShortageHold(order.orderNumber)}
           disabled={rowBusy}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 transition hover:border-indigo-300 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-xs font-medium text-indigo-700 transition active:scale-95 hover:border-indigo-300 disabled:opacity-50 max-sm:min-h-[40px] max-sm:flex-1"
         >
           <ArrowPathIcon className="h-3.5 w-3.5" />
           {t("preparation.actionLabels.returnToPreparation")}
@@ -121,7 +121,7 @@ const PreparationOrderActions = ({
       {/* Ready to ship badge */}
       {order.normalizedStatus === preparationSettings.handoffStatus ||
       order.stage === "READY_TO_SHIP" ? (
-        <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+        <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
           <TruckIcon className="h-3.5 w-3.5" />
           {t("preparation.k_10")}
         </span>
@@ -132,7 +132,7 @@ const PreparationOrderActions = ({
         type="button"
         onClick={() => onPrintPreparationSlip(order.orderNumber)}
         disabled={isPrinting}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 transition hover:border-amber-300 disabled:opacity-50"
+        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-700 transition active:scale-95 hover:border-amber-300 disabled:opacity-50 max-sm:min-h-[40px] max-sm:flex-1"
       >
         {isPrinting ? (
           <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
@@ -146,7 +146,7 @@ const PreparationOrderActions = ({
       {!merchantFulfillment ? (
         <Link
           to={`/orders/${encodeURIComponent(order.orderNumber)}`}
-          className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300"
+          className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-medium text-gray-600 transition active:scale-95 hover:border-gray-300 max-sm:min-h-[40px] max-sm:flex-1"
         >
           {t("preparation.actionLabels.openOrder")}
         </Link>

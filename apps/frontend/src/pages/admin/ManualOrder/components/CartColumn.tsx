@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { CartItem } from "../types";
 import { useAuth } from "../../../../hooks/useAuthSimple";
+import { buildOptimizedUploadImageUrl } from "../../../../utils/imageUrl";
 
 interface CartColumnProps {
   items: CartItem[];
@@ -56,7 +57,7 @@ const CartColumn: React.FC<CartColumnProps> = ({
                                 {/* Image */}
                                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
                                     {item.image ? (
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                        <img src={buildOptimizedUploadImageUrl(item.image, { width: 150 })} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
                                     ) : (
                                         <div className="w-full h-full bg-gray-200 dark:bg-gray-600" />
                                     )}

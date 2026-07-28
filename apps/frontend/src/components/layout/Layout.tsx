@@ -699,9 +699,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
              <main
                  className={`business-shell-main flex-1 flex flex-col ${
-                   shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto"
+                   shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto min-h-0"
                  } hr-theme`}
                >
+
                  {location.pathname === '/apps' ? (
                    <React.Suspense fallback={<ContentSkeleton />}>
                      <AppDashboardPage
@@ -813,9 +814,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
                <main
                   className={`business-shell-main flex-1 flex flex-col ${
-                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto"
+                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto min-h-0"
                   } hr-theme`}
-               >
+              >
                  {location.pathname === '/apps' ? (
                    <React.Suspense fallback={<ContentSkeleton />}>
                      <AppDashboardPage

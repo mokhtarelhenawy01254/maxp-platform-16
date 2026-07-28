@@ -1,0 +1,22 @@
+{
+  "title": "تحليلات المنتجات",
+  "subtitle": "أداء المنتجات والمبيعات",
+  "fetchError": "حدث خطأ في جلب البيانات",
+  "retry": "إعادة المحاولة",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوم",
+  "last90Days": "آخر 90 يوم",
+  "lastYear": "آخر سنة",
+  "totalProducts": "إجمالي المنتجات",
+  "topProducts": "أفضل المنتجات مبيعاً",
+  "topProductsDetails": "تفاصيل أفضل المنتجات",
+  "lowPerforming": "المنتجات الأقل أداءً",
+  "product": "المنتج",
+  "sales": "المبيعات",
+  "revenue": "الإيرادات",
+  "noTopProducts": "لا توجد مبيعات في هذه الفترة",
+  "noTopProductsDesc": "لم يتم تسجيل أي مبيعات للمنتجات في الفترة المحددة",
+  "noLowPerforming": "لا توجد منتجات ضعيفة الأداء",
+  "noLowPerformingDesc": "جميع المنتجات تحقق أداء جيد في هذه الفترة",
+  "ordersCount": "عدد الطلبات"
+}

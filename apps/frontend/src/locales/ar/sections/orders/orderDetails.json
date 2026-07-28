@@ -103,6 +103,7 @@
   "distributionDate": "تاريخ التوزيع",
   "distributedByLabel": "تم التوزيع بواسطة",
   "orderModified": "تم تعديل بيانات الطلب",
+  "modificationDetail": "التفاصيل: {{reason}}",
   "orderTrashed": "تم نقل الطلب إلى سلة المهملات",
   "scheduledDelivery": "تم جدولة الطلب للتسليم في {{date}} الساعة {{time}}",
   "scheduledDeliveryWithNotes": "تم جدولة الطلب للتسليم في {{date}} الساعة {{time}}\n{{notes}}",

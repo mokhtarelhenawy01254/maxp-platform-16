@@ -43,6 +43,22 @@ const handleMulterError = (err, _req, res, next) => {
 router.use(verifyToken.authenticateToken);
 router.use(verifyToken.requireCompanyAccess);
 
+router.get('/template', requireDbPermission(BULK_ORDER_PERMISSIONS.VIEW), async (_req, res) => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const templatePath = path.join(__dirname, '..', '..', '..', '..', 'apps', 'frontend', 'public', 'bulk_order_template.xlsx');
+    if (fs.existsSync(templatePath)) {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="bulk_order_template.xlsx"');
+      return res.sendFile(templatePath);
+    }
+    res.status(404).json({ success: false, error: 'Template not found' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/', requireDbPermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res) => {
   try {
     const { page, limit, status, search, sortBy, sortOrder, userId, dateFrom, dateTo } = req.query;

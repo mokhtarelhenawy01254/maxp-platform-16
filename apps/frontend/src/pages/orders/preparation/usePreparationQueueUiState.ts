@@ -22,6 +22,8 @@ export interface PreparationQueueUiState {
   productFilter: string;
   productColorFilter: string;
   productSizeFilter: string;
+  productIdFilter: string;
+  variantIdFilter: string;
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
@@ -46,6 +48,8 @@ type PreparationQueueUiAction =
   | { type: "set_product_filter"; value: string }
   | { type: "set_product_color_filter"; value: string }
   | { type: "set_product_size_filter"; value: string }
+  | { type: "set_product_id_filter"; value: string }
+  | { type: "set_variant_id_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_not_printed_filter"; value: NotPrintedFilter }
   | { type: "set_no_shipping_code_filter"; value: NoShippingCodeFilter }
@@ -74,6 +78,8 @@ const initialState: PreparationQueueUiState = {
   productFilter: "",
   productColorFilter: "",
   productSizeFilter: "",
+  productIdFilter: "",
+  variantIdFilter: "",
   itemCountFilter: "all",
   notPrintedFilter: "all",
   noShippingCodeFilter: "all",
@@ -125,6 +131,10 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { productColorFilter: action.value });
     case "set_product_size_filter":
       return withPageReset(state, { productSizeFilter: action.value });
+    case "set_product_id_filter":
+      return withPageReset(state, { productIdFilter: action.value, variantIdFilter: "" });
+    case "set_variant_id_filter":
+      return withPageReset(state, { variantIdFilter: action.value });
     case "set_item_count_filter":
       return withPageReset(state, { itemCountFilter: action.value });
     case "set_not_printed_filter":
@@ -247,6 +257,10 @@ export const usePreparationQueueUiState = (
         dispatch({ type: "set_product_color_filter", value }),
       setProductSizeFilter: (value: string) =>
         dispatch({ type: "set_product_size_filter", value }),
+      setProductIdFilter: (value: string) =>
+        dispatch({ type: "set_product_id_filter", value }),
+      setVariantIdFilter: (value: string) =>
+        dispatch({ type: "set_variant_id_filter", value }),
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
       setNotPrintedFilter: (value: NotPrintedFilter) =>

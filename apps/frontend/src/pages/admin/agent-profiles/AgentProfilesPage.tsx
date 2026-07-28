@@ -684,7 +684,7 @@ export default function AgentProfilesPage() {
       {!isMobile && sidebarContent}
 
       {/* ── Main Panel ── */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="flex-1 flex flex-col overflow-y-auto min-h-0">
         {/* Header */}
         <div className="px-4 lg:px-6 py-4 border-b border-border/50">
           {/* Mobile header row */}

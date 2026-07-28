@@ -151,7 +151,7 @@ const PreparationOrderItemsList = ({
                     type="button"
                     onClick={() => onQuickTransfer(order.orderNumber, item)}
                     disabled={!selectedWarehouseId || isTransfering}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-xs font-medium text-amber-800 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-800 transition active:scale-95 hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-[40px] max-sm:flex-1"
                   >
                     <ArrowPathIcon
                       className={`h-3.5 w-3.5 ${isTransfering ? "animate-spin" : ""}`}

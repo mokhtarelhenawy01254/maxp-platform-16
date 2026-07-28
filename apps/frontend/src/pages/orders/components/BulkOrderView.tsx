@@ -26,7 +26,6 @@ interface BulkOrderDetail {
   executedAt?: string;
   items: Array<{
     id: string;
-    orderNumber?: string;
     customerName?: string;
     customerPhone?: string;
     city?: string;
@@ -115,6 +114,9 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
     };
     return map[color?.toLowerCase()] || null;
   };
+
+  const totalQty = data?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const totalPrice = data?.items.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0;
 
   if (loading) {
     return (
@@ -227,9 +229,6 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
-                  {t("orders.bulkOrderNumber")}
-                </th>
-                <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
                   {t("orders.bulkItemCustomer")}
                 </th>
                 <th className="px-3 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left whitespace-nowrap">
@@ -270,16 +269,13 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td colSpan={12} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                     {t("orders.bulkNoItems")}
                   </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-3 py-3 text-sm font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                      {item.orderNumber || "-"}
-                    </td>
                     <td className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <div>
                         <p className="font-medium">{item.customerName || "-"}</p>
@@ -333,6 +329,21 @@ const BulkOrderView = ({ id, onBack, onEdit, onDuplicate, onExport }: BulkOrderV
             </tbody>
           </table>
         </div>
+        {data.items.length > 0 && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-indigo-50/50 dark:bg-indigo-900/10 flex items-center justify-between text-sm font-semibold">
+            <span className="text-gray-600 dark:text-gray-400">
+              {t("orders.bulkItems")}: {data.items.length}
+            </span>
+            <div className="flex items-center gap-6">
+              <span className="text-gray-600 dark:text-gray-400">
+                {t("orders.bulkItemQuantity")}: <span className="text-indigo-700 dark:text-indigo-300">{totalQty}</span>
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                {t("orders.bulkItemTotal")}: <span className="text-indigo-700 dark:text-indigo-300 font-bold">{Number(totalPrice).toFixed(2)}</span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-400">
