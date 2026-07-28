@@ -336,6 +336,27 @@
 
   <script src="/js/chunk-recovery.js"></script>
 
+  <!-- Fallback for old route bundles that reference undefined getStatusText -->
+  <script>
+    window.getStatusText = function(s) {
+      var key = (s || 'PENDING').toUpperCase().trim().replace(/\s+/g, '_');
+      var labels = {
+        PENDING: '\u0642\u064A\u062F \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631',
+        CONFIRMED: '\u0645\u0624\u0643\u062F',
+        PROCESSING: '\u0642\u064A\u062F \u0627\u0644\u062A\u062C\u0647\u064A\u0632',
+        SHIPPED: '\u062A\u0645 \u0627\u0644\u0634\u062D\u0646',
+        DELIVERED: '\u062A\u0645 \u0627\u0644\u062A\u0633\u0644\u064A\u0645',
+        CANCELLED: '\u0645\u0644\u063A\u064A',
+        RETURNED: '\u0645\u0631\u062A\u062C\u0639',
+        REFUNDED: '\u0645\u0633\u062A\u0631\u062F',
+        DRAFT: '\u0645\u0633\u0648\u062F\u0629',
+        SCHEDULED: '\u0637\u0644\u0628 \u0645\u062C\u062F\u0648\u0644',
+        ON_HOLD: '\u0645\u0639\u0644\u0642'
+      };
+      return labels[key] || key.replace(/_/g, ' ');
+    };
+  </script>
+
   <!-- Module script will be injected by Vite -->
   <script type="module" src="/src/main.tsx"></script>
 
