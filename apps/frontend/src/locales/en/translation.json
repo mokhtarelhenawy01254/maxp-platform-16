@@ -164,6 +164,7 @@
       "tools": "Tools",
       "skillsJson": "Skills (JSON)",
       "settings": "Settings",
+      "guardrails": "Guardrails",
       "advanced": "Advanced",
       "advancedFile": "Advanced file"
     },
@@ -176,7 +177,10 @@
       "addTitle": "Add Agent",
       "search": "Search",
       "noResults": "No results",
-      "unsavedConfirm": "You have unsaved changes. Continue?"
+      "unsavedConfirm": "You have unsaved changes. Continue?",
+      "loadError": "Failed to load agents",
+      "activeTab": "Active",
+      "archivedTab": "Archived"
     },
     "icon": {
       "label": "Icon"
@@ -199,7 +203,8 @@
       "discard": "Discard",
       "saving": "Saving...",
       "save": "Save",
-      "refresh": "Refresh agent list"
+      "refresh": "Refresh agent list",
+      "noSelectionHint": "Select an agent to view details"
     },
     "channel": {
       "facebook": "Facebook",
@@ -244,8 +249,9 @@
       "deleteFailed": "Delete failed"
     },
     "empty": {
-      "title": "No assistants yet",
-      "desc": "Create your first AI assistant to help manage your store tasks",
+      "title": "Start building your smart team",
+      "desc": "Choose from available AI agent templates to activate auto-reply, sales management, or customer service in your store.",
+      "cta": "Add New AI Agent",
       "chatCta": "Try chat"
     },
     "settings": {
@@ -272,8 +278,8 @@
       "active": "Active",
       "paused": "Paused",
       "persona": "Agent Persona",
-      "personaHint": "Describe the persona the agent will use with customers",
-      "personaPlaceholder": "e.g. Friendly, professional, quick to respond",
+      "personaHint": "Additional persona instructions added above the base template, does not affect SOUL.md",
+      "personaPlaceholder": "Write the agent's persona, reply style, tone of voice, or any additional brand instructions...",
       "goal": "Primary Goal",
       "goalHint": "What is the main outcome this assistant should achieve?",
       "goalPlaceholder": "e.g. Help customers choose products and complete orders",
@@ -301,7 +307,11 @@
       "escalationHint": "What should the assistant do when it does not know the answer?",
       "customPrompt": "Custom Instructions",
       "customPromptPlaceholder": "e.g. Avoid English terms, address the customer by first name...",
-      "customPromptHint": "Free-form field for any additions beyond the templates"
+      "customPromptHint": "Free-form field for any additions beyond the templates",
+      "edit": "Edit",
+      "personaLabel": "Agent Persona (PERSONA.md)",
+      "personaOverrideHint": "This content is added as PERSONA.md above the base template and does not affect SOUL.md",
+      "lockedByAdmin": "🔒 Locked by admin"
     },
     "autonomy": {
       "auto": "Auto",
@@ -348,6 +358,64 @@
       "cancel": "Cancel",
       "archiving": "Archiving...",
       "confirmButton": "Archive"
+    },
+    "guardrails": {
+      "saveSuccess": "Workflow rule created and activated successfully 🛡️",
+      "saveFailed": "Failed to create rule",
+      "updateSuccess": "Rule details updated",
+      "updateFailed": "Failed to update rule",
+      "toggleOn": "Rule activated",
+      "toggleOff": "Rule deactivated",
+      "toggleFailed": "Failed to toggle rule status",
+      "deleteConfirm": "Are you sure you want to permanently delete this rule?",
+      "deleteSuccess": "Rule deleted",
+      "deleteFailed": "Failed to delete rule",
+      "loadFailed": "Failed to load rules",
+      "title": "Dynamic Behavior & Arbitration Rules",
+      "desc": "Configure agent behavior constraints and prevent policy violations (booking times, prices, reservations) by simply writing instructions.",
+      "refresh": "Refresh list",
+      "addTitle": "Add new rule in plain language",
+      "inputPlaceholder": "Example: 'Do not give more than 10% discount on Friday' or 'Saturday is ladies only salon, do not book for men'",
+      "saveBtn": "Save & Generate",
+      "loading": "Loading rules...",
+      "emptyTitle": "No behavior rules added yet",
+      "emptyDesc": "Write your first instruction in the field above to secure and adjust agent behavior.",
+      "colExcuse": "Forbidden Situation (Excuse)",
+      "colRebuttal": "Logical Rebuttal",
+      "colAction": "Required Action",
+      "colSource": "Source",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "sourceTemplate": "Template",
+      "sourceManual": "Manual",
+      "sourceLearning": "Learned",
+      "editTitle": "Edit Rule Details",
+      "editExcuse": "Forbidden Situation (Excuse)",
+      "editRebuttal": "Logical Rebuttal (Rebuttal)",
+      "editAction": "Required Action",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "conflictTitle": "Rule Conflict Warning!",
+      "conflictDesc": "We found semantic similarity with an existing rule. Please review the conflict below to avoid AI confusion:",
+      "conflictOld": "Similar existing rule:",
+      "conflictOldRebuttal": "Old rebuttal:",
+      "conflictNew": "Your new instruction:",
+      "conflictEditBtn": "Edit new input",
+      "conflictForceBtn": "Ignore and save anyway"
+    },
+    "permanentDelete": {
+      "title": "Delete Agent Permanently",
+      "confirm": "Are you sure you want to permanently delete this agent? This action cannot be undone.",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "confirmButton": "Permanently Delete"
+    },
+    "archived": {
+      "desc": "This agent is currently archived. You can restore it to work and edit its settings, or permanently delete it from the database.",
+      "restoreSuccess": "Agent restored successfully.",
+      "restoreFailed": "Failed to restore agent.",
+      "restoreBtn": "Restore Agent",
+      "deleteBtn": "Permanently Delete"
     }
   },
   "agentSkills": {

@@ -208,7 +208,7 @@ export default function AgentProfilesPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
-    { key: "guardrails", label: t("agentProfiles.tabs.guardrails", "القواعد والتعلم"), icon: <Lock className="size-4" aria-hidden="true" /> },
+    { key: "guardrails", label: t("agentProfiles.tabs.guardrails"), icon: <Lock className="size-4" aria-hidden="true" /> },
   ];
 
   const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
@@ -241,7 +241,7 @@ export default function AgentProfilesPage() {
         }
       }
     } catch {
-      setProfileError("فشل تحميل الوكلاء");
+      setProfileError(t("agentProfiles.sidebar.loadError"));
     } finally {
       setAgentsLoading(false);
     }
@@ -793,7 +793,7 @@ export default function AgentProfilesPage() {
                 <div className="flex items-center gap-2 pt-3 border-t border-border/50">
                   {!editing && (
                     <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => { setEditing(true); }}>
-                      <PenLine className="size-3.5 ml-1" aria-hidden="true" />تعديل
+                      <PenLine className="size-3.5 ml-1" aria-hidden="true" />{t("agentProfiles.settings.edit")}
                     </Button>
                   )}
                   <div className="mr-auto" />
@@ -942,11 +942,11 @@ export default function AgentProfilesPage() {
 
                           {/* PERSONA.md - شخصية الوكيل */}
                           <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1">شخصية الوكيل (PERSONA.md)</label>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.personaLabel")}</label>
                             <p className={`text-sm whitespace-pre-wrap font-mono ${draftFiles["PERSONA.md"] ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
                               {draftFiles["PERSONA.md"] || "—"}
                             </p>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">تعليمات إضافية لشخصية الوكيل تضاف فوق القالب الأساسي ولا تؤثر على SOUL.md</p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaHint")}</p>
                           </div>
                         </div>
                       ) : (
@@ -955,7 +955,7 @@ export default function AgentProfilesPage() {
                           <div>
                             <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
                               {t("agentProfiles.settings.agentName")}
-                              {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                              {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
                             </label>
                             <Input value={draftName} onChange={(e) => { setDraftName(e.target.value) }}
                               disabled={isIdentityLocked}
@@ -968,7 +968,7 @@ export default function AgentProfilesPage() {
                           <div>
                             <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
                               {t("agentProfiles.settings.tone")}
-                              {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                              {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
                             </label>
                             <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
                               {[
@@ -991,16 +991,16 @@ export default function AgentProfilesPage() {
                             <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
                           </div>
 
-                          {/* PERSONA.md - شخصية الوكيل */}
+                          {/* PERSONA.md */}
                           <div>
                             <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                              شخصية الوكيل (PERSONA.md)
-                              {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                              {t("agentProfiles.settings.personaLabel")}
+                              {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
                             </label>
                             <Textarea value={draftFiles["PERSONA.md"] || ""} onChange={(e) => setDraftFiles(prev => ({...prev, "PERSONA.md": e.target.value}))}
                               disabled={isPersonaLocked}
-                              placeholder='اكتب شخصية الوكيل، أسلوب الرد، نبرة الصوت، أو أي تعليمات براند إضافية...' className="text-sm min-h-[120px] resize-y font-mono text-xs" />
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">هذا المحتوى يضاف كـ PERSONA.md فوق القالب الأساسي ولا يمس SOUL.md</p>
+                              placeholder={t("agentProfiles.settings.personaPlaceholder")} className="text-sm min-h-[120px] resize-y font-mono text-xs" />
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaOverrideHint")}</p>
                           </div>
                         </div>
                       )}
@@ -1029,12 +1029,12 @@ export default function AgentProfilesPage() {
               <div className="size-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mb-6">
                 <Bot className="size-8 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">ابدأ بناء فريقك الذكي</h2>
+              <h2 className="text-lg font-bold text-foreground mb-2">{t("agentProfiles.empty.title")}</h2>
               <p className="text-sm text-muted-foreground/60 max-w-sm mb-6">
-                اختر من بين قوالب الوكلاء الذكاء الاصطناعي المتاحة لتفعيل خدمة الرد التلقائي، إدارة المبيعات، أو خدمة العملاء في متجرك.
+                {t("agentProfiles.empty.desc")}
               </p>
               <Button size="lg" className="h-10 text-sm px-6" onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4 ml-1.5" />إضافة وكيل ذكي جديد
+                <Plus className="size-4 ml-1.5" />{t("agentProfiles.empty.cta")}
               </Button>
             </div>
           ) : !selectedId && (
@@ -1108,7 +1108,7 @@ export default function AgentProfilesPage() {
                     {selectedTemplate ? (
                       <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.name}</span>
                     ) : (
-                      <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">مخصص</span>
+                      <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">{t("agentProfiles.create.custom")}</span>
                     )}
                   </div>
                 </div>
