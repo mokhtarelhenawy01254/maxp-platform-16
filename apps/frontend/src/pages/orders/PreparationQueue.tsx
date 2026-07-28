@@ -393,46 +393,28 @@ const PreparationQueue: React.FC = () => {
   }, [statusConfigs]);
 
   const statusOptions = useMemo<PreparationStatusOption[]>(() => {
-    const dynamicOptions = [
-      { code: preparationSettings.startingStatus, fallbackName: t('preparation.page.stages.WAITING') },
-      { code: "PREPARING", fallbackName: t('preparation.page.stages.PREPARING') },
-      { code: "QUALITY_CHECK", fallbackName: t('preparation.page.stages.QUALITY_CHECK') },
-      { code: "PACKAGED", fallbackName: t('preparation.page.stages.PACKAGED') },
-      { code: SHORTAGE_HOLD_STATUS, fallbackName: t('preparation.page.stages.STOCK_SHORTAGE') },
-      {
-        code: preparationSettings.handoffStatus || "READY_TO_SHIP",
-        fallbackName: t('preparation.page.stages.READY_TO_SHIP'),
-      },
-    ];
+    const seen = new Set<string>();
+    const dynamicOptions: PreparationStatusOption[] = [];
 
-    const includesStarting = dynamicOptions.some(
-      (opt) => opt.code === toUpper(preparationSettings.startingStatus),
-    );
-    if (!includesStarting && preparationSettings.startingStatus) {
-      dynamicOptions.unshift({
-        code: toUpper(preparationSettings.startingStatus),
-        fallbackName: t('preparation.k_5'),
-      });
-    }
+    const addOption = (code: string, fallbackName: string) => {
+      const upper = toUpper(code);
+      if (!upper || seen.has(upper)) return;
+      seen.add(upper);
+      dynamicOptions.push({ code: upper, fallbackName });
+    };
 
-    const includesHandoff = dynamicOptions.some(
-      (opt) => opt.code === toUpper(preparationSettings.handoffStatus),
-    );
-    if (!includesHandoff && preparationSettings.handoffStatus) {
-      dynamicOptions.push({
-        code: toUpper(preparationSettings.handoffStatus),
-        fallbackName: t('preparation.k_10'),
-      });
-    }
+    preparationStatuses.forEach((status) => {
+      addOption(status.code, status.name);
+    });
 
-    const includesShortage = dynamicOptions.some(
-      (opt) => opt.code === toUpper(SHORTAGE_HOLD_STATUS),
-    );
-    if (!includesShortage) {
-      dynamicOptions.push({
-        code: toUpper(SHORTAGE_HOLD_STATUS),
-        fallbackName: t('preparation.k_9'),
-      });
+    addOption("PREPARING", t('preparation.page.stages.PREPARING'));
+    addOption("QUALITY_CHECK", t('preparation.page.stages.QUALITY_CHECK'));
+    addOption("PACKAGED", t('preparation.page.stages.PACKAGED'));
+    addOption(SHORTAGE_HOLD_STATUS, t('preparation.page.stages.STOCK_SHORTAGE'));
+    addOption(preparationSettings.handoffStatus || "READY_TO_SHIP", t('preparation.page.stages.READY_TO_SHIP'));
+
+    if (preparationSettings.startingStatus) {
+      addOption(preparationSettings.startingStatus, t('preparation.page.stages.WAITING'));
     }
 
     return dynamicOptions;

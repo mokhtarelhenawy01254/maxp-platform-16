@@ -12,7 +12,6 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
@@ -996,6 +995,12 @@ const FormsBuilderPage = React.lazy(
 const ServiceOrdersPage = React.lazy(
   () => import("./pages/admin/ServiceOrdersPage"),
 );
+const ServiceManagementPage = React.lazy(
+  () => import("./pages/admin/ServiceManagementPage"),
+);
+const ServiceRequestForm = React.lazy(
+  () => import("./pages/ServiceRequestForm"),
+);
 const PublicFormPage = React.lazy(
   () => import("./pages/public/PublicFormPage"),
 );
@@ -1734,6 +1739,7 @@ const AppContent = () => {
             <Route path="/app-explanations" element={<AppExplanationsPage />} />
             <Route path="/book/:slug" element={<BookAppointmentPage />} />
             <Route path="/forms/:slug" element={<PublicFormPage />} />
+            <Route path="/request-service" element={<ServiceRequestForm />} />
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
             {/* Public Storefront Routes - No Authentication Required */}
@@ -4359,9 +4365,7 @@ const AppContent = () => {
                   path="/analytics/orders/products"
                   element={
                     <Layout>
-                      <ErrorBoundary>
-                        <ProductsAnalyticsPage />
-                      </ErrorBoundary>
+                      <ProductsAnalyticsPage />
                     </Layout>
                   }
                 />
@@ -6817,6 +6821,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <ServiceOrdersPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/services"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceManagementPage />
                     </Layout>
                   }
                 />

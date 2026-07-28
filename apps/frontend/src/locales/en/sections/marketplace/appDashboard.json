@@ -145,7 +145,7 @@
     "legal": {
       "description": "Terms, conditions, and privacy"
     },
-    "service-requests": {
+    "serviceRequests": {
       "description": "Manage service requests from customers"
     }
   }

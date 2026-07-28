@@ -1,3 +1,4 @@
+import i18n from "../../../i18n";
 import { DEFAULT_PREPARATION_QUEUE_SETTINGS } from "./constants";
 import { parseMaybeJsonObject, toNumber, toUpper } from "./helpers";
 import type {
@@ -81,7 +82,7 @@ export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
   return {
     id: String(order.id || order.orderNumber || ""),
     orderNumber: String(order.orderNumber || order.id || ""),
-    customerName: order.customerName || "بدون اسم",
+    customerName: order.customerName || i18n.t("preparation.fallbackCustomerName"),
     customerPhone: order.customerPhone || "",
     customerEmail: order.customerEmail || "",
     city: order.city || order.shippingAddress?.city || "",
@@ -122,7 +123,7 @@ export const normalizeWarehouseOption = (
   warehouse: ApiWarehouseResponse,
 ): WarehouseOption => ({
   id: String(warehouse.id || ""),
-  name: warehouse.name || "مخزن غير مسمى",
+  name: warehouse.name || i18n.t("preparation.fallbackWarehouseName"),
 });
 
 export const normalizeStatusConfig = (
