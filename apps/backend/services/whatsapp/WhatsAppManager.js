@@ -1947,20 +1947,25 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (!messageContent) {
                 if (importHistory) {
                     const prisma = getSharedPrismaClient();
+                    const existingMsg = await prisma.whatsAppMessage.findUnique({
+                        where: { messageId },
+                        select: { id: true }
+                    });
+                    const isNew = !existingMsg;
                     await prisma.whatsAppMessage.upsert({
                         where: { messageId },
-                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), updatedAt: new Date() },
-                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
+                        update: { remoteJid, fromMe, messageType: 'UNSUPPORTED', content: 'رسالة غير مدعومة', metadata: JSON.stringify(msg), updatedAt: new Date() },
+                        create: { sessionId, messageId, remoteJid, fromMe, messageType: 'UNSUPPORTED', content: 'رسالة غير مدعومة', metadata: JSON.stringify(msg), timestamp: messageTimestamp, status: fromMe ? 'SENT' : 'DELIVERED', updatedAt: new Date() }
                     });
                     await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
                         isOutgoing: fromMe,
                         suppressUnread: true,
-                        incrementCounters: true,
+                        incrementCounters: isNew,
                         lastMessageAt: messageTimestamp,
                         lastMessagePreview: 'رسالة غير مدعومة',
                         skipProfilePic: true
                     });
-                    console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder`);
+                    console.log(`📝 [HISTORY] Stored unsupported message ${messageId} as placeholder (new=${isNew})`);
                 }
                 continue;
             }
