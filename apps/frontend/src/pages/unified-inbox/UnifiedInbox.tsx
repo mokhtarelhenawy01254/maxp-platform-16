@@ -602,7 +602,7 @@ const UnifiedInbox: React.FC = () => {
   // — Push history state on conversation open so browser back returns to list —
   useEffect(() => {
     if (!selectedConversation) return;
-    window.history.replaceState({ uiChatOpen: true }, '');
+    window.history.pushState({ uiChatOpen: true }, '');
     const handlePopState = () => {
       if (selectedConversation) {
         setSelectedConversation(null);
@@ -1522,7 +1522,7 @@ const UnifiedInbox: React.FC = () => {
                   <div className="flex items-center gap-1 sm:gap-3">
                     {/* Mobile back button */}
                     <button
-                      onClick={() => setSelectedConversation(null)}
+                      onClick={() => { setSelectedConversation(null); window.history.back(); }}
                       className="lg:hidden business-chip-button shrink-0"
                       aria-label={t("unifiedInbox.backToList", "رجوع")}
                     >
