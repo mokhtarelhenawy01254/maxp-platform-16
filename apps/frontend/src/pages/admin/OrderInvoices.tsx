@@ -105,7 +105,9 @@ interface PaymentStatusMeta {
   className: string;
 }
 
-const createPaymentStatusMeta = (t: (key: string) => string): Record<PaymentStatusKey, PaymentStatusMeta> => ({
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+const PAYMENT_STATUS_META: Record<PaymentStatusKey, PaymentStatusMeta> = {
   PAID: {
     labelKey: "orders.orderInvoices_statusPaid",
     className:
@@ -131,12 +133,10 @@ const createPaymentStatusMeta = (t: (key: string) => string): Record<PaymentStat
     className:
       "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300",
   },
-});
+};
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-
-const getPaymentStatusMeta = (status: string, meta: Record<PaymentStatusKey, PaymentStatusMeta>): PaymentStatusMeta =>
-  meta[status as PaymentStatusKey] ?? meta.PENDING;
+const getPaymentStatusMeta = (status: string): PaymentStatusMeta =>
+  PAYMENT_STATUS_META[status as PaymentStatusKey] ?? PAYMENT_STATUS_META.PENDING;
 
 const getVisiblePages = (currentPage: number, totalPages: number) => {
   if (totalPages <= 1) {
@@ -220,7 +220,6 @@ const getErrorMessage = (error: unknown, t: (key: string) => string) => {
 const OrderInvoices: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const paymentStatusMeta = createPaymentStatusMeta(t);
 
   const [invoices, setInvoices] = useState<OrderInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -377,7 +376,7 @@ const OrderInvoices: React.FC = () => {
 
   const paginationPages = getVisiblePages(currentPage, totalPages);
   const activeFilterLabels = [
-    paymentStatus ? t(getPaymentStatusMeta(paymentStatus, paymentStatusMeta).labelKey) : null,
+    paymentStatus ? t(getPaymentStatusMeta(paymentStatus).labelKey) : null,
     dateFrom ? t("orders.orderInvoices_filterFromDate", { date: formatDate(dateFrom) }) : null,
     dateTo ? t("orders.orderInvoices_filterToDate", { date: formatDate(dateTo) }) : null,
   ].filter((label): label is string => Boolean(label));
@@ -602,7 +601,7 @@ const OrderInvoices: React.FC = () => {
                 <div className="space-y-3 p-4 md:hidden">
                   {invoices.map((invoice) => {
                     const statusMeta = getPaymentStatusMeta(
-                      invoice.paymentStatus, paymentStatusMeta,
+                      invoice.paymentStatus,
                     );
 
                     return (
