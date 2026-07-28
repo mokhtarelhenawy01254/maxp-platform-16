@@ -5019,21 +5019,58 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     // --- LOG MODIFICATION ---
     try {
-      if (result.orderType === 'regular') {
-        const order = await getSharedPrismaClient().order.findUnique({
-          where: { id: result.orderId },
-          select: { id: true, status: true }
-        });
-        if (order) {
+      const changedFields = result.updatedFields || [];
+      const fieldLabels = {
+        shippingAddress: 'العنوان',
+        customerName: 'اسم العميل',
+        customerPhone: 'رقم الهاتف',
+        alternativePhone: 'الرقم البديل',
+        city: 'المدينة',
+        governorate: 'المحافظة',
+        notes: 'الملاحظات',
+        metadataPatch: 'البيانات الإضافية',
+      };
+      const mappedFields = changedFields
+        .map((f) => fieldLabels[f] || f)
+        .filter(Boolean);
+
+      let reason = 'تعديل البيانات الأساسية للطلب';
+      if (mappedFields.length > 0) {
+        reason = `تعديل: ${mappedFields.join('، ')}`;
+      } else if (changedFields.length === 0) {
+        reason = null;
+      }
+
+      if (reason) {
+        const userName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : 'النظام';
+
+        if (result.orderType === 'regular') {
+          const order = await getSharedPrismaClient().order.findUnique({
+            where: { id: result.orderId },
+            select: { id: true, status: true },
+          });
+          if (order) {
+            await getSharedPrismaClient().orderStatusHistory.create({
+              data: {
+                orderId: order.id,
+                status: order.status,
+                oldStatus: order.status,
+                reason,
+                changedBy: req.user.id,
+                userName: userName || 'النظام',
+              },
+            });
+          }
+        } else if (result.orderType === 'guest') {
           await getSharedPrismaClient().orderStatusHistory.create({
             data: {
-              orderId: order.id,
-              status: order.status,
-              oldStatus: order.status,
-              reason: 'تعديل البيانات الأساسية للطلب',
+              guestOrderId: result.orderId,
+              status: 'PENDING',
+              oldStatus: 'PENDING',
+              reason,
               changedBy: req.user.id,
-              userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
-            }
+              userName: userName || 'النظام',
+            },
           });
         }
       }

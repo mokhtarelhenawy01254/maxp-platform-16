@@ -19,7 +19,9 @@ import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
   PREPARATION_COLUMN_LABELS,
+  PREPARATION_COLUMN_LABEL_KEYS,
   PREPARATION_FILTER_SECTION_LABELS,
+  PREPARATION_FILTER_SECTION_LABEL_KEYS,
   PREPARATION_FILTER_SECTIONS,
   PREPARATION_TABLE_COLUMNS,
   SHORTAGE_HOLD_METADATA_KEY,
@@ -78,7 +80,7 @@ const readStoredPreparationState = (): Partial<PreparationQueueUiState> | null =
 };
 
 const getInitialPreparationState = (searchParams: URLSearchParams): Partial<PreparationQueueUiState> => {
-  const hasQueryKeys = ["page", "pageSize", "activeStage", "warehouseId", "stockFilter", "shortageReason", "shortageFollowUp", "shortageOwner", "productFilter", "itemCountFilter", "search", "sortBy", "sortOrder", "notPrinted", "noShippingCode"].some((k) => searchParams.has(k));
+  const hasQueryKeys = ["page", "pageSize", "activeStage", "warehouseId", "stockFilter", "shortageReason", "shortageFollowUp", "shortageOwner", "productFilter", "productId", "variantId", "itemCountFilter", "search", "sortBy", "sortOrder", "notPrinted", "noShippingCode"].some((k) => searchParams.has(k));
 
   if (hasQueryKeys) {
     const pageSizeRaw = parsePositiveInt(searchParams.get("pageSize"), 12);
@@ -93,6 +95,8 @@ const getInitialPreparationState = (searchParams: URLSearchParams): Partial<Prep
       shortageFollowUpFilter: (searchParams.get("shortageFollowUp") as "all" | "today" | "overdue" | "without_date") || "all",
       shortageOwnerFilter: searchParams.get("shortageOwner") || "",
       productFilter: searchParams.get("productFilter") || "",
+      productIdFilter: searchParams.get("productId") || "",
+      variantIdFilter: searchParams.get("variantId") || "",
       itemCountFilter: (searchParams.get("itemCountFilter") as "all" | "single" | "multiple") || "all",
       search: searchParams.get("search") || "",
       sortBy: (searchParams.get("sortBy") as "createdAt" | "totalUnits" | "totalValue") || "createdAt",
@@ -141,6 +145,8 @@ const PreparationQueue: React.FC = () => {
     loading,
     fetchInventory,
     fetchAll,
+    products,
+    productsLoading,
   } = usePreparationQueueData({
     page: uiState.page,
     pageSize: uiState.pageSize,
@@ -153,6 +159,8 @@ const PreparationQueue: React.FC = () => {
     productFilter: uiState.productFilter,
     productColorFilter: uiState.productColorFilter,
     productSizeFilter: uiState.productSizeFilter,
+    productIdFilter: uiState.productIdFilter,
+    variantIdFilter: uiState.variantIdFilter,
     itemCountFilter: uiState.itemCountFilter,
     notPrintedFilter: uiState.notPrintedFilter,
     noShippingCodeFilter: uiState.noShippingCodeFilter,
@@ -216,7 +224,16 @@ const PreparationQueue: React.FC = () => {
     } catch { /* ignore */ }
     return defaults;
   });
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      const raw = window.localStorage.getItem("preparation:queue:show-filters-v1");
+      if (raw === null) return true;
+      return JSON.parse(raw) === true;
+    } catch {
+      return true;
+    }
+  });
 
   const toggleFilterSection = (section: PreparationFilterSection) => {
     setVisibleFilterSections((prev) =>
@@ -282,6 +299,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUpFilter: uiState.shortageFollowUpFilter,
       shortageOwnerFilter: uiState.shortageOwnerFilter,
       productFilter: uiState.productFilter,
+      productIdFilter: uiState.productIdFilter,
+      variantIdFilter: uiState.variantIdFilter,
       itemCountFilter: uiState.itemCountFilter,
       search: uiState.search,
       sortBy: uiState.sortBy,
@@ -300,6 +319,8 @@ const PreparationQueue: React.FC = () => {
     if (nextState.shortageFollowUpFilter !== "all") params.shortageFollowUp = String(nextState.shortageFollowUpFilter);
     if (nextState.shortageOwnerFilter) params.shortageOwner = String(nextState.shortageOwnerFilter);
     if (nextState.productFilter) params.productFilter = String(nextState.productFilter);
+    if (nextState.productIdFilter) params.productId = String(nextState.productIdFilter);
+    if (nextState.variantIdFilter) params.variantId = String(nextState.variantIdFilter);
     if (nextState.itemCountFilter !== "all") params.itemCountFilter = String(nextState.itemCountFilter);
     if (nextState.notPrintedFilter !== "all") params.notPrinted = String(nextState.notPrintedFilter);
     if (nextState.noShippingCodeFilter !== "all") params.noShippingCode = String(nextState.noShippingCodeFilter);
@@ -326,6 +347,8 @@ const PreparationQueue: React.FC = () => {
     uiState.shortageFollowUpFilter,
     uiState.shortageOwnerFilter,
     uiState.productFilter,
+    uiState.productIdFilter,
+    uiState.variantIdFilter,
     uiState.itemCountFilter,
     uiState.search,
     uiState.sortBy,
@@ -340,9 +363,10 @@ const PreparationQueue: React.FC = () => {
       try {
         window.localStorage.setItem(VISIBLE_COLUMNS_STORAGE_KEY, JSON.stringify(visibleColumns));
         window.localStorage.setItem("preparation:queue:visible-filters-v1", JSON.stringify(visibleFilterSections));
+        window.localStorage.setItem("preparation:queue:show-filters-v1", JSON.stringify(showFilters));
       } catch { /* ignore */ }
     }
-  }, [visibleColumns, visibleFilterSections]);
+  }, [visibleColumns, visibleFilterSections, showFilters]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -917,7 +941,7 @@ const PreparationQueue: React.FC = () => {
 
         updateLocalStatuses([orderNumber], nextStatus);
         toast.success(
-          `تم تحديث ${orderNumber} إلى ${statusLabelMap.get(nextStatus) || nextStatus}`,
+          t("preparation.toasts.statusUpdated", { orderId: orderNumber, status: statusLabelMap.get(nextStatus) || nextStatus }),
         );
         void fetchAll();
       } catch (error: unknown) {
@@ -963,9 +987,11 @@ const PreparationQueue: React.FC = () => {
     }
 
     const confirmed = window.confirm(
-      `تحديث ${validOrders.length} طلب إلى مرحلة ${
-        statusLabelMap.get(bulkStatus) || bulkStatus
-      }${invalidOrders.length > 0 ? ` مع استبعاد ${invalidOrders.length} طلب غير مطابق` : ""}؟`,
+      t("preparation.confirm.bulkUpdate", {
+        count: validOrders.length,
+        stage: statusLabelMap.get(bulkStatus) || bulkStatus,
+        extra: invalidOrders.length > 0 ? t("preparation.confirm.withExclusions", { count: invalidOrders.length }) : "",
+      }),
     );
 
     if (!confirmed) return;
@@ -991,8 +1017,8 @@ const PreparationQueue: React.FC = () => {
       const failedCount = results.filter((result) => !result.success).length;
       toast.success(
         failedCount > 0
-          ? `تم تحديث ${successIds.length} طلب وفشل ${failedCount} طلب`
-          : `تم تحديث ${successIds.length} طلب بنجاح`,
+          ? t("preparation.toasts.bulkUpdatePartial", { success: successIds.length, failed: failedCount })
+          : t("preparation.toasts.bulkUpdateSuccess", { count: successIds.length }),
       );
 
       uiActions.clearBulkControls();
@@ -1037,9 +1063,10 @@ const PreparationQueue: React.FC = () => {
     }
 
     const confirmed = window.confirm(
-      `تحديث ${totalMatching} طلب إلى مرحلة ${
-        statusLabelMap.get(bulkStatus) || bulkStatus
-      } (جميع الطلبات المطابقة للفلتر)؟`,
+      t("preparation.confirm.bulkUpdateAll", {
+        count: totalMatching,
+        stage: statusLabelMap.get(bulkStatus) || bulkStatus,
+      }),
     );
 
     if (!confirmed) return;
@@ -1052,6 +1079,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUp: shortageFollowUpFilter,
       shortageOwner: shortageOwnerFilter,
       productFilter,
+      productId: uiState.productIdFilter || undefined,
+      variantId: uiState.variantIdFilter || undefined,
       itemCountFilter,
       notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
       noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
@@ -1078,8 +1107,8 @@ const PreparationQueue: React.FC = () => {
 
       toast.success(
         successCount < totalRequested
-          ? `تم تحديث ${successCount} طلب وفشل ${totalRequested - successCount} طلب`
-          : `تم تحديث ${successCount} طلب بنجاح`,
+          ? t("preparation.toasts.bulkUpdatePartial", { success: successCount, failed: totalRequested - successCount })
+          : t("preparation.toasts.bulkUpdateSuccess", { count: successCount }),
       );
 
       uiActions.clearBulkControls();
@@ -1150,7 +1179,7 @@ const PreparationQueue: React.FC = () => {
         });
 
         toast.success(
-          `تم نقل ${item.shortage} قطعة من ${sourceWarehouse.warehouseName} إلى المخزن المحدد`,
+          t("preparation.toasts.transferSuccess", { qty: item.shortage, source: sourceWarehouse.warehouseName }),
         );
         await fetchInventory();
       } catch (error: unknown) {
@@ -1172,7 +1201,7 @@ const PreparationQueue: React.FC = () => {
     }
 
     const confirmed = window.confirm(
-      `إرسال ${selectedOrders.length} طلب إلى تربو؟`,
+      t("preparation.confirm.sendToTurbo", { count: selectedOrders.length }),
     );
     if (!confirmed) return;
 
@@ -1185,8 +1214,8 @@ const PreparationQueue: React.FC = () => {
       if (response.data?.success) {
         const data = response.data.data;
         toast.success(
-          `تم إرسال ${data.success || 0} طلب إلى تربو بنجاح` +
-            (data.failed > 0 ? `، فشل ${data.failed} طلب` : ""),
+          t("preparation.toasts.turboPartial", { success: data.success || 0 }) +
+            (data.failed > 0 ? t("preparation.toasts.turboPartialMore", { failed: data.failed }) : ""),
         );
         uiActions.clearBulkControls();
         void fetchAll();
@@ -1343,7 +1372,11 @@ const PreparationQueue: React.FC = () => {
           productFilter={productFilter}
           productColorFilter={uiState.productColorFilter}
           productSizeFilter={uiState.productSizeFilter}
+          productIdFilter={uiState.productIdFilter}
+          variantIdFilter={uiState.variantIdFilter}
           productSuggestions={productSuggestions}
+          products={products}
+          productsLoading={productsLoading}
           itemCountFilter={itemCountFilter}
           notPrintedFilter={notPrintedFilter}
           noShippingCodeFilter={noShippingCodeFilter}
@@ -1361,6 +1394,8 @@ const PreparationQueue: React.FC = () => {
           onProductFilterChange={uiActions.setProductFilter}
           onProductColorFilterChange={uiActions.setProductColorFilter}
           onProductSizeFilterChange={uiActions.setProductSizeFilter}
+          onProductIdFilterChange={uiActions.setProductIdFilter}
+          onVariantIdFilterChange={uiActions.setVariantIdFilter}
           onItemCountFilterChange={uiActions.setItemCountFilter}
           onNotPrintedFilterChange={uiActions.setNotPrintedFilter}
           onNoShippingCodeFilterChange={uiActions.setNoShippingCodeFilter}
@@ -1420,14 +1455,14 @@ const PreparationQueue: React.FC = () => {
               type="button"
               onClick={() => setColumnSettingsOpen((prev) => !prev)}
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
-              title="إعدادات الأعمدة"
+              title={t("preparation.table.columnSettings")}
             >
               <Cog6ToothIcon className="h-3.5 w-3.5" />
             </button>
             {columnSettingsOpen && (
               <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
                 <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
-                  الأعمدة الظاهرة
+                  {t("preparation.table.visibleColumns")}
                 </div>
                 {PREPARATION_TABLE_COLUMNS.map((col) => (
                   <label
@@ -1440,12 +1475,12 @@ const PreparationQueue: React.FC = () => {
                       onChange={() => toggleColumn(col)}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                     />
-                    {PREPARATION_COLUMN_LABELS[col]}
+                    {t(PREPARATION_COLUMN_LABEL_KEYS[col])}
                   </label>
                 ))}
 
                 <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
-                  إظهار/إخفاء الفلاتر
+                  {t("preparation.table.showHideFilters")}
                 </div>
                 <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50">
                   <input
@@ -1454,7 +1489,7 @@ const PreparationQueue: React.FC = () => {
                     onChange={() => setShowFilters((prev) => !prev)}
                     className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                   />
-                  إظهار شريط الفلاتر
+                  {t("preparation.table.showFilterBar")}
                 </label>
                 {PREPARATION_FILTER_SECTIONS.map((section) => (
                   <label
@@ -1470,7 +1505,7 @@ const PreparationQueue: React.FC = () => {
                       disabled={!showFilters}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                     />
-                    {PREPARATION_FILTER_SECTION_LABELS[section]}
+                    {t(PREPARATION_FILTER_SECTION_LABEL_KEYS[section])}
                   </label>
                 ))}
               </div>

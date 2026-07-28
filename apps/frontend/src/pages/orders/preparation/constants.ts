@@ -90,6 +90,24 @@ export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> =
   shippingCode: "كود الشحن",
 };
 
+export const PREPARATION_COLUMN_LABEL_KEYS: Record<PreparationTableColumn, string> = {
+  customer: "preparation.columns.customer",
+  units: "preparation.columns.units",
+  value: "preparation.columns.value",
+  status: "preparation.columns.status",
+  warehouse: "preparation.columns.warehouse",
+  readiness: "preparation.columns.readiness",
+  printStatus: "preparation.columns.printStatus",
+  shippingCode: "preparation.columns.shippingCode",
+};
+
+export const PREPARATION_FILTER_SECTION_LABEL_KEYS: Record<PreparationFilterSection, string> = {
+  tabs: "preparation.filterSections.tabs",
+  search: "preparation.filterSections.search",
+  toggleButtons: "preparation.filterSections.toggleButtons",
+  advanced: "preparation.filterSections.advanced",
+};
+
 export const VISIBLE_COLUMNS_STORAGE_KEY = "preparation:queue:visible-columns-v1";
 
 export const PREPARATION_FILTER_SECTIONS = [

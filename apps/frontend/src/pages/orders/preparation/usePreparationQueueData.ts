@@ -10,6 +10,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
+import i18n from "../../../i18n";
 import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, TERMINAL_NON_PREPARATION_STATUSES, type PageSize } from "./constants";
 import {
   normalizeInventoryRecord,
@@ -67,12 +68,34 @@ interface UsePreparationQueueDataParams {
   productFilter: string;
   productColorFilter: string;
   productSizeFilter: string;
+  productIdFilter: string;
+  variantIdFilter: string;
   itemCountFilter: ItemCountFilter;
   notPrintedFilter: NotPrintedFilter;
   noShippingCodeFilter: NoShippingCodeFilter;
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
+}
+
+interface ApiProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  type: string;
+  sku?: string | null;
+  price?: number | null;
+  stock?: number;
+  isActive?: boolean;
+  metadata?: string | null;
+}
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  images?: string | null;
+  productVariants?: ApiProductVariant[];
+  variants?: ApiProductVariant[];
 }
 
 interface UsePreparationQueueDataResult {
@@ -93,6 +116,8 @@ interface UsePreparationQueueDataResult {
   refreshing: boolean;
   fetchInventory: () => Promise<InventoryRecord[]>;
   fetchAll: (showRefreshToast?: boolean) => Promise<void>;
+  products: ApiProduct[];
+  productsLoading: boolean;
 }
 
 interface PreparationOrdersQueryData {
@@ -138,6 +163,7 @@ const PREPARATION_QUERY_KEYS = {
   warehouses: ["preparation-queue", "warehouses"] as const,
   statuses: ["preparation-queue", "statuses"] as const,
   settings: ["preparation-queue", "settings"] as const,
+  products: ["preparation-queue", "products"] as const,
 };
 
 const buildOrdersQueryKey = (
@@ -158,6 +184,8 @@ const buildOrdersQueryKey = (
     (params.productFilter || "").trim().toLowerCase(),
     (params.productColorFilter || "").trim().toLowerCase(),
     (params.productSizeFilter || "").trim().toLowerCase(),
+    (params.productIdFilter || "").trim(),
+    (params.variantIdFilter || "").trim(),
     params.itemCountFilter,
     params.notPrintedFilter,
     params.noShippingCodeFilter,
@@ -186,6 +214,8 @@ const fetchOrdersData = async (
         productFilter: (params.productFilter || "").trim() || undefined,
         colorFilter: (params.productColorFilter || "").trim() || undefined,
         sizeFilter: (params.productSizeFilter || "").trim() || undefined,
+        productId: (params.productIdFilter || "").trim() || undefined,
+        variantId: (params.variantIdFilter || "").trim() || undefined,
         itemCountFilter: params.itemCountFilter,
         notPrinted: params.notPrintedFilter === "not_printed" || undefined,
         noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
@@ -303,6 +333,18 @@ const fetchPreparationSettingsData =
     }
   };
 
+const fetchProductsData = async (): Promise<ApiProduct[]> => {
+  try {
+    const response = await apiClient.get<ApiListResponse<ApiProduct>>("/products", {
+      params: { limit: 200 },
+    });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  } catch (error) {
+    console.warn("Failed to load products:", error);
+    return [];
+  }
+};
+
 export const usePreparationQueueData = ({
   page,
   pageSize,
@@ -315,6 +357,8 @@ export const usePreparationQueueData = ({
   productFilter,
   productColorFilter,
   productSizeFilter,
+  productIdFilter,
+  variantIdFilter,
   itemCountFilter,
   notPrintedFilter,
   noShippingCodeFilter,
@@ -331,6 +375,14 @@ export const usePreparationQueueData = ({
     queryFn: fetchPreparationSettingsData,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+  });
+
+  const productsQuery = useQuery({
+    queryKey: PREPARATION_QUERY_KEYS.products,
+    queryFn: fetchProductsData,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const prioritizeShortageOrders =
@@ -350,6 +402,8 @@ export const usePreparationQueueData = ({
       productFilter,
       productColorFilter,
       productSizeFilter,
+      productIdFilter,
+      variantIdFilter,
       itemCountFilter,
       notPrintedFilter,
       noShippingCodeFilter,
@@ -370,6 +424,8 @@ export const usePreparationQueueData = ({
       productFilter,
       productColorFilter,
       productSizeFilter,
+      productIdFilter,
+      variantIdFilter,
       itemCountFilter,
       notPrintedFilter,
       noShippingCodeFilter,
@@ -558,12 +614,12 @@ export const usePreparationQueueData = ({
         fetchedProductIdsRef.current = freshProductIds.sort().join(",");
 
         if (showRefreshToast) {
-          toast.success("تم تحديث قائمة التجهيز");
+          toast.success(i18n.t("preparation.toasts.queueUpdated"));
         }
       } catch (error: unknown) {
         console.error("Failed to load preparation queue:", error);
         toast.error(
-          getApiErrorMessage(error) || "تعذر تحميل بيانات تجهيز الطلبات",
+          getApiErrorMessage(error) || i18n.t("preparation.toasts.queueLoadError"),
         );
       } finally {
         setManualRefreshing(false);
@@ -609,5 +665,7 @@ export const usePreparationQueueData = ({
     refreshing,
     fetchInventory,
     fetchAll,
+    products: productsQuery.data || [],
+    productsLoading: productsQuery.isLoading,
   };
 };

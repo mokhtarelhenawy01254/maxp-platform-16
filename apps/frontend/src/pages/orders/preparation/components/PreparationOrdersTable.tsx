@@ -6,7 +6,7 @@ import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   PREPARATION_COLUMN_LABELS,
   SHORTAGE_HOLD_STATUS,
-  SOURCE_LABELS,
+  SOURCE_LABEL_KEYS,
   type PreparationTableColumn,
 } from "../constants";
 import {
@@ -127,9 +127,9 @@ const PreparationOrdersTable = ({
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <th className="w-10 px-3 py-2.5">
-              <span className="sr-only">تحديد</span>
+              <span className="sr-only">{t("preparation.table.selectColumn")}</span>
             </th>
-            <th className="px-3 py-2.5">رقم الطلب</th>
+            <th className="px-3 py-2.5">{t("preparation.table.orderNumber")}</th>
             {visibleColumns.includes("customer") && (
               <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.customer}</th>
             )}
@@ -155,7 +155,7 @@ const PreparationOrdersTable = ({
               <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.shippingCode}</th>
             )}
             <th className="w-20 px-3 py-2.5">
-              <span className="sr-only">التفاصيل</span>
+              <span className="sr-only">{t("preparation.table.detailsColumn")}</span>
             </th>
           </tr>
         </thead>
@@ -196,7 +196,7 @@ const PreparationOrdersTable = ({
             const actionLabel =
               statusSelections[order.orderNumber] &&
               statusSelections[order.orderNumber] !== defaultTargetStatus
-                ? "تطبيق المرحلة المختارة"
+                ? t("preparation.table.applySelectedStage")
                 : getQuickActionLabel(order.stage);
             const qcCompleted = enabledQcChecks.every(
               (key) => qcChecklistState[order.orderNumber]?.[key] === true,
@@ -243,9 +243,9 @@ const PreparationOrdersTable = ({
 
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
                       <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
-                        {SOURCE_LABELS[
+                        {t(SOURCE_LABEL_KEYS[
                           (order.sourceType || "unknown").toLowerCase()
-                        ] || order.sourceType}
+                        ]) || order.sourceType}
                       </span>
                       {shortageFollowUpVisual ? (
                         <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800">
@@ -309,7 +309,7 @@ const PreparationOrdersTable = ({
                   {visibleColumns.includes("warehouse") && (
                     <td className="px-3 py-2.5">
                       <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700">
-                        {order.recommendedWarehouseName || "غير محدد"}
+                        {order.recommendedWarehouseName || t("preparation.table.notDefined")}
                       </span>
                     </td>
                   )}
@@ -325,8 +325,8 @@ const PreparationOrdersTable = ({
                         }`}
                       >
                         {order.isReady
-                          ? "جاهز ✓"
-                          : `${order.missingItemsCount} نقص`}
+                          ? t("preparation.table.ready")
+                          : t("preparation.table.shortage", { count: order.missingItemsCount })}
                       </span>
                     </td>
                   )}
@@ -371,7 +371,7 @@ const PreparationOrdersTable = ({
                       onClick={() => toggleExpanded(order.orderNumber)}
                       className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
                     >
-                      التفاصيل
+                      {t("preparation.table.details")}
                       <ChevronDownIcon
                         className={`h-3.5 w-3.5 transition-transform ${
                           isExpanded ? "rotate-180" : ""

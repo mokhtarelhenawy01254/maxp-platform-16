@@ -151,7 +151,9 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
       const isTrash = h.status === "TRASH" || h.status === "DELETED";
 
       const reasonLine = reason
-        ? (isCancellationStatus(h.status) || isTrash || isModification)
+        ? isModification
+          ? t("orderDetails.modificationDetail", { reason })
+          : (isCancellationStatus(h.status) || isTrash)
             ? t("orderDetails.cancellationReasonLine", { reason })
             : t("orderDetails.statusReasonLine", { reason })
         : "";

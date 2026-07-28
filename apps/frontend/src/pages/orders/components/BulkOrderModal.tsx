@@ -5,7 +5,6 @@ import { apiClient } from "../../../services/apiClient";
 
 interface BulkOrderItem {
   row: number;
-  orderNumber: string;
   customerName: string;
   customerPhone: string;
   city: string;
@@ -43,7 +42,6 @@ const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderIte
 
 const downloadTemplate = () => {
   const headers = [
-    "Order Number",
     "Customer Name",
     "Phone",
     "City",
@@ -56,7 +54,7 @@ const downloadTemplate = () => {
     "Price",
     "Notes",
   ];
-  const sample = ["ORD-2026-0001", "Ahmed Mohamed", "01001234567", "Nasr City", "Cairo", "Nike Air Max 270", "NIKE-AM270-BLK", "42", "Black", "2", "150.00", "عاجل - توصيل سريع"];
+  const sample = ["Ahmed Mohamed", "01001234567", "Nasr City", "Cairo", "Nike Air Max 270", "NIKE-AM270-BLK", "42", "Black", "2", "150.00", "عاجل - توصيل سريع"];
   const csvContent = "\uFEFF" + [headers, sample].map((row) => row.map((v) => `"${v}"`).join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -280,8 +278,8 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkOrderNumber")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemCustomer")}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemPhone")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemCity")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemGovernorate")}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t("orders.bulkItemProduct")}</th>
@@ -295,8 +293,8 @@ const BulkOrderModal = ({ item, onClose, onSaved }: BulkOrderModalProps) => {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {importedItems.slice(0, 50).map((i, idx) => (
                       <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.orderNumber || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.customerName || "-"}</td>
+                        <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.customerPhone || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.city || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.governorate || "-"}</td>
                         <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{i.productName || "-"}</td>

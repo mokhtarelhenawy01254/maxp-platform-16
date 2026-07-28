@@ -10,7 +10,7 @@ import {
 import { authService } from "../../../../services/authService";
 import { config } from "../../../../config";
 import { toast } from "sonner";
-import { getPrimaryImageUrl } from "../../../../utils/imageUrl";
+import { getPrimaryImageUrl, buildOptimizedUploadImageUrl } from "../../../../utils/imageUrl";
 import { parseVariantAttributes } from "../utils/variantAttributes";
 
 interface ProductVariant {
@@ -360,13 +360,14 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
               >
                 {/* Image - Now larger and on top */}
                 <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
+                    {product.image ? (
+                      <img
+                        src={buildOptimizedUploadImageUrl(product.image, { width: 300 })}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
                       <ArchiveBoxIcon className="w-12 h-12" />
                     </div>

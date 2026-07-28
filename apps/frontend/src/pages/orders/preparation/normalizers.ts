@@ -21,6 +21,7 @@ const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => {
   return {
     id: String(item.id || item.productId || Math.random()),
     productId: String(item.productId || ""),
+    variantId: item.variantId ? String(item.variantId) : null,
     name: item.name || item.productName || "",
     productName: item.productName || item.name || "",
     color: item.color || (metadata?.color as string) || (metadata?.productColor as string) || "",

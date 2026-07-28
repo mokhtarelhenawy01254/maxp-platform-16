@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { SOURCE_LABELS } from "../constants";
+import { SOURCE_LABEL_KEYS } from "../constants";
 import { getAgeLabel } from "../helpers";
 import { summarizeOrderDocumentItems } from "../../../../utils/orderDocumentQuantityOffers";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
@@ -76,7 +76,7 @@ const PreparationOrderCardHeader = ({
             })()}
 
             <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-500">
-              {SOURCE_LABELS[(order.sourceType || "unknown").toLowerCase()] ||
+              {t(SOURCE_LABEL_KEYS[(order.sourceType || "unknown").toLowerCase()]) ||
                 order.sourceType}
             </span>
 
@@ -88,7 +88,7 @@ const PreparationOrderCardHeader = ({
                     : "border-gray-200 bg-gray-100 text-gray-600"
                 }`}
               >
-                {canPrepare ? "تجهيز التاجر" : "تجهيز الشركة"}
+                {canPrepare ? t("preparation.table.merchantPrep") : t("preparation.table.companyPrep")}
               </span>
             ) : null}
 
@@ -116,7 +116,7 @@ const PreparationOrderCardHeader = ({
         {/* Right-side compact stats */}
         <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <div className="text-center">
-            <p className="text-[10px] text-gray-400">القطع</p>
+            <p className="text-[10px] text-gray-400">{t("preparation.table.units")}</p>
             <p className="text-sm font-bold text-gray-800">{order.totalUnits}</p>
           </div>
 
@@ -124,7 +124,7 @@ const PreparationOrderCardHeader = ({
             <>
               <div className="h-8 w-px bg-gray-100" />
               <div className="text-center">
-                <p className="text-[10px] text-gray-400">القيمة</p>
+                <p className="text-[10px] text-gray-400">{t("preparation.table.value")}</p>
                 <p className="text-sm font-bold text-gray-800">
                   {formatPrice(order.totalValue)}
                 </p>
@@ -135,16 +135,16 @@ const PreparationOrderCardHeader = ({
           <div className="h-8 w-px bg-gray-100" />
 
           <div className="text-center">
-            <p className="text-[10px] text-gray-400">المخزن</p>
+            <p className="text-[10px] text-gray-400">{t("preparation.table.warehouse")}</p>
             <p className="max-w-[80px] truncate text-xs font-semibold text-gray-700">
-              {order.recommendedWarehouseName || "غير محدد"}
+              {order.recommendedWarehouseName || t("preparation.table.notDefined")}
             </p>
           </div>
 
           <div className="h-8 w-px bg-gray-100" />
 
           <div className="text-center">
-            <p className="text-[10px] text-gray-400">آخر تحديث</p>
+            <p className="text-[10px] text-gray-400">{t("preparation.table.lastUpdate")}</p>
             <p className="text-xs font-semibold text-gray-700">
               {formatDate(order.updatedAt || order.createdAt)}
             </p>
@@ -153,7 +153,7 @@ const PreparationOrderCardHeader = ({
           <div className="h-8 w-px bg-gray-100" />
 
           <div className="text-center">
-            <p className="text-[10px] text-gray-400">كود الشحن</p>
+            <p className="text-[10px] text-gray-400">{t("preparation.table.shippingCode")}</p>
             <p className="max-w-[100px] truncate text-xs font-medium text-gray-700" dir="ltr">
               {order.turboTrackingNumber ||
                 (order.shipments?.length
@@ -175,8 +175,8 @@ const PreparationOrderCardHeader = ({
             }`}
           >
             {order.isReady
-              ? "جاهز ✓"
-              : `${order.missingItemsCount} نقص`}
+              ? t("preparation.table.ready")
+              : t("preparation.table.shortage", { count: order.missingItemsCount })}
           </div>
         </div>
       </div>
@@ -184,7 +184,7 @@ const PreparationOrderCardHeader = ({
       {/* Mobile stats row */}
       <div className="mt-2.5 flex flex-wrap gap-2 lg:hidden">
         <span className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-          {order.totalUnits} قطعة
+          {order.totalUnits} {t("preparation.table.unitsLabel")}
         </span>
         {canViewFullDetails && (
           <span className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
@@ -192,14 +192,14 @@ const PreparationOrderCardHeader = ({
           </span>
         )}
         <span className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-          {order.recommendedWarehouseName || "لم يتم التخصيص"}
+          {order.recommendedWarehouseName || t("preparation.table.notAssigned")}
         </span>
         <span
           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
             order.isReady ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
           }`}
         >
-          {order.isReady ? "جاهز للتجهيز" : `${order.missingItemsCount} منتج يحتاج مراجعة`}
+          {order.isReady ? t("preparation.table.readyToPrepare") : t("preparation.table.needsReview", { count: order.missingItemsCount })}
         </span>
       </div>
 
@@ -207,7 +207,7 @@ const PreparationOrderCardHeader = ({
       {itemSummary.hasQuantityOffers ? (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
           <span className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-            عرض كميات
+            {t("preparation.table.quantityOffer")}
           </span>
           <span className="text-xs font-semibold text-amber-900">
             {itemSummary.primaryLabel}

@@ -497,9 +497,11 @@ const getAllProducts = async (req, res) => {
     // Build filter object (Search)
     const where = withActiveProductFilter({ companyId });
     if (req.query.search) {
-      where.name = {
-        contains: req.query.search
-      };
+      const searchTerm = req.query.search;
+      where.OR = [
+        { name: { contains: searchTerm } },
+        { sku: { contains: searchTerm } },
+      ];
     }
 
     const isAffiliateUser = req.user.role === 'AFFILIATE';
