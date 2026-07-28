@@ -272,10 +272,10 @@ const InstagramInbox: React.FC = () => {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>
-                صندوق Instagram
+                {t("instagramInbox.title")}
               </div>
               <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                {apiCounts.total > 0 ? `${apiCounts.total} محادثة` : "رسائل Instagram المباشرة"}
+                {apiCounts.total > 0 ? t("instagramInbox.conversationCount", { count: apiCounts.total }) : t("instagramInbox.directMessages")}
               </div>
             </div>
           </div>
@@ -284,7 +284,7 @@ const InstagramInbox: React.FC = () => {
           <div style={{ marginTop: 10 }}>
             <input
               type="text"
-              placeholder="بحث في المحادثات..."
+              placeholder={t("instagramInbox.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -325,12 +325,12 @@ const InstagramInbox: React.FC = () => {
                   margin: "0 auto 10px",
                 }}
               />
-              جاري التحميل...
+              {t("instagramInbox.loading")}
             </div>
           ) : conversations.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
-              <div style={{ fontSize: 13 }}>لا توجد رسائل Instagram</div>
+              <div style={{ fontSize: 13 }}>{t("instagramInbox.noMessages")}</div>
             </div>
           ) : (
             <>
@@ -358,7 +358,7 @@ const InstagramInbox: React.FC = () => {
                     borderTop: "1px solid #f3f4f6",
                   }}
                 >
-                  تحميل المزيد
+                  {t("instagramInbox.loadMore")}
                 </button>
               )}
             </>
@@ -407,10 +407,10 @@ const InstagramInbox: React.FC = () => {
                       });
                       loadConversationsIG(1, false, activeTab);
                     } catch (err) {
-                      console.error("فشل في تحديث حالة الرد الآلي:", err);
+                      console.error("Failed to update AI reply status:", err);
                     }
                   }}
-                  title={selectedConversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+                  title={selectedConversation.aiEnabled !== false ? t("instagramInbox.aiOff") : t("instagramInbox.aiOn")}
                   style={{
                     background: selectedConversation.aiEnabled !== false ? "rgba(59,130,246,0.1)" : "none",
                     border: "none",
@@ -424,7 +424,7 @@ const InstagramInbox: React.FC = () => {
                 </button>
               <button
                 onClick={handleProfilePanelToggle}
-                title={showProfilePanel ? "إخفاء الملف الشخصي" : "إظهار الملف الشخصي"}
+                title={showProfilePanel ? t("instagramInbox.hideProfile") : t("instagramInbox.showProfile")}
                 style={{
                   background: "none",
                   border: "none",
@@ -446,7 +446,7 @@ const InstagramInbox: React.FC = () => {
             <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
               {loadingMessages ? (
                 <div style={{ textAlign: "center", color: "#9ca3af", padding: 30 }}>
-                  جاري تحميل الرسائل...
+                  {t("instagramInbox.loadingMessages")}
                 </div>
               ) : (
                 <>
@@ -465,7 +465,7 @@ const InstagramInbox: React.FC = () => {
                         cursor: "pointer",
                       }}
                     >
-                      تحميل رسائل أقدم
+                      {t("instagramInbox.loadOlder")}
                     </button>
                   )}
                   {messages.map((msg) => (
@@ -525,10 +525,10 @@ const InstagramInbox: React.FC = () => {
               </svg>
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-              اختر محادثة
+              {t("instagramInbox.selectConversation")}
             </div>
             <div style={{ fontSize: 13 }}>
-              اختر محادثة من القائمة لعرض رسائل Instagram
+              {t("instagramInbox.selectConversationHint")}
             </div>
           </div>
         )}

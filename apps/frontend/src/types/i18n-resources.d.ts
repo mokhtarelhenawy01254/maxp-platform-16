@@ -1833,6 +1833,10 @@ declare module 'react-i18next' {
         noLowPerforming: string;
         noLowPerformingDesc: string;
         ordersCount: string;
+        custom: string;
+        csvExport: string;
+        sortAsc: string;
+        sortDesc: string;
       };
       variationsAnalytics: {
         title: string;

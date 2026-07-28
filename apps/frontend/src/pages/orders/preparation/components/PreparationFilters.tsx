@@ -366,9 +366,12 @@ const PreparationFilters = ({
             />
             <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             {showProductSuggestions && (
-              <div
+              <select
                 ref={productSuggestionsRef}
-                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+                size={Math.min(products.length + 1, 6)}
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg text-xs"
+                onChange={(e) => { onProductFilterChange(e.target.value); setShowProductSuggestions(false); }}
+                value=""
               >
                 {productsLoading && (
                   <div className="px-3 py-1.5 text-xs text-gray-400">

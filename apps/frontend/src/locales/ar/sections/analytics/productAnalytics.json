@@ -18,5 +18,9 @@
   "noTopProductsDesc": "لم يتم تسجيل أي مبيعات للمنتجات في الفترة المحددة",
   "noLowPerforming": "لا توجد منتجات ضعيفة الأداء",
   "noLowPerformingDesc": "جميع المنتجات تحقق أداء جيد في هذه الفترة",
-  "ordersCount": "عدد الطلبات"
+  "ordersCount": "عدد الطلبات",
+  "custom": "مخصص",
+  "csvExport": "تصدير CSV",
+  "sortAsc": "تصاعدي",
+  "sortDesc": "تنازلي"
 }
