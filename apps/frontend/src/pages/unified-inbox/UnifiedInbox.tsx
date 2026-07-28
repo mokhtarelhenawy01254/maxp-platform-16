@@ -599,6 +599,19 @@ const UnifiedInbox: React.FC = () => {
     }
   }, []);
 
+  // — Push history state on conversation open so browser back returns to list —
+  useEffect(() => {
+    if (!selectedConversation) return;
+    window.history.replaceState({ uiChatOpen: true }, '');
+    const handlePopState = () => {
+      if (selectedConversation) {
+        setSelectedConversation(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedConversation]);
+
   // ──────────────────────────────────────────────────────────
   // 🎯 Actions
   // ──────────────────────────────────────────────────────────
