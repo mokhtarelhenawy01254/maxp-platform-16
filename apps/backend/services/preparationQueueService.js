@@ -60,13 +60,16 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'READY_TO_SHIP',
   'STOCK_SHORTAGE',
   'PENDING_STOCK',
-  'ON_HOLD_STOCK'
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
 ]);
 
-const getMappedRegularOrderStatus = (preparationStatus) =>
-  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
-    ? 'CONFIRMED'
-    : 'PROCESSING';
+const getMappedRegularOrderStatus = (preparationStatus) => {
+  if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+  if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+  if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+  return 'PROCESSING';
+};
 
 const updatePreparationOrderStatus = async ({
   orderIdentifier,

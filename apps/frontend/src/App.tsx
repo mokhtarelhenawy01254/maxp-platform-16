@@ -996,6 +996,12 @@ const FormsBuilderPage = React.lazy(
 const ServiceOrdersPage = React.lazy(
   () => import("./pages/admin/ServiceOrdersPage"),
 );
+const ServiceManagementPage = React.lazy(
+  () => import("./pages/admin/ServiceManagementPage"),
+);
+const ServiceRequestForm = React.lazy(
+  () => import("./pages/ServiceRequestForm"),
+);
 const PublicFormPage = React.lazy(
   () => import("./pages/public/PublicFormPage"),
 );
@@ -1734,6 +1740,7 @@ const AppContent = () => {
             <Route path="/app-explanations" element={<AppExplanationsPage />} />
             <Route path="/book/:slug" element={<BookAppointmentPage />} />
             <Route path="/forms/:slug" element={<PublicFormPage />} />
+            <Route path="/request-service" element={<ServiceRequestForm />} />
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
             {/* Public Storefront Routes - No Authentication Required */}
@@ -6817,6 +6824,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <ServiceOrdersPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/services"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceManagementPage />
                     </Layout>
                   }
                 />

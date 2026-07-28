@@ -145,7 +145,7 @@
     "legal": {
       "description": "الشروط والأحكام والخصوصية"
     },
-    "service-requests": {
+    "serviceRequests": {
       "description": "إدارة طلبات الخدمات من العملاء"
     }
   }

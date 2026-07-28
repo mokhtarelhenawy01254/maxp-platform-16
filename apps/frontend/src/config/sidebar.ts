@@ -1074,6 +1074,7 @@ export const getSidebarConfig = (
             icon: ClipboardDocumentListIcon,
             hidden: !isAppActive('service-request-app'),
             items: [
+                { to: '/admin/services', icon: PencilSquareIcon, label: t('sidebar.serviceManagement') },
                 { to: '/admin/service-orders', icon: ClipboardDocumentListIcon, label: t('sidebar.serviceOrders') },
             ]
         },
