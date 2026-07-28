@@ -4815,6 +4815,23 @@ module.exports = {
         shouldApplyMessageStatus,
         classifySessionSocketHealth,
         getSocketReadyState,
-        getProfileSessionSnapshot
+        getProfileSessionSnapshot,
+        // Sprint 2: History import lifecycle helpers
+        getSessionHistoryImportState: async (prisma, sessionId) => {
+            try {
+                const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
+                    where: { sessionId },
+                    select: { status: true, lastError: true }
+                });
+                return imp ? { status: imp.status, lastError: imp.lastError } : null;
+            } catch { return null; }
+        },
+        shouldEnableSyncOnRestore: (historyImportStatus) => {
+            return historyImportStatus === 'REQUESTED' || historyImportStatus === 'IN_PROGRESS';
+        },
+        getFallbackEnableHistorySync: (sessionStatus, metadata) => {
+            const meta = typeof metadata === 'string' ? (() => { try { return JSON.parse(metadata); } catch { return {}; } })() : (metadata || {});
+            return meta.importHistoryOnLink === true && (sessionStatus === 'QR_PENDING' || sessionStatus === 'CONNECTING');
+        }
     }
 };
