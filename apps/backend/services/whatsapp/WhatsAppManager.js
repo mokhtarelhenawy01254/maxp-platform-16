@@ -1756,6 +1756,11 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
     });
 }
 
+const HISTORY_BATCH_SIZE = parseInt(process.env.WHATSAPP_HISTORY_BATCH_SIZE || '100', 10);
+
+// Yield to event loop between history batches so the Node.js event loop can breathe
+const historyYield = () => new Promise(resolve => setImmediate(resolve));
+
 async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     const sessionData = activeSessions.get(sessionId);
     if (!sessionData?.syncFullHistory) {
@@ -1841,44 +1846,95 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         }
     }
 
-    if (messages.length > 0) {
-        await handleIncomingMessages(sessionId, companyId, {
-            messages,
-            type: 'append',
-            lidToPhoneMap
-        }, sock, {
-            importHistory: true,
-            skipRealtimeEvents: true,
-            skipNotifications: true,
-            skipAI: true,
-            skipCrmSync: true,
-            skipMediaDownload: true
-        });
+    // ====== Sprint 3: Batch processing with bounded chunks ======
+    const totalMessages = messages.length;
+    let batchStart = 0;
+    let batchNumber = 0;
+    let totalImported = 0;
+    let totalUnsupported = 0;
+    let totalSkipped = 0;
+    let totalFailed = 0;
+    let cumulativeDurationMs = 0;
+
+    while (batchStart < totalMessages) {
+        const batchEnd = Math.min(batchStart + HISTORY_BATCH_SIZE, totalMessages);
+        const batch = messages.slice(batchStart, batchEnd);
+        batchNumber++;
+        const batchStartTime = Date.now();
+
+        try {
+            await handleIncomingMessages(sessionId, companyId, {
+                messages: batch,
+                type: 'append',
+                lidToPhoneMap
+            }, sock, {
+                importHistory: true,
+                skipRealtimeEvents: true,
+                skipNotifications: true,
+                skipAI: true,
+                skipCrmSync: true,
+                skipMediaDownload: true
+            });
+
+            const batchDuration = Date.now() - batchStartTime;
+            cumulativeDurationMs += batchDuration;
+            totalImported += batch.length;
+            const progress = totalMessages > 0 ? Math.min(batchEnd / totalMessages, 1.0) : 1.0;
+
+            // Aggregate telemetry لكل batch بدل per-message logs
+            console.log(`📊 [HISTORY-BATCH] session=${sessionId} batch=${batchNumber}/${Math.ceil(totalMessages / HISTORY_BATCH_SIZE)} msgs=${batch.length} total=${totalImported}/${totalMessages} progress=${(progress * 100).toFixed(1)}% duration=${batchDuration}ms`);
+
+            // تحديث counters في DB بعد كل batch
+            try {
+                await prisma.whatsAppSessionHistoryImport.update({
+                    where: { sessionId },
+                    data: {
+                        importedMessages: { increment: batch.length },
+                        lastProgress: progress
+                    }
+                });
+            } catch (counterErr) {
+                console.warn(`⚠️ [HISTORY] Failed to update batch counters for ${sessionId}:`, counterErr.message);
+            }
+
+            // Yield للـ event loop
+            await historyYield();
+        } catch (batchErr) {
+            console.error(`❌ [HISTORY] Batch ${batchNumber} failed for session ${sessionId}:`, batchErr.message);
+            await prisma.whatsAppSessionHistoryImport.update({
+                where: { sessionId },
+                data: { status: 'FAILED', failedAt: new Date(), lastError: `Batch ${batchNumber} failed: ${batchErr.message?.substring(0, 200)}` }
+            }).catch(() => {});
+            return; // لا نكمل باقي الـ batches
+        }
+
+        batchStart = batchEnd;
     }
+    // ====== End Sprint 3 ======
 
     io?.to(`company_${companyId}`).emit('whatsapp:history_sync', {
         sessionId,
         ...summary
     });
 
-    // ====== Sprint 2: تحديث counters + completion ======
+    // ====== Sprint 2: تحديث counters + completion (final update) ======
     try {
         await prisma.whatsAppSessionHistoryImport.update({
             where: { sessionId },
             data: {
                 chatsCount: { increment: importedChats },
                 contactsCount: contacts.length,
-                lastProgress: history?.progress ?? null
+                lastProgress: history?.progress ?? 1.0
             }
         });
 
         if (history?.isLatest) {
             sessionData.syncFullHistory = false;
+            console.log(`✅ [HISTORY] Session ${sessionId} history import completed: ${totalMessages} msgs in ${batchNumber} batches, ${cumulativeDurationMs}ms total`);
             await prisma.whatsAppSessionHistoryImport.update({
                 where: { sessionId },
                 data: { status: 'COMPLETED', completedAt: new Date() }
             });
-            // نظف metadata القديمة
             await prisma.whatsAppSession.update({
                 where: { id: sessionId },
                 data: { metadata: {
@@ -1887,7 +1943,6 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
                     historySyncedAt: new Date().toISOString()
                 }, updatedAt: new Date() }
             });
-            console.log(`✅ [HISTORY] Session ${sessionId} history import completed`);
         }
     } catch (error) {
         console.error(`❌ [HISTORY] Failed to update import state for ${sessionId}:`, error.message);
@@ -1938,11 +1993,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
-            // DEBUG: Log incoming message key
-            await logEvent(sessionId, companyId, 'debug_incoming_msg', {
-                key: msg.key,
-                pushName: msg.pushName
-            });
+            // DEBUG: Log incoming message key (نمنعها أثناء history import عشان ما نضيعش performance)
+            if (!importHistory) {
+                await logEvent(sessionId, companyId, 'debug_incoming_msg', {
+                    key: msg.key,
+                    pushName: msg.pushName
+                });
+            }
 
             // Handle @lid (Linked Device ID) by folding it into the phone JID when we know the mapping.
             if (remoteJid && isLinkedDeviceJid(remoteJid)) {
@@ -4817,6 +4874,8 @@ module.exports = {
         getSocketReadyState,
         getProfileSessionSnapshot,
         // Sprint 2: History import lifecycle helpers
+        HISTORY_BATCH_SIZE,
+        historyYield,
         getSessionHistoryImportState: async (prisma, sessionId) => {
             try {
                 const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
@@ -4824,13 +4883,13 @@ module.exports = {
                     select: { status: true, lastError: true }
                 });
                 return imp ? { status: imp.status, lastError: imp.lastError } : null;
-            } catch { return null; }
+            } catch (e) { return null; }
         },
         shouldEnableSyncOnRestore: (historyImportStatus) => {
             return historyImportStatus === 'REQUESTED' || historyImportStatus === 'IN_PROGRESS';
         },
         getFallbackEnableHistorySync: (sessionStatus, metadata) => {
-            const meta = typeof metadata === 'string' ? (() => { try { return JSON.parse(metadata); } catch { return {}; } })() : (metadata || {});
+            const meta = typeof metadata === 'string' ? (() => { try { return JSON.parse(metadata); } catch (e) { return {}; } })() : (metadata || {});
             return meta.importHistoryOnLink === true && (sessionStatus === 'QR_PENDING' || sessionStatus === 'CONNECTING');
         }
     }
