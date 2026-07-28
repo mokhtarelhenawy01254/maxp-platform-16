@@ -138,6 +138,10 @@ const PreparationFilters = ({
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const productSuggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isInitialMount = useRef(true);
