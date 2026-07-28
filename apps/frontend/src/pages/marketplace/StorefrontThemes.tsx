@@ -35,6 +35,8 @@ type WalletBalance = {
 
 type ThemeFilterType = "all" | "owned" | "free" | "paid";
 
+const THEME_FILTER_TYPES: ThemeFilterType[] = ["all", "owned", "free", "paid"];
+
 type ThemeSubcategoryGroup = {
   id: string;
   label: string;

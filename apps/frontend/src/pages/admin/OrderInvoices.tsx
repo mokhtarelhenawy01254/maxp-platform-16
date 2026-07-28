@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   CalendarRange,
@@ -221,7 +220,6 @@ const getErrorMessage = (error: unknown, t: (key: string) => string) => {
 const OrderInvoices: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const [invoices, setInvoices] = useState<OrderInvoice[]>([]);
   const [loading, setLoading] = useState(true);

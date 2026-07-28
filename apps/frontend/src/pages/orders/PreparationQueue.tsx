@@ -117,7 +117,6 @@ const getInitialPreparationState = (searchParams: URLSearchParams): Partial<Prep
 const PreparationQueue: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
