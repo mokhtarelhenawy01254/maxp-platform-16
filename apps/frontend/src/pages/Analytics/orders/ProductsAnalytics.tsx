@@ -10,6 +10,10 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  EyeIcon,
+  ShoppingCartIcon,
+  CurrencyDollarIcon,
+  CubeIcon,
 } from "@heroicons/react/24/outline";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -25,7 +29,21 @@ import { Link, useSearchParams } from "react-router-dom";
 
 const PIE_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16"];
 
-type SortKey = "sales" | "revenue" | "name";
+const PERIOD_OPTIONS = [
+  { value: "1", labelKey: "periodToday" },
+  { value: "2", labelKey: "periodYesterday" },
+  { value: "7", labelKey: "last7Days" },
+  { value: "14", labelKey: "periodTwoWeeks" },
+  { value: "30", labelKey: "last30Days" },
+  { value: "60", labelKey: "periodTwoMonths" },
+  { value: "90", labelKey: "last90Days" },
+  { value: "180", labelKey: "periodSixMonths" },
+  { value: "365", labelKey: "lastYear" },
+  { value: "730", labelKey: "periodTwoYears" },
+  { value: "custom", labelKey: "custom" },
+];
+
+type SortKey = "sales" | "revenue" | "name" | "views" | "addToCarts" | "conversionRate";
 type SortDir = "asc" | "desc";
 
 function Skeleton({ className }: { className?: string }) {
@@ -40,11 +58,17 @@ function ProductsSkeleton() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-32" />
         </div>
-        <Skeleton className="h-10 w-36" />
+        <Skeleton className="h-10 w-48" />
       </div>
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-[400px] w-full" />
-      <Skeleton className="h-64 w-full" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full" />)}
+      </div>
+      <Skeleton className="h-[300px] w-full" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Skeleton className="h-[400px] w-full" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+      <Skeleton className="h-80 w-full" />
     </div>
   );
 }
@@ -71,11 +95,14 @@ function calcPercentChange(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-function getDateRange(period: string): { startDate: string; endDate: string; prevStartDate: string; prevEndDate: string } {
-  const now = new Date();
-  const days = parseInt(period, 10);
-  const endDate = now.toISOString().split("T")[0];
-  const start = new Date(now);
+function getDateRange(period: string, referenceDate: Date = new Date()): { startDate: string; endDate: string; prevStartDate: string; prevEndDate: string } {
+  const endDate = referenceDate.toISOString().split("T")[0];
+  let days: number;
+  if (period === "1") days = 1;
+  else if (period === "2") { referenceDate.setDate(referenceDate.getDate() - 1); const y = referenceDate.toISOString().split("T")[0]; referenceDate.setDate(referenceDate.getDate() - 1); return { startDate: y, endDate: y, prevStartDate: referenceDate.toISOString().split("T")[0], prevEndDate: y }; }
+  else days = parseInt(period, 10);
+
+  const start = new Date(referenceDate);
   start.setDate(start.getDate() - days);
   const startDate = start.toISOString().split("T")[0];
   const prevEnd = new Date(start);
@@ -99,6 +126,23 @@ function exportToCsv(data: any[], filename: string) {
   a.download = `${filename}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function StockBadge({ level }: { level?: ProductHealth }) {
+  if (!level) return null;
+  if (level.urgency === "critical" || level.score < 30)
+    return <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">نفذ</span>;
+  if (level.urgency === "warning" || level.score < 60)
+    return <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">محدود</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">متوفر</span>;
+}
+
+interface ProductHealth {
+  score: number;
+  stock: number;
+  salesVelocity: number;
+  daysUntilStockout: number;
+  urgency: string;
 }
 
 const ProductsAnalytics: React.FC = () => {
@@ -154,7 +198,21 @@ const ProductsAnalytics: React.FC = () => {
     select: (data) => data.success ? (data.data || []) : [],
   });
 
-  const isLoading = topProductsQuery.isLoading || productAnalyticsQuery.isLoading || dailyTrendQuery.isLoading;
+  const healthQuery = useQuery({
+    queryKey: ["analytics", "product-health", period],
+    queryFn: () => analyticsService.getProductHealthScore(effectiveStart, effectiveEnd),
+    select: (data) => {
+      if (!data.success || !data.data?.products) return {};
+      const map: Record<string, ProductHealth> = {};
+      data.data.products.forEach((p: any) => {
+        map[p.productId || p.id] = { score: p.score ?? 50, stock: p.stock ?? 0, salesVelocity: p.salesVelocity ?? 0, daysUntilStockout: p.daysUntilStockout ?? 999, urgency: p.urgency ?? "safe" };
+      });
+      return map;
+    },
+    staleTime: 120_000,
+  });
+
+  const isLoading = topProductsQuery.isLoading || productAnalyticsQuery.isLoading;
   const isError = topProductsQuery.isError || productAnalyticsQuery.isError;
   const errorMessage = topProductsQuery.error || productAnalyticsQuery.error;
 
@@ -163,14 +221,19 @@ const ProductsAnalytics: React.FC = () => {
   const lowPerformingProducts = productAnalyticsQuery.data?.lowPerforming ?? [];
   const totalProducts = productAnalyticsQuery.data?.totalProducts ?? 0;
   const dailyData = dailyTrendQuery.data ?? [];
+  const healthMap = healthQuery.data ?? {};
 
   const totalRevenue = topProducts.reduce((sum, p) => sum + (p.revenue || 0), 0);
   const totalSales = topProducts.reduce((sum, p) => sum + (p.sales || 0), 0);
+  const totalViews = topProducts.reduce((sum, p) => sum + (p.views || 0), 0);
+  const totalAddToCarts = topProducts.reduce((sum, p) => sum + (p.addToCarts || 0), 0);
   const prevTotalRevenue = prevTopProducts.reduce((sum, p) => sum + (p.revenue || 0), 0);
   const prevTotalSales = prevTopProducts.reduce((sum, p) => sum + (p.sales || 0), 0);
+  const prevTotalViews = prevTopProducts.reduce((sum, p) => sum + (p.views || 0), 0);
 
   const revenueChange = calcPercentChange(totalRevenue, prevTotalRevenue);
   const salesChange = calcPercentChange(totalSales, prevTotalSales);
+  const viewsChange = calcPercentChange(totalViews, prevTotalViews);
 
   const sortedProducts = React.useMemo(() => {
     const sorted = [...topProducts];
@@ -186,12 +249,8 @@ const ProductsAnalytics: React.FC = () => {
   }, [topProducts, sortKey, sortDir]);
 
   function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("desc"); }
   }
 
   function SortIcon({ column }: { column: SortKey }) {
@@ -201,10 +260,7 @@ const ProductsAnalytics: React.FC = () => {
 
   function handlePeriodChange(value: string) {
     setPeriod(value);
-    if (value !== "custom") {
-      setStartDate("");
-      setEndDate("");
-    }
+    if (value !== "custom") { setStartDate(""); setEndDate(""); }
   }
 
   if (isLoading) return <ProductsSkeleton />;
@@ -216,102 +272,84 @@ const ProductsAnalytics: React.FC = () => {
         <p className="text-red-600 dark:text-red-400">
           {errorMessage instanceof Error ? errorMessage.message : t("productAnalytics.fetchError")}
         </p>
-        <button
-          onClick={() => { topProductsQuery.refetch(); productAnalyticsQuery.refetch(); }}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
+        <button onClick={() => { topProductsQuery.refetch(); productAnalyticsQuery.refetch(); }} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
           {t("productAnalytics.retry")}
         </button>
       </div>
     );
   }
 
+  const overallConversion = totalViews > 0 ? ((totalSales / totalViews) * 100).toFixed(1) : "0";
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t("productAnalytics.title")}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {t("productAnalytics.subtitle")}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("productAnalytics.title")}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t("productAnalytics.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={period}
-            onChange={(e) => handlePeriodChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <option value="7">{t("productAnalytics.last7Days")}</option>
-            <option value="30">{t("productAnalytics.last30Days")}</option>
-            <option value="90">{t("productAnalytics.last90Days")}</option>
-            <option value="365">{t("productAnalytics.lastYear")}</option>
-            <option value="custom">{t("productAnalytics.custom")}</option>
+          <select value={period} onChange={(e) => handlePeriodChange(e.target.value)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            {PERIOD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{t(`productAnalytics.${opt.labelKey}`)}</option>
+            ))}
           </select>
           {isCustom && (
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-              />
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" />
               <span className="text-gray-500">-</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-              />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <ShoppingBagIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("productAnalytics.totalProducts")}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalProducts.toLocaleString()}</p>
-            </div>
+      {/* Summary Cards — Funnel */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-full bg-purple-500"><ShoppingBagIcon className="h-5 w-5 text-white" /></div>
+            <div><p className="text-xs text-gray-500 dark:text-gray-400">{t("productAnalytics.totalProducts")}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{totalProducts.toLocaleString()}</p></div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <ChartBarSquareIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("productAnalytics.sales")}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalSales.toLocaleString()}</p>
-                <ChangeBadge value={salesChange} />
-              </div>
-            </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-full bg-blue-500"><EyeIcon className="h-5 w-5 text-white" /></div>
+            <div><p className="text-xs text-gray-500 dark:text-gray-400">مشاهدات</p><div className="flex items-center gap-1.5"><p className="text-xl font-bold text-gray-900 dark:text-white">{totalViews.toLocaleString()}</p><ChangeBadge value={viewsChange} /></div></div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("productAnalytics.revenue")}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatPrice(totalRevenue)}</p>
-                <ChangeBadge value={revenueChange} />
-              </div>
-            </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-full bg-cyan-500"><ShoppingCartIcon className="h-5 w-5 text-white" /></div>
+            <div><p className="text-xs text-gray-500 dark:text-gray-400">إضافات للسلة</p><p className="text-xl font-bold text-gray-900 dark:text-white">{totalAddToCarts.toLocaleString()}</p></div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-full bg-green-500"><CurrencyDollarIcon className="h-5 w-5 text-white" /></div>
+            <div><p className="text-xs text-gray-500 dark:text-gray-400">{t("productAnalytics.revenue")}</p><div className="flex items-center gap-1.5"><p className="text-xl font-bold text-gray-900 dark:text-white">{formatPrice(totalRevenue)}</p><ChangeBadge value={revenueChange} /></div></div>
           </div>
         </div>
       </div>
+
+      {/* Funnel Rate Bar */}
+      {totalViews > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+            <span className="flex items-center gap-1"><EyeIcon className="h-4 w-4" /> {totalViews.toLocaleString()} مشاهدة</span>
+            <span className="text-cyan-500 flex items-center gap-1"><ShoppingCartIcon className="h-4 w-4" /> {totalAddToCarts.toLocaleString()} سلة ({totalViews > 0 ? ((totalAddToCarts / totalViews) * 100).toFixed(1) : 0}%)</span>
+            <span className="text-green-600 font-medium flex items-center gap-1"><CurrencyDollarIcon className="h-4 w-4" /> {totalSales} مبيعات ({overallConversion}%)</span>
+          </div>
+          <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
+            <div className="h-full bg-blue-500 transition-all" style={{ width: `${Math.min(100, (totalViews / totalViews) * 100)}%` }} />
+          </div>
+          <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex mt-1">
+            <div className="h-full bg-cyan-500 transition-all" style={{ width: `${Math.min(100, (totalAddToCarts / totalViews) * 100)}%` }} />
+            <div className="h-full bg-green-500 transition-all" style={{ width: `${Math.min(100, (totalSales / totalViews) * 100)}%` }} />
+          </div>
+        </div>
+      )}
 
       {/* Daily Trend Chart */}
       {dailyData.length > 0 && (
@@ -326,10 +364,7 @@ const ProductsAnalytics: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="stroke-gray-300 dark:stroke-gray-600" />
                 <XAxis dataKey="date" stroke="currentColor" className="stroke-gray-600 dark:stroke-gray-400" fontSize={12} reversed={isRtl} />
                 <YAxis stroke="currentColor" className="stroke-gray-600 dark:stroke-gray-400" fontSize={12} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px" }}
-                  wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800"
-                />
+                <Tooltip contentStyle={{ borderRadius: "8px" }} wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800" />
                 <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.15} name={t("productAnalytics.revenue")} strokeWidth={2} />
                 <Area type="monotone" dataKey="orders" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.1} name={t("productAnalytics.ordersCount")} strokeWidth={2} />
               </AreaChart>
@@ -338,7 +373,7 @@ const ProductsAnalytics: React.FC = () => {
         </div>
       )}
 
-      {/* Top Products Chart & Pie Chart */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -357,17 +392,9 @@ const ProductsAnalytics: React.FC = () => {
                 <BarChart data={topProducts} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="stroke-gray-300 dark:stroke-gray-600" />
                   <XAxis type="number" stroke="currentColor" className="stroke-gray-600 dark:stroke-gray-400" fontSize={12} />
-                  <YAxis dataKey="name" type="category" stroke="currentColor" className="stroke-gray-600 dark:stroke-gray-400" fontSize={12} width={150} reversed={isRtl} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: "8px" }}
-                    wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800"
-                    formatter={(value, name) => {
-                      if (!value) return ["0", name as string];
-                      if (name === "revenue") return [formatPrice(value as number), t("productAnalytics.revenue")];
-                      return [value, t("productAnalytics.sales")];
-                    }}
-                  />
-                  <Bar dataKey="sales" fill="#3B82F6" name="sales" radius={[0, 4, 4, 0]} />
+                  <YAxis dataKey="name" type="category" stroke="currentColor" className="stroke-gray-600 dark:stroke-gray-400" fontSize={12} width={130} reversed={isRtl} />
+                  <Tooltip contentStyle={{ borderRadius: "8px" }} wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800" />
+                  <Bar dataKey="sales" fill="#3B82F6" name={t("productAnalytics.sales")} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </DeferredResponsiveContainer>
             </div>
@@ -388,19 +415,9 @@ const ProductsAnalytics: React.FC = () => {
             <div className="min-w-0 h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={topProducts.slice(0, 10)}
-                    dataKey="revenue"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={130}
-                    innerRadius={60}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {topProducts.slice(0, 10).map((_, index) => (
-                      <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
+                  <Pie data={topProducts.slice(0, 10)} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={130} innerRadius={60}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {topProducts.slice(0, 10).map((_, index) => (<Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />))}
                   </Pie>
                   <Tooltip formatter={(value) => formatPrice(value as number)} />
                 </PieChart>
@@ -418,22 +435,8 @@ const ProductsAnalytics: React.FC = () => {
             {t("productAnalytics.topProductsDetails")}
           </h3>
           {topProducts.length > 0 && (
-            <button
-              onClick={() =>
-                exportToCsv(
-                  topProducts.map((p, i) => ({
-                    "#": i + 1,
-                    [t("productAnalytics.product")]: p.name,
-                    [t("productAnalytics.sales")]: p.sales,
-                    [t("productAnalytics.revenue")]: p.revenue,
-                  })),
-                  "top-products"
-                )
-              }
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              CSV
+            <button onClick={() => exportToCsv(sortedProducts.map((p, i) => ({ "#": i + 1, [t("productAnalytics.product")]: p.name, "مشاهدات": p.views ?? 0, "إضافات للسلة": p.addToCarts ?? 0, [t("productAnalytics.sales")]: p.sales, [t("productAnalytics.revenue")]: p.revenue, "تحويل%": p.conversionRate ?? 0 })), "top-products")} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+              <ArrowDownTrayIcon className="h-4 w-4" /> CSV
             </button>
           )}
         </div>
@@ -448,43 +451,38 @@ const ProductsAnalytics: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">#</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("name")}>
-                    {t("productAnalytics.product")} <SortIcon column="name" />
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("sales")}>
-                    {t("productAnalytics.sales")} <SortIcon column="sales" />
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("revenue")}>
-                    {t("productAnalytics.revenue")} <SortIcon column="revenue" />
-                  </th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500">#</th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("name")}>{t("productAnalytics.product")} <SortIcon column="name" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("views")}><EyeIcon className="h-3.5 w-3.5 inline ml-1" />مشاهدات <SortIcon column="views" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("addToCarts")}><ShoppingCartIcon className="h-3.5 w-3.5 inline ml-1" />سلة <SortIcon column="addToCarts" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("sales")}>{t("productAnalytics.sales")} <SortIcon column="sales" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("conversionRate")}>تحويل% <SortIcon column="conversionRate" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500 cursor-pointer select-none" onClick={() => toggleSort("revenue")}>{t("productAnalytics.revenue")} <SortIcon column="revenue" /></th>
+                  <th className="text-right py-3 px-3 text-sm font-medium text-gray-500">المخزون</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedProducts.map((product, index) => (
-                  <tr
-                    key={product.id}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  >
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{index + 1}</td>
-                    <td className="py-3 px-4">
-                      <Link
-                        to={`/products/${product.id}`}
-                        className="flex items-center gap-3 hover:text-blue-600 dark:hover:text-blue-400 group"
-                      >
-                        {product.image && (
-                          <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover" />
-                        )}
-                        <span className="text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                          {product.name}
-                        </span>
-                        <ChevronRightIcon className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{product.sales}</td>
-                    <td className="py-3 px-4 text-sm text-green-600 font-medium">{formatPrice(product.revenue)}</td>
-                  </tr>
-                ))}
+                {sortedProducts.map((product, index) => {
+                  const health = healthMap[product.id];
+                  return (
+                    <tr key={product.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="py-2.5 px-3 text-sm text-gray-900 dark:text-white">{index + 1}</td>
+                      <td className="py-2.5 px-3">
+                        <Link to={`/products/${product.id}`} className="flex items-center gap-3 hover:text-blue-600 dark:hover:text-blue-400 group">
+                          {product.image && <img src={product.image} alt={product.name} className="w-9 h-9 rounded-lg object-cover" />}
+                          <span className="text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">{product.name}</span>
+                          <ChevronRightIcon className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </Link>
+                      </td>
+                      <td className="py-2.5 px-3 text-sm text-gray-600 dark:text-gray-400">{product.views?.toLocaleString() || "—"}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-600 dark:text-gray-400">{product.addToCarts?.toLocaleString() || "—"}</td>
+                      <td className="py-2.5 px-3 text-sm text-gray-900 dark:text-white font-medium">{product.sales}</td>
+                      <td className="py-2.5 px-3 text-sm">{product.conversionRate != null ? <span className={`font-medium ${product.conversionRate > 5 ? "text-green-600" : product.conversionRate > 2 ? "text-amber-600" : "text-red-600"}`}>{product.conversionRate}%</span> : "—"}</td>
+                      <td className="py-2.5 px-3 text-sm text-green-600 font-medium">{formatPrice(product.revenue)}</td>
+                      <td className="py-2.5 px-3"><StockBadge level={health} /></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -499,21 +497,8 @@ const ProductsAnalytics: React.FC = () => {
               <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
               {t("productAnalytics.lowPerforming")}
             </h3>
-            <button
-              onClick={() =>
-                exportToCsv(
-                  lowPerformingProducts.map((p) => ({
-                    [t("productAnalytics.product")]: p.name,
-                    [t("productAnalytics.sales")]: p.sales,
-                    [t("productAnalytics.revenue")]: p.revenue,
-                  })),
-                  "low-performing-products"
-                )
-              }
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              CSV
+            <button onClick={() => exportToCsv(lowPerformingProducts.map((p) => ({ [t("productAnalytics.product")]: p.name, [t("productAnalytics.sales")]: p.sales, [t("productAnalytics.revenue")]: p.revenue })), "low-performing-products")} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+              <ArrowDownTrayIcon className="h-4 w-4" /> CSV
             </button>
           </div>
           <div className="overflow-x-auto">
