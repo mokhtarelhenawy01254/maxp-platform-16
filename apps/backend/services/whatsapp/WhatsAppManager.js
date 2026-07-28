@@ -1723,14 +1723,11 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
     }
 
     if (lastMessageAt) {
-        // Monotonic: لا نحدث لو القيمة الموجودة أحدث
-        const existing = await prisma.whatsAppContact.findUnique({
+        const existing = await getSharedPrismaClient().whatsAppContact.findUnique({
             where: { sessionId_jid: { sessionId, jid: normalizedJid } },
             select: { lastMessageAt: true }
         });
-        if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
-            // نحتفظ بالتاريخ القديم
-        } else {
+        if (!existing?.lastMessageAt || lastMessageAt >= existing.lastMessageAt) {
             updateData.lastMessageAt = lastMessageAt;
         }
     }
@@ -2700,19 +2697,21 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
         if (!isGroupParticipant) {
             // Monotonic update: لا نحدث lastMessageAt/preview لو الرسالة الجديدة أقدم من الموجودة
             if (lastMessageAt) {
-                const existingContact = await getSharedPrismaClient().whatsAppContact.findUnique({
-                    where: { sessionId_jid: { sessionId, jid: remoteJid } },
-                    select: { lastMessageAt: true }
-                });
-                if (existingContact?.lastMessageAt && existingContact.lastMessageAt > lastMessageAt) {
-                    // الرسالة الجديدة أقدم — نحتفظ بالبيانات القديمة
-                    updateData.lastMessageAt = existingContact.lastMessageAt;
-                } else {
-                    updateData.lastMessageAt = lastMessageAt;
-                    if (lastMessagePreview !== undefined) {
-                        updateData.lastMessagePreview = lastMessagePreview;
+                const prisma = getSharedPrismaClient();
+                await prisma.$transaction(async (tx) => {
+                    const existing = await tx.whatsAppContact.findUnique({
+                        where: { sessionId_jid: { sessionId, jid: remoteJid } },
+                        select: { lastMessageAt: true }
+                    });
+                    if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
+                        updateData.lastMessageAt = existing.lastMessageAt;
+                    } else {
+                        updateData.lastMessageAt = lastMessageAt;
+                        if (lastMessagePreview !== undefined) {
+                            updateData.lastMessagePreview = lastMessagePreview;
+                        }
                     }
-                }
+                });
             } else {
                 updateData.lastMessageAt = new Date();
             }
