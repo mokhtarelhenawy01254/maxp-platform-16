@@ -227,7 +227,7 @@ const PreparationFilters = ({
         
         {/* Horizontal Scrollable Tabs */}
         {visibleFilterSections.includes("tabs") && (
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex min-w-0 flex-1 items-center overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => onFilterChange("ALL")}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
