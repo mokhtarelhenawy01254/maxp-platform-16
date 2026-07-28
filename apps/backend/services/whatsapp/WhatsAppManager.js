@@ -41,6 +41,7 @@ const initBaileys = async () => {
     isJidNewsletter = baileys.isJidNewsletter;
 
 };
+const crypto = require('crypto');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -1339,7 +1340,9 @@ async function createSession(sessionId, companyId, options = {}) {
             loadBalanceWeight: options.loadBalanceWeight || 1,
             createdAt: new Date(),
             lastQRTimestamp: null,
-            creds: state.creds
+            creds: state.creds,
+            labels: new Map(), // cache للتصنيفات: labelId -> { id, name, color, deleted, predefinedId }
+            labelAssociations: new Map() // labelId -> Set<chatJid>
         };
         activeSessions.set(sessionId, sessionData);
         trackCompanySession(companyId, sessionId);
@@ -1470,6 +1473,32 @@ async function createSession(sessionId, companyId, options = {}) {
         // معالجة أحداث المكالمات
         sock.ev.on('call.update', async (update) => {
             await handleCallUpdate(sessionId, companyId, update);
+        });
+
+        // معالجة أحداث التصنيفات
+        sock.ev.on('labels.edit', (label) => {
+            const sd = activeSessions.get(sessionId);
+            if (!sd) return;
+            if (label.deleted) {
+                sd.labels.delete(label.id);
+            } else {
+                sd.labels.set(label.id, { id: label.id, name: label.name, color: label.color, predefinedId: label.predefinedId });
+            }
+        });
+
+        sock.ev.on('labels.association', ({ type, association }) => {
+            const sd = activeSessions.get(sessionId);
+            if (!sd) return;
+            if (association.type === 'label_jid') {
+                if (!sd.labelAssociations.has(association.labelId)) {
+                    sd.labelAssociations.set(association.labelId, new Set());
+                }
+                if (type === 'add') {
+                    sd.labelAssociations.get(association.labelId).add(association.chatId);
+                } else {
+                    sd.labelAssociations.get(association.labelId).delete(association.chatId);
+                }
+            }
         });
 
         return sessionData;
@@ -4524,6 +4553,25 @@ async function getBroadcastLists(sessionId) {
 
 // ==================== Labels Features ====================
 
+// خريطة تحويل ألوان الهيكس إلى أرقام LabelColor المدعومة من واتساب (0-19)
+const LABEL_COLORS = [
+    '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
+    '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
+    '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800',
+];
+const HEX_TO_LABEL_COLOR_INDEX = Object.fromEntries(
+    LABEL_COLORS.map((hex, i) => [hex.toUpperCase(), i])
+);
+const resolveLabelColor = (color) => {
+    if (typeof color === 'number' && color >= 0 && color <= 19) return color;
+    if (typeof color === 'string') {
+        const idx = HEX_TO_LABEL_COLOR_INDEX[color.toUpperCase()];
+        if (idx !== undefined) return idx;
+    }
+    return 0;
+};
+const formatLabelColor = (colorIndex) => LABEL_COLORS[colorIndex] || LABEL_COLORS[0];
+
 /**
  * إضافة علامة للمحادثة
  */
@@ -4536,7 +4584,7 @@ async function labelChat(sessionId, jid, labelId) {
     }
 
     try {
-        await session.sock.labelChat(jid, labelId);
+        await session.sock.addChatLabel(jid, labelId);
         console.log(`🏷️ Chat labeled: ${jid}`);
         return { success: true };
     } catch (error) {
@@ -4546,7 +4594,7 @@ async function labelChat(sessionId, jid, labelId) {
 }
 
 /**
- * جلب العلامات
+ * جلب العلامات (من cache session)
  */
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
@@ -4557,8 +4605,14 @@ async function getLabels(sessionId) {
     }
 
     try {
-        const labels = await session.sock.getLabels();
-        return labels;
+        const labels = Array.from(session.labels.values());
+        return labels.map(label => ({
+            id: label.id,
+            name: label.name,
+            color: formatLabelColor(label.color),
+            predefinedId: label.predefinedId,
+            chatCount: session.labelAssociations.get(label.id)?.size || 0
+        }));
     } catch (error) {
         console.error('❌ Error getting labels:', error);
         throw error;
@@ -4577,9 +4631,11 @@ async function createLabel(sessionId, name, color) {
     }
 
     try {
-        const label = await session.sock.createLabel(name, color);
-        console.log(`🏷️ Label created: ${name}`);
-        return label;
+        const labelId = crypto.randomUUID();
+        const colorIndex = resolveLabelColor(color);
+        await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
+        console.log(`🏷️ Label created: ${name} (${labelId}) color=${colorIndex}`);
+        return { id: labelId, name, color: formatLabelColor(colorIndex) };
     } catch (error) {
         console.error('❌ Error creating label:', error);
         throw error;
@@ -4598,11 +4654,32 @@ async function deleteLabel(sessionId, labelId) {
     }
 
     try {
-        await session.sock.deleteLabel(labelId);
+        await session.sock.addLabel(labelId, { id: labelId, deleted: true });
         console.log(`🏷️ Label deleted: ${labelId}`);
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting label:', error);
+        throw error;
+    }
+}
+
+/**
+ * إزالة تصنيف من محادثة
+ */
+async function removeChatLabel(sessionId, jid, labelId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
+
+    try {
+        await session.sock.removeChatLabel(jid, labelId);
+        console.log(`🏷️ Label removed from chat: ${jid}`);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error removing label from chat:', error);
         throw error;
     }
 }
@@ -5224,6 +5301,7 @@ module.exports = {
     getLabels,
     createLabel,
     deleteLabel,
+    removeChatLabel,
 
     // Starred Messages
     starMessage,

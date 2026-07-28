@@ -3352,6 +3352,60 @@ async function deleteLabel(req, res) {
     }
 }
 
+async function addLabelToChat(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId, jid } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId || !jid || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.labelChat(targetSessionId, jid, labelId);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error adding label to chat:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء إضافة علامة للمحادثة' });
+    }
+}
+
+async function removeLabelFromChat(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId, jid } = req.params;
+        const { sessionId } = req.body;
+
+        if (!sessionId || !jid || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.removeChatLabel(targetSessionId, jid, labelId);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error removing label from chat:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء إزالة العلامة من المحادثة' });
+    }
+}
+
 // ==================== Starred Messages Controllers ====================
 
 async function starMessage(req, res) {
@@ -4107,6 +4161,95 @@ async function correctAIMessage(req, res) {
     }
 }
 
+/**
+ * حذف كل المحادثات
+ * POST /api/whatsapp/chats/delete-all
+ */
+async function deleteAllChats(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        // Get all sessions for this company (or a specific one if provided)
+        let sessions;
+        if (sessionId && sessionId !== 'all') {
+            const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId }
+            });
+            if (!session) {
+                return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            }
+            sessions = [session];
+        } else {
+            sessions = await getSharedPrismaClient().whatsAppSession.findMany({
+                where: { companyId }
+            });
+        }
+
+        if (!sessions || sessions.length === 0) {
+            return res.status(404).json({ error: 'لا توجد جلسات واتساب لهذه الشركة' });
+        }
+
+        let totalContacts = 0;
+        let totalMessages = 0;
+
+        for (const session of sessions) {
+            // Get all contacts for Baileys cleanup (best-effort)
+            const contacts = await getSharedPrismaClient().whatsAppContact.findMany({
+                where: { sessionId: session.id },
+                select: { jid: true }
+            });
+
+            const jids = contacts.map(c => c.jid);
+
+            // Delete from Baileys for each JID (best-effort)
+            const activeSession = WhatsAppManager.getSession(session.id);
+            if (activeSession?.status === 'connected' && jids.length > 0) {
+                const batchSize = 50;
+                for (let i = 0; i < jids.length; i += batchSize) {
+                    const batch = jids.slice(i, i + batchSize);
+                    await Promise.allSettled(batch.map(async (jid) => {
+                        try {
+                            await activeSession.sock.chatModify({
+                                delete: true,
+                                lastMessages: [{
+                                    key: { remoteJid: jid, fromMe: true, id: 'AAA' },
+                                    messageTimestamp: Math.floor(Date.now() / 1000)
+                                }]
+                            }, jid);
+                        } catch (e) {
+                            // best-effort
+                        }
+                    }));
+                }
+            }
+
+            // Delete messages from DB
+            const msgResult = await getSharedPrismaClient().whatsAppMessage.deleteMany({
+                where: { sessionId: session.id }
+            });
+
+            // Delete contacts from DB
+            const contactResult = await getSharedPrismaClient().whatsAppContact.deleteMany({
+                where: { sessionId: session.id }
+            });
+
+            totalMessages += msgResult.count;
+            totalContacts += contactResult.count;
+        }
+
+        res.json({
+            success: true,
+            deletedContacts: totalContacts,
+            deletedMessages: totalMessages,
+            sessionsCount: sessions.length
+        });
+    } catch (error) {
+        console.error('❌ Error deleting all chats:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء حذف كل المحادثات' });
+    }
+}
+
 module.exports = {
     // Sessions
     createSession,
@@ -4174,6 +4317,7 @@ module.exports = {
     clearChat,
     deleteChat,
     deleteChatsBulk,
+    deleteAllChats,
 
     // Migration
     migrateAuthToDatabase,
@@ -4203,6 +4347,8 @@ module.exports = {
     getLabels,
     createLabel,
     deleteLabel,
+    addLabelToChat,
+    removeLabelFromChat,
 
     // Starred Messages
     starMessage,

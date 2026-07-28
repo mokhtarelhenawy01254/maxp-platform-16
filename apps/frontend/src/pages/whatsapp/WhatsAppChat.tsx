@@ -82,6 +82,7 @@ import {
   useMarkAsRead,
   useDeleteConversation,
   useDeleteConversationsBulk,
+  useDeleteAllConversations,
   useArchiveConversation
 } from '../../hooks/useWhatsAppMutations';
 import {
@@ -483,6 +484,7 @@ const WhatsAppChatContent: React.FC = () => {
   const markAsReadMutation = useMarkAsRead();
   const deleteConversationMutation = useDeleteConversation();
   const deleteConversationsBulkMutation = useDeleteConversationsBulk();
+  const deleteAllConversationsMutation = useDeleteAllConversations();
   const archiveConversationMutation = useArchiveConversation();
 
   // Helper functions
@@ -1275,6 +1277,28 @@ const WhatsAppChatContent: React.FC = () => {
     });
   }, [deleteConversationsBulkMutation, selectedContact]);
 
+  const handleDeleteAllChats = useCallback((sessionId?: string) => {
+    setConfirmData({
+      open: true,
+      title: t('whatsapp.dialogs.deleteAllChatsTitle'),
+      content: t('whatsapp.dialogs.deleteAllChatsContent'),
+      onConfirm: () => {
+        deleteAllConversationsMutation.mutate({
+          sessionId
+        }, {
+          onSuccess: () => {
+            setSelectedContact(null);
+            toast.success(t('whatsapp.dialogs.deleteAllChatsSuccess'));
+            setConfirmData(prev => ({ ...prev, open: false }));
+          },
+          onError: () => {
+            toast.error('فشل حذف المحادثات');
+          }
+        });
+      }
+    });
+  }, [deleteAllConversationsMutation, t]);
+
   const handleArchiveChat = async (contact: Contact) => {
     if (!selectedSession) return;
 
@@ -1987,6 +2011,7 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenCheckNumber={() => setCheckNumberDialogOpen(true)}
         onOpenLabels={() => setLabelDialogOpen(true)}
         onBulkDelete={handleBulkDeleteChats}
+        onDeleteAll={handleDeleteAllChats}
       />
 
       <div className="relative flex min-w-0 flex-1">

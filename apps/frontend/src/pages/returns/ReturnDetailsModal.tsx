@@ -56,6 +56,13 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   const [categories, setCategories] = useState<any[]>([]);
   const [reasons, setReasons] = useState<any[]>([]);
 
+  const responsiblePartyOptions = categories.reduce((acc: any[], cat: any) => {
+    if (!acc.find((a) => a.value === cat.defaultRole)) {
+      acc.push({ value: cat.defaultRole, label: cat.name });
+    }
+    return acc;
+  }, []);
+
   // Activity Log Filter
   const [activityFilter, setActivityFilter] = useState<string>("");
 
@@ -88,10 +95,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   };
 
   const handleSaveReview = async () => {
-    if (!status) {
-      toast.error(t('returns.k_116'));
-      return;
-    }
     if (!responsibleParty) {
       toast.error(t('returns.k_117'));
       return;
@@ -182,80 +185,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800">
           {activeTab === "details" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    {t('returns.k_193')}
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_194')}
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {request.customer?.firstName}{" "}
-                        {request.customer?.lastName}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_195')}
-                      </span>
-                      <span
-                        className="font-medium text-gray-900 dark:text-white"
-                        dir="ltr"
-                      >
-                        {request.customer?.phone}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_196')}
-                      </span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {request.customer?.customerRating} (
-                        {request.customer?.successScore?.toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                    {t('returns.k_197')}
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_198')}
-                      </span>
-                      <span className="font-medium text-red-600 dark:text-red-400 font-bold">
-                        {request.reason?.reason}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('returns.k_199')}
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {request.refundAmount || "-"}
-                      </span>
-                    </div>
-                    {request.isReviewed && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">
-                          {t('returns.k_200')}
-                        </span>
-                        <span className="font-medium text-xs text-gray-900 dark:text-white">
-                          {request.reviewedAt
-                            ? new Date(request.reviewedAt).toLocaleDateString()
-                            : "-"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* COD Deposit & Shipping */}
               {(request.order?.codDepositPaid || request.shippingReturnCost) && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30">
@@ -315,10 +244,10 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     }}
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                   >
-                    <option value="CUSTOMER">{t('returns.k_203')}</option>
-                    <option value="STORE">{t('returns.k_204')}</option>
-                    <option value="SHIPPING">{t('returns.k_124')}</option>
-                    <option value="OTHER">{t('returns.k_31')}</option>
+                    <option value="">{t('returns.k_30')}</option>
+                    {responsiblePartyOptions.map((opt: any) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

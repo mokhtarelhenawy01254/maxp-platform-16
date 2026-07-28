@@ -378,6 +378,17 @@ export const APP_REGISTRY: AppDefinition[] = [
     sectionIds: ['legal'],
     category: 'settings',
   },
+  {
+    id: 'service-requests',
+    nameKey: 'sidebar.serviceRequests',
+    descriptionKey: 'appDashboard.app.serviceRequests.description',
+    icon: ClipboardDocumentListIcon,
+    color: 'cyan',
+    bgGradient: 'from-cyan-500 to-teal-500',
+    sectionIds: ['service-requests'],
+    category: 'operations',
+    requiredApps: ['service-request-app'],
+  },
 ];
 
 export const getAppById = (id: string): AppDefinition | undefined => {

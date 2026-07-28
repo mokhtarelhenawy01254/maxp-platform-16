@@ -109,6 +109,7 @@ interface ChatSidebarProps {
   onRetryConversations?: () => void;
   // Bulk actions
   onBulkDelete?: (jids: string[], sessionId: string) => void;
+  onDeleteAll?: (sessionId?: string) => void;
 }
 
 type SidebarFilter = "all" | "unread" | "groups" | "statuses";
@@ -236,6 +237,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   conversationsError,
   onRetryConversations,
   onBulkDelete,
+  onDeleteAll,
 }) => {
   const { t, i18n } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -632,6 +634,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               >
                 <Trash2 className="size-4" />
                 <span>حذف متعدد</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDeleteAll?.()}
+              >
+                <Trash2 className="size-4 text-rose-600" />
+                <span className="text-rose-600">حذف كل المحادثات</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
