@@ -138,6 +138,10 @@ const PreparationFilters = ({
   const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [localProductFilter, setLocalProductFilter] = useState(productFilter);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const productSuggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isInitialMount = useRef(true);
@@ -156,6 +160,16 @@ const PreparationFilters = ({
     }, 300);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (productSuggestionsRef.current && !productSuggestionsRef.current.contains(e.target as Node) && !productInputRef.current?.contains(e.target as Node)) {
+        setShowProductSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const selectedProduct = useMemo(() => {
     if (!productIdFilter) return null;
@@ -356,16 +370,30 @@ const PreparationFilters = ({
                 ref={productSuggestionsRef}
                 className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
               >
-                <option value="">
-                  {productsLoading ? "جاري التحميل..." : "اختر المنتج"}
-                </option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
+                {productsLoading && (
+                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                    جاري التحميل...
+                  </div>
+                )}
+                {!productsLoading && products.length === 0 && (
+                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                    اختر المنتج
+                  </div>
+                )}
+                {!productsLoading && products.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      onProductFilterChange(p.name);
+                      setShowProductSuggestions(false);
+                    }}
+                    className="cursor-pointer px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50"
+                  >
                     {p.name}
-                  </option>
+                  </div>
                 ))}
-              </select>
-            </div>
+              </div>
+            )}
 
             {selectedProductVariants.length > 0 && (
               <div className="relative min-w-[140px]">
