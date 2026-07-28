@@ -45,6 +45,7 @@ describe('WhatsAppMessageHandler.getMessages', () => {
 
         const expectedWhere = {
             sessionId: 'session-1',
+            isHidden: false,
             remoteJid: {
                 in: [
                     '201001234567:12@s.whatsapp.net',
@@ -74,6 +75,7 @@ describe('WhatsAppMessageHandler.getMessages', () => {
             expect.objectContaining({
                 where: {
                     sessionId: 'session-1',
+                    isHidden: false,
                     remoteJid: '14805138174180@lid'
                 }
             })

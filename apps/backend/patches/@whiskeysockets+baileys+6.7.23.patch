@@ -1,0 +1,14 @@
+diff --git a/node_modules/@whiskeysockets/baileys/lib/Utils/history.js b/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
+index def9742..8d90649 100644
+--- a/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
++++ b/node_modules/@whiskeysockets/baileys/lib/Utils/history.js
+@@ -70,7 +70,8 @@ export const processHistoryMessage = (item) => {
+         contacts,
+         messages,
+         syncType: item.syncType,
+-        progress: item.progress
++        progress: item.progress,
++        phoneNumberToLidMappings: item.phoneNumberToLidMappings
+     };
+ };
+ export const downloadAndProcessHistorySyncNotification = async (msg, options) => {

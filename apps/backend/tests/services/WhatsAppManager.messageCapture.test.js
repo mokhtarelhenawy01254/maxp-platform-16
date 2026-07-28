@@ -123,6 +123,19 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.shouldEnableFullHistorySync({ importHistory: false })).toBe(false);
     });
 
+    test('hides history protocol artifacts while keeping real unsupported messages visible', () => {
+        expect(__testing.isHistorySystemMessage({
+            message: { protocolMessage: { type: 5 } }
+        })).toBe(true);
+        expect(__testing.isHistorySystemMessage({
+            messageStubType: 12,
+            message: {}
+        })).toBe(true);
+        expect(__testing.isHistorySystemMessage({
+            message: { pollCreationMessage: { name: 'Poll' } }
+        })).toBe(false);
+    });
+
     test('treats forbidden socket closes as reconnectable instead of relink-required', () => {
         expect(__testing.getDisconnectRecoveryDecision(403, '', false)).toMatchObject({
             isForbidden: true,

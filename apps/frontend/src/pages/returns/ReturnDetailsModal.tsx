@@ -305,6 +305,24 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 </h3>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {t('returns.k_202')}
+                  </label>
+                  <select
+                    value={responsibleParty}
+                    onChange={(e) => {
+                      setResponsibleParty(e.target.value as any);
+                      setReasonId("");
+                    }}
+                    className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                  >
+                    <option value="CUSTOMER">{t('returns.k_203')}</option>
+                    <option value="STORE">{t('returns.k_204')}</option>
+                    <option value="SHIPPING">{t('returns.k_124')}</option>
+                    <option value="OTHER">{t('returns.k_31')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     {t('returns.k_154')}
                   </label>
                   <select
@@ -352,30 +370,6 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       </optgroup>
                     )}
                   </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      {t('returns.k_202')}
-                    </label>
-                    <select
-                      value={responsibleParty}
-                      onChange={(e) => {
-                        setResponsibleParty(e.target.value as any);
-                        setReasonId("");
-                      }}
-                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
-                    >
-                      <option value="CUSTOMER">
-                        {t('returns.k_203')}
-                      </option>
-                      <option value="STORE">
-                        {t('returns.k_204')}
-                      </option>
-                      <option value="SHIPPING">{t('returns.k_124')}</option>
-                      <option value="OTHER">{t('returns.k_31')}</option>
-                    </select>
-                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
@@ -197,9 +197,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    void loadConversations();
-  }, [debouncedSearch, loadConversations]);
+
 
   const loadConversations = useCallback(async () => {
     if (!activeSession) {

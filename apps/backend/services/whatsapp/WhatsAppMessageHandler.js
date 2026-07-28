@@ -993,7 +993,8 @@ async function getMessages(sessionId, remoteJid, options = {}) {
 
         const where = {
             sessionId,
-            remoteJid: remoteJids.length > 1 ? { in: remoteJids } : remoteJids[0]
+            remoteJid: remoteJids.length > 1 ? { in: remoteJids } : remoteJids[0],
+            isHidden: false
         };
 
         if (before) {
@@ -1646,5 +1647,4 @@ module.exports = {
     sendTemplateMessage,
     getMessageTemplate
 };
-
 

@@ -56,7 +56,7 @@
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
     "seed:link-roles": "node prisma/seeds/linkUserRoles.js",
-    "postinstall": "node -e \"try{require('../../patch-telegram-updates.js')}catch(e){console.log('⚠️  patch-telegram-updates skipped:',e.code||e.message)}\""
+    "postinstall": "patch-package && node -e \"try{require('../../patch-telegram-updates.js')}catch(e){console.log('⚠️  patch-telegram-updates skipped:',e.code||e.message)}\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -115,7 +115,8 @@
     "validator": "^13.15.35",
     "web-push": "^3.6.7",
     "winston": "^3.17.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "patch-package": "^8.0.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",

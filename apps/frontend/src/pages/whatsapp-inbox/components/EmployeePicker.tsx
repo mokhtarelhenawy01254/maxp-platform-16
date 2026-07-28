@@ -44,7 +44,7 @@ const accentClasses: Record<string, { border: string; bg: string; avatar: string
 };
 
 const getAccent = (mode: RoutingMode) =>
-  mode === 'NUMBER_OWNER' ? accentClasses.primary : mode === 'SHARED_INBOX' ? accentClasses.tertiary : accentClasses.secondary;
+  mode === 'NUMBER_OWNER' ? accentClasses['primary'] : mode === 'SHARED_INBOX' ? accentClasses['tertiary'] : accentClasses['secondary'];
 
 const EmployeePicker: React.FC<EmployeePickerProps> = ({
   employees,
@@ -164,19 +164,19 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
               onClick={() => onToggleEmployee(employee.id)}
               className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 text-start transition-colors ${
                 isSelected
-                  ? `${accent.border} ${accent.bg} ring-1 ${accent.ring}`
+                  ? `${accent?.border} ${accent?.bg} ring-1 ${accent?.ring}`
                   : 'border-border hover:border-border/80 hover:bg-muted'
               }`}
             >
               <div className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                 isSelected
-                  ? accent.avatar
+                  ? accent?.avatar
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {getInitials(employee.firstName, employee.lastName)}
                 {isSelected && (
                   <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
-                    <Check className={`size-2 ${accent.check}`} />
+                    <Check className={`size-2 ${accent?.check}`} />
                   </span>
                 )}
               </div>

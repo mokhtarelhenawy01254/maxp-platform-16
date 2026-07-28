@@ -167,8 +167,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     setLoadingOrders(true);
     try {
       const response = await apiClient.get(`/customers/${customerId}/orders`);
-      if (response.data?.success) {
-        setCustomerOrders(response.data.data || []);
+      if ((response as any).data?.success) {
+        setCustomerOrders((response as any).data.data || []);
       }
     } catch {
       setCustomerOrders([]);
@@ -364,7 +364,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       return (
         <div className="flex items-center gap-2 text-sm italic">
           {mediaHint(typeUpper)}
-          <span>{copy.chat.mediaHint[typeUpper] || message.type}</span>
+          <span>{(copy.chat.mediaHint as Record<string, string>)[typeUpper] || message.type}</span>
         </div>
       );
     },
@@ -383,7 +383,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       'sky': '#0284c7', 'emerald': '#059669', 'pink': '#db2777',
       'stone': '#78716c',
     };
-    const colorName = colorMatch ? colorMatch[1] : 'gray';
+    const colorName = colorMatch ? colorMatch[1]! : 'gray';
     const color = colorMap[colorName] || '#6b7280';
     return {
       background: `color-mix(in srgb, ${color} 12%, white)`,
@@ -795,7 +795,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                           </div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ ...theme }}>
-                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
+                          {(() => { const info = getStatusDisplay(order.status ?? ''); return (t(info.labelKey) as string) || info.label; })()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
