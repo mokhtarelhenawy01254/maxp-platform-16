@@ -221,7 +221,7 @@ const PreparationFilters = ({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white shadow-sm">
       {/* Top bar: Tabs & Search Controls */}
       <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between">
         
