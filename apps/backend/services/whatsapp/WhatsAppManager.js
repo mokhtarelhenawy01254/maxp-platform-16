@@ -5232,7 +5232,7 @@ module.exports = {
         getFallbackEnableHistorySync: (sessionStatus, metadata) => {
             const meta = typeof metadata === 'string' ? (() => { try { return JSON.parse(metadata); } catch (e) { return {}; } })() : (metadata || {});
             return meta.importHistoryOnLink === true && (sessionStatus === 'QR_PENDING' || sessionStatus === 'CONNECTING');
-        }
+        },
+        normalizeHistoryProgress
     }
 };
-        normalizeHistoryProgress,
