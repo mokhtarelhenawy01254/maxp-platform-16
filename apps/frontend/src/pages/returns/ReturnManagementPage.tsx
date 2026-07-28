@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   returnService,
   ReturnRequest,
@@ -31,13 +31,13 @@ const ReturnManagementPage: React.FC = () => {
 
   // Categories for responsible party names
   const [categories, setCategories] = useState<any[]>([]);
-  const responsiblePartyLabel = (() => {
+  const responsiblePartyLabel = useMemo(() => {
     const m: Record<string, string> = {};
     categories.forEach((cat: any) => {
       if (!m[cat.defaultRole]) m[cat.defaultRole] = cat.name;
     });
     return (role: string) => m[role] || role;
-  })();
+  }, [categories]);
 
   // Filters & Search
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
