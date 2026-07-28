@@ -526,7 +526,26 @@ async function getSessions(req, res) {
 
         const sessionsWithStatus = filteredSessions.map(mapSessionForResponse);
 
-        res.json({ sessions: sessionsWithStatus });
+        // إضافة حالة استيراد history لكل جلسة
+        const sessionIds = filteredSessions.map(s => s.id);
+        let historyImports = [];
+        try {
+            historyImports = await getSharedPrismaClient().whatsAppSessionHistoryImport.findMany({
+                where: { sessionId: { in: sessionIds } },
+                select: { sessionId: true, status: true, lastProgress: true, importedMessages: true, failedAt: true, lastError: true, completedAt: true }
+            });
+        } catch (e) {
+            // model قد لا يكون موجوداً بعد الـ migration
+        }
+        const historyImportMap = {};
+        for (const hi of historyImports) historyImportMap[hi.sessionId] = hi;
+
+        const result = sessionsWithStatus.map(s => ({
+            ...s,
+            historyImport: historyImportMap[s.id] || null
+        }));
+
+        res.json({ sessions: result });
     } catch (error) {
         console.error('❌ Error getting sessions:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب الجلسات' });
@@ -560,6 +579,15 @@ async function getSession(req, res) {
 
         const activeSession = WhatsAppManager.getSession(id);
 
+        // إضافة حالة استيراد history
+        let historyImport = null;
+        try {
+            historyImport = await getSharedPrismaClient().whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId: id },
+                select: { status: true, lastProgress: true, importedMessages: true, chatsCount: true, unsupportedMessages: true, lastError: true, requestedAt: true, startedAt: true, completedAt: true, failedAt: true }
+            });
+        } catch (e) { /* model may not exist yet */ }
+
         res.json({
             session: {
                 ...session,
@@ -570,7 +598,8 @@ async function getSession(req, res) {
                 } : session._count,
                 liveStatus: activeSession?.status || getLiveStatusFromDbStatus(session.status, session.provider),
                 qrCode: session.provider === 'META_CLOUD' ? null : (activeSession?.qrCode || null),
-                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null)
+                pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null),
+                historyImport
             }
         });
     } catch (error) {
