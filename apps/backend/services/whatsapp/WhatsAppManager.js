@@ -355,7 +355,9 @@ async function runHealthCheck() {
                             session.sock = null;
                         }
                         cleanupSessionState(sessionId, session.companyId);
-                        scheduleReconnectSession(sessionId, companyId, {}, 500);
+                        scheduleReconnectSession(sessionId, companyId, {
+                            syncFullHistory: session.syncFullHistory || false
+                        }, 500);
                     } else if (elapsed > HEALTH_CHECK_WARN_THRESHOLD) {
                         WA_LOG.health(sessionId, `Still connecting after ${Math.round(elapsed/1000)}s`);
                     }
@@ -948,7 +950,17 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
 async function shouldProcessMessageUpsertType(type, fromMe, messageId, options = {}) {
     if (type === 'notify') return true;
 
-    if (options.importHistory && type === 'append') return true;
+    // Check duplicate BEFORE importHistory shortcut to avoid bypassing dedup
+    if (options.importHistory && type === 'append') {
+        if (messageId) {
+            const existing = await getSharedPrismaClient().whatsAppMessage.findUnique({
+                where: { messageId },
+                select: { id: true }
+            });
+            if (existing) return false;
+        }
+        return true;
+    }
 
     // Own outgoing messages delivered as append (e.g. from another linked device).
     if (type === 'append' && Boolean(fromMe)) return true;
@@ -3433,7 +3445,7 @@ async function restoreAllSessions() {
                 const weight = session.isDefault ? 3 : 1;
                 const metadata = parseJsonSafely(session.metadata, {});
 
-                const enableHistorySync = session.status === 'QR_PENDING' && metadata.importHistoryOnLink === true;
+                const enableHistorySync = metadata.importHistoryOnLink === true && (session.status === 'QR_PENDING' || session.status === 'CONNECTING');
 
                 WA_LOG.restore(`Restoring session ${session.id} (status=${session.status}, phone=${session.phoneNumber || '?'})`);
 
