@@ -141,6 +141,12 @@ interface Session {
     messages: number;
     contacts: number;
   };
+  historyImport?: {
+    status: string;
+    lastProgress?: number | null;
+    importedMessages?: number;
+    lastError?: string | null;
+  } | null;
 }
 
 interface WorkspaceSettings {
@@ -1499,7 +1505,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
                     <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
-                        {t("whatsappSettings.contacts")}
+                        المحادثات الظاهرة
                       </p>
                       <p className="mt-0.5 text-base font-semibold text-[color:var(--color-foreground)] sm:mt-1 sm:text-lg">
                         {session._count?.contacts || 0}
@@ -1516,6 +1522,21 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-5 sm:gap-2 sm:pt-4">
+                  {session.historyImport && ['REQUESTED', 'IN_PROGRESS'].includes(session.historyImport.status) ? (
+                    <div className="mt-3 rounded-xl border border-sky-300/60 bg-sky-500/10 px-3 py-2 text-xs text-sky-900 dark:border-sky-500/40 dark:text-sky-100">
+                      <div className="flex items-center justify-between gap-3">
+                        <span>جاري مزامنة الرسائل</span>
+                        <span>{Math.round(session.historyImport.lastProgress || 0)}%</span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sky-950/10 dark:bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-sky-500 transition-all"
+                          style={{ width: `${Math.min(Math.max(session.historyImport.lastProgress || 0, 0), 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
                     {isConnectedStatus(statusValue) ? (
                       <Button
                         variant="outline"
@@ -2245,7 +2266,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           tone="success"
         />
         <WhatsAppMetricCard
-          label={t("whatsappSettings.contacts")}
+          label="المحادثات الظاهرة"
           value={linkedContactsCount}
           icon={Users}
           tone="primary"

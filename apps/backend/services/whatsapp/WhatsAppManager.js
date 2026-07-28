@@ -53,6 +53,9 @@ const reconnectTimers = new Map();
 const manualLogoutSessions = new Set();
 const sessionHealthChecks = new Map(); // sessionId -> last health check result
 const companySessionMap = new Map(); // companyId -> Set<sessionId>
+const historySyncQueues = new Map(); // sessionId -> Promise
+const historyMediaSyncJobs = new Map(); // sessionId -> Promise
+const historySyncCompletionRequested = new Set();
 
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
@@ -1434,7 +1437,7 @@ async function createSession(sessionId, companyId, options = {}) {
 
         sock.ev.on('messaging-history.set', async (history) => {
             try {
-                await handleMessagingHistorySet(sessionId, companyId, history, sock);
+                await enqueueMessagingHistorySet(sessionId, companyId, history, sock);
             } catch (err) {
                 console.error(`❌ [WhatsApp] Critical error in messaging-history.set for ${sessionId}:`, err.message);
             }
@@ -1877,6 +1880,65 @@ const historyYield = () => new Promise(resolve => setImmediate(resolve));
 async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     const sessionData = activeSessions.get(sessionId);
     if (!sessionData?.syncFullHistory) {
+function normalizeHistoryProgress(progress) {
+    if (progress === null || progress === undefined || progress === '') return null;
+    const value = Number(progress);
+    if (!Number.isFinite(value)) return null;
+    return Math.max(0, Math.min(value > 1 ? value : value * 100, 100));
+}
+
+function enqueueMessagingHistorySet(sessionId, companyId, history, sock) {
+    const previous = historySyncQueues.get(sessionId) || Promise.resolve();
+    const next = previous
+        .catch(() => {})
+        .then(() => handleMessagingHistorySet(sessionId, companyId, history, sock));
+
+    historySyncQueues.set(sessionId, next);
+    next.finally(() => {
+        if (historySyncQueues.get(sessionId) === next) {
+            historySyncQueues.delete(sessionId);
+            if (historySyncCompletionRequested.delete(sessionId)) {
+                void finalizeHistoryImport(sessionId, companyId).catch((error) => {
+                    console.error(`❌ [HISTORY] Failed to finalize import for ${sessionId}:`, error.message);
+                });
+            }
+        }
+    }).catch(() => {});
+
+    return next;
+}
+
+async function finalizeHistoryImport(sessionId, companyId) {
+    const sessionData = activeSessions.get(sessionId);
+    if (sessionData) sessionData.syncFullHistory = false;
+
+    const prisma = getSharedPrismaClient();
+    const session = await prisma.whatsAppSession.findUnique({
+        where: { id: sessionId },
+        select: { metadata: true }
+    });
+    await prisma.$transaction([
+        prisma.whatsAppSessionHistoryImport.update({
+            where: { sessionId },
+            data: { status: 'COMPLETED', completedAt: new Date(), lastProgress: 100 }
+        }),
+        prisma.whatsAppSession.update({
+            where: { id: sessionId },
+            data: {
+                metadata: JSON.stringify({
+                    ...parseJsonSafely(session?.metadata, {}),
+                    importHistoryOnLink: false,
+                    historySyncedAt: new Date().toISOString()
+                }),
+                updatedAt: new Date()
+            }
+        })
+    ]);
+    void syncPendingHistoryMedia(sessionId, companyId).catch((mediaError) => {
+        console.warn(`⚠️ [HISTORY] Media sync could not start for ${sessionId}:`, mediaError.message);
+    });
+}
+
         return;
     }
 
@@ -1974,7 +2036,7 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         const batchStartTime = Date.now();
 
         try {
-            await handleIncomingMessages(sessionId, companyId, {
+            const batchResult = await handleIncomingMessages(sessionId, companyId, {
                 messages: batch,
                 type: 'append',
                 lidToPhoneMap
@@ -1989,19 +2051,25 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
 
             const batchDuration = Date.now() - batchStartTime;
             cumulativeDurationMs += batchDuration;
-            totalImported += batch.length;
+            totalImported += batchResult.created;
+            totalUnsupported += batchResult.unsupported;
+            totalSkipped += batchResult.skipped;
+            totalFailed += batchResult.failed;
             const progress = totalMessages > 0 ? Math.min(batchEnd / totalMessages, 1.0) : 1.0;
 
             // Aggregate telemetry لكل batch بدل per-message logs
-            console.log(`📊 [HISTORY-BATCH] session=${sessionId} batch=${batchNumber}/${Math.ceil(totalMessages / HISTORY_BATCH_SIZE)} msgs=${batch.length} total=${totalImported}/${totalMessages} progress=${(progress * 100).toFixed(1)}% duration=${batchDuration}ms`);
+            console.log(`📊 [HISTORY-BATCH] session=${sessionId} batch=${batchNumber}/${Math.ceil(totalMessages / HISTORY_BATCH_SIZE)} received=${batch.length} created=${batchResult.created} total=${totalImported} progress=${(progress * 100).toFixed(1)}% duration=${batchDuration}ms`);
 
             // تحديث counters في DB بعد كل batch
             try {
                 await prisma.whatsAppSessionHistoryImport.update({
                     where: { sessionId },
                     data: {
-                        importedMessages: { increment: batch.length },
-                        lastProgress: progress
+                        importedMessages: { increment: batchResult.created },
+                        unsupportedMessages: { increment: batchResult.unsupported },
+                        skippedMessages: { increment: batchResult.skipped },
+                        failedMessages: { increment: batchResult.failed },
+                        lastProgress: normalizeHistoryProgress(history?.progress) ?? (progress * 100)
                     }
                 });
             } catch (counterErr) {
@@ -2034,26 +2102,14 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
             where: { sessionId },
             data: {
                 chatsCount: { increment: importedChats },
-                contactsCount: contacts.length,
-                lastProgress: history?.progress ?? 1.0
+                contactsCount: { increment: importedChats },
+                lastProgress: history?.isLatest ? 100 : (normalizeHistoryProgress(history?.progress) ?? 0)
             }
         });
 
         if (history?.isLatest) {
-            sessionData.syncFullHistory = false;
-            console.log(`✅ [HISTORY] Session ${sessionId} history import completed: ${totalMessages} msgs in ${batchNumber} batches, ${cumulativeDurationMs}ms total`);
-            await prisma.whatsAppSessionHistoryImport.update({
-                where: { sessionId },
-                data: { status: 'COMPLETED', completedAt: new Date() }
-            });
-            await prisma.whatsAppSession.update({
-                where: { id: sessionId },
-                data: { metadata: {
-                    ...parseJsonSafely((await prisma.whatsAppSession.findUnique({ where: { id: sessionId }, select: { metadata: true } }))?.metadata, {}),
-                    importHistoryOnLink: false,
-                    historySyncedAt: new Date().toISOString()
-                }, updatedAt: new Date() }
-            });
+            console.log(`✅ [HISTORY] Session ${sessionId} final batch received: ${totalMessages} msgs in ${batchNumber} batches, ${cumulativeDurationMs}ms total`);
+            historySyncCompletionRequested.add(sessionId);
         }
     } catch (error) {
         console.error(`❌ [HISTORY] Failed to update import state for ${sessionId}:`, error.message);
@@ -2078,8 +2134,9 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
     const io = getIO();
     const importHistory = Boolean(options.importHistory);
 
-    if (!Array.isArray(messages) || messages.length === 0) return;
+    if (!Array.isArray(messages) || messages.length === 0) return result;
 
+    const result = { created: 0, unsupported: 0, skipped: 0, failed: 0 };
     for (const msg of messages) {
         try {
             let remoteJid = msg.key.remoteJid;
@@ -2092,15 +2149,18 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 continue;
             }
 
+                result.skipped++;
             if (!(await shouldProcessMessageUpsertType(type, fromMe, messageId, { importHistory }))) {
                 continue;
             }
 
+                result.skipped++;
             if (!shouldProcessIncomingMessage(msg)) {
                 console.warn(`⚠️ Skipping WhatsApp message with future timestamp in session ${sessionId}`);
                 continue;
             }
 
+                result.skipped++;
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
@@ -2207,7 +2267,9 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     }
                 }
                 continue;
+                        result.unsupported += isNew ? 1 : 0;
             }
+                    result.created += isNew ? 1 : 0;
 
             const messageStatusFromPayload = getMessageStatusFromBaileysStatus(msg.status);
             const initialMessageStatus = messageStatusFromPayload || (fromMe ? 'SENT' : 'DELIVERED');
@@ -2261,6 +2323,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
             if (messageStatusFromPayload) {
                 const updatedCount = await updateMessageDeliveryStatus(messageId, messageStatusFromPayload);
+            result.created += isNewMessage ? 1 : 0;
                 if (updatedCount > 0) {
                     savedMessage.status = messageStatusFromPayload;
                 }
@@ -2568,10 +2631,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             console.error(`❌ Error processing message:`, error);
             await logEvent(sessionId, companyId, 'message_error', { error: error.message }, 'error');
         }
+            result.failed++;
     }
 }
 
 /**
+
+    return result;
  * معالجة تحديثات الحالة (Status Updates)
  */
 async function handleStatusUpdate(sessionId, companyId, msg, sock) {
@@ -3312,6 +3378,137 @@ async function sendMediaMessage(sessionId, to, media, options = {}) {
     const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
 
     const result = await session.sock.sendMessage(jid, media, options);
+
+async function requestHistorySync(sessionId, companyId) {
+    const prisma = getSharedPrismaClient();
+    const session = await prisma.whatsAppSession.findFirst({
+        where: { id: sessionId, companyId },
+        select: { id: true, provider: true, metadata: true }
+    });
+
+    if (!session) throw new Error('Session not found');
+    if (session.provider === 'META_CLOUD') throw new Error('History sync is only available for Baileys sessions');
+
+    const outcome = await prisma.$transaction(async (tx) => {
+        const current = await tx.whatsAppSessionHistoryImport.findUnique({
+            where: { sessionId },
+            select: { status: true }
+        });
+        if (current && ['REQUESTED', 'IN_PROGRESS'].includes(current.status)) {
+            return { alreadyRunning: true, status: current.status };
+        }
+
+        const metadata = parseJsonSafely(session.metadata, {});
+        metadata.importHistoryOnLink = true;
+
+        await tx.whatsAppSession.update({
+            where: { id: sessionId },
+            data: { metadata: JSON.stringify(metadata), updatedAt: new Date() }
+        });
+        await tx.whatsAppSessionHistoryImport.upsert({
+            where: { sessionId },
+            create: { sessionId, status: 'REQUESTED', requestedAt: new Date() },
+            update: {
+                status: 'REQUESTED',
+                requestedAt: new Date(),
+                startedAt: null,
+                completedAt: null,
+                failedAt: null,
+                lastError: null,
+                importedMessages: 0,
+                unsupportedMessages: 0,
+                skippedMessages: 0,
+                failedMessages: 0,
+                chatsCount: 0,
+                contactsCount: 0,
+                lastProgress: 0
+            }
+        });
+        return { alreadyRunning: false, status: 'REQUESTED' };
+    });
+
+    if (!outcome.alreadyRunning) {
+        await requestReconnect(sessionId, companyId, 'manual_history_sync', {}, 250);
+    }
+
+    return outcome;
+}
+
+async function syncPendingHistoryMedia(sessionId, companyId) {
+    if (historyMediaSyncJobs.has(sessionId)) {
+        return { alreadyRunning: true };
+    }
+
+    const job = (async () => {
+        const session = activeSessions.get(sessionId);
+        if (!session || session.status !== 'connected') {
+            throw new Error('Session is not connected');
+        }
+
+        const prisma = getSharedPrismaClient();
+        const limit = Math.max(1, Math.min(Number(process.env.WHATSAPP_HISTORY_MEDIA_SYNC_LIMIT || 1000), 2000));
+        const concurrency = Math.max(1, Math.min(Number(process.env.WHATSAPP_HISTORY_MEDIA_SYNC_CONCURRENCY || 2), 4));
+        const pending = await prisma.whatsAppMessage.findMany({
+            where: {
+                sessionId,
+                mediaUrl: null,
+                messageType: { in: ['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'STICKER'] }
+            },
+            select: { id: true, metadata: true },
+            orderBy: { timestamp: 'asc' },
+            take: limit
+        });
+        const WhatsAppMediaHandler = require('./WhatsAppMediaHandler');
+        let downloaded = 0;
+        let failed = 0;
+
+        for (let index = 0; index < pending.length; index += concurrency) {
+            const group = pending.slice(index, index + concurrency);
+            const outcomes = await Promise.all(group.map(async (storedMessage) => {
+                const rawMessage = parseJsonSafely(storedMessage.metadata, null);
+                if (!rawMessage) return false;
+
+                try {
+                    const media = await WhatsAppMediaHandler.downloadMedia(rawMessage, sessionId);
+                    if (!media) return false;
+                    await prisma.whatsAppMessage.update({
+                        where: { id: storedMessage.id },
+                        data: {
+                            mediaUrl: media.url,
+                            mediaType: media.type,
+                            mediaMimeType: media.mimetype,
+                            mediaFileName: media.fileName,
+                            mediaSize: media.size
+                        }
+                    });
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }));
+
+            downloaded += outcomes.filter(Boolean).length;
+            failed += outcomes.filter((outcome) => !outcome).length;
+            await historyYield();
+        }
+
+        getIO()?.to(`company_${companyId}`).emit('whatsapp:history_media_sync', {
+            sessionId,
+            total: pending.length,
+            downloaded,
+            failed
+        });
+        await logEvent(sessionId, companyId, 'history_media_sync_finished', { total: pending.length, downloaded, failed });
+        return { total: pending.length, downloaded, failed };
+    })();
+
+    historyMediaSyncJobs.set(sessionId, job);
+    try {
+        return await job;
+    } finally {
+        historyMediaSyncJobs.delete(sessionId);
+    }
+}
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -4955,6 +5152,8 @@ module.exports = {
     getBusinessHours,
     setBusinessHours,
     getProfile,
+    requestHistorySync,
+    syncPendingHistoryMedia,
     syncProfile,
 
     // Broadcast
@@ -5036,3 +5235,4 @@ module.exports = {
         }
     }
 };
+        normalizeHistoryProgress,

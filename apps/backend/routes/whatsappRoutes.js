@@ -242,6 +242,9 @@ router.delete('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('wh
 // بدء الاتصال بجلسة
 router.post('/sessions/:id/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.connectSession);
 
+// طلب مزامنة الرسائل التاريخية يدوياً
+router.post('/sessions/:id/history-sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.requestHistorySync);
+
 // قطع الاتصال بجلسة
 router.post('/sessions/:id/disconnect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.disconnectSession);
 

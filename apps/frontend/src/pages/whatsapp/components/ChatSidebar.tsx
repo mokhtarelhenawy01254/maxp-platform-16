@@ -92,6 +92,8 @@ interface ChatSidebarProps {
   onOpenNewGroup: () => void;
   onOpenPrivacySettings: () => void;
   onOpenBusinessProfile: () => void;
+  onSyncHistory: () => void;
+  isSyncingHistory?: boolean;
   onPinChat: (contact: Contact) => void;
   onArchiveChat: (contact: Contact) => void;
   onDeleteChat: (contact: Contact) => void;
@@ -218,6 +220,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onOpenNewGroup,
   onOpenPrivacySettings,
   onOpenBusinessProfile,
+  onSyncHistory,
+  isSyncingHistory = false,
   onPinChat,
   onArchiveChat,
   onDeleteChat,
@@ -599,6 +603,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               >
                 <Users className="size-4" />
                 <span>{t("whatsapp.sidebar.newGroup")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onSyncHistory}
+                disabled={!selectedSession || selectedSession === 'all' || isSyncingHistory}
+              >
+                <RefreshCw className={cn("size-4", isSyncingHistory && "animate-spin")} />
+                <span>{isSyncingHistory ? 'جاري طلب المزامنة' : 'مزامنة الرسائل'}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onOpenBroadcast}
