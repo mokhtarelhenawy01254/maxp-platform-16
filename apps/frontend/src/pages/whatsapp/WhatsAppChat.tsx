@@ -214,6 +214,25 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Session state
   const [selectedSession, setSelectedSession] = useState<string>('');
+  const [isSyncingHistory, setIsSyncingHistory] = useState(false);
+
+  const handleSyncHistory = async () => {
+    if (!selectedSession || selectedSession === 'all' || isSyncingHistory) return;
+
+    try {
+      setIsSyncingHistory(true);
+      const response = await api.post(`/whatsapp/sessions/${selectedSession}/history-sync`);
+      const message = response.data?.alreadyRunning
+        ? 'المزامنة تعمل بالفعل لهذه الجلسة'
+        : 'تم طلب المزامنة. سيظهر التقدم في إعدادات واتساب.';
+      toast.success(message);
+      await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'sessions'] });
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'تعذر طلب مزامنة الرسائل'));
+    } finally {
+      setIsSyncingHistory(false);
+    }
+  };
 
   // Contact state
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -1952,6 +1971,8 @@ const WhatsAppChatContent: React.FC = () => {
         onBlockContact={handleBlockContact}
         onMuteChat={handleMuteChat}
         onMarkAsRead={handleMarkUnread}
+        onSyncHistory={handleSyncHistory}
+        isSyncingHistory={isSyncingHistory}
         onLoadMore={fetchNextConversationsPage}
         conversationsError={conversationsError}
         onRetryConversations={() => refetchConversations()}

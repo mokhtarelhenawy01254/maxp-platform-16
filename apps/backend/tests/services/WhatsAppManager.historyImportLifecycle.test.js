@@ -261,6 +261,13 @@ describe('WhatsAppManager history import lifecycle', () => {
         expect(true).toBe(true);
     });
 
+    test('history progress is normalized to one percentage scale', () => {
+        expect(__testing.normalizeHistoryProgress(0.76)).toBe(76);
+        expect(__testing.normalizeHistoryProgress(76)).toBe(76);
+        expect(__testing.normalizeHistoryProgress(1)).toBe(100);
+        expect(__testing.normalizeHistoryProgress(null)).toBeNull();
+    });
+
     // ── 19. Sprint 3: batch failure → FAILED, no COMPLETED ──
     test('batch failure transitions to FAILED, not COMPLETED', async () => {
         const sid = await seed('IN_PROGRESS');

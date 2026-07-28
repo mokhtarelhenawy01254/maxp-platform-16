@@ -237,8 +237,13 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
             include: {
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -566,8 +571,13 @@ async function getSession(req, res) {
             include: {
                 _count: {
                     select: {
-                        whatsAppMessages: true,
-                        whatsAppContacts: true
+                        whatsAppMessages: { where: { isHidden: false } },
+                        whatsAppContacts: {
+                            where: {
+                                totalMessages: { gt: 0 },
+                                NOT: { jid: { contains: '@lid' } }
+                            }
+                        }
                     }
                 }
             }
@@ -813,6 +823,30 @@ async function connectSession(req, res) {
     } catch (error) {
         console.error('❌ Error connecting session:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء الاتصال' });
+    }
+}
+
+async function requestHistorySync(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const result = await WhatsAppManager.requestHistorySync(id, companyId);
+
+        res.status(result.alreadyRunning ? 200 : 202).json({
+            success: true,
+            alreadyRunning: result.alreadyRunning,
+            historyImport: { status: result.status },
+            message: result.alreadyRunning
+                ? 'المزامنة تعمل بالفعل لهذه الجلسة'
+                : 'تم طلب مزامنة الرسائل. ستبدأ إعادة الاتصال الآمنة الآن.'
+        });
+    } catch (error) {
+        console.error('❌ Error requesting WhatsApp history sync:', error);
+        res.status(error.message === 'Session not found' ? 404 : 400).json({
+            error: error.message === 'History sync is only available for Baileys sessions'
+                ? 'المزامنة اليدوية للسجل متاحة لجلسات Baileys فقط'
+                : 'تعذر بدء مزامنة الرسائل'
+        });
     }
 }
 
@@ -4082,6 +4116,7 @@ module.exports = {
     updateSession,
     deleteSession,
     connectSession,
+    requestHistorySync,
     disconnectSession,
 
     // Conversations & Messages
@@ -4855,5 +4890,3 @@ async function facebookEmbeddedConnect(req, res) {
         res.status(500).json({ error: errorMsg });
     }
 }
-
-
