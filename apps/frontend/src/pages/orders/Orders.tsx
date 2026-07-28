@@ -1699,7 +1699,7 @@ const Orders: React.FC = () => {
       !window.confirm(
         t("orders.confirmBulkUpdate", {
           count: selectedOrders.length,
-          status: getStatusText(normalizedStatus),
+          status: getStatusDisplay(normalizedStatus).label,
         }),
       )
     )
@@ -1993,7 +1993,7 @@ const Orders: React.FC = () => {
       if (!exists) {
         list.push({
           code: activeFilter,
-          name: getStatusText(activeFilter),
+          name: getStatusDisplay(activeFilter).label,
         });
       }
     }

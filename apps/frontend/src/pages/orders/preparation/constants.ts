@@ -34,7 +34,7 @@ export const SHORTAGE_HOLD_METADATA_KEY = "preparationShortageHold";
 export const PREPARATION_STATUS_METADATA_KEY = "preparationStatus";
 
 export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
-  "PENDING", "DRAFT", "SCHEDULED",
+  "DRAFT", "SCHEDULED",
   "SHIPPED", "DELIVERED",
   "CANCELLED", "RETURNED",
   "REFUNDED", "PARTIALLY_REFUNDED",

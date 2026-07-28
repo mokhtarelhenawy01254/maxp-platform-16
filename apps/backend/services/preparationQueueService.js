@@ -47,7 +47,7 @@ const PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY = {
 };
 const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES].filter(
   (status) => status !== 'TRASH'
-);
+).concat(['PENDING', 'DRAFT', 'SCHEDULED', 'TRASH_ORDER', 'EXCHANGED', 'PARTIALLY_DELIVERED']);
 const PREPARATION_BATCH_SIZE = 150;
 
 const toPreparationUpper = (value) => String(value || '').trim().toUpperCase();
