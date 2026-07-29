@@ -179,7 +179,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
   const loadData = async (silent = false) => {
     if (!activeRange.start || !activeRange.end) return;
     if (new Date(activeRange.end) < new Date(activeRange.start)) {
-      tToast.error("whatsapp_WhatsAppConversationAnalytics.msg_6297");
+      tToast.error("WhatsAppConversationAnalytics.msg_6297");
       return;
     }
     if (!silent) setLoading(true);
@@ -193,7 +193,7 @@ const WhatsAppConversationAnalytics: React.FC<{ companyId?: string }> = ({ compa
       );
       setData(res.data as AnalyticsResponse);
     } catch {
-      tToast.error("whatsapp_WhatsAppConversationAnalytics.failed_load_eab0");
+      tToast.error("WhatsAppConversationAnalytics.failed_load_eab0");
     } finally {
       setLoading(false);
       setRefreshing(false);

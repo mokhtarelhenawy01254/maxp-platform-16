@@ -105,7 +105,7 @@ const CreatePromotion: React.FC = () => {
         }
       } catch (error: any) {
         console.error("❌ Error fetching data:", error);
-        tToast.error("hr_CreatePromotion.failed_load_a9d9");
+        tToast.error("CreatePromotion.failed_load_a9d9");
       }
     };
     fetchData();
@@ -146,13 +146,13 @@ const CreatePromotion: React.FC = () => {
       setLoading(true);
 
       if (!data.employeeId) {
-        tToast.error("hr_CreatePromotion.msg_c6e2");
+        tToast.error("CreatePromotion.msg_c6e2");
         setLoading(false);
         return;
       }
 
       if (!data.toPositionName) {
-        tToast.error("hr_CreatePromotion.msg_754a");
+        tToast.error("CreatePromotion.msg_754a");
         setLoading(false);
         return;
       }
@@ -164,7 +164,7 @@ const CreatePromotion: React.FC = () => {
         data.fromPositionName.trim().toLowerCase() ===
           data.toPositionName.trim().toLowerCase()
       ) {
-        tToast.error("hr_CreatePromotion.msg_1de3");
+        tToast.error("CreatePromotion.msg_1de3");
         setLoading(false);
         return;
       }
@@ -178,7 +178,7 @@ const CreatePromotion: React.FC = () => {
       };
 
       await api.post("/hr/promotions", payload);
-      tToast.success("hr_CreatePromotion.success_create_e6da");
+      tToast.success("CreatePromotion.success_create_e6da");
       navigate("/hr/promotions");
     } catch (error: any) {
       console.error("❌ Error creating promotion:", error);

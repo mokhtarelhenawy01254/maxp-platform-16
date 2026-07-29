@@ -74,7 +74,7 @@ const SavedAudiences: React.FC = () => {
       setAudiences(data || []);
     } catch (error) {
       console.error("Error loading audiences:", error);
-      tToast.error("advertising_SavedAudiences.failed_load_70fc");
+      tToast.error("SavedAudiences.failed_load_70fc");
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ const SavedAudiences: React.FC = () => {
 
   const handleCreate = async () => {
     if (!newAudience.name.trim()) {
-      tToast.error("advertising_SavedAudiences.please_name_1f06");
+      tToast.error("SavedAudiences.please_name_1f06");
       return;
     }
 
@@ -120,7 +120,7 @@ const SavedAudiences: React.FC = () => {
       }
       await facebookAdsService.createSavedAudience(audiencePayload);
 
-      tToast.success("advertising_SavedAudiences.success_create_a80c");
+      tToast.success("SavedAudiences.success_create_a80c");
       setShowCreateModal(false);
       setNewAudience({
         name: "",
@@ -145,7 +145,7 @@ const SavedAudiences: React.FC = () => {
 
     try {
       await facebookAdsService.deleteSavedAudience(id);
-      tToast.success("advertising_SavedAudiences.success_delete_e94c");
+      tToast.success("SavedAudiences.success_delete_e94c");
       setAudiences((prev) => prev.filter((a) => a.id !== id));
     } catch (error: any) {
       console.error("Error deleting audience:", error);

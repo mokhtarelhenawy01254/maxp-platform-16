@@ -70,7 +70,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       setLabels(response.data.labels || []);
     } catch (error) {
       console.error("Error loading labels:", error);
-      tToast.error("components_LabelsDialog.failed_load_d47f");
+      tToast.error("LabelsDialog.failed_load_d47f");
     } finally {
       setLoading(false);
     }
@@ -94,11 +94,11 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         name: newLabelName,
         color: selectedColor,
       });
-      tToast.success("components_LabelsDialog.success_create_d4d4");
+      tToast.success("LabelsDialog.success_create_d4d4");
       setNewLabelName("");
       await loadLabels();
     } catch {
-      tToast.error("components_LabelsDialog.failed_create_739e");
+      tToast.error("LabelsDialog.failed_create_739e");
     }
   };
 
@@ -109,10 +109,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 
     try {
       await api.delete(`/whatsapp/labels/${labelId}`, { data: { sessionId } });
-      tToast.success("components_LabelsDialog.success_delete_eff8");
+      tToast.success("LabelsDialog.success_delete_eff8");
       await loadLabels();
     } catch {
-      tToast.error("components_LabelsDialog.failed_delete_2c9b");
+      tToast.error("LabelsDialog.failed_delete_2c9b");
     }
   };
 
@@ -140,7 +140,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       }
       onLabelsUpdated?.();
     } catch {
-      tToast.error("components_LabelsDialog.failed_update_2bc4");
+      tToast.error("LabelsDialog.failed_update_2bc4");
       setAssignedLabels(
         isAssigned
           ? [...assignedLabels, labelId]

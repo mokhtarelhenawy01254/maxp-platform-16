@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -175,7 +176,7 @@ const MedicalLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=medical&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_MedicalLanding.msg_9147")); return; }
+    if (!bundle) { alert(i18n.t("MedicalLanding.msg_9147")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -188,11 +189,11 @@ const MedicalLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin");
       } else {
-        alert(data.message || i18n.t("landing_MedicalLanding.msg_da67"));
+        alert(data.message || i18n.t("MedicalLanding.msg_da67"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_MedicalLanding.msg_94ce"));
+      alert(i18n.t("MedicalLanding.msg_94ce"));
       setSubscribing(false);
     }
   };
@@ -203,7 +204,7 @@ const MedicalLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=medical&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_MedicalLanding.msg_9147")); return; }
+    if (!bundle) { alert(i18n.t("MedicalLanding.msg_9147")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -216,11 +217,11 @@ const MedicalLanding: React.FC = () => {
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
       } else {
-        alert(data.message || i18n.t("landing_MedicalLanding.failed_create_2bac"));
+        alert(data.message || i18n.t("MedicalLanding.failed_create_2bac"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_MedicalLanding.msg_94ce"));
+      alert(i18n.t("MedicalLanding.msg_94ce"));
       setSubscribing(false);
     }
   };

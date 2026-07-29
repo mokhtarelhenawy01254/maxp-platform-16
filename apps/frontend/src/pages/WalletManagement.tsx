@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../utils/i18n-toast";
 import {
   AlertCircle,
   Building2,
@@ -1430,7 +1430,7 @@ const WalletManagement: React.FC = () => {
 
   const handleSaveWallet = async () => {
     if (!walletForm.name.trim() || !walletForm.number.trim()) {
-      tToast.error("WalletManagement_WalletManagement.msg_9034");
+      tToast.error("WalletManagement.msg_9034");
       return;
     }
 
@@ -1445,10 +1445,10 @@ const WalletManagement: React.FC = () => {
             isActive: editingWallet.isActive,
           },
         );
-        tToast.success("WalletManagement_WalletManagement.success_update_c3e3");
+        tToast.success("WalletManagement.success_update_c3e3");
       } else {
         await apiClient.post("/wallet-payment/admin/wallet-numbers", walletForm);
-        tToast.success("WalletManagement_WalletManagement.msg_1efc");
+        tToast.success("WalletManagement.msg_1efc");
       }
 
       setWalletDialogOpen(false);
@@ -1500,7 +1500,7 @@ const WalletManagement: React.FC = () => {
       await apiClient.delete(
         `/wallet-payment/admin/wallet-numbers/${walletPendingDelete.id}`,
       );
-      tToast.success("WalletManagement_WalletManagement.success_delete_cda7");
+      tToast.success("WalletManagement.success_delete_cda7");
       setWalletPendingDelete(null);
       await fetchWalletNumbers();
     } catch (error: unknown) {
@@ -1549,12 +1549,12 @@ const WalletManagement: React.FC = () => {
     const bonus = fundsForm.bonus ? Number(fundsForm.bonus) : 0;
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      tToast.error("WalletManagement_WalletManagement.msg_834a");
+      tToast.error("WalletManagement.msg_834a");
       return;
     }
 
     if (!Number.isFinite(bonus) || bonus < 0) {
-      tToast.error("WalletManagement_WalletManagement.msg_2a19");
+      tToast.error("WalletManagement.msg_2a19");
       return;
     }
 
@@ -1567,7 +1567,7 @@ const WalletManagement: React.FC = () => {
         bonus,
         notes: fundsForm.notes,
       });
-      tToast.success("WalletManagement_WalletManagement.success_add_ca6f");
+      tToast.success("WalletManagement.success_add_ca6f");
       setAddFundsDialogOpen(false);
       setSelectedCompany(null);
       setFundsForm(INITIAL_FUNDS_FORM);

@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../../utils/i18n-toast";
 
 interface AssetRequest {
   id: string;
@@ -96,7 +96,7 @@ const AssetRequestsSection: React.FC = () => {
 
   const handleCreateRequest = async () => {
     if (!newRequest.reason) {
-      tToast.error("hr_AssetRequestsSection.please_reason_9729");
+      tToast.error("AssetRequestsSection.please_reason_9729");
       return;
     }
     try {
@@ -106,12 +106,12 @@ const AssetRequestsSection: React.FC = () => {
         newRequest,
       );
       if (response.data.success) {
-        tToast.success("hr_AssetRequestsSection.success_send_b0f3");
+        tToast.success("AssetRequestsSection.success_send_b0f3");
         setShowRequestModal(false);
         fetchRequests();
       }
     } catch (error) {
-      tToast.error("hr_AssetRequestsSection.failed_send_3330");
+      tToast.error("AssetRequestsSection.failed_send_3330");
     }
   };
 
@@ -133,7 +133,7 @@ const AssetRequestsSection: React.FC = () => {
         fetchRequests();
       }
     } catch (error) {
-      tToast.error("hr_AssetRequestsSection.failed_update_e7e1");
+      tToast.error("AssetRequestsSection.failed_update_e7e1");
     }
   };
 

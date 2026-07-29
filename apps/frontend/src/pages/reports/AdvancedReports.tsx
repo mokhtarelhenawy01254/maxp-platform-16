@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import {
   ChartBarIcon,
   DocumentChartBarIcon,
@@ -268,12 +269,12 @@ const AdvancedReports: React.FC = () => {
       );
 
       if (response.data.success) {
-        alert(i18n.t("reports_AdvancedReports.success_create_fc99"));
+        alert(i18n.t("AdvancedReports.success_create_fc99"));
         console.log("Report data:", response.data.data);
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      alert(i18n.t("reports_AdvancedReports.failed_create_649d"));
+      alert(i18n.t("AdvancedReports.failed_create_649d"));
     }
   };
 

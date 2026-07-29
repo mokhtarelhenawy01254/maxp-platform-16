@@ -78,22 +78,22 @@ const AdvantagePlusShopping: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      tToast.error("advertising_AdvantagePlusShopping.please_name_2fae");
+      tToast.error("AdvantagePlusShopping.please_name_2fae");
       return;
     }
 
     if (!formData.pixelId.trim()) {
-      tToast.error("advertising_AdvantagePlusShopping.msg_d0eb");
+      tToast.error("AdvantagePlusShopping.msg_d0eb");
       return;
     }
 
     if (formData.budgetAmount < 1) {
-      tToast.error("advertising_AdvantagePlusShopping.msg_fa84");
+      tToast.error("AdvantagePlusShopping.msg_fa84");
       return;
     }
 
     if (formData.countryTargeting.length === 0) {
-      tToast.error("advertising_AdvantagePlusShopping.msg_9ca6");
+      tToast.error("AdvantagePlusShopping.msg_9ca6");
       return;
     }
 
@@ -112,7 +112,7 @@ const AdvantagePlusShopping: React.FC = () => {
         campaignPayload,
       );
 
-      tToast.success("advertising_AdvantagePlusShopping.success_create_aae3");
+      tToast.success("AdvantagePlusShopping.success_create_aae3");
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error creating campaign:", error);

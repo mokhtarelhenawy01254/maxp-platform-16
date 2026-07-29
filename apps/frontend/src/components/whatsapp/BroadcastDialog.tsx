@@ -87,12 +87,12 @@ const BroadcastDialog: React.FC<BroadcastDialogProps> = ({
 
   const handleSendBroadcast = async () => {
     if (selectedContacts.length === 0) {
-      tToast.warning("components_BroadcastDialog.msg_995e");
+      tToast.warning("BroadcastDialog.msg_995e");
       return;
     }
 
     if (!message.trim()) {
-      tToast.warning("components_BroadcastDialog.msg_7386");
+      tToast.warning("BroadcastDialog.msg_7386");
       return;
     }
 

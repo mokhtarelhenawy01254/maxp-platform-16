@@ -149,11 +149,11 @@ const CompanyOrdersDetails: React.FC = () => {
         setTotalPages(response.data.data.pagination.totalPages);
         setTotal(response.data.data.pagination.total);
       } else {
-        tToast.error("owner_CompanyOrdersDetails.failed_load_e304");
+        tToast.error("CompanyOrdersDetails.failed_load_e304");
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
-      tToast.error("owner_CompanyOrdersDetails.failed_load_e2ac");
+      tToast.error("CompanyOrdersDetails.failed_load_e2ac");
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +161,7 @@ const CompanyOrdersDetails: React.FC = () => {
 
   const handleExport = () => {
     if (orders.length === 0) {
-      tToast.error("owner_CompanyOrdersDetails.msg_075a");
+      tToast.error("CompanyOrdersDetails.msg_075a");
       return;
     }
 
@@ -200,7 +200,7 @@ const CompanyOrdersDetails: React.FC = () => {
     link.download = `orders-${company?.name}-${startDate}-to-${endDate}.csv`;
     link.click();
 
-    tToast.success("owner_CompanyOrdersDetails.msg_9ac6");
+    tToast.success("CompanyOrdersDetails.msg_9ac6");
   };
 
   const toggleOrderExpand = (orderId: string) => {

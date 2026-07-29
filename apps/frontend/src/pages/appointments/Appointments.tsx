@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -206,13 +207,13 @@ const Appointments: React.FC = () => {
       }
 
       if (!newAppointment.customerName) {
-        alert(i18n.t("appointments_Appointments.please_name_4ff9"));
+        alert(i18n.t("Appointments.please_name_4ff9"));
         return;
       }
 
       const token = getAccessToken();
       if (!token) {
-        alert(i18n.t("appointments_Appointments.msg_6355"));
+        alert(i18n.t("Appointments.msg_6355"));
         return;
       }
 
@@ -244,7 +245,7 @@ const Appointments: React.FC = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          alert(i18n.t("appointments_Appointments.msg_54f2"));
+          alert(i18n.t("Appointments.msg_54f2"));
           return;
         }
         const errorData = await response.json().catch(() => ({}));
@@ -274,9 +275,9 @@ const Appointments: React.FC = () => {
           meetingLink: "",
           notes: "",
         });
-        alert(i18n.t("appointments_Appointments.msg_9ec8"));
+        alert(i18n.t("Appointments.msg_9ec8"));
       } else {
-        alert(data.error || data.message || i18n.t("appointments_Appointments.msg_0e7d"));
+        alert(data.error || data.message || i18n.t("Appointments.msg_0e7d"));
       }
     } catch (error: any) {
       console.error("Error creating appointment:", error);
@@ -292,7 +293,7 @@ const Appointments: React.FC = () => {
     try {
       const token = getAccessToken();
       if (!token) {
-        alert(i18n.t("appointments_Appointments.msg_6355"));
+        alert(i18n.t("Appointments.msg_6355"));
         return;
       }
 
@@ -307,7 +308,7 @@ const Appointments: React.FC = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          alert(i18n.t("appointments_Appointments.msg_54f2"));
+          alert(i18n.t("Appointments.msg_54f2"));
           return;
         }
         const errorData = await response.json().catch(() => ({}));
@@ -322,9 +323,9 @@ const Appointments: React.FC = () => {
         if (selectedAppointment && selectedAppointment.id === appointmentId) {
           setSelectedAppointment(data.data);
         }
-        alert(i18n.t("appointments_Appointments.success_update_status_c132"));
+        alert(i18n.t("Appointments.success_update_status_c132"));
       } else {
-        alert(data.error || data.message || i18n.t("appointments_Appointments.failed_update_fa54"));
+        alert(data.error || data.message || i18n.t("Appointments.failed_update_fa54"));
       }
     } catch (error: any) {
       console.error("Error updating appointment status:", error);

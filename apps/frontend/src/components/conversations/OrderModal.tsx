@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import {
   XMarkIcon,
@@ -166,11 +167,11 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("components_OrderModal.msg_fe97")));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModal.msg_fe97")));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      alert(i18n.t("components_OrderModal.error_error_430a"));
+      alert(i18n.t("OrderModal.error_error_430a"));
     } finally {
       setCreatingOrder(false);
     }

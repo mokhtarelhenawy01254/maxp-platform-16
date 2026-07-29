@@ -156,7 +156,7 @@ const AffiliateCommission: React.FC = () => {
     const availablePayoutAmount = toNumber(affiliate?.pendingEarnings);
 
     if (!payoutAmount || !Number.isFinite(requestedAmount) || requestedAmount <= 0) {
-      tToast.error("affiliates_AffiliateCommission.msg_af1c");
+      tToast.error("AffiliateCommission.msg_af1c");
       return;
     }
 
@@ -166,7 +166,7 @@ const AffiliateCommission: React.FC = () => {
     }
 
     if (Math.abs(requestedAmount - availablePayoutAmount) > 0.009) {
-      tToast.error("affiliates_AffiliateCommission.msg_208d");
+      tToast.error("AffiliateCommission.msg_208d");
       return;
     }
 
@@ -186,7 +186,7 @@ const AffiliateCommission: React.FC = () => {
       });
 
       if (response.data.success) {
-        tToast.success("affiliates_AffiliateCommission.success_send_448b");
+        tToast.success("AffiliateCommission.success_send_448b");
         setShowPayoutModal(false);
         setPayoutAmount("");
         setPaymentDetails("");

@@ -160,12 +160,12 @@ const PublicAffiliateRegister: React.FC = () => {
     }
 
     if (isProgramInactive) {
-      tToast.error("public_PublicAffiliateRegister.msg_95a1");
+      tToast.error("PublicAffiliateRegister.msg_95a1");
       return;
     }
 
     if (slug && !company) {
-      toast.error(companyError || i18n.t("public_PublicAffiliateRegister.msg_1eeb"));
+      toast.error(companyError || i18n.t("PublicAffiliateRegister.msg_1eeb"));
       return;
     }
 

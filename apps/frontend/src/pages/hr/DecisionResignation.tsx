@@ -48,7 +48,7 @@ const DecisionResignation = () => {
       setResignation(response.data.resignation);
     } catch (error) {
       console.error("Error fetching resignation:", error);
-      tToast.error("hr_DecisionResignation.failed_load_753d");
+      tToast.error("DecisionResignation.failed_load_753d");
       navigate("/hr/resignations");
     } finally {
       setLoading(false);

@@ -293,7 +293,7 @@ const AffiliateSystemSettings: React.FC = () => {
 
                       const copied = await copyAffiliateText(link);
                       if (copied) {
-                        tToast.success("affiliates_AffiliateSystemSettings.msg_66a5");
+                        tToast.success("AffiliateSystemSettings.msg_66a5");
                       } else {
                         toast.error(
                           "لم نتمكن من النسخ تلقائياً، انسخ الرابط يدوياً من الحقل.",

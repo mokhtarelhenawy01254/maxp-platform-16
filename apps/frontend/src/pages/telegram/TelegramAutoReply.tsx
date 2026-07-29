@@ -37,7 +37,7 @@ const TelegramAutoReply = () => {
   const fetchRules = async () => { setLoading(true); try { const r = await apiClient.get(`/api/v1/telegram-advanced/auto-reply?userbotConfigId=${selectedUserbot}`); setRules(r.data.data || []); } catch { setError("فشل تحميل قواعد الرد التلقائي"); } finally { setLoading(false); } };
 
   const handleSave = async () => { setLoading(true); try { if (editingRule) { await apiClient.put(`/api/v1/telegram-advanced/auto-reply/${editingRule.id}`, formData); } else { await apiClient.post("/api/v1/telegram-advanced/auto-reply", { ...formData, userbotConfigId: selectedUserbot }); } fetchRules(); setOpenDialog(false); toast.success(editingRule ? "تم تحديث القاعدة" : "تم إنشاء القاعدة"); } catch { setError("فشل حفظ القاعدة"); } finally { setLoading(false); } };
-  const handleDelete = async (id) => { if (!window.confirm("هل أنت متأكد؟")) return; try { await apiClient.delete(`/api/v1/telegram-advanced/auto-reply/${id}`); fetchRules(); tToast.success("telegram_TelegramAutoReply.success_delete_b17d"); } catch { setError("فشل حذف القاعدة"); } };
+  const handleDelete = async (id) => { if (!window.confirm("هل أنت متأكد؟")) return; try { await apiClient.delete(`/api/v1/telegram-advanced/auto-reply/${id}`); fetchRules(); tToast.success("TelegramAutoReply.success_delete_b17d"); } catch { setError("فشل حذف القاعدة"); } };
   const handleToggleActive = async (rule) => { try { await apiClient.put(`/api/v1/telegram-advanced/auto-reply/${rule.id}`, { isActive: !rule.isActive }); fetchRules(); } catch { setError("فشل تغيير حالة القاعدة"); } };
 
   const getMatchTypeLabel = (m) => ({ EXACT: "تطابق تام", CONTAINS: "يحتوي على", STARTS_WITH: "يبدأ بـ", REGEX: "تعبير منتظم" }[m] || m);

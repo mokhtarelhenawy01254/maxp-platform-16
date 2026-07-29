@@ -64,7 +64,7 @@ const SettlementDetailsModal: React.FC<SettlementDetailsModalProps> = ({
       setData(response.data.settlement);
     } catch (error) {
       console.error("Error fetching settlement:", error);
-      tToast.error("hr_SettlementDetailsModal.failed_fetch_bd95");
+      tToast.error("SettlementDetailsModal.failed_fetch_bd95");
       onClose();
     } finally {
       setLoading(false);
@@ -79,12 +79,12 @@ const SettlementDetailsModal: React.FC<SettlementDetailsModalProps> = ({
       await api.post(`/hr/resignations/${resignationId}/settlement/approve`, {
         amount: data.finalSettlementAmount,
       });
-      tToast.success("hr_SettlementDetailsModal.msg_6598");
+      tToast.success("SettlementDetailsModal.msg_6598");
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error approving settlement:", error);
-      tToast.error("hr_SettlementDetailsModal.error_error_cfd1");
+      tToast.error("SettlementDetailsModal.error_error_cfd1");
     } finally {
       setSubmitting(false);
     }

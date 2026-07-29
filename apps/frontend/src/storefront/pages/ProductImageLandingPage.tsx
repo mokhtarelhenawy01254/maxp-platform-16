@@ -794,7 +794,7 @@ const ProductImageLandingPage: React.FC = () => {
         location.search,
       );
 
-      tToast.success("storefront_ProductImageLandingPage.success_send_29d8");
+      tToast.success("ProductImageLandingPage.success_send_29d8");
       const purchaseTracking = {
         eventId: pixelEventId,
         orderNumber: String(orderId),
@@ -848,7 +848,7 @@ const ProductImageLandingPage: React.FC = () => {
     return (
       <section className="product-image-landing product-image-landing--empty" dir="rtl">
         <div className="pil-empty-panel">
-          <p>{landingError || i18n.t("storefront_ProductImageLandingPage.msg_648c")}</p>
+          <p>{landingError || i18n.t("ProductImageLandingPage.msg_648c")}</p>
           <Link to={buildStorefrontPath(location.pathname, `/product/${id || ""}`, location.search)}>
             العودة لصفحة المنتج
           </Link>

@@ -42,7 +42,7 @@ const OverlayCampaignDetails: React.FC = () => {
       const { data } = await apiClient.get(`/overlay-campaigns/${id}`);
       setCampaign(data.data);
     } catch {
-      tToast.error("advertising_OverlayCampaignDetails.failed_load_5709");
+      tToast.error("OverlayCampaignDetails.failed_load_5709");
       navigate("/advertising/facebook-ads/overlay-campaigns");
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ const OverlayCampaignDetails: React.FC = () => {
   const handleAddProduct = async (productId: string) => {
     try {
       await apiClient.post(`/overlay-campaigns/${id}/products`, { productIds: [productId] });
-      tToast.success("advertising_OverlayCampaignDetails.msg_2e2c");
+      tToast.success("OverlayCampaignDetails.msg_2e2c");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل");
@@ -78,7 +78,7 @@ const OverlayCampaignDetails: React.FC = () => {
   const handleRemoveProduct = async (productId: string) => {
     try {
       await apiClient.delete(`/overlay-campaigns/${id}/products/${productId}`);
-      tToast.success("advertising_OverlayCampaignDetails.msg_7a62");
+      tToast.success("OverlayCampaignDetails.msg_7a62");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل");

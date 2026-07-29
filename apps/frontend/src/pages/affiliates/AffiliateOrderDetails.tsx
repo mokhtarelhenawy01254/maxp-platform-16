@@ -248,7 +248,7 @@ const AffiliateOrderDetails: React.FC = () => {
     const message = ticketMessage.trim();
 
     if (message.length < 5) {
-      tToast.error("affiliates_AffiliateOrderDetails.msg_7afd");
+      tToast.error("AffiliateOrderDetails.msg_7afd");
       return;
     }
 
@@ -274,7 +274,7 @@ const AffiliateOrderDetails: React.FC = () => {
             : current,
         );
         setTicketMessage("");
-        toast.success(response.data.message || i18n.t("affiliates_AffiliateOrderDetails.msg_1b99"));
+        toast.success(response.data.message || i18n.t("AffiliateOrderDetails.msg_1b99"));
       }
     } catch (error: unknown) {
       const message =

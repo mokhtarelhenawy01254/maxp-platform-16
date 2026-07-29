@@ -48,7 +48,7 @@ const TurboTickets: React.FC = () => {
             }
         } catch (error) {
             console.error("Error loading tickets:", error);
-            tToast.error("settings_TurboTickets.failed_load_c772");
+            tToast.error("TurboTickets.failed_load_c772");
             setTickets([]);
         } finally {
             setLoadingTickets(false);
@@ -90,11 +90,11 @@ const TurboTickets: React.FC = () => {
 
     const handleSendTicket = async () => {
         if (!ticketDescription.trim()) {
-            tToast.error("settings_TurboTickets.msg_1e25");
+            tToast.error("TurboTickets.msg_1e25");
             return;
         }
         if (!inquiryTypeId) {
-            tToast.error("settings_TurboTickets.msg_4493");
+            tToast.error("TurboTickets.msg_4493");
             return;
         }
         try {
@@ -107,13 +107,13 @@ const TurboTickets: React.FC = () => {
                 categoryId: Number(inquiryTypeId),
             });
             if (response.data.success) {
-                tToast.success("settings_TurboTickets.success_send_9cde");
+                tToast.success("TurboTickets.success_send_9cde");
                 setTicketDescription("");
                 setInquiryTypeId("");
                 setShowForm(false);
                 loadTickets(); // refresh the list
             } else {
-                toast.error(response.data.message || i18n.t("settings_TurboTickets.failed_send_e199"));
+                toast.error(response.data.message || i18n.t("TurboTickets.failed_send_e199"));
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || "حدث خطأ أثناء إرسال التذكرة");

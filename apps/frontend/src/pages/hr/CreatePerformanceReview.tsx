@@ -84,7 +84,7 @@ const CreatePerformanceReview: React.FC = () => {
       setEmployees(response.data.employees || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      tToast.error("hr_CreatePerformanceReview.failed_fetch_8148");
+      tToast.error("CreatePerformanceReview.failed_fetch_8148");
     } finally {
       setLoading(false);
     }
@@ -129,7 +129,7 @@ const CreatePerformanceReview: React.FC = () => {
       !formData.reviewerId ||
       !formData.reviewPeriod
     ) {
-      tToast.error("hr_CreatePerformanceReview.msg_aee9");
+      tToast.error("CreatePerformanceReview.msg_aee9");
       return;
     }
 
@@ -137,10 +137,10 @@ const CreatePerformanceReview: React.FC = () => {
       setSubmitting(true);
       if (isEditing && reviewId) {
         await api.put(`/hr/performance-reviews/${reviewId}`, formData);
-        tToast.success("hr_CreatePerformanceReview.success_update_80c1");
+        tToast.success("CreatePerformanceReview.success_update_80c1");
       } else {
         await api.post("/hr/performance-reviews", formData);
-        tToast.success("hr_CreatePerformanceReview.success_create_a683");
+        tToast.success("CreatePerformanceReview.success_create_a683");
       }
       navigate("/hr/performance-reviews");
     } catch (error: any) {

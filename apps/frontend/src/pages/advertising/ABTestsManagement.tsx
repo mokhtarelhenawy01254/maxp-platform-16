@@ -55,7 +55,7 @@ const ABTestsManagement: React.FC = () => {
     e.stopPropagation();
     try {
       await facebookAdsService.startAdTest(id);
-      tToast.success("advertising_ABTestsManagement.msg_cba6");
+      tToast.success("ABTestsManagement.msg_cba6");
       loadTests();
     } catch (error: any) {
       console.error("Error starting test:", error);
@@ -67,7 +67,7 @@ const ABTestsManagement: React.FC = () => {
     e.stopPropagation();
     try {
       await facebookAdsService.pauseAdTest(id);
-      tToast.success("advertising_ABTestsManagement.msg_e722");
+      tToast.success("ABTestsManagement.msg_e722");
       loadTests();
     } catch (error: any) {
       console.error("Error pausing test:", error);
@@ -81,7 +81,7 @@ const ABTestsManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteAdTest(id);
-      tToast.success("advertising_ABTestsManagement.success_delete_414c");
+      tToast.success("ABTestsManagement.success_delete_414c");
       loadTests();
     } catch (error: any) {
       console.error("Error deleting test:", error);

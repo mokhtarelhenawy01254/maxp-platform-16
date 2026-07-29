@@ -97,7 +97,7 @@ const ShiftDetails: React.FC = () => {
       setShift(response.data.shift);
     } catch (error: any) {
       console.error("Error fetching shift details:", error);
-      tToast.error("hr_ShiftDetails.failed_fetch_7074");
+      tToast.error("ShiftDetails.failed_fetch_7074");
       navigate("/hr/shifts");
     } finally {
       setLoading(false);
@@ -107,11 +107,11 @@ const ShiftDetails: React.FC = () => {
   const handleDeleteShift = async () => {
     try {
       await api.delete(`/hr/shifts/${id}`);
-      tToast.success("hr_ShiftDetails.success_delete_dd40");
+      tToast.success("ShiftDetails.success_delete_dd40");
       navigate("/hr/shifts");
     } catch (error) {
       console.error("Error deleting shift:", error);
-      tToast.error("hr_ShiftDetails.failed_delete_a11e");
+      tToast.error("ShiftDetails.failed_delete_a11e");
     }
   };
 
@@ -137,7 +137,7 @@ const ShiftDetails: React.FC = () => {
     if (!validateForm()) return;
     try {
       await api.put(`/hr/shifts/${id}`, formData);
-      tToast.success("hr_ShiftDetails.success_update_5ce6");
+      tToast.success("ShiftDetails.success_update_5ce6");
       setEditDialogOpen(false);
       fetchShiftDetails();
     } catch (error: any) {
@@ -165,13 +165,13 @@ const ShiftDetails: React.FC = () => {
 
     try {
       await api.delete(`/hr/shifts/assignments/${assignmentToDelete}`);
-      tToast.success("hr_ShiftDetails.msg_8f31");
+      tToast.success("ShiftDetails.msg_8f31");
       setDeleteDialogOpen(false);
       setAssignmentToDelete(null);
       fetchShiftDetails();
     } catch (error) {
       console.error("Error removing assignment:", error);
-      tToast.error("hr_ShiftDetails.msg_1d22");
+      tToast.error("ShiftDetails.msg_1d22");
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../../../i18n";
 import {
   DocumentTextIcon,
   PrinterIcon,
@@ -92,7 +93,7 @@ const ReceiptFormSection: React.FC = () => {
   };
 
   const handleGeneratePDF = () => {
-    alert(i18n.t("hr_ReceiptFormSection.msg_ad05"));
+    alert(i18n.t("ReceiptFormSection.msg_ad05"));
   };
 
   useEffect(() => {
@@ -144,7 +145,7 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Available Assets:", assets);
 
     if (!selectedEmployee || !selectedAsset) {
-      alert(i18n.t("hr_ReceiptFormSection.msg_c899"));
+      alert(i18n.t("ReceiptFormSection.msg_c899"));
       return;
     }
 
@@ -155,12 +156,12 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Found Asset:", asset);
 
     if (!employee) {
-      alert(i18n.t("hr_ReceiptFormSection.msg_0eef"));
+      alert(i18n.t("ReceiptFormSection.msg_0eef"));
       return;
     }
 
     if (!asset) {
-      alert(i18n.t("hr_ReceiptFormSection.msg_3fad"));
+      alert(i18n.t("ReceiptFormSection.msg_3fad"));
       return;
     }
 

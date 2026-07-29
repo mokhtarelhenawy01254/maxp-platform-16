@@ -145,7 +145,7 @@ const Advances: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
-      tToast.error("hr_Advances.error_error_0c59");
+      tToast.error("Advances.error_error_0c59");
       setRequests([]); // تعيين array فاضي في حالة الخطأ
     } finally {
       setLoading(false);
@@ -155,7 +155,7 @@ const Advances: React.FC = () => {
   const handleApprove = async (id: string) => {
     try {
       await api.post(`/hr/advances/${id}/approve`);
-      tToast.success("hr_Advances.msg_0709");
+      tToast.success("Advances.msg_0709");
       fetchAdvances();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "حدث خطأ");
@@ -168,7 +168,7 @@ const Advances: React.FC = () => {
       await api.post(`/hr/advances/${selectedRequest.id}/reject`, {
         rejectedReason: rejectionReason || "تم الرفض من قبل الإدارة",
       });
-      tToast.success("hr_Advances.msg_20d9");
+      tToast.success("Advances.msg_20d9");
       setIsRejectDialogOpen(false);
       setRejectionReason("");
       fetchAdvances();
@@ -210,11 +210,11 @@ const Advances: React.FC = () => {
 
     try {
       await api.delete(`/hr/advances/${id}`);
-      tToast.success("hr_Advances.success_delete_c219");
+      tToast.success("Advances.success_delete_c219");
       fetchAdvances();
     } catch (error) {
       console.error("Error deleting advance:", error);
-      tToast.error("hr_Advances.error_error_7491");
+      tToast.error("Advances.error_error_7491");
     }
   };
 
@@ -254,7 +254,7 @@ const Advances: React.FC = () => {
   const markAsPaid = async (id: string) => {
     try {
       await api.post(`/hr/advances/${id}/mark-paid`);
-      tToast.success("hr_Advances.msg_408c");
+      tToast.success("Advances.msg_408c");
       fetchAdvances();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "فشل في تحديث حالة السلفة");

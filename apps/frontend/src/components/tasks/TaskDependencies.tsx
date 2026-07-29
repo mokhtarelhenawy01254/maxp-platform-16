@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -113,11 +114,11 @@ const TaskDependencies: React.FC<TaskDependenciesProps> = ({
         setSelectedTaskId("");
         onUpdate?.();
       } else {
-        alert(data.error || i18n.t("components_TaskDependencies.failed_add_c36d"));
+        alert(data.error || i18n.t("TaskDependencies.failed_add_c36d"));
       }
     } catch (error) {
       console.error("Error adding dependency:", error);
-      alert(i18n.t("components_TaskDependencies.failed_add_c36d"));
+      alert(i18n.t("TaskDependencies.failed_add_c36d"));
     } finally {
       setLoading(false);
     }

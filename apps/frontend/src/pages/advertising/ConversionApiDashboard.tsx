@@ -271,7 +271,7 @@ const ConversionApiDashboard: React.FC = () => {
 
   const handleSendEvent = async () => {
     if (!eventData.pixelId.trim()) {
-      tToast.error("advertising_ConversionApiDashboard.msg_c0d9");
+      tToast.error("ConversionApiDashboard.msg_c0d9");
       return;
     }
 
@@ -343,7 +343,7 @@ const ConversionApiDashboard: React.FC = () => {
         return [failedEvent, ...prev.slice(0, 9)];
       });
 
-      toast.error(failedEvent.errorMessage || i18n.t("advertising_ConversionApiDashboard.failed_send_a09d"));
+      toast.error(failedEvent.errorMessage || i18n.t("ConversionApiDashboard.failed_send_a09d"));
     } finally {
       setLoading(false);
     }

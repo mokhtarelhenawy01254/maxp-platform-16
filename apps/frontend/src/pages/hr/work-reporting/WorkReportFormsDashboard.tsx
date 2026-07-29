@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { buildMessagingPreset } from "./catalog";
 import { formatArabicDateTime } from "./utils";
@@ -48,7 +48,7 @@ const WorkReportFormsDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching work report forms:", error);
-      tToast.error("hr_WorkReportFormsDashboard.unable_load_2c82");
+      tToast.error("WorkReportFormsDashboard.unable_load_2c82");
     } finally {
       setLoading(false);
     }
@@ -117,11 +117,11 @@ const WorkReportFormsDashboard: React.FC = () => {
 
     try {
       await companyAwareApi.delete(`/hr/reporting/forms/${formId}`);
-      tToast.success("hr_WorkReportFormsDashboard.success_delete_06ce");
+      tToast.success("WorkReportFormsDashboard.success_delete_06ce");
       fetchForms();
     } catch (error) {
       console.error("Error deleting form:", error);
-      tToast.error("hr_WorkReportFormsDashboard.unable_delete_2762");
+      tToast.error("WorkReportFormsDashboard.unable_delete_2762");
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { buildApiUrl, buildAppUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
 import {

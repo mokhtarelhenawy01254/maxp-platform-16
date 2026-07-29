@@ -66,7 +66,7 @@ const AffiliateQuickActions: React.FC = () => {
         setProducts(response.data.data);
       }
     } catch (error) {
-      tToast.error("affiliates_AffiliateQuickActions.error_error_d0bd");
+      tToast.error("AffiliateQuickActions.error_error_d0bd");
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ const AffiliateQuickActions: React.FC = () => {
       setPendingChanges({});
       fetchProducts();
     } catch (error) {
-      tToast.error("affiliates_AffiliateQuickActions.error_error_8409");
+      tToast.error("AffiliateQuickActions.error_error_8409");
     } finally {
       setSaving(false);
     }

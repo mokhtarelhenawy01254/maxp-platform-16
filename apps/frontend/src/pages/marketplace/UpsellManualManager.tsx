@@ -332,7 +332,7 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
       setActiveRelation("related");
     } catch (error) {
       console.error("Failed to load product relations", error);
-      tToast.error("marketplace_UpsellManualManager.unable_load_6178");
+      tToast.error("UpsellManualManager.unable_load_6178");
     } finally {
       setProductLoading(false);
     }
@@ -394,7 +394,7 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
 
   const saveRelations = async () => {
     if (!selectedProduct?.id) {
-      tToast.error("marketplace_UpsellManualManager.msg_11d8");
+      tToast.error("UpsellManualManager.msg_11d8");
       return;
     }
 
@@ -413,10 +413,10 @@ export default function UpsellManualManager({ active }: UpsellManualManagerProps
 
       setSelectedMetadata(nextMetadata);
       setInitialRelationBuckets(cloneRelationBuckets(relationBuckets));
-      tToast.success("marketplace_UpsellManualManager.success_save_00ab");
+      tToast.success("UpsellManualManager.success_save_00ab");
     } catch (error) {
       console.error("Failed to save upsell relations", error);
-      tToast.error("marketplace_UpsellManualManager.unable_save_5607");
+      tToast.error("UpsellManualManager.unable_save_5607");
     } finally {
       setSaving(false);
     }

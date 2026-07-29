@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
 import {
@@ -286,7 +287,7 @@ const Inventory: React.FC = () => {
         !stockUpdate.warehouseId ||
         stockUpdate.quantity <= 0
       ) {
-        alert(i18n.t("inventory_Inventory.msg_aec8"));
+        alert(i18n.t("Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -310,13 +311,13 @@ const Inventory: React.FC = () => {
           expiryDate: "",
           isApproved: true,
         });
-        alert(response.data.message || i18n.t("inventory_Inventory.success_update_9a49"));
+        alert(response.data.message || i18n.t("Inventory.success_update_9a49"));
       } else {
-        alert(response.data.message || i18n.t("inventory_Inventory.failed_update_ff8a"));
+        alert(response.data.message || i18n.t("Inventory.failed_update_ff8a"));
       }
     } catch (error: unknown) {
       console.error("Error updating stock:", error);
-      alert(getErrorMessage(error, i18n.t("inventory_Inventory.failed_update_ff8a")));
+      alert(getErrorMessage(error, i18n.t("Inventory.failed_update_ff8a")));
     }
   };
 
@@ -375,7 +376,7 @@ const Inventory: React.FC = () => {
         !transferData.toWarehouseId ||
         transferData.quantity <= 0
       ) {
-        alert(i18n.t("inventory_Inventory.msg_aec8"));
+        alert(i18n.t("Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -393,10 +394,10 @@ const Inventory: React.FC = () => {
           notes: "",
           batchNumber: "",
         });
-        alert(i18n.t("inventory_Inventory.msg_7ffe"));
+        alert(i18n.t("Inventory.msg_7ffe"));
       }
     } catch (error: unknown) {
-      alert(getErrorMessage(error, i18n.t("inventory_Inventory.msg_68e2")));
+      alert(getErrorMessage(error, i18n.t("Inventory.msg_68e2")));
     }
   };
 

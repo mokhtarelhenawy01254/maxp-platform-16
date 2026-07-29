@@ -162,11 +162,11 @@ const OwnerAttendanceReport: React.FC = () => {
       if (response.data.success) {
         setReportData(response.data.data);
       } else {
-        toast.error(response.data.message || i18n.t("owner_OwnerAttendanceReport.failed_load_cef6"));
+        toast.error(response.data.message || i18n.t("OwnerAttendanceReport.failed_load_cef6"));
       }
     } catch (error) {
       console.error("Failed to fetch report", error);
-      tToast.error("owner_OwnerAttendanceReport.failed_load_cef6");
+      tToast.error("OwnerAttendanceReport.failed_load_cef6");
     } finally {
       setIsLoading(false);
     }
@@ -250,11 +250,11 @@ const OwnerAttendanceReport: React.FC = () => {
         await generateExcelReport();
       }
 
-      tToast.success("owner_OwnerAttendanceReport.success_create_27b7");
+      tToast.success("OwnerAttendanceReport.success_create_27b7");
       setShowReportModal(false);
     } catch (error) {
       console.error("Error generating report:", error);
-      tToast.error("owner_OwnerAttendanceReport.failed_create_878d");
+      tToast.error("OwnerAttendanceReport.failed_create_878d");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -516,9 +516,9 @@ const OwnerAttendanceReport: React.FC = () => {
       link.download = `detailed-attendance-${startDate}-to-${endDate}.csv`;
       link.click();
 
-      tToast.success("owner_OwnerAttendanceReport.msg_6004");
+      tToast.success("OwnerAttendanceReport.msg_6004");
     } catch (error) {
-      tToast.error("owner_OwnerAttendanceReport.msg_6657");
+      tToast.error("OwnerAttendanceReport.msg_6657");
     } finally {
       setIsExporting(false);
     }

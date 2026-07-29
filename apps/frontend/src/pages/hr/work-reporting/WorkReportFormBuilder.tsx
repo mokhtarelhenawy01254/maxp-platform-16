@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import {
   buildMessagingPreset,
@@ -92,7 +92,7 @@ const WorkReportFormBuilder: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching reporting form:", error);
-        tToast.error("hr_WorkReportFormBuilder.unable_load_c717");
+        tToast.error("WorkReportFormBuilder.unable_load_c717");
       } finally {
         setLoading(false);
       }
@@ -241,12 +241,12 @@ const WorkReportFormBuilder: React.FC = () => {
     const payload = normalizeForSubmit();
 
     if (!payload.title) {
-      tToast.error("hr_WorkReportFormBuilder.msg_92ff");
+      tToast.error("WorkReportFormBuilder.msg_92ff");
       return;
     }
 
     if (!payload.fields.length) {
-      tToast.error("hr_WorkReportFormBuilder.msg_b98e");
+      tToast.error("WorkReportFormBuilder.msg_b98e");
       return;
     }
 
@@ -254,13 +254,13 @@ const WorkReportFormBuilder: React.FC = () => {
       setSaving(true);
       if (isEditing && formId) {
         await companyAwareApi.put(`/hr/reporting/forms/${formId}`, payload);
-        tToast.success("hr_WorkReportFormBuilder.success_update_f51f");
+        tToast.success("WorkReportFormBuilder.success_update_f51f");
       } else {
         const response = await companyAwareApi.post<{ data: { id: string } }>(
           "/hr/reporting/forms",
           payload,
         );
-        tToast.success("hr_WorkReportFormBuilder.success_create_3fbf");
+        tToast.success("WorkReportFormBuilder.success_create_3fbf");
         const createdId = response.data?.data?.id;
         if (createdId) {
           navigate(`/hr/reporting/forms/${createdId}/preview`);

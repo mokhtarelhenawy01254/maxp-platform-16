@@ -61,7 +61,7 @@ const AttributionSettings: React.FC = () => {
 
   const handleSave = async () => {
     if (!settings.adSetId.trim()) {
-      tToast.error("advertising_AttributionSettings.msg_c7b7");
+      tToast.error("AttributionSettings.msg_c7b7");
       return;
     }
 
@@ -76,7 +76,7 @@ const AttributionSettings: React.FC = () => {
         settings.adSetId,
         attributionPayload,
       );
-      tToast.success("advertising_AttributionSettings.success_save_97ba");
+      tToast.success("AttributionSettings.success_save_97ba");
     } catch (error: any) {
       console.error("Error saving settings:", error);
       toast.error(error?.response?.data?.error || "فشل في حفظ الإعدادات");

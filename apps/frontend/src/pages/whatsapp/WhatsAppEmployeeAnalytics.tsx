@@ -421,7 +421,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
   const loadData = async (silent = false) => {
     if (!activeRange.start || !activeRange.end) return;
     if (new Date(activeRange.end) < new Date(activeRange.start)) {
-      tToast.error("whatsapp_WhatsAppEmployeeAnalytics.msg_2f97");
+      tToast.error("WhatsAppEmployeeAnalytics.msg_2f97");
       return;
     }
     if (!silent) setLoading(true);
@@ -440,7 +440,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
       setData(currRes.data as AnalyticsResponse);
       setPrevData(prevRes ? (prevRes as unknown as AnalyticsResponse) : null);
     } catch {
-      tToast.error("whatsapp_WhatsAppEmployeeAnalytics.failed_load_61c5");
+      tToast.error("WhatsAppEmployeeAnalytics.failed_load_61c5");
     } finally {
       setLoading(false);
       setRefreshing(false);

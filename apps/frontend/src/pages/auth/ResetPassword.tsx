@@ -72,7 +72,7 @@ const ResetPassword: React.FC = () => {
 
   useEffect(() => {
     if (!token) {
-      tToast.error("auth_ResetPassword.msg_db5c");
+      tToast.error("ResetPassword.msg_db5c");
       navigate("/auth/forgot-password");
     }
   }, [navigate, token]);
@@ -87,7 +87,7 @@ const ResetPassword: React.FC = () => {
       });
 
       setIsSuccess(true);
-      tToast.success("auth_ResetPassword.msg_75cd");
+      tToast.success("ResetPassword.msg_75cd");
       setTimeout(() => navigate("/auth/login"), 2000);
     } catch (error: any) {
       const message =

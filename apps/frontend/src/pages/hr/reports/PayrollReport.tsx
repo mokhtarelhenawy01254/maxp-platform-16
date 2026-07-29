@@ -13,7 +13,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface PayrollReport {
   totalPayroll: number;
@@ -69,7 +69,7 @@ const PayrollReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      tToast.error("hr_PayrollReport.failed_fetch_f53f");
+      tToast.error("PayrollReport.failed_fetch_f53f");
       setReport(null);
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ const PayrollReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    tToast.success("hr_PayrollReport.msg_6788");
+    tToast.success("PayrollReport.msg_6788");
   };
 
   const formatCurrency = (amount: number) => {

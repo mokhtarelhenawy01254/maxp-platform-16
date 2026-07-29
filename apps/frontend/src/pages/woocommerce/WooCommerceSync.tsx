@@ -93,7 +93,7 @@ export default function WooCommerceSync() {
 
   const syncNow = async () => {
     if (!currentSettings?.syncEnabled) {
-      tToast.error("woocommerce_WooCommerceSync.please_activate_dc67");
+      tToast.error("WooCommerceSync.please_activate_dc67");
       return;
     }
 
@@ -107,13 +107,13 @@ export default function WooCommerceSync() {
       });
       const data = await response.json();
       if (data.success) {
-        tToast.success("woocommerce_WooCommerceSync.msg_3a63");
+        tToast.success("WooCommerceSync.msg_3a63");
         loadSyncLogs();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      tToast.error("woocommerce_WooCommerceSync.msg_56af");
+      tToast.error("WooCommerceSync.msg_56af");
     }
   };
 

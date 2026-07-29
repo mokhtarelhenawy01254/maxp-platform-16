@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import {
   DollarSign,
   Plus,
@@ -215,17 +216,17 @@ const Deductions: React.FC = () => {
     try {
       // Client-side validation
       if (!createForm.employeeId) {
-        alert(i18n.t("hr_Deductions.msg_8727"));
+        alert(i18n.t("Deductions.msg_8727"));
         return;
       }
 
       if (!createForm.amount || parseFloat(createForm.amount) <= 0) {
-        alert(i18n.t("hr_Deductions.msg_dc9a"));
+        alert(i18n.t("Deductions.msg_dc9a"));
         return;
       }
 
       if (!createForm.reason || createForm.reason.trim().length < 5) {
-        alert(i18n.t("hr_Deductions.please_reason_7f8b"));
+        alert(i18n.t("Deductions.please_reason_7f8b"));
         return;
       }
 
@@ -289,7 +290,7 @@ const Deductions: React.FC = () => {
     try {
       const response = await api.post(`/hr/deductions/${id}/approve`);
       if (response.data.success) {
-        alert(i18n.t("hr_Deductions.msg_04f1"));
+        alert(i18n.t("Deductions.msg_04f1"));
         loadData();
       }
     } catch (error: any) {
@@ -307,7 +308,7 @@ const Deductions: React.FC = () => {
         reason,
       });
       if (response.data.success) {
-        alert(i18n.t("hr_Deductions.msg_cec9"));
+        alert(i18n.t("Deductions.msg_cec9"));
         loadData();
       }
     } catch (error: any) {
@@ -322,7 +323,7 @@ const Deductions: React.FC = () => {
     try {
       const response = await api.delete(`/hr/deductions/${id}`);
       if (response.data.success) {
-        alert(i18n.t("hr_Deductions.success_delete_59dc"));
+        alert(i18n.t("Deductions.success_delete_59dc"));
         loadData();
       }
     } catch (error: any) {

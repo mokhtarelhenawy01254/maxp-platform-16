@@ -228,7 +228,7 @@ const OrderConfirmationSettings: React.FC = () => {
       const res = await orderConfirmationService.updateSettings(payload);
       setSettings(res.data);
       await loadEligibleUsers();
-      tToast.success("settings_OrderConfirmationSettings.success_save_8804");
+      tToast.success("OrderConfirmationSettings.success_save_8804");
     } catch (error: any) {
       toast.error(error?.message || 'فشل حفظ الإعدادات');
     } finally {

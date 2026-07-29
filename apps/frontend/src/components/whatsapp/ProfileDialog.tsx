@@ -83,11 +83,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      tToast.success("components_ProfileDialog.success_update_7fa9");
+      tToast.success("ProfileDialog.success_update_7fa9");
       onClose();
     } catch (error) {
       console.error("Error updating profile:", error);
-      tToast.error("components_ProfileDialog.failed_update_293c");
+      tToast.error("ProfileDialog.failed_update_293c");
     } finally {
       setLoading(false);
     }
@@ -103,11 +103,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         setName(profile.name || "");
         setStatus(profile.status || "");
         setPicturePreview(profile.profilePicUrl || null);
-        tToast.success("components_ProfileDialog.msg_fc01");
+        tToast.success("ProfileDialog.msg_fc01");
       }
     } catch (error) {
       console.error("Error syncing profile:", error);
-      tToast.error("components_ProfileDialog.msg_5720");
+      tToast.error("ProfileDialog.msg_5720");
     } finally {
       setLoading(false);
     }

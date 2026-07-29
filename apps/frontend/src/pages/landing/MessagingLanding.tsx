@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -171,7 +172,7 @@ const MessagingLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_MessagingLanding.msg_ccb3")); return; }
+    if (!bundle) { alert(i18n.t("MessagingLanding.msg_ccb3")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -184,11 +185,11 @@ const MessagingLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || i18n.t("landing_MessagingLanding.msg_9dca"));
+        alert(data.message || i18n.t("MessagingLanding.msg_9dca"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_MessagingLanding.msg_c26f"));
+      alert(i18n.t("MessagingLanding.msg_c26f"));
       setSubscribing(false);
     }
   };
@@ -199,7 +200,7 @@ const MessagingLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_MessagingLanding.msg_ccb3")); return; }
+    if (!bundle) { alert(i18n.t("MessagingLanding.msg_ccb3")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -212,11 +213,11 @@ const MessagingLanding: React.FC = () => {
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
       } else {
-        alert(data.message || i18n.t("landing_MessagingLanding.failed_create_931a"));
+        alert(data.message || i18n.t("MessagingLanding.failed_create_931a"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_MessagingLanding.msg_c26f"));
+      alert(i18n.t("MessagingLanding.msg_c26f"));
       setSubscribing(false);
     }
   };

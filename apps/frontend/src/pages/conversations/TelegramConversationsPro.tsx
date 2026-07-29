@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useTranslation } from "react-i18next";
 import useSocket from "../../hooks/useSocket";
@@ -651,7 +652,7 @@ const TelegramConversationsPro: React.FC = () => {
       toast.success(newStatus ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
     } catch (err) {
       console.error(err);
-      tToast.error("conversations_TelegramConversationsPro.failed_update_status_ffd1");
+      tToast.error("TelegramConversationsPro.failed_update_status_ffd1");
     }
   };
 

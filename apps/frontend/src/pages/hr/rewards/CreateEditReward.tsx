@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../../i18n";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../../services/apiClient";
 import {
@@ -276,10 +277,10 @@ const CreateEditReward: React.FC = () => {
 
       if (isEdit) {
         await apiClient.put(`/hr/rewards/records/${id}`, payload);
-        alert(i18n.t("hr_CreateEditReward.success_update_6490"));
+        alert(i18n.t("CreateEditReward.success_update_6490"));
       } else {
         await apiClient.post(`/hr/rewards/records`, payload);
-        alert(i18n.t("hr_CreateEditReward.success_add_ab3d"));
+        alert(i18n.t("CreateEditReward.success_add_ab3d"));
       }
 
       navigate("/hr/rewards");

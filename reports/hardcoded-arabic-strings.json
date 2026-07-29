@@ -1,42 +1,12 @@
 {
-  "total": 652,
+  "total": 117,
   "byCategory": {
     "alert": [
-      {
-        "file": "components\\conversations\\CustomerProfile.tsx",
-        "line": 108,
-        "category": "alert",
-        "string": "معرف الصفحة غير متوفر"
-      },
-      {
-        "file": "components\\conversations\\CustomerProfile.tsx",
-        "line": 122,
-        "category": "alert",
-        "string": "تم حظر العميل على الصفحة بنجاح"
-      },
-      {
-        "file": "components\\conversations\\CustomerProfile.tsx",
-        "line": 132,
-        "category": "alert",
-        "string": "معرف الصفحة غير متوفر"
-      },
-      {
-        "file": "components\\conversations\\CustomerProfile.tsx",
-        "line": 144,
-        "category": "alert",
-        "string": "تم إلغاء حظر العميل بنجاح"
-      },
       {
         "file": "components\\conversations\\OrderModal.tsx",
         "line": 169,
         "category": "alert",
-        "string": "فشل في إنشاء الطلب: \" + (data.error || \"خطأ غير معروف"
-      },
-      {
-        "file": "components\\conversations\\OrderModal.tsx",
-        "line": 173,
-        "category": "alert",
-        "string": "حدث خطأ أثناء إنشاء الطلب"
+        "string": "فشل في إنشاء الطلب: \" + (data.error || i18n.t(\"components_OrderModal.msg_fe97"
       },
       {
         "file": "components\\conversations\\OrderModalEnhanced.tsx",
@@ -51,18 +21,6 @@
         "string": "✅ تم حفظ ${successCount} صورة في الحافظة!"
       },
       {
-        "file": "components\\facebook-inbox\\ImageGallery\\ImageGalleryModal.tsx",
-        "line": 123,
-        "category": "alert",
-        "string": "حدث خطأ أثناء رفع الصور"
-      },
-      {
-        "file": "components\\facebook-inbox\\ImageGallery\\ImageGalleryModal.tsx",
-        "line": 146,
-        "category": "alert",
-        "string": "فشل حذف الصورة. حاول مرة أخرى."
-      },
-      {
         "file": "components\\facebook-inbox\\TextGallery\\TextGalleryModal.tsx",
         "line": 281,
         "category": "alert",
@@ -75,106 +33,10 @@
         "string": "الملف ${file.name} ليس صورة."
       },
       {
-        "file": "components\\guides\\FacebookSetupGuide.tsx",
-        "line": 113,
-        "category": "alert",
-        "string": "تم نسخ النص إلى الحافظة"
-      },
-      {
         "file": "components\\orders\\OrderModal.tsx",
         "line": 297,
         "category": "alert",
         "string": "فشل في إنشاء الطلب: \" + (data.error || i18n.t(\"components_OrderModal.msg_fe97"
-      },
-      {
-        "file": "components\\quality\\RatingButtons.tsx",
-        "line": 97,
-        "category": "alert",
-        "string": "حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى."
-      },
-      {
-        "file": "components\\RichTextEditor.tsx",
-        "line": 65,
-        "category": "alert",
-        "string": "فشل في رفع الصورة"
-      },
-      {
-        "file": "components\\store\\StorefrontPageSectionsEditor.tsx",
-        "line": 3211,
-        "category": "alert",
-        "string": "اسم الصفحة يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط."
-      },
-      {
-        "file": "components\\store\\StorefrontPageSectionsEditor.tsx",
-        "line": 3215,
-        "category": "alert",
-        "string": "هذه الصفحة موجودة بالفعل."
-      },
-      {
-        "file": "components\\tasks\\TaskDependencies.tsx",
-        "line": 120,
-        "category": "alert",
-        "string": "فشل في إضافة التبعية"
-      },
-      {
-        "file": "components\\WaybillGenerator.tsx",
-        "line": 361,
-        "category": "alert",
-        "string": "يرجى السماح بفتح النوافذ المنبثقة"
-      },
-      {
-        "file": "pages\\admin\\EducationTeacherPaymentsPage.tsx",
-        "line": 105,
-        "category": "alert",
-        "string": "تم إنشاء الدفعة"
-      },
-      {
-        "file": "pages\\admin\\EducationTeacherPaymentsPage.tsx",
-        "line": 117,
-        "category": "alert",
-        "string": "تم تأكيد الدفع"
-      },
-      {
-        "file": "pages\\conversations\\CampaignPredictionCalculator.tsx",
-        "line": 251,
-        "category": "alert",
-        "string": "الرجاء إدخال اسم للحملة قبل الحفظ"
-      },
-      {
-        "file": "pages\\conversations\\CampaignPredictionCalculator.tsx",
-        "line": 266,
-        "category": "alert",
-        "string": "تم حفظ السيناريو بنجاح!"
-      },
-      {
-        "file": "pages\\conversations\\Conversations.tsx",
-        "line": 580,
-        "category": "alert",
-        "string": "حدث خطأ أثناء إرسال الرسالة"
-      },
-      {
-        "file": "pages\\customers\\LoyaltyPrograms.tsx",
-        "line": 138,
-        "category": "alert",
-        "string": "حدث خطأ أثناء حفظ البرنامج"
-      },
-      {
-        "file": "pages\\customers\\LoyaltyPrograms.tsx",
-        "line": 151,
-        "category": "alert",
-        "string": "حدث خطأ أثناء الحذف"
-      },
-      {
-        "file": "pages\\FacebookStatusPage.tsx",
-        "line": 55,
-        "category": "alert",
-        "string": "يرجى إدخال الرسالة ومعرف المستلم"
-      },
-      {
-        "file": "pages\\FacebookStatusPage.tsx",
-        "line": 80,
-        "category": "alert",
-        "string": "✅ تم إرسال الرسالة التجريبية بنجاح!"
       },
       {
         "file": "pages\\FacebookStatusPage.tsx",
@@ -183,106 +45,10 @@
         "string": "❌ فشل في إرسال الرسالة التجريبية: ${data.error}"
       },
       {
-        "file": "pages\\FacebookStatusPage.tsx",
-        "line": 88,
-        "category": "alert",
-        "string": "خطأ في إرسال الرسالة التجريبية"
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetCategories.tsx",
-        "line": 47,
-        "category": "alert",
-        "string": "فشل في إضافة التصنيف"
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetCategories.tsx",
-        "line": 62,
-        "category": "alert",
-        "string": "فشل في حذف التصنيف. قد يكون مرتبطاً بأصول."
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetsOverviewDashboard.tsx",
-        "line": 118,
-        "category": "alert",
-        "string": "حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى."
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetSuppliers.tsx",
-        "line": 54,
-        "category": "alert",
-        "string": "فشل في إضافة المورد"
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetSuppliers.tsx",
-        "line": 72,
-        "category": "alert",
-        "string": "فشل في حذف المورد. قد يكون مرتبطاً بطلبات شراء أو أصول."
-      },
-      {
-        "file": "pages\\hr\\assets\\MyAssetRequests.tsx",
-        "line": 61,
-        "category": "alert",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\assets\\MyAssetRequests.tsx",
-        "line": 76,
-        "category": "alert",
-        "string": "تم إرسال الطلب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\assets\\MyAssetRequests.tsx",
-        "line": 80,
-        "category": "alert",
-        "string": "فشل في إرسال الطلب"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\ReceiptFormSection.tsx",
-        "line": 95,
-        "category": "alert",
-        "string": "جاري توليد ملف PDF وحفظه في سجلات الموظف..."
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\ReceiptFormSection.tsx",
-        "line": 147,
-        "category": "alert",
-        "string": "الرجاء اختيار الموظف والأصل"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\ReceiptFormSection.tsx",
-        "line": 158,
-        "category": "alert",
-        "string": "لم يتم العثور على الموظف المختار"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\ReceiptFormSection.tsx",
-        "line": 163,
-        "category": "alert",
-        "string": "لم يتم العثور على الأصل المختار"
-      },
-      {
         "file": "pages\\hr\\Deductions.tsx",
         "line": 159,
         "category": "alert",
         "string": "${errorMsg}\\n${details ? `التفاصيل: ${details}` : \"\"}"
-      },
-      {
-        "file": "pages\\hr\\rewards\\CreateEditReward.tsx",
-        "line": 279,
-        "category": "alert",
-        "string": "تم تحديث المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\rewards\\CreateEditReward.tsx",
-        "line": 282,
-        "category": "alert",
-        "string": "تم إضافة المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\inventory\\Inventory.tsx",
-        "line": 289,
-        "category": "alert",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
       },
       {
         "file": "pages\\inventory\\Inventory.tsx",
@@ -291,3540 +57,10 @@
         "string": "تم إضافة \"${product.name || \"المنتج\"}\" وإرساله للمراجعة"
       },
       {
-        "file": "pages\\inventory\\Inventory.tsx",
-        "line": 378,
-        "category": "alert",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\inventory\\Inventory.tsx",
-        "line": 396,
-        "category": "alert",
-        "string": "تم نقل المخزون بنجاح"
-      },
-      {
-        "file": "pages\\inventory\\InventoryAudits.tsx",
-        "line": 64,
-        "category": "alert",
-        "string": "تم اعتماد الحركة بنجاح"
-      },
-      {
-        "file": "pages\\landing\\AiInboxLanding.tsx",
-        "line": 144,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\AiInboxLanding.tsx",
-        "line": 161,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\landing\\AiInboxLanding.tsx",
-        "line": 172,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\AiInboxLanding.tsx",
-        "line": 189,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\landing\\MedicalLanding.tsx",
-        "line": 178,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\MedicalLanding.tsx",
-        "line": 195,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\landing\\MedicalLanding.tsx",
-        "line": 206,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\MedicalLanding.tsx",
-        "line": 223,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\landing\\MessagingLanding.tsx",
-        "line": 174,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\MessagingLanding.tsx",
-        "line": 191,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\landing\\MessagingLanding.tsx",
-        "line": 202,
-        "category": "alert",
-        "string": "الباقة غير متوفرة"
-      },
-      {
-        "file": "pages\\landing\\MessagingLanding.tsx",
-        "line": 219,
-        "category": "alert",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\opportunities\\Opportunities.tsx",
-        "line": 151,
-        "category": "alert",
-        "string": "تم تحديث مرحلة الفرصة بنجاح"
-      },
-      {
-        "file": "pages\\opportunities\\Opportunities.tsx",
-        "line": 155,
-        "category": "alert",
-        "string": "فشل في تحديث مرحلة الفرصة"
-      },
-      {
-        "file": "pages\\reports\\AdvancedReports.tsx",
-        "line": 271,
-        "category": "alert",
-        "string": "تم إنشاء التقرير بنجاح"
-      },
-      {
-        "file": "pages\\reports\\AdvancedReports.tsx",
-        "line": 276,
-        "category": "alert",
-        "string": "فشل في إنشاء التقرير"
-      },
-      {
-        "file": "pages\\reports\\Reports.tsx",
-        "line": 488,
-        "category": "alert",
-        "string": "حدث خطأ في تحميل التقارير. يرجى المحاولة مرة أخرى."
-      },
-      {
-        "file": "pages\\settings\\components\\ListItemsEditor.tsx",
-        "line": 76,
-        "category": "alert",
-        "string": "حدث خطأ أثناء رفع الصورة"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalDetails.tsx",
-        "line": 174,
-        "category": "alert",
-        "string": "فشل حفظ النتيجة الرئيسية"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalDetails.tsx",
-        "line": 188,
-        "category": "alert",
-        "string": "فشل الحذف"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalDetails.tsx",
-        "line": 208,
-        "category": "alert",
-        "string": "فشل إضافة المراجعة"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalDetails.tsx",
-        "line": 222,
-        "category": "alert",
-        "string": "فشل تحديث التقدم"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalForm.tsx",
-        "line": 155,
-        "category": "alert",
-        "string": "العنوان والتواريخ مطلوبة"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalForm.tsx",
-        "line": 194,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\DevGoalsList.tsx",
-        "line": 176,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\DevProjects.tsx",
-        "line": 468,
-        "category": "alert",
-        "string": "الاسم والوصف مطلوبان"
-      },
-      {
-        "file": "pages\\super-admin\\DevProjects.tsx",
-        "line": 500,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\DevReleases.tsx",
-        "line": 410,
-        "category": "alert",
-        "string": "رقم الإصدار والاسم مطلوبان"
-      },
-      {
-        "file": "pages\\super-admin\\DevReleases.tsx",
-        "line": 436,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskSettings.tsx",
-        "line": 217,
-        "category": "alert",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
         "file": "pages\\super-admin\\DevTaskSettings.tsx",
         "line": 221,
         "category": "alert",
-        "string": "فشل الحفظ: \" + (data.message || \"خطأ غير معروف"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskSettings.tsx",
-        "line": 225,
-        "category": "alert",
-        "string": "حدث خطأ أثناء الحفظ"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskSettings.tsx",
-        "line": 1000,
-        "category": "alert",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\super-admin\\DevTeam.tsx",
-        "line": 170,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\DevTeam.tsx",
-        "line": 454,
-        "category": "alert",
-        "string": "يرجى اختيار مستخدم"
-      },
-      {
-        "file": "pages\\super-admin\\DevTeam.tsx",
-        "line": 494,
-        "category": "alert",
-        "string": "فشل في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminAppExplanations.tsx",
-        "line": 206,
-        "category": "alert",
-        "string": "حدث خطأ أثناء الحذف"
-      }
-    ],
-    "toast": [
-      {
-        "file": "components\\CreateCompanyModal.tsx",
-        "line": 105,
-        "category": "toast",
-        "string": "تم إنشاء الشركة بنجاح! 🎉"
-      },
-      {
-        "file": "components\\facebook-inbox\\Modals\\QuickCreateTaskModal.tsx",
-        "line": 211,
-        "category": "toast",
-        "string": "يجب تسجيل الدخول أولاً"
-      },
-      {
-        "file": "components\\facebook-inbox\\Modals\\QuickCreateTaskModal.tsx",
-        "line": 235,
-        "category": "toast",
-        "string": "تم إنشاء المهمة بنجاح"
-      },
-      {
-        "file": "components\\facebook-inbox\\Modals\\QuickCreateTaskModal.tsx",
-        "line": 241,
-        "category": "toast",
-        "string": "فشل في إنشاء المهمة"
-      },
-      {
-        "file": "components\\hr\\AssignShiftDialog.tsx",
-        "line": 142,
-        "category": "toast",
-        "string": "فشل في جلب البيانات"
-      },
-      {
-        "file": "components\\hr\\AssignShiftDialog.tsx",
-        "line": 153,
-        "category": "toast",
-        "string": "يرجى اختيار موظف واحد على الأقل والتاريخ"
-      },
-      {
-        "file": "components\\hr\\AssignShiftDialog.tsx",
-        "line": 158,
-        "category": "toast",
-        "string": "يرجى تحديد تاريخ الانتهاء"
-      },
-      {
-        "file": "components\\orders\\OrderConfirmationModal.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "تم نسخ رقم الطلب!"
-      },
-      {
-        "file": "components\\orders\\OrderConfirmationModal.tsx",
-        "line": 393,
-        "category": "toast",
-        "string": "تم إرسال نسخة للبريد الإلكتروني!"
-      },
-      {
-        "file": "components\\store\\StorefrontImagePickerModal.tsx",
-        "line": 48,
-        "category": "toast",
-        "string": "تعذر تحميل حافظة الصور"
-      },
-      {
-        "file": "components\\store\\StorefrontImagePickerModal.tsx",
-        "line": 79,
-        "category": "toast",
-        "string": "تم رفع الصورة واختيارها"
-      },
-      {
-        "file": "components\\store\\StorefrontImagePickerModal.tsx",
-        "line": 83,
-        "category": "toast",
-        "string": "فشل رفع الصورة"
-      },
-      {
-        "file": "components\\whatsapp\\BroadcastDialog.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "يرجى اختيار جهة اتصال واحدة على الأقل"
-      },
-      {
-        "file": "components\\whatsapp\\BroadcastDialog.tsx",
-        "line": 94,
-        "category": "toast",
-        "string": "يرجى كتابة رسالة"
-      },
-      {
-        "file": "components\\whatsapp\\BusinessProfileDialog.tsx",
-        "line": 79,
-        "category": "toast",
-        "string": "تم تحديث ملف الأعمال بنجاح"
-      },
-      {
-        "file": "components\\whatsapp\\BusinessProfileDialog.tsx",
-        "line": 83,
-        "category": "toast",
-        "string": "فشل تحديث ملف الأعمال"
-      },
-      {
-        "file": "components\\whatsapp\\CreateGroupDialog.tsx",
-        "line": 84,
-        "category": "toast",
-        "string": "يرجى إدخال اسم المجموعة"
-      },
-      {
-        "file": "components\\whatsapp\\CreateGroupDialog.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "يرجى اختيار مشارك واحد على الأقل"
-      },
-      {
-        "file": "components\\whatsapp\\CreateGroupDialog.tsx",
-        "line": 102,
-        "category": "toast",
-        "string": "تم إنشاء المجموعة بنجاح"
-      },
-      {
-        "file": "components\\whatsapp\\ProfileDialog.tsx",
-        "line": 85,
-        "category": "toast",
-        "string": "تم تحديث الملف الشخصي بنجاح"
-      },
-      {
-        "file": "components\\whatsapp\\ProfileDialog.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "فشل تحديث الملف الشخصي"
-      },
-      {
-        "file": "components\\whatsapp\\ProfileDialog.tsx",
-        "line": 105,
-        "category": "toast",
-        "string": "تمت مزامنة البيانات من واتساب بنجاح"
-      },
-      {
-        "file": "components\\whatsapp\\ProfileDialog.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "فشل مزامنة البيانات من واتساب"
-      },
-      {
-        "file": "hooks\\useCheckout.ts",
-        "line": 174,
-        "category": "toast",
-        "string": "تم تطبيق الكوبون بنجاح"
-      },
-      {
-        "file": "hooks\\useCheckout.ts",
-        "line": 179,
-        "category": "toast",
-        "string": "خطأ في التحقق من الكوبون"
-      },
-      {
-        "file": "hooks\\useCheckoutFormSettings.ts",
-        "line": 86,
-        "category": "toast",
-        "string": "خطأ في تحميل إعدادات الشيك أوت"
-      },
-      {
-        "file": "hooks\\useCheckoutFormSettings.ts",
-        "line": 128,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
-        "file": "hooks\\useCheckoutFormSettings.ts",
-        "line": 135,
-        "category": "toast",
-        "string": "خطأ في حفظ إعدادات الشيك أوت"
-      },
-      {
-        "file": "hooks\\useCheckoutFormSettings.ts",
-        "line": 152,
-        "category": "toast",
-        "string": "تم إعادة تعيين الإعدادات بنجاح"
-      },
-      {
-        "file": "hooks\\useCheckoutFormSettings.ts",
-        "line": 156,
-        "category": "toast",
-        "string": "خطأ في إعادة تعيين إعدادات الشيك أوت"
-      },
-      {
-        "file": "hooks\\useElessiProductDetails.ts",
-        "line": 840,
-        "category": "toast",
-        "string": "يرجى اختيار اللون أو المقاس أولًا"
-      },
-      {
-        "file": "hooks\\useElessiProductDetails.ts",
-        "line": 863,
-        "category": "toast",
-        "string": "تمت إضافة المنتج للسلة"
-      },
-      {
-        "file": "hooks\\useElessiProductDetails.ts",
-        "line": 867,
-        "category": "toast",
-        "string": "تعذر إضافة المنتج للسلة"
-      },
-      {
-        "file": "hooks\\useTrackOrder.ts",
-        "line": 62,
-        "category": "toast",
-        "string": "يرجى إدخال رقم الطلب ورقم الهاتف"
-      },
-      {
-        "file": "hooks\\useTrackOrder.ts",
-        "line": 80,
-        "category": "toast",
-        "string": "حدث خطأ في تتبع الطلب"
-      },
-      {
-        "file": "pages\\admin\\booking\\AppointmentsTab.tsx",
-        "line": 74,
-        "category": "toast",
-        "string": "تم تغيير حالة الموعد إلى \"${label}\""
-      },
-      {
-        "file": "pages\\admin\\booking\\BranchModal.tsx",
-        "line": 106,
-        "category": "toast",
-        "string": "الصورة كبيرة جدًا. الحد الأقصى 2MB"
-      },
-      {
-        "file": "pages\\admin\\booking\\BranchModal.tsx",
-        "line": 107,
-        "category": "toast",
-        "string": "يرجى اختيار صورة JPG أو PNG أو WEBP"
-      },
-      {
-        "file": "pages\\admin\\booking\\BranchModal.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "فشل معالجة الصورة"
-      },
-      {
-        "file": "pages\\admin\\ServiceManagementPage.tsx",
-        "line": 41,
-        "category": "toast",
-        "string": "فشل رفع: ${file.name}"
-      },
-      {
-        "file": "pages\\admin\\ServiceManagementPage.tsx",
-        "line": 48,
-        "category": "toast",
-        "string": "اسم الخدمة مطلوب"
-      },
-      {
-        "file": "pages\\admin\\ServiceManagementPage.tsx",
-        "line": 60,
-        "category": "toast",
-        "string": "حدث خطأ"
-      },
-      {
-        "file": "pages\\admin\\ServiceManagementPage.tsx",
-        "line": 68,
-        "category": "toast",
-        "string": "تم الحذف"
-      },
-      {
-        "file": "pages\\admin\\ServiceManagementPage.tsx",
-        "line": 69,
-        "category": "toast",
-        "string": "حدث خطأ"
-      },
-      {
-        "file": "pages\\admin\\ServiceOrdersPage.tsx",
-        "line": 38,
-        "category": "toast",
-        "string": "تم التحديث"
-      },
-      {
-        "file": "pages\\admin\\ServiceOrdersPage.tsx",
-        "line": 40,
-        "category": "toast",
-        "string": "حدث خطأ"
-      },
-      {
-        "file": "pages\\advertising\\ABTestDetails.tsx",
-        "line": 55,
-        "category": "toast",
-        "string": "تم بدء الاختبار بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestDetails.tsx",
-        "line": 67,
-        "category": "toast",
-        "string": "تم إيقاف الاختبار بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestDetails.tsx",
-        "line": 82,
-        "category": "toast",
-        "string": "تم تحليل النتائج بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestDetails.tsx",
-        "line": 102,
-        "category": "toast",
-        "string": "تم تعزيز الفائز بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestsManagement.tsx",
-        "line": 57,
-        "category": "toast",
-        "string": "تم بدء الاختبار بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestsManagement.tsx",
-        "line": 69,
-        "category": "toast",
-        "string": "تم إيقاف الاختبار بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\ABTestsManagement.tsx",
-        "line": 83,
-        "category": "toast",
-        "string": "تم حذف الاختبار بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\AdDetails.tsx",
-        "line": 251,
-        "category": "toast",
-        "string": "تم تحديث تفاصيل الإعلان"
-      },
-      {
-        "file": "pages\\advertising\\AdDetails.tsx",
-        "line": 265,
-        "category": "toast",
-        "string": "تمت مزامنة أداء الإعلان"
-      },
-      {
-        "file": "pages\\advertising\\AdDetails.tsx",
-        "line": 275,
-        "category": "toast",
-        "string": "الإعلان غير مربوط بمعرف Meta للمعاينة"
-      },
-      {
-        "file": "pages\\advertising\\AdPreview.tsx",
-        "line": 86,
-        "category": "toast",
-        "string": "يرجى إدخال معرف الإعلان الإبداعي"
-      },
-      {
-        "file": "pages\\advertising\\AdPreview.tsx",
-        "line": 97,
-        "category": "toast",
-        "string": "تم تحميل المعاينة بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\AdvantagePlusShopping.tsx",
-        "line": 80,
-        "category": "toast",
-        "string": "يرجى إدخال اسم الحملة"
-      },
-      {
-        "file": "pages\\advertising\\AdvantagePlusShopping.tsx",
-        "line": 85,
-        "category": "toast",
-        "string": "يرجى إدخال معرف Facebook Pixel"
-      },
-      {
-        "file": "pages\\advertising\\AdvantagePlusShopping.tsx",
-        "line": 90,
-        "category": "toast",
-        "string": "يرجى إدخال ميزانية صحيحة"
-      },
-      {
-        "file": "pages\\advertising\\AdvantagePlusShopping.tsx",
-        "line": 95,
-        "category": "toast",
-        "string": "يرجى اختيار دولة واحدة على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\AdvantagePlusShopping.tsx",
-        "line": 114,
-        "category": "toast",
-        "string": "تم إنشاء حملة Advantage+ Shopping بنجاح! 🛒"
-      },
-      {
-        "file": "pages\\advertising\\AttributionSettings.tsx",
-        "line": 63,
-        "category": "toast",
-        "string": "يرجى إدخال معرف مجموعة الإعلانات"
-      },
-      {
-        "file": "pages\\advertising\\AttributionSettings.tsx",
-        "line": 78,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الإحالة بنجاح! ✅"
-      },
-      {
-        "file": "pages\\advertising\\AudiencesManagement.tsx",
-        "line": 62,
-        "category": "toast",
-        "string": "تم تحديث البيانات"
-      },
-      {
-        "file": "pages\\advertising\\AudiencesManagement.tsx",
-        "line": 82,
-        "category": "toast",
-        "string": "تم حذف الجمهور بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\AutomationRules.tsx",
-        "line": 150,
-        "category": "toast",
-        "string": "فشل في تحميل القواعد"
-      },
-      {
-        "file": "pages\\advertising\\AutomationRules.tsx",
-        "line": 158,
-        "category": "toast",
-        "string": "اسم القاعدة مطلوب"
-      },
-      {
-        "file": "pages\\advertising\\AutomationRules.tsx",
-        "line": 181,
-        "category": "toast",
-        "string": "تم إنشاء القاعدة بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\AutomationRules.tsx",
-        "line": 198,
-        "category": "toast",
-        "string": "تم حذف القاعدة"
-      },
-      {
-        "file": "pages\\advertising\\AutomationRules.tsx",
-        "line": 201,
-        "category": "toast",
-        "string": "فشل في حذف القاعدة"
-      },
-      {
-        "file": "pages\\advertising\\CampaignDetails.tsx",
-        "line": 104,
-        "category": "toast",
-        "string": "تم تحديث البيانات"
-      },
-      {
-        "file": "pages\\advertising\\CampaignDetails.tsx",
-        "line": 111,
-        "category": "toast",
-        "string": "تم إيقاف الحملة"
-      },
-      {
-        "file": "pages\\advertising\\CampaignDetails.tsx",
-        "line": 122,
-        "category": "toast",
-        "string": "تم استئناف الحملة"
-      },
-      {
-        "file": "pages\\advertising\\CampaignDetails.tsx",
-        "line": 137,
-        "category": "toast",
-        "string": "تم حذف الحملة"
-      },
-      {
-        "file": "pages\\advertising\\CatalogDetails.tsx",
-        "line": 71,
-        "category": "toast",
-        "string": "فشل في تحميل المنتجات"
-      },
-      {
-        "file": "pages\\advertising\\CatalogDetails.tsx",
-        "line": 87,
-        "category": "toast",
-        "string": "تم مزامنة ${result.successful} منتج بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CatalogDetails.tsx",
-        "line": 94,
-        "category": "toast",
-        "string": "فشل في مزامنة ${result.failed} منتج"
-      },
-      {
-        "file": "pages\\advertising\\CatalogDetails.tsx",
-        "line": 110,
-        "category": "toast",
-        "string": "تم حذف Catalog بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CatalogDetails.tsx",
-        "line": 278,
-        "category": "toast",
-        "string": "تم نسخ الرابط"
-      },
-      {
-        "file": "pages\\advertising\\CatalogsManagement.tsx",
-        "line": 70,
-        "category": "toast",
-        "string": "تم تحديث البيانات"
-      },
-      {
-        "file": "pages\\advertising\\CatalogsManagement.tsx",
-        "line": 92,
-        "category": "toast",
-        "string": "تم حذف Catalog بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CatalogsManagement.tsx",
-        "line": 235,
-        "category": "toast",
-        "string": "تم نسخ الرابط"
-      },
-      {
-        "file": "pages\\advertising\\ConversionApiDashboard.tsx",
-        "line": 272,
-        "category": "toast",
-        "string": "يرجى إدخال معرف Facebook Pixel"
-      },
-      {
-        "file": "pages\\advertising\\CreateAd.tsx",
-        "line": 191,
-        "category": "toast",
-        "string": "جاري رفع الصورة..."
-      },
-      {
-        "file": "pages\\advertising\\CreateAd.tsx",
-        "line": 210,
-        "category": "toast",
-        "string": "تم رفع الصورة بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CreateAd.tsx",
-        "line": 231,
-        "category": "toast",
-        "string": "جاري رفع الفيديو..."
-      },
-      {
-        "file": "pages\\advertising\\CreateAd.tsx",
-        "line": 252,
-        "category": "toast",
-        "string": "تم رفع الفيديو بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdSet.tsx",
-        "line": 237,
-        "category": "toast",
-        "string": "فشل في تحميل الجماهير"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdSet.tsx",
-        "line": 342,
-        "category": "toast",
-        "string": "يرجى إدخال اسم مجموعة الإعلانات"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdSet.tsx",
-        "line": 348,
-        "category": "toast",
-        "string": "يرجى إدخال ميزانية صحيحة"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdSet.tsx",
-        "line": 356,
-        "category": "toast",
-        "string": "اختر دولة أو محافظة أو مدينة واحدة على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdSet.tsx",
-        "line": 396,
-        "category": "toast",
-        "string": "تم إنشاء مجموعة الإعلانات بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdWizard.tsx",
-        "line": 1343,
-        "category": "toast",
-        "string": "تم تفعيل الحساب الإعلاني وتحميل الصفحات والبكسلات"
-      },
-      {
-        "file": "pages\\advertising\\CreateAdWizard.tsx",
-        "line": 1818,
-        "category": "toast",
-        "string": "فعّل الحساب الإعلاني المختار قبل مراجعة الإرسال"
-      },
-      {
-        "file": "pages\\advertising\\CreateCatalog.tsx",
-        "line": 62,
-        "category": "toast",
-        "string": "تم إنشاء Catalog بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CreateLookalikeAudience.tsx",
-        "line": 56,
-        "category": "toast",
-        "string": "فشل في تحميل البيانات"
-      },
-      {
-        "file": "pages\\advertising\\CreateLookalikeAudience.tsx",
-        "line": 73,
-        "category": "toast",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\advertising\\CreateLookalikeAudience.tsx",
-        "line": 80,
-        "category": "toast",
-        "string": "تم إنشاء الجمهور المشابه بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\CustomAudienceDetails.tsx",
-        "line": 62,
-        "category": "toast",
-        "string": "تم حذف الجمهور بنجاح"
-      },
-      {
-        "file": "pages\\advertising\\DynamicCreativeOptimization.tsx",
-        "line": 98,
-        "category": "toast",
-        "string": "يرجى إدخال معرف الصفحة"
-      },
-      {
-        "file": "pages\\advertising\\DynamicCreativeOptimization.tsx",
-        "line": 108,
-        "category": "toast",
-        "string": "يرجى إضافة صورة أو فيديو واحد على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\DynamicCreativeOptimization.tsx",
-        "line": 113,
-        "category": "toast",
-        "string": "يرجى إضافة عنوان واحد على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\DynamicCreativeOptimization.tsx",
-        "line": 118,
-        "category": "toast",
-        "string": "يرجى إضافة نص واحد على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\DynamicCreativeOptimization.tsx",
-        "line": 138,
-        "category": "toast",
-        "string": "تم إنشاء الإعلان الديناميكي بنجاح! 🎉"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsConnection.tsx",
-        "line": 171,
-        "category": "toast",
-        "string": "معرف الشركة غير متوفر"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsConnection.tsx",
-        "line": 191,
-        "category": "toast",
-        "string": "فشل بدء ربط الإعلانات"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsConnection.tsx",
-        "line": 213,
-        "category": "toast",
-        "string": "تم فصل مصدر الإعلانات."
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsConnection.tsx",
-        "line": 217,
-        "category": "toast",
-        "string": "فشل فصل مصدر الإعلانات"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsDashboard.tsx",
-        "line": 223,
-        "category": "toast",
-        "string": "تم تحديث البيانات"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsDashboard.tsx",
-        "line": 231,
-        "category": "toast",
-        "string": "اختار حساب إعلاني الأول"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsDashboard.tsx",
-        "line": 241,
-        "category": "toast",
-        "string": "تم تحديث الحملات من Meta بسرعة"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsDashboard.tsx",
-        "line": 251,
-        "category": "toast",
-        "string": "اختار حساب إعلاني الأول"
-      },
-      {
-        "file": "pages\\advertising\\FacebookAdsDiagnosis.tsx",
-        "line": 433,
-        "category": "toast",
-        "string": "تم تحديث بيانات التشخيص"
-      },
-      {
-        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
-        "line": 464,
-        "category": "toast",
-        "string": "❌ خطأ: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_134e\"))}"
-      },
-      {
-        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
-        "line": 484,
-        "category": "toast",
-        "string": "❌ خطأ: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_dbf2\"))}"
-      },
-      {
-        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
-        "line": 542,
-        "category": "toast",
-        "string": "⚠️ الصلاحيات المطلوبة غير متوفرة: ${missingPerms}"
-      },
-      {
-        "file": "pages\\advertising\\LeadFormsManagement.tsx",
-        "line": 110,
-        "category": "toast",
-        "string": "فشل في تحميل النماذج"
-      },
-      {
-        "file": "pages\\advertising\\LeadFormsManagement.tsx",
-        "line": 123,
-        "category": "toast",
-        "string": "فشل في تحميل البيانات"
-      },
-      {
-        "file": "pages\\advertising\\LeadFormsManagement.tsx",
-        "line": 131,
-        "category": "toast",
-        "string": "يرجى ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\advertising\\LeadFormsManagement.tsx",
-        "line": 145,
-        "category": "toast",
-        "string": "تم إنشاء النموذج بنجاح!"
-      },
-      {
-        "file": "pages\\advertising\\LeadFormsManagement.tsx",
-        "line": 199,
-        "category": "toast",
-        "string": "تم تصدير البيانات بنجاح!"
-      },
-      {
-        "file": "pages\\advertising\\MediaBuyingReports.tsx",
-        "line": 292,
-        "category": "toast",
-        "string": "اختر حقلًا واحدًا على الأقل"
-      },
-      {
-        "file": "pages\\advertising\\MediaBuyingReports.tsx",
-        "line": 297,
-        "category": "toast",
-        "string": "حدد بداية ونهاية الفترة"
-      },
-      {
-        "file": "pages\\advertising\\MediaBuyingReports.tsx",
-        "line": 336,
-        "category": "toast",
-        "string": "اختر حسابًا إعلانيًا أولًا"
-      },
-      {
-        "file": "pages\\advertising\\MediaBuyingReports.tsx",
-        "line": 340,
-        "category": "toast",
-        "string": "المعاينة السريعة تحتاج فترة مخصصة لأن endpoint الحالي يستقبل start/end"
-      },
-      {
-        "file": "pages\\advertising\\MediaBuyingReports.tsx",
-        "line": 344,
-        "category": "toast",
-        "string": "حدد بداية ونهاية الفترة"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaignDetails.tsx",
-        "line": 44,
-        "category": "toast",
-        "string": "فشل في تحميل الحملة"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaignDetails.tsx",
-        "line": 70,
-        "category": "toast",
-        "string": "تمت الإضافة"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaignDetails.tsx",
-        "line": 80,
-        "category": "toast",
-        "string": "تمت الإزالة"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaigns.tsx",
-        "line": 65,
-        "category": "toast",
-        "string": "الاسم وصورة الإطار مطلوبان"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaigns.tsx",
-        "line": 70,
-        "category": "toast",
-        "string": "تم إنشاء الحملة"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaigns.tsx",
-        "line": 83,
-        "category": "toast",
-        "string": "تم الحذف"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaigns.tsx",
-        "line": 94,
-        "category": "toast",
-        "string": "جاري تطبيق الإطارات والتزامن مع فيسبوك في الخلفية"
-      },
-      {
-        "file": "pages\\advertising\\OverlayCampaigns.tsx",
-        "line": 96,
-        "category": "toast",
-        "string": "تم تطبيق الإطار على ${data.data?.results?.length || 0} منتج"
-      },
-      {
-        "file": "pages\\advertising\\SavedAudiences.tsx",
-        "line": 76,
-        "category": "toast",
-        "string": "فشل في تحميل الجماهير"
-      },
-      {
-        "file": "pages\\advertising\\SavedAudiences.tsx",
-        "line": 84,
-        "category": "toast",
-        "string": "يرجى إدخال اسم الجمهور"
-      },
-      {
-        "file": "pages\\advertising\\SavedAudiences.tsx",
-        "line": 122,
-        "category": "toast",
-        "string": "تم إنشاء الجمهور بنجاح! ✅"
-      },
-      {
-        "file": "pages\\advertising\\SavedAudiences.tsx",
-        "line": 147,
-        "category": "toast",
-        "string": "تم حذف الجمهور"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateCommission.tsx",
-        "line": 158,
-        "category": "toast",
-        "string": "الرجاء إدخال مبلغ صالح"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateCommission.tsx",
-        "line": 163,
-        "category": "toast",
-        "string": "الحد الأدنى للسحب هو ${formatPrice(minimumPayout)}"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateCommission.tsx",
-        "line": 168,
-        "category": "toast",
-        "string": "يمكن طلب سحب الرصيد المتاح بالكامل فقط حالياً"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateCommission.tsx",
-        "line": 188,
-        "category": "toast",
-        "string": "تم إرسال طلب السحب بنجاح"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateDashboard.tsx",
-        "line": 202,
-        "category": "toast",
-        "string": "تم نسخ الرابط!"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateDashboard.tsx",
-        "line": 205,
-        "category": "toast",
-        "string": "لم نتمكن من النسخ تلقائيا، انسخ الرابط يدويا من الحقل."
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateDashboard.tsx",
-        "line": 210,
-        "category": "toast",
-        "string": "اختر ملفًا صالحًا أولاً"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateDashboard.tsx",
-        "line": 227,
-        "category": "toast",
-        "string": "تم رفع النسخة الجديدة وبانتظار مراجعة الإدارة"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateOrderDetails.tsx",
-        "line": 249,
-        "category": "toast",
-        "string": "اكتب تفاصيل أوضح قبل فتح التيكت"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateOrders.tsx",
-        "line": 57,
-        "category": "toast",
-        "string": "حدث خطأ أثناء جلب الطلبات"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
-        "line": 92,
-        "category": "toast",
-        "string": "فشل تحميل قائمة المسوقين"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
-        "line": 195,
-        "category": "toast",
-        "string": "فشل تحميل المنتجات"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
-        "line": 220,
-        "category": "toast",
-        "string": "فشل التحديث"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
-        "line": 234,
-        "category": "toast",
-        "string": "تم تحديث ${res.data.data.count} منتج"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
-        "line": 239,
-        "category": "toast",
-        "string": "فشل التحديث الجماعي"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
-        "line": 125,
-        "category": "toast",
-        "string": "قيمة ${product.name} غير صالحة"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
-        "line": 141,
-        "category": "toast",
-        "string": "أسعار ${product.name} غير مكتملة"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
-        "line": 146,
-        "category": "toast",
-        "string": "تكلفة المسوق في ${product.name} لا يجب أن تقل عن سعر التاجر"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
-        "line": 151,
-        "category": "toast",
-        "string": "السعر النهائي في ${product.name} لا يجب أن يقل عن تكلفة المسوق"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
-        "line": 169,
-        "category": "toast",
-        "string": "تم تحديث ${changesCount} منتج بنجاح!"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateRegister.tsx",
-        "line": 37,
-        "category": "toast",
-        "string": "تم تسجيلك كمسوق بنجاح!"
-      },
-      {
-        "file": "pages\\affiliates\\AffiliateSystemSettings.tsx",
-        "line": 295,
-        "category": "toast",
-        "string": "تم نسخ الرابط بنجاح"
-      },
-      {
-        "file": "pages\\affiliates\\CompanyAffiliateDashboard.tsx",
-        "line": 64,
-        "category": "toast",
-        "string": "حدث خطأ أثناء جلب البيانات"
-      },
-      {
-        "file": "pages\\Analytics\\orders\\CancellationAnalytics.tsx",
-        "line": 286,
-        "category": "toast",
-        "string": "تم حفظ أسباب الإلغاء الجاهزة"
-      },
-      {
-        "file": "pages\\Analytics\\orders\\CancellationAnalytics.tsx",
-        "line": 290,
-        "category": "toast",
-        "string": "فشل في حفظ أسباب الإلغاء"
-      },
-      {
-        "file": "pages\\auth\\ResetPassword.tsx",
-        "line": 74,
-        "category": "toast",
-        "string": "رمز إعادة التعيين غير صحيح"
-      },
-      {
-        "file": "pages\\auth\\ResetPassword.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "تم إعادة تعيين كلمة المرور بنجاح"
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 89,
-        "category": "toast",
-        "string": "فشل الإرسال: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 92,
-        "category": "toast",
-        "string": "خطأ في الإرسال: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 176,
-        "category": "toast",
-        "string": "خطأ: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 336,
-        "category": "toast",
-        "string": "فشل تحميل التعليقات: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 388,
-        "category": "toast",
-        "string": "تم حذف ${selectedComments.length} تعليق"
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 395,
-        "category": "toast",
-        "string": "خطأ: "
-      },
-      {
-        "file": "pages\\comments\\PostSettings.jsx",
-        "line": 156,
-        "category": "toast",
-        "string": "تمت معالجة ${response.data.processedComments} تعليق"
-      },
-      {
-        "file": "pages\\comments\\PostSettings.jsx",
-        "line": 159,
-        "category": "toast",
-        "string": "حدث خطأ أثناء تطبيق طريقة الرد: "
-      },
-      {
-        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
-        "line": 69,
-        "category": "toast",
-        "string": "حدث خطأ أثناء حذف التعليقات: "
-      },
-      {
-        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
-        "line": 152,
-        "category": "toast",
-        "string": "خطأ في تحديث رد التعليق: "
-      },
-      {
-        "file": "pages\\conversations\\TelegramConversationsPro.tsx",
-        "line": 654,
-        "category": "toast",
-        "string": "فشل تحديث حالة الرد الآلي"
-      },
-      {
-        "file": "pages\\customers\\CashbackSettings.tsx",
-        "line": 81,
-        "category": "toast",
-        "string": "حدث خطأ أثناء تحميل الإعدادات"
-      },
-      {
-        "file": "pages\\customers\\CashbackSettings.tsx",
-        "line": 92,
-        "category": "toast",
-        "string": "نسبة الكاش باك يجب أن تكون بين 0 و 100"
-      },
-      {
-        "file": "pages\\customers\\CashbackSettings.tsx",
-        "line": 97,
-        "category": "toast",
-        "string": "الحد الأقصى للطلب يجب أن يكون رقم إيجابي (أو 0 بدون حد)"
-      },
-      {
-        "file": "pages\\customers\\CashbackSettings.tsx",
-        "line": 104,
-        "category": "toast",
-        "string": "يجب أن تكون نسب المستويات الخاصة بين 0 و 100"
-      },
-      {
-        "file": "pages\\customers\\CashbackSettings.tsx",
-        "line": 111,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الكاش باك بنجاح"
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetList.tsx",
-        "line": 108,
-        "category": "toast",
-        "string": "جاري استنساخ الأصل..."
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetList.tsx",
-        "line": 529,
-        "category": "toast",
-        "string": "جاري تحديث الحالة..."
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetList.tsx",
-        "line": 536,
-        "category": "toast",
-        "string": "تم تغيير حالة ${selectedIds.length} أصول إلى ${status.label}"
-      },
-      {
-        "file": "pages\\hr\\assets\\AssetList.tsx",
-        "line": 540,
-        "category": "toast",
-        "string": "فشل في تحديث الحالة"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetMaintenanceSection.tsx",
-        "line": 98,
-        "category": "toast",
-        "string": "حدث خطأ أثناء تحميل البيانات"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetMaintenanceSection.tsx",
-        "line": 110,
-        "category": "toast",
-        "string": "يرجى اكمال البيانات المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetMaintenanceSection.tsx",
-        "line": 120,
-        "category": "toast",
-        "string": "تم تسجيل سجل الصيانة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetMaintenanceSection.tsx",
-        "line": 125,
-        "category": "toast",
-        "string": "فشل في حفظ سجل الصيانة"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetRequestsSection.tsx",
-        "line": 98,
-        "category": "toast",
-        "string": "يرجى ذكر سبب الطلب"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetRequestsSection.tsx",
-        "line": 108,
-        "category": "toast",
-        "string": "تم إرسال الطلب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetRequestsSection.tsx",
-        "line": 113,
-        "category": "toast",
-        "string": "فشل في إرسال الطلب"
-      },
-      {
-        "file": "pages\\hr\\assets\\sections\\AssetRequestsSection.tsx",
-        "line": 135,
-        "category": "toast",
-        "string": "فشل في تحديث حالة الطلب"
-      },
-      {
-        "file": "pages\\hr\\AssignShift.tsx",
-        "line": 120,
-        "category": "toast",
-        "string": "فشل في جلب البيانات المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\AssignShift.tsx",
-        "line": 147,
-        "category": "toast",
-        "string": "يرجى اختيار موظف واحد على الأقل والتاريخ"
-      },
-      {
-        "file": "pages\\hr\\AssignShift.tsx",
-        "line": 193,
-        "category": "toast",
-        "string": "تم تعيين ${selectedEmployeeIds.length} موظف بنجاح"
-      },
-      {
-        "file": "pages\\hr\\ClearanceChecklist.tsx",
-        "line": 57,
-        "category": "toast",
-        "string": "فشل في تحميل بيانات إخلاء الطرف"
-      },
-      {
-        "file": "pages\\hr\\ClearanceChecklist.tsx",
-        "line": 87,
-        "category": "toast",
-        "string": "فشل في تحديث الحالة"
-      },
-      {
-        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
-        "line": 234,
-        "category": "toast",
-        "string": "فشل في جلب قائمة الموظفين"
-      },
-      {
-        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
-        "line": 280,
-        "category": "toast",
-        "string": "تم الانتهاء من محاكاة الحسابات"
-      },
-      {
-        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
-        "line": 293,
-        "category": "toast",
-        "string": "تم تطبيق سيناريو: ${scenario.name}"
-      },
-      {
-        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
-        "line": 959,
-        "category": "toast",
-        "string": "جاري إعداد قالب الطباعة..."
-      },
-      {
-        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
-        "line": 966,
-        "category": "toast",
-        "string": "تم حفظ المحاكاة كمسودة"
-      },
-      {
-        "file": "pages\\hr\\CreateAdvance.tsx",
-        "line": 73,
-        "category": "toast",
-        "string": "حدث خطأ أثناء جلب البيانات"
-      },
-      {
-        "file": "pages\\hr\\CreateAdvance.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "تم إنشاء طلب السلفة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateFeedback.tsx",
-        "line": 91,
-        "category": "toast",
-        "string": "لم يتم العثور على التغذية الراجعة"
-      },
-      {
-        "file": "pages\\hr\\CreateFeedback.tsx",
-        "line": 97,
-        "category": "toast",
-        "string": "فشل في تحميل البيانات"
-      },
-      {
-        "file": "pages\\hr\\CreateFeedback.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "يرجى اختيار تقييم"
-      },
-      {
-        "file": "pages\\hr\\CreateFeedback.tsx",
-        "line": 121,
-        "category": "toast",
-        "string": "تم تحديث الرسالة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateFeedback.tsx",
-        "line": 124,
-        "category": "toast",
-        "string": "تم الإرسال بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreatePerformanceReview.tsx",
-        "line": 86,
-        "category": "toast",
-        "string": "فشل في جلب قائمة الموظفين"
-      },
-      {
-        "file": "pages\\hr\\CreatePerformanceReview.tsx",
-        "line": 131,
-        "category": "toast",
-        "string": "يرجى ملء جميع الحقول الإلزامية"
-      },
-      {
-        "file": "pages\\hr\\CreatePerformanceReview.tsx",
-        "line": 139,
-        "category": "toast",
-        "string": "تم تحديث التقييم بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreatePerformanceReview.tsx",
-        "line": 142,
-        "category": "toast",
-        "string": "تم إنشاء نموذج التقييم بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreatePromotion.tsx",
-        "line": 107,
-        "category": "toast",
-        "string": "فشل في تحميل بيانات الموظفين"
-      },
-      {
-        "file": "pages\\hr\\CreatePromotion.tsx",
-        "line": 148,
-        "category": "toast",
-        "string": "يجب اختيار الموظف"
-      },
-      {
-        "file": "pages\\hr\\CreatePromotion.tsx",
-        "line": 154,
-        "category": "toast",
-        "string": "يجب كتابة المنصب الجديد"
-      },
-      {
-        "file": "pages\\hr\\CreatePromotion.tsx",
-        "line": 166,
-        "category": "toast",
-        "string": "المنصب الجديد يجب أن يكون مختلفاً عن المنصب السابق"
-      },
-      {
-        "file": "pages\\hr\\CreatePromotion.tsx",
-        "line": 180,
-        "category": "toast",
-        "string": "تم إنشاء الترقية بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateResignation.tsx",
-        "line": 69,
-        "category": "toast",
-        "string": "فشل في تحميل البيانات"
-      },
-      {
-        "file": "pages\\hr\\CreateResignation.tsx",
-        "line": 104,
-        "category": "toast",
-        "string": "يجب اختيار الموظف"
-      },
-      {
-        "file": "pages\\hr\\CreateResignation.tsx",
-        "line": 110,
-        "category": "toast",
-        "string": "تم تسجيل الاستقالة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateTraining.tsx",
-        "line": 115,
-        "category": "toast",
-        "string": "فشل في تحميل البيانات"
-      },
-      {
-        "file": "pages\\hr\\CreateTraining.tsx",
-        "line": 128,
-        "category": "toast",
-        "string": "يجب اختيار الموظف"
-      },
-      {
-        "file": "pages\\hr\\CreateTraining.tsx",
-        "line": 142,
-        "category": "toast",
-        "string": "تم تحديث البرنامج التدريبي بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateTraining.tsx",
-        "line": 145,
-        "category": "toast",
-        "string": "تم إضافة البرنامج التدريبي بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateTraining.tsx",
-        "line": 163,
-        "category": "toast",
-        "string": "تم حذف السجل التدريبي بنجاح"
-      },
-      {
-        "file": "pages\\hr\\CreateWarning.tsx",
-        "line": 91,
-        "category": "toast",
-        "string": "فشل في تحميل بيانات الموظفين"
-      },
-      {
-        "file": "pages\\hr\\CreateWarning.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "يجب اختيار الموظف"
-      },
-      {
-        "file": "pages\\hr\\CreateWarning.tsx",
-        "line": 114,
-        "category": "toast",
-        "string": "تم إصدار الإنذار بنجاح"
-      },
-      {
-        "file": "pages\\hr\\DecisionResignation.tsx",
-        "line": 50,
-        "category": "toast",
-        "string": "فشل في تحميل بيانات الاستقالة"
-      },
-      {
-        "file": "pages\\hr\\Departments.tsx",
-        "line": 502,
-        "category": "toast",
-        "string": "تم إضافة ${assignEmployeesSelection.length} موظف للقسم"
-      },
-      {
-        "file": "pages\\hr\\EditPromotion.tsx",
-        "line": 239,
-        "category": "toast",
-        "string": "يجب اختيار الموظف"
-      },
-      {
-        "file": "pages\\hr\\EditPromotion.tsx",
-        "line": 244,
-        "category": "toast",
-        "string": "يجب كتابة المنصب الجديد"
-      },
-      {
-        "file": "pages\\hr\\EditPromotion.tsx",
-        "line": 268,
-        "category": "toast",
-        "string": "تم تحديث الترقية بنجاح"
-      },
-      {
-        "file": "pages\\hr\\EditWarning.tsx",
-        "line": 96,
-        "category": "toast",
-        "string": "الرجاء ملء جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\EditWarning.tsx",
-        "line": 103,
-        "category": "toast",
-        "string": "تم تحديث الإنذار بنجاح"
-      },
-      {
-        "file": "pages\\hr\\EmployeeDetails.tsx",
-        "line": 130,
-        "category": "toast",
-        "string": "حدث خطأ أثناء جلب بيانات الموظف"
-      },
-      {
-        "file": "pages\\hr\\EmployeeEdit.tsx",
-        "line": 96,
-        "category": "toast",
-        "string": "فشل في تحميل بيانات الموظف"
-      },
-      {
-        "file": "pages\\hr\\EmployeeEdit.tsx",
-        "line": 132,
-        "category": "toast",
-        "string": "تم تحديث بيانات الموظف بنجاح"
-      },
-      {
-        "file": "pages\\hr\\EmployeesPromotion.tsx",
-        "line": 227,
-        "category": "toast",
-        "string": "تم حذف الترقية بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Feedback.tsx",
-        "line": 128,
-        "category": "toast",
-        "string": "فشل في جلب التغذية الراجعة"
-      },
-      {
-        "file": "pages\\hr\\Feedback.tsx",
-        "line": 203,
-        "category": "toast",
-        "string": "تم حذف التغذية الراجعة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Feedback.tsx",
-        "line": 209,
-        "category": "toast",
-        "string": "فشل في حذف التغذية الراجعة"
-      },
-      {
-        "file": "pages\\hr\\Feedback.tsx",
-        "line": 228,
-        "category": "toast",
-        "string": "تم إرسال الرد بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Goals.tsx",
-        "line": 246,
-        "category": "toast",
-        "string": "تعذر تحميل الأهداف"
-      },
-      {
-        "file": "pages\\hr\\HRReports.tsx",
-        "line": 269,
-        "category": "toast",
-        "string": "لا توجد بيانات للتصدير"
-      },
-      {
-        "file": "pages\\hr\\HRReports.tsx",
-        "line": 300,
-        "category": "toast",
-        "string": "تم تصدير التقرير بنجاح"
-      },
-      {
-        "file": "pages\\hr\\HRReports.tsx",
-        "line": 319,
-        "category": "toast",
-        "string": "تم تصدير ملف تجريبي للتقرير"
-      },
-      {
-        "file": "pages\\hr\\HRSettings.tsx",
-        "line": 732,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
-        "file": "pages\\hr\\HRSettings.tsx",
-        "line": 859,
-        "category": "toast",
-        "string": "تم الحصول على الموقع الحالي بنجاح"
-      },
-      {
-        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
-        "line": 496,
-        "category": "toast",
-        "string": "تم تعيين وقت الحضور: ${currentTime}"
-      },
-      {
-        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
-        "line": 505,
-        "category": "toast",
-        "string": "تم تعيين وقت الانصراف: ${currentTime}"
-      },
-      {
-        "file": "pages\\hr\\MyAdvances.tsx",
-        "line": 81,
-        "category": "toast",
-        "string": "فشل في جلب بيانات السلف"
-      },
-      {
-        "file": "pages\\hr\\MyAdvances.tsx",
-        "line": 89,
-        "category": "toast",
-        "string": "يرجى تعبئة جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\MyAdvances.tsx",
-        "line": 106,
-        "category": "toast",
-        "string": "تم إرسال طلب السلفة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\MyCompaniesDashboard.tsx",
-        "line": 195,
-        "category": "toast",
-        "string": "تم تعيين ${companyName} كشركة افتراضية"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 265,
-        "category": "toast",
-        "string": "تم توليد ${result.success.length} كشف راتب جديد"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 270,
-        "category": "toast",
-        "string": "تم إعادة توليد ${result.regenerated.length} كشف راتب"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 275,
-        "category": "toast",
-        "string": "تم تخطي ${result.skipped.length} موظف (لديهم كشوف رواتب مسبقاً)"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 280,
-        "category": "toast",
-        "string": "فشل توليد ${result.failed.length} كشف"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 338,
-        "category": "toast",
-        "string": "تم صرف ${selectedIds.length} راتب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Payroll.tsx",
-        "line": 363,
-        "category": "toast",
-        "string": "تم اعتماد ${response.data.result.updated} كشف راتب"
-      },
-      {
-        "file": "pages\\hr\\PayrollTesting.tsx",
-        "line": 481,
-        "category": "toast",
-        "string": "فشل في حساب الراتب"
-      },
-      {
-        "file": "pages\\hr\\PayrollTesting.tsx",
-        "line": 518,
-        "category": "toast",
-        "string": "فشل في جلب قائمة الموظفين"
-      },
-      {
-        "file": "pages\\hr\\PayrollTesting.tsx",
-        "line": 2593,
-        "category": "toast",
-        "string": "جاري تحضير ملف PDF..."
-      },
-      {
-        "file": "pages\\hr\\PayrollTesting.tsx",
-        "line": 2606,
-        "category": "toast",
-        "string": "جاري فتح نافذة الطباعة..."
-      },
-      {
-        "file": "pages\\hr\\PerformanceReviews.tsx",
-        "line": 76,
-        "category": "toast",
-        "string": "فشل في جلب التقييمات"
-      },
-      {
-        "file": "pages\\hr\\PerformanceReviews.tsx",
-        "line": 87,
-        "category": "toast",
-        "string": "تم حذف التقييم بنجاح"
-      },
-      {
-        "file": "pages\\hr\\PerformanceReviews.tsx",
-        "line": 91,
-        "category": "toast",
-        "string": "فشل في حذف التقييم"
-      },
-      {
-        "file": "pages\\hr\\PositionsManagement.tsx",
-        "line": 172,
-        "category": "toast",
-        "string": "عنوان المنصب مطلوب"
-      },
-      {
-        "file": "pages\\hr\\PositionsManagement.tsx",
-        "line": 199,
-        "category": "toast",
-        "string": "تم تحديث المنصب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\PositionsManagement.tsx",
-        "line": 206,
-        "category": "toast",
-        "string": "تم إنشاء المنصب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\PositionsManagement.tsx",
-        "line": 234,
-        "category": "toast",
-        "string": "تم حذف المنصب بنجاح"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\HiringPipelineSection.tsx",
-        "line": 155,
-        "category": "toast",
-        "string": "تم نقل المتقدم للمرحلة المحددة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\HiringPipelineSection.tsx",
-        "line": 161,
-        "category": "toast",
-        "string": "فشل في نقل المتقدم"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\HiringPipelineSection.tsx",
-        "line": 187,
-        "category": "toast",
-        "string": "تم حذف المتقدم بنجاح"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\HiringPipelineSection.tsx",
-        "line": 198,
-        "category": "toast",
-        "string": "فشل حذف المتقدم"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\InterviewsSection.tsx",
-        "line": 91,
-        "category": "toast",
-        "string": "فشل في جلب المقابلات"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\InterviewsSection.tsx",
-        "line": 127,
-        "category": "toast",
-        "string": "يرجى تعبئة جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\InterviewsSection.tsx",
-        "line": 142,
-        "category": "toast",
-        "string": "تم جدولة المقابلة بنجاح 🎉"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\InterviewsSection.tsx",
-        "line": 160,
-        "category": "toast",
-        "string": "تم تحديث الحالة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\recruitment\\sections\\InterviewsSection.tsx",
-        "line": 165,
-        "category": "toast",
-        "string": "فشل تحديث الحالة"
-      },
-      {
-        "file": "pages\\hr\\reports\\AttendanceReport.tsx",
-        "line": 102,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\AttendanceReport.tsx",
-        "line": 110,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\EmployeeReport.tsx",
-        "line": 161,
-        "category": "toast",
-        "string": "فشل في جلب قائمة الموظفين"
-      },
-      {
-        "file": "pages\\hr\\reports\\EmployeeReport.tsx",
-        "line": 167,
-        "category": "toast",
-        "string": "الرجاء اختيار موظف"
-      },
-      {
-        "file": "pages\\hr\\reports\\EmployeeReport.tsx",
-        "line": 172,
-        "category": "toast",
-        "string": "الرجاء تحديد الفترة الزمنية"
-      },
-      {
-        "file": "pages\\hr\\reports\\EmployeeReport.tsx",
-        "line": 179,
-        "category": "toast",
-        "string": "تاريخ البداية يجب أن يكون قبل تاريخ النهاية"
-      },
-      {
-        "file": "pages\\hr\\reports\\EmployeeReport.tsx",
-        "line": 246,
-        "category": "toast",
-        "string": "تم تصدير التقرير بنجاح"
-      },
-      {
-        "file": "pages\\hr\\reports\\LateAbsenceReport.tsx",
-        "line": 93,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\LateAbsenceReport.tsx",
-        "line": 101,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\LeaveReport.tsx",
-        "line": 76,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\LeaveReport.tsx",
-        "line": 84,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\OvertimeReport.tsx",
-        "line": 87,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\OvertimeReport.tsx",
-        "line": 95,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\PayrollReport.tsx",
-        "line": 71,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\PayrollReport.tsx",
-        "line": 79,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\PerformanceReport.tsx",
-        "line": 88,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\PerformanceReport.tsx",
-        "line": 96,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\reports\\TurnoverReport.tsx",
-        "line": 86,
-        "category": "toast",
-        "string": "فشل في جلب التقرير"
-      },
-      {
-        "file": "pages\\hr\\reports\\TurnoverReport.tsx",
-        "line": 94,
-        "category": "toast",
-        "string": "جاري تصدير التقرير..."
-      },
-      {
-        "file": "pages\\hr\\Resignations.tsx",
-        "line": 53,
-        "category": "toast",
-        "string": "فشل في جلب الاستقالات"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardApplication.tsx",
-        "line": 56,
-        "category": "toast",
-        "string": "فشل تحميل البيانات"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardApplication.tsx",
-        "line": 63,
-        "category": "toast",
-        "string": "يرجى اختيار الموظف ونوع المكافأة"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardApplication.tsx",
-        "line": 70,
-        "category": "toast",
-        "string": "تم صرف المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardApplication.tsx",
-        "line": 77,
-        "category": "toast",
-        "string": "فشل صرف المكافأة"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardDetails.tsx",
-        "line": 116,
-        "category": "toast",
-        "string": "تم اعتماد المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardDetails.tsx",
-        "line": 129,
-        "category": "toast",
-        "string": "تم رفض المكافأة"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardDetails.tsx",
-        "line": 142,
-        "category": "toast",
-        "string": "تم حذف المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\rewards\\RewardsList.tsx",
-        "line": 186,
-        "category": "toast",
-        "string": "تم حذف المكافأة بنجاح"
-      },
-      {
-        "file": "pages\\hr\\SalaryHistory.tsx",
-        "line": 72,
-        "category": "toast",
-        "string": "فشل في جلب سجل الرواتب"
-      },
-      {
-        "file": "pages\\hr\\SalaryUpdates.tsx",
-        "line": 78,
-        "category": "toast",
-        "string": "فشل في جلب البيانات"
-      },
-      {
-        "file": "pages\\hr\\SalaryUpdates.tsx",
-        "line": 174,
-        "category": "toast",
-        "string": "لا توجد تغييرات فعلية للحفظ"
-      },
-      {
-        "file": "pages\\hr\\SalaryUpdates.tsx",
-        "line": 183,
-        "category": "toast",
-        "string": "يجب كتابة سبب التعديل لكل موظف تم تغيير راتبه"
-      },
-      {
-        "file": "pages\\hr\\SalaryUpdates.tsx",
-        "line": 199,
-        "category": "toast",
-        "string": "تم تحديث ${res.data.updatedCount} موظف بنجاح"
-      },
-      {
-        "file": "pages\\hr\\SettlementDetailsModal.tsx",
-        "line": 66,
-        "category": "toast",
-        "string": "فشل في جلب تفاصيل المستحقات"
-      },
-      {
-        "file": "pages\\hr\\SettlementDetailsModal.tsx",
-        "line": 81,
-        "category": "toast",
-        "string": "تم اعتماد المستحقات وصرفها بنجاح"
-      },
-      {
-        "file": "pages\\hr\\SettlementDetailsModal.tsx",
-        "line": 86,
-        "category": "toast",
-        "string": "حدث خطأ أثناء اعتماد المستحقات"
-      },
-      {
-        "file": "pages\\hr\\Shifts.tsx",
-        "line": 210,
-        "category": "toast",
-        "string": "تم حذف ${selectedShifts.length} مناوبة"
-      },
-      {
-        "file": "pages\\hr\\Training.tsx",
-        "line": 52,
-        "category": "toast",
-        "string": "فشل في جلب سجلات التدريب"
-      },
-      {
-        "file": "pages\\hr\\WarningDetails.tsx",
-        "line": 82,
-        "category": "toast",
-        "string": "تم حذف الإنذار بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Warnings.tsx",
-        "line": 131,
-        "category": "toast",
-        "string": "فشل في جلب البيانات"
-      },
-      {
-        "file": "pages\\hr\\Warnings.tsx",
-        "line": 141,
-        "category": "toast",
-        "string": "تم حذف الإنذار بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Warnings.tsx",
-        "line": 144,
-        "category": "toast",
-        "string": "فشل في حذف الإنذار"
-      },
-      {
-        "file": "pages\\hr\\Warnings.tsx",
-        "line": 152,
-        "category": "toast",
-        "string": "تم تسجيل الإقرار بنجاح"
-      },
-      {
-        "file": "pages\\hr\\Warnings.tsx",
-        "line": 155,
-        "category": "toast",
-        "string": "فشل في تسجيل الإقرار"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormBuilder.tsx",
-        "line": 94,
-        "category": "toast",
-        "string": "تعذر تحميل الفورم"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormBuilder.tsx",
-        "line": 243,
-        "category": "toast",
-        "string": "اكتب اسم الفورم أولًا"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormBuilder.tsx",
-        "line": 248,
-        "category": "toast",
-        "string": "أضف حقلًا واحدًا على الأقل"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormBuilder.tsx",
-        "line": 256,
-        "category": "toast",
-        "string": "تم تحديث الفورم"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormBuilder.tsx",
-        "line": 262,
-        "category": "toast",
-        "string": "تم إنشاء الفورم"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormPreview.tsx",
-        "line": 70,
-        "category": "toast",
-        "string": "تعذر تحميل المعاينة"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormsDashboard.tsx",
-        "line": 50,
-        "category": "toast",
-        "string": "تعذر تحميل فورمات التقارير"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormsDashboard.tsx",
-        "line": 119,
-        "category": "toast",
-        "string": "تم حذف الفورم"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportFormsDashboard.tsx",
-        "line": 123,
-        "category": "toast",
-        "string": "تعذر حذف الفورم"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportRecordsPage.tsx",
-        "line": 80,
-        "category": "toast",
-        "string": "تعذر تحميل السجلات"
-      },
-      {
-        "file": "pages\\hr\\work-reporting\\WorkReportSubmissionPage.tsx",
-        "line": 158,
-        "category": "toast",
-        "string": "تم حفظ التقرير"
-      },
-      {
-        "file": "pages\\legal\\TermsAndConditions.tsx",
-        "line": 57,
-        "category": "toast",
-        "string": "فشل تحميل المحتوى"
-      },
-      {
-        "file": "pages\\legal\\TermsAndConditions.tsx",
-        "line": 73,
-        "category": "toast",
-        "string": "تم حفظ الشروط والأحكام بنجاح"
-      },
-      {
-        "file": "pages\\legal\\TermsAndConditions.tsx",
-        "line": 77,
-        "category": "toast",
-        "string": "فشل حفظ المحتوى"
-      },
-      {
-        "file": "pages\\marketplace\\AppDetails.tsx",
-        "line": 239,
-        "category": "toast",
-        "string": "خطأ في جلب تفاصيل الأداة"
-      },
-      {
-        "file": "pages\\marketplace\\AppDetails.tsx",
-        "line": 249,
-        "category": "toast",
-        "string": "هذه الأداة مفعلة بالفعل"
-      },
-      {
-        "file": "pages\\marketplace\\AppDetails.tsx",
-        "line": 284,
-        "category": "toast",
-        "string": "يرجى تسجيل الدخول أولاً"
-      },
-      {
-        "file": "pages\\marketplace\\AppDetails.tsx",
-        "line": 316,
-        "category": "toast",
-        "string": "يرجى تسجيل الدخول أولاً"
-      },
-      {
-        "file": "pages\\marketplace\\AppSettings.tsx",
-        "line": 719,
-        "category": "toast",
-        "string": "تعذر تحميل إعدادات التطبيق"
-      },
-      {
-        "file": "pages\\marketplace\\AppSettings.tsx",
-        "line": 817,
-        "category": "toast",
-        "string": "فعّل التطبيق أولًا من Marketplace"
-      },
-      {
-        "file": "pages\\marketplace\\AppSettings.tsx",
-        "line": 826,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
-        "file": "pages\\marketplace\\AppSettings.tsx",
-        "line": 832,
-        "category": "toast",
-        "string": "حدث خطأ أثناء حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\marketplace\\BundleDetails.tsx",
-        "line": 69,
-        "category": "toast",
-        "string": "لم يتم العثور على الباقة"
-      },
-      {
-        "file": "pages\\marketplace\\BundleDetails.tsx",
-        "line": 106,
-        "category": "toast",
-        "string": "حدث خطأ أثناء الاشتراك"
-      },
-      {
-        "file": "pages\\marketplace\\UpsellManualManager.tsx",
-        "line": 334,
-        "category": "toast",
-        "string": "تعذر تحميل ربط المنتجات لهذا المنتج"
-      },
-      {
-        "file": "pages\\marketplace\\UpsellManualManager.tsx",
-        "line": 396,
-        "category": "toast",
-        "string": "اختر المنتج الأساسي أولًا"
-      },
-      {
-        "file": "pages\\marketplace\\UpsellManualManager.tsx",
-        "line": 415,
-        "category": "toast",
-        "string": "تم حفظ روابط الـ upsell لهذا المنتج"
-      },
-      {
-        "file": "pages\\marketplace\\UpsellManualManager.tsx",
-        "line": 418,
-        "category": "toast",
-        "string": "تعذر حفظ روابط المنتجات"
-      },
-      {
-        "file": "pages\\merchant-portal\\MerchantPortalDashboard.tsx",
-        "line": 182,
-        "category": "toast",
-        "string": "لا توجد مستحقات متاحة للسحب بعد التسليم"
-      },
-      {
-        "file": "pages\\merchant-portal\\MerchantPortalDashboard.tsx",
-        "line": 199,
-        "category": "toast",
-        "string": "تم إرسال طلب السحب للشركة"
-      },
-      {
-        "file": "pages\\merchants\\MerchantRegister.tsx",
-        "line": 107,
-        "category": "toast",
-        "string": "تم تسجيل التاجر بنجاح!"
-      },
-      {
-        "file": "pages\\merchants\\MerchantsList.tsx",
-        "line": 236,
-        "category": "toast",
-        "string": "حدث خطأ أثناء جلب التجار"
-      },
-      {
-        "file": "pages\\merchants\\MerchantsList.tsx",
-        "line": 255,
-        "category": "toast",
-        "string": "تم تسجيل تحويل مستحقات التاجر"
-      },
-      {
-        "file": "pages\\merchants\\MerchantsList.tsx",
-        "line": 278,
-        "category": "toast",
-        "string": "تم إلغاء طلب سحب التاجر"
-      },
-      {
-        "file": "pages\\orders\\components\\SimplifiedProductSelectionModal.tsx",
-        "line": 223,
-        "category": "toast",
-        "string": "فشل في جلب المنتجات"
-      },
-      {
-        "file": "pages\\orders\\components\\SimplifiedProductSelectionModal.tsx",
-        "line": 252,
-        "category": "toast",
-        "string": "هذا المنتج غير متوفر في المخزون"
-      },
-      {
-        "file": "pages\\orders\\components\\SimplifiedProductSelectionModal.tsx",
-        "line": 263,
-        "category": "toast",
-        "string": "هذا المنتج غير متوفر في المخزون"
-      },
-      {
-        "file": "pages\\orders\\hooks\\useOrderDetails.ts",
-        "line": 781,
-        "category": "toast",
-        "string": "الرقم البديل: ${altPhoneValidation.error}"
-      },
-      {
-        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
-        "line": 374,
-        "category": "toast",
-        "string": "تم حساب السعر الفعلي للشحن: ${cost} ج.م"
-      },
-      {
-        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
-        "line": 385,
-        "category": "toast",
-        "string": "تم عرض سعر الشحن: ${fallbackCost} ج.م"
-      },
-      {
-        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
-        "line": 397,
-        "category": "toast",
-        "string": "لا يوجد كود تتبع لشحنة تربو التابعة لهذا الطلب"
-      },
-      {
-        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
-        "line": 432,
-        "category": "toast",
-        "string": "لا توجد شحنة تربو مربوطة بهذا الطلب لمزامنتها"
-      },
-      {
-        "file": "pages\\owner\\CompanyOrdersDetails.tsx",
-        "line": 151,
-        "category": "toast",
-        "string": "فشل تحميل البيانات"
-      },
-      {
-        "file": "pages\\owner\\CompanyOrdersDetails.tsx",
-        "line": 155,
-        "category": "toast",
-        "string": "فشل تحميل الطلبات"
-      },
-      {
-        "file": "pages\\owner\\CompanyOrdersDetails.tsx",
-        "line": 163,
-        "category": "toast",
-        "string": "لا توجد طلبات للتصدير"
-      },
-      {
-        "file": "pages\\owner\\CompanyOrdersDetails.tsx",
-        "line": 202,
-        "category": "toast",
-        "string": "تم تصدير التقرير"
-      },
-      {
-        "file": "pages\\owner\\OwnerAttendanceReport.tsx",
-        "line": 167,
-        "category": "toast",
-        "string": "فشل تحميل التقرير"
-      },
-      {
-        "file": "pages\\owner\\OwnerAttendanceReport.tsx",
-        "line": 251,
-        "category": "toast",
-        "string": "تم إنشاء التقرير بنجاح"
-      },
-      {
-        "file": "pages\\owner\\OwnerAttendanceReport.tsx",
-        "line": 255,
-        "category": "toast",
-        "string": "فشل في إنشاء التقرير"
-      },
-      {
-        "file": "pages\\owner\\OwnerAttendanceReport.tsx",
-        "line": 517,
-        "category": "toast",
-        "string": "تم تصدير التقرير"
-      },
-      {
-        "file": "pages\\owner\\OwnerAttendanceReport.tsx",
-        "line": 519,
-        "category": "toast",
-        "string": "فشل التصدير"
-      },
-      {
-        "file": "pages\\owner\\OwnerUsersManagement.tsx",
-        "line": 122,
-        "category": "toast",
-        "string": "لا يمكن تحديد الشركة لهذا المستخدم"
-      },
-      {
-        "file": "pages\\owner\\OwnerUsersManagement.tsx",
-        "line": 153,
-        "category": "toast",
-        "string": "تم حذف المستخدم"
-      },
-      {
-        "file": "pages\\owner\\OwnerUsersManagement.tsx",
-        "line": 157,
-        "category": "toast",
-        "string": "المستخدم محذوف مسبقاً وتم تحديث القائمة"
-      },
-      {
-        "file": "pages\\PaymentPage.jsx",
-        "line": 40,
-        "category": "toast",
-        "string": "تم نسخ رقم ${walletName}"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 105,
-        "category": "toast",
-        "string": "تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 107,
-        "category": "toast",
-        "string": "حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 114,
-        "category": "toast",
-        "string": "تم حذف ${count} منتج بنجاح"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 159,
-        "category": "toast",
-        "string": "✅ تم نسخ المنتج \"${product.name}\" بنجاح"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 162,
-        "category": "toast",
-        "string": "❌ ${err?.response?.data?.error || err?.response?.data?.message || \"حدث خطأ غير متوقع\"}"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 170,
-        "category": "toast",
-        "string": "تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح"
-      },
-      {
-        "file": "pages\\products\\Products.tsx",
-        "line": 226,
-        "category": "toast",
-        "string": "تم استيراد ${count} منتج بنجاح"
-      },
-      {
-        "file": "pages\\products\\ProductsTrash.tsx",
-        "line": 139,
-        "category": "toast",
-        "string": "تم استعادة ${successCount} منتج بنجاح"
-      },
-      {
-        "file": "pages\\products\\ProductsTrash.tsx",
-        "line": 178,
-        "category": "toast",
-        "string": "تم حذف ${successCount} منتج نهائياً"
-      },
-      {
-        "file": "pages\\products\\WooCommerceImport.tsx",
-        "line": 52,
-        "category": "toast",
-        "string": "يرجى إدخال جميع البيانات المطلوبة"
-      },
-      {
-        "file": "pages\\products\\WooCommerceImport.tsx",
-        "line": 86,
-        "category": "toast",
-        "string": "خطأ في الاتصال بالخادم"
-      },
-      {
-        "file": "pages\\products\\WooCommerceImport.tsx",
-        "line": 102,
-        "category": "toast",
-        "string": "يرجى اختيار منتج واحد على الأقل"
-      },
-      {
-        "file": "pages\\products\\WooCommerceImport.tsx",
-        "line": 140,
-        "category": "toast",
-        "string": "خطأ في استيراد المنتجات"
-      },
-      {
-        "file": "pages\\public\\PublicAffiliateRegister.tsx",
-        "line": 161,
-        "category": "toast",
-        "string": "برنامج المسوقين غير متاح حالياً لهذه الشركة"
-      },
-      {
-        "file": "pages\\public\\PublicApplicationForm.tsx",
-        "line": 125,
-        "category": "toast",
-        "string": "تم رفع \"${file.name}\" بنجاح"
-      },
-      {
-        "file": "pages\\public\\PublicApplicationForm.tsx",
-        "line": 164,
-        "category": "toast",
-        "string": "يرجى رفع ملف للسؤال: \"${question.questionText}\""
-      },
-      {
-        "file": "pages\\public\\PublicApplicationForm.tsx",
-        "line": 174,
-        "category": "toast",
-        "string": "السؤال \"${question.questionText}\" مطلوب"
-      },
-      {
-        "file": "pages\\public\\PublicMerchantRegister.tsx",
-        "line": 65,
-        "category": "toast",
-        "string": "أدخل رابط الشركة أو الـ slug الخاص بها أولاً"
-      },
-      {
-        "file": "pages\\public\\PublicMerchantRegister.tsx",
-        "line": 88,
-        "category": "toast",
-        "string": "تم إنشاء حساب التاجر بنجاح! يمكنك تسجيل الدخول بعد تفعيل الشركة لحسابك"
-      },
-      {
-        "file": "pages\\PublicCompanyLinks.tsx",
-        "line": 58,
-        "category": "toast",
-        "string": "فشل النسخ"
-      },
-      {
-        "file": "pages\\reports\\ShippingReport.tsx",
-        "line": 112,
-        "category": "toast",
-        "string": "تم تحديث التكلفة الفعلية"
-      },
-      {
-        "file": "pages\\reports\\ShippingReport.tsx",
-        "line": 131,
-        "category": "toast",
-        "string": "تم تحديث ${orderIds.length} طلب"
-      },
-      {
-        "file": "pages\\reports\\ShippingReport.tsx",
-        "line": 152,
-        "category": "toast",
-        "string": "فشل تحميل إعدادات المحافظات"
-      },
-      {
-        "file": "pages\\reports\\ShippingReport.tsx",
-        "line": 172,
-        "category": "toast",
-        "string": "تم حفظ تكاليف المحافظات"
-      },
-      {
-        "file": "pages\\reports\\ShippingReport.tsx",
-        "line": 208,
-        "category": "toast",
-        "string": "فشل تصدير التقرير"
-      },
-      {
-        "file": "pages\\ServiceRequestForm.tsx",
-        "line": 52,
-        "category": "toast",
-        "string": "فشل رفع: ${file.name}"
-      },
-      {
-        "file": "pages\\ServiceRequestForm.tsx",
-        "line": 60,
-        "category": "toast",
-        "string": "يرجى إكمال جميع الحقول المطلوبة"
-      },
-      {
-        "file": "pages\\ServiceRequestForm.tsx",
-        "line": 72,
-        "category": "toast",
-        "string": "تم إرسال الطلب"
-      },
-      {
-        "file": "pages\\ServiceRequestForm.tsx",
-        "line": 74,
-        "category": "toast",
-        "string": "حدث خطأ في الإرسال"
-      },
-      {
-        "file": "pages\\settings\\BostaSettings.tsx",
-        "line": 39,
-        "category": "toast",
-        "string": "فشل تحميل إعدادات Bosta"
-      },
-      {
-        "file": "pages\\settings\\BostaSettings.tsx",
-        "line": 44,
-        "category": "toast",
-        "string": "يرجى إدخال Bosta API Key"
-      },
-      {
-        "file": "pages\\settings\\BostaSettings.tsx",
-        "line": 52,
-        "category": "toast",
-        "string": "تم حفظ إعدادات Bosta بنجاح"
-      },
-      {
-        "file": "pages\\settings\\DuplicateOrderSettings.tsx",
-        "line": 56,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الطلبات المكررة بنجاح ✅"
-      },
-      {
-        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
-        "line": 32,
-        "category": "toast",
-        "string": "خطأ في جلب إعدادات الطلبات غير المكتملة"
-      },
-      {
-        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
-        "line": 40,
-        "category": "toast",
-        "string": "المدة يجب أن تكون بين ${MIN_HOURS} و ${MAX_HOURS} ساعة"
-      },
-      {
-        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
-        "line": 51,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
-        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
-        "line": 56,
-        "category": "toast",
-        "string": "خطأ في حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\settings\\LateCancellationSettings.tsx",
-        "line": 135,
-        "category": "toast",
-        "string": "تم حفظ إعدادات اعتراض الإلغاء المتأخر بنجاح ✅"
-      },
-      {
-        "file": "pages\\settings\\MinimumOrderSettings.tsx",
-        "line": 61,
-        "category": "toast",
-        "string": "فشل في جلب إعدادات الحد الأدنى للطلبات"
-      },
-      {
-        "file": "pages\\settings\\MinimumOrderSettings.tsx",
-        "line": 71,
-        "category": "toast",
-        "string": "يجب إدخال قيمة أكبر من صفر عند تفعيل الحد الأدنى"
-      },
-      {
-        "file": "pages\\settings\\MinimumOrderSettings.tsx",
-        "line": 95,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الحد الأدنى للطلبات"
-      },
-      {
-        "file": "pages\\settings\\MinimumOrderSettings.tsx",
-        "line": 99,
-        "category": "toast",
-        "string": "فشل في حفظ إعدادات الحد الأدنى للطلبات"
-      },
-      {
-        "file": "pages\\settings\\OrderColumnsSettings.tsx",
-        "line": 97,
-        "category": "toast",
-        "string": "تم تحديث إعداد شريط البحث بنجاح"
-      },
-      {
-        "file": "pages\\settings\\OrderColumnsSettings.tsx",
-        "line": 100,
-        "category": "toast",
-        "string": "فشل في تحديث إعدادات شريط التنقل"
-      },
-      {
-        "file": "pages\\settings\\OrderColumnsSettings.tsx",
-        "line": 104,
-        "category": "toast",
-        "string": "حدث خطأ أثناء تحديث الإعدادات"
-      },
-      {
-        "file": "pages\\settings\\OrderColumnsSettings.tsx",
-        "line": 121,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الأعمدة بنجاح"
-      },
-      {
-        "file": "pages\\settings\\OrderColumnsSettings.tsx",
-        "line": 124,
-        "category": "toast",
-        "string": "فشل حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\settings\\OrderConfirmationSettings.tsx",
-        "line": 230,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\settings\\OrderPreparationSettings.tsx",
-        "line": 239,
-        "category": "toast",
-        "string": "تعذر تحميل إعدادات تجهيز الطلبات"
-      },
-      {
-        "file": "pages\\settings\\OrderPreparationSettings.tsx",
-        "line": 262,
-        "category": "toast",
-        "string": "لا يمكن تحديد الشركة الحالية"
-      },
-      {
-        "file": "pages\\settings\\OrderPreparationSettings.tsx",
-        "line": 266,
-        "category": "toast",
-        "string": "تم حفظ إعدادات تجهيز الطلبات"
-      },
-      {
-        "file": "pages\\settings\\OrderPreparationSettings.tsx",
-        "line": 268,
-        "category": "toast",
-        "string": "فشل حفظ إعدادات تجهيز الطلبات"
-      },
-      {
-        "file": "pages\\settings\\OrderPreparationSettings.tsx",
-        "line": 276,
-        "category": "toast",
-        "string": "تم استرجاع الإعدادات الافتراضية داخل النموذج"
-      },
-      {
-        "file": "pages\\settings\\RatingSettingsManager.tsx",
-        "line": 50,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات بنجاح"
-      },
-      {
-        "file": "pages\\settings\\RatingSettingsManager.tsx",
-        "line": 52,
-        "category": "toast",
-        "string": "فشل حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\settings\\StorefrontVisualEditorPage.tsx",
-        "line": 275,
-        "category": "toast",
-        "string": "تم حفظ تعديلات الصفحة الرئيسية"
-      },
-      {
-        "file": "pages\\settings\\StorefrontVisualEditorPage.tsx",
-        "line": 290,
-        "category": "toast",
-        "string": "تمت إعادة تحميل آخر نسخة محفوظة"
-      },
-      {
-        "file": "pages\\settings\\StorefrontVisualEditorPage.tsx",
-        "line": 307,
-        "category": "toast",
-        "string": "تمت إعادة تعيين إعدادات المتجر"
-      },
-      {
-        "file": "pages\\settings\\StoreSettings.tsx",
-        "line": 1578,
-        "category": "toast",
-        "string": "تم إزالة إعدادات بوابة الدفع بنجاح"
-      },
-      {
-        "file": "pages\\settings\\StoreSettings.tsx",
-        "line": 1581,
-        "category": "toast",
-        "string": "حدث خطأ أثناء الحذف: "
-      },
-      {
-        "file": "pages\\settings\\StoreSettings.tsx",
-        "line": 1613,
-        "category": "toast",
-        "string": "تم حفظ إعدادات بوابة الدفع بنجاح"
-      },
-      {
-        "file": "pages\\settings\\StoreSettings.tsx",
-        "line": 1616,
-        "category": "toast",
-        "string": "حدث خطأ أثناء الحفظ: "
-      },
-      {
-        "file": "pages\\settings\\TurboStatusMapping.tsx",
-        "line": 101,
-        "category": "toast",
-        "string": "فشل تحميل البيانات"
-      },
-      {
-        "file": "pages\\settings\\TurboStatusMapping.tsx",
-        "line": 125,
-        "category": "toast",
-        "string": "تم حفظ ربط حالات Turbo بنجاح"
-      },
-      {
-        "file": "pages\\settings\\TurboTickets.tsx",
-        "line": 49,
-        "category": "toast",
-        "string": "فشل تحميل التذاكر"
-      },
-      {
-        "file": "pages\\settings\\TurboTickets.tsx",
-        "line": 91,
-        "category": "toast",
-        "string": "يرجى كتابة وصف للتذكرة"
-      },
-      {
-        "file": "pages\\settings\\TurboTickets.tsx",
-        "line": 95,
-        "category": "toast",
-        "string": "يرجى اختيار نوع الاستفسار"
-      },
-      {
-        "file": "pages\\settings\\TurboTickets.tsx",
-        "line": 108,
-        "category": "toast",
-        "string": "✅ تم إرسال التذكرة بنجاح"
-      },
-      {
-        "file": "pages\\super-admin\\BillingOverview.tsx",
-        "line": 56,
-        "category": "toast",
-        "string": "خطأ في جلب بيانات الفواتير"
-      },
-      {
-        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
-        "line": 421,
-        "category": "toast",
-        "string": "تم ${enabled ? \"تفعيل\" : \"إيقاف\"} الخاصية بنجاح"
-      },
-      {
-        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
-        "line": 495,
-        "category": "toast",
-        "string": "جاري تفعيل ${app.name}... ${Math.round(((index + 1) / uninstalledApps.length) * 100)}%"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskIntegrations.tsx",
-        "line": 180,
-        "category": "toast",
-        "string": "تعذر النسخ من المتصفح"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskIntegrations.tsx",
-        "line": 240,
-        "category": "toast",
-        "string": "اسم المفتاح مطلوب"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskIntegrations.tsx",
-        "line": 245,
-        "category": "toast",
-        "string": "اختر صلاحية واحدة على الأقل"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskIntegrations.tsx",
-        "line": 250,
-        "category": "toast",
-        "string": "اختر مشروع التطوير المقيد لهذا المفتاح"
-      },
-      {
-        "file": "pages\\super-admin\\DevTaskIntegrations.tsx",
-        "line": 258,
-        "category": "toast",
-        "string": "مفاتيح الكتابة تحتاج Reporter افتراضي"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformPartnerManagement.tsx",
-        "line": 47,
-        "category": "toast",
-        "string": "خطأ في تحميل البيانات"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformPartnerManagement.tsx",
-        "line": 85,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات ✅"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSignupCoupons.tsx",
-        "line": 273,
-        "category": "toast",
-        "string": "فشل تحميل كوبونات التسجيل"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSignupCoupons.tsx",
-        "line": 368,
-        "category": "toast",
-        "string": "تم حذف كوبون التسجيل"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSignupCoupons.tsx",
-        "line": 377,
-        "category": "toast",
-        "string": "تم إيقاف الكوبون مع الاحتفاظ بسجل الاستخدام"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSiteHomepageTemplates.tsx",
-        "line": 85,
-        "category": "toast",
-        "string": "فشل تحميل إعدادات لاندنج المنصة"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSiteHomepageTemplates.tsx",
-        "line": 140,
-        "category": "toast",
-        "string": "تم تحديث الصفحة الرئيسية العامة"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSiteMetaPixel.tsx",
-        "line": 80,
-        "category": "toast",
-        "string": "فشل تحميل إعدادات Meta Pixel للموقع العام"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSiteMetaPixel.tsx",
-        "line": 141,
-        "category": "toast",
-        "string": "Pixel ID يجب أن يكون 15 أو 16 رقمًا"
-      },
-      {
-        "file": "pages\\super-admin\\PlatformSiteMetaPixel.tsx",
-        "line": 152,
-        "category": "toast",
-        "string": "تم حفظ إعدادات Meta Pixel للموقع العام"
-      },
-      {
-        "file": "pages\\super-admin\\SubscriptionCenter.tsx",
-        "line": 1627,
-        "category": "toast",
-        "string": "تم ${value ? \"تفعيل\" : \"تعطيل\"} الباقة بنجاح"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminAIImageGeneratorSettings.tsx",
-        "line": 81,
-        "category": "toast",
-        "string": "تم حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminAIImageGeneratorSettings.tsx",
-        "line": 82,
-        "category": "toast",
-        "string": "خطأ في حفظ الإعدادات"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminAIImageGeneratorSettings.tsx",
-        "line": 96,
-        "category": "toast",
-        "string": "تم حفظ إعدادات الشركة"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 38,
-        "category": "toast",
-        "string": "فشل تحميل الصفحات"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 53,
-        "category": "toast",
-        "string": "فشل تحديث حالة الصفحة"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 64,
-        "category": "toast",
-        "string": "تم ربط الباقة"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 66,
-        "category": "toast",
-        "string": "فشل تحديث الباقة"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 77,
-        "category": "toast",
-        "string": "تم تحديث نوع التفعيل"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminLandingPages.tsx",
-        "line": 79,
-        "category": "toast",
-        "string": "فشل تحديث نوع التفعيل"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminPaymentSettings.tsx",
-        "line": 72,
-        "category": "toast",
-        "string": "خطأ في جلب إعدادات بوابة الدفع"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminPaymentSettings.tsx",
-        "line": 97,
-        "category": "toast",
-        "string": "يرجى ملء Merchant ID و API Key"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminPaymentSettings.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "✅ تم حفظ إعدادات بوابة الدفع بنجاح"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminPaymentSettings.tsx",
-        "line": 123,
-        "category": "toast",
-        "string": "يرجى ملء Merchant ID و API Key أولاً"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminSupportSettings.tsx",
-        "line": 32,
-        "category": "toast",
-        "string": "خطأ في جلب إعدادات الدعم الفني"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminSupportSettings.tsx",
-        "line": 47,
-        "category": "toast",
-        "string": "تم حفظ رقم الدعم الفني"
-      },
-      {
-        "file": "pages\\super-admin\\SuperAdminSupportSettings.tsx",
-        "line": 50,
-        "category": "toast",
-        "string": "فشل حفظ الرقم"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 85,
-        "category": "toast",
-        "string": "تم التحديث بنجاح"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 115,
-        "category": "toast",
-        "string": "تم إنشاء الشركة بنجاح"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 124,
-        "category": "toast",
-        "string": "تم تحديث الشركة بنجاح"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 176,
-        "category": "toast",
-        "string": "تم تحديث المتابعة"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 191,
-        "category": "toast",
-        "string": "تمت إضافة الموظف بنجاح"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\hooks\\useCompanies.ts",
-        "line": 206,
-        "category": "toast",
-        "string": "تم نقل الملكية بنجاح"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\index.tsx",
-        "line": 551,
-        "category": "toast",
-        "string": "تم تحديث المتابعة"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\index.tsx",
-        "line": 581,
-        "category": "toast",
-        "string": "لا يوجد رقم هاتف لهذه الشركة"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\index.tsx",
-        "line": 632,
-        "category": "toast",
-        "string": "تم نقل الملكية"
-      },
-      {
-        "file": "pages\\SuperAdminCompaniesV2\\index.tsx",
-        "line": 663,
-        "category": "toast",
-        "string": "تمت إضافة الموظف"
-      },
-      {
-        "file": "pages\\SuperAdminFollowUp\\index.tsx",
-        "line": 42,
-        "category": "toast",
-        "string": "لا يوجد رقم هاتف"
-      },
-      {
-        "file": "pages\\telegram\\TelegramAutoReply.tsx",
-        "line": 39,
-        "category": "toast",
-        "string": "تم حذف القاعدة"
-      },
-      {
-        "file": "pages\\telegram\\TelegramBulkMessages.tsx",
-        "line": 43,
-        "category": "toast",
-        "string": "تم إرسال الرسائل"
-      },
-      {
-        "file": "pages\\telegram\\TelegramCampaigns.tsx",
-        "line": 41,
-        "category": "toast",
-        "string": "تم إنشاء الحملة"
-      },
-      {
-        "file": "pages\\telegram\\TelegramCampaigns.tsx",
-        "line": 42,
-        "category": "toast",
-        "string": "تم إلغاء الحملة"
-      },
-      {
-        "file": "pages\\telegram\\TelegramCampaigns.tsx",
-        "line": 43,
-        "category": "toast",
-        "string": "تم حذف الحملة"
-      },
-      {
-        "file": "pages\\telegram\\TelegramScheduler.tsx",
-        "line": 46,
-        "category": "toast",
-        "string": "تم جدولة الرسالة بنجاح"
-      },
-      {
-        "file": "pages\\UsersManagement.tsx",
-        "line": 1095,
-        "category": "toast",
-        "string": "تم حذف ${pendingAction.count} مستخدم"
-      },
-      {
-        "file": "pages\\whatsapp\\components\\ChatRightPanel.tsx",
-        "line": 180,
-        "category": "toast",
-        "string": "تم تحديث التصنيف"
-      },
-      {
-        "file": "pages\\whatsapp\\components\\ChatRightPanel.tsx",
-        "line": 184,
-        "category": "toast",
-        "string": "فشل تحديث التصنيف"
-      },
-      {
-        "file": "pages\\whatsapp\\components\\MessageBubble.tsx",
-        "line": 98,
-        "category": "toast",
-        "string": "تم تصحيح الرد وتعليم الوكيل ✅"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
-        "line": 1319,
-        "category": "toast",
-        "string": "تم حذف ${jids.length} محادثة بنجاح"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
-        "line": 1763,
-        "category": "toast",
-        "string": "فشل تحديد الموقع: "
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppConversationAnalytics.tsx",
-        "line": 181,
-        "category": "toast",
-        "string": "تاريخ النهاية قبل تاريخ البداية"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppConversationAnalytics.tsx",
-        "line": 195,
-        "category": "toast",
-        "string": "فشل في تحميل تحليلات المحادثات"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppEmployeeAnalytics.tsx",
-        "line": 423,
-        "category": "toast",
-        "string": "تاريخ النهاية قبل تاريخ البداية"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppEmployeeAnalytics.tsx",
-        "line": 442,
-        "category": "toast",
-        "string": "فشل في تحميل تحليلات الموظفين"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
-        "line": 201,
-        "category": "toast",
-        "string": "تم تحميل ${phones.length} عميل يحمل الوسم: ${tagName}"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
-        "line": 214,
-        "category": "toast",
-        "string": "لا يوجد جهات اتصال في تصنيف \"${categoryName}\""
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
-        "line": 218,
-        "category": "toast",
-        "string": "تم استيراد ${phones.length} جهة اتصال من \"${categoryName}\""
-      },
-      {
-        "file": "pages\\woocommerce\\components\\SettingsTab.tsx",
-        "line": 295,
-        "category": "toast",
-        "string": "تم نسخ الرابط"
-      },
-      {
-        "file": "pages\\woocommerce\\components\\SettingsTab.tsx",
-        "line": 321,
-        "category": "toast",
-        "string": "تم نسخ المفتاح السري"
-      },
-      {
-        "file": "pages\\woocommerce\\components\\StatusMappingTab.tsx",
-        "line": 81,
-        "category": "toast",
-        "string": "تم إضافة الحالة \"${val}\""
-      },
-      {
-        "file": "pages\\woocommerce\\components\\StatusMappingTab.tsx",
-        "line": 84,
-        "category": "toast",
-        "string": "هذه الحالة موجودة بالفعل"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
-        "line": 28,
-        "category": "toast",
-        "string": "خطأ في جلب الطلبات المحلية"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
-        "line": 37,
-        "category": "toast",
-        "string": "يرجى اختيار متجر WooCommerce أولاً"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
-        "line": 69,
-        "category": "toast",
-        "string": "تم تصدير ${exported} طلب بنجاح"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
-        "line": 86,
-        "category": "toast",
-        "string": "خطأ في تصدير الطلبات: ${error.message || \"خطأ غير معروف\"}"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
-        "line": 85,
-        "category": "toast",
-        "string": "فشل الاستيراد: ${data.error}"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
-        "line": 141,
-        "category": "toast",
-        "string": "إجمالي الطلبات: ${data.data.count}"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
-        "line": 176,
-        "category": "toast",
-        "string": "تم جلب ${data.data.orders.length} طلب للمراجعة"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
-        "line": 284,
-        "category": "toast",
-        "string": "تم استيراد ${data.data.imported} طلب بنجاح"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
-        "line": 379,
-        "category": "toast",
-        "string": "✅ تم استيراد ${data.imported} طلب بنجاح"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
-        "line": 423,
-        "category": "toast",
-        "string": "❌ فشل الاستيراد: ${data.error}"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
-        "line": 27,
-        "category": "toast",
-        "string": "يرجى إعداد بيانات الاتصال أولاً"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
-        "line": 49,
-        "category": "toast",
-        "string": "تم جلب ${data.data.products.length} منتج"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
-        "line": 54,
-        "category": "toast",
-        "string": "خطأ في جلب المنتجات"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
-        "line": 100,
-        "category": "toast",
-        "string": "خطأ في استيراد المنتجات"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
-        "line": 196,
-        "category": "toast",
-        "string": "✅ الاتصال ناجح! تم العثور على ${data.data.count} منتج"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
-        "line": 198,
-        "category": "toast",
-        "string": "❌ فشل الاتصال: ${data.message}"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
-        "line": 120,
-        "category": "toast",
-        "string": "يرجى إعداد بيانات الاتصال أولاً"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
-        "line": 135,
-        "category": "toast",
-        "string": "تم جلب ${data.data.length} حالة من المتجر"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
-        "line": 137,
-        "category": "toast",
-        "string": "فشل جلب الحالات"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
-        "line": 140,
-        "category": "toast",
-        "string": "خطأ في الاتصال"
-      },
-      {
-        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
-        "line": 204,
-        "category": "toast",
-        "string": "🤖 تمت محاولة الربط التلقائي بنجاح"
-      },
-      {
-        "file": "pages\\woocommerce\\WooCommerceSync.tsx",
-        "line": 95,
-        "category": "toast",
-        "string": "يرجى تفعيل المزامنة أولاً من الإعدادات"
-      },
-      {
-        "file": "pages\\woocommerce\\WooCommerceSync.tsx",
-        "line": 109,
-        "category": "toast",
-        "string": "تم بدء المزامنة بنجاح"
-      },
-      {
-        "file": "pages\\woocommerce\\WooCommerceSync.tsx",
-        "line": 115,
-        "category": "toast",
-        "string": "فشل بدء المزامنة"
-      },
-      {
-        "file": "services\\apiClient.ts",
-        "line": 615,
-        "category": "toast",
-        "string": "⚠️ حدث خطأ غير متوقع"
-      },
-      {
-        "file": "storefront\\components\\QuantityOffersPanel.tsx",
-        "line": 521,
-        "category": "toast",
-        "string": "تمت إضافة عرض ${activeOffer.quantity} قطع إلى السلة"
-      },
-      {
-        "file": "storefront\\pages\\ProductImageLandingPage.tsx",
-        "line": 795,
-        "category": "toast",
-        "string": "تم إرسال الطلب بنجاح."
-      },
-      {
-        "file": "storefront\\sections\\OrderSummary.tsx",
-        "line": 944,
-        "category": "toast",
-        "string": "أدخل كود الخصم أولًا."
+        "string": "فشل الحفظ: \" + (data.message || i18n.t(\"super-admin_DevTaskSettings.msg_74b2"
       }
     ],
     "console": [
@@ -3917,6 +153,560 @@
         "line": 602,
         "category": "console",
         "string": "[خطأ ${status}] ${detailedMessage}"
+      }
+    ],
+    "toast": [
+      {
+        "file": "pages\\admin\\booking\\AppointmentsTab.tsx",
+        "line": 74,
+        "category": "toast",
+        "string": "تم تغيير حالة الموعد إلى \"${label}\""
+      },
+      {
+        "file": "pages\\admin\\ServiceManagementPage.tsx",
+        "line": 42,
+        "category": "toast",
+        "string": "فشل رفع: ${file.name}"
+      },
+      {
+        "file": "pages\\advertising\\CatalogDetails.tsx",
+        "line": 88,
+        "category": "toast",
+        "string": "تم مزامنة ${result.successful} منتج بنجاح"
+      },
+      {
+        "file": "pages\\advertising\\CatalogDetails.tsx",
+        "line": 95,
+        "category": "toast",
+        "string": "فشل في مزامنة ${result.failed} منتج"
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 191,
+        "category": "toast",
+        "string": "جاري رفع الصورة..."
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 210,
+        "category": "toast",
+        "string": "تم رفع الصورة بنجاح"
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 231,
+        "category": "toast",
+        "string": "جاري رفع الفيديو..."
+      },
+      {
+        "file": "pages\\advertising\\CreateAd.tsx",
+        "line": 252,
+        "category": "toast",
+        "string": "تم رفع الفيديو بنجاح"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 464,
+        "category": "toast",
+        "string": "❌ خطأ: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_134e\"))}"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 484,
+        "category": "toast",
+        "string": "❌ خطأ: ${getErrorMessage(error, i18n.t(\"facebookPixel.msg_dbf2\"))}"
+      },
+      {
+        "file": "pages\\advertising\\FacebookPixelSettings.tsx",
+        "line": 542,
+        "category": "toast",
+        "string": "⚠️ الصلاحيات المطلوبة غير متوفرة: ${missingPerms}"
+      },
+      {
+        "file": "pages\\advertising\\OverlayCampaigns.tsx",
+        "line": 97,
+        "category": "toast",
+        "string": "تم تطبيق الإطار على ${data.data?.results?.length || 0} منتج"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateCommission.tsx",
+        "line": 164,
+        "category": "toast",
+        "string": "الحد الأدنى للسحب هو ${formatPrice(minimumPayout)}"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateProductsVisibility.tsx",
+        "line": 235,
+        "category": "toast",
+        "string": "تم تحديث ${res.data.data.count} منتج"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 125,
+        "category": "toast",
+        "string": "قيمة ${product.name} غير صالحة"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 141,
+        "category": "toast",
+        "string": "أسعار ${product.name} غير مكتملة"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 146,
+        "category": "toast",
+        "string": "تكلفة المسوق في ${product.name} لا يجب أن تقل عن سعر التاجر"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 151,
+        "category": "toast",
+        "string": "السعر النهائي في ${product.name} لا يجب أن يقل عن تكلفة المسوق"
+      },
+      {
+        "file": "pages\\affiliates\\AffiliateQuickActions.tsx",
+        "line": 169,
+        "category": "toast",
+        "string": "تم تحديث ${changesCount} منتج بنجاح!"
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 89,
+        "category": "toast",
+        "string": "فشل الإرسال: "
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 92,
+        "category": "toast",
+        "string": "خطأ في الإرسال: "
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 176,
+        "category": "toast",
+        "string": "خطأ: "
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 336,
+        "category": "toast",
+        "string": "فشل تحميل التعليقات: "
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 388,
+        "category": "toast",
+        "string": "تم حذف ${selectedComments.length} تعليق"
+      },
+      {
+        "file": "pages\\comments\\PostComments.jsx",
+        "line": 395,
+        "category": "toast",
+        "string": "خطأ: "
+      },
+      {
+        "file": "pages\\comments\\PostSettings.jsx",
+        "line": 156,
+        "category": "toast",
+        "string": "تمت معالجة ${response.data.processedComments} تعليق"
+      },
+      {
+        "file": "pages\\comments\\PostSettings.jsx",
+        "line": 159,
+        "category": "toast",
+        "string": "حدث خطأ أثناء تطبيق طريقة الرد: "
+      },
+      {
+        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
+        "line": 69,
+        "category": "toast",
+        "string": "حدث خطأ أثناء حذف التعليقات: "
+      },
+      {
+        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
+        "line": 152,
+        "category": "toast",
+        "string": "خطأ في تحديث رد التعليق: "
+      },
+      {
+        "file": "pages\\hr\\assets\\AssetList.tsx",
+        "line": 538,
+        "category": "toast",
+        "string": "تم تغيير حالة ${selectedIds.length} أصول إلى ${status.label}"
+      },
+      {
+        "file": "pages\\hr\\assets\\AssetList.tsx",
+        "line": 542,
+        "category": "toast",
+        "string": "فشل في تحديث الحالة"
+      },
+      {
+        "file": "pages\\hr\\AssignShift.tsx",
+        "line": 194,
+        "category": "toast",
+        "string": "تم تعيين ${selectedEmployeeIds.length} موظف بنجاح"
+      },
+      {
+        "file": "pages\\hr\\components\\PayrollSimulator.tsx",
+        "line": 294,
+        "category": "toast",
+        "string": "تم تطبيق سيناريو: ${scenario.name}"
+      },
+      {
+        "file": "pages\\hr\\Departments.tsx",
+        "line": 502,
+        "category": "toast",
+        "string": "تم إضافة ${assignEmployeesSelection.length} موظف للقسم"
+      },
+      {
+        "file": "pages\\hr\\HRSettings.tsx",
+        "line": 732,
+        "category": "toast",
+        "string": "تم حفظ الإعدادات بنجاح"
+      },
+      {
+        "file": "pages\\hr\\HRSettings.tsx",
+        "line": 859,
+        "category": "toast",
+        "string": "تم الحصول على الموقع الحالي بنجاح"
+      },
+      {
+        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
+        "line": 496,
+        "category": "toast",
+        "string": "تم تعيين وقت الحضور: ${currentTime}"
+      },
+      {
+        "file": "pages\\hr\\ManualAttendanceEdit.tsx",
+        "line": 505,
+        "category": "toast",
+        "string": "تم تعيين وقت الانصراف: ${currentTime}"
+      },
+      {
+        "file": "pages\\hr\\MyCompaniesDashboard.tsx",
+        "line": 195,
+        "category": "toast",
+        "string": "تم تعيين ${companyName} كشركة افتراضية"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 265,
+        "category": "toast",
+        "string": "تم توليد ${result.success.length} كشف راتب جديد"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 270,
+        "category": "toast",
+        "string": "تم إعادة توليد ${result.regenerated.length} كشف راتب"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 275,
+        "category": "toast",
+        "string": "تم تخطي ${result.skipped.length} موظف (لديهم كشوف رواتب مسبقاً)"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 280,
+        "category": "toast",
+        "string": "فشل توليد ${result.failed.length} كشف"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 338,
+        "category": "toast",
+        "string": "تم صرف ${selectedIds.length} راتب بنجاح"
+      },
+      {
+        "file": "pages\\hr\\Payroll.tsx",
+        "line": 363,
+        "category": "toast",
+        "string": "تم اعتماد ${response.data.result.updated} كشف راتب"
+      },
+      {
+        "file": "pages\\hr\\SalaryUpdates.tsx",
+        "line": 200,
+        "category": "toast",
+        "string": "تم تحديث ${res.data.updatedCount} موظف بنجاح"
+      },
+      {
+        "file": "pages\\hr\\Shifts.tsx",
+        "line": 210,
+        "category": "toast",
+        "string": "تم حذف ${selectedShifts.length} مناوبة"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useOrderDetails.ts",
+        "line": 781,
+        "category": "toast",
+        "string": "الرقم البديل: ${altPhoneValidation.error}"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
+        "line": 375,
+        "category": "toast",
+        "string": "تم حساب السعر الفعلي للشحن: ${cost} ج.م"
+      },
+      {
+        "file": "pages\\orders\\hooks\\useTurboShipping.ts",
+        "line": 386,
+        "category": "toast",
+        "string": "تم عرض سعر الشحن: ${fallbackCost} ج.م"
+      },
+      {
+        "file": "pages\\PaymentPage.jsx",
+        "line": 40,
+        "category": "toast",
+        "string": "تم نسخ رقم ${walletName}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 105,
+        "category": "toast",
+        "string": "تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 107,
+        "category": "toast",
+        "string": "حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 114,
+        "category": "toast",
+        "string": "تم حذف ${count} منتج بنجاح"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 159,
+        "category": "toast",
+        "string": "✅ تم نسخ المنتج \"${product.name}\" بنجاح"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 162,
+        "category": "toast",
+        "string": "❌ ${err?.response?.data?.error || err?.response?.data?.message || \"حدث خطأ غير متوقع\"}"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 170,
+        "category": "toast",
+        "string": "تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح"
+      },
+      {
+        "file": "pages\\products\\Products.tsx",
+        "line": 226,
+        "category": "toast",
+        "string": "تم استيراد ${count} منتج بنجاح"
+      },
+      {
+        "file": "pages\\products\\ProductsTrash.tsx",
+        "line": 139,
+        "category": "toast",
+        "string": "تم استعادة ${successCount} منتج بنجاح"
+      },
+      {
+        "file": "pages\\products\\ProductsTrash.tsx",
+        "line": 178,
+        "category": "toast",
+        "string": "تم حذف ${successCount} منتج نهائياً"
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 125,
+        "category": "toast",
+        "string": "تم رفع \"${file.name}\" بنجاح"
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 164,
+        "category": "toast",
+        "string": "يرجى رفع ملف للسؤال: \"${question.questionText}\""
+      },
+      {
+        "file": "pages\\public\\PublicApplicationForm.tsx",
+        "line": 174,
+        "category": "toast",
+        "string": "السؤال \"${question.questionText}\" مطلوب"
+      },
+      {
+        "file": "pages\\reports\\ShippingReport.tsx",
+        "line": 132,
+        "category": "toast",
+        "string": "تم تحديث ${orderIds.length} طلب"
+      },
+      {
+        "file": "pages\\ServiceRequestForm.tsx",
+        "line": 53,
+        "category": "toast",
+        "string": "فشل رفع: ${file.name}"
+      },
+      {
+        "file": "pages\\settings\\IncompleteOrdersSettings.tsx",
+        "line": 41,
+        "category": "toast",
+        "string": "المدة يجب أن تكون بين ${MIN_HOURS} و ${MAX_HOURS} ساعة"
+      },
+      {
+        "file": "pages\\settings\\StoreSettings.tsx",
+        "line": 1582,
+        "category": "toast",
+        "string": "حدث خطأ أثناء الحذف: "
+      },
+      {
+        "file": "pages\\settings\\StoreSettings.tsx",
+        "line": 1617,
+        "category": "toast",
+        "string": "حدث خطأ أثناء الحفظ: "
+      },
+      {
+        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
+        "line": 421,
+        "category": "toast",
+        "string": "تم ${enabled ? \"تفعيل\" : \"إيقاف\"} الخاصية بنجاح"
+      },
+      {
+        "file": "pages\\super-admin\\company-details\\useCompanyDetails.ts",
+        "line": 495,
+        "category": "toast",
+        "string": "جاري تفعيل ${app.name}... ${Math.round(((index + 1) / uninstalledApps.length) * 100)}%"
+      },
+      {
+        "file": "pages\\super-admin\\SubscriptionCenter.tsx",
+        "line": 1627,
+        "category": "toast",
+        "string": "تم ${value ? \"تفعيل\" : \"تعطيل\"} الباقة بنجاح"
+      },
+      {
+        "file": "pages\\UsersManagement.tsx",
+        "line": 1095,
+        "category": "toast",
+        "string": "تم حذف ${pendingAction.count} مستخدم"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
+        "line": 1319,
+        "category": "toast",
+        "string": "تم حذف ${jids.length} محادثة بنجاح"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
+        "line": 1763,
+        "category": "toast",
+        "string": "فشل تحديد الموقع: "
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 201,
+        "category": "toast",
+        "string": "تم تحميل ${phones.length} عميل يحمل الوسم: ${tagName}"
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 214,
+        "category": "toast",
+        "string": "لا يوجد جهات اتصال في تصنيف \"${categoryName}\""
+      },
+      {
+        "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",
+        "line": 218,
+        "category": "toast",
+        "string": "تم استيراد ${phones.length} جهة اتصال من \"${categoryName}\""
+      },
+      {
+        "file": "pages\\woocommerce\\components\\StatusMappingTab.tsx",
+        "line": 82,
+        "category": "toast",
+        "string": "تم إضافة الحالة \"${val}\""
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
+        "line": 71,
+        "category": "toast",
+        "string": "تم تصدير ${exported} طلب بنجاح"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceExport.ts",
+        "line": 88,
+        "category": "toast",
+        "string": "خطأ في تصدير الطلبات: ${error.message || \"خطأ غير معروف\"}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 85,
+        "category": "toast",
+        "string": "فشل الاستيراد: ${data.error}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 141,
+        "category": "toast",
+        "string": "إجمالي الطلبات: ${data.data.count}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 176,
+        "category": "toast",
+        "string": "تم جلب ${data.data.orders.length} طلب للمراجعة"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImport.ts",
+        "line": 284,
+        "category": "toast",
+        "string": "تم استيراد ${data.data.imported} طلب بنجاح"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
+        "line": 379,
+        "category": "toast",
+        "string": "✅ تم استيراد ${data.imported} طلب بنجاح"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceImportEnhanced.ts",
+        "line": 423,
+        "category": "toast",
+        "string": "❌ فشل الاستيراد: ${data.error}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceProducts.ts",
+        "line": 50,
+        "category": "toast",
+        "string": "تم جلب ${data.data.products.length} منتج"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
+        "line": 196,
+        "category": "toast",
+        "string": "✅ الاتصال ناجح! تم العثور على ${data.data.count} منتج"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceSettings.ts",
+        "line": 198,
+        "category": "toast",
+        "string": "❌ فشل الاتصال: ${data.message}"
+      },
+      {
+        "file": "pages\\woocommerce\\hooks\\useWooCommerceStatus.ts",
+        "line": 136,
+        "category": "toast",
+        "string": "تم جلب ${data.data.length} حالة من المتجر"
+      },
+      {
+        "file": "services\\apiClient.ts",
+        "line": 615,
+        "category": "toast",
+        "string": "⚠️ حدث خطأ غير متوقع"
+      },
+      {
+        "file": "storefront\\components\\QuantityOffersPanel.tsx",
+        "line": 521,
+        "category": "toast",
+        "string": "تمت إضافة عرض ${activeOffer.quantity} قطع إلى السلة"
       }
     ]
   }

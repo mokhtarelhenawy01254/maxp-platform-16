@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../utils/i18n-toast";
 import { uploadService } from "../services/uploadService";
 
 export default function ServiceRequestForm() {
@@ -58,7 +58,7 @@ export default function ServiceRequestForm() {
 
   const submit = async () => {
     if (!form.customerName?.trim() || !form.phone?.trim() || !form.serviceId) {
-      return tToast.error("ServiceRequestForm_ServiceRequestForm.msg_a413");
+      return tToast.error("ServiceRequestForm.msg_a413");
     }
     setSubmitting(true);
     const referenceFiles = await uploadFiles();
@@ -70,9 +70,9 @@ export default function ServiceRequestForm() {
         body: JSON.stringify({ ...form, referenceFiles }),
       });
       const d = await r.json();
-      if (d.success) { setDone(true); tToast.success("ServiceRequestForm_ServiceRequestForm.success_send_7517"); }
+      if (d.success) { setDone(true); tToast.success("ServiceRequestForm.success_send_7517"); }
       else toast.error(d.error);
-    } catch (e) { tToast.error("ServiceRequestForm_ServiceRequestForm.error_error_7eca"); }
+    } catch (e) { tToast.error("ServiceRequestForm.error_error_7eca"); }
     finally { setSubmitting(false); }
   };
 

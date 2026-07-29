@@ -63,7 +63,7 @@ const PublicMerchantRegister: React.FC = () => {
     e.preventDefault();
 
     if (requiresCompanyIdentifier && !companyIdentifier.trim()) {
-      tToast.error("public_PublicMerchantRegister.msg_79bb");
+      tToast.error("PublicMerchantRegister.msg_79bb");
       return;
     }
 
@@ -86,7 +86,7 @@ const PublicMerchantRegister: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("public_PublicMerchantRegister.success_create_account_4e42");
+        tToast.success("PublicMerchantRegister.success_create_account_4e42");
         trackPlatformSiteCompleteRegistration("merchant_public_register", {
           destination: "pending-review",
           subdomain: subdomain || "root",

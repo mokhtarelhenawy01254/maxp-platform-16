@@ -50,7 +50,7 @@ const Training: React.FC = () => {
       setTrainings(response.data.trainings || []);
     } catch (error) {
       console.error("Error fetching trainings:", error);
-      tToast.error("hr_Training.failed_fetch_8c5b");
+      tToast.error("Training.failed_fetch_8c5b");
     } finally {
       setLoading(false);
     }

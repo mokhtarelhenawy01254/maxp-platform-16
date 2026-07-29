@@ -942,7 +942,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
 
     if (!normalizedCouponCode) {
       clearAppliedCoupon();
-      tToast.error("storefront_OrderSummary.msg_c088");
+      tToast.error("OrderSummary.msg_c088");
       return;
     }
 

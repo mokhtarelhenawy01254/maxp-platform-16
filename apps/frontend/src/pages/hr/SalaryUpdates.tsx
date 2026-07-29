@@ -76,7 +76,7 @@ const SalaryUpdates: React.FC = () => {
       fetchSalaryHistory();
     } catch (error) {
       console.error("Error fetching data:", error);
-      tToast.error("hr_SalaryUpdates.failed_fetch_4bd4");
+      tToast.error("SalaryUpdates.failed_fetch_4bd4");
     } finally {
       setLoading(false);
     }
@@ -172,7 +172,7 @@ const SalaryUpdates: React.FC = () => {
       );
 
       if (updatesList.length === 0) {
-        tToast.info("hr_SalaryUpdates.msg_f4a3");
+        tToast.info("SalaryUpdates.msg_f4a3");
         return;
       }
 
@@ -181,7 +181,7 @@ const SalaryUpdates: React.FC = () => {
         (e) => !reasons[e.id] || reasons[e.id].trim() === "",
       );
       if (missingReason) {
-        tToast.error("hr_SalaryUpdates.msg_bdbc");
+        tToast.error("SalaryUpdates.msg_bdbc");
         return;
       }
 

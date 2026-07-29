@@ -265,7 +265,7 @@ const MerchantProfile: React.FC = () => {
 
   useEffect(() => {
     if (!id) {
-      tToast.error("merchants_MerchantProfile.msg_5068");
+      tToast.error("MerchantProfile.msg_5068");
       navigate("/merchants");
       return;
     }
@@ -395,7 +395,7 @@ const MerchantProfile: React.FC = () => {
       >(`/merchants/${id}`, formData);
 
       if (response.data.success) {
-        tToast.success("merchants_MerchantProfile.success_update_a91e");
+        tToast.success("MerchantProfile.success_update_a91e");
         navigate(`/merchants/${id}`);
       }
     } catch (error: unknown) {
@@ -413,7 +413,7 @@ const MerchantProfile: React.FC = () => {
     }
 
     if (!linkForm.productId) {
-      tToast.error("merchants_MerchantProfile.msg_f1ca");
+      tToast.error("MerchantProfile.msg_f1ca");
       return;
     }
 
@@ -421,12 +421,12 @@ const MerchantProfile: React.FC = () => {
     const stock = Number(linkForm.stock || "0");
 
     if (!Number.isFinite(merchantPrice) || merchantPrice <= 0) {
-      tToast.error("merchants_MerchantProfile.msg_39bc");
+      tToast.error("MerchantProfile.msg_39bc");
       return;
     }
 
     if (!Number.isFinite(stock) || stock < 0) {
-      tToast.error("merchants_MerchantProfile.msg_c969");
+      tToast.error("MerchantProfile.msg_c969");
       return;
     }
 
@@ -444,7 +444,7 @@ const MerchantProfile: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("merchants_MerchantProfile.msg_2366");
+        tToast.success("MerchantProfile.msg_2366");
         setLinkForm({
           productId: "",
           merchantSku: "",

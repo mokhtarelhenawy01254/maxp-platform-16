@@ -17,7 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -165,7 +165,7 @@ const ApplicantsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("hr_ApplicantsSection.success_delete_026c");
+        tToast.success("ApplicantsSection.success_delete_026c");
         setApplicants((currentApplicants) =>
           currentApplicants.filter(
             (currentApplicant) => currentApplicant.id !== applicant.id,
@@ -179,7 +179,7 @@ const ApplicantsSection: React.FC = () => {
 
         fetchApplicants();
       } else {
-        tToast.error("hr_ApplicantsSection.failed_delete_951f");
+        tToast.error("ApplicantsSection.failed_delete_951f");
       }
     } catch (error: any) {
       console.error("Error deleting applicant:", error);
@@ -206,17 +206,17 @@ const ApplicantsSection: React.FC = () => {
         `/hr/recruitment/applicants/${applicantId}/status`,
         { status },
       );
-      tToast.success("hr_ApplicantsSection.success_update_status_7ae4");
+      tToast.success("ApplicantsSection.success_update_status_7ae4");
       fetchApplicants();
     } catch (error) {
-      tToast.error("hr_ApplicantsSection.failed_update_a9eb");
+      tToast.error("ApplicantsSection.failed_update_a9eb");
     }
   };
 
   const handleAddApplicant = async () => {
     try {
       if (!newApplicant.name || !newApplicant.email || !newApplicant.jobId) {
-        tToast.error("hr_ApplicantsSection.msg_0d23");
+        tToast.error("ApplicantsSection.msg_0d23");
         return;
       }
 
@@ -233,7 +233,7 @@ const ApplicantsSection: React.FC = () => {
         payload,
       );
       if (response.data.success) {
-        tToast.success("hr_ApplicantsSection.success_add_3282");
+        tToast.success("ApplicantsSection.success_add_3282");
         setShowAddModal(false);
         resetAddForm();
         fetchApplicants();

@@ -1341,7 +1341,7 @@ const CreateAdWizard: React.FC = () => {
     try {
       const activeAdAccountId = await activateSelectedAdAccount();
       await loadPagesAndPixels(activeAdAccountId);
-      tToast.success("advertising_CreateAdWizard.success_activate_0a35");
+      tToast.success("CreateAdWizard.success_activate_0a35");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -1816,7 +1816,7 @@ const CreateAdWizard: React.FC = () => {
         adAccountId:
           "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
       }));
-      tToast.error("advertising_CreateAdWizard.msg_93bd");
+      tToast.error("CreateAdWizard.msg_93bd");
       return;
     }
 

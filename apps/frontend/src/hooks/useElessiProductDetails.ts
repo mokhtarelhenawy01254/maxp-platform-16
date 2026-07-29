@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../utils/i18n-toast";
 
 import { storefrontApi } from "../utils/storefrontApi";
 import type {
@@ -838,7 +838,7 @@ export const useElessiProductDetails = (
 
     const needsVariantSelection = hasVariants && !selectedVariant?.id;
     if (needsVariantSelection) {
-      tToast.error("hooks_useElessiProductDetails.msg_0924");
+      tToast.error("useElessiProductDetails.msg_0924");
       return false;
     }
 
@@ -861,11 +861,11 @@ export const useElessiProductDetails = (
       }
 
       window.dispatchEvent(new Event("cartUpdated"));
-      tToast.success("hooks_useElessiProductDetails.msg_df74");
+      tToast.success("useElessiProductDetails.msg_df74");
       return true;
     } catch (error) {
       console.error("Failed to add to cart:", error);
-      tToast.error("hooks_useElessiProductDetails.unable_add_f585");
+      tToast.error("useElessiProductDetails.unable_add_f585");
       return false;
     } finally {
       setAddingToCart(false);

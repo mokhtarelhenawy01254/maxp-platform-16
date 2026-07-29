@@ -237,12 +237,12 @@ const EditPromotion: React.FC = () => {
       setSaving(true);
 
       if (!data.employeeId) {
-        tToast.error("hr_EditPromotion.msg_0242");
+        tToast.error("EditPromotion.msg_0242");
         return;
       }
 
       if (!data.toPositionName) {
-        tToast.error("hr_EditPromotion.msg_d62b");
+        tToast.error("EditPromotion.msg_d62b");
         return;
       }
 
@@ -266,7 +266,7 @@ const EditPromotion: React.FC = () => {
       );
       const response = await api.put(`/hr/promotions/${id}`, payload);
       console.log("✅ [EDIT-PROMOTION] Success response:", response.data);
-      tToast.success("hr_EditPromotion.success_update_a27f");
+      tToast.success("EditPromotion.success_update_a27f");
       navigate("/hr/promotions");
     } catch (error: any) {
       console.error("❌ Error updating promotion:", error);

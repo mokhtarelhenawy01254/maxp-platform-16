@@ -19,7 +19,7 @@ import {
 } from "../../../components/ui/select";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface LeaveReport {
   totalRequests: number;
@@ -74,7 +74,7 @@ const LeaveReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      tToast.error("hr_LeaveReport.failed_fetch_8d4c");
+      tToast.error("LeaveReport.failed_fetch_8d4c");
       setReport(null);
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ const LeaveReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    tToast.success("hr_LeaveReport.msg_f68b");
+    tToast.success("LeaveReport.msg_f68b");
   };
 
   return (

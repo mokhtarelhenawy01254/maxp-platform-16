@@ -204,7 +204,7 @@ const ProductLandingPages: React.FC = () => {
 
   const createPage = async () => {
     if (!createProductId) {
-      tToast.error("advertising_ProductLandingPages.msg_11ec");
+      tToast.error("ProductLandingPages.msg_11ec");
       return;
     }
 
@@ -224,7 +224,7 @@ const ProductLandingPages: React.FC = () => {
       setSelectedId(page.id);
       setCreateTitle("");
       setCreateSlug("");
-      tToast.success("advertising_ProductLandingPages.success_create_88aa");
+      tToast.success("ProductLandingPages.success_create_88aa");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء الصفحة");
     } finally {
@@ -256,7 +256,7 @@ const ProductLandingPages: React.FC = () => {
       setPages((current) =>
         current.map((item) => (item.id === page.id ? page : item)),
       );
-      tToast.success("advertising_ProductLandingPages.msg_d05d");
+      tToast.success("ProductLandingPages.msg_d05d");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الحفظ");
     } finally {
@@ -268,7 +268,7 @@ const ProductLandingPages: React.FC = () => {
     if (!selectedPage) return;
 
     if (status === "PUBLISHED" && editor.slices.length === 0) {
-      tToast.error("advertising_ProductLandingPages.msg_637e");
+      tToast.error("ProductLandingPages.msg_637e");
       return;
     }
 
@@ -286,7 +286,7 @@ const ProductLandingPages: React.FC = () => {
         current.map((item) => (item.id === page.id ? page : item)),
       );
       setEditor((current) => ({ ...current, status: page.status }));
-      tToast.success("advertising_ProductLandingPages.success_update_7714");
+      tToast.success("ProductLandingPages.success_update_7714");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تحديث الحالة");
     }
@@ -349,12 +349,12 @@ const ProductLandingPages: React.FC = () => {
     if (!customerUrl) return;
 
     if (editor.status !== "PUBLISHED") {
-      tToast.error("advertising_ProductLandingPages.msg_51eb");
+      tToast.error("ProductLandingPages.msg_51eb");
       return;
     }
 
     await navigator.clipboard.writeText(customerUrl);
-    tToast.success("advertising_ProductLandingPages.msg_eeb5");
+    tToast.success("ProductLandingPages.msg_eeb5");
   };
 
   return (

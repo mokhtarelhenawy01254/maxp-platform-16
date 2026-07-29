@@ -54,7 +54,7 @@ const DuplicateOrderSettings: React.FC = () => {
         duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes,
       });
       if (response.data.success) {
-        tToast.success("settings_DuplicateOrderSettings.success_save_eed8");
+        tToast.success("DuplicateOrderSettings.success_save_eed8");
         fetchSettings();
       }
     } catch (error) {

@@ -53,7 +53,7 @@ const ABTestDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.startAdTest(id);
-      tToast.success("advertising_ABTestDetails.msg_86d5");
+      tToast.success("ABTestDetails.msg_86d5");
       loadTest();
     } catch (error: any) {
       console.error("Error starting test:", error);
@@ -65,7 +65,7 @@ const ABTestDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.pauseAdTest(id);
-      tToast.success("advertising_ABTestDetails.msg_8980");
+      tToast.success("ABTestDetails.msg_8980");
       loadTest();
     } catch (error: any) {
       console.error("Error pausing test:", error);
@@ -80,7 +80,7 @@ const ABTestDetails: React.FC = () => {
       const result = await facebookAdsService.analyzeAdTest(id);
       setAnalysis(result.analysis);
       setTest(result.test);
-      tToast.success("advertising_ABTestDetails.msg_bb33");
+      tToast.success("ABTestDetails.msg_bb33");
     } catch (error: any) {
       console.error("Error analyzing test:", error);
       toast.error(error?.response?.data?.error || "فشل في تحليل النتائج");
@@ -100,7 +100,7 @@ const ABTestDetails: React.FC = () => {
 
     try {
       await facebookAdsService.promoteWinner(id);
-      tToast.success("advertising_ABTestDetails.msg_5e37");
+      tToast.success("ABTestDetails.msg_5e37");
       loadTest();
     } catch (error: any) {
       console.error("Error promoting winner:", error);

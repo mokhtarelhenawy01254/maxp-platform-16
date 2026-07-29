@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import i18n from "../../i18n";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -110,7 +111,7 @@ const FacebookSetupGuide: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert(i18n.t("components_FacebookSetupGuide.msg_1aca"));
+    alert(i18n.t("FacebookSetupGuide.msg_1aca"));
   };
 
   return (

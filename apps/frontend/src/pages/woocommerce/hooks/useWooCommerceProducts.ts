@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { WooProduct, WooProductVariation, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
@@ -25,7 +25,7 @@ export const useWooCommerceProducts = (settings: Settings | null) => {
 
   const fetchWooProducts = async () => {
     if (!settings?.hasCredentials) {
-      tToast.error("woocommerce_useWooCommerceProducts.msg_0311");
+      tToast.error("useWooCommerceProducts.msg_0311");
       return;
     }
 
@@ -52,7 +52,7 @@ export const useWooCommerceProducts = (settings: Settings | null) => {
         toast.error(data.message);
       }
     } catch {
-      tToast.error("woocommerce_useWooCommerceProducts.error_fetch_1808");
+      tToast.error("useWooCommerceProducts.error_fetch_1808");
     } finally {
       setFetchingProducts(false);
     }
@@ -98,7 +98,7 @@ export const useWooCommerceProducts = (settings: Settings | null) => {
         toast.error(data.message);
       }
     } catch {
-      tToast.error("woocommerce_useWooCommerceProducts.msg_244d");
+      tToast.error("useWooCommerceProducts.msg_244d");
     } finally {
       setImportingProducts(false);
     }

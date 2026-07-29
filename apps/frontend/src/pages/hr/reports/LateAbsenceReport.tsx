@@ -20,7 +20,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface LateAbsenceReport {
   totalLateArrivals: number;
@@ -91,7 +91,7 @@ const LateAbsenceReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      tToast.error("hr_LateAbsenceReport.failed_fetch_c08d");
+      tToast.error("LateAbsenceReport.failed_fetch_c08d");
       setReport(null);
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ const LateAbsenceReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    tToast.success("hr_LateAbsenceReport.msg_fffa");
+    tToast.success("LateAbsenceReport.msg_fffa");
   };
 
   return (

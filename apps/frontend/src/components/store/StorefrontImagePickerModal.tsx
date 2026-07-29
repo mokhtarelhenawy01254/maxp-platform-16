@@ -46,7 +46,7 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         setImages(nextImages);
       } catch (error) {
         console.error("Error loading storefront image gallery:", error);
-        tToast.error("components_StorefrontImagePickerModal.unable_load_cffc");
+        tToast.error("StorefrontImagePickerModal.unable_load_cffc");
       } finally {
         setIsLoading(false);
       }
@@ -77,11 +77,11 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         ...current.filter((image) => image.id !== uploadedImage.id),
       ]);
       onSelectImage(uploadedImage.url);
-      tToast.success("components_StorefrontImagePickerModal.msg_6895");
+      tToast.success("StorefrontImagePickerModal.msg_6895");
       onClose();
     } catch (error) {
       console.error("Error uploading storefront image:", error);
-      tToast.error("components_StorefrontImagePickerModal.msg_6cd9");
+      tToast.error("StorefrontImagePickerModal.msg_6cd9");
     } finally {
       setIsUploading(false);
     }

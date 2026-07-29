@@ -90,7 +90,7 @@ const AffiliatePicker: React.FC<{
           setAffiliates(res.data.data);
         }
       } catch {
-        tToast.error("affiliates_AffiliateProductsVisibility.failed_load_20b1");
+        tToast.error("AffiliateProductsVisibility.failed_load_20b1");
       } finally {
         setLoading(false);
       }
@@ -193,7 +193,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         setTotal(res.data.pagination.total);
       }
     } catch {
-      tToast.error("affiliates_AffiliateProductsVisibility.failed_load_e3ee");
+      tToast.error("AffiliateProductsVisibility.failed_load_e3ee");
     } finally {
       setLoading(false);
     }
@@ -218,7 +218,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      tToast.error("affiliates_AffiliateProductsVisibility.msg_d8af");
+      tToast.error("AffiliateProductsVisibility.msg_d8af");
     } finally {
       setSavingId(null);
     }
@@ -237,7 +237,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      tToast.error("affiliates_AffiliateProductsVisibility.msg_eddc");
+      tToast.error("AffiliateProductsVisibility.msg_eddc");
     }
   };
 

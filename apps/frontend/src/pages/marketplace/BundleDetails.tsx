@@ -67,7 +67,7 @@ export default function BundleDetails() {
       }
     } catch (error) {
       console.error("Error fetching bundle:", error);
-      tToast.error("marketplace_BundleDetails.msg_3844");
+      tToast.error("BundleDetails.msg_3844");
       navigate("/marketplace/bundles");
     } finally {
       setLoading(false);
@@ -104,7 +104,7 @@ export default function BundleDetails() {
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        tToast.error("marketplace_BundleDetails.error_error_02ae");
+        tToast.error("BundleDetails.error_error_02ae");
       }
     } finally {
       setActivating(false);

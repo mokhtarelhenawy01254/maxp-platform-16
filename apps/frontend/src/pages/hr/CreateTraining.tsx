@@ -113,7 +113,7 @@ const CreateTraining = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        tToast.error("hr_CreateTraining.failed_load_7dfb");
+        tToast.error("CreateTraining.failed_load_7dfb");
       } finally {
         setFetching(false);
       }
@@ -126,7 +126,7 @@ const CreateTraining = () => {
       setLoading(true);
 
       if (!data.employeeId || data.employeeId.trim() === "") {
-        tToast.error("hr_CreateTraining.msg_e5a0");
+        tToast.error("CreateTraining.msg_e5a0");
         return;
       }
 
@@ -140,10 +140,10 @@ const CreateTraining = () => {
 
       if (isEdit) {
         await api.put(`/hr/trainings/${id}`, payload);
-        tToast.success("hr_CreateTraining.success_update_d670");
+        tToast.success("CreateTraining.success_update_d670");
       } else {
         await api.post("/hr/trainings", payload);
-        tToast.success("hr_CreateTraining.success_add_818b");
+        tToast.success("CreateTraining.success_add_818b");
       }
 
       navigate("/hr/training");
@@ -161,7 +161,7 @@ const CreateTraining = () => {
     try {
       setLoading(true);
       await api.delete(`/hr/trainings/${id}`);
-      tToast.success("hr_CreateTraining.success_delete_b773");
+      tToast.success("CreateTraining.success_delete_b773");
       navigate("/hr/training");
     } catch (error: any) {
       console.error("Error deleting training:", error);

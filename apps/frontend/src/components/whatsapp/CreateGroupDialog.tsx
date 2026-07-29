@@ -82,12 +82,12 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
 
   const handleCreate = async () => {
     if (!subject.trim()) {
-      tToast.warning("components_CreateGroupDialog.please_name_3daa");
+      tToast.warning("CreateGroupDialog.please_name_3daa");
       return;
     }
 
     if (selectedParticipants.length === 0) {
-      tToast.warning("components_CreateGroupDialog.msg_4c38");
+      tToast.warning("CreateGroupDialog.msg_4c38");
       return;
     }
 
@@ -100,7 +100,7 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
       });
 
       if (response.data.success) {
-        tToast.success("components_CreateGroupDialog.success_create_6766");
+        tToast.success("CreateGroupDialog.success_create_6766");
         onGroupCreated(response.data.group);
         reset();
       }

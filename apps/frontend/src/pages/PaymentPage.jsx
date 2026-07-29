@@ -7,7 +7,7 @@ import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { apiClient } from "../services/apiClient";
 import { Copy, Upload, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../utils/i18n-toast";
 
 const PaymentPage = () => {
   const { invoiceId } = useParams();
@@ -43,13 +43,13 @@ const PaymentPage = () => {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { tToast.error("PaymentPage_PaymentPage.msg_04b5"); return; }
+      if (file.size > 5 * 1024 * 1024) { tToast.error("PaymentPage.msg_04b5"); return; }
       setSelectedFile(file);
     }
   };
 
   const submitReceipt = async (walletNumberId) => {
-    if (!selectedFile) { tToast.error("PaymentPage_PaymentPage.msg_3dbc"); return; }
+    if (!selectedFile) { tToast.error("PaymentPage.msg_3dbc"); return; }
     setUploading(true);
     const formData = new FormData();
     formData.append("receipt", selectedFile);
@@ -57,9 +57,9 @@ const PaymentPage = () => {
     formData.append("walletNumberId", walletNumberId);
     try {
       const response = await apiClient.post("/wallet-payment/submit-receipt", formData);
-      if (response.data.success) { setSubmitted(true); tToast.success("PaymentPage_PaymentPage.success_send_f112"); }
+      if (response.data.success) { setSubmitted(true); tToast.success("PaymentPage.success_send_f112"); }
       else toast.error(response.data.message);
-    } catch (error) { tToast.error("PaymentPage_PaymentPage.error_send_3b6c"); } finally { setUploading(false); }
+    } catch (error) { tToast.error("PaymentPage.error_send_3b6c"); } finally { setUploading(false); }
   };
 
   const formatCurrency = (amount) => new Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 0 }).format(amount);

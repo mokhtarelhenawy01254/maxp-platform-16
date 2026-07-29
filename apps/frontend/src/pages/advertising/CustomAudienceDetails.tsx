@@ -60,7 +60,7 @@ const CustomAudienceDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      tToast.success("advertising_CustomAudienceDetails.success_delete_12fd");
+      tToast.success("CustomAudienceDetails.success_delete_12fd");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

@@ -79,7 +79,7 @@ const MyAdvances: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
-      tToast.error("hr_MyAdvances.failed_fetch_10f6");
+      tToast.error("MyAdvances.failed_fetch_10f6");
     } finally {
       setLoadingAdvances(false);
     }
@@ -87,7 +87,7 @@ const MyAdvances: React.FC = () => {
 
   const handleAdvanceSubmit = async () => {
     if (!advanceForm.amount || !advanceForm.reason) {
-      tToast.error("hr_MyAdvances.msg_aa97");
+      tToast.error("MyAdvances.msg_aa97");
       return;
     }
 
@@ -104,7 +104,7 @@ const MyAdvances: React.FC = () => {
       const response = await api.post("/hr/advances", payload);
 
       if (response.data && response.data.success) {
-        tToast.success("hr_MyAdvances.success_send_a21b");
+        tToast.success("MyAdvances.success_send_a21b");
         setIsAdvanceDialogOpen(false);
         setAdvanceForm({
           amount: "",

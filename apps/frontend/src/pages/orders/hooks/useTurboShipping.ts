@@ -3,7 +3,7 @@ import { apiClient } from "../../../services/apiClient";
 import { socketService } from "../../../services/socketService";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { config } from "../../../config";
 import tokenManager from "../../../utils/tokenManager";
 import i18n from "../../../i18n";
@@ -395,7 +395,7 @@ export const useTurboShipping = (
 
   const updateShipment = async () => {
     if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
-      tToast.error("orders_useTurboShipping.msg_d8b2");
+      tToast.error("useTurboShipping.msg_d8b2");
       return false;
     }
 
@@ -430,7 +430,7 @@ export const useTurboShipping = (
 
   const syncStatus = async () => {
     if (!order?.id || (!order?.turboShipmentId && !order?.turboTrackingNumber)) {
-      tToast.error("orders_useTurboShipping.msg_2fbc");
+      tToast.error("useTurboShipping.msg_2fbc");
       return false;
     }
 

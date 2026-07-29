@@ -112,10 +112,10 @@ function FormModal({ form, onClose, onSave }: { form?: FormDefinition | null; on
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!title.trim()) return tToast.error("admin_FormsBuilderPage.msg_da6d");
-    if (!slug.trim()) return tToast.error("admin_FormsBuilderPage.msg_a286");
-    if (fields.length === 0) return tToast.error("admin_FormsBuilderPage.msg_ed2d");
-    if (fields.some((f) => !f.label.trim())) return tToast.error("admin_FormsBuilderPage.msg_6b79");
+    if (!title.trim()) return tToast.error("FormsBuilderPage.msg_da6d");
+    if (!slug.trim()) return tToast.error("FormsBuilderPage.msg_a286");
+    if (fields.length === 0) return tToast.error("FormsBuilderPage.msg_ed2d");
+    if (fields.some((f) => !f.label.trim())) return tToast.error("FormsBuilderPage.msg_6b79");
 
     setSaving(true);
     try {
@@ -123,10 +123,10 @@ function FormModal({ form, onClose, onSave }: { form?: FormDefinition | null; on
       const body = { title: title.trim(), slug: slug.trim(), description, fields, pixelId: pixelId.trim() || undefined, pixelToken: pixelToken.trim() || undefined, thankYouTitle, thankYouBody, submitLabel };
       if (form) {
         await fetchJson(buildApiUrl(`/forms/${form.id}`), { method: "PUT", headers, body: JSON.stringify(body) });
-        tToast.success("admin_FormsBuilderPage.success_update_4ef5");
+        tToast.success("FormsBuilderPage.success_update_4ef5");
       } else {
         await fetchJson(buildApiUrl("/forms"), { method: "POST", headers, body: JSON.stringify(body) });
-        tToast.success("admin_FormsBuilderPage.success_create_ad1a");
+        tToast.success("FormsBuilderPage.success_create_ad1a");
       }
       onSave();
     } catch (err: any) {
@@ -354,7 +354,7 @@ const FormsBuilderPage: React.FC = () => {
     try {
       const headers = { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" };
       await fetchJson(buildApiUrl(`/forms/${form.id}`), { method: "DELETE", headers });
-      tToast.success("admin_FormsBuilderPage.success_delete_49c8");
+      tToast.success("FormsBuilderPage.success_delete_49c8");
       loadForms();
     } catch (err: any) {
       toast.error(err.message);
@@ -364,7 +364,7 @@ const FormsBuilderPage: React.FC = () => {
   const copyPublicUrl = (slug: string) => {
     const cid = user?.companyId ? `?companyId=${user.companyId}` : "";
     navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}${cid}`);
-    tToast.success("admin_FormsBuilderPage.msg_d548");
+    tToast.success("FormsBuilderPage.msg_d548");
   };
 
   const filtered = forms.filter((f) => f.title.includes(search) || f.slug.includes(search));

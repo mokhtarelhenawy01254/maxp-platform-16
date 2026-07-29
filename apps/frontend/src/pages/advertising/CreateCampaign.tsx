@@ -120,7 +120,7 @@ const CreateCampaign: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error("Error loading Ad Accounts:", error);
-      tToast.error("advertising_CreateCampaign.failed_load_7ed0");
+      tToast.error("CreateCampaign.failed_load_7ed0");
     } finally {
       setLoadingAccounts(false);
     }
@@ -178,28 +178,28 @@ const CreateCampaign: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          tToast.error("advertising_CreateCampaign.please_name_c07b");
+          tToast.error("CreateCampaign.please_name_c07b");
           return false;
         }
         if (!formData.objective) {
-          tToast.error("advertising_CreateCampaign.msg_0457");
+          tToast.error("CreateCampaign.msg_0457");
           return false;
         }
         return true;
       case 2:
         if (!formData.budgetAmount || formData.budgetAmount <= 0) {
-          tToast.error("advertising_CreateCampaign.msg_61ce");
+          tToast.error("CreateCampaign.msg_61ce");
           return false;
         }
         return true;
       case 3:
         // Targeting validation
         if (!formData.conversionLocation) {
-          tToast.error("advertising_CreateCampaign.msg_136c");
+          tToast.error("CreateCampaign.msg_136c");
           return false;
         }
         if (formData.targetingLocations.length === 0) {
-          tToast.error("advertising_CreateCampaign.msg_4753");
+          tToast.error("CreateCampaign.msg_4753");
           return false;
         }
         return true;
@@ -289,7 +289,7 @@ const CreateCampaign: React.FC = () => {
       };
 
       const campaign = await facebookAdsService.createCampaign(campaignData);
-      tToast.success("advertising_CreateCampaign.success_create_76a9");
+      tToast.success("CreateCampaign.success_create_76a9");
       navigate(`/advertising/facebook-ads/campaigns/${campaign.id}`);
     } catch (error: unknown) {
       console.error("Error creating campaign:", error);

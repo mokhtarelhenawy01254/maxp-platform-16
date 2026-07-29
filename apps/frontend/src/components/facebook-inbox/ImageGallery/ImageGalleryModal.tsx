@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import i18n from "../../../i18n";
 import { createPortal } from "react-dom";
 import { apiClient } from "../../../services/apiClient";
 
@@ -120,7 +121,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
       }
     } catch (error) {
       console.error("Error uploading images:", error);
-      alert(i18n.t("components_ImageGalleryModal.error_error_fcf9"));
+      alert(i18n.t("ImageGalleryModal.error_error_fcf9"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -143,7 +144,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
       });
     } catch (error) {
       console.error("Error deleting image:", error);
-      alert(i18n.t("components_ImageGalleryModal.failed_delete_e86b"));
+      alert(i18n.t("ImageGalleryModal.failed_delete_e86b"));
     } finally {
       setDeleting(null);
     }

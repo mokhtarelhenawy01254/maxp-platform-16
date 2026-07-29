@@ -214,7 +214,7 @@ const EmployeesPromotion: React.FC = () => {
         );
         fetchPromotions();
       } else {
-        toast.error(response.data.error || i18n.t("hr_EmployeesPromotion.failed_update_d7a0"));
+        toast.error(response.data.error || i18n.t("EmployeesPromotion.failed_update_d7a0"));
       }
     } catch (error: any) {
       console.error("❌ Error updating status:", error);
@@ -226,10 +226,10 @@ const EmployeesPromotion: React.FC = () => {
     try {
       const response = await api.delete(`/hr/promotions/${promotionId}`);
       if (response.data.success) {
-        tToast.success("hr_EmployeesPromotion.success_delete_044f");
+        tToast.success("EmployeesPromotion.success_delete_044f");
         fetchPromotions(); // إعادة تحميل القائمة
       } else {
-        toast.error(response.data.error || i18n.t("hr_EmployeesPromotion.failed_delete_c80d"));
+        toast.error(response.data.error || i18n.t("EmployeesPromotion.failed_delete_c80d"));
       }
     } catch (error: any) {
       console.error("❌ Error deleting promotion:", error);

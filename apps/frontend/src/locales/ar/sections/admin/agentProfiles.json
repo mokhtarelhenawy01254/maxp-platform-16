@@ -183,7 +183,7 @@
     "edit": "تعديل",
     "personaLabel": "شخصية الوكيل (PERSONA.md)",
     "personaOverrideHint": "هذا المحتوى يضاف كـ PERSONA.md فوق القالب الأساسي ولا يمس SOUL.md",
-    "lockedByAdmin": "\uD83D\uDD12 مغلق من الإدارة"
+    "lockedByAdmin": "🔒 مغلق من الإدارة"
   },
   "autonomy": {
     "auto": "تلقائي",
@@ -232,7 +232,7 @@
     "confirmButton": "أرشفة"
   },
   "guardrails": {
-    "saveSuccess": "تم توليد قاعدة العمل وتفعيلها بنجاح \uD83D\uDEE1\uFE0F",
+    "saveSuccess": "تم توليد قاعدة العمل وتفعيلها بنجاح 🛡️",
     "saveFailed": "فشلت عملية إنشاء القاعدة",
     "updateSuccess": "تم تحديث تفاصيل قاعدة العمل",
     "updateFailed": "فشلت عملية تحديث القاعدة",

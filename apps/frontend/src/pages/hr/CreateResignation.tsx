@@ -67,7 +67,7 @@ const CreateResignation = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        tToast.error("hr_CreateResignation.failed_load_4801");
+        tToast.error("CreateResignation.failed_load_4801");
       }
     };
     fetchData();
@@ -102,13 +102,13 @@ const CreateResignation = () => {
 
       // Validate employeeId before submitting
       if (!data.employeeId || data.employeeId.trim() === "") {
-        tToast.error("hr_CreateResignation.msg_640c");
+        tToast.error("CreateResignation.msg_640c");
         return;
       }
 
       console.log("Submitting resignation data:", data);
       await api.post("/hr/resignations", data);
-      tToast.success("hr_CreateResignation.success_login_7609");
+      tToast.success("CreateResignation.success_login_7609");
       navigate("/hr/resignations");
     } catch (error: any) {
       console.error("Error creating resignation:", error);

@@ -39,9 +39,9 @@ const TelegramCampaigns = () => {
   const getStatusVariant = (s) => s === "SENT" || s === "COMPLETED" ? "default" : s === "FAILED" || s === "CANCELLED" ? "destructive" : "secondary";
   const getStatusLabel = (s) => ({ PENDING: "قيد الانتظار", SENT: "تم الإرسال", COMPLETED: "مكتملة", FAILED: "فشل", CANCELLED: "ملغية", RUNNING: "قيد التشغيل", DRAFT: "مسودة" }[s] || s);
 
-  const handleCreate = async () => { setLoading(true); try { await apiClient.post("/api/v1/telegram-advanced/campaigns", formData); fetchCampaigns(); setOpenDialog(false); tToast.success("telegram_TelegramCampaigns.success_create_6e83"); } catch { setError("فشل إنشاء الحملة"); } finally { setLoading(false); } };
-  const handleCancel = async (id) => { if (!window.confirm("هل أنت متأكد؟")) return; try { await apiClient.post(`/api/v1/telegram-advanced/campaigns/${id}/cancel`); fetchCampaigns(); tToast.success("telegram_TelegramCampaigns.msg_2651"); } catch { setError("فشل إلغاء الحملة"); } };
-  const handleDelete = async (id) => { if (!window.confirm("هل أنت متأكد من الحذف؟")) return; try { await apiClient.delete(`/api/v1/telegram-advanced/campaigns/${id}`); fetchCampaigns(); tToast.success("telegram_TelegramCampaigns.success_delete_09d0"); } catch { setError("فشل حذف الحملة"); } };
+  const handleCreate = async () => { setLoading(true); try { await apiClient.post("/api/v1/telegram-advanced/campaigns", formData); fetchCampaigns(); setOpenDialog(false); tToast.success("TelegramCampaigns.success_create_6e83"); } catch { setError("فشل إنشاء الحملة"); } finally { setLoading(false); } };
+  const handleCancel = async (id) => { if (!window.confirm("هل أنت متأكد؟")) return; try { await apiClient.post(`/api/v1/telegram-advanced/campaigns/${id}/cancel`); fetchCampaigns(); tToast.success("TelegramCampaigns.msg_2651"); } catch { setError("فشل إلغاء الحملة"); } };
+  const handleDelete = async (id) => { if (!window.confirm("هل أنت متأكد من الحذف؟")) return; try { await apiClient.delete(`/api/v1/telegram-advanced/campaigns/${id}`); fetchCampaigns(); tToast.success("TelegramCampaigns.success_delete_09d0"); } catch { setError("فشل حذف الحملة"); } };
 
   return (
     <div className="p-3 rtl">

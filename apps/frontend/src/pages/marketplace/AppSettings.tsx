@@ -717,7 +717,7 @@ export default function AppSettings() {
       );
     } catch (error: unknown) {
       console.error("Error loading app settings:", error);
-      tToast.error("marketplace_AppSettings.unable_load_9624");
+      tToast.error("AppSettings.unable_load_9624");
     } finally {
       setLoading(false);
     }
@@ -815,7 +815,7 @@ export default function AppSettings() {
 
   const handleSave = async () => {
     if (!companyApp) {
-      tToast.error("marketplace_AppSettings.msg_565c");
+      tToast.error("AppSettings.msg_565c");
       return;
     }
 
@@ -824,13 +824,13 @@ export default function AppSettings() {
       await apiClient.put(`/my-apps/${companyApp.id}/settings`, {
         settings: normalizedSettings,
       });
-      tToast.success("marketplace_AppSettings.success_save_0151");
+      tToast.success("AppSettings.success_save_0151");
       setCompanyApp((current) =>
         current ? { ...current, settings: normalizedSettings } : current,
       );
     } catch (error) {
       console.error("Error saving app settings:", error);
-      tToast.error("marketplace_AppSettings.error_error_8032");
+      tToast.error("AppSettings.error_error_8032");
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -148,11 +149,11 @@ const Opportunities: React.FC = () => {
       if (data.success) {
         fetchOpportunities();
         fetchPipelineStats();
-        alert(i18n.t("opportunities_Opportunities.success_update_e8ba"));
+        alert(i18n.t("Opportunities.success_update_e8ba"));
       }
     } catch (error) {
       console.error("Error updating opportunity stage:", error);
-      alert(i18n.t("opportunities_Opportunities.failed_update_25e9"));
+      alert(i18n.t("Opportunities.failed_update_25e9"));
     }
   };
 

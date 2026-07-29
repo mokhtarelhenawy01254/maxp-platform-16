@@ -3,7 +3,7 @@ import { PlusIcon, TrashIcon, TagIcon, ChatBubbleBottomCenterTextIcon } from "@h
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { toast } from "sonner";
-import i18n from "../../i18n";
+import i18n from "../../../i18n";
 
 const AssetCategories: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -45,7 +45,7 @@ const AssetCategories: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating category:", error);
-      alert(i18n.t("hr_AssetCategories.failed_add_92d0"));
+      alert(i18n.t("AssetCategories.failed_add_92d0"));
     } finally {
       setAdding(false);
     }
@@ -60,7 +60,7 @@ const AssetCategories: React.FC = () => {
         fetchCategories();
       }
     } catch (error) {
-      alert(i18n.t("hr_AssetCategories.failed_delete_6b1d"));
+      alert(i18n.t("AssetCategories.failed_delete_6b1d"));
     }
   };
 

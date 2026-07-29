@@ -105,7 +105,7 @@ const MerchantRegister: React.FC = () => {
       const response = await apiClient.post<ApiSuccess>("/merchants", formData);
 
       if (response.data.success) {
-        tToast.success("merchants_MerchantRegister.success_login_a40a");
+        tToast.success("MerchantRegister.success_login_a40a");
         navigate("/merchants");
       }
     } catch (error: unknown) {

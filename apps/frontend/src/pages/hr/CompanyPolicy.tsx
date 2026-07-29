@@ -113,7 +113,7 @@ const CompanyPolicy: React.FC = () => {
     } catch (error) {
       console.error("Failed to fetch policies:", error);
       // Fallback to empty or mock if needed, but for now show error
-      // tToast.error("hr_CompanyPolicy.failed_load_3491");
+      // tToast.error("CompanyPolicy.failed_load_3491");
     } finally {
       setLoading(false);
     }
@@ -128,14 +128,14 @@ const CompanyPolicy: React.FC = () => {
 
   const handleCreate = async () => {
     if (!formData.title || !formData.content) {
-      tToast.error("hr_CompanyPolicy.msg_e09d");
+      tToast.error("CompanyPolicy.msg_e09d");
       return;
     }
 
     try {
       const { data } = await api.post("/hr/policies", formData);
       if (data.success) {
-        tToast.success("hr_CompanyPolicy.success_create_6d9e");
+        tToast.success("CompanyPolicy.success_create_6d9e");
         setPolicies([data.policy, ...policies]);
         setIsAddDialogOpen(false);
         setFormData({
@@ -146,7 +146,7 @@ const CompanyPolicy: React.FC = () => {
         });
       }
     } catch (error) {
-      tToast.error("hr_CompanyPolicy.failed_create_b4c3");
+      tToast.error("CompanyPolicy.failed_create_b4c3");
     }
   };
 
@@ -162,14 +162,14 @@ const CompanyPolicy: React.FC = () => {
       });
 
       if (data.success) {
-        tToast.success("hr_CompanyPolicy.success_update_c338");
+        tToast.success("CompanyPolicy.success_update_c338");
         setPolicies(
           policies.map((p) => (p.id === editingPolicy.id ? data.policy : p)),
         );
         setEditingPolicy(null);
       }
     } catch (error) {
-      tToast.error("hr_CompanyPolicy.failed_update_7a20");
+      tToast.error("CompanyPolicy.failed_update_7a20");
     }
   };
 
@@ -179,9 +179,9 @@ const CompanyPolicy: React.FC = () => {
     try {
       await api.delete(`/hr/policies/${id}`);
       setPolicies(policies.filter((p) => p.id !== id));
-      tToast.success("hr_CompanyPolicy.success_delete_e3d8");
+      tToast.success("CompanyPolicy.success_delete_e3d8");
     } catch (error) {
-      tToast.error("hr_CompanyPolicy.failed_delete_5065");
+      tToast.error("CompanyPolicy.failed_delete_5065");
     }
   };
 

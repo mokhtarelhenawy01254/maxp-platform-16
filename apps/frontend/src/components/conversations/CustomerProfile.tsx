@@ -105,7 +105,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleBlockCustomer = async () => {
     if (!pageId) {
-      alert(i18n.t("components_CustomerProfile.msg_bf82"));
+      alert(i18n.t("CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -119,7 +119,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setIsBlocked(true);
       setShowBlockModal(false);
       setBlockReason("");
-      alert(i18n.t("components_CustomerProfile.msg_8262"));
+      alert(i18n.t("CustomerProfile.msg_8262"));
     } catch (error: any) {
       alert(error.message || "فشل حظر العميل");
     } finally {
@@ -129,7 +129,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleUnblockCustomer = async () => {
     if (!pageId) {
-      alert(i18n.t("components_CustomerProfile.msg_bf82"));
+      alert(i18n.t("CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -141,7 +141,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setBlocking(true);
       await apiService.unblockCustomerOnPage(customerId, pageId);
       setIsBlocked(false);
-      alert(i18n.t("components_CustomerProfile.msg_b667"));
+      alert(i18n.t("CustomerProfile.msg_b667"));
     } catch (error: any) {
       alert(error.message || "فشل إلغاء حظر العميل");
     } finally {

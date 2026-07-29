@@ -72,7 +72,7 @@ const Documents: React.FC = () => {
       setDocuments(response.data.documents || []);
     } catch (error) {
       console.error("Error fetching documents:", error);
-      tToast.error("hr_Documents.failed_fetch_e440");
+      tToast.error("Documents.failed_fetch_e440");
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const Documents: React.FC = () => {
 
   const handleUpload = async () => {
     if (!selectedFile || !employeeId) {
-      tToast.error("hr_Documents.msg_4014");
+      tToast.error("Documents.msg_4014");
       return;
     }
 
@@ -107,7 +107,7 @@ const Documents: React.FC = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      tToast.success("hr_Documents.msg_4e4b");
+      tToast.success("Documents.msg_4e4b");
       setUploadDialog(false);
       setSelectedFile(null);
       setFormData({ name: "", type: "other", expiryDate: "", notes: "" });
@@ -123,22 +123,22 @@ const Documents: React.FC = () => {
 
     try {
       await api.delete(`/hr/documents/${id}`);
-      tToast.success("hr_Documents.success_delete_8d08");
+      tToast.success("Documents.success_delete_8d08");
       fetchDocuments();
     } catch (error) {
       console.error("Error deleting document:", error);
-      tToast.error("hr_Documents.failed_delete_f267");
+      tToast.error("Documents.failed_delete_f267");
     }
   };
 
   const handleVerify = async (id: string) => {
     try {
       await api.post(`/hr/documents/${id}/verify`);
-      tToast.success("hr_Documents.msg_a4fe");
+      tToast.success("Documents.msg_a4fe");
       fetchDocuments();
     } catch (error) {
       console.error("Error verifying document:", error);
-      tToast.error("hr_Documents.msg_e8eb");
+      tToast.error("Documents.msg_e8eb");
     }
   };
 

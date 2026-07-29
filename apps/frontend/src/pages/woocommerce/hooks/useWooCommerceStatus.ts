@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { FetchedStatus, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
@@ -118,7 +118,7 @@ export const useWooCommerceStatus = (
 
   const fetchWooStatuses = async () => {
     if (!settings?.hasCredentials) {
-      tToast.error("woocommerce_useWooCommerceStatus.msg_8a1a");
+      tToast.error("useWooCommerceStatus.msg_8a1a");
       return;
     }
 
@@ -135,10 +135,10 @@ export const useWooCommerceStatus = (
         setWooStatuses(data.data);
         toast.success(`تم جلب ${data.data.length} حالة من المتجر`);
       } else {
-        tToast.error("woocommerce_useWooCommerceStatus.failed_fetch_eccf");
+        tToast.error("useWooCommerceStatus.failed_fetch_eccf");
       }
     } catch (error) {
-      tToast.error("woocommerce_useWooCommerceStatus.msg_33d0");
+      tToast.error("useWooCommerceStatus.msg_33d0");
     } finally {
       setFetchingStatuses(false);
     }
@@ -202,7 +202,7 @@ export const useWooCommerceStatus = (
     });
 
     setSettingsForm((prev: any) => ({ ...prev, statusMapping: newMapping }));
-    tToast.success("woocommerce_useWooCommerceStatus.msg_0288");
+    tToast.success("useWooCommerceStatus.msg_0288");
   };
 
   return {

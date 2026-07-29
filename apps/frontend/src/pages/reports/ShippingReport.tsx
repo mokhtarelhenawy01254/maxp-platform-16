@@ -110,7 +110,7 @@ const ShippingReport: React.FC = () => {
         orderId: editModal.orderId,
         actualCost: parseFloat(editModal.newCost),
       });
-      tToast.success("reports_ShippingReport.success_update_531b");
+      tToast.success("ShippingReport.success_update_531b");
       setEditModal({ ...editModal, open: false, newCost: "" });
       fetchReport();
     } catch (error: any) {
@@ -150,7 +150,7 @@ const ShippingReport: React.FC = () => {
         setGovCostsForm(form);
       }
     } catch (e: any) {
-      tToast.error("reports_ShippingReport.failed_load_dc84");
+      tToast.error("ShippingReport.failed_load_dc84");
     } finally {
       setGovCostsLoading(false);
     }
@@ -170,7 +170,7 @@ const ShippingReport: React.FC = () => {
         if (!isNaN(num) && num >= 0) costs[gov] = num;
       }
       await apiClient.put("/turbo/reports/shipping/governorate-costs", { costs, applyRetroactive: govCostsRetroactive, retroactiveFrom: govCostsRetroactiveFrom || undefined });
-      tToast.success("reports_ShippingReport.success_save_9691");
+      tToast.success("ShippingReport.success_save_9691");
       setGovCostModal(false);
       fetchReport();
     } catch (e: any) {
@@ -206,7 +206,7 @@ const ShippingReport: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
       console.error("Error exporting CSV:", error);
-      tToast.error("reports_ShippingReport.msg_c494");
+      tToast.error("ShippingReport.msg_c494");
     }
   };
 

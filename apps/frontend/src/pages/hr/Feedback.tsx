@@ -126,7 +126,7 @@ const Feedback: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error fetching feedback:", error);
-      tToast.error("hr_Feedback.failed_fetch_9062");
+      tToast.error("Feedback.failed_fetch_9062");
     } finally {
       setLoading(false);
     }
@@ -201,13 +201,13 @@ const Feedback: React.FC = () => {
     try {
       const response = await api.delete(`/hr/feedback/${id}`);
       if (response.data.success) {
-        tToast.success("hr_Feedback.success_delete_0947");
+        tToast.success("Feedback.success_delete_0947");
         setFeedback((prev) => prev.filter((item) => item.id !== id));
         fetchStats();
       }
     } catch (error) {
       console.error("Error deleting feedback:", error);
-      tToast.error("hr_Feedback.failed_delete_e7e4");
+      tToast.error("Feedback.failed_delete_e7e4");
     }
   };
 
@@ -226,7 +226,7 @@ const Feedback: React.FC = () => {
 
       if (response.data.success) {
         console.log("✅ Reply sent successfully:", response.data);
-        tToast.success("hr_Feedback.success_send_a8d1");
+        tToast.success("Feedback.success_send_a8d1");
         setFeedback((prev) =>
           prev.map((f) =>
             f.id === selectedFeedback.id

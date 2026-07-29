@@ -118,7 +118,7 @@ const AssignShift: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      tToast.error("hr_AssignShift.failed_fetch_3c57");
+      tToast.error("AssignShift.failed_fetch_3c57");
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,7 @@ const AssignShift: React.FC = () => {
 
   const handleAssign = async () => {
     if (selectedEmployeeIds.length === 0 || !assignmentDate) {
-      tToast.error("hr_AssignShift.msg_59ee");
+      tToast.error("AssignShift.msg_59ee");
       return;
     }
 

@@ -70,7 +70,7 @@ const SalaryHistory: React.FC = () => {
     } catch (error) {
       console.error("Error fetching salary history:", error);
 
-      tToast.error("hr_SalaryHistory.failed_fetch_2afd");
+      tToast.error("SalaryHistory.failed_fetch_2afd");
     } finally {
       setLoading(false);
     }

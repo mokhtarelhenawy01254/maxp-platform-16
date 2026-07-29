@@ -99,7 +99,7 @@ const TurboStatusMapping: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error("Error loading data:", error);
-      tToast.error("settings_TurboStatusMapping.failed_load_4efb");
+      tToast.error("TurboStatusMapping.failed_load_4efb");
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ const TurboStatusMapping: React.FC = () => {
         mapping,
       });
       if (response.data?.success) {
-        tToast.success("settings_TurboStatusMapping.success_save_7f59");
+        tToast.success("TurboStatusMapping.success_save_7f59");
       }
     } catch (error: unknown) {
       console.error("Error saving mapping:", error);

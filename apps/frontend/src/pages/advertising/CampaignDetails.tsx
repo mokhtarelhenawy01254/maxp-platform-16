@@ -102,14 +102,14 @@ const CampaignDetails: React.FC = () => {
     setRefreshing(true);
     await loadCampaign();
     setRefreshing(false);
-    tToast.success("advertising_CampaignDetails.success_update_c9e9");
+    tToast.success("CampaignDetails.success_update_c9e9");
   };
 
   const handlePause = async () => {
     if (!id) return;
     try {
       await facebookAdsService.pauseCampaign(id);
-      tToast.success("advertising_CampaignDetails.msg_c0fb");
+      tToast.success("CampaignDetails.msg_c0fb");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في إيقاف الحملة"));
@@ -120,7 +120,7 @@ const CampaignDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.resumeCampaign(id);
-      tToast.success("advertising_CampaignDetails.msg_00e5");
+      tToast.success("CampaignDetails.msg_00e5");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في استئناف الحملة"));
@@ -135,7 +135,7 @@ const CampaignDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCampaign(id);
-      tToast.success("advertising_CampaignDetails.success_delete_b4c9");
+      tToast.success("CampaignDetails.success_delete_b4c9");
       navigate(dashboardUrl);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في حذف الحملة"));

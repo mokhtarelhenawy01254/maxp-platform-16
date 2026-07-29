@@ -79,7 +79,7 @@ const CashbackSettingsPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching cashback data:", error);
-      tToast.error("customers_CashbackSettings.error_error_6d32");
+      tToast.error("CashbackSettings.error_error_6d32");
     } finally {
       setIsLoading(false);
     }
@@ -90,26 +90,26 @@ const CashbackSettingsPage: React.FC = () => {
 
     // Validation
     if (settings.cashbackPercent < 0 || settings.cashbackPercent > 100) {
-      tToast.error("customers_CashbackSettings.msg_faa7");
+      tToast.error("CashbackSettings.msg_faa7");
       return;
     }
 
     if (settings.maxPerOrder < 0) {
-      tToast.error("customers_CashbackSettings.msg_3170");
+      tToast.error("CashbackSettings.msg_3170");
       return;
     }
 
     // Validate tier overrides
     const invalidOverrides = Object.values(settings.tierOverrides).some(val => val < 0 || val > 100);
     if (invalidOverrides) {
-      tToast.error("customers_CashbackSettings.msg_2ddf");
+      tToast.error("CashbackSettings.msg_2ddf");
       return;
     }
 
     try {
       setIsSaving(true);
       await apiClient.put("/hr/customer-loyalty/cashback/settings", settings);
-      tToast.success("customers_CashbackSettings.success_save_fe44");
+      tToast.success("CashbackSettings.success_save_fe44");
     } catch (error: any) {
       console.error("Error saving cashback settings:", error);
       toast.error(error?.response?.data?.error || "حدث خطأ أثناء حفظ الإعدادات");

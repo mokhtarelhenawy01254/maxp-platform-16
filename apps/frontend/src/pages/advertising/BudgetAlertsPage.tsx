@@ -219,18 +219,18 @@ const BudgetAlertsPage: React.FC = () => {
 
   const handleCreateBudgetAlert = async () => {
     if (!selectedAdAccountId) {
-      tToast.error("advertising_BudgetAlertsPage.msg_c1b0");
+      tToast.error("BudgetAlertsPage.msg_c1b0");
       return;
     }
 
     const recipientPhones = splitAlertPhones(budgetAlertForm.recipientPhones);
     if (recipientPhones.length === 0) {
-      tToast.error("advertising_BudgetAlertsPage.msg_74b3");
+      tToast.error("BudgetAlertsPage.msg_74b3");
       return;
     }
 
     if (budgetAlertForm.scope === "CAMPAIGN" && !budgetAlertForm.campaignId) {
-      tToast.error("advertising_BudgetAlertsPage.msg_0efb");
+      tToast.error("BudgetAlertsPage.msg_0efb");
       return;
     }
 
@@ -240,7 +240,7 @@ const BudgetAlertsPage: React.FC = () => {
         : Number(budgetAlertForm.thresholdAmount);
 
     if (!Number.isFinite(thresholdAmount)) {
-      tToast.error("advertising_BudgetAlertsPage.msg_fe1b");
+      tToast.error("BudgetAlertsPage.msg_fe1b");
       return;
     }
 
@@ -265,7 +265,7 @@ const BudgetAlertsPage: React.FC = () => {
         recipientPhones: current.recipientPhones,
       }));
       await reloadBudgetAlerts();
-      tToast.success("advertising_BudgetAlertsPage.success_create_2b78");
+      tToast.success("BudgetAlertsPage.success_create_2b78");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل إنشاء التنبيه"));
     } finally {
@@ -278,7 +278,7 @@ const BudgetAlertsPage: React.FC = () => {
       setTestingBudgetAlertId(ruleId);
       await facebookAdsService.testBudgetAlertRule(ruleId);
       await reloadBudgetAlerts();
-      tToast.success("advertising_BudgetAlertsPage.success_send_d688");
+      tToast.success("BudgetAlertsPage.success_send_d688");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل اختبار التنبيه"));
     } finally {
@@ -305,7 +305,7 @@ const BudgetAlertsPage: React.FC = () => {
     try {
       await facebookAdsService.deleteBudgetAlertRule(ruleId);
       await reloadBudgetAlerts();
-      tToast.success("advertising_BudgetAlertsPage.success_delete_7527");
+      tToast.success("BudgetAlertsPage.success_delete_7527");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل حذف التنبيه"));
     }
@@ -316,7 +316,7 @@ const BudgetAlertsPage: React.FC = () => {
       setCheckingBudgetAlerts(true);
       await facebookAdsService.runBudgetAlertRulesNow();
       await reloadBudgetAlerts();
-      tToast.success("advertising_BudgetAlertsPage.msg_28e0");
+      tToast.success("BudgetAlertsPage.msg_28e0");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل فحص التنبيهات"));
     } finally {

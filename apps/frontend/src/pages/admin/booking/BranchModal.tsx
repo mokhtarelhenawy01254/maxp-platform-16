@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { BookingBranch, BranchFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
 
 const compressImage = (file: File, maxW = 1200, quality = 0.8): Promise<string> =>
@@ -104,10 +104,10 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={async e => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 2 * 1024 * 1024) { tToast.error("admin_BranchModal.msg_d137"); return; }
-                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { tToast.error("admin_BranchModal.msg_b798"); return; }
+                if (file.size > 2 * 1024 * 1024) { tToast.error("BranchModal.msg_d137"); return; }
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { tToast.error("BranchModal.msg_b798"); return; }
                 try { setForm({ ...form, landmarkImage: await compressImage(file) }); }
-                catch { tToast.error("admin_BranchModal.msg_6f5e"); }
+                catch { tToast.error("BranchModal.msg_6f5e"); }
               }} />
               <span className="text-gray-400 dark:text-gray-500 text-2xl">📸</span>
               <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">انقر هنا لاختيار صورة</span>

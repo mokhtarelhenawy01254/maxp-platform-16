@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../utils/i18n-toast";
 import { wishlistApi } from "../utils/wishlistApi";
 import { storefrontApi, getCompanyId } from "../utils/storefrontApi";
 import { storefrontSettingsService } from "../services/storefrontSettingsService";
@@ -58,7 +58,7 @@ export const useWishlistPage = () => {
       }
     } catch (error) {
       console.error("Error fetching wishlist:", error);
-      tToast.error("hooks_useWishlistPage.error_error_d13d");
+      tToast.error("useWishlistPage.error_error_d13d");
     } finally {
       setLoading(false);
     }
@@ -68,11 +68,11 @@ export const useWishlistPage = () => {
     try {
       await wishlistApi.removeFromWishlist(productId, variantId);
       setItems((prev) => prev.filter((item) => item.id !== itemId));
-      tToast.success("hooks_useWishlistPage.success_delete_3958");
+      tToast.success("useWishlistPage.success_delete_3958");
       window.dispatchEvent(new Event("wishlistUpdated"));
     } catch (error) {
       console.error("Error removing from wishlist:", error);
-      tToast.error("hooks_useWishlistPage.error_error_10f3");
+      tToast.error("useWishlistPage.error_error_10f3");
     }
   };
 
@@ -83,11 +83,11 @@ export const useWishlistPage = () => {
         quantity: 1,
         ...(variantId && { variantId }),
       });
-      tToast.success("hooks_useWishlistPage.msg_27db");
+      tToast.success("useWishlistPage.msg_27db");
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (error) {
       console.error("Error adding to cart:", error);
-      tToast.error("hooks_useWishlistPage.error_error_2ec3");
+      tToast.error("useWishlistPage.error_error_2ec3");
     }
   };
 
@@ -97,11 +97,11 @@ export const useWishlistPage = () => {
     try {
       await wishlistApi.clearWishlist();
       setItems([]);
-      tToast.success("hooks_useWishlistPage.msg_a442");
+      tToast.success("useWishlistPage.msg_a442");
       window.dispatchEvent(new Event("wishlistUpdated"));
     } catch (error) {
       console.error("Error clearing wishlist:", error);
-      tToast.error("hooks_useWishlistPage.error_error_d538");
+      tToast.error("useWishlistPage.error_error_d538");
     }
   };
 

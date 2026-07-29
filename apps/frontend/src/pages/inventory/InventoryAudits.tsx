@@ -61,7 +61,7 @@ const InventoryAudits: React.FC = () => {
         { movementId },
       );
       if (response.data.success) {
-        alert(i18n.t("inventory_InventoryAudits.msg_b003"));
+        alert(i18n.t("InventoryAudits.msg_b003"));
         fetchAudits();
       }
     } catch (error: any) {

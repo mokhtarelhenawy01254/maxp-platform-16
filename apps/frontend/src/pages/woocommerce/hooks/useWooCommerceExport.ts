@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { LocalOrder, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
@@ -27,7 +27,7 @@ export const useWooCommerceExport = (settings: Settings | null) => {
         setLocalOrders(data.data.orders || []);
       }
     } catch (error) {
-      tToast.error("woocommerce_useWooCommerceExport.error_fetch_dd37");
+      tToast.error("useWooCommerceExport.error_fetch_dd37");
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export const useWooCommerceExport = (settings: Settings | null) => {
   const exportSelectedOrders = async () => {
     if (selectedLocalOrders.size === 0) return;
     if (!settings?.id) {
-      tToast.error("woocommerce_useWooCommerceExport.msg_f0f7");
+      tToast.error("useWooCommerceExport.msg_f0f7");
       return;
     }
     setExporting(true);
@@ -75,7 +75,7 @@ export const useWooCommerceExport = (settings: Settings | null) => {
         fetchLocalOrders();
       } else {
         const errorDetails = data.data?.errors;
-        const errorMsg = data.message || i18n.t("woocommerce_useWooCommerceExport.msg_d65f");
+        const errorMsg = data.message || i18n.t("useWooCommerceExport.msg_d65f");
 
         toast.error(
           errorDetails

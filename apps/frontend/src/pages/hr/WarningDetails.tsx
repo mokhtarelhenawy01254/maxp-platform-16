@@ -80,7 +80,7 @@ const WarningDetails: React.FC = () => {
 
     try {
       await api.delete(`/hr/warnings/${id}`);
-      tToast.success("hr_WarningDetails.success_delete_d2a6");
+      tToast.success("WarningDetails.success_delete_d2a6");
       navigate("/hr/warnings");
     } catch (error: any) {
       console.error("Error deleting warning:", error);

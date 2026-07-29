@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../i18n";
 import { buildApiUrl } from "../utils/urlHelper";
 
 interface FacebookPage {
@@ -40,7 +41,7 @@ const FacebookStatusPage: React.FC = () => {
       if (data.success) {
         setStatus(data.data);
       } else {
-        setError(data.error || i18n.t("FacebookStatusPage_FacebookStatusPage.failed_load_c05f"));
+        setError(data.error || i18n.t("FacebookStatusPage.failed_load_c05f"));
       }
     } catch (err) {
       console.error("Error loading Facebook status:", err);
@@ -52,7 +53,7 @@ const FacebookStatusPage: React.FC = () => {
 
   const testMessageSend = async () => {
     if (!testMessage.trim() || !testRecipientId.trim()) {
-      alert(i18n.t("FacebookStatusPage_FacebookStatusPage.msg_a055"));
+      alert(i18n.t("FacebookStatusPage.msg_a055"));
       return;
     }
 
@@ -77,7 +78,7 @@ const FacebookStatusPage: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert(i18n.t("FacebookStatusPage_FacebookStatusPage.success_send_7129"));
+        alert(i18n.t("FacebookStatusPage.success_send_7129"));
         console.log("Test result:", data.data);
       } else {
         alert(`❌ فشل في إرسال الرسالة التجريبية: ${data.error}`);
@@ -85,7 +86,7 @@ const FacebookStatusPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Error testing message:", err);
-      alert(i18n.t("FacebookStatusPage_FacebookStatusPage.error_send_1df1"));
+      alert(i18n.t("FacebookStatusPage.error_send_1df1"));
     } finally {
       setTesting(false);
     }

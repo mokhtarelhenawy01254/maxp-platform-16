@@ -96,7 +96,7 @@ const DynamicCreativeOptimization: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!formData.pageId) {
-      tToast.error("advertising_DynamicCreativeOptimization.msg_ccda");
+      tToast.error("DynamicCreativeOptimization.msg_ccda");
       return;
     }
 
@@ -106,17 +106,17 @@ const DynamicCreativeOptimization: React.FC = () => {
     const filledBodies = formData.bodies.filter((b) => b.trim());
 
     if (filledImages.length === 0 && filledVideos.length === 0) {
-      tToast.error("advertising_DynamicCreativeOptimization.please_add_c24d");
+      tToast.error("DynamicCreativeOptimization.please_add_c24d");
       return;
     }
 
     if (filledTitles.length === 0) {
-      tToast.error("advertising_DynamicCreativeOptimization.please_add_ddc3");
+      tToast.error("DynamicCreativeOptimization.please_add_ddc3");
       return;
     }
 
     if (filledBodies.length === 0) {
-      tToast.error("advertising_DynamicCreativeOptimization.please_add_00c2");
+      tToast.error("DynamicCreativeOptimization.please_add_00c2");
       return;
     }
 
@@ -136,7 +136,7 @@ const DynamicCreativeOptimization: React.FC = () => {
       if (filledVideos.length > 0) dcoPayload.videos = filledVideos;
       await facebookAdsService.createDynamicCreative(dcoPayload);
 
-      tToast.success("advertising_DynamicCreativeOptimization.success_create_6a5d");
+      tToast.success("DynamicCreativeOptimization.success_create_6a5d");
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error creating DCO:", error);

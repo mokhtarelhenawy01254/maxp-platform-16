@@ -235,7 +235,7 @@ const CreateAdSet: React.FC = () => {
       setLookalikeAudiences(lookalike.filter((a) => a.status === "ACTIVE"));
     } catch (error: unknown) {
       console.error("Error loading audiences:", error);
-      tToast.error("advertising_CreateAdSet.failed_load_3afc");
+      tToast.error("CreateAdSet.failed_load_3afc");
     } finally {
       setLoadingAudiences(false);
     }
@@ -340,13 +340,13 @@ const CreateAdSet: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          tToast.error("advertising_CreateAdSet.please_name_c33c");
+          tToast.error("CreateAdSet.please_name_c33c");
           return false;
         }
         return true;
       case 2:
         if (!formData.budgetAmount || formData.budgetAmount <= 0) {
-          tToast.error("advertising_CreateAdSet.msg_bdb9");
+          tToast.error("CreateAdSet.msg_bdb9");
           return false;
         }
         if (
@@ -354,7 +354,7 @@ const CreateAdSet: React.FC = () => {
           (formData.targeting?.regions || []).length === 0 &&
           (formData.targeting?.cities || []).length === 0
         ) {
-          tToast.error("advertising_CreateAdSet.msg_a209");
+          tToast.error("CreateAdSet.msg_a209");
           return false;
         }
         return true;
@@ -394,7 +394,7 @@ const CreateAdSet: React.FC = () => {
           locations: usesLocalGeo ? [] : formData.targeting?.locations || [],
         },
       });
-      tToast.success("advertising_CreateAdSet.success_create_52e7");
+      tToast.success("CreateAdSet.success_create_52e7");
       navigate(`/advertising/facebook-ads/campaigns/${campaignId}`);
     } catch (error: unknown) {
       console.error("Error creating ad set:", error);

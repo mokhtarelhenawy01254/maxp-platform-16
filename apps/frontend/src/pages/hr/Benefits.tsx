@@ -59,7 +59,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../../utils/i18n-toast";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Enrollment {
   id: string;

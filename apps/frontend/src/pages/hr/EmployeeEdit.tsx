@@ -94,7 +94,7 @@ const EmployeeEdit: React.FC = () => {
         });
       } catch (error: any) {
         console.error("❌ Error fetching employee data:", error);
-        tToast.error("hr_EmployeeEdit.failed_load_e53e");
+        tToast.error("EmployeeEdit.failed_load_e53e");
         navigate("/hr/employees");
       } finally {
         setLoading(false);
@@ -130,7 +130,7 @@ const EmployeeEdit: React.FC = () => {
         data: response.data,
       });
 
-      tToast.success("hr_EmployeeEdit.success_update_9e9c");
+      tToast.success("EmployeeEdit.success_update_9e9c");
       navigate(`/hr/employees/${id}`);
     } catch (error: any) {
       console.error("❌ [EMPLOYEE-UPDATE] Error updating employee:", {

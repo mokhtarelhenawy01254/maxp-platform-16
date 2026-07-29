@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../../../i18n";
 import {
   DocumentIcon,
   PhotoIcon,
@@ -254,11 +255,11 @@ const DocumentsSection: React.FC = () => {
         allowedTypes.some((t) => file.type.startsWith(t.replace("/*", ""))) ||
         file.type === "";
       if (!isAllowed) {
-        alert(i18n.t("hr_DocumentsSection.msg_8a25"));
+        alert(i18n.t("DocumentsSection.msg_8a25"));
         return;
       }
       if (file.size > maxSize) {
-        alert(i18n.t("hr_DocumentsSection.msg_fd1d"));
+        alert(i18n.t("DocumentsSection.msg_fd1d"));
         return;
       }
       setSelectedFile(file);
@@ -268,15 +269,15 @@ const DocumentsSection: React.FC = () => {
 
   const handleUpload = async () => {
     if (!uploadForm.assetId) {
-      alert(i18n.t("hr_DocumentsSection.msg_4ae4"));
+      alert(i18n.t("DocumentsSection.msg_4ae4"));
       return;
     }
     if (!selectedFile && !uploadForm.fileUrl) {
-      alert(i18n.t("hr_DocumentsSection.msg_a01e"));
+      alert(i18n.t("DocumentsSection.msg_a01e"));
       return;
     }
     if (!uploadForm.fileName) {
-      alert(i18n.t("hr_DocumentsSection.please_name_78ee"));
+      alert(i18n.t("DocumentsSection.please_name_78ee"));
       return;
     }
 
@@ -320,7 +321,7 @@ const DocumentsSection: React.FC = () => {
       }
 
       if (!fileUrl) {
-        alert(i18n.t("hr_DocumentsSection.msg_a01e"));
+        alert(i18n.t("DocumentsSection.msg_a01e"));
         setUploading(false);
         return;
       }
@@ -352,13 +353,13 @@ const DocumentsSection: React.FC = () => {
         setDocuments((prev) => [{ ...newDoc, asset }, ...prev]);
         setShowUploadModal(false);
         resetUploadForm();
-        alert(i18n.t("hr_DocumentsSection.msg_7330"));
+        alert(i18n.t("DocumentsSection.msg_7330"));
         // Refresh first page to keep pagination + filters in sync
         fetchAllDocuments({ page: 1, append: false });
       }
     } catch (err: any) {
       console.error("Document upload error:", err);
-      alert(err.response?.data?.message || err.message || i18n.t("hr_DocumentsSection.msg_3c68"));
+      alert(err.response?.data?.message || err.message || i18n.t("DocumentsSection.msg_3c68"));
     } finally {
       setUploading(false);
     }

@@ -231,7 +231,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(message);
       await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'sessions'] });
     } catch (error) {
-      toast.error(getErrorMessage(error, i18n.t("whatsappChat.تعذر_طلب_مزامنة_a1e8f7")));
+      toast.error(getErrorMessage(error, i18n.t("whatsappChat.unable_request_sync_791e")));
     } finally {
       setIsSyncingHistory(false);
     }
@@ -552,10 +552,10 @@ const WhatsAppChatContent: React.FC = () => {
         onSuccess: () => {
           setStatusContent('');
           setStatusDialogOpen(false);
-          tToast.success("whatsappChat.تم_نشر_الحالة_d898b7");
+          tToast.success("whatsappChat.success_publish_5ce3");
         },
         onError: () => {
-          tToast.error("whatsappChat.فشل_نشر_الحالة_aa1012");
+          tToast.error("whatsappChat.failed_publish_960d");
         }
       }
     );
@@ -1154,7 +1154,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   const handleToggleAi = useCallback(async (contact: Contact, aiEnabled: boolean) => {
     if (!contact.customer?.conversations || contact.customer.conversations.length === 0) {
-      tToast.error("whatsappChat.لم_يتم_العثور_76dde5");
+      tToast.error("whatsappChat.msg_e1cd");
       return;
     }
     const conversationId = contact.customer.conversations[0]!.id;
@@ -1188,7 +1188,7 @@ const WhatsAppChatContent: React.FC = () => {
 
     } catch (error) {
       console.error(error);
-      tToast.error("whatsappChat.فشل_تحديث_حالة_06a7b4");
+      tToast.error("whatsappChat.failed_update_status_7075");
     }
   }, [queryClient]);
 
@@ -1197,13 +1197,13 @@ const WhatsAppChatContent: React.FC = () => {
 
     // Check authentication
     if (!user?.id) {
-      tToast.error("whatsappChat.يجب_تسجيل_الدخول_68d443");
+      tToast.error("whatsappChat.msg_18a1");
       return;
     }
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      tToast.error("whatsappChat.خطأ_لا_يمكن_c00bbe");
+      tToast.error("whatsappChat.msg_1f79");
       return;
     }
 
@@ -1219,7 +1219,7 @@ const WhatsAppChatContent: React.FC = () => {
         setReplyingTo(null);
       },
       onError: (error: unknown) => {
-        toast.error(getErrorMessage(error, i18n.t("whatsappChat.حدث_خطأ_أثناء_45409b")));
+        toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_d123")));
       }
     });
   };
@@ -1230,7 +1230,7 @@ const WhatsAppChatContent: React.FC = () => {
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      tToast.error("whatsappChat.خطأ_لا_يمكن_c00bbe");
+      tToast.error("whatsappChat.msg_1f79");
       return;
     }
 
@@ -1244,7 +1244,7 @@ const WhatsAppChatContent: React.FC = () => {
       userId: user?.id
     }, {
       onError: (error: unknown) => {
-        toast.error(getErrorMessage(error, i18n.t("whatsappChat.حدث_خطأ_أثناء_a8d275")));
+        toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_be74")));
       }
     });
 
@@ -1272,7 +1272,7 @@ const WhatsAppChatContent: React.FC = () => {
             });
           }
         } catch (error) {
-          tToast.error("whatsappChat.فشل_مسح_المحادثة_764594");
+          tToast.error("whatsappChat.failed_clear_cdd5");
         }
         setConfirmData(prev => ({ ...prev, open: false }));
       }
@@ -1320,7 +1320,7 @@ const WhatsAppChatContent: React.FC = () => {
             setConfirmData(prev => ({ ...prev, open: false }));
           },
           onError: () => {
-            tToast.error("whatsappChat.فشل_حذف_المحادثات_616542");
+            tToast.error("whatsappChat.failed_delete_6e98");
           }
         });
       }
@@ -1342,7 +1342,7 @@ const WhatsAppChatContent: React.FC = () => {
             setConfirmData(prev => ({ ...prev, open: false }));
           },
           onError: () => {
-            tToast.error("whatsappChat.فشل_حذف_المحادثات_616542");
+            tToast.error("whatsappChat.failed_delete_6e98");
           }
         });
       }
@@ -1370,7 +1370,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isPinned ? 'تم إلغاء التثبيت' : 'تم التثبيت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحديث_حالة_d9f10e");
+      tToast.error("whatsappChat.failed_update_status_9511");
     }
   };
 
@@ -1385,7 +1385,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isMuted ? 'تم إلغاء كتم الصوت' : 'تم كتم الصوت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحديث_حالة_ce3303");
+      tToast.error("whatsappChat.failed_update_status_73cc");
     }
   };
 
@@ -1393,10 +1393,10 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession) return;
     try {
       await api.post(`/whatsapp/chats/unread`, { sessionId: contact.sessionId || selectedSession, jid: contact.jid, unread: true });
-      tToast.success("whatsappChat.تم_تحديد_المحادثة_785689");
+      tToast.success("whatsappChat.success_select_9a6b");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحديد_حالة_28fb34");
+      tToast.error("whatsappChat.failed_select_status_be9a");
     }
   };
 
@@ -1411,12 +1411,12 @@ const WhatsAppChatContent: React.FC = () => {
           messageId: selectedMessageForMenu.messageId
         })
       ));
-      tToast.success("whatsappChat.تم_إعادة_توجيه_1ccf33");
+      tToast.success("whatsappChat.msg_29a7");
       setForwardDialogOpen(false);
       setSelectedContactsForForward([]);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إعادة_توجيه_9db76a");
+      tToast.error("whatsappChat.msg_71a8");
     }
   };
 
@@ -1434,7 +1434,7 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: selectedMessageForMenu.fromMe
         }
       });
-      tToast.success("whatsappChat.تم_حذف_الرسالة_3744e4");
+      tToast.success("whatsappChat.success_delete_57de");
 
       // Update messages cache
       queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', selectedContact.jid, targetSessionId], old => {
@@ -1449,7 +1449,7 @@ const WhatsAppChatContent: React.FC = () => {
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_حذف_الرسالة_5870cf");
+      tToast.error("whatsappChat.failed_delete_f800");
     }
   };
 
@@ -1464,7 +1464,7 @@ const WhatsAppChatContent: React.FC = () => {
   const handleCopy = () => {
     if (selectedMessageForMenu?.content) {
       navigator.clipboard.writeText(selectedMessageForMenu.content);
-      tToast.success("whatsappChat.تم_نسخ_النص_2097a9");
+      tToast.success("whatsappChat.success_copy_3ea5");
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     }
@@ -1573,9 +1573,9 @@ const WhatsAppChatContent: React.FC = () => {
         emoji
       });
       setShowReactionPicker(null);
-      tToast.success("whatsappChat.تم_إرسال_التفاعل_622f10");
+      tToast.success("whatsappChat.success_send_3257");
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_التفاعل_1a26c5");
+      tToast.error("whatsappChat.failed_send_869b");
     }
   };
 
@@ -1594,10 +1594,10 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: message.fromMe
         }
       });
-      tToast.success("whatsappChat.تم_تمييز_الرسالة_331eca");
+      tToast.success("whatsappChat.msg_6131");
       setMessageContextMenu(null);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تمييز_الرسالة_979172");
+      tToast.error("whatsappChat.msg_5a7e");
     }
   };
 
@@ -1622,7 +1622,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validOptions = pollData.options.filter(o => o.trim());
     if (validOptions.length < 2) {
-      tToast.warning("whatsappChat.يجب_إضافة_خيارين_8d6b73");
+      tToast.warning("whatsappChat.msg_ef4e");
       return;
     }
     try {
@@ -1635,11 +1635,11 @@ const WhatsAppChatContent: React.FC = () => {
           selectableCount: pollData.selectableCount
         }
       });
-      tToast.success("whatsappChat.تم_إرسال_الاستطلاع_f44faf");
+      tToast.success("whatsappChat.success_send_3f0b");
       setPollDialogOpen(false);
       setPollData({ question: '', options: ['', ''], selectableCount: 1 });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_الاستطلاع_437311");
+      tToast.error("whatsappChat.failed_send_8954");
     }
   };
 
@@ -1649,7 +1649,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validButtons = buttonsData.buttons.filter(b => b.text.trim());
     if (validButtons.length === 0 || validButtons.length > 3) {
-      tToast.warning("whatsappChat.يجب_إضافة_13_8ebdf9");
+      tToast.warning("whatsappChat.msg_292e");
       return;
     }
     try {
@@ -1660,11 +1660,11 @@ const WhatsAppChatContent: React.FC = () => {
         buttons: validButtons.map((b, i) => ({ buttonId: `btn_${i}`, buttonText: { displayText: b.text }, type: 1 })),
         footer: buttonsData.footer || undefined
       });
-      tToast.success("whatsappChat.تم_إرسال_الرسالة_ba1907");
+      tToast.success("whatsappChat.success_send_714a");
       setButtonsDialogOpen(false);
       setButtonsData({ text: '', footer: '', buttons: [{ id: '1', text: '' }] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_الرسالة_1c183d");
+      tToast.error("whatsappChat.failed_send_0a36");
     }
   };
 
@@ -1688,11 +1688,11 @@ const WhatsAppChatContent: React.FC = () => {
           }))
         }))
       });
-      tToast.success("whatsappChat.تم_إرسال_القائمة_8daf2e");
+      tToast.success("whatsappChat.success_send_fd2a");
       setListDialogOpen(false);
       setListData({ text: '', buttonText: 'اختر', title: '', sections: [{ title: 'القسم 1', rows: [{ id: '1', title: '', description: '' }] }] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_القائمة_df44a9");
+      tToast.error("whatsappChat.failed_send_6b1d");
     }
   };
 
@@ -1725,10 +1725,10 @@ const WhatsAppChatContent: React.FC = () => {
           imageUrl: product.imageUrl
         }
       });
-      tToast.success("whatsappChat.تم_إرسال_المنتج_28ff8e");
+      tToast.success("whatsappChat.success_send_2909");
       setCatalogDialogOpen(false);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_المنتج_e0602b");
+      tToast.error("whatsappChat.failed_send_f8fe");
     }
   };
 
@@ -1743,7 +1743,7 @@ const WhatsAppChatContent: React.FC = () => {
       setStarredMessages((res as any).data.messages || []);
       setStarredMessagesOpen(true);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحميل_الرسائل_a95a80");
+      tToast.error("whatsappChat.failed_load_229c");
     }
   };
 
@@ -1757,14 +1757,14 @@ const WhatsAppChatContent: React.FC = () => {
             longitude: position.coords.longitude.toString(),
             address: ''
           });
-          tToast.success("whatsappChat.تم_تحديد_موقعك_da4fc8");
+          tToast.success("whatsappChat.success_select_a6fd");
         },
         (error) => {
           toast.error('فشل تحديد الموقع: ' + error.message);
         }
       );
     } else {
-      tToast.error("whatsappChat.المتصفح_لا_يدعم_3156c9");
+      tToast.error("whatsappChat.msg_2cdb");
     }
   };
 
@@ -1782,11 +1782,11 @@ const WhatsAppChatContent: React.FC = () => {
           address: locationData.address
         }
       });
-      tToast.success("whatsappChat.تم_إرسال_الموقع_b33d24");
+      tToast.success("whatsappChat.success_send_6ef9");
       setLocationDialogOpen(false);
       setLocationData({ latitude: '', longitude: '', address: '' });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_الموقع_7f3c59");
+      tToast.error("whatsappChat.failed_send_84ec");
     }
   };
 
@@ -1794,7 +1794,7 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession) return;
     const sessionId = selectedContact?.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!sessionId) {
-      tToast.error("whatsappChat.الرجاء_اختيار_جلسة_4343c6");
+      tToast.error("whatsappChat.msg_f28c");
       return;
     }
     setTemplateDialogOpen(true);
@@ -1806,7 +1806,7 @@ const WhatsAppChatContent: React.FC = () => {
       const allTemplates = (res as any).data?.templates || (res as any).data?.data || [];
       setTemplates(allTemplates.filter((t: any) => t.status === 'APPROVED'));
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحميل_القوالب_53bc8e");
+      tToast.error("whatsappChat.failed_load_055c");
       setTemplates([]);
     } finally {
       setLoadingTemplates(false);
@@ -1833,7 +1833,7 @@ const WhatsAppChatContent: React.FC = () => {
   const handleSendTemplate = async () => {
     if (!selectedSession || !selectedContact || !selectedTemplate) return;
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
-    if (!targetSessionId) { tToast.error("whatsappChat.الرجاء_اختيار_جلسة_4343c6"); return; }
+    if (!targetSessionId) { tToast.error("whatsappChat.msg_f28c"); return; }
     const bodyComponent = selectedTemplate.components?.find((c: any) => c.type === 'BODY');
     const params: Record<string, any> = {
       name: selectedTemplate.name,
@@ -1860,12 +1860,12 @@ const WhatsAppChatContent: React.FC = () => {
         parameters: params,
         templateBody,
       });
-      tToast.success("whatsappChat.تم_إرسال_القالب_8172fe");
+      tToast.success("whatsappChat.success_send_f1a1");
       setTemplateDialogOpen(false);
       setSelectedTemplate(null);
       setTemplateVariables({});
     } catch (error) {
-      tToast.error("whatsappChat.فشل_إرسال_القالب_3e4de2");
+      tToast.error("whatsappChat.failed_send_c7f6");
     }
   };
 
@@ -1873,18 +1873,18 @@ const WhatsAppChatContent: React.FC = () => {
     if (!window.confirm(`هل أنت متأكد من حظر ${getContactName(contact)}؟`)) return;
     try {
       await api.post('/whatsapp/contacts/block', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      tToast.success("whatsappChat.تم_حظر_جهة_ab3027");
+      tToast.success("whatsappChat.msg_f18b");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      tToast.error("whatsappChat.فشل_حظر_جهة_506111");
+      tToast.error("whatsappChat.msg_0a94");
     }
   };
 
   const handleUnblockContact = async (contact: Contact) => {
     try {
       await api.post('/whatsapp/contacts/unblock', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      tToast.success("whatsappChat.تم_إلغاء_حظر_5fca28");
+      tToast.success("whatsappChat.msg_0e02");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
@@ -1900,9 +1900,9 @@ const WhatsAppChatContent: React.FC = () => {
         sessionId: selectedSession,
         ephemeral: duration // 0 = off, 86400 = 24h, 604800 = 7 days, 7776000 = 90 days
       });
-      tToast.success("whatsappChat.تم_تحديث_إعدادات_321fef");
+      tToast.success("whatsappChat.success_update_a33f");
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحديث_الإعدادات_4ef392");
+      tToast.error("whatsappChat.failed_update_a3e3");
     }
   };
 
@@ -1915,9 +1915,9 @@ const WhatsAppChatContent: React.FC = () => {
       await api.post(`/whatsapp/groups/${selectedContact.jid}/picture`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      tToast.success("whatsappChat.تم_تحديث_صورة_720482");
+      tToast.success("whatsappChat.success_update_1cca");
     } catch (error) {
-      tToast.error("whatsappChat.فشل_تحديث_الصورة_85886d");
+      tToast.error("whatsappChat.failed_update_c47f");
     }
   };
 
@@ -1928,10 +1928,10 @@ const WhatsAppChatContent: React.FC = () => {
         sessionId: selectedSession,
         inviteCode
       });
-      tToast.success("whatsappChat.تم_قبول_الدعوة_abf7be");
+      tToast.success("whatsappChat.msg_6016");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      tToast.error("whatsappChat.فشل_قبول_الدعوة_6f5c48");
+      tToast.error("whatsappChat.msg_ae22");
     }
   };
 
@@ -2099,10 +2099,10 @@ const WhatsAppChatContent: React.FC = () => {
               formData.append('ptt', 'true');
               try {
                 await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-                tToast.success("whatsappChat.تم_إرسال_الرسالة_a406dc");
+                tToast.success("whatsappChat.success_send_ba8a");
                 // Messages reload automatically via socket or refetch
               } catch (error) {
-                tToast.error("whatsappChat.فشل_إرسال_الرسالة_ef99d4");
+                tToast.error("whatsappChat.failed_send_8f23");
               }
             }
           }}
@@ -2469,7 +2469,7 @@ const WhatsAppChatContent: React.FC = () => {
                   <UiButton
                     variant="outline"
                     className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/[0.12] dark:hover:text-rose-200"
-                    onClick={() => tToast.info("whatsappChat.قريباً_0e1cf1")}
+                    onClick={() => tToast.info("whatsappChat.msg_36fc")}
                   >
                     <span>الإبلاغ عن {selectedContactName}</span>
                     <ShieldAlert className="size-4" />

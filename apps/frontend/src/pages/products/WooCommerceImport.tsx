@@ -51,7 +51,7 @@ const WooCommerceImport: React.FC = () => {
   // جلب المنتجات من WooCommerce
   const fetchProducts = async () => {
     if (!storeUrl.trim() || !consumerKey.trim() || !consumerSecret.trim()) {
-      tToast.error("products_WooCommerceImport.msg_9c80");
+      tToast.error("WooCommerceImport.msg_9c80");
       return;
     }
 
@@ -81,11 +81,11 @@ const WooCommerceImport: React.FC = () => {
         );
         setSelectedProducts(allIndexes);
       } else {
-        toast.error(data.message || i18n.t("products_WooCommerceImport.failed_fetch_579a"));
+        toast.error(data.message || i18n.t("WooCommerceImport.failed_fetch_579a"));
       }
     } catch (error: unknown) {
       console.error("Error fetching products:", error);
-      tToast.error("products_WooCommerceImport.msg_d18b");
+      tToast.error("WooCommerceImport.msg_d18b");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ const WooCommerceImport: React.FC = () => {
   // استيراد المنتجات المحددة
   const importProducts = async () => {
     if (selectedProducts.size === 0) {
-      tToast.error("products_WooCommerceImport.msg_7f37");
+      tToast.error("WooCommerceImport.msg_7f37");
       return;
     }
 
@@ -135,11 +135,11 @@ const WooCommerceImport: React.FC = () => {
         // إعادة تعيين
         clearData();
       } else {
-        toast.error(data.message || i18n.t("products_WooCommerceImport.msg_b68b"));
+        toast.error(data.message || i18n.t("WooCommerceImport.msg_b68b"));
       }
     } catch (error: unknown) {
       console.error("Error importing products:", error);
-      tToast.error("products_WooCommerceImport.msg_c438");
+      tToast.error("WooCommerceImport.msg_c438");
     } finally {
       setImporting(false);
     }

@@ -69,7 +69,7 @@ const AffiliateProducts: React.FC = () => {
         setAffiliate(affiliateRes.data.data);
       }
     } catch (error: any) {
-      tToast.error("affiliates_AffiliateProducts.error_error_ad12");
+      tToast.error("AffiliateProducts.error_error_ad12");
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ const AffiliateProducts: React.FC = () => {
   const handleUpdateMarkup = async (productId: string, markup: number) => {
     try {
       if (!Number.isFinite(markup) || markup < 0) {
-        tToast.error("affiliates_AffiliateProducts.msg_f09a");
+        tToast.error("AffiliateProducts.msg_f09a");
         return;
       }
 
@@ -90,11 +90,11 @@ const AffiliateProducts: React.FC = () => {
         { markup: number }
       >(`/affiliates/products/${product.id}`, { markup });
       if (response.data.success) {
-        tToast.success("affiliates_AffiliateProducts.success_update_c846");
+        tToast.success("AffiliateProducts.success_update_c846");
         loadProducts();
       }
     } catch (error: any) {
-      tToast.error("affiliates_AffiliateProducts.error_error_59e1");
+      tToast.error("AffiliateProducts.error_error_59e1");
     }
   };
 
@@ -104,7 +104,7 @@ const AffiliateProducts: React.FC = () => {
         `/affiliates/products/${affiliateProductId}`,
       );
       if (response.data.success) {
-        tToast.success("affiliates_AffiliateProducts.msg_46fb");
+        tToast.success("AffiliateProducts.msg_46fb");
         loadProducts();
       }
     } catch (error: any) {
@@ -241,10 +241,10 @@ const AffiliateProducts: React.FC = () => {
                           );
                           const copied = await copyAffiliateText(link);
                           if (copied) {
-                            tToast.success("affiliates_AffiliateProducts.msg_0153");
+                            tToast.success("AffiliateProducts.msg_0153");
                             return;
                           }
-                          tToast.error("affiliates_AffiliateProducts.msg_ccdb");
+                          tToast.error("AffiliateProducts.msg_ccdb");
                         }}
                         className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-xs font-bold transition shadow-sm shadow-blue-500/20"
                       >

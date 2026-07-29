@@ -485,7 +485,7 @@ const Reports: React.FC = () => {
     } catch (error) {
       console.error("Error fetching reports:", error);
       // في حالة الخطأ، عرض رسالة للمستخدم
-      alert(i18n.t("reports_Reports.error_error_3799"));
+      alert(i18n.t("Reports.error_error_3799"));
     } finally {
       setLoading(false);
     }

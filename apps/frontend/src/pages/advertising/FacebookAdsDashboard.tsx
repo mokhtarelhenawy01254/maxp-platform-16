@@ -221,7 +221,7 @@ const FacebookAdsDashboard: React.FC = () => {
         refreshAdAccounts(),
         loadCampaigns(selectedAdAccountId),
       ]);
-      tToast.success("advertising_FacebookAdsDashboard.success_update_4f77");
+      tToast.success("FacebookAdsDashboard.success_update_4f77");
     } finally {
       setRefreshing(false);
     }
@@ -229,7 +229,7 @@ const FacebookAdsDashboard: React.FC = () => {
 
   const handleSyncFromFacebook = async () => {
     if (!selectedAdAccountId) {
-      tToast.error("advertising_FacebookAdsDashboard.msg_2888");
+      tToast.error("FacebookAdsDashboard.msg_2888");
       return;
     }
 
@@ -239,7 +239,7 @@ const FacebookAdsDashboard: React.FC = () => {
         includeStructure: false,
       });
       await loadCampaigns(selectedAdAccountId);
-      tToast.success("advertising_FacebookAdsDashboard.success_update_f698");
+      tToast.success("FacebookAdsDashboard.success_update_f698");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل مزامنة الحملات"));
     } finally {
@@ -249,7 +249,7 @@ const FacebookAdsDashboard: React.FC = () => {
 
   const handleCreateCampaign = () => {
     if (!selectedAdAccountId) {
-      tToast.error("advertising_FacebookAdsDashboard.msg_2888");
+      tToast.error("FacebookAdsDashboard.msg_2888");
       return;
     }
 

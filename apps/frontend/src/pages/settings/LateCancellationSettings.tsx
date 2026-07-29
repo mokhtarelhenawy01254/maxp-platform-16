@@ -133,7 +133,7 @@ const LateCancellationSettings: React.FC = () => {
           settings.lateCancellationTargetStatuses,
       });
       if (response.data.success) {
-        tToast.success("settings_LateCancellationSettings.success_save_767c");
+        tToast.success("LateCancellationSettings.success_save_767c");
         fetchSettings();
       }
     } catch (error) {

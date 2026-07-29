@@ -48,9 +48,9 @@ const RatingSettingsManager: React.FC = () => {
     setSaving(true);
     try {
       await returnService.updateSettings(settings);
-      tToast.success("settings_RatingSettingsManager.success_save_3111");
+      tToast.success("RatingSettingsManager.success_save_3111");
     } catch (error) {
-      tToast.error("settings_RatingSettingsManager.failed_save_dfaf");
+      tToast.error("RatingSettingsManager.failed_save_dfaf");
     } finally {
       setSaving(false);
     }

@@ -21,7 +21,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import {
   Table,
   TableBody,
@@ -100,7 +100,7 @@ const AttendanceReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      tToast.error("hr_AttendanceReport.failed_fetch_2d8e");
+      tToast.error("AttendanceReport.failed_fetch_2d8e");
       setReport(null);
     } finally {
       setLoading(false);
@@ -108,7 +108,7 @@ const AttendanceReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    tToast.success("hr_AttendanceReport.msg_74cd");
+    tToast.success("AttendanceReport.msg_74cd");
   };
 
   return (

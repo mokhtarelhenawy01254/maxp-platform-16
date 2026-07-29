@@ -60,7 +60,7 @@ const CreateCatalog: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createCatalog(formData);
-      tToast.success("advertising_CreateCatalog.success_create_8f33");
+      tToast.success("CreateCatalog.success_create_8f33");
       navigate("/advertising/facebook-ads/catalogs");
     } catch (error: any) {
       console.error("Error creating catalog:", error);

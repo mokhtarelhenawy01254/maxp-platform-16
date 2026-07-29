@@ -51,7 +51,7 @@ const Resignations: React.FC = () => {
       setResignations(response.data.resignations || []);
     } catch (error) {
       console.error("Error fetching resignations:", error);
-      tToast.error("hr_Resignations.failed_fetch_eabb");
+      tToast.error("Resignations.failed_fetch_eabb");
     } finally {
       setLoading(false);
     }

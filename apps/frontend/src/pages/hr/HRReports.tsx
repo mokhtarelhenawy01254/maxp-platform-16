@@ -267,7 +267,7 @@ const HRReports: React.FC = () => {
    */
   const handleExport = () => {
     if (!payrollReport && activeTab === "payroll") {
-      tToast.error("hr_HRReports.msg_80be");
+      tToast.error("HRReports.msg_80be");
       return;
     }
 
@@ -298,7 +298,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      tToast.success("hr_HRReports.msg_ed25");
+      tToast.success("HRReports.msg_ed25");
     } else {
       // Basic export for other tabs
       let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
@@ -317,7 +317,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      tToast.success("hr_HRReports.msg_4045");
+      tToast.success("HRReports.msg_4045");
     }
   };
 

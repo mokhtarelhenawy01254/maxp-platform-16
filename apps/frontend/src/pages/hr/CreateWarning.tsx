@@ -89,7 +89,7 @@ const CreateWarning = () => {
         setEmployees(empRes.data.employees || []);
       } catch (error) {
         console.error("Error fetching data:", error);
-        tToast.error("hr_CreateWarning.failed_load_dbdf");
+        tToast.error("CreateWarning.failed_load_dbdf");
       }
     };
     fetchData();
@@ -107,12 +107,12 @@ const CreateWarning = () => {
       setLoading(true);
 
       if (!data.employeeId || data.employeeId.trim() === "") {
-        tToast.error("hr_CreateWarning.msg_a319");
+        tToast.error("CreateWarning.msg_a319");
         return;
       }
 
       await api.post("/hr/warnings", data);
-      tToast.success("hr_CreateWarning.msg_c304");
+      tToast.success("CreateWarning.msg_c304");
       navigate("/hr/warnings");
     } catch (error: any) {
       console.error("Error creating warning:", error);

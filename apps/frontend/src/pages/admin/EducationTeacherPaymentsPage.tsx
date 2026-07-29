@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 
@@ -78,7 +79,7 @@ export default function EducationTeacherPaymentsPage() {
       });
       const data = await res.json();
       if (data.success) setCalcResult(data.data);
-      else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.msg_7d6d"));
+      else alert(data.error || i18n.t("EducationTeacherPaymentsPage.msg_7d6d"));
     } catch (e) { console.error(e); }
     setCalcLoading(false);
   };
@@ -102,11 +103,11 @@ export default function EducationTeacherPaymentsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(i18n.t("admin_EducationTeacherPaymentsPage.success_create_4d53"));
+        alert(i18n.t("EducationTeacherPaymentsPage.success_create_4d53"));
         setShowCalc(false);
         setCalcResult(null);
         fetchPayments();
-      } else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.failed_create_3a00"));
+      } else alert(data.error || i18n.t("EducationTeacherPaymentsPage.failed_create_3a00"));
     } catch (e) { console.error(e); }
   };
 
@@ -114,8 +115,8 @@ export default function EducationTeacherPaymentsPage() {
     try {
       const res = await fetch(api(`payments/${id}/mark-paid`), { method: "PUT", headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success) { fetchPayments(); alert(i18n.t("admin_EducationTeacherPaymentsPage.msg_71a6")); }
-      else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.msg_88aa"));
+      if (data.success) { fetchPayments(); alert(i18n.t("EducationTeacherPaymentsPage.msg_71a6")); }
+      else alert(data.error || i18n.t("EducationTeacherPaymentsPage.msg_88aa"));
     } catch (e) { console.error(e); }
   };
 

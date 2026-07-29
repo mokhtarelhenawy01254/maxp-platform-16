@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import i18n from "../../i18n";
 import {
   CalculatorIcon,
   ChartBarIcon,
@@ -248,7 +249,7 @@ const CampaignPredictionCalculator: React.FC = () => {
 
   const saveScenario = () => {
     if (!inputs.campaignName) {
-      alert(i18n.t("conversations_CampaignPredictionCalculator.msg_1512"));
+      alert(i18n.t("CampaignPredictionCalculator.msg_1512"));
       return;
     }
 
@@ -263,7 +264,7 @@ const CampaignPredictionCalculator: React.FC = () => {
     const updated = [...savedScenarios, newScenario];
     setSavedScenarios(updated);
     localStorage.setItem("campaignScenarios", JSON.stringify(updated));
-    alert(i18n.t("conversations_CampaignPredictionCalculator.success_save_3135"));
+    alert(i18n.t("CampaignPredictionCalculator.success_save_3135"));
   };
 
   // Calculation functions

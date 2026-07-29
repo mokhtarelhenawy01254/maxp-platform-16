@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import i18n from "../../i18n";
 import {
   HandThumbUpIcon,
   HandThumbDownIcon,
@@ -94,7 +95,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
       setIsSubmitted(false);
 
       // يمكن إضافة toast notification هنا
-      alert(i18n.t("components_RatingButtons.error_error_1ca7"));
+      alert(i18n.t("RatingButtons.error_error_1ca7"));
     } finally {
       setIsSubmitting(false);
     }

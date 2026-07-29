@@ -234,7 +234,7 @@ const MerchantsList: React.FC = () => {
         setMerchantPayouts(payoutsResponse.data.data || []);
       }
     } catch (_error: unknown) {
-      tToast.error("merchants_MerchantsList.error_error_2f2d");
+      tToast.error("MerchantsList.error_error_2f2d");
     } finally {
       setLoading(false);
     }
@@ -253,7 +253,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("merchants_MerchantsList.success_login_3fe0");
+        tToast.success("MerchantsList.success_login_3fe0");
         await loadMerchants();
       }
     } catch (error: unknown) {
@@ -276,7 +276,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("merchants_MerchantsList.msg_8395");
+        tToast.success("MerchantsList.msg_8395");
         await loadMerchants();
       }
     } catch (error: unknown) {

@@ -30,7 +30,7 @@ const IncompleteOrdersSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching incomplete order settings:", error);
-      tToast.error("settings_IncompleteOrdersSettings.error_fetch_53e5");
+      tToast.error("IncompleteOrdersSettings.error_fetch_53e5");
     } finally {
       setLoading(false);
     }
@@ -49,12 +49,12 @@ const IncompleteOrdersSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        tToast.success("settings_IncompleteOrdersSettings.success_save_8fed");
+        tToast.success("IncompleteOrdersSettings.success_save_8fed");
         fetchSettings();
       }
     } catch (error) {
       console.error("Error saving incomplete order settings:", error);
-      tToast.error("settings_IncompleteOrdersSettings.error_save_bccf");
+      tToast.error("IncompleteOrdersSettings.error_save_bccf");
     } finally {
       setSaving(false);
     }

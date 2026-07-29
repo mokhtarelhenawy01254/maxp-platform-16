@@ -244,7 +244,7 @@ const Goals: React.FC = () => {
       setStats(statsResponse.data.stats || null);
     } catch (error) {
       console.error("Error fetching goals:", error);
-      tToast.error("hr_Goals.unable_load_2181");
+      tToast.error("Goals.unable_load_2181");
     } finally {
       setLoading(false);
     }

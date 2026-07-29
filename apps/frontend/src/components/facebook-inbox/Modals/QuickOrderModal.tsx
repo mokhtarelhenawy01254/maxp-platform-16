@@ -14,8 +14,8 @@ import {
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
@@ -638,7 +638,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      tToast.error("components_QuickOrderModal.failed_fetch_fdd8");
+      tToast.error("QuickOrderModal.failed_fetch_fdd8");
     } finally {
       setLoadingProducts(false);
     }
@@ -711,7 +711,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             : item;
         }),
       );
-      tToast.success("components_QuickOrderModal.msg_7c93");
+      tToast.success("QuickOrderModal.msg_7c93");
     } else {
       const price = variant ? parseFloat(String(variant.price)) : product.price;
       const image = variant && variant.image ? variant.image : product.image;
@@ -741,7 +741,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           sku,
         },
       ]);
-      tToast.success("components_QuickOrderModal.msg_e784");
+      tToast.success("QuickOrderModal.msg_e784");
     }
 
     setShowVariantModal(false);
@@ -790,7 +790,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         return !isMatch;
       }),
     );
-    tToast.success("components_QuickOrderModal.success_delete_b9f1");
+    tToast.success("QuickOrderModal.success_delete_b9f1");
   };
 
   // Calculate totals
@@ -805,11 +805,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   // Create order
   const handleCreateOrder = async () => {
     if (cartItems.length === 0) {
-      tToast.error("components_QuickOrderModal.msg_337c");
+      tToast.error("QuickOrderModal.msg_337c");
       return;
     }
     if (!phone || !customerName) {
-      tToast.error("components_QuickOrderModal.msg_55c5");
+      tToast.error("QuickOrderModal.msg_55c5");
       return;
     }
 
@@ -851,7 +851,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       const response = await apiClient.post("/orders-enhanced", payload);
 
       if (response.data.success) {
-        tToast.success("components_QuickOrderModal.success_create_5c00");
+        tToast.success("QuickOrderModal.success_create_5c00");
         const orderId = response.data.order?.id || response.data.data?.id;
 
         if (onOrderCreated && orderId) {
@@ -864,7 +864,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         onClose();
       } else {
         toast.error(
-          "فشل إنشاء الطلب: " + (response.data.error || i18n.t("components_QuickOrderModal.msg_4223")),
+          "فشل إنشاء الطلب: " + (response.data.error || i18n.t("QuickOrderModal.msg_4223")),
         );
       }
     } catch (error: any) {

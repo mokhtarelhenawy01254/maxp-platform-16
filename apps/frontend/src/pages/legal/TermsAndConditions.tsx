@@ -55,7 +55,7 @@ const TermsAndConditions: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading content:", error);
-      tToast.error("legal_TermsAndConditions.failed_load_0ab1");
+      tToast.error("TermsAndConditions.failed_load_0ab1");
     } finally {
       setLoading(false);
     }
@@ -71,11 +71,11 @@ const TermsAndConditions: React.FC = () => {
       localStorage.setItem("terms_and_conditions_date", now);
       setLastUpdated(now);
 
-      tToast.success("legal_TermsAndConditions.success_save_3b44");
+      tToast.success("TermsAndConditions.success_save_3b44");
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving content:", error);
-      tToast.error("legal_TermsAndConditions.failed_save_90be");
+      tToast.error("TermsAndConditions.failed_save_90be");
     } finally {
       setLoading(false);
     }

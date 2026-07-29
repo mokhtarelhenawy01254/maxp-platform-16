@@ -170,7 +170,7 @@ const FacebookAdsConnection: React.FC = () => {
 
   const handleConnectAds = async () => {
     if (!user?.companyId) {
-      tToast.error("advertising_FacebookAdsConnection.msg_261d");
+      tToast.error("FacebookAdsConnection.msg_261d");
       return;
     }
 
@@ -190,7 +190,7 @@ const FacebookAdsConnection: React.FC = () => {
     } catch (connectError: unknown) {
       console.error("Failed to start Facebook Ads OAuth:", connectError);
       setError("فشل بدء ربط الإعلانات");
-      tToast.error("advertising_FacebookAdsConnection.msg_375c");
+      tToast.error("FacebookAdsConnection.msg_375c");
     } finally {
       setConnecting(false);
     }
@@ -212,11 +212,11 @@ const FacebookAdsConnection: React.FC = () => {
     try {
       setDisconnectingSourceId(sourceId);
       await facebookAdsService.disconnectAdsConnectionSource(sourceId);
-      tToast.success("advertising_FacebookAdsConnection.msg_19f6");
+      tToast.success("FacebookAdsConnection.msg_19f6");
       await loadStatus();
     } catch (disconnectError: unknown) {
       console.error("Failed to disconnect Facebook Ads source:", disconnectError);
-      tToast.error("advertising_FacebookAdsConnection.msg_e833");
+      tToast.error("FacebookAdsConnection.msg_e833");
     } finally {
       setDisconnectingSourceId(null);
     }
@@ -363,7 +363,7 @@ const FacebookAdsConnection: React.FC = () => {
                                 : remoteSource.error || "فشل الاختبار"
                               : "لم يتم الاختبار"}
                           </span>
-                          <span>{source.lastError || i18n.t("advertising_FacebookAdsConnection.msg_990c")}</span>
+                          <span>{source.lastError || i18n.t("FacebookAdsConnection.msg_990c")}</span>
                         </div>
                         <div className="flex items-center gap-2 md:justify-end">
                           <StatusPill

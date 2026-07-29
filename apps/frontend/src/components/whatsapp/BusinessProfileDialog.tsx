@@ -77,11 +77,11 @@ const BusinessProfileDialog: React.FC<BusinessProfileDialogProps> = ({
         sessionId,
         ...profile,
       });
-      tToast.success("components_BusinessProfileDialog.success_update_9be1");
+      tToast.success("BusinessProfileDialog.success_update_9be1");
       onClose();
     } catch (error) {
       console.error("Error updating business profile:", error);
-      tToast.error("components_BusinessProfileDialog.failed_update_5c61");
+      tToast.error("BusinessProfileDialog.failed_update_5c61");
     } finally {
       setLoading(false);
     }

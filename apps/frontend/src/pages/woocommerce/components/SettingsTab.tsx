@@ -1,6 +1,6 @@
 import React from "react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import {
   ArrowPathIcon,
   CheckCircleIcon,
@@ -293,7 +293,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(settings.webhookUrl || "");
-                                tToast.success("woocommerce_SettingsTab.msg_b231");
+                                tToast.success("SettingsTab.msg_b231");
                               }}
                               className="p-1.5 text-gray-400 hover:text-purple-600 border border-gray-200 dark:border-gray-700 rounded hover:bg-white transition-colors"
                               title="نسخ الرابط"
@@ -319,7 +319,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(settingsForm.webhookSecret || "");
-                                  tToast.success("woocommerce_SettingsTab.msg_65a3");
+                                  tToast.success("SettingsTab.msg_65a3");
                                 }}
                                 className="p-1.5 text-gray-400 hover:text-purple-600 border border-gray-200 dark:border-gray-700 rounded hover:bg-white transition-colors"
                                 title="نسخ المفتاح السري"

@@ -60,7 +60,7 @@ const AudiencesManagement: React.FC = () => {
     setRefreshing(true);
     await loadAudiences();
     setRefreshing(false);
-    tToast.success("advertising_AudiencesManagement.success_update_1209");
+    tToast.success("AudiencesManagement.success_update_1209");
   };
 
   const handleCreateCustomAudience = () => {
@@ -80,7 +80,7 @@ const AudiencesManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      tToast.success("advertising_AudiencesManagement.success_delete_e963");
+      tToast.success("AudiencesManagement.success_delete_e963");
       await loadAudiences();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -127,7 +128,7 @@ const TaskTemplates: React.FC = () => {
 
   const createTemplate = async () => {
     if (!newTemplate.name.trim() || !newTemplate.taskTitle.trim()) {
-      alert(i18n.t("tasks_TaskTemplates.msg_e4d8"));
+      alert(i18n.t("TaskTemplates.msg_e4d8"));
       return;
     }
 
@@ -147,13 +148,13 @@ const TaskTemplates: React.FC = () => {
         fetchTemplates();
         setShowCreateModal(false);
         resetForm();
-        alert(i18n.t("tasks_TaskTemplates.success_create_c37f"));
+        alert(i18n.t("TaskTemplates.success_create_c37f"));
       } else {
-        alert(data.error || i18n.t("tasks_TaskTemplates.failed_create_7f8d"));
+        alert(data.error || i18n.t("TaskTemplates.failed_create_7f8d"));
       }
     } catch (error) {
       console.error("Error creating template:", error);
-      alert(i18n.t("tasks_TaskTemplates.failed_create_7f8d"));
+      alert(i18n.t("TaskTemplates.failed_create_7f8d"));
     }
   };
 
@@ -179,13 +180,13 @@ const TaskTemplates: React.FC = () => {
         fetchTemplates();
         setShowEditModal(false);
         setEditingTemplate(null);
-        alert(i18n.t("tasks_TaskTemplates.success_update_85c7"));
+        alert(i18n.t("TaskTemplates.success_update_85c7"));
       } else {
-        alert(data.error || i18n.t("tasks_TaskTemplates.failed_update_bf44"));
+        alert(data.error || i18n.t("TaskTemplates.failed_update_bf44"));
       }
     } catch (error) {
       console.error("Error updating template:", error);
-      alert(i18n.t("tasks_TaskTemplates.failed_update_bf44"));
+      alert(i18n.t("TaskTemplates.failed_update_bf44"));
     }
   };
 
@@ -205,13 +206,13 @@ const TaskTemplates: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         fetchTemplates();
-        alert(i18n.t("tasks_TaskTemplates.success_delete_746e"));
+        alert(i18n.t("TaskTemplates.success_delete_746e"));
       } else {
-        alert(data.error || i18n.t("tasks_TaskTemplates.failed_delete_3434"));
+        alert(data.error || i18n.t("TaskTemplates.failed_delete_3434"));
       }
     } catch (error) {
       console.error("Error deleting template:", error);
-      alert(i18n.t("tasks_TaskTemplates.failed_delete_3434"));
+      alert(i18n.t("TaskTemplates.failed_delete_3434"));
     }
   };
 

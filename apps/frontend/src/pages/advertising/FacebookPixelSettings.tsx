@@ -547,7 +547,7 @@ const FacebookPixelSettings: React.FC = () => {
             }, 1500);
           } else {
             toast.success(
-              response.data.message || i18n.t("advertising_FacebookPixelSettings.msg_15c2"),
+              response.data.message || i18n.t("FacebookPixelSettings.msg_15c2"),
               {
                 duration: 3000,
               },

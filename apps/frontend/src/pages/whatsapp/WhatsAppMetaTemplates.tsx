@@ -366,11 +366,11 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const handleCreate = useCallback(async () => {
     if (!sanitizedName || !form.bodyText) {
-      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_5d29");
+      tToast.error("WhatsAppMetaTemplates.msg_5d29");
       return;
     }
     if (!nameValid) {
-      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_7367");
+      tToast.error("WhatsAppMetaTemplates.msg_7367");
       return;
     }
     const checkPassed = handleComplianceCheck(form);
@@ -385,7 +385,7 @@ const WhatsAppMetaTemplates: React.FC<{
         withCompanyConfig(),
       );
       addHistory({ action: "created", name: sanitizedName, language: form.language, timestamp: Date.now(), category: form.category });
-      tToast.success("whatsapp_WhatsAppMetaTemplates.success_create_b7fe");
+      tToast.success("WhatsAppMetaTemplates.success_create_b7fe");
       setCreateOpen(false);
       setForm({ ...initialForm });
       setVarValues({});
@@ -394,7 +394,7 @@ const WhatsAppMetaTemplates: React.FC<{
       fetchTemplates();
     } catch (err: any) {
       const metaMsg = err?.response?.data?.error;
-      toast.error(metaMsg || i18n.t("whatsapp_WhatsAppMetaTemplates.failed_create_1d9d"), { duration: 8000 });
+      toast.error(metaMsg || i18n.t("WhatsAppMetaTemplates.failed_create_1d9d"), { duration: 8000 });
     } finally {
       setSending(false);
     }
@@ -402,14 +402,14 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const handleEdit = useCallback(async () => {
     if (!editForm || !editForm.name) {
-      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_bfc1");
+      tToast.error("WhatsAppMetaTemplates.msg_bfc1");
       return;
     }
     const results = runComplianceCheck(editForm);
     setEditComplianceResults(results);
     setEditShowCompliance(true);
     if (results.some(r => r.severity === "error")) {
-      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_e04d");
+      tToast.error("WhatsAppMetaTemplates.msg_e04d");
       return;
     }
     try {
@@ -422,7 +422,7 @@ const WhatsAppMetaTemplates: React.FC<{
         withCompanyConfig(),
       );
       addHistory({ action: "edited", name: editForm.name, language: editForm.language, timestamp: Date.now(), category: editForm.category });
-      tToast.success("whatsapp_WhatsAppMetaTemplates.success_update_ee74");
+      tToast.success("WhatsAppMetaTemplates.success_update_ee74");
       setEditOpen(false);
       setEditForm(null);
       fetchTemplates();
@@ -440,7 +440,7 @@ const WhatsAppMetaTemplates: React.FC<{
         ...withCompanyConfig(),
       });
       addHistory({ action: "deleted", name: templateName, language: "", timestamp: Date.now() });
-      tToast.success("whatsapp_WhatsAppMetaTemplates.success_delete_3acd");
+      tToast.success("WhatsAppMetaTemplates.success_delete_3acd");
       setDeleteConfirm(null);
       fetchTemplates();
     } catch (err: any) {

@@ -431,7 +431,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
       loadData(id),
       loadBreakdowns(id),
     ]);
-    tToast.success("advertising_FacebookAdsDiagnosis.success_update_aa38");
+    tToast.success("FacebookAdsDiagnosis.success_update_aa38");
   };
 
   if (loading || contextLoading) {

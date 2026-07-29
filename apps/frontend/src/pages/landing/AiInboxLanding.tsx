@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -141,7 +142,7 @@ const AiInboxLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_AiInboxLanding.msg_cfb7")); return; }
+    if (!bundle) { alert(i18n.t("AiInboxLanding.msg_cfb7")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -154,11 +155,11 @@ const AiInboxLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin/ai-hub?tab=sandbox");
       } else {
-        alert(data.message || i18n.t("landing_AiInboxLanding.msg_8228"));
+        alert(data.message || i18n.t("AiInboxLanding.msg_8228"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_AiInboxLanding.msg_b100"));
+      alert(i18n.t("AiInboxLanding.msg_b100"));
       setSubscribing(false);
     }
   };
@@ -169,7 +170,7 @@ const AiInboxLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert(i18n.t("landing_AiInboxLanding.msg_cfb7")); return; }
+    if (!bundle) { alert(i18n.t("AiInboxLanding.msg_cfb7")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -182,11 +183,11 @@ const AiInboxLanding: React.FC = () => {
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
       } else {
-        alert(data.message || i18n.t("landing_AiInboxLanding.failed_create_0a24"));
+        alert(data.message || i18n.t("AiInboxLanding.failed_create_0a24"));
         setSubscribing(false);
       }
     } catch {
-      alert(i18n.t("landing_AiInboxLanding.msg_b100"));
+      alert(i18n.t("AiInboxLanding.msg_b100"));
       setSubscribing(false);
     }
   };

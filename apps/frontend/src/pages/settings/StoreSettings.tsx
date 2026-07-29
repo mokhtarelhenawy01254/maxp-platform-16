@@ -1576,7 +1576,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         setEnabledMethods(["cod"]);
         setIsEditing(true);
       }
-      tToast.success("settings_StoreSettings.msg_126b");
+      tToast.success("StoreSettings.msg_126b");
     } catch (error) {
       console.error("[DELETE] Failed to delete settings:", error);
       toast.error("حدث خطأ أثناء الحذف: " + (error?.message || "Unknown error"));
@@ -1611,7 +1611,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         });
         setIsEditing(false);
       }
-      tToast.success("settings_StoreSettings.success_save_ccce");
+      tToast.success("StoreSettings.success_save_ccce");
     } catch (error) {
       console.error("[SAVE] Failed to save payment gateway settings:", error);
       toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));

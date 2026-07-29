@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";
 import {
   canUserApproveReward,
@@ -184,7 +184,7 @@ const RewardsList: React.FC = () => {
     try {
       setDeleting(true);
       await apiClient.delete(`/hr/rewards/records/${deleteTarget.id}`);
-      tToast.success("hr_RewardsList.success_delete_7170");
+      tToast.success("RewardsList.success_delete_7170");
       setDeleteConfirmOpen(false);
       setDeleteTarget(null);
 

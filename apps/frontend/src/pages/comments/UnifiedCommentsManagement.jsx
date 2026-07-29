@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
 import { toast } from "sonner";
-import { tToast } from "../../../utils/i18n-toast";
+import { tToast } from "../../utils/i18n-toast";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";

@@ -36,9 +36,9 @@ export default function ServiceOrdersPage() {
         body: JSON.stringify({ status }),
       });
       const d = await r.json();
-      if (d.success) { tToast.success("admin_ServiceOrdersPage.msg_1aba"); fetchOrders(); }
+      if (d.success) { tToast.success("ServiceOrdersPage.msg_1aba"); fetchOrders(); }
       else toast.error(d.error);
-    } catch (e) { tToast.error("admin_ServiceOrdersPage.error_error_1393"); }
+    } catch (e) { tToast.error("ServiceOrdersPage.error_error_1393"); }
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>;

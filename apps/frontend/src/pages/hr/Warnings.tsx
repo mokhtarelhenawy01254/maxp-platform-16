@@ -129,7 +129,7 @@ const Warnings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      tToast.error("hr_Warnings.failed_fetch_a188");
+      tToast.error("Warnings.failed_fetch_a188");
     } finally {
       setLoading(false);
     }
@@ -139,10 +139,10 @@ const Warnings: React.FC = () => {
     if (!window.confirm("هل أنت متأكد من حذف هذا الإنذار؟")) return;
     try {
       await api.delete(`/hr/warnings/${id}`);
-      tToast.success("hr_Warnings.success_delete_8ccd");
+      tToast.success("Warnings.success_delete_8ccd");
       fetchData(); // Refresh data
     } catch (error) {
-      tToast.error("hr_Warnings.failed_delete_e465");
+      tToast.error("Warnings.failed_delete_e465");
     }
   };
 
@@ -150,10 +150,10 @@ const Warnings: React.FC = () => {
     if (!window.confirm("هل تريد تسجيل إقرار إداري لهذا الإنذار؟ (يستخدم في حال توقيع الموظف ورقياً)")) return;
     try {
       await api.post(`/hr/warnings/${id}/admin-acknowledge`);
-      tToast.success("hr_Warnings.success_login_0831");
+      tToast.success("Warnings.success_login_0831");
       fetchData(); // Refresh data
     } catch (error) {
-      tToast.error("hr_Warnings.failed_login_4439");
+      tToast.error("Warnings.failed_login_4439");
     }
   };
 

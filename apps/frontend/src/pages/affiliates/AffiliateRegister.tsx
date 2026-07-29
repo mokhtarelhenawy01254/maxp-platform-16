@@ -35,7 +35,7 @@ const AffiliateRegister: React.FC = () => {
       >("/affiliates/register", formData);
 
       if (response.data.success) {
-        tToast.success("affiliates_AffiliateRegister.msg_564e");
+        tToast.success("AffiliateRegister.msg_564e");
         navigate("/affiliates/dashboard");
       }
     } catch (error: any) {

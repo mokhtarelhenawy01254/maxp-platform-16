@@ -74,7 +74,7 @@ const PerformanceReviews: React.FC = () => {
       setReviews(response.data.reviews || []);
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      tToast.error("hr_PerformanceReviews.failed_fetch_f64e");
+      tToast.error("PerformanceReviews.failed_fetch_f64e");
     } finally {
       setLoading(false);
     }
@@ -85,11 +85,11 @@ const PerformanceReviews: React.FC = () => {
 
     try {
       await api.delete(`/hr/performance-reviews/${id}`);
-      tToast.success("hr_PerformanceReviews.success_delete_9529");
+      tToast.success("PerformanceReviews.success_delete_9529");
       setReviews(reviews.filter((r) => r.id !== id));
     } catch (error) {
       console.error("Error deleting review:", error);
-      tToast.error("hr_PerformanceReviews.failed_delete_4e3b");
+      tToast.error("PerformanceReviews.failed_delete_4e3b");
     }
   };
 

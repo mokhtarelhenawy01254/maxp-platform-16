@@ -63,12 +63,12 @@ const OverlayCampaigns: React.FC = () => {
 
   const handleCreate = async () => {
     if (!form.name || !form.overlayImage) {
-      tToast.error("advertising_OverlayCampaigns.msg_47da");
+      tToast.error("OverlayCampaigns.msg_47da");
       return;
     }
     try {
       await apiClient.post("/overlay-campaigns", form);
-      tToast.success("advertising_OverlayCampaigns.success_create_85f3");
+      tToast.success("OverlayCampaigns.success_create_85f3");
       setShowForm(false);
       setForm({ name: "", overlayImage: "", startAt: "", endAt: "" });
       load();
@@ -81,7 +81,7 @@ const OverlayCampaigns: React.FC = () => {
     if (!confirm("حذف الحملة؟")) return;
     try {
       await apiClient.delete(`/overlay-campaigns/${id}`);
-      tToast.success("advertising_OverlayCampaigns.msg_1d0b");
+      tToast.success("OverlayCampaigns.msg_1d0b");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل في الحذف");
@@ -92,7 +92,7 @@ const OverlayCampaigns: React.FC = () => {
     try {
       const { data } = await apiClient.post(`/overlay-campaigns/${id}/apply`);
       if (data.data?.processing) {
-        tToast.success("advertising_OverlayCampaigns.msg_02a0");
+        tToast.success("OverlayCampaigns.msg_02a0");
       } else {
         toast.success(`تم تطبيق الإطار على ${data.data?.results?.length || 0} منتج`);
       }

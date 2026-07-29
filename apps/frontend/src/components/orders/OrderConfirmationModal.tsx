@@ -107,7 +107,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
     const copyOrderNumber = () => {
         navigator.clipboard.writeText(orderData.orderNumber);
         setCopied(true);
-        tToast.success("components_OrderConfirmationModal.msg_1966");
+        tToast.success("OrderConfirmationModal.msg_1966");
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -391,7 +391,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
                                             orderId: orderData.id,
                                             email: null
                                         });
-                                        tToast.success("components_OrderConfirmationModal.success_send_d5ae");
+                                        tToast.success("OrderConfirmationModal.success_send_d5ae");
                                     } catch (error: any) {
                                         toast.error(error.response?.data?.error || 'فشل إرسال الإيميل');
                                     }

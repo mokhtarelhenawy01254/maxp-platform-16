@@ -51,7 +51,7 @@ const CreateCustomAudience: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error loading Ad Accounts:", error);
-      tToast.error("advertising_CreateCustomAudience.failed_load_0ade");
+      tToast.error("CreateCustomAudience.failed_load_0ade");
     } finally {
       setLoadingAccounts(false);
     }
@@ -68,11 +68,11 @@ const CreateCustomAudience: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          tToast.error("advertising_CreateCustomAudience.please_name_d64c");
+          tToast.error("CreateCustomAudience.please_name_d64c");
           return false;
         }
         if (!formData.audienceType) {
-          tToast.error("advertising_CreateCustomAudience.msg_fefb");
+          tToast.error("CreateCustomAudience.msg_fefb");
           return false;
         }
         return true;
@@ -81,11 +81,11 @@ const CreateCustomAudience: React.FC = () => {
           formData.audienceType === "CUSTOMER_LIST" &&
           (!formData.customerList || formData.customerList.length === 0)
         ) {
-          tToast.error("advertising_CreateCustomAudience.please_add_0126");
+          tToast.error("CreateCustomAudience.please_add_0126");
           return false;
         }
         if (formData.audienceType === "WEBSITE" && !formData.pixelId) {
-          tToast.error("advertising_CreateCustomAudience.msg_7a97");
+          tToast.error("CreateCustomAudience.msg_7a97");
           return false;
         }
         return true;
@@ -116,7 +116,7 @@ const CreateCustomAudience: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createCustomAudience(formData);
-      tToast.success("advertising_CreateCustomAudience.success_create_d55e");
+      tToast.success("CreateCustomAudience.success_create_d55e");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       console.error("Error creating custom audience:", error);

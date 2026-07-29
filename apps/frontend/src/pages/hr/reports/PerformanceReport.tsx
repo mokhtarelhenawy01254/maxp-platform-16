@@ -20,7 +20,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface PerformanceReport {
   totalReviews: number;
@@ -86,7 +86,7 @@ const PerformanceReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      tToast.error("hr_PerformanceReport.failed_fetch_78fc");
+      tToast.error("PerformanceReport.failed_fetch_78fc");
       setReport(null);
     } finally {
       setLoading(false);
@@ -94,7 +94,7 @@ const PerformanceReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    tToast.success("hr_PerformanceReport.msg_bbfd");
+    tToast.success("PerformanceReport.msg_bbfd");
   };
 
   return (

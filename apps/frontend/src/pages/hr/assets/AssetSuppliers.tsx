@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../../i18n";
 import {
   PlusIcon,
   TrashIcon,
@@ -51,7 +52,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
-      alert(i18n.t("hr_AssetSuppliers.failed_add_606a"));
+      alert(i18n.t("AssetSuppliers.failed_add_606a"));
     } finally {
       setAdding(false);
     }
@@ -69,7 +70,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error deleting supplier:", error);
-      alert(i18n.t("hr_AssetSuppliers.failed_delete_4959"));
+      alert(i18n.t("AssetSuppliers.failed_delete_4959"));
     }
   };
 

@@ -94,14 +94,14 @@ const EditWarning: React.FC = () => {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.description.trim()) {
-      tToast.error("hr_EditWarning.msg_1d83");
+      tToast.error("EditWarning.msg_1d83");
       return;
     }
 
     try {
       setSaving(true);
       await api.put(`/hr/warnings/${id}`, formData);
-      tToast.success("hr_EditWarning.success_update_3427");
+      tToast.success("EditWarning.success_update_3427");
       navigate(`/hr/warnings/${id}`);
     } catch (error: any) {
       console.error("Error updating warning:", error);

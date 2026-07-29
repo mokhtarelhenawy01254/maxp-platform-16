@@ -140,7 +140,7 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
         setExistingAssignments(currentAssignments);
       } catch (error) {
         console.error(`[AssignShiftDialog-${instanceId}] ❌ Error in loadAllData:`, error);
-        tToast.error("components_AssignShiftDialog.failed_fetch_d7b6");
+        tToast.error("AssignShiftDialog.failed_fetch_d7b6");
       } finally {
         setLoading(false);
       }
@@ -151,12 +151,12 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
 
   const handleAssign = async () => {
     if (selectedEmployeeIds.length === 0 || !assignmentDate) {
-      tToast.error("components_AssignShiftDialog.msg_d0f6");
+      tToast.error("AssignShiftDialog.msg_d0f6");
       return;
     }
 
     if (dateRangeMode && !endDate) {
-      tToast.error("components_AssignShiftDialog.msg_06cd");
+      tToast.error("AssignShiftDialog.msg_06cd");
       return;
     }
 

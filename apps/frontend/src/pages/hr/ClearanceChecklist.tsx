@@ -55,7 +55,7 @@ const ClearanceChecklist = () => {
       setItems(checklistRes.data.items || []);
     } catch (error) {
       console.error("Error fetching clearance data:", error);
-      tToast.error("hr_ClearanceChecklist.failed_load_eca3");
+      tToast.error("ClearanceChecklist.failed_load_eca3");
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ const ClearanceChecklist = () => {
       );
     } catch (error) {
       console.error("Error updating item:", error);
-      tToast.error("hr_ClearanceChecklist.failed_update_a0ad");
+      tToast.error("ClearanceChecklist.failed_update_a0ad");
     }
   };
 

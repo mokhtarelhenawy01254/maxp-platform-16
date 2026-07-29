@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 import { extractErrorMessage, enrichCompanies } from "../utils";
 import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, QuickStats } from "../types";
 

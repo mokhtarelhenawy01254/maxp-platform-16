@@ -44,7 +44,7 @@ const TelegramScheduler = () => {
     if (!formData.userbotConfigId || cleanChatIds.length === 0 || !formData.message) { setError("يرجى ملء جميع الحقول المطلوبة"); return; }
     if (formData.scheduledTime < new Date()) { setError("لا يمكن جدولة رسالة في وقت ماضٍ"); return; }
     setLoading(true);
-    try { await apiClient.post("/api/v1/telegram-advanced/scheduled-messages", { ...formData, chatIds: cleanChatIds }); fetchScheduledMessages(); setOpenDialog(false); tToast.success("telegram_TelegramScheduler.msg_5a62"); }
+    try { await apiClient.post("/api/v1/telegram-advanced/scheduled-messages", { ...formData, chatIds: cleanChatIds }); fetchScheduledMessages(); setOpenDialog(false); tToast.success("TelegramScheduler.msg_5a62"); }
     catch { setError("فشل جدولة الرسالة"); } finally { setLoading(false); }
   };
 

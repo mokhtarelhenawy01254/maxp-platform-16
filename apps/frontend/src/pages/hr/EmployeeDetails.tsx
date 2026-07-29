@@ -128,7 +128,7 @@ const EmployeeDetails: React.FC = () => {
       setEmployee(response.data.employee);
     } catch (error) {
       console.error("Error fetching employee:", error);
-      tToast.error("hr_EmployeeDetails.error_error_e639");
+      tToast.error("EmployeeDetails.error_error_e639");
     } finally {
       setLoading(false);
     }

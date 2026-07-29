@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
 import {
@@ -215,11 +216,11 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
 
     // التحقق من اختيار الـ variants إذا كانت موجودة
     if (colorVariants.length > 0 && !variants?.color) {
-      alert(i18n.t("components_OrderModalEnhanced.msg_2012"));
+      alert(i18n.t("OrderModalEnhanced.msg_2012"));
       return;
     }
     if (sizeVariants.length > 0 && !variants?.size) {
-      alert(i18n.t("components_OrderModalEnhanced.msg_b619"));
+      alert(i18n.t("OrderModalEnhanced.msg_b619"));
       return;
     }
 
@@ -312,12 +313,12 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
     if (selectedProducts.length === 0 || creatingOrder) return;
 
     if (!selectedCity) {
-      alert(i18n.t("components_OrderModalEnhanced.msg_d722"));
+      alert(i18n.t("OrderModalEnhanced.msg_d722"));
       return;
     }
 
     if (!customerPhone) {
-      alert(i18n.t("components_OrderModalEnhanced.msg_09ce"));
+      alert(i18n.t("OrderModalEnhanced.msg_09ce"));
       return;
     }
 
@@ -383,11 +384,11 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("components_OrderModalEnhanced.msg_1ca3")));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModalEnhanced.msg_1ca3")));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      alert(i18n.t("components_OrderModalEnhanced.error_error_ad3b"));
+      alert(i18n.t("OrderModalEnhanced.error_error_ad3b"));
     } finally {
       setCreatingOrder(false);
     }

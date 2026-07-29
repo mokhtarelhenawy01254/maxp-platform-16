@@ -112,7 +112,7 @@ const CommissionsManagement: React.FC = () => {
         setPayouts(payoutsResponse.data.data || []);
       }
     } catch (error: any) {
-      tToast.error("platform_CommissionsManagement.error_error_d02d");
+      tToast.error("CommissionsManagement.error_error_d02d");
     } finally {
       setLoading(false);
     }
@@ -128,11 +128,11 @@ const CommissionsManagement: React.FC = () => {
         { status },
       );
       if (response.data.success) {
-        tToast.success("platform_CommissionsManagement.success_update_a539");
+        tToast.success("CommissionsManagement.success_update_a539");
         loadData();
       }
     } catch (error: any) {
-      tToast.error("platform_CommissionsManagement.error_error_dffd");
+      tToast.error("CommissionsManagement.error_error_dffd");
     }
   };
 
@@ -144,7 +144,7 @@ const CommissionsManagement: React.FC = () => {
 
     const normalizedTransactionId = transactionId.trim();
     if (!normalizedTransactionId) {
-      tToast.error("platform_CommissionsManagement.msg_eebb");
+      tToast.error("CommissionsManagement.msg_eebb");
       return;
     }
 
@@ -163,7 +163,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("platform_CommissionsManagement.msg_6a52");
+        tToast.success("CommissionsManagement.msg_6a52");
         loadData();
       }
     } catch (error: any) {
@@ -181,7 +181,7 @@ const CommissionsManagement: React.FC = () => {
 
     const normalizedReason = reason.trim();
     if (!normalizedReason) {
-      tToast.error("platform_CommissionsManagement.reason_required_09eb");
+      tToast.error("CommissionsManagement.reason_required_09eb");
       return;
     }
 
@@ -195,7 +195,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("platform_CommissionsManagement.msg_9672");
+        tToast.success("CommissionsManagement.msg_9672");
         loadData();
       }
     } catch (error: any) {
@@ -238,7 +238,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("platform_CommissionsManagement.msg_b64d");
+        tToast.success("CommissionsManagement.msg_b64d");
         loadData();
       }
     } catch (error: any) {

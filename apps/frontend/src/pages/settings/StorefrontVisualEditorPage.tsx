@@ -119,7 +119,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
       console.debug('✅ [VisualEditorPage] Settings loaded successfully');
     } catch (error) {
-      toast.error(getErrorMessage(error, i18n.t("settings_StorefrontVisualEditorPage.unable_load_eddf")));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.unable_load_eddf")));
       console.error("❌ [VisualEditorPage] Error loading storefront editor settings:", error);
     } finally {
       setLoading(false);
@@ -274,9 +274,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedThemeId(resolveStorefrontThemeId(nextSettings));
       setSavedContentSignature(getStorefrontContentSignature(nextSettings));
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
-      tToast.success("settings_StorefrontVisualEditorPage.success_save_ddb7");
+      tToast.success("StorefrontVisualEditorPage.success_save_ddb7");
     } catch (error) {
-      toast.error(getErrorMessage(error, i18n.t("settings_StorefrontVisualEditorPage.failed_save_8619")));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.failed_save_8619")));
       console.error("Error saving storefront editor settings:", error);
     } finally {
       setSaving(false);
@@ -289,7 +289,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
     }
 
     await loadSettings({ silent: true });
-    tToast.success("settings_StorefrontVisualEditorPage.msg_b399");
+    tToast.success("StorefrontVisualEditorPage.msg_b399");
   };
 
   const handleReset = async () => {
@@ -306,9 +306,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
       setSavedThemeId(resolveStorefrontThemeId(nextSettings));
       setSavedContentSignature(getStorefrontContentSignature(nextSettings));
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
-      tToast.success("settings_StorefrontVisualEditorPage.msg_7f54");
+      tToast.success("StorefrontVisualEditorPage.msg_7f54");
     } catch (error) {
-      toast.error(getErrorMessage(error, i18n.t("settings_StorefrontVisualEditorPage.msg_e1b9")));
+      toast.error(getErrorMessage(error, i18n.t("StorefrontVisualEditorPage.msg_e1b9")));
       console.error("Error resetting storefront settings:", error);
     } finally {
       setResetting(false);

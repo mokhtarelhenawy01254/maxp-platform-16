@@ -249,7 +249,7 @@ const AdDetails: React.FC = () => {
     setRefreshing(true);
     await loadDetails({ silent: true });
     setRefreshing(false);
-    tToast.success("advertising_AdDetails.success_update_b872");
+    tToast.success("AdDetails.success_update_b872");
   };
 
   const handleSync = async () => {
@@ -263,7 +263,7 @@ const AdDetails: React.FC = () => {
         dateRange.endDate,
       );
       await loadDetails({ silent: true });
-      tToast.success("advertising_AdDetails.msg_39be");
+      tToast.success("AdDetails.msg_39be");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في مزامنة الإعلان"));
     } finally {
@@ -273,7 +273,7 @@ const AdDetails: React.FC = () => {
 
   const handlePreview = async () => {
     if (!details?.ad.facebookAdId) {
-      tToast.error("advertising_AdDetails.msg_d051");
+      tToast.error("AdDetails.msg_d051");
       return;
     }
 

@@ -17,7 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -98,13 +98,13 @@ const JobPostingsSection: React.FC = () => {
         jobData,
       );
       if (response.data.success) {
-        tToast.success("hr_JobPostingsSection.success_create_66f5");
+        tToast.success("JobPostingsSection.success_create_66f5");
         setShowCreateModal(false);
         fetchJobs();
         resetForm();
       }
     } catch (error) {
-      tToast.error("hr_JobPostingsSection.failed_create_5462");
+      tToast.error("JobPostingsSection.failed_create_5462");
     }
   };
 
@@ -113,10 +113,10 @@ const JobPostingsSection: React.FC = () => {
 
     try {
       await companyAwareApi.delete(`/hr/recruitment/jobs/${jobId}`);
-      tToast.success("hr_JobPostingsSection.success_delete_0815");
+      tToast.success("JobPostingsSection.success_delete_0815");
       fetchJobs();
     } catch (error) {
-      tToast.error("hr_JobPostingsSection.failed_delete_fc8a");
+      tToast.error("JobPostingsSection.failed_delete_fc8a");
     }
   };
 
@@ -125,10 +125,10 @@ const JobPostingsSection: React.FC = () => {
       await companyAwareApi.put(`/hr/recruitment/jobs/${jobId}/status`, {
         status,
       });
-      tToast.success("hr_JobPostingsSection.success_update_status_49df");
+      tToast.success("JobPostingsSection.success_update_status_49df");
       fetchJobs();
     } catch (error) {
-      tToast.error("hr_JobPostingsSection.failed_update_22de");
+      tToast.error("JobPostingsSection.failed_update_22de");
     }
   };
 

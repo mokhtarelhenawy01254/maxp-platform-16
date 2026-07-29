@@ -89,13 +89,13 @@ const CreateFeedback = () => {
             setValue("rating", currentFB.rating || 0);
             setValue("isAnonymous", currentFB.isAnonymous);
           } else {
-            tToast.error("hr_CreateFeedback.msg_ad77");
+            tToast.error("CreateFeedback.msg_ad77");
             navigate("/my-feedback");
           }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        tToast.error("hr_CreateFeedback.failed_load_cfaf");
+        tToast.error("CreateFeedback.failed_load_cfaf");
       } finally {
         setFetchingData(false);
       }
@@ -107,7 +107,7 @@ const CreateFeedback = () => {
     try {
       const isReviewType = ["PEER", "MANAGER", "SUBORDINATE"].includes(data.type);
       if (isReviewType && data.rating === 0) {
-        tToast.error("hr_CreateFeedback.msg_79e3");
+        tToast.error("CreateFeedback.msg_79e3");
         return;
       }
       setLoading(true);
@@ -119,10 +119,10 @@ const CreateFeedback = () => {
 
       if (isEdit) {
         await api.put(`/hr/feedback/${id}`, payload);
-        tToast.success("hr_CreateFeedback.success_update_293e");
+        tToast.success("CreateFeedback.success_update_293e");
       } else {
         await api.post("/hr/feedback", payload);
-        tToast.success("hr_CreateFeedback.msg_1de5");
+        tToast.success("CreateFeedback.msg_1de5");
       }
       navigate("/my-feedback");
     } catch (error) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import {
   Gift,
@@ -135,7 +136,7 @@ const LoyaltyPrograms: React.FC = () => {
       fetchPrograms();
     } catch (error) {
       console.error("Error saving program:", error);
-      alert(i18n.t("customers_LoyaltyPrograms.error_error_b7ee"));
+      alert(i18n.t("LoyaltyPrograms.error_error_b7ee"));
     } finally {
       setIsSaving(false);
     }
@@ -148,7 +149,7 @@ const LoyaltyPrograms: React.FC = () => {
       fetchPrograms();
     } catch (error) {
       console.error("Error deleting program:", error);
-      alert(i18n.t("customers_LoyaltyPrograms.error_error_a7e1"));
+      alert(i18n.t("LoyaltyPrograms.error_error_a7e1"));
     }
   };
 

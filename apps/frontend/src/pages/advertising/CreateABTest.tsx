@@ -48,7 +48,7 @@ const CreateABTest: React.FC = () => {
       );
     } catch (error: any) {
       console.error("Error loading campaigns:", error);
-      tToast.error("advertising_CreateABTest.failed_load_c1ee");
+      tToast.error("CreateABTest.failed_load_c1ee");
     } finally {
       setLoadingCampaigns(false);
     }
@@ -68,21 +68,21 @@ const CreateABTest: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          tToast.error("advertising_CreateABTest.please_name_d31f");
+          tToast.error("CreateABTest.please_name_d31f");
           return false;
         }
         if (!formData.testType) {
-          tToast.error("advertising_CreateABTest.msg_2a40");
+          tToast.error("CreateABTest.msg_2a40");
           return false;
         }
         return true;
       case 2:
         if (!formData.campaignId) {
-          tToast.error("advertising_CreateABTest.msg_c09f");
+          tToast.error("CreateABTest.msg_c09f");
           return false;
         }
         if (formData.variants.length < 2) {
-          tToast.error("advertising_CreateABTest.please_add_6156");
+          tToast.error("CreateABTest.please_add_6156");
           return false;
         }
         return true;
@@ -113,7 +113,7 @@ const CreateABTest: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createAdTest(formData);
-      tToast.success("advertising_CreateABTest.success_create_2b73");
+      tToast.success("CreateABTest.success_create_2b73");
       navigate("/advertising/facebook-ads/tests");
     } catch (error: any) {
       console.error("Error creating test:", error);

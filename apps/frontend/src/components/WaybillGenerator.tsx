@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "../i18n";
 
 interface WaybillData {
   orderNumber: string;
@@ -233,12 +234,12 @@ export const WaybillGenerator: React.FC<WaybillGeneratorProps> = ({ data }) => {
       <div className="order-info">
         <div className="info-item">
           <span className="info-label">رقم الطلب</span>
-          <span className="info-value">{data.orderNumber || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+          <span className="info-value">{data.orderNumber || i18n.t("WaybillGenerator.msg_1794")}</span>
         </div>
         <div className="info-item">
           <span className="info-label">كود الشحنة</span>
           <span className="info-value">
-            {data.turboOrderCode || i18n.t("components_WaybillGenerator.msg_1794")}
+            {data.turboOrderCode || i18n.t("WaybillGenerator.msg_1794")}
           </span>
         </div>
         <div className="info-item">
@@ -261,13 +262,13 @@ export const WaybillGenerator: React.FC<WaybillGeneratorProps> = ({ data }) => {
           <div className="detail-row">
             <span className="detail-label">الاسم:</span>
             <span className="detail-value">
-              {data.receiverName || i18n.t("components_WaybillGenerator.msg_1794")}
+              {data.receiverName || i18n.t("WaybillGenerator.msg_1794")}
             </span>
           </div>
           <div className="detail-row">
             <span className="detail-label">الهاتف:</span>
             <span className="detail-value">
-              {data.receiverPhone || i18n.t("components_WaybillGenerator.msg_1794")}
+              {data.receiverPhone || i18n.t("WaybillGenerator.msg_1794")}
             </span>
           </div>
           {data.receiverPhone2 && (
@@ -279,19 +280,19 @@ export const WaybillGenerator: React.FC<WaybillGeneratorProps> = ({ data }) => {
           <div className="detail-row">
             <span className="detail-label">العنوان:</span>
             <span className="detail-value">
-              {data.receiverAddress || i18n.t("components_WaybillGenerator.msg_1794")}
+              {data.receiverAddress || i18n.t("WaybillGenerator.msg_1794")}
             </span>
           </div>
           <div className="detail-row">
             <span className="detail-label">المدينة:</span>
             <span className="detail-value">
-              {data.receiverCity || i18n.t("components_WaybillGenerator.msg_1794")}
+              {data.receiverCity || i18n.t("WaybillGenerator.msg_1794")}
             </span>
           </div>
           <div className="detail-row">
             <span className="detail-label">المحافظة:</span>
             <span className="detail-value">
-              {data.receiverState || i18n.t("components_WaybillGenerator.msg_1794")}
+              {data.receiverState || i18n.t("WaybillGenerator.msg_1794")}
             </span>
           </div>
         </div>
@@ -358,7 +359,7 @@ export const openWaybillInNewWindow = (data: WaybillData) => {
   const waybillWindow = window.open("", "_blank", "width=800,height=600");
 
   if (!waybillWindow) {
-    alert(i18n.t("components_WaybillGenerator.msg_e5f7"));
+    alert(i18n.t("WaybillGenerator.msg_e5f7"));
     return;
   }
 
@@ -532,11 +533,11 @@ export const openWaybillInNewWindow = (data: WaybillData) => {
         <div class="order-info">
             <div class="info-item">
                 <span class="info-label">رقم الطلب</span>
-                <span class="info-value">${data.orderNumber || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                <span class="info-value">${data.orderNumber || i18n.t("WaybillGenerator.msg_1794")}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">كود الشحنة</span>
-                <span class="info-value">${data.turboOrderCode || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                <span class="info-value">${data.turboOrderCode || i18n.t("WaybillGenerator.msg_1794")}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">تاريخ الطلب</span>
@@ -553,11 +554,11 @@ export const openWaybillInNewWindow = (data: WaybillData) => {
             <div class="customer-details">
                 <div class="detail-row">
                     <span class="detail-label">الاسم:</span>
-                    <span class="detail-value">${data.receiverName || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                    <span class="detail-value">${data.receiverName || i18n.t("WaybillGenerator.msg_1794")}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">الهاتف:</span>
-                    <span class="detail-value">${data.receiverPhone || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                    <span class="detail-value">${data.receiverPhone || i18n.t("WaybillGenerator.msg_1794")}</span>
                 </div>
                 ${
                   data.receiverPhone2
@@ -571,15 +572,15 @@ export const openWaybillInNewWindow = (data: WaybillData) => {
                 }
                 <div class="detail-row">
                     <span class="detail-label">العنوان:</span>
-                    <span class="detail-value">${data.receiverAddress || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                    <span class="detail-value">${data.receiverAddress || i18n.t("WaybillGenerator.msg_1794")}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">المدينة:</span>
-                    <span class="detail-value">${data.receiverCity || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                    <span class="detail-value">${data.receiverCity || i18n.t("WaybillGenerator.msg_1794")}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">المحافظة:</span>
-                    <span class="detail-value">${data.receiverState || i18n.t("components_WaybillGenerator.msg_1794")}</span>
+                    <span class="detail-value">${data.receiverState || i18n.t("WaybillGenerator.msg_1794")}</span>
                 </div>
             </div>
         </div>

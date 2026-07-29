@@ -40,7 +40,7 @@ export default function SuperAdminFollowUp() {
 
   const handleOpenWhatsApp = (company: import("../SuperAdminCompaniesV2/types").Company) => {
     const phone = company.phone?.replace(/\s+/g, "").replace(/^0+/, "");
-    if (!phone) { tToast.error("SuperAdminFollowUp_index.msg_f7bf"); return; }
+    if (!phone) { tToast.error("index.msg_f7bf"); return; }
     const full = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("20") ? phone : `20${phone}`;
     window.open(`https://wa.me/${full}`, "_blank", "noopener,noreferrer");
   };

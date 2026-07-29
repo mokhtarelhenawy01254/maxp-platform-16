@@ -200,7 +200,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
       toast.success(`تم تحميل ${phones.length} عميل يحمل الوسم: ${tagName}`);
     } catch (err: any) {
-      tToast.error("whatsapp_WhatsAppTemplateBroadcast.failed_load_914a");
+      tToast.error("WhatsAppTemplateBroadcast.failed_load_914a");
     }
   }, []);
 
@@ -218,7 +218,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       toast.success(`تم استيراد ${phones.length} جهة اتصال من "${categoryName}"`);
       setActiveTab("create");
     } catch (err: any) {
-      tToast.error("whatsapp_WhatsAppTemplateBroadcast.msg_e35f");
+      tToast.error("WhatsAppTemplateBroadcast.msg_e35f");
     } finally {
       setImportingCategoryId(null);
     }
@@ -226,7 +226,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
   const handleCreateCampaign = useCallback(async () => {
     if (!campaignName || !selectedTemplate || recipients.length === 0) {
-      tToast.error("whatsapp_WhatsAppTemplateBroadcast.msg_03ea");
+      tToast.error("WhatsAppTemplateBroadcast.msg_03ea");
       return;
     }
     try {
@@ -256,7 +256,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setSendProgress({ current: 0, total: recipients.length, status: "sending" });
       if (scheduleAt) {
         setResult({ scheduled: true, scheduledAt: scheduleAt });
-        tToast.success("whatsapp_WhatsAppTemplateBroadcast.msg_be37");
+        tToast.success("WhatsAppTemplateBroadcast.msg_be37");
         setSending(false);
         setSendProgress(null);
         return;

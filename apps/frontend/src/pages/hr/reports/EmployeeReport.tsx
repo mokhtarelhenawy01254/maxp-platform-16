@@ -27,7 +27,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface EmployeeReportData {
   employee: {
@@ -159,25 +159,25 @@ const EmployeeReport: React.FC = () => {
       setEmployees(response.data?.employees || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      tToast.error("hr_EmployeeReport.failed_fetch_50e6");
+      tToast.error("EmployeeReport.failed_fetch_50e6");
     }
   };
 
   const fetchReport = async () => {
     if (!selectedEmployee) {
-      tToast.error("hr_EmployeeReport.msg_57a7");
+      tToast.error("EmployeeReport.msg_57a7");
       return;
     }
 
     if (!startDate || !endDate) {
-      tToast.error("hr_EmployeeReport.msg_5832");
+      tToast.error("EmployeeReport.msg_5832");
       return;
     }
 
     try {
       setLoading(true);
       if (new Date(startDate) > new Date(endDate)) {
-        tToast.error("hr_EmployeeReport.msg_8609");
+        tToast.error("EmployeeReport.msg_8609");
         return;
       }
 
@@ -244,7 +244,7 @@ const EmployeeReport: React.FC = () => {
     link.download = `employee_report_${report.employee.name}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    tToast.success("hr_EmployeeReport.msg_9b34");
+    tToast.success("EmployeeReport.msg_9b34");
   };
 
   const handlePrint = () => {

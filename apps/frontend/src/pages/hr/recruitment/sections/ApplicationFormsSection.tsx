@@ -18,8 +18,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
+import i18n from "../../../../i18n";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 

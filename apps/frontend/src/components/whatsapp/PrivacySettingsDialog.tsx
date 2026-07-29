@@ -95,7 +95,7 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
       setBlocklist(response.data.blocklist || []);
     } catch (error) {
       console.error("Error fetching blocklist:", error);
-      tToast.error("components_PrivacySettingsDialog.failed_fetch_6cd1");
+      tToast.error("PrivacySettingsDialog.failed_fetch_6cd1");
     } finally {
       setLoading(false);
     }
@@ -130,21 +130,21 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
   const handleUnblock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/unblock", { sessionId, jid });
-      tToast.success("components_PrivacySettingsDialog.msg_0f47");
+      tToast.success("PrivacySettingsDialog.msg_0f47");
       await fetchBlocklist();
     } catch {
-      tToast.error("components_PrivacySettingsDialog.msg_4588");
+      tToast.error("PrivacySettingsDialog.msg_4588");
     }
   };
 
   const handleBlock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/block", { sessionId, jid });
-      tToast.success("components_PrivacySettingsDialog.msg_7f33");
+      tToast.success("PrivacySettingsDialog.msg_7f33");
       setBlockSearchQuery("");
       await fetchBlocklist();
     } catch {
-      tToast.error("components_PrivacySettingsDialog.msg_b631");
+      tToast.error("PrivacySettingsDialog.msg_b631");
     }
   };
 
@@ -160,9 +160,9 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
         setting: key,
         value,
       });
-      tToast.success("components_PrivacySettingsDialog.success_update_8d4d");
+      tToast.success("PrivacySettingsDialog.success_update_8d4d");
     } catch {
-      tToast.error("components_PrivacySettingsDialog.failed_update_bf9a");
+      tToast.error("PrivacySettingsDialog.failed_update_bf9a");
       await fetchPrivacySettings();
     }
   };

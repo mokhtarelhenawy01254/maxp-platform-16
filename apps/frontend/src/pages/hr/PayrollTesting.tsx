@@ -479,7 +479,7 @@ const PayrollTesting: React.FC = () => {
       });
     } catch (error) {
       console.error("Error calculating payroll:", error);
-      tToast.error("hr_PayrollTesting.failed_account_1ffd");
+      tToast.error("PayrollTesting.failed_account_1ffd");
     } finally {
       setCalculating(false);
     }
@@ -516,7 +516,7 @@ const PayrollTesting: React.FC = () => {
       setFilteredEmployees(response.data.employees);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      tToast.error("hr_PayrollTesting.failed_fetch_8a11");
+      tToast.error("PayrollTesting.failed_fetch_8a11");
     } finally {
       setLoadingEmployees(false);
     }
@@ -2591,7 +2591,7 @@ const PayrollTesting: React.FC = () => {
                           className="flex-1"
                           onClick={() => {
                             // Generate PDF
-                            tToast.success("hr_PayrollTesting.msg_98c4");
+                            tToast.success("PayrollTesting.msg_98c4");
                           }}
                         >
                           <Download className="h-4 w-4 ml-2" />
@@ -2604,7 +2604,7 @@ const PayrollTesting: React.FC = () => {
                           className="flex-1"
                           onClick={() => {
                             // Print payslip
-                            tToast.success("hr_PayrollTesting.msg_f478");
+                            tToast.success("PayrollTesting.msg_f478");
                           }}
                         >
                           <Printer className="h-4 w-4 ml-2" />

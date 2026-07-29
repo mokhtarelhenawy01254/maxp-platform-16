@@ -155,7 +155,7 @@ const Shifts: React.FC = () => {
     if (!validateForm()) return;
     try {
       await api.post('/hr/shifts', formData);
-      tToast.success("hr_Shifts.success_create_c830");
+      tToast.success("Shifts.success_create_c830");
       setDialogOpen(false);
       resetForm();
       fetchShifts();
@@ -168,7 +168,7 @@ const Shifts: React.FC = () => {
     if (!editingShift || !validateForm()) return;
     try {
       await api.put(`/hr/shifts/${editingShift.id}`, formData);
-      tToast.success("hr_Shifts.success_update_bb31");
+      tToast.success("Shifts.success_update_bb31");
       setDialogOpen(false);
       resetForm();
       fetchShifts();
@@ -185,7 +185,7 @@ const Shifts: React.FC = () => {
       toast.success(currentStatus ? 'تم تعطيل المناوبة' : 'تم تفعيل المناوبة');
     } catch (error) {
       setShifts(prev => prev.map(s => s.id === shiftId ? { ...s, isActive: currentStatus } : s));
-      tToast.error("hr_Shifts.msg_744f");
+      tToast.error("Shifts.msg_744f");
     }
   };
 
@@ -211,13 +211,13 @@ const Shifts: React.FC = () => {
         setSelectedShifts([]);
       } else {
         await api.delete(`/hr/shifts/${shiftToDelete}`);
-        tToast.success("hr_Shifts.success_delete_06fc");
+        tToast.success("Shifts.success_delete_06fc");
       }
       setDeleteDialogOpen(false);
       setShiftToDelete(null);
       fetchShifts();
     } catch (error) {
-      tToast.error("hr_Shifts.failed_delete_901a");
+      tToast.error("Shifts.failed_delete_901a");
     }
   };
 

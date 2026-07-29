@@ -59,7 +59,7 @@ const MinimumOrderSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching minimum order settings:", error);
-      tToast.error("settings_MinimumOrderSettings.failed_fetch_084b");
+      tToast.error("MinimumOrderSettings.failed_fetch_084b");
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ const MinimumOrderSettings: React.FC = () => {
     const amount = Number(settings.minimumOrderAmount || 0);
 
     if (settings.minimumOrderEnabled && amount <= 0) {
-      tToast.error("settings_MinimumOrderSettings.msg_6377");
+      tToast.error("MinimumOrderSettings.msg_6377");
       return;
     }
 
@@ -93,11 +93,11 @@ const MinimumOrderSettings: React.FC = () => {
           minimumOrderMessage:
             data.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
         });
-        tToast.success("settings_MinimumOrderSettings.success_save_d446");
+        tToast.success("MinimumOrderSettings.success_save_d446");
       }
     } catch (error) {
       console.error("Error saving minimum order settings:", error);
-      tToast.error("settings_MinimumOrderSettings.failed_save_d041");
+      tToast.error("MinimumOrderSettings.failed_save_d041");
     } finally {
       setSaving(false);
     }

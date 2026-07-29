@@ -55,7 +55,7 @@ const AffiliateOrders: React.FC = () => {
         setOrders(response.data.data);
       }
     } catch {
-      tToast.error("affiliates_AffiliateOrders.error_error_9817");
+      tToast.error("AffiliateOrders.error_error_9817");
     } finally {
       setLoading(false);
     }

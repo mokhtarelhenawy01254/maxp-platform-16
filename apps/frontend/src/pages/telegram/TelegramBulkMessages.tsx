@@ -41,7 +41,7 @@ const TelegramBulkMessages = () => {
   const fetchMessages = async () => { setLoading(true); try { const r = await apiClient.get("/api/v1/telegram-advanced/bulk-messages"); setMessages(r.data.data || []); } catch { setError("فشل تحميل الرسائل"); } finally { setLoading(false); } };
   const fetchDialogs = async (id: string) => { if (!id) return; try { const r = await apiClient.get(`/api/v1/userbot/dialogs?userbotConfigId=${id}`); setDialogList(r.data.data || []); } catch {} };
 
-  const handleSend = async () => { setSending(true); setProgress(0); setError(""); setSendResults([]); try { const r = await apiClient.post("/api/v1/telegram-advanced/bulk-messages", { userbotConfigId: selectedUserbot, chatIds: selectedDialogs, message: messageText }); setMessages(r.data.data || []); tToast.success("telegram_TelegramBulkMessages.success_send_242e"); setOpenDialog(false); } catch { setError("فشل إرسال الرسائل"); } finally { setSending(false); } };
+  const handleSend = async () => { setSending(true); setProgress(0); setError(""); setSendResults([]); try { const r = await apiClient.post("/api/v1/telegram-advanced/bulk-messages", { userbotConfigId: selectedUserbot, chatIds: selectedDialogs, message: messageText }); setMessages(r.data.data || []); tToast.success("TelegramBulkMessages.success_send_242e"); setOpenDialog(false); } catch { setError("فشل إرسال الرسائل"); } finally { setSending(false); } };
 
   return (
     <div className="p-3 rtl">

@@ -200,15 +200,15 @@ const AffiliateDashboard: React.FC = () => {
   const copyToClipboard = async (text: string) => {
     const copied = await copyAffiliateText(text);
     if (copied) {
-      tToast.success("affiliates_AffiliateDashboard.msg_8552");
+      tToast.success("AffiliateDashboard.msg_8552");
       return;
     }
-    tToast.error("affiliates_AffiliateDashboard.msg_6c14");
+    tToast.error("AffiliateDashboard.msg_6c14");
   };
 
   const uploadReplacementDocument = async () => {
     if (!affiliate || !replacementDocument) {
-      tToast.error("affiliates_AffiliateDashboard.msg_ea5b");
+      tToast.error("AffiliateDashboard.msg_ea5b");
       return;
     }
 
@@ -225,7 +225,7 @@ const AffiliateDashboard: React.FC = () => {
       if (response.data.success && response.data.data) {
         setAffiliate(response.data.data);
         setReplacementDocument(null);
-        tToast.success("affiliates_AffiliateDashboard.msg_e5e2");
+        tToast.success("AffiliateDashboard.msg_e5e2");
       }
     } catch (error: unknown) {
       toast.error(

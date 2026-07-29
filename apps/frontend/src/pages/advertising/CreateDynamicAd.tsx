@@ -53,7 +53,7 @@ const CreateDynamicAd: React.FC = () => {
       setCatalogs(data.filter((c) => c.status === "ACTIVE"));
     } catch (error: any) {
       console.error("Error loading catalogs:", error);
-      tToast.error("advertising_CreateDynamicAd.failed_load_54a9");
+      tToast.error("CreateDynamicAd.failed_load_54a9");
     } finally {
       setLoadingData(false);
     }
@@ -67,7 +67,7 @@ const CreateDynamicAd: React.FC = () => {
       setProductSets(sets);
     } catch (error: any) {
       console.error("Error loading product sets:", error);
-      tToast.error("advertising_CreateDynamicAd.failed_load_fa45");
+      tToast.error("CreateDynamicAd.failed_load_fa45");
     }
   };
 
@@ -79,17 +79,17 @@ const CreateDynamicAd: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          tToast.error("advertising_CreateDynamicAd.please_name_e56c");
+          tToast.error("CreateDynamicAd.please_name_e56c");
           return false;
         }
         if (!formData.catalogId) {
-          tToast.error("advertising_CreateDynamicAd.msg_8fe0");
+          tToast.error("CreateDynamicAd.msg_8fe0");
           return false;
         }
         return true;
       case 2:
         if (!formData.productSetId) {
-          tToast.error("advertising_CreateDynamicAd.msg_b753");
+          tToast.error("CreateDynamicAd.msg_b753");
           return false;
         }
         return true;
@@ -120,7 +120,7 @@ const CreateDynamicAd: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createDynamicAd(adSetId, formData);
-      tToast.success("advertising_CreateDynamicAd.success_create_6286");
+      tToast.success("CreateDynamicAd.success_create_6286");
       navigate(-1); // رجوع للصفحة السابقة
     } catch (error: any) {
       console.error("Error creating dynamic ad:", error);

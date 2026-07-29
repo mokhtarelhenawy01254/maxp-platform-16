@@ -290,12 +290,12 @@ const MediaBuyingReports: React.FC = () => {
 
   const runAsyncReport = async () => {
     if (!fields.length) {
-      tToast.error("advertising_MediaBuyingReports.msg_dd34");
+      tToast.error("MediaBuyingReports.msg_dd34");
       return;
     }
 
     if (dateMode === "range" && (!since || !until)) {
-      tToast.error("advertising_MediaBuyingReports.msg_c2d1");
+      tToast.error("MediaBuyingReports.msg_c2d1");
       return;
     }
 
@@ -334,15 +334,15 @@ const MediaBuyingReports: React.FC = () => {
 
   const runSyncReport = async () => {
     if (!selectedAdAccountId) {
-      tToast.error("advertising_MediaBuyingReports.msg_17dc");
+      tToast.error("MediaBuyingReports.msg_17dc");
       return;
     }
     if (dateMode === "preset") {
-      tToast.error("advertising_MediaBuyingReports.msg_d8c5");
+      tToast.error("MediaBuyingReports.msg_d8c5");
       return;
     }
     if (!since || !until) {
-      tToast.error("advertising_MediaBuyingReports.msg_c2d1");
+      tToast.error("MediaBuyingReports.msg_c2d1");
       return;
     }
 

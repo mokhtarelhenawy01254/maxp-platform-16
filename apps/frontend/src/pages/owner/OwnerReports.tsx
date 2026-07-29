@@ -198,15 +198,15 @@ const OwnerReports: React.FC = () => {
         if (response.data.token) {
           localStorage.setItem("accessToken", response.data.token);
         }
-        tToast.success("owner_OwnerReports.msg_9431");
+        tToast.success("OwnerReports.msg_9431");
         // Reload to stay on current page with new company context
         window.location.reload();
       } else {
-        toast.error(response.data.message || i18n.t("owner_OwnerReports.msg_d5a6"));
+        toast.error(response.data.message || i18n.t("OwnerReports.msg_d5a6"));
       }
     } catch (error) {
       console.error("Failed to switch company:", error);
-      tToast.error("owner_OwnerReports.msg_d5a6");
+      tToast.error("OwnerReports.msg_d5a6");
     }
   };
 
@@ -227,11 +227,11 @@ const OwnerReports: React.FC = () => {
       if (response.data.success) {
         setReportData(response.data.data);
       } else {
-        toast.error(response.data.message || i18n.t("owner_OwnerReports.failed_load_2917"));
+        toast.error(response.data.message || i18n.t("OwnerReports.failed_load_2917"));
       }
     } catch (error) {
       console.error("Failed to fetch report", error);
-      tToast.error("owner_OwnerReports.failed_load_2917");
+      tToast.error("OwnerReports.failed_load_2917");
     } finally {
       setIsLoading(false);
     }
@@ -257,11 +257,11 @@ const OwnerReports: React.FC = () => {
         };
         setTodayAttendanceData(transformedData);
       } else {
-        toast.error(response.data.message || i18n.t("owner_OwnerReports.failed_load_7c13"));
+        toast.error(response.data.message || i18n.t("OwnerReports.failed_load_7c13"));
       }
     } catch (error) {
       console.error("Failed to fetch attendance", error);
-      tToast.error("owner_OwnerReports.failed_load_7c13");
+      tToast.error("OwnerReports.failed_load_7c13");
     } finally {
       setIsLoading(false);
     }
@@ -303,9 +303,9 @@ const OwnerReports: React.FC = () => {
       link.download = `sales-report-${startDate}-to-${endDate}.csv`;
       link.click();
 
-      tToast.success("owner_OwnerReports.msg_f9f4");
+      tToast.success("OwnerReports.msg_f9f4");
     } catch (error) {
-      tToast.error("owner_OwnerReports.msg_1d9e");
+      tToast.error("OwnerReports.msg_1d9e");
     } finally {
       setIsExporting(false);
     }
@@ -351,9 +351,9 @@ const OwnerReports: React.FC = () => {
       link.download = `today-attendance-${todayAttendanceData.date}.csv`;
       link.click();
 
-      tToast.success("owner_OwnerReports.msg_f9f4");
+      tToast.success("OwnerReports.msg_f9f4");
     } catch (error) {
-      tToast.error("owner_OwnerReports.msg_1d9e");
+      tToast.error("OwnerReports.msg_1d9e");
     } finally {
       setIsExporting(false);
     }

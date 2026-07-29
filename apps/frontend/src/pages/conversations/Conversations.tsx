@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import i18n from "../../i18n";
 import {
   PaperAirplaneIcon,
   FaceSmileIcon,
@@ -577,7 +578,7 @@ const Conversations: React.FC = () => {
       }
     } catch (error) {
       console.error("❌ Error sending message:", error);
-      alert(i18n.t("conversations_Conversations.error_error_e429"));
+      alert(i18n.t("Conversations.error_error_e429"));
       setNewMessage(messageContent); // إرجاع الرسالة في حالة الفشل
     }
   };

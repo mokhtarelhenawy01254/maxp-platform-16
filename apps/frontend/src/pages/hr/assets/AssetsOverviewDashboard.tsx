@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import i18n from "../../../i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -115,7 +116,7 @@ const AssetsOverviewDashboard: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading report:", error);
-      alert(i18n.t("hr_AssetsOverviewDashboard.error_error_3ff5"));
+      alert(i18n.t("AssetsOverviewDashboard.error_error_3ff5"));
     } finally {
       setLoadingReport(null);
     }

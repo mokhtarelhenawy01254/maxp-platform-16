@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import i18n from "../../i18n";
 import {
   ArrowPathIcon,
   ChevronDownIcon,
@@ -3208,11 +3209,11 @@ export const StorefrontPageSectionsEditor: React.FC<
               if (name && name.trim()) {
                 const slug = name.trim().toLowerCase().replace(/\s+/g, "-");
                 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-                  alert(i18n.t("components_StorefrontPageSectionsEditor.msg_b0d6"));
+                  alert(i18n.t("StorefrontPageSectionsEditor.msg_b0d6"));
                   return;
                 }
                 if (pageOverrides[slug as StorefrontPageKey] || activeTheme.pages[slug]) {
-                  alert(i18n.t("components_StorefrontPageSectionsEditor.msg_8a5e"));
+                  alert(i18n.t("StorefrontPageSectionsEditor.msg_8a5e"));
                   return;
                 }
                 const nextOverrides = {

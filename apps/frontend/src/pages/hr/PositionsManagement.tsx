@@ -170,7 +170,7 @@ const PositionsManagement: React.FC = () => {
       setLoading(true);
 
       if (!data.title || data.title.trim() === "") {
-        tToast.error("hr_PositionsManagement.msg_1afe");
+        tToast.error("PositionsManagement.msg_1afe");
         setLoading(false);
         return;
       }
@@ -197,14 +197,14 @@ const PositionsManagement: React.FC = () => {
           cleanedData,
         );
         console.log("Position updated:", response.data);
-        tToast.success("hr_PositionsManagement.success_update_7e3b");
+        tToast.success("PositionsManagement.success_update_7e3b");
         setIsEditDialogOpen(false);
         setEditingPosition(null);
       } else {
         // Create new position
         const response = await api.post("/hr/positions", cleanedData);
         console.log("Position created:", response.data);
-        tToast.success("hr_PositionsManagement.success_create_8e61");
+        tToast.success("PositionsManagement.success_create_8e61");
         setIsCreateDialogOpen(false);
       }
 
@@ -232,7 +232,7 @@ const PositionsManagement: React.FC = () => {
     try {
       setLoading(true);
       await api.delete(`/hr/positions/${position.id}`);
-      tToast.success("hr_PositionsManagement.success_delete_f7bf");
+      tToast.success("PositionsManagement.success_delete_f7bf");
       setDeleteDialogOpen(false);
       setPositionToDelete(null);
       fetchData();

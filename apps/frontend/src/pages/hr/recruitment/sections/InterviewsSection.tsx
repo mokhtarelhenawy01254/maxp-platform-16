@@ -17,7 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
+import { tToast } from "../../../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -89,7 +89,7 @@ const InterviewsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching interviews:", error);
-      tToast.error("hr_InterviewsSection.failed_fetch_cbf5");
+      tToast.error("InterviewsSection.failed_fetch_cbf5");
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ const InterviewsSection: React.FC = () => {
         !newInterview.date ||
         !newInterview.time
       ) {
-        tToast.error("hr_InterviewsSection.msg_faf7");
+        tToast.error("InterviewsSection.msg_faf7");
         return;
       }
 
@@ -140,7 +140,7 @@ const InterviewsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        tToast.success("hr_InterviewsSection.msg_d55d");
+        tToast.success("InterviewsSection.msg_d55d");
         setShowScheduleModal(false);
         resetForm();
         fetchInterviews();
@@ -158,12 +158,12 @@ const InterviewsSection: React.FC = () => {
         { status },
       );
       if (response.data.success) {
-        tToast.success("hr_InterviewsSection.success_update_a5d2");
+        tToast.success("InterviewsSection.success_update_a5d2");
         fetchInterviews();
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      tToast.error("hr_InterviewsSection.failed_update_fa1c");
+      tToast.error("InterviewsSection.failed_update_fa1c");
     }
   };
 

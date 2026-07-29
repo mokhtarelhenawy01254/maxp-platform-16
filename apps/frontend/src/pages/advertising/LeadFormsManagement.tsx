@@ -108,7 +108,7 @@ const LeadFormsManagement: React.FC = () => {
       setForms([]);
     } catch (error) {
       console.error("Error loading forms:", error);
-      tToast.error("advertising_LeadFormsManagement.failed_load_5cf0");
+      tToast.error("LeadFormsManagement.failed_load_5cf0");
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ const LeadFormsManagement: React.FC = () => {
       setLeads(data);
     } catch (error) {
       console.error("Error loading leads:", error);
-      tToast.error("advertising_LeadFormsManagement.failed_load_4459");
+      tToast.error("LeadFormsManagement.failed_load_4459");
     } finally {
       setLeadsLoading(false);
     }
@@ -129,7 +129,7 @@ const LeadFormsManagement: React.FC = () => {
 
   const handleCreateForm = async () => {
     if (!newForm.pageId || !newForm.name || !newForm.privacyPolicyUrl) {
-      tToast.error("advertising_LeadFormsManagement.msg_b2ef");
+      tToast.error("LeadFormsManagement.msg_b2ef");
       return;
     }
 
@@ -143,7 +143,7 @@ const LeadFormsManagement: React.FC = () => {
         thankYouPage: newForm.thankYouPage,
       };
       await facebookAdsService.createLeadForm(formPayload);
-      tToast.success("advertising_LeadFormsManagement.success_create_b5a7");
+      tToast.success("LeadFormsManagement.success_create_b5a7");
       setShowCreateModal(false);
       loadForms();
     } catch (error: any) {
@@ -197,7 +197,7 @@ const LeadFormsManagement: React.FC = () => {
     link.download = `leads_${selectedForm?.name || "export"}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    tToast.success("advertising_LeadFormsManagement.msg_afda");
+    tToast.success("LeadFormsManagement.msg_afda");
   };
 
   const filteredForms = forms.filter((form) =>

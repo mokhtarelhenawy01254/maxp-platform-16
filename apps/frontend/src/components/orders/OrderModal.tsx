@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../i18n";
 import {
   XMarkIcon,
   ShoppingCartIcon,
@@ -195,12 +196,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
     if (selectedProducts.length === 0) return;
 
     if (!selectedCity) {
-      alert(i18n.t("components_OrderModal.msg_a03a"));
+      alert(i18n.t("OrderModal.msg_a03a"));
       return;
     }
 
     if (!customerPhone) {
-      alert(i18n.t("components_OrderModal.msg_f4e5"));
+      alert(i18n.t("OrderModal.msg_f4e5"));
       return;
     }
 
@@ -208,7 +209,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
       setCreatingOrder(true);
 
       if (!getAccessToken()) {
-        alert(i18n.t("components_OrderModal.msg_f9fe"));
+        alert(i18n.t("OrderModal.msg_f9fe"));
         return;
       }
 
@@ -294,12 +295,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("components_OrderModal.msg_fe97")));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("OrderModal.msg_fe97")));
         console.log(data.error);
       }
     } catch (error) {
       console.error("Error creating order:", error);
-      alert(i18n.t("components_OrderModal.failed_create_ff97"));
+      alert(i18n.t("OrderModal.failed_create_ff97"));
     } finally {
       setCreatingOrder(false);
     }

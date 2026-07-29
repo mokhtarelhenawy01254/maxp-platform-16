@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import i18n from "../../../i18n";
 import { apiClient } from "../../../services/apiClient";
 
 const overlayStyle: React.CSSProperties = {

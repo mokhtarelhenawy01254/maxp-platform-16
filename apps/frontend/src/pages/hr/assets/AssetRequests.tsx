@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import i18n from "../../../i18n";
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -84,13 +85,13 @@ const AssetRequests: React.FC = () => {
       }
     } catch (error) {
       console.error("Error approving request:", error);
-      alert(i18n.t("hr_AssetRequests.msg_d2d3"));
+      alert(i18n.t("AssetRequests.msg_d2d3"));
     }
   };
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
-      alert(i18n.t("hr_AssetRequests.please_reason_7dfe"));
+      alert(i18n.t("AssetRequests.please_reason_7dfe"));
       return;
     }
 
@@ -110,13 +111,13 @@ const AssetRequests: React.FC = () => {
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
-      alert(i18n.t("hr_AssetRequests.msg_b942"));
+      alert(i18n.t("AssetRequests.msg_b942"));
     }
   };
 
   const handleFulfill = async () => {
     if (!selectedRequest || !selectedAssetId) {
-      alert(i18n.t("hr_AssetRequests.msg_f5d7"));
+      alert(i18n.t("AssetRequests.msg_f5d7"));
       return;
     }
 
@@ -133,11 +134,11 @@ const AssetRequests: React.FC = () => {
         setShowFulfillModal(false);
         setSelectedAssetId("");
         setSelectedRequest(null);
-        alert(i18n.t("hr_AssetRequests.msg_713d"));
+        alert(i18n.t("AssetRequests.msg_713d"));
       }
     } catch (error) {
       console.error("Error fulfilling request:", error);
-      alert(i18n.t("hr_AssetRequests.msg_eda3"));
+      alert(i18n.t("AssetRequests.msg_eda3"));
     }
   };
 

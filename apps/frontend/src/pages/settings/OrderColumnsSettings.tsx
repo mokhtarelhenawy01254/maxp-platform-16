@@ -95,14 +95,14 @@ const OrderColumnsSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        tToast.success("settings_OrderColumnsSettings.success_update_f41e");
+        tToast.success("OrderColumnsSettings.success_update_f41e");
         await refreshCompany(true);
       } else {
-        tToast.error("settings_OrderColumnsSettings.failed_update_d0d4");
+        tToast.error("OrderColumnsSettings.failed_update_d0d4");
       }
     } catch (error) {
       console.error("Error updating search toggle:", error);
-      tToast.error("settings_OrderColumnsSettings.error_error_f49e");
+      tToast.error("OrderColumnsSettings.error_error_f49e");
     } finally {
       setSavingSearchToggle(false);
     }
@@ -119,10 +119,10 @@ const OrderColumnsSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        tToast.success("settings_OrderColumnsSettings.success_save_ba84");
+        tToast.success("OrderColumnsSettings.success_save_ba84");
         await refreshCompany(true);
       } else {
-        tToast.error("settings_OrderColumnsSettings.failed_save_ed22");
+        tToast.error("OrderColumnsSettings.failed_save_ed22");
       }
     } catch (error) {
       console.error("Error saving order columns settings:", error);

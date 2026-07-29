@@ -109,7 +109,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setProvider(result.data.provider);
             }
         } catch {
-            tToast.error("affiliates_CompanyConsumerDetail.failed_load_23e0");
+            tToast.error("CompanyConsumerDetail.failed_load_23e0");
         } finally {
             setLoading(false);
         }
@@ -129,7 +129,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setOrdersPage(result.data.page);
             }
         } catch {
-            tToast.error("affiliates_CompanyConsumerDetail.failed_load_7101");
+            tToast.error("CompanyConsumerDetail.failed_load_7101");
         } finally {
             setLoadingOrders(false);
         }
@@ -150,7 +150,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setCommissionsSummary(result.data.summary);
             }
         } catch {
-            tToast.error("affiliates_CompanyConsumerDetail.failed_load_569e");
+            tToast.error("CompanyConsumerDetail.failed_load_569e");
         } finally {
             setLoadingCommissions(false);
         }
@@ -170,7 +170,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 setPayoutsPage(result.data.page);
             }
         } catch {
-            tToast.error("affiliates_CompanyConsumerDetail.failed_load_8127");
+            tToast.error("CompanyConsumerDetail.failed_load_8127");
         } finally {
             setLoadingPayouts(false);
         }
@@ -184,7 +184,7 @@ const CompanyConsumerDetail: React.FC = () => {
     const handleRequestPayout = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!paymentMethod) {
-            tToast.error("affiliates_CompanyConsumerDetail.msg_1641");
+            tToast.error("CompanyConsumerDetail.msg_1641");
             return;
         }
         setSubmittingPayout(true);
@@ -196,7 +196,7 @@ const CompanyConsumerDetail: React.FC = () => {
             });
             const result = await resp.json();
             if (result.success) {
-                tToast.success("affiliates_CompanyConsumerDetail.success_send_161a");
+                tToast.success("CompanyConsumerDetail.success_send_161a");
                 setShowPayoutModal(false);
                 setPaymentMethod("");
                 setPaymentDetails("");
@@ -207,7 +207,7 @@ const CompanyConsumerDetail: React.FC = () => {
                 toast.error(result.message || "فشل طلب السحب");
             }
         } catch {
-            tToast.error("affiliates_CompanyConsumerDetail.error_error_9b4a");
+            tToast.error("CompanyConsumerDetail.error_error_9b4a");
         } finally {
             setSubmittingPayout(false);
         }
