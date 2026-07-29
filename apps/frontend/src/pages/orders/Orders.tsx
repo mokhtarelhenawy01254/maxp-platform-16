@@ -2412,10 +2412,10 @@ const Orders: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => handleFilterChange("status", "")}
-                className={`relative inline-flex min-w-[126px] items-center justify-center rounded-[16px] px-4 py-2.5 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
+                className={`relative inline-flex min-w-0 flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
                   ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
                   : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
                   }`}
@@ -2425,7 +2425,7 @@ const Orders: React.FC = () => {
               <button
                 onClick={() => navigate("/orders/workspace")}
                 title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
+                className="relative inline-flex min-w-0 flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
               >
                 <BriefcaseIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
@@ -3364,17 +3364,17 @@ const Orders: React.FC = () => {
                       )}
                       {columnsToRender.includes("actions") && (
                         <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-0.5 lg:gap-1.5">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenOrder(order);
                               }}
                               aria-label={`${t("orders.quickView")} ${order.orderNumber}`}
-                              className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                               title={t("orders.quickView")}
                             >
-                              <EyeIcon className="w-5 h-5" />
+                              <EyeIcon className="w-4 h-4 lg:w-5 lg:h-5" />
                             </button>
                             <Link
                               to={`/orders/${order.orderNumber}`}
@@ -3385,20 +3385,20 @@ const Orders: React.FC = () => {
                                 }
                               }}
                               aria-label={`${t("orders.viewFullDetails")} ${order.orderNumber}`}
-                              className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                               title={t("orders.viewFullDetails")}
                             >
-                              <ShoppingBagIcon className="w-5 h-5" />
+                              <ShoppingBagIcon className="w-4 h-4 lg:w-5 lg:h-5" />
                             </Link>
                             {order.conversationId && (
                               <Link
                                 to={`/whatsapp?conversationId=${order.conversationId}`}
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                                className="p-1 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                                className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                                 title={t("orders.conversation")}
                               >
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                                <ChatBubbleLeftRightIcon className="w-4 h-4 lg:w-5 lg:h-5" />
                               </Link>
                             )}
                           </div>
