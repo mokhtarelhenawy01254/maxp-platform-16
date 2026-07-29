@@ -1698,7 +1698,11 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       const isKnownStatus = knownCodes.has(upperStatus);
 
       if (isKnownStatus) {
-        whereClause.status = upperStatus;
+        if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
+          whereClause.status = upperStatus;
+        } else {
+          whereClause._customStatusFilter = upperStatus;
+        }
         guestWhereClause.status = { in: [upperStatus, lowerStatus] };
       } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
         const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
@@ -1974,6 +1978,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }, null, 2));
     }
 
+    // ── Custom status filter (BDONKODTERBO etc.) ──────────────────────
+    // Prisma's typed enum rejects values not in the OrderStatus enum,
+    // so we fetch IDs via raw SQL first, then use typed Prisma queries.
+    const customStatusFilter = whereClause._customStatusFilter;
+    let customStatusOrderIds = null;
+    let customStatusTotal = 0;
+
+    if (customStatusFilter) {
+      delete whereClause._customStatusFilter;
+      const prisma = getSharedPrismaClient();
+      let countSql = `SELECT COUNT(*) as cnt FROM "order" WHERE "companyId" = $1 AND status = $2`;
+      let fetchSql = `SELECT id FROM "order" WHERE "companyId" = $1 AND status = $2`;
+      const params = [companyId, customStatusFilter];
+      if (whereClause.createdAt?.gte) {
+        countSql += ` AND "createdAt" >= $3`;
+        fetchSql += ` AND "createdAt" >= $3`;
+        params.push(whereClause.createdAt.gte);
+      }
+      if (whereClause.createdAt?.lte) {
+        const n = params.length + 1;
+        countSql += ` AND "createdAt" <= $${n}`;
+        fetchSql += ` AND "createdAt" <= $${n}`;
+        params.push(whereClause.createdAt.lte);
+      }
+      const [countRow] = await prisma.$queryRawUnsafe(countSql, ...params);
+      customStatusTotal = Number(countRow?.cnt || 0);
+      fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
+      const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
+      customStatusOrderIds = rows.map(r => r.id);
+      whereClause.id = { in: customStatusOrderIds };
+    }
+
     const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
       // Fetch Regular Orders
       getSharedPrismaClient().order.findMany({
@@ -2035,7 +2071,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' }
       }),
       // Count Total Regular (for pagination metadata)
-      getSharedPrismaClient().order.count({ where: whereClause }),
+      customStatusFilter ? customStatusTotal : getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
