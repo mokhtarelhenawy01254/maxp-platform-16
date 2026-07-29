@@ -407,7 +407,7 @@ const ReleaseFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.version.trim() || !formData.name.trim()) {
-      alert("رقم الإصدار والاسم مطلوبان");
+      alert(i18n.t("super-admin_DevReleases.msg_43a1"));
       return;
     }
 
@@ -430,10 +430,10 @@ const ReleaseFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || "فشل في إنشاء الإصدار");
+        alert(data.error || i18n.t("super-admin_DevReleases.failed_create_38bf"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("super-admin_DevReleases.msg_f389"));
     } finally {
       setSaving(false);
     }

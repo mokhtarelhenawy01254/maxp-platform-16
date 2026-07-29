@@ -465,7 +465,7 @@ const ProjectFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.description.trim()) {
-      alert("الاسم والوصف مطلوبان");
+      alert(i18n.t("super-admin_DevProjects.msg_f4a8"));
       return;
     }
 
@@ -494,10 +494,10 @@ const ProjectFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || "فشل في إنشاء المشروع");
+        alert(data.error || i18n.t("super-admin_DevProjects.failed_create_b90e"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("super-admin_DevProjects.msg_58f7"));
     } finally {
       setSaving(false);
     }

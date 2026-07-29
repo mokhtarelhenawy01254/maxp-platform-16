@@ -26,6 +26,7 @@ import {
   Truck, FileText, Percent, Heart, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { FacebookIcon } from "../../components/icons/brands";
 import type { ElementType } from "react";
@@ -236,7 +237,7 @@ export default function AppDetails() {
       setApp(response.data.data);
     } catch (error) {
       console.error("Error fetching app details:", error);
-      toast.error("خطأ في جلب تفاصيل الأداة");
+      tToast.error("marketplace_AppDetails.error_fetch_5849");
     } finally {
       setLoading(false);
     }
@@ -246,7 +247,7 @@ export default function AppDetails() {
     if (!app) return;
 
     if (app.isInstalled && app.activePricingModel !== "PAY_PER_USE") {
-      toast.error("هذه الأداة مفعلة بالفعل");
+      tToast.error("marketplace_AppDetails.msg_2949");
       return;
     }
 
@@ -281,7 +282,7 @@ export default function AppDetails() {
       navigate("/marketplace");
     } catch (error: any) {
       if (error.response?.status === 401) {
-        toast.error("يرجى تسجيل الدخول أولاً");
+        tToast.error("marketplace_AppDetails.please_login_login_ac18");
         navigate("/auth/login");
         return;
       }
@@ -313,7 +314,7 @@ export default function AppDetails() {
       setConfirmUninstall(false);
     } catch (error: any) {
       if (error.response?.status === 401) {
-        toast.error("يرجى تسجيل الدخول أولاً");
+        tToast.error("marketplace_AppDetails.please_login_login_ac18");
         return;
       }
 

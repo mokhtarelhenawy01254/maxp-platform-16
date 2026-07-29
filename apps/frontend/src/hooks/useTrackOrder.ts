@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { storefrontApi } from "../utils/storefrontApi";
 
 export interface Order {
@@ -59,7 +61,7 @@ export const useTrackOrder = () => {
     if (e) e.preventDefault();
 
     if (!orderNumber || !phone) {
-      toast.error("يرجى إدخال رقم الطلب ورقم الهاتف");
+      tToast.error("hooks_useTrackOrder.msg_132a");
       return;
     }
 
@@ -73,11 +75,11 @@ export const useTrackOrder = () => {
         setOrder(data.data);
       } else {
         setOrder(null);
-        toast.error(data.error || "الطلب غير موجود");
+        toast.error(data.error || i18n.t("hooks_useTrackOrder.msg_2905"));
       }
     } catch (error) {
       console.error("Error tracking order:", error);
-      toast.error("حدث خطأ في تتبع الطلب");
+      tToast.error("hooks_useTrackOrder.error_error_cd62");
       setOrder(null);
     } finally {
       setLoading(false);

@@ -10,6 +10,7 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS,
   platformSiteHomepageService,
@@ -82,7 +83,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
       setSelectedVariantId(nextSettings.activeLandingId);
     } catch (error) {
       console.error("Failed to load platform homepage variants", error);
-      toast.error("فشل تحميل إعدادات لاندنج المنصة");
+      tToast.error("super-admin_PlatformSiteHomepageTemplates.failed_load_a341");
     } finally {
       setLoading(false);
     }
@@ -137,7 +138,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
       });
       setSettings(saved);
       setSelectedVariantId(saved.activeLandingId);
-      toast.success("تم تحديث الصفحة الرئيسية العامة");
+      tToast.success("super-admin_PlatformSiteHomepageTemplates.success_update_b605");
     } catch (error: any) {
       const message =
         error?.response?.data?.message || "فشل تحديث الصفحة الرئيسية العامة";

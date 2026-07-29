@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Target,
   DollarSign,
@@ -1340,7 +1341,7 @@ const CreateAdWizard: React.FC = () => {
     try {
       const activeAdAccountId = await activateSelectedAdAccount();
       await loadPagesAndPixels(activeAdAccountId);
-      toast.success("تم تفعيل الحساب الإعلاني وتحميل الصفحات والبكسلات");
+      tToast.success("advertising_CreateAdWizard.success_activate_0a35");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -1815,7 +1816,7 @@ const CreateAdWizard: React.FC = () => {
         adAccountId:
           "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
       }));
-      toast.error("فعّل الحساب الإعلاني المختار قبل مراجعة الإرسال");
+      tToast.error("advertising_CreateAdWizard.msg_93bd");
       return;
     }
 

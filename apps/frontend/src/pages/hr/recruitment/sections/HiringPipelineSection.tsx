@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface PipelineStage {
   id: string;
@@ -152,13 +153,13 @@ const HiringPipelineSection: React.FC = () => {
         { status: newStatus }
       );
       if (response.data.success) {
-        toast.success("تم نقل المتقدم للمرحلة المحددة بنجاح");
+        tToast.success("hr_HiringPipelineSection.msg_875d");
         await Promise.all([
           fetchPipelineStats(false),
           fetchStageApplicants(selectedStageId),
         ]);
       } else {
-        toast.error("فشل في نقل المتقدم");
+        tToast.error("hr_HiringPipelineSection.msg_a559");
         setStageApplicantsLoading(false);
       }
     } catch (error: any) {
@@ -184,7 +185,7 @@ const HiringPipelineSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم حذف المتقدم بنجاح");
+        tToast.success("hr_HiringPipelineSection.success_delete_28f8");
         setStageApplicants((currentApplicants) =>
           currentApplicants.filter(
             (currentApplicant) => currentApplicant.id !== applicant.id,
@@ -195,7 +196,7 @@ const HiringPipelineSection: React.FC = () => {
           fetchStageApplicants(selectedStageId),
         ]);
       } else {
-        toast.error("فشل حذف المتقدم");
+        tToast.error("hr_HiringPipelineSection.failed_delete_15ad");
       }
     } catch (error: any) {
       console.error("Error deleting applicant:", error);

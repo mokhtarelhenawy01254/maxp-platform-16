@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { useCurrency } from "../../../../hooks/useCurrency";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface MaintenanceRecord {
   id: string;
@@ -95,7 +96,7 @@ const AssetMaintenanceSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error in main maintenance fetch:", error);
-      toast.error("حدث خطأ أثناء تحميل البيانات");
+      tToast.error("hr_AssetMaintenanceSection.error_error_85aa");
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const AssetMaintenanceSection: React.FC = () => {
 
   const handleAddMaintenance = async () => {
     if (!newRecord.assetId || !newRecord.description) {
-      toast.error("يرجى اكمال البيانات المطلوبة");
+      tToast.error("hr_AssetMaintenanceSection.msg_b270");
       return;
     }
 
@@ -117,12 +118,12 @@ const AssetMaintenanceSection: React.FC = () => {
         newRecord,
       );
       if (response.data.success) {
-        toast.success("تم تسجيل سجل الصيانة بنجاح");
+        tToast.success("hr_AssetMaintenanceSection.success_login_record_39c0");
         setShowAddModal(false);
         fetchData();
       }
     } catch (error) {
-      toast.error("فشل في حفظ سجل الصيانة");
+      tToast.error("hr_AssetMaintenanceSection.failed_save_efc0");
     }
   };
 

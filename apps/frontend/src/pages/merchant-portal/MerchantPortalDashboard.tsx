@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
@@ -179,7 +180,7 @@ const MerchantPortalDashboard: React.FC = () => {
   const requestMerchantPayout = async () => {
     const availableAmount = Number(payoutSummary?.balances.availableAmount || 0);
     if (availableAmount <= 0) {
-      toast.error("لا توجد مستحقات متاحة للسحب بعد التسليم");
+      tToast.error("merchant-portal_MerchantPortalDashboard.msg_ea8b");
       return;
     }
 
@@ -196,7 +197,7 @@ const MerchantPortalDashboard: React.FC = () => {
           },
         },
       );
-      toast.success("تم إرسال طلب السحب للشركة");
+      tToast.success("merchant-portal_MerchantPortalDashboard.success_send_8bfa");
       await loadPortal();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "تعذر إنشاء طلب السحب"));

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
@@ -177,7 +178,7 @@ const DevTaskIntegrations: React.FC = () => {
       await navigator.clipboard.writeText(value);
       toast.success(successMessage);
     } catch (_error) {
-      toast.error("تعذر النسخ من المتصفح");
+      tToast.error("super-admin_DevTaskIntegrations.msg_3354");
     }
   };
 
@@ -196,7 +197,7 @@ const DevTaskIntegrations: React.FC = () => {
       setProjects(projectsResponse.data || []);
     } catch (error: unknown) {
       console.error("Failed to load dev task integrations:", error);
-      setLoadError(getErrorMessage(error, "فشل تحميل بيانات التكاملات"));
+      setLoadError(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.failed_load_0534")));
     } finally {
       setLoading(false);
     }
@@ -237,17 +238,17 @@ const DevTaskIntegrations: React.FC = () => {
   const saveCredential = async () => {
     try {
       if (!formState.name.trim()) {
-        toast.error("اسم المفتاح مطلوب");
+        tToast.error("super-admin_DevTaskIntegrations.name_required_1041");
         return;
       }
 
       if (formState.scopes.length === 0) {
-        toast.error("اختر صلاحية واحدة على الأقل");
+        tToast.error("super-admin_DevTaskIntegrations.msg_9272");
         return;
       }
 
       if (!formState.defaultProjectId) {
-        toast.error("اختر مشروع التطوير المقيد لهذا المفتاح");
+        tToast.error("super-admin_DevTaskIntegrations.msg_dbef");
         return;
       }
 
@@ -255,7 +256,7 @@ const DevTaskIntegrations: React.FC = () => {
         hasWriteScope(formState.scopes) &&
         !formState.defaultReporterMemberId
       ) {
-        toast.error("مفاتيح الكتابة تحتاج Reporter افتراضي");
+        tToast.error("super-admin_DevTaskIntegrations.msg_53d1");
         return;
       }
 
@@ -302,7 +303,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to save credential:", error);
-      toast.error(getErrorMessage(error, "فشل حفظ المفتاح"));
+      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.failed_save_96d4")));
     } finally {
       setSubmitting(false);
     }
@@ -326,7 +327,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to rotate credential:", error);
-      toast.error(getErrorMessage(error, "فشل تدوير المفتاح"));
+      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.msg_71f8")));
     } finally {
       setRotatingCredentialId(null);
     }
@@ -355,7 +356,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to revoke credential:", error);
-      toast.error(getErrorMessage(error, "فشل إلغاء المفتاح"));
+      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.msg_7de3")));
     } finally {
       setRevokingCredentialId(null);
     }

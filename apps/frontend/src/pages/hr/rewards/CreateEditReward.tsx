@@ -276,10 +276,10 @@ const CreateEditReward: React.FC = () => {
 
       if (isEdit) {
         await apiClient.put(`/hr/rewards/records/${id}`, payload);
-        alert("تم تحديث المكافأة بنجاح");
+        alert(i18n.t("hr_CreateEditReward.success_update_6490"));
       } else {
         await apiClient.post(`/hr/rewards/records`, payload);
-        alert("تم إضافة المكافأة بنجاح");
+        alert(i18n.t("hr_CreateEditReward.success_add_ab3d"));
       }
 
       navigate("/hr/rewards");

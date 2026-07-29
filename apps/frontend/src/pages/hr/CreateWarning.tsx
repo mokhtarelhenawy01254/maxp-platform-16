@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Save,
   ArrowRight,
@@ -88,7 +89,7 @@ const CreateWarning = () => {
         setEmployees(empRes.data.employees || []);
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("فشل في تحميل بيانات الموظفين");
+        tToast.error("hr_CreateWarning.failed_load_dbdf");
       }
     };
     fetchData();
@@ -106,12 +107,12 @@ const CreateWarning = () => {
       setLoading(true);
 
       if (!data.employeeId || data.employeeId.trim() === "") {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("hr_CreateWarning.msg_a319");
         return;
       }
 
       await api.post("/hr/warnings", data);
-      toast.success("تم إصدار الإنذار بنجاح");
+      tToast.success("hr_CreateWarning.msg_c304");
       navigate("/hr/warnings");
     } catch (error: any) {
       console.error("Error creating warning:", error);

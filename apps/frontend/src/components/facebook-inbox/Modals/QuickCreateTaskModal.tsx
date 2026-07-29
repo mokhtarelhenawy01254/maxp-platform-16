@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { buildApiUrl } from "../../../utils/urlHelper";
 import { tokenManager } from "../../../utils/tokenManager";
 import { CreateTaskModal } from "../../../pages/tasks/components/CreateTaskModal";
@@ -208,7 +210,7 @@ const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onC
     try {
       const token = getAccessToken();
       if (!token) {
-        toast.error("يجب تسجيل الدخول أولاً");
+        tToast.error("components_QuickCreateTaskModal.login_login_dff4");
         return;
       }
       const url = buildApiUrl("tasks");
@@ -232,13 +234,13 @@ const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onC
             localStorage.getItem("userName") || "",
           ),
         );
-        toast.success("تم إنشاء المهمة بنجاح");
+        tToast.success("components_QuickCreateTaskModal.success_create_7fd6");
         onClose();
       } else {
-        toast.error(data.error || "فشل في إنشاء المهمة");
+        toast.error(data.error || i18n.t("components_QuickCreateTaskModal.failed_create_9b04"));
       }
     } catch {
-      toast.error("فشل في إنشاء المهمة");
+      tToast.error("components_QuickCreateTaskModal.failed_create_9b04");
     }
   }, [newTask, onClose]);
 

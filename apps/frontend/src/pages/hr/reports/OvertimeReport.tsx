@@ -20,6 +20,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface OvertimeReport {
   totalOvertimeHours: number;
@@ -84,7 +85,7 @@ const OvertimeReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error("فشل في جلب التقرير");
+      tToast.error("hr_OvertimeReport.failed_fetch_b96c");
       setReport(null);
     } finally {
       setLoading(false);
@@ -92,7 +93,7 @@ const OvertimeReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    toast.success("جاري تصدير التقرير...");
+    tToast.success("hr_OvertimeReport.msg_9613");
   };
 
   const formatCurrency = (amount: number) => {

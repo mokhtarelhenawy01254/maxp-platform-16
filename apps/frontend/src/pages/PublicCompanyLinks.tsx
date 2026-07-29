@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { buildApiUrl } from "../utils/urlHelper";
 
 type PublicLink = {
@@ -55,7 +56,7 @@ const PublicCompanyLinks = () => {
       await navigator.clipboard.writeText(text || "");
       toast.success(successMessage);
     } catch (e) {
-      toast.error("فشل النسخ");
+      tToast.error("PublicCompanyLinks_PublicCompanyLinks.msg_c9d0");
     }
   };
 

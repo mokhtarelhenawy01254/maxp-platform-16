@@ -20,6 +20,7 @@ import {
 import { Textarea } from "../../../components/ui/textarea";
 import { CheckCircle, AlertTriangle, Calculator, User } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import api from "../../../services/api";
 
 const RewardApplication: React.FC = () => {
@@ -53,28 +54,28 @@ const RewardApplication: React.FC = () => {
       setTypes(typesRes.data.data || []);
     } catch (error) {
       console.error("Error loading data", error);
-      toast.error("فشل تحميل البيانات");
+      tToast.error("hr_RewardApplication.failed_load_f3f5");
     }
   };
 
   const handleApply = async () => {
     try {
       if (!formData.userId || !formData.rewardTypeId) {
-        return toast.error("يرجى اختيار الموظف ونوع المكافأة");
+        return tToast.error("hr_RewardApplication.msg_d0bb");
       }
 
       setLoading(true);
       const response = await api.post("/hr/rewards/apply", formData);
 
       if (response.data.success) {
-        toast.success("تم صرف المكافأة بنجاح");
+        tToast.success("hr_RewardApplication.msg_1402");
         setFormData({ ...formData, reason: "", userId: "" });
         setCalculationPreview(null);
         setEligibilityCheck(null);
       }
     } catch (error) {
       console.error("Apply error:", error);
-      toast.error("فشل صرف المكافأة");
+      tToast.error("hr_RewardApplication.msg_c569");
     } finally {
       setLoading(false);
     }

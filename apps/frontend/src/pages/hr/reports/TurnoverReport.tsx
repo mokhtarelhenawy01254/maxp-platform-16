@@ -20,6 +20,7 @@ import {
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface TurnoverReport {
   totalEmployees: number;
@@ -83,7 +84,7 @@ const TurnoverReport: React.FC = () => {
       setReport(response.data?.report || null);
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error("فشل في جلب التقرير");
+      tToast.error("hr_TurnoverReport.failed_fetch_6374");
       setReport(null);
     } finally {
       setLoading(false);
@@ -91,7 +92,7 @@ const TurnoverReport: React.FC = () => {
   };
 
   const handleExport = async () => {
-    toast.success("جاري تصدير التقرير...");
+    tToast.success("hr_TurnoverReport.msg_d2ae");
   };
 
   return (

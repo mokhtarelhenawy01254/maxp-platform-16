@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Progress } from "../../components/ui/progress";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Employee {
   id: string;
@@ -127,7 +128,7 @@ const EmployeeDetails: React.FC = () => {
       setEmployee(response.data.employee);
     } catch (error) {
       console.error("Error fetching employee:", error);
-      toast.error("حدث خطأ أثناء جلب بيانات الموظف");
+      tToast.error("hr_EmployeeDetails.error_error_e639");
     } finally {
       setLoading(false);
     }

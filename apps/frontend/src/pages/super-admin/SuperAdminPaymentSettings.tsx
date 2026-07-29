@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   CreditCard,
   Eye,
@@ -69,7 +70,7 @@ export default function SuperAdminPaymentSettings() {
         setSettings(response.data.data);
       }
     } catch (error: any) {
-      toast.error("خطأ في جلب إعدادات بوابة الدفع");
+      tToast.error("super-admin_SuperAdminPaymentSettings.error_fetch_922f");
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ export default function SuperAdminPaymentSettings() {
 
   const handleSave = async () => {
     if (!settings.merchantId || !settings.apiKey) {
-      toast.error("يرجى ملء Merchant ID و API Key");
+      tToast.error("super-admin_SuperAdminPaymentSettings.msg_d1a0");
       return;
     }
 
@@ -106,7 +107,7 @@ export default function SuperAdminPaymentSettings() {
         { headers: getAuthHeaders() }
       );
       if (response.data.success) {
-        toast.success("✅ تم حفظ إعدادات بوابة الدفع بنجاح");
+        tToast.success("super-admin_SuperAdminPaymentSettings.success_save_a705");
         setIsDirty(false);
         // Re-fetch to get masked secretKey
         await fetchSettings();
@@ -120,7 +121,7 @@ export default function SuperAdminPaymentSettings() {
 
   const handleTest = async () => {
     if (!settings.merchantId || !settings.apiKey) {
-      toast.error("يرجى ملء Merchant ID و API Key أولاً");
+      tToast.error("super-admin_SuperAdminPaymentSettings.msg_7700");
       return;
     }
 
@@ -134,7 +135,7 @@ export default function SuperAdminPaymentSettings() {
       );
       setTestResult({
         success: response.data.success,
-        message: response.data.message || "تم الاتصال بنجاح",
+        message: response.data.message || i18n.t("super-admin_SuperAdminPaymentSettings.msg_25c4"),
       });
     } catch (error: any) {
       setTestResult({

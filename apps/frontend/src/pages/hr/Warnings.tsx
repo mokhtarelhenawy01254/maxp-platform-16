@@ -54,6 +54,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 // Define Types
 interface Warning {
@@ -128,7 +129,7 @@ const Warnings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("فشل في جلب البيانات");
+      tToast.error("hr_Warnings.failed_fetch_a188");
     } finally {
       setLoading(false);
     }
@@ -138,10 +139,10 @@ const Warnings: React.FC = () => {
     if (!window.confirm("هل أنت متأكد من حذف هذا الإنذار؟")) return;
     try {
       await api.delete(`/hr/warnings/${id}`);
-      toast.success("تم حذف الإنذار بنجاح");
+      tToast.success("hr_Warnings.success_delete_8ccd");
       fetchData(); // Refresh data
     } catch (error) {
-      toast.error("فشل في حذف الإنذار");
+      tToast.error("hr_Warnings.failed_delete_e465");
     }
   };
 
@@ -149,10 +150,10 @@ const Warnings: React.FC = () => {
     if (!window.confirm("هل تريد تسجيل إقرار إداري لهذا الإنذار؟ (يستخدم في حال توقيع الموظف ورقياً)")) return;
     try {
       await api.post(`/hr/warnings/${id}/admin-acknowledge`);
-      toast.success("تم تسجيل الإقرار بنجاح");
+      tToast.success("hr_Warnings.success_login_0831");
       fetchData(); // Refresh data
     } catch (error) {
-      toast.error("فشل في تسجيل الإقرار");
+      tToast.error("hr_Warnings.failed_login_4439");
     }
   };
 

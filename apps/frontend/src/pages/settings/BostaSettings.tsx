@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { RocketLaunchIcon, CheckCircleIcon, XCircleIcon, KeyIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface BostaSettingsData {
@@ -36,12 +37,12 @@ const BostaSettings: React.FC = () => {
           maskedApiKey: res.data.data.maskedApiKey || "",
         });
       }
-    } catch { toast.error("فشل تحميل إعدادات Bosta"); }
+    } catch { tToast.error("settings_BostaSettings.failed_load_f24b"); }
     finally { setLoading(false); }
   };
 
   const handleSave = async () => {
-    if (!settings.bostaApiKey && !settings.hasApiKey) { toast.error("يرجى إدخال Bosta API Key"); return; }
+    if (!settings.bostaApiKey && !settings.hasApiKey) { tToast.error("settings_BostaSettings.msg_d142"); return; }
     try {
       setSaving(true);
       const res = await apiClient.put("/store-settings/bosta", {
@@ -49,7 +50,7 @@ const BostaSettings: React.FC = () => {
         bostaWebhookToken: settings.bostaWebhookToken || undefined,
         bostaEnabled: settings.bostaEnabled,
       });
-      if (res.data.success) { toast.success("تم حفظ إعدادات Bosta بنجاح"); loadSettings(); }
+      if (res.data.success) { tToast.success("settings_BostaSettings.success_save_6d9e"); loadSettings(); }
     } catch (err: any) { toast.error(err.response?.data?.message || "فشل حفظ الإعدادات"); }
     finally { setSaving(false); }
   };

@@ -10,6 +10,8 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface UserCompanyRelation {
@@ -56,7 +58,7 @@ const OwnerUsersManagement: React.FC = () => {
       if (response.data.success) {
         setUsers(response.data.data.users);
       } else {
-        toast.error(response.data.message || "فشل تحميل المستخدمين");
+        toast.error(response.data.message || i18n.t("owner_OwnerUsersManagement.failed_load_47f1"));
       }
     } catch (error: any) {
       console.error("Failed to fetch users", error);
@@ -119,7 +121,7 @@ const OwnerUsersManagement: React.FC = () => {
         ? [selectedCompanyFilter]
         : user.companies.map((uc) => uc.company.id).filter(Boolean);
     if (!targetCompanies.length) {
-      toast.error("لا يمكن تحديد الشركة لهذا المستخدم");
+      tToast.error("owner_OwnerUsersManagement.msg_60da");
       return;
     }
     if (!window.confirm(`هل أنت متأكد من حذف ${user.firstName}؟`)) return;
@@ -150,11 +152,11 @@ const OwnerUsersManagement: React.FC = () => {
 
       if (success) {
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        toast.success("تم حذف المستخدم");
+        tToast.success("owner_OwnerUsersManagement.success_delete_9115");
       } else if (notFoundCount === targetCompanies.length) {
         // كله 404 -> اعتبره محذوف وحدث القائمة
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        toast.success("المستخدم محذوف مسبقاً وتم تحديث القائمة");
+        tToast.success("owner_OwnerUsersManagement.msg_295b");
       } else {
         toast.error(lastMessage || "فشل حذف المستخدم");
       }

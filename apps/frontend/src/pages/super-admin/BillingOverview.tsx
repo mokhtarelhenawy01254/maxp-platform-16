@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface BillingData {
   totalRevenue: number;
@@ -53,7 +55,7 @@ export default function BillingOverview() {
       }
     } catch (error) {
       console.error("Error fetching billing data:", error);
-      toast.error("خطأ في جلب بيانات الفواتير");
+      tToast.error("super-admin_BillingOverview.error_fetch_fec6");
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function BillingOverview() {
       );
 
       if (response.data.success) {
-        toast.success(response.data.message || "تمت إعادة محاولة الدفع بنجاح");
+        toast.success(response.data.message || i18n.t("super-admin_BillingOverview.msg_23a3"));
         fetchBillingData();
       }
     } catch (error: any) {

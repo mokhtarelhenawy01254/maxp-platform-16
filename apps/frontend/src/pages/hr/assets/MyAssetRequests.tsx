@@ -58,7 +58,7 @@ const MyAssetRequests: React.FC = () => {
     e.preventDefault();
 
     if (!formData.assetType.trim() || !formData.reason.trim()) {
-      alert("يرجى ملء جميع الحقول المطلوبة");
+      alert(i18n.t("hr_MyAssetRequests.msg_bf3c"));
       return;
     }
 
@@ -73,11 +73,11 @@ const MyAssetRequests: React.FC = () => {
           reason: "",
           priority: "NORMAL",
         });
-        alert("تم إرسال الطلب بنجاح");
+        alert(i18n.t("hr_MyAssetRequests.success_send_7573"));
       }
     } catch (error) {
       console.error("Error creating request:", error);
-      alert("فشل في إرسال الطلب");
+      alert(i18n.t("hr_MyAssetRequests.failed_send_d330"));
     }
   };
 

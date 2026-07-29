@@ -10,6 +10,7 @@ import {
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Order {
   id: string;
@@ -54,7 +55,7 @@ const AffiliateOrders: React.FC = () => {
         setOrders(response.data.data);
       }
     } catch {
-      toast.error("حدث خطأ أثناء جلب الطلبات");
+      tToast.error("affiliates_AffiliateOrders.error_error_9817");
     } finally {
       setLoading(false);
     }

@@ -22,6 +22,7 @@ import {
 } from "../../components/ui/dialog";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Warning {
   id: string;
@@ -93,14 +94,14 @@ const EditWarning: React.FC = () => {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.description.trim()) {
-      toast.error("الرجاء ملء جميع الحقول المطلوبة");
+      tToast.error("hr_EditWarning.msg_1d83");
       return;
     }
 
     try {
       setSaving(true);
       await api.put(`/hr/warnings/${id}`, formData);
-      toast.success("تم تحديث الإنذار بنجاح");
+      tToast.success("hr_EditWarning.success_update_3427");
       navigate(`/hr/warnings/${id}`);
     } catch (error: any) {
       console.error("Error updating warning:", error);

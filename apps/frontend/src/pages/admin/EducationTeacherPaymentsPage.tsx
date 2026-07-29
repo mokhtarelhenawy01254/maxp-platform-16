@@ -78,7 +78,7 @@ export default function EducationTeacherPaymentsPage() {
       });
       const data = await res.json();
       if (data.success) setCalcResult(data.data);
-      else alert(data.error || "فشل الحساب");
+      else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.msg_7d6d"));
     } catch (e) { console.error(e); }
     setCalcLoading(false);
   };
@@ -102,11 +102,11 @@ export default function EducationTeacherPaymentsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("تم إنشاء الدفعة");
+        alert(i18n.t("admin_EducationTeacherPaymentsPage.success_create_4d53"));
         setShowCalc(false);
         setCalcResult(null);
         fetchPayments();
-      } else alert(data.error || "فشل إنشاء الدفعة");
+      } else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.failed_create_3a00"));
     } catch (e) { console.error(e); }
   };
 
@@ -114,8 +114,8 @@ export default function EducationTeacherPaymentsPage() {
     try {
       const res = await fetch(api(`payments/${id}/mark-paid`), { method: "PUT", headers: getAuthHeaders() });
       const data = await res.json();
-      if (data.success) { fetchPayments(); alert("تم تأكيد الدفع"); }
-      else alert(data.error || "فشل التأكيد");
+      if (data.success) { fetchPayments(); alert(i18n.t("admin_EducationTeacherPaymentsPage.msg_71a6")); }
+      else alert(data.error || i18n.t("admin_EducationTeacherPaymentsPage.msg_88aa"));
     } catch (e) { console.error(e); }
   };
 

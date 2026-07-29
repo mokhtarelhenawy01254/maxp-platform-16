@@ -30,6 +30,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BarChart,
@@ -420,7 +421,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
   const loadData = async (silent = false) => {
     if (!activeRange.start || !activeRange.end) return;
     if (new Date(activeRange.end) < new Date(activeRange.start)) {
-      toast.error("تاريخ النهاية قبل تاريخ البداية");
+      tToast.error("whatsapp_WhatsAppEmployeeAnalytics.msg_2f97");
       return;
     }
     if (!silent) setLoading(true);
@@ -439,7 +440,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
       setData(currRes.data as AnalyticsResponse);
       setPrevData(prevRes ? (prevRes as unknown as AnalyticsResponse) : null);
     } catch {
-      toast.error("فشل في تحميل تحليلات الموظفين");
+      tToast.error("whatsapp_WhatsAppEmployeeAnalytics.failed_load_61c5");
     } finally {
       setLoading(false);
       setRefreshing(false);

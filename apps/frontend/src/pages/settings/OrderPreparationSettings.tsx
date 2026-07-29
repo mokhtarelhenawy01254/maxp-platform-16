@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   ArrowPathIcon,
   BellIcon,
@@ -236,7 +237,7 @@ const OrderPreparationSettings: React.FC = () => {
         const ready = nextShip.filter((s) => s.code === "READY_TO_SHIP");
         if (ready.length > 0) setHandoffStatuses(ready);
       } catch {
-        toast.error("تعذر تحميل إعدادات تجهيز الطلبات");
+        tToast.error("settings_OrderPreparationSettings.unable_load_d994");
       } finally {
         setLoading(false);
       }
@@ -259,13 +260,13 @@ const OrderPreparationSettings: React.FC = () => {
     setSettings((prev) => ({ ...prev, slipDocument: { ...prev.slipDocument, [key]: value } }));
 
   const handleSave = async () => {
-    if (!companyId) { toast.error("لا يمكن تحديد الشركة الحالية"); return; }
+    if (!companyId) { tToast.error("settings_OrderPreparationSettings.msg_775a"); return; }
     try {
       setSaving(true);
       await apiClient.put(`/companies/${companyId}`, { settings: { orderPreparation: settings } });
-      toast.success("تم حفظ إعدادات تجهيز الطلبات");
+      tToast.success("settings_OrderPreparationSettings.success_save_1e4d");
     } catch {
-      toast.error("فشل حفظ إعدادات تجهيز الطلبات");
+      tToast.error("settings_OrderPreparationSettings.failed_save_8951");
     } finally {
       setSaving(false);
     }
@@ -273,7 +274,7 @@ const OrderPreparationSettings: React.FC = () => {
 
   const handleReset = () => {
     setSettings(buildSettingsState(DEFAULT_SETTINGS));
-    toast.success("تم استرجاع الإعدادات الافتراضية داخل النموذج");
+    tToast.success("settings_OrderPreparationSettings.msg_a1d9");
   };
 
   if (loading) {

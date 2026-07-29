@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Bar,
   BarChart,
@@ -77,7 +78,7 @@ const WorkReportRecordsPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching work report records:", error);
-      toast.error("تعذر تحميل السجلات");
+      tToast.error("hr_WorkReportRecordsPage.unable_load_ea41");
     } finally {
       setLoading(false);
     }

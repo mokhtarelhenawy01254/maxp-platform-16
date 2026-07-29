@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Save,
   ArrowRight,
@@ -104,7 +105,7 @@ const CreatePromotion: React.FC = () => {
         }
       } catch (error: any) {
         console.error("❌ Error fetching data:", error);
-        toast.error("فشل في تحميل بيانات الموظفين");
+        tToast.error("hr_CreatePromotion.failed_load_a9d9");
       }
     };
     fetchData();
@@ -145,13 +146,13 @@ const CreatePromotion: React.FC = () => {
       setLoading(true);
 
       if (!data.employeeId) {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("hr_CreatePromotion.msg_c6e2");
         setLoading(false);
         return;
       }
 
       if (!data.toPositionName) {
-        toast.error("يجب كتابة المنصب الجديد");
+        tToast.error("hr_CreatePromotion.msg_754a");
         setLoading(false);
         return;
       }
@@ -163,7 +164,7 @@ const CreatePromotion: React.FC = () => {
         data.fromPositionName.trim().toLowerCase() ===
           data.toPositionName.trim().toLowerCase()
       ) {
-        toast.error("المنصب الجديد يجب أن يكون مختلفاً عن المنصب السابق");
+        tToast.error("hr_CreatePromotion.msg_1de3");
         setLoading(false);
         return;
       }
@@ -177,7 +178,7 @@ const CreatePromotion: React.FC = () => {
       };
 
       await api.post("/hr/promotions", payload);
-      toast.success("تم إنشاء الترقية بنجاح");
+      tToast.success("hr_CreatePromotion.success_create_e6da");
       navigate("/hr/promotions");
     } catch (error: any) {
       console.error("❌ Error creating promotion:", error);

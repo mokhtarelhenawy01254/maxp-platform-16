@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface ApiSuccess<T = unknown> {
   success: boolean;
@@ -104,7 +105,7 @@ const MerchantRegister: React.FC = () => {
       const response = await apiClient.post<ApiSuccess>("/merchants", formData);
 
       if (response.data.success) {
-        toast.success("تم تسجيل التاجر بنجاح!");
+        tToast.success("merchants_MerchantRegister.success_login_a40a");
         navigate("/merchants");
       }
     } catch (error: unknown) {

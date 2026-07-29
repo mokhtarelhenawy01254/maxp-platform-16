@@ -13,6 +13,7 @@ import {
     ArrowLeftCircleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 import { useAuth } from "../../hooks/useAuthSimple";
 
@@ -61,7 +62,7 @@ const CompanyAffiliateDashboard: React.FC = () => {
                 toast.error(result.message || "فشل جلب البيانات");
             }
         } catch (error) {
-            toast.error("حدث خطأ أثناء جلب البيانات");
+            tToast.error("affiliates_CompanyAffiliateDashboard.error_error_3711");
         } finally {
             setLoading(false);
         }

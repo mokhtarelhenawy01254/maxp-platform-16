@@ -148,11 +148,11 @@ const Opportunities: React.FC = () => {
       if (data.success) {
         fetchOpportunities();
         fetchPipelineStats();
-        alert("تم تحديث مرحلة الفرصة بنجاح");
+        alert(i18n.t("opportunities_Opportunities.success_update_e8ba"));
       }
     } catch (error) {
       console.error("Error updating opportunity stage:", error);
-      alert("فشل في تحديث مرحلة الفرصة");
+      alert(i18n.t("opportunities_Opportunities.failed_update_25e9"));
     }
   };
 

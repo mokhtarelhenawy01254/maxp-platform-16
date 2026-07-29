@@ -7,6 +7,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface StatusMapping {
@@ -98,7 +99,7 @@ const TurboStatusMapping: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error("Error loading data:", error);
-      toast.error("فشل تحميل البيانات");
+      tToast.error("settings_TurboStatusMapping.failed_load_4efb");
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ const TurboStatusMapping: React.FC = () => {
         mapping,
       });
       if (response.data?.success) {
-        toast.success("تم حفظ ربط حالات Turbo بنجاح");
+        tToast.success("settings_TurboStatusMapping.success_save_7f59");
       }
     } catch (error: unknown) {
       console.error("Error saving mapping:", error);

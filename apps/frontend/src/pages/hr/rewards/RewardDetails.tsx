@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";
 import {
   canUserApproveReward,
@@ -113,7 +114,7 @@ const RewardDetails: React.FC = () => {
     try {
       setActionLoading(true);
       await apiClient.patch(`/hr/rewards/approve/${id}`, {});
-      toast.success("تم اعتماد المكافأة بنجاح");
+      tToast.success("hr_RewardDetails.msg_7955");
       fetchRewardDetails();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "فشل في اعتماد المكافأة");
@@ -126,7 +127,7 @@ const RewardDetails: React.FC = () => {
     try {
       setActionLoading(true);
       await apiClient.patch(`/hr/rewards/reject/${id}`, { reason });
-      toast.success("تم رفض المكافأة");
+      tToast.success("hr_RewardDetails.msg_1c5d");
       fetchRewardDetails();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "فشل في رفض المكافأة");
@@ -139,7 +140,7 @@ const RewardDetails: React.FC = () => {
     try {
       setActionLoading(true);
       await apiClient.delete(`/hr/rewards/records/${id}`);
-      toast.success("تم حذف المكافأة بنجاح");
+      tToast.success("hr_RewardDetails.success_delete_48dd");
       setDeleteDialogOpen(false);
       navigate("/hr/rewards");
     } catch (err: any) {

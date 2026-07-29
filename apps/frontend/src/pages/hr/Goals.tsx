@@ -24,6 +24,7 @@ import { Progress } from "../../components/ui/progress";
 import { Switch } from "../../components/ui/switch";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 type GoalType = "COMPANY" | "DEPARTMENT" | "PROJECT" | "EMPLOYEE" | "DAILY";
 
@@ -243,7 +244,7 @@ const Goals: React.FC = () => {
       setStats(statsResponse.data.stats || null);
     } catch (error) {
       console.error("Error fetching goals:", error);
-      toast.error("تعذر تحميل الأهداف");
+      tToast.error("hr_Goals.unable_load_2181");
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/api";
 import {
   CheckCircleIcon,
@@ -53,7 +54,7 @@ const DuplicateOrderSettings: React.FC = () => {
         duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes,
       });
       if (response.data.success) {
-        toast.success("تم حفظ إعدادات الطلبات المكررة بنجاح ✅");
+        tToast.success("settings_DuplicateOrderSettings.success_save_eed8");
         fetchSettings();
       }
     } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Save,
   ArrowRight,
@@ -236,12 +237,12 @@ const EditPromotion: React.FC = () => {
       setSaving(true);
 
       if (!data.employeeId) {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("hr_EditPromotion.msg_0242");
         return;
       }
 
       if (!data.toPositionName) {
-        toast.error("يجب كتابة المنصب الجديد");
+        tToast.error("hr_EditPromotion.msg_d62b");
         return;
       }
 
@@ -265,7 +266,7 @@ const EditPromotion: React.FC = () => {
       );
       const response = await api.put(`/hr/promotions/${id}`, payload);
       console.log("✅ [EDIT-PROMOTION] Success response:", response.data);
-      toast.success("تم تحديث الترقية بنجاح");
+      tToast.success("hr_EditPromotion.success_update_a27f");
       navigate("/hr/promotions");
     } catch (error: any) {
       console.error("❌ Error updating promotion:", error);

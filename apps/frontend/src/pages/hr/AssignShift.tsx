@@ -35,6 +35,7 @@ import {
 } from "../../components/ui/select";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Shift {
   id: string;
@@ -117,7 +118,7 @@ const AssignShift: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("فشل في جلب البيانات المطلوبة");
+      tToast.error("hr_AssignShift.failed_fetch_3c57");
     } finally {
       setLoading(false);
     }
@@ -144,7 +145,7 @@ const AssignShift: React.FC = () => {
 
   const handleAssign = async () => {
     if (selectedEmployeeIds.length === 0 || !assignmentDate) {
-      toast.error("يرجى اختيار موظف واحد على الأقل والتاريخ");
+      tToast.error("hr_AssignShift.msg_59ee");
       return;
     }
 

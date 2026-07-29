@@ -12,6 +12,8 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 interface Product {
@@ -49,7 +51,7 @@ const WooCommerceImport: React.FC = () => {
   // جلب المنتجات من WooCommerce
   const fetchProducts = async () => {
     if (!storeUrl.trim() || !consumerKey.trim() || !consumerSecret.trim()) {
-      toast.error("يرجى إدخال جميع البيانات المطلوبة");
+      tToast.error("products_WooCommerceImport.msg_9c80");
       return;
     }
 
@@ -79,11 +81,11 @@ const WooCommerceImport: React.FC = () => {
         );
         setSelectedProducts(allIndexes);
       } else {
-        toast.error(data.message || "فشل جلب المنتجات");
+        toast.error(data.message || i18n.t("products_WooCommerceImport.failed_fetch_579a"));
       }
     } catch (error: unknown) {
       console.error("Error fetching products:", error);
-      toast.error("خطأ في الاتصال بالخادم");
+      tToast.error("products_WooCommerceImport.msg_d18b");
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,7 @@ const WooCommerceImport: React.FC = () => {
   // استيراد المنتجات المحددة
   const importProducts = async () => {
     if (selectedProducts.size === 0) {
-      toast.error("يرجى اختيار منتج واحد على الأقل");
+      tToast.error("products_WooCommerceImport.msg_7f37");
       return;
     }
 
@@ -133,11 +135,11 @@ const WooCommerceImport: React.FC = () => {
         // إعادة تعيين
         clearData();
       } else {
-        toast.error(data.message || "فشل استيراد المنتجات");
+        toast.error(data.message || i18n.t("products_WooCommerceImport.msg_b68b"));
       }
     } catch (error: unknown) {
       console.error("Error importing products:", error);
-      toast.error("خطأ في استيراد المنتجات");
+      tToast.error("products_WooCommerceImport.msg_c438");
     } finally {
       setImporting(false);
     }

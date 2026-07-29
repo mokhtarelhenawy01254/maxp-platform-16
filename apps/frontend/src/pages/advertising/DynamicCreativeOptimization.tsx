@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Sparkles,
   Image,
@@ -95,7 +96,7 @@ const DynamicCreativeOptimization: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!formData.pageId) {
-      toast.error("يرجى إدخال معرف الصفحة");
+      tToast.error("advertising_DynamicCreativeOptimization.msg_ccda");
       return;
     }
 
@@ -105,17 +106,17 @@ const DynamicCreativeOptimization: React.FC = () => {
     const filledBodies = formData.bodies.filter((b) => b.trim());
 
     if (filledImages.length === 0 && filledVideos.length === 0) {
-      toast.error("يرجى إضافة صورة أو فيديو واحد على الأقل");
+      tToast.error("advertising_DynamicCreativeOptimization.please_add_c24d");
       return;
     }
 
     if (filledTitles.length === 0) {
-      toast.error("يرجى إضافة عنوان واحد على الأقل");
+      tToast.error("advertising_DynamicCreativeOptimization.please_add_ddc3");
       return;
     }
 
     if (filledBodies.length === 0) {
-      toast.error("يرجى إضافة نص واحد على الأقل");
+      tToast.error("advertising_DynamicCreativeOptimization.please_add_00c2");
       return;
     }
 
@@ -135,7 +136,7 @@ const DynamicCreativeOptimization: React.FC = () => {
       if (filledVideos.length > 0) dcoPayload.videos = filledVideos;
       await facebookAdsService.createDynamicCreative(dcoPayload);
 
-      toast.success("تم إنشاء الإعلان الديناميكي بنجاح! 🎉");
+      tToast.success("advertising_DynamicCreativeOptimization.success_create_6a5d");
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error creating DCO:", error);

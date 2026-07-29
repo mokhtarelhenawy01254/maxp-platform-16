@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import api from "../../services/api";
 
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface SalaryHistory {
   id: string;
@@ -69,7 +70,7 @@ const SalaryHistory: React.FC = () => {
     } catch (error) {
       console.error("Error fetching salary history:", error);
 
-      toast.error("فشل في جلب سجل الرواتب");
+      tToast.error("hr_SalaryHistory.failed_fetch_2afd");
     } finally {
       setLoading(false);
     }

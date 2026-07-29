@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   FileText,
   Plus,
@@ -107,7 +108,7 @@ const LeadFormsManagement: React.FC = () => {
       setForms([]);
     } catch (error) {
       console.error("Error loading forms:", error);
-      toast.error("فشل في تحميل النماذج");
+      tToast.error("advertising_LeadFormsManagement.failed_load_5cf0");
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,7 @@ const LeadFormsManagement: React.FC = () => {
       setLeads(data);
     } catch (error) {
       console.error("Error loading leads:", error);
-      toast.error("فشل في تحميل البيانات");
+      tToast.error("advertising_LeadFormsManagement.failed_load_4459");
     } finally {
       setLeadsLoading(false);
     }
@@ -128,7 +129,7 @@ const LeadFormsManagement: React.FC = () => {
 
   const handleCreateForm = async () => {
     if (!newForm.pageId || !newForm.name || !newForm.privacyPolicyUrl) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      tToast.error("advertising_LeadFormsManagement.msg_b2ef");
       return;
     }
 
@@ -142,7 +143,7 @@ const LeadFormsManagement: React.FC = () => {
         thankYouPage: newForm.thankYouPage,
       };
       await facebookAdsService.createLeadForm(formPayload);
-      toast.success("تم إنشاء النموذج بنجاح!");
+      tToast.success("advertising_LeadFormsManagement.success_create_b5a7");
       setShowCreateModal(false);
       loadForms();
     } catch (error: any) {
@@ -196,7 +197,7 @@ const LeadFormsManagement: React.FC = () => {
     link.download = `leads_${selectedForm?.name || "export"}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تصدير البيانات بنجاح!");
+    tToast.success("advertising_LeadFormsManagement.msg_afda");
   };
 
   const filteredForms = forms.filter((form) =>

@@ -24,6 +24,7 @@ import analyticsService from "../../../services/analyticsService";
 import cancellationReasonService from "../../../services/cancellationReasonService";
 import { normalizeCancellationReasonOptions } from "../../../services/cancellationReasonUtils";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 type HeroIcon = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> &
@@ -283,11 +284,11 @@ const CancellationAnalytics: React.FC = () => {
 
       setSavedReasonOptions(savedOptions);
       setReasonOptionsDraft(savedOptions.join("\n"));
-      toast.success("تم حفظ أسباب الإلغاء الجاهزة");
+      tToast.success("Analytics_CancellationAnalytics.success_save_84b0");
     } catch (err) {
       console.error("Failed to save cancellation reason settings:", err);
       setSettingsError("فشل في حفظ أسباب الإلغاء");
-      toast.error("فشل في حفظ أسباب الإلغاء");
+      tToast.error("Analytics_CancellationAnalytics.failed_save_3bab");
     } finally {
       setSettingsSaving(false);
     }

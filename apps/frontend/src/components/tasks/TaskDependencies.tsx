@@ -113,11 +113,11 @@ const TaskDependencies: React.FC<TaskDependenciesProps> = ({
         setSelectedTaskId("");
         onUpdate?.();
       } else {
-        alert(data.error || "فشل في إضافة التبعية");
+        alert(data.error || i18n.t("components_TaskDependencies.failed_add_c36d"));
       }
     } catch (error) {
       console.error("Error adding dependency:", error);
-      alert("فشل في إضافة التبعية");
+      alert(i18n.t("components_TaskDependencies.failed_add_c36d"));
     } finally {
       setLoading(false);
     }

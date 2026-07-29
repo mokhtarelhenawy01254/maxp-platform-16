@@ -10,6 +10,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { WorkReportFillContext, WorkReportForm } from "./types";
 import {
@@ -67,7 +68,7 @@ const WorkReportFormPreview: React.FC = () => {
         if (contextResponse.data?.data) setContext(contextResponse.data.data);
       } catch (error) {
         console.error("Error fetching report preview:", error);
-        toast.error("تعذر تحميل المعاينة");
+        tToast.error("hr_WorkReportFormPreview.unable_load_1744");
       } finally {
         setLoading(false);
       }

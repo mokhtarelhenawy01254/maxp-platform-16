@@ -16,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
@@ -220,7 +221,7 @@ const FacebookAdsDashboard: React.FC = () => {
         refreshAdAccounts(),
         loadCampaigns(selectedAdAccountId),
       ]);
-      toast.success("تم تحديث البيانات");
+      tToast.success("advertising_FacebookAdsDashboard.success_update_4f77");
     } finally {
       setRefreshing(false);
     }
@@ -228,7 +229,7 @@ const FacebookAdsDashboard: React.FC = () => {
 
   const handleSyncFromFacebook = async () => {
     if (!selectedAdAccountId) {
-      toast.error("اختار حساب إعلاني الأول");
+      tToast.error("advertising_FacebookAdsDashboard.msg_2888");
       return;
     }
 
@@ -238,7 +239,7 @@ const FacebookAdsDashboard: React.FC = () => {
         includeStructure: false,
       });
       await loadCampaigns(selectedAdAccountId);
-      toast.success("تم تحديث الحملات من Meta بسرعة");
+      tToast.success("advertising_FacebookAdsDashboard.success_update_f698");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل مزامنة الحملات"));
     } finally {
@@ -248,7 +249,7 @@ const FacebookAdsDashboard: React.FC = () => {
 
   const handleCreateCampaign = () => {
     if (!selectedAdAccountId) {
-      toast.error("اختار حساب إعلاني الأول");
+      tToast.error("advertising_FacebookAdsDashboard.msg_2888");
       return;
     }
 

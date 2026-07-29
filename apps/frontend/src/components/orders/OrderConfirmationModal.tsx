@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 
 interface OrderItem {
     productName: string;
@@ -106,7 +107,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
     const copyOrderNumber = () => {
         navigator.clipboard.writeText(orderData.orderNumber);
         setCopied(true);
-        toast.success('تم نسخ رقم الطلب!');
+        tToast.success("components_OrderConfirmationModal.msg_1966");
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -390,7 +391,7 @@ export const OrderConfirmationModal: React.FC<OrderConfirmationProps> = ({
                                             orderId: orderData.id,
                                             email: null
                                         });
-                                        toast.success('تم إرسال نسخة للبريد الإلكتروني!');
+                                        tToast.success("components_OrderConfirmationModal.success_send_d5ae");
                                     } catch (error: any) {
                                         toast.error(error.response?.data?.error || 'فشل إرسال الإيميل');
                                     }

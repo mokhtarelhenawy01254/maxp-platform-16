@@ -6,6 +6,8 @@
 
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Activity,
   Send,
@@ -269,7 +271,7 @@ const ConversionApiDashboard: React.FC = () => {
 
   const handleSendEvent = async () => {
     if (!eventData.pixelId.trim()) {
-      toast.error("يرجى إدخال معرف Facebook Pixel");
+      tToast.error("advertising_ConversionApiDashboard.msg_c0d9");
       return;
     }
 
@@ -341,7 +343,7 @@ const ConversionApiDashboard: React.FC = () => {
         return [failedEvent, ...prev.slice(0, 9)];
       });
 
-      toast.error(failedEvent.errorMessage || "فشل في إرسال الحدث");
+      toast.error(failedEvent.errorMessage || i18n.t("advertising_ConversionApiDashboard.failed_send_a09d"));
     } finally {
       setLoading(false);
     }

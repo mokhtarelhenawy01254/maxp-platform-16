@@ -286,7 +286,7 @@ const Inventory: React.FC = () => {
         !stockUpdate.warehouseId ||
         stockUpdate.quantity <= 0
       ) {
-        alert("يرجى ملء جميع الحقول المطلوبة");
+        alert(i18n.t("inventory_Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -310,13 +310,13 @@ const Inventory: React.FC = () => {
           expiryDate: "",
           isApproved: true,
         });
-        alert(response.data.message || "تم تحديث المخزون بنجاح");
+        alert(response.data.message || i18n.t("inventory_Inventory.success_update_9a49"));
       } else {
-        alert(response.data.message || "فشل في تحديث المخزون");
+        alert(response.data.message || i18n.t("inventory_Inventory.failed_update_ff8a"));
       }
     } catch (error: unknown) {
       console.error("Error updating stock:", error);
-      alert(getErrorMessage(error, "فشل في تحديث المخزون"));
+      alert(getErrorMessage(error, i18n.t("inventory_Inventory.failed_update_ff8a")));
     }
   };
 
@@ -375,7 +375,7 @@ const Inventory: React.FC = () => {
         !transferData.toWarehouseId ||
         transferData.quantity <= 0
       ) {
-        alert("يرجى ملء جميع الحقول المطلوبة");
+        alert(i18n.t("inventory_Inventory.msg_aec8"));
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -393,10 +393,10 @@ const Inventory: React.FC = () => {
           notes: "",
           batchNumber: "",
         });
-        alert("تم نقل المخزون بنجاح");
+        alert(i18n.t("inventory_Inventory.msg_7ffe"));
       }
     } catch (error: unknown) {
-      alert(getErrorMessage(error, "فشل في نقل المخزون"));
+      alert(getErrorMessage(error, i18n.t("inventory_Inventory.msg_68e2")));
     }
   };
 

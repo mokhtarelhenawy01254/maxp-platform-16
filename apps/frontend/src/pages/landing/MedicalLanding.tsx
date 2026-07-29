@@ -175,7 +175,7 @@ const MedicalLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=medical&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("landing_MedicalLanding.msg_9147")); return; }
     setSubscribing(true);
     setActionType("free");
     try {
@@ -188,11 +188,11 @@ const MedicalLanding: React.FC = () => {
       if (data.success) {
         navigate("/admin");
       } else {
-        alert(data.message || "فشل التفعيل");
+        alert(data.message || i18n.t("landing_MedicalLanding.msg_da67"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("landing_MedicalLanding.msg_94ce"));
       setSubscribing(false);
     }
   };
@@ -203,7 +203,7 @@ const MedicalLanding: React.FC = () => {
       navigate(`/auth/register?source=${LP_SLUG}&theme=medical&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
-    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    if (!bundle) { alert(i18n.t("landing_MedicalLanding.msg_9147")); return; }
     setSubscribing(true);
     setActionType("paid");
     try {
@@ -216,11 +216,11 @@ const MedicalLanding: React.FC = () => {
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
       } else {
-        alert(data.message || "فشل إنشاء الدفع");
+        alert(data.message || i18n.t("landing_MedicalLanding.failed_create_2bac"));
         setSubscribing(false);
       }
     } catch {
-      alert("خطأ في الاتصال");
+      alert(i18n.t("landing_MedicalLanding.msg_94ce"));
       setSubscribing(false);
     }
   };

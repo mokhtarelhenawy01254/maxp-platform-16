@@ -12,6 +12,7 @@ import {
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 type VisibilityMode = "ALL" | "HIDDEN" | "SELECTED";
 
@@ -89,7 +90,7 @@ const AffiliatePicker: React.FC<{
           setAffiliates(res.data.data);
         }
       } catch {
-        toast.error("فشل تحميل قائمة المسوقين");
+        tToast.error("affiliates_AffiliateProductsVisibility.failed_load_20b1");
       } finally {
         setLoading(false);
       }
@@ -192,7 +193,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         setTotal(res.data.pagination.total);
       }
     } catch {
-      toast.error("فشل تحميل المنتجات");
+      tToast.error("affiliates_AffiliateProductsVisibility.failed_load_e3ee");
     } finally {
       setLoading(false);
     }
@@ -217,7 +218,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      toast.error("فشل التحديث");
+      tToast.error("affiliates_AffiliateProductsVisibility.msg_d8af");
     } finally {
       setSavingId(null);
     }
@@ -236,7 +237,7 @@ const AffiliateProductsVisibility: React.FC = () => {
         fetchProducts();
       }
     } catch {
-      toast.error("فشل التحديث الجماعي");
+      tToast.error("affiliates_AffiliateProductsVisibility.msg_eddc");
     }
   };
 

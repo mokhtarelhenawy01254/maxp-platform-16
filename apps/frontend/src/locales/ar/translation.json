@@ -5257,6 +5257,84 @@
     "editUser": "تعديل المستخدم",
     "inviteNewUser": "دعوة مستخدم جديد"
   },
+  "CreateCompanyModal": {
+    "success_create_60f4": "تم إنشاء الشركة بنجاح! 🎉",
+    "failed_create_0bca": "فشل في إنشاء الشركة"
+  },
+  "RichTextEditor": {
+    "msg_c246": "فشل في رفع الصورة"
+  },
+  "WaybillGenerator": {
+    "msg_1794": "غير محدد",
+    "msg_e5f7": "يرجى السماح بفتح النوافذ المنبثقة"
+  },
+  "CustomerProfile": {
+    "msg_bf82": "معرف الصفحة غير متوفر",
+    "msg_8262": "تم حظر العميل على الصفحة بنجاح",
+    "msg_b667": "تم إلغاء حظر العميل بنجاح"
+  },
+  "OrderModal": {
+    "msg_fe97": "خطأ غير معروف",
+    "msg_a03a": "الرجاء اختيار المدينة",
+    "msg_f4e5": "الرجاء إدخال رقم الهاتف",
+    "msg_f9fe": "يرجى تسجيل الدخول أولاً",
+    "failed_create_ff97": "فشل في إنشاء الطلب"
+  },
+  "ImageGalleryModal": {
+    "error_error_fcf9": "حدث خطأ أثناء رفع الصور",
+    "failed_delete_e86b": "فشل حذف الصورة. حاول مرة أخرى."
+  },
+  "QuickCreateTaskModal": {
+    "login_login_dff4": "يجب تسجيل الدخول أولاً",
+    "success_create_7fd6": "تم إنشاء المهمة بنجاح",
+    "failed_create_9b04": "فشل في إنشاء المهمة"
+  },
+  "FacebookSetupGuide": {
+    "msg_1aca": "تم نسخ النص إلى الحافظة"
+  },
+  "AssignShiftDialog": {
+    "failed_fetch_d7b6": "فشل في جلب البيانات",
+    "msg_d0f6": "يرجى اختيار موظف واحد على الأقل والتاريخ",
+    "msg_06cd": "يرجى تحديد تاريخ الانتهاء"
+  },
+  "OrderConfirmationModal": {
+    "msg_1966": "تم نسخ رقم الطلب!",
+    "success_send_d5ae": "تم إرسال نسخة للبريد الإلكتروني!"
+  },
+  "RatingButtons": {
+    "error_error_1ca7": "حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى."
+  },
+  "StorefrontImagePickerModal": {
+    "unable_load_cffc": "تعذر تحميل حافظة الصور",
+    "msg_6895": "تم رفع الصورة واختيارها",
+    "msg_6cd9": "فشل رفع الصورة"
+  },
+  "StorefrontPageSectionsEditor": {
+    "msg_b0d6": "اسم الصفحة يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط.",
+    "msg_8a5e": "هذه الصفحة موجودة بالفعل."
+  },
+  "TaskDependencies": {
+    "failed_add_c36d": "فشل في إضافة التبعية"
+  },
+  "BroadcastDialog": {
+    "msg_995e": "يرجى اختيار جهة اتصال واحدة على الأقل",
+    "msg_7386": "يرجى كتابة رسالة"
+  },
+  "BusinessProfileDialog": {
+    "success_update_9be1": "تم تحديث ملف الأعمال بنجاح",
+    "failed_update_5c61": "فشل تحديث ملف الأعمال"
+  },
+  "CreateGroupDialog": {
+    "please_name_3daa": "يرجى إدخال اسم المجموعة",
+    "msg_4c38": "يرجى اختيار مشارك واحد على الأقل",
+    "success_create_6766": "تم إنشاء المجموعة بنجاح"
+  },
+  "ProfileDialog": {
+    "success_update_7fa9": "تم تحديث الملف الشخصي بنجاح",
+    "failed_update_293c": "فشل تحديث الملف الشخصي",
+    "msg_fc01": "تمت مزامنة البيانات من واتساب بنجاح",
+    "msg_5720": "فشل مزامنة البيانات من واتساب"
+  },
   "OrderModalEnhanced": {
     "msg_1ca3": "خطأ غير معروف",
     "msg_2012": "الرجاء اختيار اللون أولاً",
@@ -5597,6 +5675,27 @@
     "resume": "استئناف",
     "pause": "إيقاف مؤقت",
     "stop": "إنهاء المهمة"
+  },
+  "useCheckout": {
+    "msg_bdcc": "تم تطبيق الكوبون بنجاح",
+    "msg_64d9": "خطأ في التحقق من الكوبون"
+  },
+  "useCheckoutFormSettings": {
+    "error_load_c04f": "خطأ في تحميل إعدادات الشيك أوت",
+    "success_save_db4a": "تم حفظ الإعدادات بنجاح",
+    "error_save_d031": "خطأ في حفظ إعدادات الشيك أوت",
+    "msg_7e92": "تم إعادة تعيين الإعدادات بنجاح",
+    "msg_6249": "خطأ في إعادة تعيين إعدادات الشيك أوت"
+  },
+  "useElessiProductDetails": {
+    "msg_0924": "يرجى اختيار اللون أو المقاس أولًا",
+    "msg_df74": "تمت إضافة المنتج للسلة",
+    "unable_add_f585": "تعذر إضافة المنتج للسلة"
+  },
+  "useTrackOrder": {
+    "msg_132a": "يرجى إدخال رقم الطلب ورقم الهاتف",
+    "error_error_cd62": "حدث خطأ في تتبع الطلب",
+    "msg_2905": "الطلب غير موجود"
   },
   "Advances": {
     "error_error_0c59": "حدث خطأ أثناء جلب البيانات",
@@ -8454,13 +8553,6 @@
     "msg_c969": "أدخل قيمة مخزون صحيحة",
     "msg_2366": "تم ربط المنتج بالتاجر بنجاح"
   },
-  "OrderModal": {
-    "msg_fe97": "خطأ غير معروف",
-    "msg_a03a": "الرجاء اختيار المدينة",
-    "msg_f4e5": "الرجاء إدخال رقم الهاتف",
-    "msg_f9fe": "يرجى تسجيل الدخول أولاً",
-    "failed_create_ff97": "فشل في إنشاء الطلب"
-  },
   "bosta": {
     "title": "شحن بوسطه",
     "trackingNumber": "رقم التتبع",
@@ -10765,6 +10857,876 @@
     "failed_load_7c13": "فشل تحميل تقرير الحضور",
     "msg_f9f4": "تم تصدير التقرير",
     "msg_1d9e": "فشل التصدير"
+  },
+  "CancellationAnalytics": {
+    "success_save_84b0": "تم حفظ أسباب الإلغاء الجاهزة",
+    "failed_save_3bab": "فشل في حفظ أسباب الإلغاء"
+  },
+  "FacebookStatusPage": {
+    "failed_load_c05f": "فشل في تحميل حالة Facebook",
+    "msg_a055": "يرجى إدخال الرسالة ومعرف المستلم",
+    "success_send_7129": "✅ تم إرسال الرسالة التجريبية بنجاح!",
+    "error_send_1df1": "خطأ في إرسال الرسالة التجريبية"
+  },
+  "PublicCompanyLinks": {
+    "msg_c9d0": "فشل النسخ"
+  },
+  "ServiceRequestForm": {
+    "msg_a413": "يرجى إكمال جميع الحقول المطلوبة",
+    "success_send_7517": "تم إرسال الطلب",
+    "error_error_7eca": "حدث خطأ في الإرسال"
+  },
+  "useCompanies": {
+    "msg_43e0": "تم التحديث بنجاح",
+    "success_create_30c4": "تم إنشاء الشركة بنجاح",
+    "success_update_1110": "تم تحديث الشركة بنجاح",
+    "success_update_78ed": "تم تحديث المتابعة",
+    "msg_f60e": "تمت إضافة الموظف بنجاح",
+    "msg_143a": "تم نقل الملكية بنجاح"
+  },
+  "index": {
+    "msg_f7bf": "لا يوجد رقم هاتف"
+  },
+  "EducationTeacherPaymentsPage": {
+    "msg_7d6d": "فشل الحساب",
+    "failed_create_3a00": "فشل إنشاء الدفعة",
+    "msg_88aa": "فشل التأكيد",
+    "success_create_4d53": "تم إنشاء الدفعة",
+    "msg_71a6": "تم تأكيد الدفع"
+  },
+  "ServiceManagementPage": {
+    "name_required_6f37": "اسم الخدمة مطلوب",
+    "error_error_0d92": "حدث خطأ",
+    "msg_9174": "تم الحذف"
+  },
+  "ServiceOrdersPage": {
+    "msg_1aba": "تم التحديث",
+    "error_error_1393": "حدث خطأ"
+  },
+  "BranchModal": {
+    "msg_d137": "الصورة كبيرة جدًا. الحد الأقصى 2MB",
+    "msg_b798": "يرجى اختيار صورة JPG أو PNG أو WEBP",
+    "msg_6f5e": "فشل معالجة الصورة"
+  },
+  "ABTestDetails": {
+    "msg_86d5": "تم بدء الاختبار بنجاح",
+    "msg_8980": "تم إيقاف الاختبار بنجاح",
+    "msg_bb33": "تم تحليل النتائج بنجاح",
+    "msg_5e37": "تم تعزيز الفائز بنجاح"
+  },
+  "ABTestsManagement": {
+    "msg_cba6": "تم بدء الاختبار بنجاح",
+    "msg_e722": "تم إيقاف الاختبار بنجاح",
+    "success_delete_414c": "تم حذف الاختبار بنجاح"
+  },
+  "AdDetails": {
+    "success_update_b872": "تم تحديث تفاصيل الإعلان",
+    "msg_39be": "تمت مزامنة أداء الإعلان",
+    "msg_d051": "الإعلان غير مربوط بمعرف Meta للمعاينة"
+  },
+  "AdPreview": {
+    "msg_068f": "يرجى إدخال معرف الإعلان الإبداعي",
+    "success_load_bb63": "تم تحميل المعاينة بنجاح"
+  },
+  "AdvantagePlusShopping": {
+    "please_name_2fae": "يرجى إدخال اسم الحملة",
+    "msg_d0eb": "يرجى إدخال معرف Facebook Pixel",
+    "msg_fa84": "يرجى إدخال ميزانية صحيحة",
+    "msg_9ca6": "يرجى اختيار دولة واحدة على الأقل",
+    "success_create_aae3": "تم إنشاء حملة Advantage+ Shopping بنجاح! 🛒"
+  },
+  "AttributionSettings": {
+    "msg_c7b7": "يرجى إدخال معرف مجموعة الإعلانات",
+    "success_save_97ba": "تم حفظ إعدادات الإحالة بنجاح! ✅"
+  },
+  "AudiencesManagement": {
+    "success_update_1209": "تم تحديث البيانات",
+    "success_delete_e963": "تم حذف الجمهور بنجاح"
+  },
+  "AutomationRules": {
+    "failed_load_3df3": "فشل في تحميل القواعد",
+    "name_required_4c30": "اسم القاعدة مطلوب",
+    "success_create_b833": "تم إنشاء القاعدة بنجاح",
+    "success_delete_5fdc": "تم حذف القاعدة",
+    "failed_delete_4c17": "فشل في حذف القاعدة"
+  },
+  "CampaignDetails": {
+    "success_update_c9e9": "تم تحديث البيانات",
+    "msg_c0fb": "تم إيقاف الحملة",
+    "msg_00e5": "تم استئناف الحملة",
+    "success_delete_b4c9": "تم حذف الحملة"
+  },
+  "CatalogDetails": {
+    "failed_load_53c9": "فشل في تحميل المنتجات",
+    "success_delete_6559": "تم حذف Catalog بنجاح",
+    "msg_fa82": "تم نسخ الرابط"
+  },
+  "CatalogsManagement": {
+    "success_update_522e": "تم تحديث البيانات",
+    "success_delete_47bf": "تم حذف Catalog بنجاح",
+    "msg_eddf": "تم نسخ الرابط"
+  },
+  "ConversionApiDashboard": {
+    "msg_c0d9": "يرجى إدخال معرف Facebook Pixel",
+    "failed_send_a09d": "فشل في إرسال الحدث"
+  },
+  "CreateAdSet": {
+    "failed_load_3afc": "فشل في تحميل الجماهير",
+    "please_name_c33c": "يرجى إدخال اسم مجموعة الإعلانات",
+    "msg_bdb9": "يرجى إدخال ميزانية صحيحة",
+    "msg_a209": "اختر دولة أو محافظة أو مدينة واحدة على الأقل",
+    "success_create_52e7": "تم إنشاء مجموعة الإعلانات بنجاح"
+  },
+  "CreateAdWizard": {
+    "success_activate_0a35": "تم تفعيل الحساب الإعلاني وتحميل الصفحات والبكسلات",
+    "msg_93bd": "فعّل الحساب الإعلاني المختار قبل مراجعة الإرسال"
+  },
+  "CreateCatalog": {
+    "success_create_8f33": "تم إنشاء Catalog بنجاح"
+  },
+  "CreateLookalikeAudience": {
+    "failed_load_9cfe": "فشل في تحميل البيانات",
+    "msg_30e5": "يرجى ملء جميع الحقول المطلوبة",
+    "success_create_ddc4": "تم إنشاء الجمهور المشابه بنجاح"
+  },
+  "CustomAudienceDetails": {
+    "success_delete_12fd": "تم حذف الجمهور بنجاح"
+  },
+  "DynamicCreativeOptimization": {
+    "msg_ccda": "يرجى إدخال معرف الصفحة",
+    "please_add_c24d": "يرجى إضافة صورة أو فيديو واحد على الأقل",
+    "please_add_ddc3": "يرجى إضافة عنوان واحد على الأقل",
+    "please_add_00c2": "يرجى إضافة نص واحد على الأقل",
+    "success_create_6a5d": "تم إنشاء الإعلان الديناميكي بنجاح! 🎉"
+  },
+  "FacebookAdsConnection": {
+    "msg_261d": "معرف الشركة غير متوفر",
+    "msg_375c": "فشل بدء ربط الإعلانات",
+    "msg_19f6": "تم فصل مصدر الإعلانات.",
+    "msg_e833": "فشل فصل مصدر الإعلانات",
+    "msg_990c": "بدون أخطاء"
+  },
+  "FacebookAdsDashboard": {
+    "success_update_4f77": "تم تحديث البيانات",
+    "msg_2888": "اختار حساب إعلاني الأول",
+    "success_update_f698": "تم تحديث الحملات من Meta بسرعة"
+  },
+  "FacebookAdsDiagnosis": {
+    "success_update_aa38": "تم تحديث بيانات التشخيص"
+  },
+  "FacebookPixelSettings": {
+    "msg_15c2": "يرجى الربط مع Facebook..."
+  },
+  "LeadFormsManagement": {
+    "failed_load_5cf0": "فشل في تحميل النماذج",
+    "failed_load_4459": "فشل في تحميل البيانات",
+    "msg_b2ef": "يرجى ملء جميع الحقول المطلوبة",
+    "success_create_b5a7": "تم إنشاء النموذج بنجاح!",
+    "msg_afda": "تم تصدير البيانات بنجاح!"
+  },
+  "MediaBuyingReports": {
+    "msg_dd34": "اختر حقلًا واحدًا على الأقل",
+    "msg_c2d1": "حدد بداية ونهاية الفترة",
+    "msg_17dc": "اختر حسابًا إعلانيًا أولًا",
+    "msg_d8c5": "المعاينة السريعة تحتاج فترة مخصصة لأن endpoint الحالي يستقبل start/end"
+  },
+  "OverlayCampaignDetails": {
+    "failed_load_5709": "فشل في تحميل الحملة",
+    "msg_2e2c": "تمت الإضافة",
+    "msg_7a62": "تمت الإزالة"
+  },
+  "OverlayCampaigns": {
+    "msg_47da": "الاسم وصورة الإطار مطلوبان",
+    "success_create_85f3": "تم إنشاء الحملة",
+    "msg_1d0b": "تم الحذف",
+    "msg_02a0": "جاري تطبيق الإطارات والتزامن مع فيسبوك في الخلفية"
+  },
+  "SavedAudiences": {
+    "failed_load_70fc": "فشل في تحميل الجماهير",
+    "please_name_1f06": "يرجى إدخال اسم الجمهور",
+    "success_create_a80c": "تم إنشاء الجمهور بنجاح! ✅",
+    "success_delete_e94c": "تم حذف الجمهور"
+  },
+  "AffiliateCommission": {
+    "msg_af1c": "الرجاء إدخال مبلغ صالح",
+    "msg_208d": "يمكن طلب سحب الرصيد المتاح بالكامل فقط حالياً",
+    "success_send_448b": "تم إرسال طلب السحب بنجاح"
+  },
+  "AffiliateDashboard": {
+    "msg_8552": "تم نسخ الرابط!",
+    "msg_6c14": "لم نتمكن من النسخ تلقائيا، انسخ الرابط يدويا من الحقل.",
+    "msg_ea5b": "اختر ملفًا صالحًا أولاً",
+    "msg_e5e2": "تم رفع النسخة الجديدة وبانتظار مراجعة الإدارة"
+  },
+  "AffiliateOrderDetails": {
+    "msg_7afd": "اكتب تفاصيل أوضح قبل فتح التيكت",
+    "msg_1b99": "تم فتح التيكت وربطه بالطلب"
+  },
+  "AffiliateOrders": {
+    "error_error_9817": "حدث خطأ أثناء جلب الطلبات"
+  },
+  "AffiliateProductsVisibility": {
+    "failed_load_20b1": "فشل تحميل قائمة المسوقين",
+    "failed_load_e3ee": "فشل تحميل المنتجات",
+    "msg_d8af": "فشل التحديث",
+    "msg_eddc": "فشل التحديث الجماعي"
+  },
+  "AffiliateRegister": {
+    "msg_564e": "تم تسجيلك كمسوق بنجاح!"
+  },
+  "AffiliateSystemSettings": {
+    "msg_66a5": "تم نسخ الرابط بنجاح"
+  },
+  "CompanyAffiliateDashboard": {
+    "error_error_3711": "حدث خطأ أثناء جلب البيانات"
+  },
+  "ResetPassword": {
+    "msg_db5c": "رمز إعادة التعيين غير صحيح",
+    "msg_75cd": "تم إعادة تعيين كلمة المرور بنجاح"
+  },
+  "CampaignPredictionCalculator": {
+    "msg_1512": "الرجاء إدخال اسم للحملة قبل الحفظ",
+    "success_save_3135": "تم حفظ السيناريو بنجاح!"
+  },
+  "Conversations": {
+    "error_error_e429": "حدث خطأ أثناء إرسال الرسالة"
+  },
+  "TelegramConversationsPro": {
+    "failed_update_status_ffd1": "فشل تحديث حالة الرد الآلي"
+  },
+  "CashbackSettings": {
+    "error_error_6d32": "حدث خطأ أثناء تحميل الإعدادات",
+    "msg_faa7": "نسبة الكاش باك يجب أن تكون بين 0 و 100",
+    "msg_3170": "الحد الأقصى للطلب يجب أن يكون رقم إيجابي (أو 0 بدون حد)",
+    "msg_2ddf": "يجب أن تكون نسب المستويات الخاصة بين 0 و 100",
+    "success_save_fe44": "تم حفظ إعدادات الكاش باك بنجاح"
+  },
+  "LoyaltyPrograms": {
+    "error_error_b7ee": "حدث خطأ أثناء حفظ البرنامج",
+    "error_error_a7e1": "حدث خطأ أثناء الحذف"
+  },
+  "AssignShift": {
+    "failed_fetch_3c57": "فشل في جلب البيانات المطلوبة",
+    "msg_59ee": "يرجى اختيار موظف واحد على الأقل والتاريخ"
+  },
+  "ClearanceChecklist": {
+    "failed_load_eca3": "فشل في تحميل بيانات إخلاء الطرف",
+    "failed_update_a0ad": "فشل في تحديث الحالة"
+  },
+  "CreateAdvance": {
+    "error_error_3c32": "حدث خطأ أثناء جلب البيانات",
+    "success_create_6559": "تم إنشاء طلب السلفة بنجاح"
+  },
+  "CreateFeedback": {
+    "msg_ad77": "لم يتم العثور على التغذية الراجعة",
+    "failed_load_cfaf": "فشل في تحميل البيانات",
+    "msg_79e3": "يرجى اختيار تقييم",
+    "success_update_293e": "تم تحديث الرسالة بنجاح",
+    "msg_1de5": "تم الإرسال بنجاح"
+  },
+  "CreatePerformanceReview": {
+    "failed_fetch_8148": "فشل في جلب قائمة الموظفين",
+    "msg_aee9": "يرجى ملء جميع الحقول الإلزامية",
+    "success_update_80c1": "تم تحديث التقييم بنجاح",
+    "success_create_a683": "تم إنشاء نموذج التقييم بنجاح"
+  },
+  "CreatePromotion": {
+    "failed_load_a9d9": "فشل في تحميل بيانات الموظفين",
+    "msg_c6e2": "يجب اختيار الموظف",
+    "msg_754a": "يجب كتابة المنصب الجديد",
+    "msg_1de3": "المنصب الجديد يجب أن يكون مختلفاً عن المنصب السابق",
+    "success_create_e6da": "تم إنشاء الترقية بنجاح"
+  },
+  "CreateResignation": {
+    "failed_load_4801": "فشل في تحميل البيانات",
+    "msg_640c": "يجب اختيار الموظف",
+    "success_login_7609": "تم تسجيل الاستقالة بنجاح"
+  },
+  "CreateTraining": {
+    "failed_load_7dfb": "فشل في تحميل البيانات",
+    "msg_e5a0": "يجب اختيار الموظف",
+    "success_update_d670": "تم تحديث البرنامج التدريبي بنجاح",
+    "success_add_818b": "تم إضافة البرنامج التدريبي بنجاح",
+    "success_delete_b773": "تم حذف السجل التدريبي بنجاح"
+  },
+  "CreateWarning": {
+    "failed_load_dbdf": "فشل في تحميل بيانات الموظفين",
+    "msg_a319": "يجب اختيار الموظف",
+    "msg_c304": "تم إصدار الإنذار بنجاح"
+  },
+  "DecisionResignation": {
+    "failed_load_753d": "فشل في تحميل بيانات الاستقالة"
+  },
+  "EditPromotion": {
+    "msg_0242": "يجب اختيار الموظف",
+    "msg_d62b": "يجب كتابة المنصب الجديد",
+    "success_update_a27f": "تم تحديث الترقية بنجاح"
+  },
+  "EditWarning": {
+    "msg_1d83": "الرجاء ملء جميع الحقول المطلوبة",
+    "success_update_3427": "تم تحديث الإنذار بنجاح"
+  },
+  "EmployeeDetails": {
+    "error_error_e639": "حدث خطأ أثناء جلب بيانات الموظف"
+  },
+  "EmployeeEdit": {
+    "failed_load_e53e": "فشل في تحميل بيانات الموظف",
+    "success_update_9e9c": "تم تحديث بيانات الموظف بنجاح"
+  },
+  "EmployeesPromotion": {
+    "success_delete_044f": "تم حذف الترقية بنجاح",
+    "failed_update_d7a0": "فشل في تحديث حالة الترقية",
+    "failed_delete_c80d": "فشل في حذف الترقية"
+  },
+  "Feedback": {
+    "failed_fetch_9062": "فشل في جلب التغذية الراجعة",
+    "success_delete_0947": "تم حذف التغذية الراجعة بنجاح",
+    "failed_delete_e7e4": "فشل في حذف التغذية الراجعة",
+    "success_send_a8d1": "تم إرسال الرد بنجاح"
+  },
+  "Goals": {
+    "unable_load_2181": "تعذر تحميل الأهداف"
+  },
+  "HRReports": {
+    "msg_80be": "لا توجد بيانات للتصدير",
+    "msg_ed25": "تم تصدير التقرير بنجاح",
+    "msg_4045": "تم تصدير ملف تجريبي للتقرير"
+  },
+  "MyAdvances": {
+    "failed_fetch_10f6": "فشل في جلب بيانات السلف",
+    "msg_aa97": "يرجى تعبئة جميع الحقول المطلوبة",
+    "success_send_a21b": "تم إرسال طلب السلفة بنجاح"
+  },
+  "PayrollTesting": {
+    "failed_account_1ffd": "فشل في حساب الراتب",
+    "failed_fetch_8a11": "فشل في جلب قائمة الموظفين",
+    "msg_98c4": "جاري تحضير ملف PDF...",
+    "msg_f478": "جاري فتح نافذة الطباعة..."
+  },
+  "PerformanceReviews": {
+    "failed_fetch_f64e": "فشل في جلب التقييمات",
+    "success_delete_9529": "تم حذف التقييم بنجاح",
+    "failed_delete_4e3b": "فشل في حذف التقييم"
+  },
+  "PositionsManagement": {
+    "msg_1afe": "عنوان المنصب مطلوب",
+    "success_update_7e3b": "تم تحديث المنصب بنجاح",
+    "success_create_8e61": "تم إنشاء المنصب بنجاح",
+    "success_delete_f7bf": "تم حذف المنصب بنجاح"
+  },
+  "Resignations": {
+    "failed_fetch_eabb": "فشل في جلب الاستقالات"
+  },
+  "SalaryHistory": {
+    "failed_fetch_2afd": "فشل في جلب سجل الرواتب"
+  },
+  "SalaryUpdates": {
+    "failed_fetch_4bd4": "فشل في جلب البيانات",
+    "msg_f4a3": "لا توجد تغييرات فعلية للحفظ",
+    "msg_bdbc": "يجب كتابة سبب التعديل لكل موظف تم تغيير راتبه"
+  },
+  "SettlementDetailsModal": {
+    "failed_fetch_bd95": "فشل في جلب تفاصيل المستحقات",
+    "msg_6598": "تم اعتماد المستحقات وصرفها بنجاح",
+    "error_error_cfd1": "حدث خطأ أثناء اعتماد المستحقات"
+  },
+  "Training": {
+    "failed_fetch_8c5b": "فشل في جلب سجلات التدريب"
+  },
+  "WarningDetails": {
+    "success_delete_d2a6": "تم حذف الإنذار بنجاح"
+  },
+  "Warnings": {
+    "failed_fetch_a188": "فشل في جلب البيانات",
+    "success_delete_8ccd": "تم حذف الإنذار بنجاح",
+    "failed_delete_e465": "فشل في حذف الإنذار",
+    "success_login_0831": "تم تسجيل الإقرار بنجاح",
+    "failed_login_4439": "فشل في تسجيل الإقرار"
+  },
+  "AssetCategories": {
+    "failed_add_92d0": "فشل في إضافة التصنيف",
+    "failed_delete_6b1d": "فشل في حذف التصنيف. قد يكون مرتبطاً بأصول."
+  },
+  "AssetList": {
+    "msg_b785": "جاري استنساخ الأصل...",
+    "loading_update_4408": "جاري تحديث الحالة...",
+    "msg_c0e9": "تم الاستنساخ بنجاح",
+    "msg_20bb": "فشل في استنساخ الأصل"
+  },
+  "AssetSuppliers": {
+    "failed_add_606a": "فشل في إضافة المورد",
+    "failed_delete_4959": "فشل في حذف المورد. قد يكون مرتبطاً بطلبات شراء أو أصول."
+  },
+  "AssetsOverviewDashboard": {
+    "error_error_3ff5": "حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى."
+  },
+  "MyAssetRequests": {
+    "msg_bf3c": "يرجى ملء جميع الحقول المطلوبة",
+    "success_send_7573": "تم إرسال الطلب بنجاح",
+    "failed_send_d330": "فشل في إرسال الطلب"
+  },
+  "AssetMaintenanceSection": {
+    "error_error_85aa": "حدث خطأ أثناء تحميل البيانات",
+    "msg_b270": "يرجى اكمال البيانات المطلوبة",
+    "success_login_record_39c0": "تم تسجيل سجل الصيانة بنجاح",
+    "failed_save_efc0": "فشل في حفظ سجل الصيانة"
+  },
+  "AssetRequestsSection": {
+    "please_reason_9729": "يرجى ذكر سبب الطلب",
+    "success_send_b0f3": "تم إرسال الطلب بنجاح",
+    "failed_send_3330": "فشل في إرسال الطلب",
+    "failed_update_e7e1": "فشل في تحديث حالة الطلب"
+  },
+  "ReceiptFormSection": {
+    "msg_ad05": "جاري توليد ملف PDF وحفظه في سجلات الموظف...",
+    "msg_c899": "الرجاء اختيار الموظف والأصل",
+    "msg_0eef": "لم يتم العثور على الموظف المختار",
+    "msg_3fad": "لم يتم العثور على الأصل المختار"
+  },
+  "PayrollSimulator": {
+    "failed_fetch_36f4": "فشل في جلب قائمة الموظفين",
+    "msg_2d8c": "تم الانتهاء من محاكاة الحسابات",
+    "msg_4b00": "جاري إعداد قالب الطباعة...",
+    "success_save_47f4": "تم حفظ المحاكاة كمسودة"
+  },
+  "HiringPipelineSection": {
+    "msg_875d": "تم نقل المتقدم للمرحلة المحددة بنجاح",
+    "msg_a559": "فشل في نقل المتقدم",
+    "success_delete_28f8": "تم حذف المتقدم بنجاح",
+    "failed_delete_15ad": "فشل حذف المتقدم"
+  },
+  "InterviewsSection": {
+    "failed_fetch_cbf5": "فشل في جلب المقابلات",
+    "msg_faf7": "يرجى تعبئة جميع الحقول المطلوبة",
+    "msg_d55d": "تم جدولة المقابلة بنجاح 🎉",
+    "success_update_a5d2": "تم تحديث الحالة بنجاح",
+    "failed_update_fa1c": "فشل تحديث الحالة"
+  },
+  "AttendanceReport": {
+    "failed_fetch_2d8e": "فشل في جلب التقرير",
+    "msg_74cd": "جاري تصدير التقرير..."
+  },
+  "EmployeeReport": {
+    "failed_fetch_50e6": "فشل في جلب قائمة الموظفين",
+    "msg_57a7": "الرجاء اختيار موظف",
+    "msg_5832": "الرجاء تحديد الفترة الزمنية",
+    "msg_8609": "تاريخ البداية يجب أن يكون قبل تاريخ النهاية",
+    "msg_9b34": "تم تصدير التقرير بنجاح"
+  },
+  "LateAbsenceReport": {
+    "failed_fetch_c08d": "فشل في جلب التقرير",
+    "msg_fffa": "جاري تصدير التقرير..."
+  },
+  "LeaveReport": {
+    "failed_fetch_8d4c": "فشل في جلب التقرير",
+    "msg_f68b": "جاري تصدير التقرير..."
+  },
+  "OvertimeReport": {
+    "failed_fetch_b96c": "فشل في جلب التقرير",
+    "msg_9613": "جاري تصدير التقرير..."
+  },
+  "PayrollReport": {
+    "failed_fetch_f53f": "فشل في جلب التقرير",
+    "msg_6788": "جاري تصدير التقرير..."
+  },
+  "PerformanceReport": {
+    "failed_fetch_78fc": "فشل في جلب التقرير",
+    "msg_bbfd": "جاري تصدير التقرير..."
+  },
+  "TurnoverReport": {
+    "failed_fetch_6374": "فشل في جلب التقرير",
+    "msg_d2ae": "جاري تصدير التقرير..."
+  },
+  "CreateEditReward": {
+    "success_update_6490": "تم تحديث المكافأة بنجاح",
+    "success_add_ab3d": "تم إضافة المكافأة بنجاح"
+  },
+  "RewardApplication": {
+    "failed_load_f3f5": "فشل تحميل البيانات",
+    "msg_d0bb": "يرجى اختيار الموظف ونوع المكافأة",
+    "msg_1402": "تم صرف المكافأة بنجاح",
+    "msg_c569": "فشل صرف المكافأة"
+  },
+  "RewardDetails": {
+    "msg_7955": "تم اعتماد المكافأة بنجاح",
+    "msg_1c5d": "تم رفض المكافأة",
+    "success_delete_48dd": "تم حذف المكافأة بنجاح"
+  },
+  "RewardsList": {
+    "success_delete_7170": "تم حذف المكافأة بنجاح"
+  },
+  "WorkReportFormBuilder": {
+    "unable_load_c717": "تعذر تحميل الفورم",
+    "msg_92ff": "اكتب اسم الفورم أولًا",
+    "msg_b98e": "أضف حقلًا واحدًا على الأقل",
+    "success_update_f51f": "تم تحديث الفورم",
+    "success_create_3fbf": "تم إنشاء الفورم"
+  },
+  "WorkReportFormPreview": {
+    "unable_load_1744": "تعذر تحميل المعاينة"
+  },
+  "WorkReportFormsDashboard": {
+    "unable_load_2c82": "تعذر تحميل فورمات التقارير",
+    "success_delete_06ce": "تم حذف الفورم",
+    "unable_delete_2762": "تعذر حذف الفورم"
+  },
+  "WorkReportRecordsPage": {
+    "unable_load_ea41": "تعذر تحميل السجلات"
+  },
+  "WorkReportSubmissionPage": {
+    "success_save_2d7a": "تم حفظ التقرير"
+  },
+  "Inventory": {
+    "success_update_9a49": "تم تحديث المخزون بنجاح",
+    "failed_update_ff8a": "فشل في تحديث المخزون",
+    "msg_68e2": "فشل في نقل المخزون",
+    "msg_aec8": "يرجى ملء جميع الحقول المطلوبة",
+    "msg_7ffe": "تم نقل المخزون بنجاح"
+  },
+  "InventoryAudits": {
+    "msg_b003": "تم اعتماد الحركة بنجاح"
+  },
+  "AiInboxLanding": {
+    "msg_8228": "فشل التفعيل",
+    "failed_create_0a24": "فشل إنشاء الدفع",
+    "msg_cfb7": "الباقة غير متوفرة",
+    "msg_b100": "خطأ في الاتصال"
+  },
+  "MedicalLanding": {
+    "msg_da67": "فشل التفعيل",
+    "failed_create_2bac": "فشل إنشاء الدفع",
+    "msg_9147": "الباقة غير متوفرة",
+    "msg_94ce": "خطأ في الاتصال"
+  },
+  "MessagingLanding": {
+    "msg_9dca": "فشل التفعيل",
+    "failed_create_931a": "فشل إنشاء الدفع",
+    "msg_ccb3": "الباقة غير متوفرة",
+    "msg_c26f": "خطأ في الاتصال"
+  },
+  "TermsAndConditions": {
+    "failed_load_0ab1": "فشل تحميل المحتوى",
+    "success_save_3b44": "تم حفظ الشروط والأحكام بنجاح",
+    "failed_save_90be": "فشل حفظ المحتوى"
+  },
+  "AppDetails": {
+    "error_fetch_5849": "خطأ في جلب تفاصيل الأداة",
+    "msg_2949": "هذه الأداة مفعلة بالفعل",
+    "please_login_login_ac18": "يرجى تسجيل الدخول أولاً"
+  },
+  "AppSettings": {
+    "unable_load_9624": "تعذر تحميل إعدادات التطبيق",
+    "msg_565c": "فعّل التطبيق أولًا من Marketplace",
+    "success_save_0151": "تم حفظ الإعدادات بنجاح",
+    "error_error_8032": "حدث خطأ أثناء حفظ الإعدادات"
+  },
+  "BundleDetails": {
+    "msg_3844": "لم يتم العثور على الباقة",
+    "error_error_02ae": "حدث خطأ أثناء الاشتراك"
+  },
+  "UpsellManualManager": {
+    "unable_load_6178": "تعذر تحميل ربط المنتجات لهذا المنتج",
+    "msg_11d8": "اختر المنتج الأساسي أولًا",
+    "success_save_00ab": "تم حفظ روابط الـ upsell لهذا المنتج",
+    "unable_save_5607": "تعذر حفظ روابط المنتجات"
+  },
+  "MerchantPortalDashboard": {
+    "msg_ea8b": "لا توجد مستحقات متاحة للسحب بعد التسليم",
+    "success_send_8bfa": "تم إرسال طلب السحب للشركة"
+  },
+  "MerchantRegister": {
+    "success_login_a40a": "تم تسجيل التاجر بنجاح!"
+  },
+  "MerchantsList": {
+    "error_error_2f2d": "حدث خطأ أثناء جلب التجار",
+    "success_login_3fe0": "تم تسجيل تحويل مستحقات التاجر",
+    "msg_8395": "تم إلغاء طلب سحب التاجر"
+  },
+  "Opportunities": {
+    "success_update_e8ba": "تم تحديث مرحلة الفرصة بنجاح",
+    "failed_update_25e9": "فشل في تحديث مرحلة الفرصة"
+  },
+  "SimplifiedProductSelectionModal": {
+    "failed_fetch_c827": "فشل في جلب المنتجات",
+    "msg_0e6c": "هذا المنتج غير متوفر في المخزون"
+  },
+  "useTurboShipping": {
+    "msg_d8b2": "لا يوجد كود تتبع لشحنة تربو التابعة لهذا الطلب",
+    "msg_2fbc": "لا توجد شحنة تربو مربوطة بهذا الطلب لمزامنتها"
+  },
+  "CompanyOrdersDetails": {
+    "failed_load_e304": "فشل تحميل البيانات",
+    "failed_load_e2ac": "فشل تحميل الطلبات",
+    "msg_075a": "لا توجد طلبات للتصدير",
+    "msg_9ac6": "تم تصدير التقرير"
+  },
+  "OwnerAttendanceReport": {
+    "failed_load_cef6": "فشل تحميل التقرير",
+    "success_create_27b7": "تم إنشاء التقرير بنجاح",
+    "failed_create_878d": "فشل في إنشاء التقرير",
+    "msg_6004": "تم تصدير التقرير",
+    "msg_6657": "فشل التصدير"
+  },
+  "OwnerUsersManagement": {
+    "msg_60da": "لا يمكن تحديد الشركة لهذا المستخدم",
+    "success_delete_9115": "تم حذف المستخدم",
+    "msg_295b": "المستخدم محذوف مسبقاً وتم تحديث القائمة",
+    "failed_load_47f1": "فشل تحميل المستخدمين"
+  },
+  "WooCommerceImport": {
+    "msg_9c80": "يرجى إدخال جميع البيانات المطلوبة",
+    "msg_d18b": "خطأ في الاتصال بالخادم",
+    "msg_7f37": "يرجى اختيار منتج واحد على الأقل",
+    "msg_c438": "خطأ في استيراد المنتجات",
+    "failed_fetch_579a": "فشل جلب المنتجات",
+    "msg_b68b": "فشل استيراد المنتجات"
+  },
+  "PublicAffiliateRegister": {
+    "msg_95a1": "برنامج المسوقين غير متاح حالياً لهذه الشركة",
+    "msg_1eeb": "تعذر تحديد الشركة المرتبط بها الرابط"
+  },
+  "PublicMerchantRegister": {
+    "msg_79bb": "أدخل رابط الشركة أو الـ slug الخاص بها أولاً",
+    "success_create_account_4e42": "تم إنشاء حساب التاجر بنجاح! يمكنك تسجيل الدخول بعد تفعيل الشركة لحسابك"
+  },
+  "AdvancedReports": {
+    "success_create_fc99": "تم إنشاء التقرير بنجاح",
+    "failed_create_649d": "فشل في إنشاء التقرير"
+  },
+  "Reports": {
+    "error_error_3799": "حدث خطأ في تحميل التقارير. يرجى المحاولة مرة أخرى."
+  },
+  "ShippingReport": {
+    "success_update_531b": "تم تحديث التكلفة الفعلية",
+    "failed_load_dc84": "فشل تحميل إعدادات المحافظات",
+    "success_save_9691": "تم حفظ تكاليف المحافظات",
+    "msg_c494": "فشل تصدير التقرير"
+  },
+  "BostaSettings": {
+    "failed_load_f24b": "فشل تحميل إعدادات Bosta",
+    "msg_d142": "يرجى إدخال Bosta API Key",
+    "success_save_6d9e": "تم حفظ إعدادات Bosta بنجاح"
+  },
+  "DuplicateOrderSettings": {
+    "success_save_eed8": "تم حفظ إعدادات الطلبات المكررة بنجاح ✅"
+  },
+  "IncompleteOrdersSettings": {
+    "error_fetch_53e5": "خطأ في جلب إعدادات الطلبات غير المكتملة",
+    "success_save_8fed": "تم حفظ الإعدادات بنجاح",
+    "error_save_bccf": "خطأ في حفظ الإعدادات"
+  },
+  "LateCancellationSettings": {
+    "success_save_767c": "تم حفظ إعدادات اعتراض الإلغاء المتأخر بنجاح ✅"
+  },
+  "MinimumOrderSettings": {
+    "failed_fetch_084b": "فشل في جلب إعدادات الحد الأدنى للطلبات",
+    "msg_6377": "يجب إدخال قيمة أكبر من صفر عند تفعيل الحد الأدنى",
+    "success_save_d446": "تم حفظ إعدادات الحد الأدنى للطلبات",
+    "failed_save_d041": "فشل في حفظ إعدادات الحد الأدنى للطلبات"
+  },
+  "OrderColumnsSettings": {
+    "success_update_f41e": "تم تحديث إعداد شريط البحث بنجاح",
+    "failed_update_d0d4": "فشل في تحديث إعدادات شريط التنقل",
+    "error_error_f49e": "حدث خطأ أثناء تحديث الإعدادات",
+    "success_save_ba84": "تم حفظ إعدادات الأعمدة بنجاح",
+    "failed_save_ed22": "فشل حفظ الإعدادات"
+  },
+  "OrderConfirmationSettings": {
+    "success_save_8804": "تم حفظ الإعدادات"
+  },
+  "OrderPreparationSettings": {
+    "unable_load_d994": "تعذر تحميل إعدادات تجهيز الطلبات",
+    "msg_775a": "لا يمكن تحديد الشركة الحالية",
+    "success_save_1e4d": "تم حفظ إعدادات تجهيز الطلبات",
+    "failed_save_8951": "فشل حفظ إعدادات تجهيز الطلبات",
+    "msg_a1d9": "تم استرجاع الإعدادات الافتراضية داخل النموذج"
+  },
+  "RatingSettingsManager": {
+    "success_save_3111": "تم حفظ الإعدادات بنجاح",
+    "failed_save_dfaf": "فشل حفظ الإعدادات"
+  },
+  "StoreSettings": {
+    "msg_126b": "تم إزالة إعدادات بوابة الدفع بنجاح",
+    "success_save_ccce": "تم حفظ إعدادات بوابة الدفع بنجاح"
+  },
+  "StorefrontVisualEditorPage": {
+    "success_save_ddb7": "تم حفظ تعديلات الصفحة الرئيسية",
+    "msg_b399": "تمت إعادة تحميل آخر نسخة محفوظة",
+    "msg_7f54": "تمت إعادة تعيين إعدادات المتجر",
+    "unable_load_eddf": "تعذر تحميل إعدادات المتجر",
+    "failed_save_8619": "فشل حفظ تعديلات الصفحة الرئيسية",
+    "msg_e1b9": "فشل إعادة تعيين إعدادات المتجر"
+  },
+  "TurboStatusMapping": {
+    "failed_load_4efb": "فشل تحميل البيانات",
+    "success_save_7f59": "تم حفظ ربط حالات Turbo بنجاح"
+  },
+  "TurboTickets": {
+    "failed_load_c772": "فشل تحميل التذاكر",
+    "msg_1e25": "يرجى كتابة وصف للتذكرة",
+    "msg_4493": "يرجى اختيار نوع الاستفسار",
+    "success_send_9cde": "✅ تم إرسال التذكرة بنجاح",
+    "failed_send_e199": "فشل إرسال التذكرة"
+  },
+  "ListItemsEditor": {
+    "error_error_0ba3": "حدث خطأ أثناء رفع الصورة"
+  },
+  "BillingOverview": {
+    "error_fetch_fec6": "خطأ في جلب بيانات الفواتير",
+    "msg_23a3": "تمت إعادة محاولة الدفع بنجاح"
+  },
+  "DevGoalDetails": {
+    "failed_save_181b": "فشل حفظ النتيجة الرئيسية",
+    "msg_892b": "فشل الحذف",
+    "failed_add_9743": "فشل إضافة المراجعة",
+    "failed_update_f56b": "فشل تحديث التقدم"
+  },
+  "DevGoalForm": {
+    "failed_save_7680": "فشل حفظ الهدف",
+    "msg_2fbd": "العنوان والتواريخ مطلوبة",
+    "msg_58e7": "فشل في الاتصال بالخادم"
+  },
+  "DevGoalsList": {
+    "failed_delete_5bfb": "فشل حذف الهدف",
+    "msg_6e3a": "فشل في الاتصال بالخادم"
+  },
+  "DevProjects": {
+    "failed_create_b90e": "فشل في إنشاء المشروع",
+    "msg_f4a8": "الاسم والوصف مطلوبان",
+    "msg_58f7": "فشل في الاتصال بالخادم"
+  },
+  "DevReleases": {
+    "failed_create_38bf": "فشل في إنشاء الإصدار",
+    "msg_43a1": "رقم الإصدار والاسم مطلوبان",
+    "msg_f389": "فشل في الاتصال بالخادم"
+  },
+  "DevTaskIntegrations": {
+    "msg_3354": "تعذر النسخ من المتصفح",
+    "name_required_1041": "اسم المفتاح مطلوب",
+    "msg_9272": "اختر صلاحية واحدة على الأقل",
+    "msg_dbef": "اختر مشروع التطوير المقيد لهذا المفتاح",
+    "msg_53d1": "مفاتيح الكتابة تحتاج Reporter افتراضي",
+    "failed_load_0534": "فشل تحميل بيانات التكاملات",
+    "failed_save_96d4": "فشل حفظ المفتاح",
+    "msg_71f8": "فشل تدوير المفتاح",
+    "msg_7de3": "فشل إلغاء المفتاح"
+  },
+  "DevTaskSettings": {
+    "msg_74b2": "خطأ غير معروف",
+    "success_save_eb53": "تم حفظ الإعدادات بنجاح",
+    "error_error_3bd3": "حدث خطأ أثناء الحفظ",
+    "msg_fdf4": "يرجى ملء جميع الحقول المطلوبة"
+  },
+  "DevTeam": {
+    "failed_delete_b4ec": "فشل في حذف العضو",
+    "msg_e835": "فشل في الاتصال بالخادم",
+    "msg_9a18": "يرجى اختيار مستخدم"
+  },
+  "PlatformPartnerManagement": {
+    "error_load_1fe0": "خطأ في تحميل البيانات",
+    "success_save_3c98": "تم حفظ الإعدادات ✅"
+  },
+  "PlatformSignupCoupons": {
+    "failed_load_ccaf": "فشل تحميل كوبونات التسجيل",
+    "success_delete_6248": "تم حذف كوبون التسجيل",
+    "msg_42c7": "تم إيقاف الكوبون مع الاحتفاظ بسجل الاستخدام"
+  },
+  "PlatformSiteHomepageTemplates": {
+    "failed_load_a341": "فشل تحميل إعدادات لاندنج المنصة",
+    "success_update_b605": "تم تحديث الصفحة الرئيسية العامة"
+  },
+  "PlatformSiteMetaPixel": {
+    "failed_load_41c7": "فشل تحميل إعدادات Meta Pixel للموقع العام",
+    "msg_3ee4": "Pixel ID يجب أن يكون 15 أو 16 رقمًا",
+    "success_save_9b3e": "تم حفظ إعدادات Meta Pixel للموقع العام"
+  },
+  "SubscriptionCenter": {
+    "unable_fetch_f426": "تعذر جلب تقرير الفرق"
+  },
+  "SuperAdminAIImageGeneratorSettings": {
+    "success_save_d643": "تم حفظ الإعدادات",
+    "error_save_f591": "خطأ في حفظ الإعدادات",
+    "success_save_c57f": "تم حفظ إعدادات الشركة"
+  },
+  "SuperAdminAppExplanations": {
+    "error_error_62e5": "حدث خطأ أثناء الحذف"
+  },
+  "SuperAdminLandingPages": {
+    "failed_load_65d1": "فشل تحميل الصفحات",
+    "failed_update_status_4f34": "فشل تحديث حالة الصفحة",
+    "msg_bae8": "تم ربط الباقة",
+    "failed_update_dddb": "فشل تحديث الباقة",
+    "success_update_e302": "تم تحديث نوع التفعيل",
+    "failed_update_58c9": "فشل تحديث نوع التفعيل"
+  },
+  "SuperAdminPaymentSettings": {
+    "error_fetch_922f": "خطأ في جلب إعدادات بوابة الدفع",
+    "msg_d1a0": "يرجى ملء Merchant ID و API Key",
+    "success_save_a705": "✅ تم حفظ إعدادات بوابة الدفع بنجاح",
+    "msg_7700": "يرجى ملء Merchant ID و API Key أولاً",
+    "msg_25c4": "تم الاتصال بنجاح"
+  },
+  "SuperAdminSupportSettings": {
+    "error_fetch_386a": "خطأ في جلب إعدادات الدعم الفني",
+    "success_save_bcfb": "تم حفظ رقم الدعم الفني",
+    "failed_save_f02c": "فشل حفظ الرقم"
+  },
+  "TelegramAutoReply": {
+    "success_delete_b17d": "تم حذف القاعدة"
+  },
+  "TelegramBulkMessages": {
+    "success_send_242e": "تم إرسال الرسائل"
+  },
+  "TelegramCampaigns": {
+    "success_create_6e83": "تم إنشاء الحملة",
+    "msg_2651": "تم إلغاء الحملة",
+    "success_delete_09d0": "تم حذف الحملة"
+  },
+  "TelegramScheduler": {
+    "msg_5a62": "تم جدولة الرسالة بنجاح"
+  },
+  "WhatsAppConversationAnalytics": {
+    "msg_6297": "تاريخ النهاية قبل تاريخ البداية",
+    "failed_load_eab0": "فشل في تحميل تحليلات المحادثات"
+  },
+  "WhatsAppEmployeeAnalytics": {
+    "msg_2f97": "تاريخ النهاية قبل تاريخ البداية",
+    "failed_load_61c5": "فشل في تحميل تحليلات الموظفين"
+  },
+  "ChatRightPanel": {
+    "success_update_506f": "تم تحديث التصنيف",
+    "failed_update_1f8e": "فشل تحديث التصنيف"
+  },
+  "MessageBubble": {
+    "msg_fbfd": "تم تصحيح الرد وتعليم الوكيل ✅"
+  },
+  "WooCommerceSync": {
+    "please_activate_dc67": "يرجى تفعيل المزامنة أولاً من الإعدادات",
+    "msg_3a63": "تم بدء المزامنة بنجاح",
+    "msg_56af": "فشل بدء المزامنة"
+  },
+  "SettingsTab": {
+    "msg_b231": "تم نسخ الرابط",
+    "msg_65a3": "تم نسخ المفتاح السري"
+  },
+  "StatusMappingTab": {
+    "msg_d2df": "هذه الحالة موجودة بالفعل"
+  },
+  "useWooCommerceExport": {
+    "error_fetch_dd37": "خطأ في جلب الطلبات المحلية",
+    "msg_f0f7": "يرجى اختيار متجر WooCommerce أولاً",
+    "msg_d65f": "فشل التصدير الجزئي"
+  },
+  "useWooCommerceProducts": {
+    "msg_0311": "يرجى إعداد بيانات الاتصال أولاً",
+    "error_fetch_1808": "خطأ في جلب المنتجات",
+    "msg_244d": "خطأ في استيراد المنتجات"
+  },
+  "useWooCommerceStatus": {
+    "msg_8a1a": "يرجى إعداد بيانات الاتصال أولاً",
+    "failed_fetch_eccf": "فشل جلب الحالات",
+    "msg_33d0": "خطأ في الاتصال",
+    "msg_0288": "🤖 تمت محاولة الربط التلقائي بنجاح"
   },
   "CommissionsManagement": {
     "error_error_d02d": "حدث خطأ أثناء جلب العمولات وطلبات السحب",
@@ -13203,6 +14165,13 @@
     "copyError": "تعذر نسخ الرابط — جرّب مرة أخرى",
     "previewBlocked": "المتصفح منع فتح تبويب المعاينة. اسمح للنوافذ المنبثقة ثم جرّب مرة أخرى.",
     "previewNoCompany": "تعذر تحديد الشركة لفتح المعاينة"
+  },
+  "ProductImageLandingPage": {
+    "success_send_29d8": "تم إرسال الطلب بنجاح.",
+    "msg_648c": "صفحة الهبوط المصورة غير جاهزة لهذا المنتج بعد."
+  },
+  "OrderSummary": {
+    "msg_c088": "أدخل كود الخصم أولًا."
   },
   "StaffCompanyAccess": {
     "msg_7dc0": "تمت إضافة الصلاحية بنجاح",

@@ -15,6 +15,7 @@ import {
   StarIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookAdTest,
@@ -52,7 +53,7 @@ const ABTestDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.startAdTest(id);
-      toast.success("تم بدء الاختبار بنجاح");
+      tToast.success("advertising_ABTestDetails.msg_86d5");
       loadTest();
     } catch (error: any) {
       console.error("Error starting test:", error);
@@ -64,7 +65,7 @@ const ABTestDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.pauseAdTest(id);
-      toast.success("تم إيقاف الاختبار بنجاح");
+      tToast.success("advertising_ABTestDetails.msg_8980");
       loadTest();
     } catch (error: any) {
       console.error("Error pausing test:", error);
@@ -79,7 +80,7 @@ const ABTestDetails: React.FC = () => {
       const result = await facebookAdsService.analyzeAdTest(id);
       setAnalysis(result.analysis);
       setTest(result.test);
-      toast.success("تم تحليل النتائج بنجاح");
+      tToast.success("advertising_ABTestDetails.msg_bb33");
     } catch (error: any) {
       console.error("Error analyzing test:", error);
       toast.error(error?.response?.data?.error || "فشل في تحليل النتائج");
@@ -99,7 +100,7 @@ const ABTestDetails: React.FC = () => {
 
     try {
       await facebookAdsService.promoteWinner(id);
-      toast.success("تم تعزيز الفائز بنجاح");
+      tToast.success("advertising_ABTestDetails.msg_5e37");
       loadTest();
     } catch (error: any) {
       console.error("Error promoting winner:", error);

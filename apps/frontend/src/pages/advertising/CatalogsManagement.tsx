@@ -18,6 +18,7 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookProductCatalog,
@@ -67,7 +68,7 @@ const CatalogsManagement: React.FC = () => {
     setRefreshing(true);
     await loadCatalogs();
     setRefreshing(false);
-    toast.success("تم تحديث البيانات");
+    tToast.success("advertising_CatalogsManagement.success_update_522e");
   };
 
   const handleCreateCatalog = () => {
@@ -89,7 +90,7 @@ const CatalogsManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCatalog(id);
-      toast.success("تم حذف Catalog بنجاح");
+      tToast.success("advertising_CatalogsManagement.success_delete_47bf");
       await loadCatalogs();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف Catalog");
@@ -232,7 +233,7 @@ const CatalogsManagement: React.FC = () => {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/${includeHidden ? '?includeHidden=true' : ''}`);
-                toast.success("تم نسخ الرابط");
+                tToast.success("advertising_CatalogsManagement.msg_eddf");
               }}
               className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
             >

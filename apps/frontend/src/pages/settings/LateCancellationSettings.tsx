@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/api";
 import {
   CheckCircleIcon,
@@ -132,7 +133,7 @@ const LateCancellationSettings: React.FC = () => {
           settings.lateCancellationTargetStatuses,
       });
       if (response.data.success) {
-        toast.success("تم حفظ إعدادات اعتراض الإلغاء المتأخر بنجاح ✅");
+        tToast.success("settings_LateCancellationSettings.success_save_767c");
         fetchSettings();
       }
     } catch (error) {

@@ -115,7 +115,7 @@ const AssetsOverviewDashboard: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading report:", error);
-      alert("حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى.");
+      alert(i18n.t("hr_AssetsOverviewDashboard.error_error_3ff5"));
     } finally {
       setLoadingReport(null);
     }

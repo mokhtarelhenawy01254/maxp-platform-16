@@ -19,6 +19,7 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookAdDetailResponse,
@@ -248,7 +249,7 @@ const AdDetails: React.FC = () => {
     setRefreshing(true);
     await loadDetails({ silent: true });
     setRefreshing(false);
-    toast.success("تم تحديث تفاصيل الإعلان");
+    tToast.success("advertising_AdDetails.success_update_b872");
   };
 
   const handleSync = async () => {
@@ -262,7 +263,7 @@ const AdDetails: React.FC = () => {
         dateRange.endDate,
       );
       await loadDetails({ silent: true });
-      toast.success("تمت مزامنة أداء الإعلان");
+      tToast.success("advertising_AdDetails.msg_39be");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في مزامنة الإعلان"));
     } finally {
@@ -272,7 +273,7 @@ const AdDetails: React.FC = () => {
 
   const handlePreview = async () => {
     if (!details?.ad.facebookAdId) {
-      toast.error("الإعلان غير مربوط بمعرف Meta للمعاينة");
+      tToast.error("advertising_AdDetails.msg_d051");
       return;
     }
 

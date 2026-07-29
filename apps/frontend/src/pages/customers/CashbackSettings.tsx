@@ -10,6 +10,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface CustomerLoyaltyTier {
   id: string;
@@ -78,7 +79,7 @@ const CashbackSettingsPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching cashback data:", error);
-      toast.error("حدث خطأ أثناء تحميل الإعدادات");
+      tToast.error("customers_CashbackSettings.error_error_6d32");
     } finally {
       setIsLoading(false);
     }
@@ -89,26 +90,26 @@ const CashbackSettingsPage: React.FC = () => {
 
     // Validation
     if (settings.cashbackPercent < 0 || settings.cashbackPercent > 100) {
-      toast.error("نسبة الكاش باك يجب أن تكون بين 0 و 100");
+      tToast.error("customers_CashbackSettings.msg_faa7");
       return;
     }
 
     if (settings.maxPerOrder < 0) {
-      toast.error("الحد الأقصى للطلب يجب أن يكون رقم إيجابي (أو 0 بدون حد)");
+      tToast.error("customers_CashbackSettings.msg_3170");
       return;
     }
 
     // Validate tier overrides
     const invalidOverrides = Object.values(settings.tierOverrides).some(val => val < 0 || val > 100);
     if (invalidOverrides) {
-      toast.error("يجب أن تكون نسب المستويات الخاصة بين 0 و 100");
+      tToast.error("customers_CashbackSettings.msg_2ddf");
       return;
     }
 
     try {
       setIsSaving(true);
       await apiClient.put("/hr/customer-loyalty/cashback/settings", settings);
-      toast.success("تم حفظ إعدادات الكاش باك بنجاح");
+      tToast.success("customers_CashbackSettings.success_save_fe44");
     } catch (error: any) {
       console.error("Error saving cashback settings:", error);
       toast.error(error?.response?.data?.error || "حدث خطأ أثناء حفظ الإعدادات");

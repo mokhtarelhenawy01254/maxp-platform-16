@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCampaign,
@@ -101,14 +102,14 @@ const CampaignDetails: React.FC = () => {
     setRefreshing(true);
     await loadCampaign();
     setRefreshing(false);
-    toast.success("تم تحديث البيانات");
+    tToast.success("advertising_CampaignDetails.success_update_c9e9");
   };
 
   const handlePause = async () => {
     if (!id) return;
     try {
       await facebookAdsService.pauseCampaign(id);
-      toast.success("تم إيقاف الحملة");
+      tToast.success("advertising_CampaignDetails.msg_c0fb");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في إيقاف الحملة"));
@@ -119,7 +120,7 @@ const CampaignDetails: React.FC = () => {
     if (!id) return;
     try {
       await facebookAdsService.resumeCampaign(id);
-      toast.success("تم استئناف الحملة");
+      tToast.success("advertising_CampaignDetails.msg_00e5");
       await loadCampaign();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في استئناف الحملة"));
@@ -134,7 +135,7 @@ const CampaignDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCampaign(id);
-      toast.success("تم حذف الحملة");
+      tToast.success("advertising_CampaignDetails.success_delete_b4c9");
       navigate(dashboardUrl);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل في حذف الحملة"));

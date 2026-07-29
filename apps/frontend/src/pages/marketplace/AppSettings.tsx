@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import {
   applyMarketplaceAppPreset,
@@ -716,7 +717,7 @@ export default function AppSettings() {
       );
     } catch (error: unknown) {
       console.error("Error loading app settings:", error);
-      toast.error("تعذر تحميل إعدادات التطبيق");
+      tToast.error("marketplace_AppSettings.unable_load_9624");
     } finally {
       setLoading(false);
     }
@@ -814,7 +815,7 @@ export default function AppSettings() {
 
   const handleSave = async () => {
     if (!companyApp) {
-      toast.error("فعّل التطبيق أولًا من Marketplace");
+      tToast.error("marketplace_AppSettings.msg_565c");
       return;
     }
 
@@ -823,13 +824,13 @@ export default function AppSettings() {
       await apiClient.put(`/my-apps/${companyApp.id}/settings`, {
         settings: normalizedSettings,
       });
-      toast.success("تم حفظ الإعدادات بنجاح");
+      tToast.success("marketplace_AppSettings.success_save_0151");
       setCompanyApp((current) =>
         current ? { ...current, settings: normalizedSettings } : current,
       );
     } catch (error) {
       console.error("Error saving app settings:", error);
-      toast.error("حدث خطأ أثناء حفظ الإعدادات");
+      tToast.error("marketplace_AppSettings.error_error_8032");
     } finally {
       setSaving(false);
     }

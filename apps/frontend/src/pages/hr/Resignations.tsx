@@ -13,6 +13,7 @@ import { Badge } from "../../components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import SettlementDetailsModal from "./SettlementDetailsModal";
 
 interface Resignation {
@@ -50,7 +51,7 @@ const Resignations: React.FC = () => {
       setResignations(response.data.resignations || []);
     } catch (error) {
       console.error("Error fetching resignations:", error);
-      toast.error("فشل في جلب الاستقالات");
+      tToast.error("hr_Resignations.failed_fetch_eabb");
     } finally {
       setLoading(false);
     }

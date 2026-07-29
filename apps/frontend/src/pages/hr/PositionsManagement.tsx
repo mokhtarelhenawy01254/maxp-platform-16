@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Briefcase,
   Plus,
@@ -169,7 +170,7 @@ const PositionsManagement: React.FC = () => {
       setLoading(true);
 
       if (!data.title || data.title.trim() === "") {
-        toast.error("عنوان المنصب مطلوب");
+        tToast.error("hr_PositionsManagement.msg_1afe");
         setLoading(false);
         return;
       }
@@ -196,14 +197,14 @@ const PositionsManagement: React.FC = () => {
           cleanedData,
         );
         console.log("Position updated:", response.data);
-        toast.success("تم تحديث المنصب بنجاح");
+        tToast.success("hr_PositionsManagement.success_update_7e3b");
         setIsEditDialogOpen(false);
         setEditingPosition(null);
       } else {
         // Create new position
         const response = await api.post("/hr/positions", cleanedData);
         console.log("Position created:", response.data);
-        toast.success("تم إنشاء المنصب بنجاح");
+        tToast.success("hr_PositionsManagement.success_create_8e61");
         setIsCreateDialogOpen(false);
       }
 
@@ -231,7 +232,7 @@ const PositionsManagement: React.FC = () => {
     try {
       setLoading(true);
       await api.delete(`/hr/positions/${position.id}`);
-      toast.success("تم حذف المنصب بنجاح");
+      tToast.success("hr_PositionsManagement.success_delete_f7bf");
       setDeleteDialogOpen(false);
       setPositionToDelete(null);
       fetchData();

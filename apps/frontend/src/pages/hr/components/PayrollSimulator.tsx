@@ -44,6 +44,7 @@ import {
 import { Checkbox } from "../../../components/ui/checkbox";
 import { Separator } from "../../../components/ui/separator";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { numberToArabicWords } from "../../../lib/tafqeet";
 import api from "../../../services/api";
 
@@ -231,7 +232,7 @@ export default function PayrollSimulator() {
       const response = await api.get("/hr/employees?limit=100");
       setEmployees(response.data.employees);
     } catch (error) {
-      toast.error("فشل في جلب قائمة الموظفين");
+      tToast.error("hr_PayrollSimulator.failed_fetch_36f4");
     } finally {
       setLoading(false);
     }
@@ -277,7 +278,7 @@ export default function PayrollSimulator() {
         },
       );
       setResults(response.data.payroll);
-      toast.success("تم الانتهاء من محاكاة الحسابات");
+      tToast.success("hr_PayrollSimulator.msg_2d8c");
     } catch (error: any) {
       toast.error(error.response?.data?.error || "فشل في المحاكاة");
     } finally {
@@ -956,14 +957,14 @@ export default function PayrollSimulator() {
                   <Button
                     variant="outline"
                     className="flex-1 rounded-xl gap-2 h-11 border-slate-200"
-                    onClick={() => toast.info("جاري إعداد قالب الطباعة...")}
+                    onClick={() => tToast.info("hr_PayrollSimulator.msg_4b00")}
                   >
                     <Printer className="h-4 w-4" />
                     طباعة تجريبية
                   </Button>
                   <Button
                     className="flex-1 rounded-xl bg-slate-900 hover:bg-black gap-2 h-11"
-                    onClick={() => toast.success("تم حفظ المحاكاة كمسودة")}
+                    onClick={() => tToast.success("hr_PayrollSimulator.success_save_47f4")}
                   >
                     <Save className="h-4 w-4" />
                     حفظ كمسودة

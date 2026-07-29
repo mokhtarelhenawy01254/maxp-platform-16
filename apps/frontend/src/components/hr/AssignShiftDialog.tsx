@@ -14,6 +14,7 @@ import { Checkbox } from '../../components/ui/checkbox';
 import { Search, Users, AlertTriangle, Check } from 'lucide-react';
 import api from '../../services/api';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 import { getDateRange } from '../../utils/shiftHelpers';
 import { cn } from '../../lib/utils';
 
@@ -139,7 +140,7 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
         setExistingAssignments(currentAssignments);
       } catch (error) {
         console.error(`[AssignShiftDialog-${instanceId}] ❌ Error in loadAllData:`, error);
-        toast.error('فشل في جلب البيانات');
+        tToast.error("components_AssignShiftDialog.failed_fetch_d7b6");
       } finally {
         setLoading(false);
       }
@@ -150,12 +151,12 @@ const AssignShiftDialog: React.FC<AssignShiftDialogProps> = ({
 
   const handleAssign = async () => {
     if (selectedEmployeeIds.length === 0 || !assignmentDate) {
-      toast.error('يرجى اختيار موظف واحد على الأقل والتاريخ');
+      tToast.error("components_AssignShiftDialog.msg_d0f6");
       return;
     }
 
     if (dateRangeMode && !endDate) {
-      toast.error('يرجى تحديد تاريخ الانتهاء');
+      tToast.error("components_AssignShiftDialog.msg_06cd");
       return;
     }
 

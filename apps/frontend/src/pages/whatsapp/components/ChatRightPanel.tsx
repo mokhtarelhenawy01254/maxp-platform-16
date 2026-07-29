@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { getBestContactDisplayName } from '../whatsappContactDisplay';
 
@@ -177,11 +178,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     const actualCategoryId = categoryId === 'none' ? null : categoryId;
     try {
       await apiClient.put("/whatsapp/contacts/" + contact.id, { leadCategoryId: actualCategoryId });
-      toast.success('تم تحديث التصنيف');
+      tToast.success("whatsapp_ChatRightPanel.success_update_506f");
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch {
       setSelectedCategoryId(prevCategoryId);
-      toast.error('فشل تحديث التصنيف');
+      tToast.error("whatsapp_ChatRightPanel.failed_update_1f8e");
     } finally {
       setUpdatingCategory(false);
     }

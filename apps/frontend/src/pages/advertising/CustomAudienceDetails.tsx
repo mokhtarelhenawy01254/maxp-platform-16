@@ -15,6 +15,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCustomAudience,
@@ -59,7 +60,7 @@ const CustomAudienceDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      toast.success("تم حذف الجمهور بنجاح");
+      tToast.success("advertising_CustomAudienceDetails.success_delete_12fd");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

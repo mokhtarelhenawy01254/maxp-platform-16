@@ -135,7 +135,7 @@ const LoyaltyPrograms: React.FC = () => {
       fetchPrograms();
     } catch (error) {
       console.error("Error saving program:", error);
-      alert("حدث خطأ أثناء حفظ البرنامج");
+      alert(i18n.t("customers_LoyaltyPrograms.error_error_b7ee"));
     } finally {
       setIsSaving(false);
     }
@@ -148,7 +148,7 @@ const LoyaltyPrograms: React.FC = () => {
       fetchPrograms();
     } catch (error) {
       console.error("Error deleting program:", error);
-      alert("حدث خطأ أثناء الحذف");
+      alert(i18n.t("customers_LoyaltyPrograms.error_error_a7e1"));
     }
   };
 

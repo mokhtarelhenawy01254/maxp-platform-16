@@ -171,7 +171,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert("فشل حفظ النتيجة الرئيسية");
+      alert(i18n.t("super-admin_DevGoalDetails.failed_save_181b"));
     }
   };
 
@@ -185,7 +185,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert("فشل الحذف");
+      alert(i18n.t("super-admin_DevGoalDetails.msg_892b"));
     }
   };
 
@@ -205,7 +205,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert("فشل إضافة المراجعة");
+      alert(i18n.t("super-admin_DevGoalDetails.failed_add_9743"));
     }
   };
 
@@ -219,7 +219,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert("فشل تحديث التقدم");
+      alert(i18n.t("super-admin_DevGoalDetails.failed_update_f56b"));
     }
   };
 

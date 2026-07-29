@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Loader2, Store } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -76,11 +77,11 @@ const BusinessProfileDialog: React.FC<BusinessProfileDialogProps> = ({
         sessionId,
         ...profile,
       });
-      toast.success("تم تحديث ملف الأعمال بنجاح");
+      tToast.success("components_BusinessProfileDialog.success_update_9be1");
       onClose();
     } catch (error) {
       console.error("Error updating business profile:", error);
-      toast.error("فشل تحديث ملف الأعمال");
+      tToast.error("components_BusinessProfileDialog.failed_update_5c61");
     } finally {
       setLoading(false);
     }

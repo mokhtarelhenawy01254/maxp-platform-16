@@ -92,7 +92,7 @@ const ReceiptFormSection: React.FC = () => {
   };
 
   const handleGeneratePDF = () => {
-    alert("جاري توليد ملف PDF وحفظه في سجلات الموظف...");
+    alert(i18n.t("hr_ReceiptFormSection.msg_ad05"));
   };
 
   useEffect(() => {
@@ -144,7 +144,7 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Available Assets:", assets);
 
     if (!selectedEmployee || !selectedAsset) {
-      alert("الرجاء اختيار الموظف والأصل");
+      alert(i18n.t("hr_ReceiptFormSection.msg_c899"));
       return;
     }
 
@@ -155,12 +155,12 @@ const ReceiptFormSection: React.FC = () => {
     console.log("Found Asset:", asset);
 
     if (!employee) {
-      alert("لم يتم العثور على الموظف المختار");
+      alert(i18n.t("hr_ReceiptFormSection.msg_0eef"));
       return;
     }
 
     if (!asset) {
-      alert("لم يتم العثور على الأصل المختار");
+      alert(i18n.t("hr_ReceiptFormSection.msg_3fad"));
       return;
     }
 

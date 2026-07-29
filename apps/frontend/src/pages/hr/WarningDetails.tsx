@@ -22,6 +22,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Warning {
   id: string;
@@ -79,7 +80,7 @@ const WarningDetails: React.FC = () => {
 
     try {
       await api.delete(`/hr/warnings/${id}`);
-      toast.success("تم حذف الإنذار بنجاح");
+      tToast.success("hr_WarningDetails.success_delete_d2a6");
       navigate("/hr/warnings");
     } catch (error: any) {
       console.error("Error deleting warning:", error);

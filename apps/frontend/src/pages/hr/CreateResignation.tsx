@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { Save, ArrowRight, FileX, Calculator, AlertCircle } from "lucide-react";
 import api from "../../services/api";
 
@@ -66,7 +67,7 @@ const CreateResignation = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("فشل في تحميل البيانات");
+        tToast.error("hr_CreateResignation.failed_load_4801");
       }
     };
     fetchData();
@@ -101,13 +102,13 @@ const CreateResignation = () => {
 
       // Validate employeeId before submitting
       if (!data.employeeId || data.employeeId.trim() === "") {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("hr_CreateResignation.msg_640c");
         return;
       }
 
       console.log("Submitting resignation data:", data);
       await api.post("/hr/resignations", data);
-      toast.success("تم تسجيل الاستقالة بنجاح");
+      tToast.success("hr_CreateResignation.success_login_7609");
       navigate("/hr/resignations");
     } catch (error: any) {
       console.error("Error creating resignation:", error);

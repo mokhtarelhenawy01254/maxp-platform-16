@@ -8,6 +8,7 @@ import {
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
 
 interface ProductVariant {
@@ -220,7 +221,7 @@ const SimplifiedProductSelectionModal: React.FC<
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error("فشل في جلب المنتجات");
+      tToast.error("orders_SimplifiedProductSelectionModal.failed_fetch_c827");
     } finally {
       setLoading(false);
     }
@@ -249,7 +250,7 @@ const SimplifiedProductSelectionModal: React.FC<
     } else {
       // ✅ Check stock for products without variants
       if (product.stock !== undefined && product.stock <= 0) {
-        toast.error("هذا المنتج غير متوفر في المخزون");
+        tToast.error("orders_SimplifiedProductSelectionModal.msg_0e6c");
         return;
       }
       onProductSelected(product);
@@ -260,7 +261,7 @@ const SimplifiedProductSelectionModal: React.FC<
     if (selectedProduct) {
       // ✅ Check stock
       if (variant.stock !== undefined && variant.stock <= 0) {
-        toast.error("هذا المنتج غير متوفر في المخزون");
+        tToast.error("orders_SimplifiedProductSelectionModal.msg_0e6c");
         return;
       }
 

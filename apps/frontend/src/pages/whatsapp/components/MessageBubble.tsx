@@ -14,6 +14,7 @@ import {
   Radio,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import api from "../../../services/api";
 
 import { cn } from "@/lib/utils";
@@ -95,7 +96,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
           sessionId,
           correction: correctionText,
         });
-        toast.success('تم تصحيح الرد وتعليم الوكيل ✅');
+        tToast.success("whatsapp_MessageBubble.msg_fbfd");
         setIsEditing(false);
         setCorrectionText('');
         onCorrect?.();

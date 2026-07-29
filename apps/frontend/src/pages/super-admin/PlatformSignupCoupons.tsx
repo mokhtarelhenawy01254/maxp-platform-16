@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BusinessFilterSheet,
@@ -270,7 +271,7 @@ const PlatformSignupCoupons: React.FC = () => {
       setSummary(response.summary);
     } catch (error) {
       console.error("Failed to load platform signup coupons", error);
-      toast.error("فشل تحميل كوبونات التسجيل");
+      tToast.error("super-admin_PlatformSignupCoupons.failed_load_ccaf");
     } finally {
       setLoading(false);
     }
@@ -365,7 +366,7 @@ const PlatformSignupCoupons: React.FC = () => {
         setCoupons((previous) =>
           previous.filter((coupon) => coupon.id !== couponPendingRemoval.id),
         );
-        toast.success("تم حذف كوبون التسجيل");
+        tToast.success("super-admin_PlatformSignupCoupons.success_delete_6248");
       } else {
         setCoupons((previous) =>
           previous.map((coupon) =>
@@ -374,7 +375,7 @@ const PlatformSignupCoupons: React.FC = () => {
               : coupon,
           ),
         );
-        toast.success("تم إيقاف الكوبون مع الاحتفاظ بسجل الاستخدام");
+        tToast.success("super-admin_PlatformSignupCoupons.msg_42c7");
       }
 
       setCouponPendingRemoval(null);

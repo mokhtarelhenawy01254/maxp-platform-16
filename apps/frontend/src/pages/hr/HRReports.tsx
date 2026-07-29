@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Progress } from "../../components/ui/progress";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   PieChart,
   Pie,
@@ -266,7 +267,7 @@ const HRReports: React.FC = () => {
    */
   const handleExport = () => {
     if (!payrollReport && activeTab === "payroll") {
-      toast.error("لا توجد بيانات للتصدير");
+      tToast.error("hr_HRReports.msg_80be");
       return;
     }
 
@@ -297,7 +298,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("تم تصدير التقرير بنجاح");
+      tToast.success("hr_HRReports.msg_ed25");
     } else {
       // Basic export for other tabs
       let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
@@ -316,7 +317,7 @@ const HRReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("تم تصدير ملف تجريبي للتقرير");
+      tToast.success("hr_HRReports.msg_4045");
     }
   };
 

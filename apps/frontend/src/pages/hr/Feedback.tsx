@@ -51,6 +51,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -125,7 +126,7 @@ const Feedback: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error fetching feedback:", error);
-      toast.error("فشل في جلب التغذية الراجعة");
+      tToast.error("hr_Feedback.failed_fetch_9062");
     } finally {
       setLoading(false);
     }
@@ -200,13 +201,13 @@ const Feedback: React.FC = () => {
     try {
       const response = await api.delete(`/hr/feedback/${id}`);
       if (response.data.success) {
-        toast.success("تم حذف التغذية الراجعة بنجاح");
+        tToast.success("hr_Feedback.success_delete_0947");
         setFeedback((prev) => prev.filter((item) => item.id !== id));
         fetchStats();
       }
     } catch (error) {
       console.error("Error deleting feedback:", error);
-      toast.error("فشل في حذف التغذية الراجعة");
+      tToast.error("hr_Feedback.failed_delete_e7e4");
     }
   };
 
@@ -225,7 +226,7 @@ const Feedback: React.FC = () => {
 
       if (response.data.success) {
         console.log("✅ Reply sent successfully:", response.data);
-        toast.success("تم إرسال الرد بنجاح");
+        tToast.success("hr_Feedback.success_send_a8d1");
         setFeedback((prev) =>
           prev.map((f) =>
             f.id === selectedFeedback.id

@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { WorkReportFillContext, WorkReportField, WorkReportFieldValue } from "./types";
 import {
@@ -155,7 +156,7 @@ const WorkReportSubmissionPage: React.FC = () => {
         reportDate,
         values: buildSubmitPayload(),
       });
-      toast.success("تم حفظ التقرير");
+      tToast.success("hr_WorkReportSubmissionPage.success_save_2d7a");
       fetchContext();
     } catch (error: any) {
       console.error("Error submitting report:", error);

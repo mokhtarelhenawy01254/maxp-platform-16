@@ -110,7 +110,7 @@ const FacebookSetupGuide: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("تم نسخ النص إلى الحافظة");
+    alert(i18n.t("components_FacebookSetupGuide.msg_1aca"));
   };
 
   return (

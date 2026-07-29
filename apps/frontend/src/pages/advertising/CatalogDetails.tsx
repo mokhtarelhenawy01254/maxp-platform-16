@@ -19,6 +19,7 @@ import {
   ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookProductCatalog,
@@ -68,7 +69,7 @@ const CatalogDetails: React.FC = () => {
       setProducts(result.data);
     } catch (error: any) {
       console.error("Error loading catalog products:", error);
-      toast.error("فشل في تحميل المنتجات");
+      tToast.error("advertising_CatalogDetails.failed_load_53c9");
     } finally {
       setLoadingProducts(false);
     }
@@ -107,7 +108,7 @@ const CatalogDetails: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCatalog(id);
-      toast.success("تم حذف Catalog بنجاح");
+      tToast.success("advertising_CatalogDetails.success_delete_6559");
       navigate("/advertising/facebook-ads/catalogs");
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف Catalog");
@@ -275,7 +276,7 @@ const CatalogDetails: React.FC = () => {
           <button
             onClick={() => {
               navigator.clipboard.writeText(`${window.location.origin}/api/v1/public/products/feed/${catalog.id}.xml`);
-              toast.success("تم نسخ الرابط");
+              tToast.success("advertising_CatalogDetails.msg_fa82");
             }}
             className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
           >

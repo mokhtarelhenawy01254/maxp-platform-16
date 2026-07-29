@@ -22,6 +22,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface EmployeeAttendanceData {
@@ -160,11 +162,11 @@ const OwnerAttendanceReport: React.FC = () => {
       if (response.data.success) {
         setReportData(response.data.data);
       } else {
-        toast.error(response.data.message || "فشل تحميل التقرير");
+        toast.error(response.data.message || i18n.t("owner_OwnerAttendanceReport.failed_load_cef6"));
       }
     } catch (error) {
       console.error("Failed to fetch report", error);
-      toast.error("فشل تحميل التقرير");
+      tToast.error("owner_OwnerAttendanceReport.failed_load_cef6");
     } finally {
       setIsLoading(false);
     }
@@ -248,11 +250,11 @@ const OwnerAttendanceReport: React.FC = () => {
         await generateExcelReport();
       }
 
-      toast.success("تم إنشاء التقرير بنجاح");
+      tToast.success("owner_OwnerAttendanceReport.success_create_27b7");
       setShowReportModal(false);
     } catch (error) {
       console.error("Error generating report:", error);
-      toast.error("فشل في إنشاء التقرير");
+      tToast.error("owner_OwnerAttendanceReport.failed_create_878d");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -514,9 +516,9 @@ const OwnerAttendanceReport: React.FC = () => {
       link.download = `detailed-attendance-${startDate}-to-${endDate}.csv`;
       link.click();
 
-      toast.success("تم تصدير التقرير");
+      tToast.success("owner_OwnerAttendanceReport.msg_6004");
     } catch (error) {
-      toast.error("فشل التصدير");
+      tToast.error("owner_OwnerAttendanceReport.msg_6657");
     } finally {
       setIsExporting(false);
     }

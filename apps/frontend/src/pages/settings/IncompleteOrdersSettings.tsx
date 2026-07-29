@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { CheckCircleIcon, ArrowPathIcon, ClockIcon } from "@heroicons/react/24/outline";
 
 const MIN_HOURS = 1;
@@ -29,7 +30,7 @@ const IncompleteOrdersSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching incomplete order settings:", error);
-      toast.error("خطأ في جلب إعدادات الطلبات غير المكتملة");
+      tToast.error("settings_IncompleteOrdersSettings.error_fetch_53e5");
     } finally {
       setLoading(false);
     }
@@ -48,12 +49,12 @@ const IncompleteOrdersSettings: React.FC = () => {
       });
 
       if (response.data?.success) {
-        toast.success("تم حفظ الإعدادات بنجاح");
+        tToast.success("settings_IncompleteOrdersSettings.success_save_8fed");
         fetchSettings();
       }
     } catch (error) {
       console.error("Error saving incomplete order settings:", error);
-      toast.error("خطأ في حفظ الإعدادات");
+      tToast.error("settings_IncompleteOrdersSettings.error_save_bccf");
     } finally {
       setSaving(false);
     }

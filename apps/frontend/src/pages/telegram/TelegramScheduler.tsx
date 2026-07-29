@@ -17,6 +17,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Plus, XCircle, Clock, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 const TelegramScheduler = () => {
   const [scheduledMessages, setScheduledMessages] = useState([]);
@@ -43,7 +44,7 @@ const TelegramScheduler = () => {
     if (!formData.userbotConfigId || cleanChatIds.length === 0 || !formData.message) { setError("يرجى ملء جميع الحقول المطلوبة"); return; }
     if (formData.scheduledTime < new Date()) { setError("لا يمكن جدولة رسالة في وقت ماضٍ"); return; }
     setLoading(true);
-    try { await apiClient.post("/api/v1/telegram-advanced/scheduled-messages", { ...formData, chatIds: cleanChatIds }); fetchScheduledMessages(); setOpenDialog(false); toast.success("تم جدولة الرسالة بنجاح"); }
+    try { await apiClient.post("/api/v1/telegram-advanced/scheduled-messages", { ...formData, chatIds: cleanChatIds }); fetchScheduledMessages(); setOpenDialog(false); tToast.success("telegram_TelegramScheduler.msg_5a62"); }
     catch { setError("فشل جدولة الرسالة"); } finally { setLoading(false); }
   };
 

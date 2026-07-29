@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import {
     TicketIcon,
     PlusCircleIcon,
@@ -46,7 +48,7 @@ const TurboTickets: React.FC = () => {
             }
         } catch (error) {
             console.error("Error loading tickets:", error);
-            toast.error("فشل تحميل التذاكر");
+            tToast.error("settings_TurboTickets.failed_load_c772");
             setTickets([]);
         } finally {
             setLoadingTickets(false);
@@ -88,11 +90,11 @@ const TurboTickets: React.FC = () => {
 
     const handleSendTicket = async () => {
         if (!ticketDescription.trim()) {
-            toast.error("يرجى كتابة وصف للتذكرة");
+            tToast.error("settings_TurboTickets.msg_1e25");
             return;
         }
         if (!inquiryTypeId) {
-            toast.error("يرجى اختيار نوع الاستفسار");
+            tToast.error("settings_TurboTickets.msg_4493");
             return;
         }
         try {
@@ -105,13 +107,13 @@ const TurboTickets: React.FC = () => {
                 categoryId: Number(inquiryTypeId),
             });
             if (response.data.success) {
-                toast.success("✅ تم إرسال التذكرة بنجاح");
+                tToast.success("settings_TurboTickets.success_send_9cde");
                 setTicketDescription("");
                 setInquiryTypeId("");
                 setShowForm(false);
                 loadTickets(); // refresh the list
             } else {
-                toast.error(response.data.message || "فشل إرسال التذكرة");
+                toast.error(response.data.message || i18n.t("settings_TurboTickets.failed_send_e199"));
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || "حدث خطأ أثناء إرسال التذكرة");

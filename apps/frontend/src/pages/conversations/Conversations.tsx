@@ -577,7 +577,7 @@ const Conversations: React.FC = () => {
       }
     } catch (error) {
       console.error("❌ Error sending message:", error);
-      alert("حدث خطأ أثناء إرسال الرسالة");
+      alert(i18n.t("conversations_Conversations.error_error_e429"));
       setNewMessage(messageContent); // إرجاع الرسالة في حالة الفشل
     }
   };

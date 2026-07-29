@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   ArrowPathIcon,
   CloudArrowDownIcon,
@@ -81,7 +82,7 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
       toast.success(`تم إضافة الحالة "${val}"`);
       if (customStatusRef.current) customStatusRef.current.value = "";
     } else if (val && settingsForm.statusMapping?.[val]) {
-      toast.error("هذه الحالة موجودة بالفعل");
+      tToast.error("woocommerce_StatusMappingTab.msg_d2df");
     }
   };
 

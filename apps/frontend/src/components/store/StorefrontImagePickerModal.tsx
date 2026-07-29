@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import imageGalleryService, {
   GalleryImage,
 } from "../../services/imageGalleryService";
@@ -45,7 +46,7 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         setImages(nextImages);
       } catch (error) {
         console.error("Error loading storefront image gallery:", error);
-        toast.error("تعذر تحميل حافظة الصور");
+        tToast.error("components_StorefrontImagePickerModal.unable_load_cffc");
       } finally {
         setIsLoading(false);
       }
@@ -76,11 +77,11 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         ...current.filter((image) => image.id !== uploadedImage.id),
       ]);
       onSelectImage(uploadedImage.url);
-      toast.success("تم رفع الصورة واختيارها");
+      tToast.success("components_StorefrontImagePickerModal.msg_6895");
       onClose();
     } catch (error) {
       console.error("Error uploading storefront image:", error);
-      toast.error("فشل رفع الصورة");
+      tToast.error("components_StorefrontImagePickerModal.msg_6cd9");
     } finally {
       setIsUploading(false);
     }

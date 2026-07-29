@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   checkoutFormSettingsService,
   CheckoutFormSettingsUpdate,
@@ -83,7 +84,7 @@ export const useCheckoutFormSettings = (
       setSettings(normalized);
     } catch (error) {
       console.error("Error loading checkout form settings:", error);
-      toast.error("خطأ في تحميل إعدادات الشيك أوت");
+      tToast.error("hooks_useCheckoutFormSettings.error_load_c04f");
       const fallback = normalizeCheckoutFormSettings(null);
       settingsRef.current = fallback;
       setSettings(fallback);
@@ -125,14 +126,14 @@ export const useCheckoutFormSettings = (
       const payload = buildUpdatePayload(normalized);
       await checkoutFormSettingsService.updateSettings(payload);
       if (!options.silent) {
-        toast.success("تم حفظ الإعدادات بنجاح");
+        tToast.success("hooks_useCheckoutFormSettings.success_save_db4a");
       }
       await loadSettings();
       return true;
     } catch (error) {
       console.error("Error saving checkout form settings:", error);
       if (!options.silent) {
-        toast.error("خطأ في حفظ إعدادات الشيك أوت");
+        tToast.error("hooks_useCheckoutFormSettings.error_save_d031");
       }
       return false;
     } finally {
@@ -149,11 +150,11 @@ export const useCheckoutFormSettings = (
     try {
       setSaving(true);
       await checkoutFormSettingsService.resetSettings();
-      toast.success("تم إعادة تعيين الإعدادات بنجاح");
+      tToast.success("hooks_useCheckoutFormSettings.msg_7e92");
       await loadSettings();
     } catch (error) {
       console.error("Error resetting checkout form settings:", error);
-      toast.error("خطأ في إعادة تعيين إعدادات الشيك أوت");
+      tToast.error("hooks_useCheckoutFormSettings.msg_6249");
     } finally {
       setSaving(false);
     }

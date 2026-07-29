@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { EyeIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -35,9 +36,9 @@ export default function ServiceOrdersPage() {
         body: JSON.stringify({ status }),
       });
       const d = await r.json();
-      if (d.success) { toast.success("تم التحديث"); fetchOrders(); }
+      if (d.success) { tToast.success("admin_ServiceOrdersPage.msg_1aba"); fetchOrders(); }
       else toast.error(d.error);
-    } catch (e) { toast.error("حدث خطأ"); }
+    } catch (e) { tToast.error("admin_ServiceOrdersPage.error_error_1393"); }
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>;

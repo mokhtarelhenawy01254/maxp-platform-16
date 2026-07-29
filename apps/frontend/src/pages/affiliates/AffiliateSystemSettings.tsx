@@ -4,6 +4,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getBaseDomain } from "../../utils/storeUrl";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { copyAffiliateText } from "./affiliateClipboard";
 import {
   LinkIcon,
@@ -292,7 +293,7 @@ const AffiliateSystemSettings: React.FC = () => {
 
                       const copied = await copyAffiliateText(link);
                       if (copied) {
-                        toast.success("تم نسخ الرابط بنجاح");
+                        tToast.success("affiliates_AffiliateSystemSettings.msg_66a5");
                       } else {
                         toast.error(
                           "لم نتمكن من النسخ تلقائياً، انسخ الرابط يدوياً من الحقل.",

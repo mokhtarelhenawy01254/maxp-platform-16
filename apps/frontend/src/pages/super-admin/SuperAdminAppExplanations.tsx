@@ -203,7 +203,7 @@ const SuperAdminAppExplanations: React.FC = () => {
             fetchExplanations();
         } catch (err) {
             console.error(err);
-            alert("حدث خطأ أثناء الحذف");
+            alert(i18n.t("super-admin_SuperAdminAppExplanations.error_error_62e5"));
         }
     };
 

@@ -8,6 +8,7 @@ import {
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
@@ -71,7 +72,7 @@ const ResetPassword: React.FC = () => {
 
   useEffect(() => {
     if (!token) {
-      toast.error("رمز إعادة التعيين غير صحيح");
+      tToast.error("auth_ResetPassword.msg_db5c");
       navigate("/auth/forgot-password");
     }
   }, [navigate, token]);
@@ -86,7 +87,7 @@ const ResetPassword: React.FC = () => {
       });
 
       setIsSuccess(true);
-      toast.success("تم إعادة تعيين كلمة المرور بنجاح");
+      tToast.success("auth_ResetPassword.msg_75cd");
       setTimeout(() => navigate("/auth/login"), 2000);
     } catch (error: any) {
       const message =

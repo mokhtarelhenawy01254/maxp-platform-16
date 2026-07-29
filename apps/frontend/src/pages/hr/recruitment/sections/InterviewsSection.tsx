@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -88,7 +89,7 @@ const InterviewsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching interviews:", error);
-      toast.error("فشل في جلب المقابلات");
+      tToast.error("hr_InterviewsSection.failed_fetch_cbf5");
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ const InterviewsSection: React.FC = () => {
         !newInterview.date ||
         !newInterview.time
       ) {
-        toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+        tToast.error("hr_InterviewsSection.msg_faf7");
         return;
       }
 
@@ -139,7 +140,7 @@ const InterviewsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم جدولة المقابلة بنجاح 🎉");
+        tToast.success("hr_InterviewsSection.msg_d55d");
         setShowScheduleModal(false);
         resetForm();
         fetchInterviews();
@@ -157,12 +158,12 @@ const InterviewsSection: React.FC = () => {
         { status },
       );
       if (response.data.success) {
-        toast.success("تم تحديث الحالة بنجاح");
+        tToast.success("hr_InterviewsSection.success_update_a5d2");
         fetchInterviews();
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error("فشل تحديث الحالة");
+      tToast.error("hr_InterviewsSection.failed_update_fa1c");
     }
   };
 

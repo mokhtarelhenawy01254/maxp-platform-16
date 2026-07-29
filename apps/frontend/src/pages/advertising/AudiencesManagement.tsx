@@ -15,6 +15,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   FacebookCustomAudience,
@@ -59,7 +60,7 @@ const AudiencesManagement: React.FC = () => {
     setRefreshing(true);
     await loadAudiences();
     setRefreshing(false);
-    toast.success("تم تحديث البيانات");
+    tToast.success("advertising_AudiencesManagement.success_update_1209");
   };
 
   const handleCreateCustomAudience = () => {
@@ -79,7 +80,7 @@ const AudiencesManagement: React.FC = () => {
 
     try {
       await facebookAdsService.deleteCustomAudience(id);
-      toast.success("تم حذف الجمهور بنجاح");
+      tToast.success("advertising_AudiencesManagement.success_delete_e963");
       await loadAudiences();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "فشل في حذف الجمهور");

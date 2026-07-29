@@ -62,7 +62,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
       } catch (error) {
         console.error("Error uploading image:", error);
-        alert("فشل في رفع الصورة");
+        alert(i18n.t("components_RichTextEditor.msg_c246"));
       }
     };
   }, []);

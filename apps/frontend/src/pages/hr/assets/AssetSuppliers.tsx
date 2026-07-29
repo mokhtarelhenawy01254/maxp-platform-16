@@ -51,7 +51,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
-      alert("فشل في إضافة المورد");
+      alert(i18n.t("hr_AssetSuppliers.failed_add_606a"));
     } finally {
       setAdding(false);
     }
@@ -69,7 +69,7 @@ const AssetSuppliers: React.FC = () => {
       }
     } catch (error) {
       console.error("Error deleting supplier:", error);
-      alert("فشل في حذف المورد. قد يكون مرتبطاً بطلبات شراء أو أصول.");
+      alert(i18n.t("hr_AssetSuppliers.failed_delete_4959"));
     }
   };
 

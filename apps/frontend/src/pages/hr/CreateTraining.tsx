@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Save,
   ArrowRight,
@@ -112,7 +113,7 @@ const CreateTraining = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("فشل في تحميل البيانات");
+        tToast.error("hr_CreateTraining.failed_load_7dfb");
       } finally {
         setFetching(false);
       }
@@ -125,7 +126,7 @@ const CreateTraining = () => {
       setLoading(true);
 
       if (!data.employeeId || data.employeeId.trim() === "") {
-        toast.error("يجب اختيار الموظف");
+        tToast.error("hr_CreateTraining.msg_e5a0");
         return;
       }
 
@@ -139,10 +140,10 @@ const CreateTraining = () => {
 
       if (isEdit) {
         await api.put(`/hr/trainings/${id}`, payload);
-        toast.success("تم تحديث البرنامج التدريبي بنجاح");
+        tToast.success("hr_CreateTraining.success_update_d670");
       } else {
         await api.post("/hr/trainings", payload);
-        toast.success("تم إضافة البرنامج التدريبي بنجاح");
+        tToast.success("hr_CreateTraining.success_add_818b");
       }
 
       navigate("/hr/training");
@@ -160,7 +161,7 @@ const CreateTraining = () => {
     try {
       setLoading(true);
       await api.delete(`/hr/trainings/${id}`);
-      toast.success("تم حذف السجل التدريبي بنجاح");
+      tToast.success("hr_CreateTraining.success_delete_b773");
       navigate("/hr/training");
     } catch (error: any) {
       console.error("Error deleting training:", error);

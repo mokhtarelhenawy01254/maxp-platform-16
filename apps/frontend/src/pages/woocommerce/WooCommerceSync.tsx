@@ -10,6 +10,7 @@ import {
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 // Types
@@ -92,7 +93,7 @@ export default function WooCommerceSync() {
 
   const syncNow = async () => {
     if (!currentSettings?.syncEnabled) {
-      toast.error("يرجى تفعيل المزامنة أولاً من الإعدادات");
+      tToast.error("woocommerce_WooCommerceSync.please_activate_dc67");
       return;
     }
 
@@ -106,13 +107,13 @@ export default function WooCommerceSync() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم بدء المزامنة بنجاح");
+        tToast.success("woocommerce_WooCommerceSync.msg_3a63");
         loadSyncLogs();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error("فشل بدء المزامنة");
+      tToast.error("woocommerce_WooCommerceSync.msg_56af");
     }
   };
 

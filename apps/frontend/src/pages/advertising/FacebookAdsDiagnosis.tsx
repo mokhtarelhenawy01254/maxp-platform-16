@@ -17,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
@@ -430,7 +431,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
       loadData(id),
       loadBreakdowns(id),
     ]);
-    toast.success("تم تحديث بيانات التشخيص");
+    tToast.success("advertising_FacebookAdsDiagnosis.success_update_aa38");
   };
 
   if (loading || contextLoading) {

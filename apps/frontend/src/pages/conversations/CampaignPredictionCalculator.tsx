@@ -248,7 +248,7 @@ const CampaignPredictionCalculator: React.FC = () => {
 
   const saveScenario = () => {
     if (!inputs.campaignName) {
-      alert("الرجاء إدخال اسم للحملة قبل الحفظ");
+      alert(i18n.t("conversations_CampaignPredictionCalculator.msg_1512"));
       return;
     }
 
@@ -263,7 +263,7 @@ const CampaignPredictionCalculator: React.FC = () => {
     const updated = [...savedScenarios, newScenario];
     setSavedScenarios(updated);
     localStorage.setItem("campaignScenarios", JSON.stringify(updated));
-    alert("تم حفظ السيناريو بنجاح!");
+    alert(i18n.t("conversations_CampaignPredictionCalculator.success_save_3135"));
   };
 
   // Calculation functions

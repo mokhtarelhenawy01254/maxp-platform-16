@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 import orderConfirmationService, {
   type OrderConfirmationSettings as OrderConfirmationSettingsType,
   type OrderConfirmationProduct,
@@ -227,7 +228,7 @@ const OrderConfirmationSettings: React.FC = () => {
       const res = await orderConfirmationService.updateSettings(payload);
       setSettings(res.data);
       await loadEligibleUsers();
-      toast.success('تم حفظ الإعدادات');
+      tToast.success("settings_OrderConfirmationSettings.success_save_8804");
     } catch (error: any) {
       toast.error(error?.message || 'فشل حفظ الإعدادات');
     } finally {

@@ -15,6 +15,7 @@ import { Badge } from "../../components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Training {
   id: string;
@@ -49,7 +50,7 @@ const Training: React.FC = () => {
       setTrainings(response.data.trainings || []);
     } catch (error) {
       console.error("Error fetching trainings:", error);
-      toast.error("فشل في جلب سجلات التدريب");
+      tToast.error("hr_Training.failed_fetch_8c5b");
     } finally {
       setLoading(false);
     }

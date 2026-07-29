@@ -651,7 +651,7 @@ const TelegramConversationsPro: React.FC = () => {
       toast.success(newStatus ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
     } catch (err) {
       console.error(err);
-      toast.error('فشل تحديث حالة الرد الآلي');
+      tToast.error("conversations_TelegramConversationsPro.failed_update_status_ffd1");
     }
   };
 

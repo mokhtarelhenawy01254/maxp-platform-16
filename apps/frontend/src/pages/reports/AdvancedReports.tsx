@@ -268,12 +268,12 @@ const AdvancedReports: React.FC = () => {
       );
 
       if (response.data.success) {
-        alert("تم إنشاء التقرير بنجاح");
+        alert(i18n.t("reports_AdvancedReports.success_create_fc99"));
         console.log("Report data:", response.data.data);
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      alert("فشل في إنشاء التقرير");
+      alert(i18n.t("reports_AdvancedReports.failed_create_649d"));
     }
   };
 

@@ -164,10 +164,10 @@ const DevTeam = () => {
       if (data.success) {
         fetchTeamMembers();
       } else {
-        alert(data.error || "فشل في حذف العضو");
+        alert(data.error || i18n.t("super-admin_DevTeam.failed_delete_b4ec"));
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("super-admin_DevTeam.msg_e835"));
     }
   };
 
@@ -451,7 +451,7 @@ const TeamMemberFormModal: React.FC<{
     e.preventDefault();
 
     if (!member && !formData.userId) {
-      alert("يرجى اختيار مستخدم");
+      alert(i18n.t("super-admin_DevTeam.msg_9a18"));
       return;
     }
 
@@ -491,7 +491,7 @@ const TeamMemberFormModal: React.FC<{
         alert(data.error || `فشل في ${member ? "تحديث" : "إنشاء"} العضو`);
       }
     } catch (err) {
-      alert("فشل في الاتصال بالخادم");
+      alert(i18n.t("super-admin_DevTeam.msg_e835"));
     } finally {
       setSaving(false);
     }

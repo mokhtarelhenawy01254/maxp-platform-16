@@ -105,7 +105,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleBlockCustomer = async () => {
     if (!pageId) {
-      alert("معرف الصفحة غير متوفر");
+      alert(i18n.t("components_CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -119,7 +119,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setIsBlocked(true);
       setShowBlockModal(false);
       setBlockReason("");
-      alert("تم حظر العميل على الصفحة بنجاح");
+      alert(i18n.t("components_CustomerProfile.msg_8262"));
     } catch (error: any) {
       alert(error.message || "فشل حظر العميل");
     } finally {
@@ -129,7 +129,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
 
   const handleUnblockCustomer = async () => {
     if (!pageId) {
-      alert("معرف الصفحة غير متوفر");
+      alert(i18n.t("components_CustomerProfile.msg_bf82"));
       return;
     }
 
@@ -141,7 +141,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setBlocking(true);
       await apiService.unblockCustomerOnPage(customerId, pageId);
       setIsBlocked(false);
-      alert("تم إلغاء حظر العميل بنجاح");
+      alert(i18n.t("components_CustomerProfile.msg_b667"));
     } catch (error: any) {
       alert(error.message || "فشل إلغاء حظر العميل");
     } finally {

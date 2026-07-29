@@ -1,5 +1,6 @@
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   AlertTriangle,
   BarChart3,
@@ -289,12 +290,12 @@ const MediaBuyingReports: React.FC = () => {
 
   const runAsyncReport = async () => {
     if (!fields.length) {
-      toast.error("اختر حقلًا واحدًا على الأقل");
+      tToast.error("advertising_MediaBuyingReports.msg_dd34");
       return;
     }
 
     if (dateMode === "range" && (!since || !until)) {
-      toast.error("حدد بداية ونهاية الفترة");
+      tToast.error("advertising_MediaBuyingReports.msg_c2d1");
       return;
     }
 
@@ -333,15 +334,15 @@ const MediaBuyingReports: React.FC = () => {
 
   const runSyncReport = async () => {
     if (!selectedAdAccountId) {
-      toast.error("اختر حسابًا إعلانيًا أولًا");
+      tToast.error("advertising_MediaBuyingReports.msg_17dc");
       return;
     }
     if (dateMode === "preset") {
-      toast.error("المعاينة السريعة تحتاج فترة مخصصة لأن endpoint الحالي يستقبل start/end");
+      tToast.error("advertising_MediaBuyingReports.msg_d8c5");
       return;
     }
     if (!since || !until) {
-      toast.error("حدد بداية ونهاية الفترة");
+      tToast.error("advertising_MediaBuyingReports.msg_c2d1");
       return;
     }
 

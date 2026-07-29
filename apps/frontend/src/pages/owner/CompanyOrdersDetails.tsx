@@ -19,6 +19,7 @@ import {
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../utils/statusRegistry";
@@ -148,11 +149,11 @@ const CompanyOrdersDetails: React.FC = () => {
         setTotalPages(response.data.data.pagination.totalPages);
         setTotal(response.data.data.pagination.total);
       } else {
-        toast.error("فشل تحميل البيانات");
+        tToast.error("owner_CompanyOrdersDetails.failed_load_e304");
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
-      toast.error("فشل تحميل الطلبات");
+      tToast.error("owner_CompanyOrdersDetails.failed_load_e2ac");
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +161,7 @@ const CompanyOrdersDetails: React.FC = () => {
 
   const handleExport = () => {
     if (orders.length === 0) {
-      toast.error("لا توجد طلبات للتصدير");
+      tToast.error("owner_CompanyOrdersDetails.msg_075a");
       return;
     }
 
@@ -199,7 +200,7 @@ const CompanyOrdersDetails: React.FC = () => {
     link.download = `orders-${company?.name}-${startDate}-to-${endDate}.csv`;
     link.click();
 
-    toast.success("تم تصدير التقرير");
+    tToast.success("owner_CompanyOrdersDetails.msg_9ac6");
   };
 
   const toggleOrderExpand = (orderId: string) => {

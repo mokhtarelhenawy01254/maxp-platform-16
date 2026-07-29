@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { storefrontApi } from "../utils/storefrontApi";
 import type {
@@ -171,12 +172,12 @@ export const useCheckout = ({
           discountAmount: Number(response.data?.discountAmount) || 0,
           type: response.data?.coupon?.type,
         });
-        toast.success("تم تطبيق الكوبون بنجاح");
+        tToast.success("hooks_useCheckout.msg_bdcc");
       } else {
         toast.error(response.error || "كوبون غير صالح");
       }
     } catch {
-      toast.error("خطأ في التحقق من الكوبون");
+      tToast.error("hooks_useCheckout.msg_64d9");
     } finally {
       setCouponLoading(false);
     }

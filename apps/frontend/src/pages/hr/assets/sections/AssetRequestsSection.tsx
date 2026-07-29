@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface AssetRequest {
   id: string;
@@ -95,7 +96,7 @@ const AssetRequestsSection: React.FC = () => {
 
   const handleCreateRequest = async () => {
     if (!newRequest.reason) {
-      toast.error("يرجى ذكر سبب الطلب");
+      tToast.error("hr_AssetRequestsSection.please_reason_9729");
       return;
     }
     try {
@@ -105,12 +106,12 @@ const AssetRequestsSection: React.FC = () => {
         newRequest,
       );
       if (response.data.success) {
-        toast.success("تم إرسال الطلب بنجاح");
+        tToast.success("hr_AssetRequestsSection.success_send_b0f3");
         setShowRequestModal(false);
         fetchRequests();
       }
     } catch (error) {
-      toast.error("فشل في إرسال الطلب");
+      tToast.error("hr_AssetRequestsSection.failed_send_3330");
     }
   };
 
@@ -132,7 +133,7 @@ const AssetRequestsSection: React.FC = () => {
         fetchRequests();
       }
     } catch (error) {
-      toast.error("فشل في تحديث حالة الطلب");
+      tToast.error("hr_AssetRequestsSection.failed_update_e7e1");
     }
   };
 

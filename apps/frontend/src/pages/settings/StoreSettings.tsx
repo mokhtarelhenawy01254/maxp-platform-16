@@ -12,6 +12,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 import {
   storeSettingsService,
@@ -1575,7 +1576,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         setEnabledMethods(["cod"]);
         setIsEditing(true);
       }
-      toast.success("تم إزالة إعدادات بوابة الدفع بنجاح");
+      tToast.success("settings_StoreSettings.msg_126b");
     } catch (error) {
       console.error("[DELETE] Failed to delete settings:", error);
       toast.error("حدث خطأ أثناء الحذف: " + (error?.message || "Unknown error"));
@@ -1610,7 +1611,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         });
         setIsEditing(false);
       }
-      toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
+      tToast.success("settings_StoreSettings.success_save_ccce");
     } catch (error) {
       console.error("[SAVE] Failed to save payment gateway settings:", error);
       toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));

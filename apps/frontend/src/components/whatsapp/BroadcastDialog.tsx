@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Loader2, Megaphone, Search } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -86,12 +87,12 @@ const BroadcastDialog: React.FC<BroadcastDialogProps> = ({
 
   const handleSendBroadcast = async () => {
     if (selectedContacts.length === 0) {
-      toast.warning("يرجى اختيار جهة اتصال واحدة على الأقل");
+      tToast.warning("components_BroadcastDialog.msg_995e");
       return;
     }
 
     if (!message.trim()) {
-      toast.warning("يرجى كتابة رسالة");
+      tToast.warning("components_BroadcastDialog.msg_7386");
       return;
     }
 

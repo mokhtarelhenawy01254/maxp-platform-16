@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Users,
   Plus,
@@ -73,7 +74,7 @@ const SavedAudiences: React.FC = () => {
       setAudiences(data || []);
     } catch (error) {
       console.error("Error loading audiences:", error);
-      toast.error("فشل في تحميل الجماهير");
+      tToast.error("advertising_SavedAudiences.failed_load_70fc");
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ const SavedAudiences: React.FC = () => {
 
   const handleCreate = async () => {
     if (!newAudience.name.trim()) {
-      toast.error("يرجى إدخال اسم الجمهور");
+      tToast.error("advertising_SavedAudiences.please_name_1f06");
       return;
     }
 
@@ -119,7 +120,7 @@ const SavedAudiences: React.FC = () => {
       }
       await facebookAdsService.createSavedAudience(audiencePayload);
 
-      toast.success("تم إنشاء الجمهور بنجاح! ✅");
+      tToast.success("advertising_SavedAudiences.success_create_a80c");
       setShowCreateModal(false);
       setNewAudience({
         name: "",
@@ -144,7 +145,7 @@ const SavedAudiences: React.FC = () => {
 
     try {
       await facebookAdsService.deleteSavedAudience(id);
-      toast.success("تم حذف الجمهور");
+      tToast.success("advertising_SavedAudiences.success_delete_e94c");
       setAudiences((prev) => prev.filter((a) => a.id !== id));
     } catch (error: any) {
       console.error("Error deleting audience:", error);

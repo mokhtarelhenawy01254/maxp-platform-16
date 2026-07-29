@@ -5,6 +5,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import ReactQuill from "react-quill";
 import DOMPurify from "dompurify";
 import "react-quill/dist/quill.snow.css";
@@ -54,7 +55,7 @@ const TermsAndConditions: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading content:", error);
-      toast.error("فشل تحميل المحتوى");
+      tToast.error("legal_TermsAndConditions.failed_load_0ab1");
     } finally {
       setLoading(false);
     }
@@ -70,11 +71,11 @@ const TermsAndConditions: React.FC = () => {
       localStorage.setItem("terms_and_conditions_date", now);
       setLastUpdated(now);
 
-      toast.success("تم حفظ الشروط والأحكام بنجاح");
+      tToast.success("legal_TermsAndConditions.success_save_3b44");
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving content:", error);
-      toast.error("فشل حفظ المحتوى");
+      tToast.error("legal_TermsAndConditions.failed_save_90be");
     } finally {
       setLoading(false);
     }

@@ -423,7 +423,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
     } catch (err: unknown) {
       console.error("Catalog diff fetch error:", err);
       setCatalogDiff(null);
-      setCatalogDiffError(getErrorMessage(err, "تعذر جلب تقرير الفرق"));
+      setCatalogDiffError(getErrorMessage(err, i18n.t("super-admin_SubscriptionCenter.unable_fetch_f426")));
       if (showToast) {
         tToast.error("subscriptionCenter.msg_b558");
       }

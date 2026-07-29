@@ -27,6 +27,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Progress } from "../../../components/ui/progress";
 import api from "../../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface EmployeeReportData {
   employee: {
@@ -158,25 +159,25 @@ const EmployeeReport: React.FC = () => {
       setEmployees(response.data?.employees || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      toast.error("فشل في جلب قائمة الموظفين");
+      tToast.error("hr_EmployeeReport.failed_fetch_50e6");
     }
   };
 
   const fetchReport = async () => {
     if (!selectedEmployee) {
-      toast.error("الرجاء اختيار موظف");
+      tToast.error("hr_EmployeeReport.msg_57a7");
       return;
     }
 
     if (!startDate || !endDate) {
-      toast.error("الرجاء تحديد الفترة الزمنية");
+      tToast.error("hr_EmployeeReport.msg_5832");
       return;
     }
 
     try {
       setLoading(true);
       if (new Date(startDate) > new Date(endDate)) {
-        toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+        tToast.error("hr_EmployeeReport.msg_8609");
         return;
       }
 
@@ -243,7 +244,7 @@ const EmployeeReport: React.FC = () => {
     link.download = `employee_report_${report.employee.name}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    toast.success("تم تصدير التقرير بنجاح");
+    tToast.success("hr_EmployeeReport.msg_9b34");
   };
 
   const handlePrint = () => {

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Group, Loader2, Search, Users } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -81,12 +82,12 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
 
   const handleCreate = async () => {
     if (!subject.trim()) {
-      toast.warning("يرجى إدخال اسم المجموعة");
+      tToast.warning("components_CreateGroupDialog.please_name_3daa");
       return;
     }
 
     if (selectedParticipants.length === 0) {
-      toast.warning("يرجى اختيار مشارك واحد على الأقل");
+      tToast.warning("components_CreateGroupDialog.msg_4c38");
       return;
     }
 
@@ -99,7 +100,7 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
       });
 
       if (response.data.success) {
-        toast.success("تم إنشاء المجموعة بنجاح");
+        tToast.success("components_CreateGroupDialog.success_create_6766");
         onGroupCreated(response.data.group);
         reset();
       }

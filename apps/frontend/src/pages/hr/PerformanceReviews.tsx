@@ -15,6 +15,7 @@ import { Badge } from "../../components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface PerformanceReview {
   id: string;
@@ -73,7 +74,7 @@ const PerformanceReviews: React.FC = () => {
       setReviews(response.data.reviews || []);
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      toast.error("فشل في جلب التقييمات");
+      tToast.error("hr_PerformanceReviews.failed_fetch_f64e");
     } finally {
       setLoading(false);
     }
@@ -84,11 +85,11 @@ const PerformanceReviews: React.FC = () => {
 
     try {
       await api.delete(`/hr/performance-reviews/${id}`);
-      toast.success("تم حذف التقييم بنجاح");
+      tToast.success("hr_PerformanceReviews.success_delete_9529");
       setReviews(reviews.filter((r) => r.id !== id));
     } catch (error) {
       console.error("Error deleting review:", error);
-      toast.error("فشل في حذف التقييم");
+      tToast.error("hr_PerformanceReviews.failed_delete_4e3b");
     }
   };
 

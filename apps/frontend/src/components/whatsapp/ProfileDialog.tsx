@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -82,11 +83,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("تم تحديث الملف الشخصي بنجاح");
+      tToast.success("components_ProfileDialog.success_update_7fa9");
       onClose();
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("فشل تحديث الملف الشخصي");
+      tToast.error("components_ProfileDialog.failed_update_293c");
     } finally {
       setLoading(false);
     }
@@ -102,11 +103,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         setName(profile.name || "");
         setStatus(profile.status || "");
         setPicturePreview(profile.profilePicUrl || null);
-        toast.success("تمت مزامنة البيانات من واتساب بنجاح");
+        tToast.success("components_ProfileDialog.msg_fc01");
       }
     } catch (error) {
       console.error("Error syncing profile:", error);
-      toast.error("فشل مزامنة البيانات من واتساب");
+      tToast.error("components_ProfileDialog.msg_5720");
     } finally {
       setLoading(false);
     }

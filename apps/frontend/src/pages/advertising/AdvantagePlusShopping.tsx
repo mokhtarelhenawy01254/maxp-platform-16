@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   ShoppingBag,
   Sparkles,
@@ -77,22 +78,22 @@ const AdvantagePlusShopping: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      toast.error("يرجى إدخال اسم الحملة");
+      tToast.error("advertising_AdvantagePlusShopping.please_name_2fae");
       return;
     }
 
     if (!formData.pixelId.trim()) {
-      toast.error("يرجى إدخال معرف Facebook Pixel");
+      tToast.error("advertising_AdvantagePlusShopping.msg_d0eb");
       return;
     }
 
     if (formData.budgetAmount < 1) {
-      toast.error("يرجى إدخال ميزانية صحيحة");
+      tToast.error("advertising_AdvantagePlusShopping.msg_fa84");
       return;
     }
 
     if (formData.countryTargeting.length === 0) {
-      toast.error("يرجى اختيار دولة واحدة على الأقل");
+      tToast.error("advertising_AdvantagePlusShopping.msg_9ca6");
       return;
     }
 
@@ -111,7 +112,7 @@ const AdvantagePlusShopping: React.FC = () => {
         campaignPayload,
       );
 
-      toast.success("تم إنشاء حملة Advantage+ Shopping بنجاح! 🛒");
+      tToast.success("advertising_AdvantagePlusShopping.success_create_aae3");
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error creating campaign:", error);

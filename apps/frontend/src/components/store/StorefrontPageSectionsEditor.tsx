@@ -3208,11 +3208,11 @@ export const StorefrontPageSectionsEditor: React.FC<
               if (name && name.trim()) {
                 const slug = name.trim().toLowerCase().replace(/\s+/g, "-");
                 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-                  alert("اسم الصفحة يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط.");
+                  alert(i18n.t("components_StorefrontPageSectionsEditor.msg_b0d6"));
                   return;
                 }
                 if (pageOverrides[slug as StorefrontPageKey] || activeTheme.pages[slug]) {
-                  alert("هذه الصفحة موجودة بالفعل.");
+                  alert(i18n.t("components_StorefrontPageSectionsEditor.msg_8a5e"));
                   return;
                 }
                 const nextOverrides = {

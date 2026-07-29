@@ -12,6 +12,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Merchant {
   id: string;
@@ -233,7 +234,7 @@ const MerchantsList: React.FC = () => {
         setMerchantPayouts(payoutsResponse.data.data || []);
       }
     } catch (_error: unknown) {
-      toast.error("حدث خطأ أثناء جلب التجار");
+      tToast.error("merchants_MerchantsList.error_error_2f2d");
     } finally {
       setLoading(false);
     }
@@ -252,7 +253,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم تسجيل تحويل مستحقات التاجر");
+        tToast.success("merchants_MerchantsList.success_login_3fe0");
         await loadMerchants();
       }
     } catch (error: unknown) {
@@ -275,7 +276,7 @@ const MerchantsList: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم إلغاء طلب سحب التاجر");
+        tToast.success("merchants_MerchantsList.msg_8395");
         await loadMerchants();
       }
     } catch (error: unknown) {

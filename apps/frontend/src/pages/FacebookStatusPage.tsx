@@ -40,7 +40,7 @@ const FacebookStatusPage: React.FC = () => {
       if (data.success) {
         setStatus(data.data);
       } else {
-        setError(data.error || "فشل في تحميل حالة Facebook");
+        setError(data.error || i18n.t("FacebookStatusPage_FacebookStatusPage.failed_load_c05f"));
       }
     } catch (err) {
       console.error("Error loading Facebook status:", err);
@@ -52,7 +52,7 @@ const FacebookStatusPage: React.FC = () => {
 
   const testMessageSend = async () => {
     if (!testMessage.trim() || !testRecipientId.trim()) {
-      alert("يرجى إدخال الرسالة ومعرف المستلم");
+      alert(i18n.t("FacebookStatusPage_FacebookStatusPage.msg_a055"));
       return;
     }
 
@@ -77,7 +77,7 @@ const FacebookStatusPage: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        alert("✅ تم إرسال الرسالة التجريبية بنجاح!");
+        alert(i18n.t("FacebookStatusPage_FacebookStatusPage.success_send_7129"));
         console.log("Test result:", data.data);
       } else {
         alert(`❌ فشل في إرسال الرسالة التجريبية: ${data.error}`);
@@ -85,7 +85,7 @@ const FacebookStatusPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Error testing message:", err);
-      alert("خطأ في إرسال الرسالة التجريبية");
+      alert(i18n.t("FacebookStatusPage_FacebookStatusPage.error_send_1df1"));
     } finally {
       setTesting(false);
     }

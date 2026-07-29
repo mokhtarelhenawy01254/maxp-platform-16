@@ -73,7 +73,7 @@ const ListItemsEditor: React.FC<ListItemsEditorProps> = ({
             handleUpdateItem(index, key, url);
         } catch (error) {
             console.error("Upload error:", error);
-            alert("حدث خطأ أثناء رفع الصورة");
+            alert(i18n.t("settings_ListItemsEditor.error_error_0ba3"));
         } finally {
             setUploadingIndex(null);
             // Reset input

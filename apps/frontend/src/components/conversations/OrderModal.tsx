@@ -166,11 +166,11 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || "خطأ غير معروف"));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("components_OrderModal.msg_fe97")));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      alert("حدث خطأ أثناء إنشاء الطلب");
+      alert(i18n.t("components_OrderModal.error_error_430a"));
     } finally {
       setCreatingOrder(false);
     }

@@ -94,7 +94,7 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
       setIsSubmitted(false);
 
       // يمكن إضافة toast notification هنا
-      alert("حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى.");
+      alert(i18n.t("components_RatingButtons.error_error_1ca7"));
     } finally {
       setIsSubmitting(false);
     }

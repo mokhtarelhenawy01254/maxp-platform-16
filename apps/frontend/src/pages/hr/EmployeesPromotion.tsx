@@ -36,6 +36,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Promotion {
   id: string;
@@ -212,7 +214,7 @@ const EmployeesPromotion: React.FC = () => {
         );
         fetchPromotions();
       } else {
-        toast.error(response.data.error || "فشل في تحديث حالة الترقية");
+        toast.error(response.data.error || i18n.t("hr_EmployeesPromotion.failed_update_d7a0"));
       }
     } catch (error: any) {
       console.error("❌ Error updating status:", error);
@@ -224,10 +226,10 @@ const EmployeesPromotion: React.FC = () => {
     try {
       const response = await api.delete(`/hr/promotions/${promotionId}`);
       if (response.data.success) {
-        toast.success("تم حذف الترقية بنجاح");
+        tToast.success("hr_EmployeesPromotion.success_delete_044f");
         fetchPromotions(); // إعادة تحميل القائمة
       } else {
-        toast.error(response.data.error || "فشل في حذف الترقية");
+        toast.error(response.data.error || i18n.t("hr_EmployeesPromotion.failed_delete_c80d"));
       }
     } catch (error: any) {
       console.error("❌ Error deleting promotion:", error);
