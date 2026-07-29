@@ -8297,6 +8297,8 @@ declare module 'react-i18next' {
         featured: string;
         installed: string;
         active: string;
+        trial: string;
+        cancelled: string;
         cancel: string;
         deactivate: string;
         activating: string;
@@ -13165,6 +13167,7 @@ declare module 'react-i18next' {
         billingSection: string;
         broadcast: string;
         browseApps: string;
+        myApps: string;
         browseBundles: string;
         bulkMessages: string;
         bulkOrders: string;
