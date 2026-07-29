@@ -7583,7 +7583,7 @@ declare module 'react-i18next' {
           legal: {
             description: string;
           };
-          'service-requests': {
+          serviceRequests: {
             description: string;
           };
         };
@@ -9755,6 +9755,8 @@ declare module 'react-i18next' {
           previous: string;
           next: string;
         };
+        fallbackCustomerName: string;
+        fallbackWarehouseName: string;
       };
       quickStatus: {
         title: string;
@@ -11837,6 +11839,7 @@ declare module 'react-i18next' {
         turboCaptains: string;
         wholesale: string;
         serviceRequests: string;
+        serviceManagement: string;
         serviceOrders: string;
         wholesaleRail: string;
         wholesaleCustomers: string;

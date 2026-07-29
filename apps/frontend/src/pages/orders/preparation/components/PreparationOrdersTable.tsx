@@ -122,10 +122,10 @@ const PreparationOrdersTable = ({
   const totalCols = visibleColumns.length + 3;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <table className="w-full table-auto text-right text-sm">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
             <th className="w-10 px-3 py-2.5">
               <span className="sr-only">{t("preparation.table.selectColumn")}</span>
             </th>
@@ -211,9 +211,9 @@ const PreparationOrdersTable = ({
             return (
               <Fragment key={order.orderNumber}>
                 <tr
-                  className={`border-b border-gray-100 transition hover:bg-gray-100/60 ${
-                    isEvenRow ? "bg-white" : "bg-gray-50/40"
-                  } ${isExpanded ? "bg-amber-50/40 shadow-inner" : ""}`}
+                  className={`border-b border-gray-100 transition hover:bg-gray-100/60 dark:border-gray-700 dark:hover:bg-gray-700/30 ${
+                    isEvenRow ? "bg-white dark:bg-gray-800" : "bg-gray-50/40 dark:bg-gray-800/60"
+                  } ${isExpanded ? "bg-amber-50/40 shadow-inner dark:bg-amber-900/10" : ""}`}
                 >
                   {/* Checkbox */}
                   <td className="px-3 py-2.5">
@@ -222,33 +222,33 @@ const PreparationOrdersTable = ({
                       checked={selectedSet.has(order.orderNumber)}
                       onChange={() => onToggleSelection(order.orderNumber)}
                       disabled={!canPrepare}
-                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
                     />
                   </td>
 
                   {/* Order number */}
                   <td className="px-3 py-2.5">
                     {order.merchantFulfillment ? (
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                         #{order.orderNumber}
                       </span>
                     ) : (
                       <Link
                         to={`/orders/${encodeURIComponent(order.orderNumber)}`}
-                        className="text-sm font-bold text-gray-900 hover:text-amber-700"
+                        className="text-sm font-bold text-gray-900 hover:text-amber-700 dark:text-gray-100 dark:hover:text-amber-400"
                       >
                         #{order.orderNumber}
                       </Link>
                     )}
 
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                      <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                      <span className="rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
                         {t(SOURCE_LABEL_KEYS[
                           (order.sourceType || "unknown").toLowerCase()
                         ]) || order.sourceType}
                       </span>
                       {shortageFollowUpVisual ? (
-                        <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800">
+                        <span className="rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300">
                           {shortageFollowUpVisual.label}
                         </span>
                       ) : null}
@@ -258,13 +258,13 @@ const PreparationOrdersTable = ({
                   {/* Customer */}
                   {visibleColumns.includes("customer") && (
                     <td className="px-3 py-2.5">
-                      <p className="text-xs font-medium text-gray-800">
+                      <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                         {order.customerName}
                       </p>
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
                         {order.customerPhone || ""}
                       </p>
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
                         {getAgeLabel(order.createdAt)}
                         {order.governorate || order.city
                           ? ` • ${order.governorate || order.city}`
@@ -276,7 +276,7 @@ const PreparationOrdersTable = ({
                   {/* Units */}
                   {visibleColumns.includes("units") && (
                     <td className="px-3 py-2.5">
-                      <span className="text-sm font-bold text-gray-800">
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
                         {order.totalUnits}
                       </span>
                     </td>
@@ -285,7 +285,7 @@ const PreparationOrdersTable = ({
                   {/* Value */}
                   {visibleColumns.includes("value") && (
                     <td className="px-3 py-2.5">
-                      <span className="text-sm font-bold text-gray-800">
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
                         {formatPrice(order.totalValue)}
                       </span>
                     </td>
@@ -308,7 +308,7 @@ const PreparationOrdersTable = ({
                   {/* Warehouse */}
                   {visibleColumns.includes("warehouse") && (
                     <td className="px-3 py-2.5">
-                      <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700">
+                      <span className="max-w-[100px] truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
                         {order.recommendedWarehouseName || t("preparation.table.notDefined")}
                       </span>
                     </td>
@@ -320,8 +320,8 @@ const PreparationOrdersTable = ({
                       <span
                         className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${
                           order.isReady
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-rose-50 text-rose-700"
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                            : "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
                         }`}
                       >
                         {order.isReady
@@ -335,14 +335,14 @@ const PreparationOrdersTable = ({
                   {visibleColumns.includes("printStatus") && (
                     <td className="px-3 py-2.5">
                       {(order.printCount ?? 0) > 0 ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700" title={order.printedAt ? formatDate(order.printedAt) : ''}>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300" title={order.printedAt ? formatDate(order.printedAt) : ''}>
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                           {order.printCount}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-400">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-400 dark:bg-gray-700 dark:text-gray-500">
                           —
                         </span>
                       )}
@@ -352,7 +352,7 @@ const PreparationOrdersTable = ({
                   {/* Shipping code */}
                   {visibleColumns.includes("shippingCode") && (
                     <td className="px-3 py-2.5">
-                      <span className="text-xs font-medium text-gray-700">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                         {order.turboTrackingNumber ||
                           (order.shipments?.length
                             ? order.shipments
@@ -369,7 +369,7 @@ const PreparationOrdersTable = ({
                     <button
                       type="button"
                       onClick={() => toggleExpanded(order.orderNumber)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
                     >
                       {t("preparation.table.details")}
                       <ChevronDownIcon
@@ -383,8 +383,8 @@ const PreparationOrdersTable = ({
 
                 {/* Expanded details row */}
                 {isExpanded && (
-                  <tr className="bg-gray-50/80">
-                    <td colSpan={totalCols} className="border-b border-gray-100 px-4 py-4">
+                  <tr className="bg-gray-50/80 dark:bg-gray-800/60">
+                    <td colSpan={totalCols} className="border-b border-gray-100 px-4 py-4 dark:border-gray-700">
                       <div className="space-y-2.5">
                         <PreparationOrderItemsList
                           order={order}

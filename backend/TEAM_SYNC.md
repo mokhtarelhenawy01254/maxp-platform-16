@@ -1,5 +1,14 @@
 # Team Sync Updates
 
+- **[FRONTEND / PWA SECURITY] Service Worker Scope Unification & Comprehensive SW Cache Flush Overhaul (2026-07-29):**
+  1. **SW Scope Collision Fix**: Consolidated Service Worker registration under `/sw.js` across `browserNotifications.ts` and `pushNotifications.ts` to prevent `/push-sw.js` from overwriting VitePWA Workbox caching on scope `/`.
+  2. **Security & Privacy (API Cache Removal)**: Removed `/api/` NetworkFirst caching in `src/sw.js` to ensure no sensitive user or tenant API data persists in browser `CacheStorage` across sessions.
+  3. **Stale Asset Prevention**: Updated static asset routing strategy to `StaleWhileRevalidate` with proper expiration plugin settings.
+  4. **SW Cache Purge Utility**: Created `src/utils/swCacheFlush.ts` (`clearAllSWCaches` & `flushSWCacheAndReload`) that purges all entries in `window.caches` and notifies waiting service workers.
+  5. **Automated Integration**: Integrated cache purging into SW update toast (`AdminAppBootstrap.tsx`), user logout flow (`useAuthSimple.tsx`), and automatic chunk recovery (`chunkLoadRecovery.ts`).
+  6. **Environment Isolation**: Restricted auto-registration of `/sw.js` in `main.tsx` to `import.meta.env.PROD` to prevent HMR collisions during local development.
+  7. **Testing**: Verified unit test suite with Jest (100% pass across `swCacheFlush.test.ts`, `chunkLoadRecovery.test.ts`, and `browserNotifications.test.ts`).
+
 - **[🔴 CRITICAL FIX] Production Backend Crash-Loop — SyntaxError in WhatsAppManager.js (2026-07-28):**
   1. **Incident**: Production backend service `maxp-backend` was completely offline, stuck in crash-loop (restart count 384).
   2. **Root Cause**: Investigated SSH PM2 logs (`pm2 logs maxp-backend`) on server `153.92.223.119` and identified `SyntaxError: Unexpected end of input` at `/var/www/backend2/services/whatsapp/WhatsAppManager.js:5241`. A misplaced closing brace `};` cut off exports prematurely.

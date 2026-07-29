@@ -7,6 +7,7 @@ import {
 } from '../utils/sessionRefresh';
 import { repairMojibakeText } from '../utils/textEncoding';
 import socketService from '../services/socketService';
+import { clearAllSWCaches } from '../utils/swCacheFlush';
 
 interface Company {
   id: string;
@@ -583,6 +584,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // 🔌 Disconnect socket to force fresh connection on next login
       socketService.disconnect();
       debugLog('🔌 [AUTH] Socket disconnected on logout');
+
+      // 🧹 Clear Service Worker Caches to prevent data leakage between sessions
+      void clearAllSWCaches();
     }
   };
 

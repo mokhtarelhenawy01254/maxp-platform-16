@@ -88,7 +88,7 @@ interface ProductSuggestion {
 }
 
 const selectClass =
-  "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white";
+  "w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:bg-gray-700 dark:focus:border-amber-500";
 
 const PreparationFilters = ({
   activeFilter,
@@ -252,9 +252,9 @@ const PreparationFilters = ({
   };
 
   return (
-    <div className="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       {/* Top bar: Tabs & Search Controls */}
-      <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-b border-gray-100 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
         
         {/* Horizontal Scrollable Tabs */}
         {visibleFilterSections.includes("tabs") && (
@@ -263,13 +263,13 @@ const PreparationFilters = ({
               onClick={() => onFilterChange("ALL")}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                 activeFilter === "ALL"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-slate-900 text-white shadow-sm dark:bg-slate-700"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               <span>{t("preparation.filters.allStages", { count: "" }).replace(/\(\s*\)/, "").trim()}</span>
               <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                activeFilter === "ALL" ? "bg-white/20 text-white" : "bg-gray-200/80 text-gray-700"
+                activeFilter === "ALL" ? "bg-white/20 text-white" : "bg-gray-200/80 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
               }`}>
                 {visibleOrdersCount}
               </span>
@@ -290,7 +290,7 @@ const PreparationFilters = ({
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
                     isActive
                       ? `${display.colorClass} border border-current shadow-sm`
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                   }`}
                   title={tab.name}
                 >
@@ -300,8 +300,8 @@ const PreparationFilters = ({
                       isActive
                         ? "bg-white/25 text-current"
                         : count > 0
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-gray-200/70 text-gray-500"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                        : "bg-gray-200/70 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
                     }`}
                   >
                     {count}
@@ -316,12 +316,12 @@ const PreparationFilters = ({
         {visibleFilterSections.includes("search") && (
           <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
             <div className="relative flex-1 sm:w-48">
-              <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder={t("preparation.filters.quickSearchPlaceholder")}
-                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:bg-gray-700 dark:focus:border-amber-500"
               />
             </div>
 
@@ -330,8 +330,8 @@ const PreparationFilters = ({
               onClick={() => setShowAdvanced((v) => !v)}
               className={`flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition ${
                 showAdvanced || hasAdvancedFilters
-                  ? "bg-amber-100 text-amber-800 font-semibold"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-amber-100 text-amber-800 font-semibold dark:bg-amber-900/30 dark:text-amber-300"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               <FunnelIcon className="h-3.5 w-3.5" />
@@ -343,7 +343,7 @@ const PreparationFilters = ({
               <button
                 onClick={resetAll}
                 title={t("common.reset", "إعادة ضبط")}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition"
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-gray-600 dark:hover:text-gray-300"
               >
                 <XMarkIcon className="h-4 w-4" />
               </button>
@@ -354,7 +354,7 @@ const PreparationFilters = ({
 
       {/* Toggle filter buttons + Product filter */}
       {visibleFilterSections.includes("toggleButtons") && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
             <button
               onClick={() =>
@@ -362,8 +362,8 @@ const PreparationFilters = ({
               }
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition max-sm:flex-1 ${
                 notPrintedFilter === "not_printed"
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-amber-500 text-white shadow-sm dark:bg-amber-600"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               {t("preparation.filters.notPrinted")}
@@ -374,8 +374,8 @@ const PreparationFilters = ({
               }
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition max-sm:flex-1 ${
                 noShippingCodeFilter === "no_shipping_code"
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-amber-500 text-white shadow-sm dark:bg-amber-600"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               {t("preparation.filters.noShippingCode")}
@@ -398,21 +398,21 @@ const PreparationFilters = ({
               }}
               onFocus={() => setShowProductSuggestions(true)}
               placeholder={t("preparation.filters.productPlaceholder")}
-              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+              className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 pr-8 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
             />
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             {showProductSuggestions && (
               <div
                 ref={productSuggestionsRef}
-                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg text-xs"
+                className="absolute right-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg text-xs dark:border-gray-600 dark:bg-gray-800"
               >
                 {productsLoading && (
-                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                  <div className="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500">
                     {t("common.loading")}
                   </div>
                 )}
                 {!productsLoading && products.length === 0 && (
-                  <div className="px-3 py-1.5 text-xs text-gray-400">
+                  <div className="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500">
                     {t("preparation.filters.noProductResults")}
                   </div>
                 )}
@@ -426,7 +426,7 @@ const PreparationFilters = ({
                       onProductSizeFilterChange("");
                       setShowProductSuggestions(false);
                     }}
-                    className="cursor-pointer px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50"
+                    className="cursor-pointer px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50 dark:text-gray-300 dark:hover:bg-amber-900/20"
                   >
                     {p.name}
                   </div>
@@ -439,7 +439,7 @@ const PreparationFilters = ({
                 <select
                   value={variantIdFilter}
                   onChange={(e) => onVariantIdFilterChange(e.target.value)}
-                  className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+                  className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
                 >
                   <option value="">جميع المتغيرات</option>
                   {selectedProductVariants.map((v) => (
@@ -457,7 +457,7 @@ const PreparationFilters = ({
               <select
                 value={productColorFilter}
                 onChange={(e) => onProductColorFilterChange(e.target.value)}
-                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
               >
                 <option value="">اللون (الكل)</option>
                 {availableColors.map((color, idx) => (
@@ -472,7 +472,7 @@ const PreparationFilters = ({
               <select
                 value={productSizeFilter}
                 onChange={(e) => onProductSizeFilterChange(e.target.value)}
-                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400"
+                className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
               >
                 <option value="">المقاس (الكل)</option>
                 {availableSizes.map((size, idx) => (
@@ -486,9 +486,9 @@ const PreparationFilters = ({
 
       {/* Advanced filters (collapsible) */}
       {showAdvanced && visibleFilterSections.includes("advanced") && (
-        <div className="grid grid-cols-1 gap-3 border-t border-gray-50 p-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-1 gap-3 border-t border-gray-50 p-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 dark:border-gray-700">
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.warehouse")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.warehouse")}</label>
             <select
               value={selectedWarehouseId}
               onChange={(e) => onSelectedWarehouseChange(e.target.value)}
@@ -502,7 +502,7 @@ const PreparationFilters = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.stockStatus")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.stockStatus")}</label>
             <select
               value={stockFilter}
               onChange={(e) => onStockFilterChange(e.target.value as StockFilter)}
@@ -515,7 +515,7 @@ const PreparationFilters = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.sortBy")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.sortBy")}</label>
             <select
               value={`${sortBy}_${sortOrder}`}
               onChange={(e) => {
@@ -531,7 +531,7 @@ const PreparationFilters = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.itemsCount")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.itemsCount")}</label>
             <select
               value={itemCountFilter}
               onChange={(e) => onItemCountFilterChange(e.target.value as ItemCountFilter)}
@@ -544,7 +544,7 @@ const PreparationFilters = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.shortageReason")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.shortageReason")}</label>
             <select
               value={shortageReasonFilter}
               onChange={(e) => onShortageReasonFilterChange(e.target.value as ShortageReasonFilter)}
@@ -558,7 +558,7 @@ const PreparationFilters = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-medium text-gray-500">{t("preparation.filters.followUpDate")}</label>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">{t("preparation.filters.followUpDate")}</label>
             <select
               value={shortageFollowUpFilter}
               onChange={(e) => onShortageFollowUpFilterChange(e.target.value as ShortageFollowUpFilter)}

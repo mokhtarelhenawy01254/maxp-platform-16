@@ -13,7 +13,7 @@
 ## Web Push behavior
 
 1. The user enables `إشعار المتصفح` from `/notification-settings`
-2. After saving, the frontend registers `/push-sw.js`, requests a `PushSubscription`, and syncs it to the backend
+2. After saving, the frontend registers `/sw.js`, requests a `PushSubscription`, and syncs it to the backend
 3. The backend stores both notification preferences and browser subscriptions per `companyId + userId`
 4. When a supported event happens, the backend checks:
    - global notifications are enabled
@@ -67,7 +67,8 @@
 - `frontend/src/utils/browserNotifications.ts`
 - `frontend/src/utils/notificationSettings.ts`
 - `frontend/src/utils/pushNotifications.ts`
-- `frontend/public/push-sw.js`
+- `frontend/src/sw.js`
+- `frontend/public/push-sw.js` (legacy fallback)
 - `backend/routes/notificationRoutes.js`
 - `backend/services/browserPushService.js`
 - `backend/services/notificationPreferencesService.js`

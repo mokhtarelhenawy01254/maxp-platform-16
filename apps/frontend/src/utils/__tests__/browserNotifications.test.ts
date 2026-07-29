@@ -67,7 +67,7 @@ describe("showBrowserNotification", () => {
     expect(shown).toBe(true);
     await flushPromises();
 
-    expect(register).toHaveBeenCalledWith("/push-sw.js", { scope: "/" });
+    expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
     expect(showNotification).toHaveBeenCalledWith(
       "New message",
       expect.objectContaining({

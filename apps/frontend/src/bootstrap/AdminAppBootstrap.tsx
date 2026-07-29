@@ -2,12 +2,39 @@ import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
+import { toast } from "sonner";
+import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
 import ErrorBoundary from "../components/ErrorBoundary";
+import { ThemeProvider } from "../components/theme-provider";
+import AppRoot from "../AppRoot";
 
-const AppRoot = React.lazy(() => import("../AppRoot"));
-const ThemeProvider = React.lazy(() => import("../components/theme-provider").then(m => ({ default: m.ThemeProvider })));
-const LazyToaster = React.lazy(() => import("sonner").then(m => ({ default: m.Toaster })));
+const LazyToaster = React.lazy(() =>
+  import("sonner").then((module) => ({ default: module.Toaster })),
+);
+
+const SwUpdateToast: React.FC = () => {
+  React.useEffect(() => {
+    const show = () => {
+      toast("تحديث جديد متاح", {
+        description: "اضغط للتحديث وتحديث الكاش فوراً",
+        duration: Infinity,
+        action: {
+          label: "تحديث",
+          onClick: () => {
+            void flushSWCacheAndReload();
+          },
+        },
+      });
+    };
+
+    if ((window as unknown as Record<string, unknown>).__SW_UPDATE_PENDING__) show();
+    window.addEventListener("sw-update-ready", show);
+    return () => window.removeEventListener("sw-update-ready", show);
+  }, []);
+
+  return null;
+};
 
 const RouteAwareErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -28,6 +55,7 @@ const AdminAppBootstrap: React.FC = () => (
         <RouteAwareErrorBoundary>
           <AppRoot />
         </RouteAwareErrorBoundary>
+        <SwUpdateToast />
         <LazyToaster position="top-right" richColors />
       </BrowserRouter>
     </ThemeProvider>

@@ -1,5 +1,5 @@
-import { precacheAndRoute } from 'workbox-precaching';
-import { NetworkFirst } from 'workbox-strategies';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { registerRoute } from 'workbox-routing';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -15,30 +15,38 @@ registerRoute(
   }),
 );
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
-  new NetworkFirst({
-    cacheName: 'api',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
+// Note: Broad /api/ route caching removed to prevent caching sensitive user/tenant data in SW CacheStorage.
+// API state management is safely handled in-memory by React Query.
 
 registerRoute(
   ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
-  new NetworkFirst({
+  new StaleWhileRevalidate({
     cacheName: 'assets',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   }),
 );
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    cleanupOutdatedCaches();
+    await self.clients.claim();
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable();
+    }
+  })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+    self.clients.claim();
+  }
 });
 
 self.addEventListener('push', (event) => {

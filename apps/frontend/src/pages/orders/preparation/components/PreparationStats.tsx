@@ -25,49 +25,49 @@ const PreparationStats = ({
       title: t("preparation.stats.inPreparation"),
       count: searchedOrdersCount,
       icon: PackageSearch,
-      iconColor: 'text-indigo-500',
-      iconBg: 'bg-indigo-50',
-      countColor: 'text-indigo-700',
+      iconColor: 'text-indigo-500 dark:text-indigo-400',
+      iconBg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      countColor: 'text-indigo-700 dark:text-indigo-300',
     },
     {
       title: t("preparation.stats.fullyReady"),
       count: readyCount,
       icon: CheckCircle2,
-      iconColor: 'text-emerald-500',
-      iconBg: 'bg-emerald-50',
-      countColor: 'text-emerald-700',
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      countColor: 'text-emerald-700 dark:text-emerald-300',
     },
     {
       title: t("preparation.stats.hasShortage"),
       count: shortageCount,
       icon: AlertCircle,
-      iconColor: 'text-rose-500',
-      iconBg: 'bg-rose-50',
-      countColor: 'text-rose-700',
+      iconColor: 'text-rose-500 dark:text-rose-400',
+      iconBg: 'bg-rose-50 dark:bg-rose-900/20',
+      countColor: 'text-rose-700 dark:text-rose-300',
     },
     {
       title: t("preparation.stats.readyToShip"),
       count: readyToShipCount,
       icon: Truck,
-      iconColor: 'text-sky-500',
-      iconBg: 'bg-sky-50',
-      countColor: 'text-sky-700',
+      iconColor: 'text-sky-500 dark:text-sky-400',
+      iconBg: 'bg-sky-50 dark:bg-sky-900/20',
+      countColor: 'text-sky-700 dark:text-sky-300',
     },
     {
       title: t("preparation.stats.onHoldByShortage"),
       count: shortageHoldCount,
       icon: Clock,
-      iconColor: 'text-amber-500',
-      iconBg: 'bg-amber-50',
-      countColor: 'text-amber-700',
+      iconColor: 'text-amber-500 dark:text-amber-400',
+      iconBg: 'bg-amber-50 dark:bg-amber-900/20',
+      countColor: 'text-amber-700 dark:text-amber-300',
     },
     {
       title: t("preparation.stats.overdueFollowUps"),
       count: overdueShortageFollowUpCount,
       icon: Timer,
-      iconColor: 'text-orange-500',
-      iconBg: 'bg-orange-50',
-      countColor: 'text-orange-700',
+      iconColor: 'text-orange-500 dark:text-orange-400',
+      iconBg: 'bg-orange-50 dark:bg-orange-900/20',
+      countColor: 'text-orange-700 dark:text-orange-300',
     },
   ];
 
@@ -78,7 +78,7 @@ const PreparationStats = ({
         return (
           <div
             key={index}
-            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm transition hover:border-gray-200"
+            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm transition hover:border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
           >
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${stat.iconBg}`}
@@ -86,7 +86,7 @@ const PreparationStats = ({
               <Icon className={`h-4 w-4 ${stat.iconColor}`} strokeWidth={2} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-medium text-gray-500">{stat.title}</p>
+              <p className="truncate text-[11px] font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
               <p className={`text-lg font-bold leading-none ${stat.countColor}`}>
                 {stat.count.toLocaleString('en-US')}
               </p>

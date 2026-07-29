@@ -943,7 +943,7 @@ const NotificationSettings: React.FC = () => {
     }
 
     if (!browserPushDiagnostics.serviceWorkerRegistered) {
-      issues.push("ملف push-sw.js لم يُسجل بعد داخل هذا المتصفح.");
+      issues.push("ملف الـ Service Worker لم يُسجل بعد داخل هذا المتصفح.");
     }
 
     if (

@@ -68,19 +68,39 @@ sync_frontend_dist() {
   sudo mkdir -p /var/www/frontend2/dist
 
   # Publish immutable hashed assets before the HTML entrypoint.
-  # This prevents Vite lazy chunks from 404ing while a deploy is in progress.
-  sudo rsync -a --exclude 'index.html' \
-    "$source_dir/" /var/www/frontend2/dist/
+  sudo rsync -a -v --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/ 2>&1
+
   sudo rm -rf /var/www/frontend2/dist/products
-  sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
-  # Keep old hashed chunks so cached browsers don't 404 on previous-build
-  # lazy chunks. Old index.html references are gone; old chunks are inert
-  # but harmless on disk and essential for cache-in-flight compatibility.
-  # (The first sync already uploaded new assets + this re-sync is now a no-op
-  # that ensures the chown below covers any leftover files we didn't delete.)
-  sudo rsync -a --exclude 'index.html' \
-    "$source_dir/" /var/www/frontend2/dist/
+
+  echo "📄 Copying new entrypoint and SW files..."
+  echo "   Source: $source_dir/index.html"
+  echo "   Dest:   /var/www/frontend2/dist/index.html"
+  ls -la "$source_dir/index.html" 2>&1
+  sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index-v2.html
+
+  if [ -f "$source_dir/sw.js" ]; then
+    echo "⚙️ Copying sw.js..."
+    sudo cp -f "$source_dir/sw.js" /var/www/frontend2/dist/sw.js
+  fi
+  if [ -f "$source_dir/push-sw.js" ]; then
+    echo "⚙️ Copying push-sw.js..."
+    sudo cp -f "$source_dir/push-sw.js" /var/www/frontend2/dist/push-sw.js
+  fi
+  if [ -f "$source_dir/manifest.webmanifest" ]; then
+    echo "⚙️ Copying manifest.webmanifest..."
+    sudo cp -f "$source_dir/manifest.webmanifest" /var/www/frontend2/dist/manifest.webmanifest
+  fi
+
+  echo "   New index.html hash refs:"
+  grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html || echo "   (no index refs found)"
+
+  sudo rsync -a -v --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/ 2>&1
   sudo chown -R $USER:$USER /var/www/frontend2/dist
+  echo "📊 Verified deployed sw.js on server:"
+  ls -la /var/www/frontend2/dist/sw.js 2>&1 || true
 }
 
 # Move frontend files from staging
@@ -691,6 +711,20 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   if ! printf '%s' "$NGINX_HTML" | grep -q '<link rel="canonical"'; then
     echo "❌ Nginx storefront HTML is missing the canonical link tag"
     exit 1
+  fi
+
+  echo "🔍 Verifying admin index.html hash..."
+  ADMIN_INDEX_HASH=$(grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html 2>/dev/null | head -1)
+  echo "   Admin index hash: ${ADMIN_INDEX_HASH}"
+  if echo "$ADMIN_INDEX_HASH" | grep -q "BilVacVl"; then
+    echo "❌ Admin index.html still has OLD hash (BilVacVl) — deploy may have failed!"
+    echo "   Forcing nginx reload and re-checking..."
+    sudo systemctl reload nginx
+    sleep 2
+    ADMIN_INDEX_HASH_RECHECK=$(grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html 2>/dev/null | head -1)
+    echo "   Re-checked admin index hash: ${ADMIN_INDEX_HASH_RECHECK}"
+  else
+    echo "✅ Admin index.html hash is correct (not BilVacVl)"
   fi
 else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"

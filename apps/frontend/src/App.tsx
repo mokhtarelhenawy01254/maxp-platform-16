@@ -7,12 +7,13 @@ import {
   shouldRedirectAffiliateToDashboard,
   shouldRedirectMerchantToPortal,
 } from "./utils/merchantAccess";
+// fallback for old deployed bundles that reference undefined getStatusText
+// (injected as inline script in index.html instead to avoid tree-shaking)
 
 // Providers
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
@@ -4366,9 +4367,7 @@ const AppContent = () => {
                   path="/analytics/orders/products"
                   element={
                     <Layout>
-                      <ErrorBoundary>
-                        <ProductsAnalyticsPage />
-                      </ErrorBoundary>
+                      <ProductsAnalyticsPage />
                     </Layout>
                   }
                 />

@@ -1816,7 +1816,30 @@
     "noTopProductsDesc": "No product sales have been recorded for the selected period",
     "noLowPerforming": "No low performing products",
     "noLowPerformingDesc": "All products are performing well in this period",
-    "ordersCount": "Order Count"
+    "ordersCount": "Order Count",
+    "custom": "Custom",
+    "csvExport": "Export CSV",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "periodToday": "Today",
+    "periodYesterday": "Yesterday",
+    "periodTwoWeeks": "Last 14 Days",
+    "periodTwoMonths": "Last 60 Days",
+    "periodSixMonths": "Last 6 Months",
+    "periodTwoYears": "Last 2 Years",
+    "periodAll": "All Time",
+    "views": "Views",
+    "addToCarts": "Add to Cart",
+    "conversionRate": "Conv. Rate",
+    "stock": "Stock",
+    "funnelTitle": "Conversion Funnel",
+    "funnelViews": "Views",
+    "funnelCart": "Cart",
+    "funnelSales": "Sales",
+    "highStock": "In Stock",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "variants": "Variants"
   },
   "profitAnalytics": {
     "title": "Profit Analytics",
@@ -3351,6 +3374,10 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "bulkDelete": "Delete Multiple",
+      "deleteAllChats": "Delete All Conversations",
+      "deleteAllChatsTitle": "Delete All Conversations",
+      "deleteAllChatsContent": "Are you sure you want to delete all conversations permanently? This action cannot be undone.",
+      "deleteAllChatsSuccess": "All conversations deleted successfully",
       "clearChatTitle": "Clear Chat Content",
       "clearChatContent": "Are you sure you want to clear all messages in this chat?",
       "confirm": "Confirm",
@@ -7562,6 +7589,9 @@
       },
       "legal": {
         "description": "Terms, conditions, and privacy"
+      },
+      "serviceRequests": {
+        "description": "Manage service requests from customers"
       }
     }
   },
@@ -9731,7 +9761,9 @@
       "perPage": "per page",
       "previous": "Previous",
       "next": "Next"
-    }
+    },
+    "fallbackCustomerName": "Unknown Customer",
+    "fallbackWarehouseName": "Unnamed Warehouse"
   },
   "quickStatus": {
     "title": "Quick Status Change",
@@ -11813,6 +11845,9 @@
     "turboRecords": "Turbo Records",
     "turboCaptains": "Captains Reports",
     "wholesale": "Wholesale",
+    "serviceRequests": "Service Requests",
+    "serviceManagement": "Manage Services",
+    "serviceOrders": "Manage Orders",
     "wholesaleRail": "Wholesale",
     "wholesaleCustomers": "Wholesale Customers",
     "priceLists": "Price Lists",
