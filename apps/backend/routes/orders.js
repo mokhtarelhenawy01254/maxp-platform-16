@@ -700,10 +700,12 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_STOCK'
 ]);
 
-const getMappedRegularOrderStatus = (preparationStatus) =>
-  ['PENDING_PREPARATION', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)
-    ? 'CONFIRMED'
-    : 'PROCESSING';
+const getMappedRegularOrderStatus = (preparationStatus) => {
+  if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+  if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+  if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+  return 'PROCESSING';
+};
 
 const parseOrderMetadata = (rawMetadata) => {
   if (!rawMetadata) return {};
@@ -1640,7 +1642,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
         'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'DRAFT', 'TRASH',
         'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-        'PENDING_PREPARATION', 'PREPARING', 'READY'
+        'PENDING_PREPARATION', 'PREPARING', 'READY',
+        'STOCK_SHORTAGE', 'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
       ].includes(upperStatus);
 
       if (isValidPrismaEnum) {
@@ -1651,8 +1654,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
         guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
       } else {
-        whereClause.status = upperStatus;
+        // GuestOrder.status is String (not enum), so any value is valid there
+        // Order.status is OrderStatus enum — skip filter for unrecognized values
         guestWhereClause.status = { in: [upperStatus, lowerStatus] };
+        console.warn(`[ORDERS] Ignoring unrecognized status filter for regular orders, applied to guest orders only: "${rawStatus}"`);
       }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);

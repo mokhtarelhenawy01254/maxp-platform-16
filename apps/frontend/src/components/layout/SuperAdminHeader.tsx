@@ -86,10 +86,8 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
           </TooltipProvider>
           <ThemeToggle />
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="border-2 border-transparent p-0.5 hover:border-primary" aria-label={t("superAdmin.profileMenu")}>
-                <Avatar className="size-8 bg-primary font-bold"><AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback></Avatar>
-              </Button>
+            <DropdownMenuTrigger className="border-2 border-transparent p-0.5 hover:border-primary rounded-lg cursor-pointer" aria-label={t("superAdmin.profileMenu")}>
+              <Avatar className="size-8 bg-primary font-bold"><AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback></Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[180px]">
               <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />{t("superAdmin.logout")}</DropdownMenuItem>
