@@ -60,7 +60,7 @@
         "file": "pages\\super-admin\\DevTaskSettings.tsx",
         "line": 221,
         "category": "alert",
-        "string": "فشل الحفظ: \" + (data.message || i18n.t(\"super-admin_DevTaskSettings.msg_74b2"
+        "string": "فشل الحفظ: \" + (data.message || i18n.t(\"DevTaskSettings.msg_74b2"
       }
     ],
     "console": [

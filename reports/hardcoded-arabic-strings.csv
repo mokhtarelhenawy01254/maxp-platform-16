@@ -85,7 +85,7 @@ pages\settings\StoreSettings.tsx,1582,toast,"حدث خطأ أثناء الحذف
 pages\settings\StoreSettings.tsx,1617,toast,"حدث خطأ أثناء الحفظ: "
 pages\super-admin\company-details\useCompanyDetails.ts,421,toast,"تم ${enabled ? ""تفعيل"" : ""إيقاف""} الخاصية بنجاح"
 pages\super-admin\company-details\useCompanyDetails.ts,495,toast,"جاري تفعيل ${app.name}... ${Math.round(((index + 1) / uninstalledApps.length) * 100)}%"
-pages\super-admin\DevTaskSettings.tsx,221,alert,"فشل الحفظ: "" + (data.message || i18n.t(""super-admin_DevTaskSettings.msg_74b2"
+pages\super-admin\DevTaskSettings.tsx,221,alert,"فشل الحفظ: "" + (data.message || i18n.t(""DevTaskSettings.msg_74b2"
 pages\super-admin\SubscriptionCenter.tsx,1627,toast,"تم ${value ? ""تفعيل"" : ""تعطيل""} الباقة بنجاح"
 pages\UsersManagement.tsx,1095,toast,"تم حذف ${pendingAction.count} مستخدم"
 pages\whatsapp\WhatsAppChat.tsx,1319,toast,"تم حذف ${jids.length} محادثة بنجاح"
