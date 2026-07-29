@@ -18,24 +18,26 @@ import {
   Cog6ToothIcon,
   BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 import type { ElementType } from "react";
 
 export interface DefaultPageOption {
   value: string;
-  label: string;
+  labelKey: string;
   icon: ElementType<{ className?: string }>;
 }
 
 export const DEFAULT_PAGE_OPTIONS: DefaultPageOption[] = [
-  { value: "/apps", label: "التطبيقات", icon: Squares2X2Icon },
-  { value: "/company-dashboard", label: "لوحة التحكم", icon: ChartBarIcon },
-  { value: "/orders", label: "الطلبات", icon: ShoppingCartIcon },
-  { value: "/products", label: "المنتجات", icon: CubeIcon },
-  { value: "/customers", label: "العملاء", icon: UserGroupIcon },
-  { value: "/users", label: "المستخدمين", icon: UsersIcon },
-  { value: "/profile", label: "الملف الشخصي", icon: HomeIcon },
-  { value: "/settings", label: "الإعدادات", icon: Cog6ToothIcon },
-  { value: "/marketplace", label: "المتجر", icon: BuildingStorefrontIcon },
+  { value: "/apps", labelKey: "settings.page_apps", icon: Squares2X2Icon },
+  { value: "/company-dashboard", labelKey: "settings.page_company-dashboard", icon: ChartBarIcon },
+  { value: "/orders", labelKey: "settings.page_orders", icon: ShoppingCartIcon },
+  { value: "/products", labelKey: "settings.page_products", icon: CubeIcon },
+  { value: "/customers", labelKey: "settings.page_customers", icon: UserGroupIcon },
+  { value: "/users", labelKey: "settings.page_users", icon: UsersIcon },
+  { value: "/profile", labelKey: "settings.page_profile", icon: HomeIcon },
+  { value: "/settings", labelKey: "settings.page_settings", icon: Cog6ToothIcon },
+  { value: "/marketplace", labelKey: "settings.page_marketplace", icon: BuildingStorefrontIcon },
+  { value: "/whatsapp#chat", labelKey: "settings.page_whatsapp", icon: ChatBubbleLeftRightIcon },
 ];
 
 interface DefaultPageSelectorProps {
@@ -63,20 +65,19 @@ export function DefaultPageSelector({
           <selectedOption.icon className="size-4 text-violet-500 dark:text-violet-400" />
         )}
         <span className="text-sm font-medium text-foreground">
-          {t("settings.defaultPage") || "الصفحة الافتراضية بعد تسجيل الدخول"}
+          {t("settings.defaultPage")}
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        {t("settings.defaultPageHint") ||
-          "اختر الصفحة التي يفتح عليها النظام بعد تسجيل الدخول"}
+        {t("settings.defaultPageHint")}
       </p>
       <Select value={value || "/apps"} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger className="h-11 rounded-2xl">
-          <SelectValue placeholder={t("settings.selectDefaultPage") || "اختر الصفحة الافتراضية"}>
+          <SelectValue placeholder={t("settings.selectDefaultPage")}>
             {selectedOption && (
               <span className="flex items-center gap-2">
                 <selectedOption.icon className="size-4" />
-                {selectedOption.label}
+                {t(selectedOption.labelKey)}
               </span>
             )}
           </SelectValue>
@@ -86,7 +87,7 @@ export function DefaultPageSelector({
             <SelectItem key={option.value} value={option.value}>
               <span className="flex items-center gap-2">
                 <option.icon className="size-4" />
-                {option.label}
+                {t(option.labelKey)}
               </span>
             </SelectItem>
           ))}

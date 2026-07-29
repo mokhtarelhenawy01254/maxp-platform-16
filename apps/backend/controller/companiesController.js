@@ -1341,6 +1341,7 @@ const getSingleUser = async (req, res) => {
               lastLoginAt: true,
               createdAt: true,
               updatedAt: true,
+              settings: true,
               // ✅ Include Employee fields directly from User
               employeeNumber: true,
             contractType: true,
@@ -1393,6 +1394,16 @@ const getSingleUser = async (req, res) => {
       lastLoginAt: userCompany.user.lastLoginAt,
       createdAt: userCompany.user.createdAt,
       updatedAt: userCompany.user.updatedAt,
+      // ✅ Parse settings for defaultPage
+      defaultPage: (() => {
+        try {
+          if (userCompany.user.settings) {
+            const parsed = JSON.parse(userCompany.user.settings);
+            return parsed.defaultPage || "/apps";
+          }
+        } catch { /* ignore */ }
+        return "/apps";
+      })(),
       // ✅ Include Employee (HR) data from User fields
       employee: userCompany.user.employeeNumber
         ? {

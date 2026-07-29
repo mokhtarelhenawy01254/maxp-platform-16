@@ -362,46 +362,75 @@
 
 /* ── 18. Visible Custom Scrollbars for WhatsApp ── */
 .wa-slim-scroll,
-.wa-messages-scroll {
+.wa-messages-scroll,
+.whatsapp-messages-area {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, #64748b) 50%, transparent) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.6) rgba(0, 0, 0, 0.05);
 }
 
 .wa-slim-scroll::-webkit-scrollbar,
-.wa-messages-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.wa-messages-scroll::-webkit-scrollbar,
+.whatsapp-messages-area::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
 }
 
 .wa-slim-scroll::-webkit-scrollbar-track,
-.wa-messages-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.wa-slim-scroll::-webkit-scrollbar-thumb,
-.wa-messages-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(in srgb, var(--color-muted-foreground, #64748b) 50%, transparent);
+.wa-messages-scroll::-webkit-scrollbar-track,
+.whatsapp-messages-area::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 9999px;
 }
 
-.wa-slim-scroll::-webkit-scrollbar-thumb:hover,
-.wa-messages-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in srgb, var(--color-muted-foreground, #64748b) 80%, transparent);
+.wa-slim-scroll::-webkit-scrollbar-thumb,
+.wa-messages-scroll::-webkit-scrollbar-thumb,
+.whatsapp-messages-area::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.6);
+  border-radius: 9999px;
+  border: 1px solid transparent;
 }
 
+.wa-slim-scroll::-webkit-scrollbar-thumb:hover,
+.wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+.whatsapp-messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.9);
+}
+
+/* Dark mode & Enterprise Theme scrollbar overrides */
 .dark .wa-slim-scroll,
-.dark .wa-messages-scroll {
-  scrollbar-color: color-mix(in srgb, #ffffff 40%, transparent) transparent;
+.dark .wa-messages-scroll,
+.dark .whatsapp-messages-area,
+[data-theme="business-os-enterprise"] .wa-slim-scroll,
+[data-theme="business-os-enterprise"] .wa-messages-scroll,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area {
+  scrollbar-color: rgba(148, 163, 184, 0.65) rgba(255, 255, 255, 0.05);
+}
+
+.dark .wa-slim-scroll::-webkit-scrollbar-track,
+.dark .wa-messages-scroll::-webkit-scrollbar-track,
+.dark .whatsapp-messages-area::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-track,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dark .wa-slim-scroll::-webkit-scrollbar-thumb,
-.dark .wa-messages-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(in srgb, #ffffff 35%, transparent);
+.dark .wa-messages-scroll::-webkit-scrollbar-thumb,
+.dark .whatsapp-messages-area::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-thumb,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.65);
 }
 
 .dark .wa-slim-scroll::-webkit-scrollbar-thumb:hover,
-.dark .wa-messages-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in srgb, #ffffff 65%, transparent);
+.dark .wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+.dark .whatsapp-messages-area::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .wa-slim-scroll::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .wa-messages-scroll::-webkit-scrollbar-thumb:hover,
+[data-theme="business-os-enterprise"] .whatsapp-messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(226, 232, 240, 0.9);
 }
 
 /* ── 19. Reduced Motion — Disable All Animations ── */

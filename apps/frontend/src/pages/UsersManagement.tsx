@@ -704,30 +704,16 @@ const UsersManagement: React.FC = () => {
     setEditingUser(targetUser);
     let defaultPage = "/apps";
     try {
-      const freshPayload = await requestApi<UserRecord>(
+      const freshPayload = await requestApi<any>(
         `companies/${user?.companyId}/users/${targetUser.id}`
       );
       if (freshPayload.success && freshPayload.data) {
         targetUser = freshPayload.data;
         setEditingUser(targetUser);
+        defaultPage = freshPayload.data.defaultPage || "/apps";
       }
     } catch {
       // Fall back to the passed-in user data if fetch fails
-    }
-    // Load user settings to get defaultPage
-    try {
-      const settingsRes = await fetch(buildApiUrl(`user/settings`), {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        if (settingsData?.success && settingsData?.data?.defaultPage) {
-          defaultPage = settingsData.data.defaultPage;
-        }
-      }
-    } catch {
-      // silent
     }
     const resolvedRole = targetUser.roleId
       ? (Object.entries(roles).find(([, r]) => r.id === targetUser.roleId)?.[0] || targetUser.role)

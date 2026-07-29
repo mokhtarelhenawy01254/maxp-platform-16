@@ -1,3 +1,16 @@
+### [FRONTEND / WHATSAPP] Hidden Scrollbars in Enterprise Dark Theme (2026-07-30)
+
+- **Severity**: 🟡 MEDIUM — Scrollbars in WhatsApp chat window & conversation list auto-hidden or invisible in dark theme.
+- **Root Cause**:
+  1. Dark theme scrollbar CSS rules only targeted `.dark`, but the platform app wrapper uses `[data-theme="business-os-enterprise"]`.
+  2. Chromium overlay scrollbar engine hides `scrollbar-color: ... transparent` when the track is transparent and no hover/scroll event occurs.
+- **Fix**:
+  1. Added `[data-theme="business-os-enterprise"]` selector targets to `whatsapp-responsive.css` and `index.css`.
+  2. Upgraded scrollbar width to `7px` with high-contrast slate thumb (`rgba(148, 163, 184, 0.65)`) and subtle track (`rgba(255, 255, 255, 0.05)`) for permanent visibility.
+- **Files Modified**: `apps/frontend/src/styles/whatsapp-responsive.css`, `apps/frontend/src/styles/index.css`
+
+---
+
 ### [SEO / SOCIAL PREVIEW] Open Graph Link Preview Showing Wrong Image & Same Preview for All Pages (2026-07-29)
 
 - **Severity**: 🟡 MEDIUM — Every shared link on Telegram, WhatsApp, Facebook, etc. showed the theme `preview.png` (elegant-luxe store screenshot) regardless of which page was shared.

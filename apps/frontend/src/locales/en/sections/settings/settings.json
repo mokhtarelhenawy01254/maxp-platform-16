@@ -97,5 +97,18 @@
   "k_46": "Payment reports",
   "k_47": "Upon activation, the customer will be required to pay a percentage/amount in advance before confirming the order",
   "k_48": "Example: request for",
-  "k_49": "Waiting"
+  "k_49": "Waiting",
+  "defaultPage": "Default Landing Page",
+  "defaultPageHint": "Choose which page opens after login",
+  "selectDefaultPage": "Select default page",
+  "page_apps": "Apps",
+  "page_company-dashboard": "Dashboard",
+  "page_orders": "Orders",
+  "page_products": "Products",
+  "page_customers": "Customers",
+  "page_users": "Users",
+  "page_profile": "Profile",
+  "page_settings": "Settings",
+  "page_marketplace": "Store",
+  "page_whatsapp": "WhatsApp"
 }

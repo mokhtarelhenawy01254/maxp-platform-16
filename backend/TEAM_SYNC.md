@@ -1,5 +1,9 @@
 # Team Sync Updates
 
+- **[FRONTEND / WHATSAPP] Enterprise Dark Theme Scrollbar Visibility Fix (2026-07-30):**
+  1. **Theme Selector Fix**: Added `[data-theme="business-os-enterprise"]` selector overrides to `whatsapp-responsive.css` and `index.css` scrollbar rules. Previously, dark mode scrollbar styles only targeted `.dark`, missing the enterprise theme container (`data-theme="business-os-enterprise"`).
+  2. **High-Contrast Thumb & Solid Track**: Upgraded thumb colors to high-contrast slate `rgba(148, 163, 184, 0.65)` with solid hover `rgba(226, 232, 240, 0.9)` and `7px` width, preventing Chromium overlay scrollbar engines from auto-hiding the scrollbar.
+
 - **[SEO / SOCIAL PREVIEW] Open Graph & Twitter Card Full System Fix (2026-07-29):**
   1. **Root Cause Diagnosed**: All MaxP shared links on Telegram/WhatsApp/Facebook showed the wrong preview image (elegant-luxe theme screenshot) because `index.html` had hardcoded storefront-specific `og:image`. Social crawlers never execute JavaScript, so per-page React meta updates were invisible to them.
   2. **Brand OG Cover Image**: Generated `og-cover.png` (1200×630px) — a premium dark-theme MaxP brand image with platform tagline, feature badges, and the `https://maxp.online` domain pill — using the `sharp` SVG→PNG pipeline. Saved to `apps/frontend/public/og-cover.png`.
