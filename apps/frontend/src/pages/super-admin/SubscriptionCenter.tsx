@@ -31,6 +31,8 @@ import { appSchema, pricingRuleSchema, enterprisePlanSchema } from "../../../bac
 import { buildApiUrl } from "../../utils/urlHelper";
 import axios from "axios";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeCatalogService";
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
@@ -409,13 +411,13 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         setCatalogDiff(response.data.data as CatalogDiffPayload);
         setCatalogDiffError(null);
         if (showToast) {
-          toast.success("تم تحديث تقرير الفرق بين الملفات وقاعدة البيانات");
+          tToast.success("subscriptionCenter.success_update_4fdf");
         }
       } else {
         setCatalogDiff(null);
         setCatalogDiffError("فشل في جلب تقرير الفرق");
         if (showToast) {
-          toast.error("فشل في جلب تقرير الفرق");
+          tToast.error("subscriptionCenter.failed_fetch_d415");
         }
       }
     } catch (err: unknown) {
@@ -423,7 +425,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       setCatalogDiff(null);
       setCatalogDiffError(getErrorMessage(err, "تعذر جلب تقرير الفرق"));
       if (showToast) {
-        toast.error("تعذر جلب تقرير الفرق");
+        tToast.error("subscriptionCenter.msg_b558");
       }
     } finally {
       setCatalogDiffLoading(false);
@@ -545,11 +547,11 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         buildApiUrl(`super-admin/marketplace-management/${typePath}/${id}`),
         { headers },
       );
-      toast.success("تم الحذف بنجاح");
+      tToast.success("subscriptionCenter.msg_26af");
       await fetchAllData();
     } catch (err) {
       console.error("Delete error:", err);
-      toast.error("خطأ في الحذف");
+      tToast.error("subscriptionCenter.msg_2c0e");
     }
   }, [activeTab, editingItem, fetchAllData]);
 
@@ -719,7 +721,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
                 );
               }
 
-              toast.success("تم الحفظ بنجاح");
+              tToast.success("subscriptionCenter.msg_6f39");
               setMarketplaceDialog(false);
               setEditingItem(null);
               await fetchAllData();
@@ -728,7 +730,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
               const serverMsg = axiosErr?.response?.data?.message || "";
               const serverErrors = axiosErr?.response?.data?.errors;
               console.error("Marketplace save error:", err, "Server response:", axiosErr?.response?.data);
-              toast.error(serverMsg || "خطأ في الحفظ");
+              toast.error(serverMsg || i18n.t("subscriptionCenter.saveError"));
               if (serverErrors) console.error("Validation errors:", serverErrors);
             }
           }}
@@ -1157,7 +1159,7 @@ const MarketplaceAppsTab = ({
       );
       onRefresh();
     } catch (err) {
-      toast.error("خطأ في التحديث");
+      tToast.error("subscriptionCenter.msg_eb61");
     }
   };
 
@@ -1181,10 +1183,10 @@ const MarketplaceAppsTab = ({
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success("تم تصدير الإعدادات بنجاح");
+      tToast.success("subscriptionCenter.msg_9d6d");
     } catch (err) {
       console.error("Export error:", err);
-      toast.error("فشل في تصدير الإعدادات");
+      tToast.error("subscriptionCenter.msg_1144");
     }
   };
 
@@ -1205,11 +1207,11 @@ const MarketplaceAppsTab = ({
           }),
         },
       );
-      toast.success("تم استيراد الإعدادات بنجاح");
+      tToast.success("subscriptionCenter.msg_c6b7");
       onRefresh();
     } catch (err) {
       console.error("Import error:", err);
-      toast.error("فشل في استيراد الإعدادات");
+      tToast.error("subscriptionCenter.msg_cc19");
     }
   };
 
@@ -1625,7 +1627,7 @@ const BundlesAndPricingTab = ({
       toast.success(`تم ${value ? "تفعيل" : "تعطيل"} الباقة بنجاح`);
       onRefresh();
     } catch (err) {
-      toast.error("خطأ في التحديث");
+      tToast.error("subscriptionCenter.msg_eb61");
     }
   };
 
@@ -2111,7 +2113,7 @@ const StorefrontThemesTab = ({
       (patch.isActive === false || patch.isPublic === false) &&
       uniqueThemeIds.some((themeId) => drafts[themeId]?.isDefaultTheme)
     ) {
-      toast.error("عيّن قالبًا افتراضيًا آخر قبل تعطيل القالب الحالي");
+      tToast.error("subscriptionCenter.msg_6f63");
       return;
     }
 
@@ -2147,7 +2149,7 @@ const StorefrontThemesTab = ({
       await onRefresh();
     } catch (error) {
       console.error("Bulk theme update error:", error);
-      toast.error("فشل تحديث القوالب المحددة");
+      tToast.error("subscriptionCenter.failed_update_a0da");
     } finally {
       setBulkSaving(false);
     }
@@ -2158,7 +2160,7 @@ const StorefrontThemesTab = ({
       themeIds.includes(theme.themeId),
     );
     if (themesToArchive.some((theme) => theme.isDefaultTheme)) {
-      toast.error("عيّن قالبًا افتراضيًا آخر قبل أرشفة القالب الحالي");
+      tToast.error("subscriptionCenter.msg_6d79");
       return;
     }
 
@@ -2184,7 +2186,7 @@ const StorefrontThemesTab = ({
   const handleApplyBulkPrice = async () => {
     const price = Number(bulkPrice);
     if (!Number.isFinite(price) || price < 0) {
-      toast.error("اكتب سعر صحيح أولًا");
+      tToast.error("subscriptionCenter.msg_94b7");
       return;
     }
 
@@ -2237,11 +2239,11 @@ const StorefrontThemesTab = ({
           ]),
         ) as Record<string, StorefrontThemeCatalogItem>,
       );
-      toast.success("تم تعيين القالب الافتراضي للمتاجر الجديدة");
+      tToast.success("subscriptionCenter.msg_4f19");
       await onRefresh();
     } catch (error) {
       console.error("Default storefront theme update error:", error);
-      toast.error("فشل تعيين القالب الافتراضي");
+      tToast.error("subscriptionCenter.msg_6b19");
     } finally {
       setSavingThemeId(null);
     }
@@ -2255,11 +2257,11 @@ const StorefrontThemesTab = ({
     try {
       setSavingThemeId(themeId);
       await persistThemeDraft(themeId, draft);
-      toast.success("تم تحديث القالب بنجاح");
+      tToast.success("subscriptionCenter.success_update_78cf");
       onRefresh();
     } catch (error) {
       console.error("Theme catalog save error:", error);
-      toast.error("فشل تحديث القالب");
+      tToast.error("subscriptionCenter.failed_update_3eb1");
     } finally {
       setSavingThemeId(null);
     }
@@ -2299,15 +2301,15 @@ const StorefrontThemesTab = ({
       ).length;
 
       if (failedCount > 0) {
-        toast.error(`تعذر تحديث ${failedCount} قالب. راجع الشبكة ثم أعد المحاولة.`);
+        toast.error(i18n.t("subscriptionCenter.templateUpdateFailed", { failedCount }));
       } else {
-        toast.success("تم إظهار وتفعيل كل القوالب");
+        tToast.success("subscriptionCenter.msg_cae9");
       }
 
       onRefresh();
     } catch (error) {
       console.error("Bulk theme activation error:", error);
-      toast.error("فشل إظهار وتفعيل القوالب");
+      tToast.error("subscriptionCenter.msg_264a");
     } finally {
       setBulkSaving(false);
     }

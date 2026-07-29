@@ -13042,6 +13042,31 @@ declare module 'react-i18next' {
           THEME: string;
         };
       };
+      subscriptionCenter: {
+        success_update_4fdf: string;
+        failed_fetch_d415: string;
+        msg_b558: string;
+        msg_26af: string;
+        msg_2c0e: string;
+        msg_6f39: string;
+        msg_eb61: string;
+        msg_9d6d: string;
+        msg_1144: string;
+        msg_c6b7: string;
+        msg_cc19: string;
+        msg_6f63: string;
+        failed_update_a0da: string;
+        msg_6d79: string;
+        msg_94b7: string;
+        msg_4f19: string;
+        msg_6b19: string;
+        success_update_78cf: string;
+        failed_update_3eb1: string;
+        msg_cae9: string;
+        msg_264a: string;
+        saveError: string;
+        templateUpdateFailed: string;
+      };
       superAdmin: {
         title: string;
         companies: string;
