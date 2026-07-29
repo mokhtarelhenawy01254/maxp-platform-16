@@ -2413,9 +2413,10 @@ const Orders: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <div className="flex w-full gap-1.5 sm:w-auto sm:gap-2">
               <button
                 onClick={() => handleFilterChange("status", "")}
-                className={`relative inline-flex min-w-0 flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
+                className={`relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
                   ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
                   : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
                   }`}
@@ -2425,12 +2426,13 @@ const Orders: React.FC = () => {
               <button
                 onClick={() => navigate("/orders/workspace")}
                 title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex min-w-0 flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
+                className="relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
               >
                 <BriefcaseIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
                 <span className="sm:hidden">{t('orders.myWorkspace')}</span>
               </button>
+              </div>
 
               {!loading && (
                 <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
