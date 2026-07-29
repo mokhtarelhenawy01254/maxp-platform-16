@@ -342,7 +342,7 @@ const PreparationFilters = ({
             {hasActiveFilters && (
               <button
                 onClick={resetAll}
-                title={t("common.reset", "إعادة ضبط")}
+                title={t("common.reset")}
                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-gray-600 dark:hover:text-gray-300"
               >
                 <XMarkIcon className="h-4 w-4" />
@@ -441,7 +441,7 @@ const PreparationFilters = ({
                   onChange={(e) => onVariantIdFilterChange(e.target.value)}
                   className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
                 >
-                  <option value="">جميع المتغيرات</option>
+                  <option value="">{t("preparation.filters.allVariants")}</option>
                   {selectedProductVariants.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.name}
@@ -459,7 +459,7 @@ const PreparationFilters = ({
                 onChange={(e) => onProductColorFilterChange(e.target.value)}
                 className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
               >
-                <option value="">اللون (الكل)</option>
+                <option value="">{t("preparation.filters.productColorAll")}</option>
                 {availableColors.map((color, idx) => (
                   <option key={idx} value={color}>{color}</option>
                 ))}
@@ -474,7 +474,7 @@ const PreparationFilters = ({
                 onChange={(e) => onProductSizeFilterChange(e.target.value)}
                 className="h-8 w-full rounded-xl border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-800 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-amber-500"
               >
-                <option value="">المقاس (الكل)</option>
+                <option value="">{t("preparation.filters.productSizeAll")}</option>
                 {availableSizes.map((size, idx) => (
                   <option key={idx} value={size}>{size}</option>
                 ))}

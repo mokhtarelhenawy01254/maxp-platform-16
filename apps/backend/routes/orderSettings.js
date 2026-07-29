@@ -122,6 +122,13 @@ router.put('/', async (req, res) => {
             });
         }
 
+        if (orderPrefix && /[^\x20-\x7E]/.test(orderPrefix)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order prefix must only contain ASCII characters (English letters, numbers, and symbols). CODE128 barcode format does not support Arabic or special Unicode characters.'
+            });
+        }
+
         if (nextOrderNumber && nextOrderNumber < 1) {
             return res.status(400).json({
                 success: false,

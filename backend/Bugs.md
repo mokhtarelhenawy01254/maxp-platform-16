@@ -1,3 +1,16 @@
+### [FRONTEND / UI] WhatsApp Templates Page Layout Stacking & Sidebar Sub-menu Clean Up (2026-07-29)
+
+- **Severity**: 🟡 MEDIUM — Layout breakage in RTL mode & redundant sidebar sub-items for templates.
+- **Root Cause**:
+  1. `WhatsAppTemplates.tsx` used `flex-col-reverse` on the search/category tabs filter bar, which in RTL mode broke into a vertical stack layout when rendered in narrow or medium containers.
+  2. `sidebar.ts` contained `children` sub-items (`ORDERS`, `HR`, `SYSTEM`) under `/whatsapp/templates`, which cluttered the sidebar menu while the page itself already manages category filtering dynamically via tab controls.
+- **Fix**:
+  1. Replaced `flex-col-reverse` with a clear inline search bar and `flex-wrap` category tabs in `WhatsAppTemplates.tsx`.
+  2. Removed `children` array from `/whatsapp/templates` item in `sidebar.ts`.
+- **Files**: `apps/frontend/src/pages/whatsapp/WhatsAppTemplates.tsx`, `apps/frontend/src/config/sidebar.ts`
+
+---
+
 ### [FRONTEND / PWA] Service Worker Scope Conflict, Sensitive API Cache Leak & Flush Architecture Overhaul (2026-07-29)
 
 - **Severity**: 🔴 HIGH — Potential SW scope collision, persistent stale bundles, and sensitive API response caching in `CacheStorage`.

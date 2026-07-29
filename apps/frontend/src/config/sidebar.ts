@@ -572,16 +572,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
                 { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
-                { 
-                    to: '/whatsapp/templates', 
-                    icon: DocumentTextIcon, 
-                    label: t('sidebar.whatsappTemplates'),
-                    children: [
-                        { to: '/whatsapp/templates?category=ORDERS', label: t('sidebar.whatsappTemplatesOrders') },
-                        { to: '/whatsapp/templates?category=HR', label: t('sidebar.whatsappTemplatesHR') },
-                        { to: '/whatsapp/templates?category=SYSTEM', label: t('sidebar.whatsappTemplatesSystem') },
-                    ]
-                },
+                { to: '/whatsapp/templates', icon: DocumentTextIcon, label: t('sidebar.whatsappTemplates') },
                 { to: '/whatsapp/routing', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
                 { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
                 { to: '/whatsapp/cloud-connect', icon: GlobeAltIcon, label: t('sidebar.whatsappCloudConnect') },

@@ -454,7 +454,7 @@ const PreparationQueue: React.FC = () => {
     }
 
     return tabs;
-  }, [preparationStatuses, statusLabelMap, SHORTAGE_HOLD_STATUS]);
+  }, [preparationStatuses, statusLabelMap]);
 
   const enabledQcChecks = useMemo(
     () =>
@@ -637,9 +637,11 @@ const PreparationQueue: React.FC = () => {
 
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
-  const paginatedOrders = preparationOrders;
+  // NOTE: server-side pagination already ran; this is just the inventory-enriched
+  // version of the current page's orders — not a client-side slice.
+  const enrichedOrders = preparationOrders;
   const visibleOrdersCount = summary.filteredTotal;
-  const currentPageCount = paginatedOrders.length;
+  const currentPageCount = enrichedOrders.length;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
 
@@ -844,7 +846,7 @@ const PreparationQueue: React.FC = () => {
     async (
       orderNumber: string,
       overrides: Partial<ShortageHoldDetails> = {},
-      options?: { successMessage?: string | null },
+      options?: { successMessage?: string | null; skipRefresh?: boolean },
     ) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       if (!order) {
@@ -878,7 +880,13 @@ const PreparationQueue: React.FC = () => {
           toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
         }
 
-        void fetchAll();
+        // Skip refresh when the caller (e.g. handleMarkAsShortageHold /
+        // handleReleaseShortageHold) will trigger handleSingleStatusUpdate,
+        // which already calls fetchAll — avoids a double network round-trip.
+        if (!options?.skipRefresh) {
+          void fetchAll();
+        }
+
         return true;
       } catch (error: unknown) {
         console.error("Failed to save shortage hold details:", error);
@@ -1064,6 +1072,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUp: shortageFollowUpFilter,
       shortageOwner: shortageOwnerFilter,
       productFilter,
+      colorFilter: uiState.productColorFilter || undefined,
+      sizeFilter: uiState.productSizeFilter || undefined,
       productId: uiState.productIdFilter || undefined,
       variantId: uiState.variantIdFilter || undefined,
       itemCountFilter,
@@ -1115,6 +1125,10 @@ const PreparationQueue: React.FC = () => {
     shortageFollowUpFilter,
     shortageOwnerFilter,
     productFilter,
+    uiState.productColorFilter,
+    uiState.productSizeFilter,
+    uiState.productIdFilter,
+    uiState.variantIdFilter,
     itemCountFilter,
     notPrintedFilter,
     noShippingCodeFilter,
@@ -1252,6 +1266,7 @@ const PreparationQueue: React.FC = () => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       const currentDraft =
         shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
+      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
       const saved = await saveShortageHoldDetails(
         orderNumber,
         {
@@ -1260,7 +1275,7 @@ const PreparationQueue: React.FC = () => {
           releasedAt: "",
           state: "held",
         },
-        { successMessage: null },
+        { successMessage: null, skipRefresh: true },
       );
       if (!saved) return;
 
@@ -1274,6 +1289,7 @@ const PreparationQueue: React.FC = () => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       const currentDraft =
         shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
+      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
       const saved = await saveShortageHoldDetails(
         orderNumber,
         {
@@ -1281,7 +1297,7 @@ const PreparationQueue: React.FC = () => {
           releasedAt: new Date().toISOString(),
           state: "released",
         },
-        { successMessage: null },
+        { successMessage: null, skipRefresh: true },
       );
       if (!saved) return;
 

@@ -588,40 +588,40 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         >
           <div className="space-y-5">
             <div className="flex flex-col gap-4">
+              {/* Search bar */}
+              <div className="relative w-full">
+                <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+                <Input
+                  value={templateSearch}
+                  onChange={(event) => setTemplateSearch(event.target.value)}
+                  placeholder={String(t("common.search"))}
+                  className="h-11 rounded-full bg-[color:var(--color-muted)] ps-10"
+                />
+              </div>
+
+              {/* Category filter tabs */}
               <Tabs
                 value={templateCategory}
                 onValueChange={handleCategoryChange}
                 className="w-full"
               >
-                <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
+                <TabsList className="flex h-auto flex-wrap justify-start gap-1.5 bg-transparent p-0">
+                  <TabsTrigger
+                    value="ALL"
+                    className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
+                  >
+                    {i18n.language === "ar" ? "جميع التصنيفات" : "All categories"}
+                  </TabsTrigger>
+                  {availableCategoryEntries.map(([key, label]) => (
                     <TabsTrigger
-                      value="ALL"
+                      key={key}
+                      value={key}
                       className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
                     >
-                      {i18n.language === "ar" ? "جميع التصنيفات" : "All categories"}
+                      {label}
                     </TabsTrigger>
-                    {availableCategoryEntries.map(([key, label]) => (
-                      <TabsTrigger
-                        key={key}
-                        value={key}
-                        className="rounded-full px-4 py-2 data-[state=active]:bg-[color:var(--color-primary)] data-[state=active]:text-white data-[state=active]:shadow-md"
-                      >
-                        {label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-
-                  <div className="relative w-full shrink-0 lg:w-[16rem]">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-                    <Input
-                      value={templateSearch}
-                      onChange={(event) => setTemplateSearch(event.target.value)}
-                      placeholder={String(t("common.search"))}
-                      className="h-11 rounded-full bg-[color:var(--color-card)] pl-10"
-                    />
-                  </div>
-                </div>
+                  ))}
+                </TabsList>
               </Tabs>
             </div>
 

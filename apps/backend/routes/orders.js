@@ -12,6 +12,63 @@ const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
+
+// ── Dynamic Status Code Cache ──────────────────────────────────────────
+// Loads ALL known status codes (system + custom) from orderStatusConfig
+// so custom statuses like BDONKODTERBO also work in the main page filter.
+const PRISMA_ORDER_STATUS_ENUM = new Set([
+  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+  'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
+  'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'WOO_TAGHEZ', 'DRAFT',
+  'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
+  'PENDING_PREPARATION', 'PREPARING', 'READY', 'QUALITY_CHECK', 'PACKAGED',
+  'ON_HOLD_PREP', 'PARTIALLY_DELIVERED', 'STOCK_SHORTAGE'
+]);
+
+let _knownStatusCodes = null;
+let _knownStatusCodesPromise = null;
+
+const loadKnownStatusCodes = async () => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const statuses = await prisma.orderStatusConfig.findMany({
+      where: { isActive: true, statusType: { in: ['order', 'preparation'] } },
+      select: { code: true }
+    });
+    const dbCodes = new Set(statuses.map(s => s.code.toUpperCase()));
+    _knownStatusCodes = new Set([...PRISMA_ORDER_STATUS_ENUM, ...dbCodes]);
+    return _knownStatusCodes;
+  } catch (err) {
+    console.error('[ORDERS] Failed to load status codes, falling back to Prisma enum:', err.message);
+    _knownStatusCodes = PRISMA_ORDER_STATUS_ENUM;
+    return _knownStatusCodes;
+  }
+};
+
+const getKnownStatusCodes = () => {
+  if (_knownStatusCodes) return _knownStatusCodes;
+  if (!_knownStatusCodesPromise) {
+    _knownStatusCodesPromise = loadKnownStatusCodes().catch(() => {
+      _knownStatusCodes = PRISMA_ORDER_STATUS_ENUM;
+    });
+  }
+  return _knownStatusCodes || PRISMA_ORDER_STATUS_ENUM;
+};
+
+// Warm cache on first import (non-blocking)
+loadKnownStatusCodes();
+
+// API endpoint to refresh the cache (called when custom statuses change)
+router.post('/refresh-status-cache', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    _knownStatusCodes = null;
+    _knownStatusCodesPromise = null;
+    await loadKnownStatusCodes();
+    res.json({ success: true, message: 'Status cache refreshed', count: _knownStatusCodes?.size || 0 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 const merchantService = require('../services/merchantService');
 const { validateOrderItems, validateEgyptianPhone } = require('../utils/orderValidation');
 const {
@@ -1637,25 +1694,21 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       const upperStatus = rawStatus.toUpperCase();
       const lowerStatus = rawStatus.toLowerCase();
 
-      const isValidPrismaEnum = [
-        'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
-        'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
-        'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'DRAFT', 'TRASH',
-        'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-        'PENDING_PREPARATION', 'PREPARING', 'READY',
-        'STOCK_SHORTAGE', 'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
-      ].includes(upperStatus);
+      const knownCodes = getKnownStatusCodes();
+      const isKnownStatus = knownCodes.has(upperStatus);
 
-      if (isValidPrismaEnum) {
-        whereClause.status = upperStatus;
+      if (isKnownStatus) {
+        if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
+          whereClause.status = upperStatus;
+        } else {
+          whereClause._customStatusFilter = upperStatus;
+        }
         guestWhereClause.status = { in: [upperStatus, lowerStatus] };
       } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
         const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
         whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
         guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
       } else {
-        // GuestOrder.status is String (not enum), so any value is valid there
-        // Order.status is OrderStatus enum — skip filter for unrecognized values
         guestWhereClause.status = { in: [upperStatus, lowerStatus] };
         console.warn(`[ORDERS] Ignoring unrecognized status filter for regular orders, applied to guest orders only: "${rawStatus}"`);
       }
@@ -1925,6 +1978,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }, null, 2));
     }
 
+    // ── Custom status filter (BDONKODTERBO etc.) ──────────────────────
+    // Prisma's typed enum rejects values not in the OrderStatus enum,
+    // so we fetch IDs via raw SQL first, then use typed Prisma queries.
+    const customStatusFilter = whereClause._customStatusFilter;
+    let customStatusOrderIds = null;
+    let customStatusTotal = 0;
+
+    if (customStatusFilter) {
+      delete whereClause._customStatusFilter;
+      const prisma = getSharedPrismaClient();
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
+      const params = [companyId, customStatusFilter];
+      if (whereClause.createdAt?.gte) {
+        countSql += ` AND "createdAt" >= $3`;
+        fetchSql += ` AND "createdAt" >= $3`;
+        params.push(whereClause.createdAt.gte);
+      }
+      if (whereClause.createdAt?.lte) {
+        const n = params.length + 1;
+        countSql += ` AND "createdAt" <= $${n}`;
+        fetchSql += ` AND "createdAt" <= $${n}`;
+        params.push(whereClause.createdAt.lte);
+      }
+      const [countRow] = await prisma.$queryRawUnsafe(countSql, ...params);
+      customStatusTotal = Number(countRow?.cnt || 0);
+      fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
+      const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
+      customStatusOrderIds = rows.map(r => r.id);
+      whereClause.id = { in: customStatusOrderIds };
+    }
+
     const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
       // Fetch Regular Orders
       getSharedPrismaClient().order.findMany({
@@ -1986,7 +2071,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' }
       }),
       // Count Total Regular (for pagination metadata)
-      getSharedPrismaClient().order.count({ where: whereClause }),
+      customStatusFilter ? customStatusTotal : getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);

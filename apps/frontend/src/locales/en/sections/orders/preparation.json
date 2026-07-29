@@ -103,7 +103,8 @@
     "noShippingCode": "No Shipping Code",
     "noProductResults": "No matching products",
     "productColorAll": "Color (All)",
-    "productSizeAll": "Size (All)"
+    "productSizeAll": "Size (All)",
+    "allVariants": "All Variants"
   },
   "columns": {
     "customer": "Customer",
@@ -365,5 +366,6 @@
     "next": "Next"
   },
   "fallbackCustomerName": "Unknown Customer",
-  "fallbackWarehouseName": "Unnamed Warehouse"
+  "fallbackWarehouseName": "Unnamed Warehouse",
+  "k_10": "Ready to Ship"
 }

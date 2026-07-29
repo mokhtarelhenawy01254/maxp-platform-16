@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
-  PREPARATION_COLUMN_LABELS,
+  PREPARATION_COLUMN_LABEL_KEYS,
   SHORTAGE_HOLD_STATUS,
   SOURCE_LABEL_KEYS,
   type PreparationTableColumn,
@@ -131,28 +131,28 @@ const PreparationOrdersTable = ({
             </th>
             <th className="px-3 py-2.5">{t("preparation.table.orderNumber")}</th>
             {visibleColumns.includes("customer") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.customer}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.customer)}</th>
             )}
             {visibleColumns.includes("units") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.units}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.units)}</th>
             )}
             {visibleColumns.includes("value") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.value}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.value)}</th>
             )}
             {visibleColumns.includes("status") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.status}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.status)}</th>
             )}
             {visibleColumns.includes("warehouse") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.warehouse}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.warehouse)}</th>
             )}
             {visibleColumns.includes("readiness") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.readiness}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.readiness)}</th>
             )}
             {visibleColumns.includes("printStatus") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.printStatus}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.printStatus)}</th>
             )}
             {visibleColumns.includes("shippingCode") && (
-              <th className="px-3 py-2.5">{PREPARATION_COLUMN_LABELS.shippingCode}</th>
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.shippingCode)}</th>
             )}
             <th className="w-20 px-3 py-2.5">
               <span className="sr-only">{t("preparation.table.detailsColumn")}</span>
