@@ -8,7 +8,7 @@ import {
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
 // Auto-purge legacy SW caches once for all existing clients
-const SW_MIGRATION_VERSION = "maxp_sw_v2_20260729";
+const SW_MIGRATION_VERSION = "maxp_sw_v3_20260729";
 if (typeof window !== "undefined") {
   try {
     if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
@@ -23,6 +23,13 @@ if (typeof window !== "undefined") {
   } catch {
     // Ignore private browsing error
   }
+}
+
+// Listen for new service worker and auto-refresh when detected
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
 }
 
 const OPTIONAL_GOOGLE_FONTS_ID = "optional-google-fonts";
