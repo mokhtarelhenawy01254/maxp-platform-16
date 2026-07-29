@@ -128,5 +128,21 @@
   "returnAmount": "{{amount}} EGP",
   "returnCustomValue": "Custom value",
   "returnDefaultValue": "Default: shipping cost",
-  "returnDescription": "Shown to the shipping company as the collection amount upon return"
+  "returnDescription": "Shown to the shipping company as the collection amount upon return",
+  "activityLog": "Activity Log",
+  "addNote": "Add Note",
+  "addNotePlaceholder": "Add a note...",
+  "adding": "Adding...",
+  "add": "Add",
+  "allActivities": "All Activities",
+  "statusChanges": "Status Changes",
+  "notes": "Notes",
+  "save": "Save",
+  "edited": "edited",
+  "editNote": "Edit Note",
+  "deleteNote": "Delete Note",
+  "deleteNoteConfirmTitle": "Delete Note",
+  "deleteNoteConfirmMessage": "Are you sure you want to delete this note? This action cannot be undone.",
+  "deleting": "Deleting...",
+  "yesDelete": "Yes, Delete"
 }
