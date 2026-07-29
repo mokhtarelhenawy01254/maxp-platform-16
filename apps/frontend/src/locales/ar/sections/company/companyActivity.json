@@ -39,7 +39,7 @@
     "details": "تفاصيل",
     "noActivities": "لا توجد نشاطات",
     "rowsPerPage": "عدد الصفوف:",
-    "displayedRows": "{from}-{to} من {count}"
+    "displayedRows": "{{from}}-{{to}} من {{count}}"
   },
   "categories": {
     "AUTH": "المصادقة",

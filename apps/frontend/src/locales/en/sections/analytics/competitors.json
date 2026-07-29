@@ -246,9 +246,9 @@
     "add": "Add",
     "noResults": "No new competitors found",
     "addedSuccess": "Competitor added",
-    "searchingTerms": "Searching across {count} terms",
+    "searchingTerms": "Searching across {{count}} terms",
     "suggestion": "Suggestion",
-    "yourProductsCount": "Your Products: {count}"
+    "yourProductsCount": "Your Products: {{count}}"
   },
   "platforms": {
     "amazon": "Amazon",

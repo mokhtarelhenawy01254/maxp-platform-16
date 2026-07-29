@@ -1,13 +1,13 @@
 {
   "time": {
     "now": "Now",
-    "minutesAgo": "{minutes} min ago",
-    "hoursAgo": "{hours}h ago",
-    "daysAgo": "{days}d ago"
+    "minutesAgo": "{{minutes}} min ago",
+    "hoursAgo": "{{hours}}h ago",
+    "daysAgo": "{{days}}d ago"
   },
   "editor": {
     "emptyContent": "No content",
-    "linesWords": "{lines} lines, {words} words",
+    "linesWords": "{{lines}} lines, {{words}} words",
     "edit": "Edit",
     "preview": "Preview",
     "collapse": "Collapse",
@@ -88,7 +88,7 @@
     "template": "Template",
     "loadingTemplates": "Loading templates...",
     "custom": "Custom",
-    "toolsCount": "{n} tools · {m} skills",
+    "toolsCount": "{{n}} tools · {{m}} skills",
     "identity": "Identity",
     "name": "Name",
     "namePlaceholder": "Enter agent name",

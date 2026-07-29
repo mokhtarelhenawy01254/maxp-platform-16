@@ -25,7 +25,7 @@
   "assignToAgent": "تعيين لوكيل",
   "dialogAssignTitle": "تعيين المهارة لوكيل",
   "dialogSearch": "بحث في الوكلاء...",
-  "dialogSelected": "{selected} / {total} محدد",
+  "dialogSelected": "{{selected}} / {{total}} محدد",
   "dialogSelectAll": "تحديد الكل",
   "dialogDeselectAll": "إلغاء تحديد الكل",
   "dialogCurrent": "حالي",

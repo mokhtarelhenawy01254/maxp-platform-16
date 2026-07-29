@@ -46,10 +46,10 @@
     "advanced": "Advanced"
   },
   "pricing": {
-    "salePrice": "Sale Price ({currency}) *",
-    "comparePrice": "Compare Price ({currency})",
+    "salePrice": "Sale Price ({{currency}}) *",
+    "comparePrice": "Compare Price ({{currency}})",
     "comparePriceHint": "For comparison only (optional)",
-    "costPrice": "Cost Price ({currency})",
+    "costPrice": "Cost Price ({{currency}})",
     "costPriceHint": "Product purchase cost (optional)",
     "saleStartDate": "Sale Start Date",
     "saleEndDate": "Sale End Date",

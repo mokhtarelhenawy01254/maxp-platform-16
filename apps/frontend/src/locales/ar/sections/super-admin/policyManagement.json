@@ -8,7 +8,7 @@
   "updateSuccess": "تم تحديث السياسة بنجاح",
   "createSuccess": "تم إضافة السياسة بنجاح",
   "deleteSuccess": "تم حذف السياسة بنجاح",
-  "toggleSuccess": "تم {status} السياسة بنجاح",
+  "toggleSuccess": "تم {{status}} السياسة بنجاح",
   "confirmDelete": "هل أنت متأكد من حذف هذه السياسة؟",
   "editTitle": "تعديل السياسة",
   "columns": {

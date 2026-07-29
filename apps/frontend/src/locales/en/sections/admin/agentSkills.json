@@ -25,7 +25,7 @@
   "assignToAgent": "Assign to Agent",
   "dialogAssignTitle": "Assign Skill to Agent",
   "dialogSearch": "Search agents...",
-  "dialogSelected": "{selected} / {total} selected",
+  "dialogSelected": "{{selected}} / {{total}} selected",
   "dialogSelectAll": "Select All",
   "dialogDeselectAll": "Deselect All",
   "dialogCurrent": "Current",

@@ -24,7 +24,7 @@
   "addressPlaceholder": "Full store address...",
   "socialLinksDesc": "These links appear in the store footer, and templates can use them instead of demo links.",
   "quickLinksDesc": "Display quick links to main pages in the footer.",
-  "copyrightNote": "{year} will be automatically replaced with the current year.",
+  "copyrightNote": "{{year}} will be automatically replaced with the current year.",
   "previewTitle": "Footer Preview",
   "contactUs": "Contact Us",
   "quickLinksPreview": "Quick Links",

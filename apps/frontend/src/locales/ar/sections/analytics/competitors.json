@@ -246,9 +246,9 @@
     "add": "إضافة",
     "noResults": "لم يتم العثور على منافسين جدد",
     "addedSuccess": "تم إضافة المنافس",
-    "searchingTerms": "البحث في {count} كلمة",
+    "searchingTerms": "البحث في {{count}} كلمة",
     "suggestion": "اقتراح",
-    "yourProductsCount": "عدد منتجاتك: {count}"
+    "yourProductsCount": "عدد منتجاتك: {{count}}"
   },
   "platforms": {
     "amazon": "أمازون",

@@ -8,7 +8,7 @@
   "updateSuccess": "Policy updated successfully",
   "createSuccess": "Policy created successfully",
   "deleteSuccess": "Policy deleted successfully",
-  "toggleSuccess": "Policy {status} successfully",
+  "toggleSuccess": "Policy {{status}} successfully",
   "confirmDelete": "Are you sure you want to delete this policy?",
   "editTitle": "Edit Policy",
   "columns": {

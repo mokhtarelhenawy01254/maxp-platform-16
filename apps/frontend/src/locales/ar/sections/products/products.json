@@ -44,10 +44,10 @@
     "advanced": "متقدم"
   },
   "pricing": {
-    "salePrice": "السعر في الخصم ({currency}) *",
-    "comparePrice": "السعر الأساسي ({currency})",
+    "salePrice": "السعر في الخصم ({{currency}}) *",
+    "comparePrice": "السعر الأساسي ({{currency}})",
     "comparePriceHint": "للمقارنة فقط (اختياري)",
-    "costPrice": "سعر الشراء ({currency})",
+    "costPrice": "سعر الشراء ({{currency}})",
     "costPriceHint": "تكلفة شراء المنتج (اختياري)",
     "saleStartDate": "تاريخ بداية العرض",
     "saleEndDate": "تاريخ انتهاء العرض",

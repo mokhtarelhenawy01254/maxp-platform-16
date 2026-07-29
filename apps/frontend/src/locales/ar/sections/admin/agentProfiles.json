@@ -1,13 +1,13 @@
 {
   "time": {
     "now": "الآن",
-    "minutesAgo": "منذ {minutes} دقيقة",
-    "hoursAgo": "منذ {hours} ساعة",
-    "daysAgo": "منذ {days} يوم"
+    "minutesAgo": "منذ {{minutes}} دقيقة",
+    "hoursAgo": "منذ {{hours}} ساعة",
+    "daysAgo": "منذ {{days}} يوم"
   },
   "editor": {
     "emptyContent": "لا يوجد محتوى",
-    "linesWords": "{lines} سطر، {words} كلمة",
+    "linesWords": "{{lines}} سطر، {{words}} كلمة",
     "edit": "تحرير",
     "preview": "معاينة",
     "collapse": "طي",
@@ -88,7 +88,7 @@
     "template": "قالب",
     "loadingTemplates": "جارٍ تحميل القوالب...",
     "custom": "مخصص",
-    "toolsCount": "{n} أداة · {m} مهارة",
+    "toolsCount": "{{n}} أداة · {{m}} مهارة",
     "identity": "الهوية",
     "name": "الاسم",
     "namePlaceholder": "أدخل اسم الوكيل",

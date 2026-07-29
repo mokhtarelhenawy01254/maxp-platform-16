@@ -136,7 +136,7 @@
     "storePending": "Needs setup",
     "readySummary": "The basics are ready. Track orders, visits, and conversion from this dashboard instead of jumping between separate blocks.",
     "setupSummary": "Finish the core setup first, then move the team into a live flow with a clear storefront link and contact channel.",
-    "launchSummary": "You are in the first-launch stage. {nextStep} is the highest-impact next move before daily operations.",
+    "launchSummary": "You are in the first-launch stage. {{nextStep}} is the highest-impact next move before daily operations.",
     "readyMeta": "All core signals are complete",
     "setupMeta": "Setup steps remain before go-live",
     "launchMeta": "Finish the next step and start the live test",
