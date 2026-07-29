@@ -20,6 +20,8 @@ import {
   BeakerIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -276,7 +278,7 @@ const FacebookPixelSettings: React.FC = () => {
       const error = urlParams.get("error");
 
       if (success === "pixel_connected") {
-        toast.success("✅ تم ربط حساب Facebook بنجاح! جاري جلب Pixels...");
+        tToast.success("facebookPixel.success_connect_account_7c2d");
         // تنظيف URL
         window.history.replaceState(
           {},
@@ -393,7 +395,7 @@ const FacebookPixelSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      toast.error("فشل تحميل الإعدادات");
+      tToast.error("facebookPixel.failed_load_settings_11f2");
     } finally {
       setLoading(false);
     }
@@ -405,7 +407,7 @@ const FacebookPixelSettings: React.FC = () => {
 
       // Validation
       if (settings.facebookPixelEnabled && !settings.facebookPixelId) {
-        toast.error("يرجى إدخال Pixel ID");
+        tToast.error("facebookPixel.required_enter_9b40");
         setSaving(false);
         return;
       }
@@ -414,13 +416,13 @@ const FacebookPixelSettings: React.FC = () => {
         settings.facebookPixelId &&
         !/^\d{16}$/.test(settings.facebookPixelId)
       ) {
-        toast.error("Pixel ID يجب أن يكون 16 رقم");
+        tToast.error("facebookPixel.msg_1bac");
         setSaving(false);
         return;
       }
 
       if (settings.facebookConvApiEnabled && !settings.facebookConvApiToken) {
-        toast.error("يرجى إدخال Access Token");
+        tToast.error("facebookPixel.required_enter_3a76");
         setSaving(false);
         return;
       }
@@ -431,12 +433,12 @@ const FacebookPixelSettings: React.FC = () => {
       const response = await storefrontSettingsService.updateSettings(settings);
       console.log("✅ Save response:", response);
 
-      toast.success("✅ تم حفظ الإعدادات بنجاح");
+      tToast.success("facebookPixel.success_save_settings_09ef");
 
       // Reload to get updated data (skip guard to force reload)
       await loadSettings(true);
     } catch (error) {
-      toast.error("❌ فشل حفظ الإعدادات");
+      tToast.error("facebookPixel.failed_save_settings_0771");
       console.error("❌ Save error:", error);
     } finally {
       setSaving(false);
@@ -451,7 +453,7 @@ const FacebookPixelSettings: React.FC = () => {
       const response = await storefrontSettingsService.testFacebookPixel();
 
       if (response.success) {
-        toast.success("✅ Pixel ID صحيح وتم تفعيله بنجاح!");
+        tToast.success("facebookPixel.msg_d7b6");
         await loadSettings(true); // Reload to get updated status
       } else {
         toast.error(
@@ -459,7 +461,7 @@ const FacebookPixelSettings: React.FC = () => {
         );
       }
     } catch (error: unknown) {
-      toast.error(`❌ خطأ: ${getErrorMessage(error, "فشل الاختبار")}`);
+      toast.error(`❌ خطأ: ${getErrorMessage(error, i18n.t("facebookPixel.msg_134e"))}`);
     } finally {
       setTestingPixel(false);
     }
@@ -473,13 +475,13 @@ const FacebookPixelSettings: React.FC = () => {
       const response = await storefrontSettingsService.testFacebookCapi();
 
       if (response.success) {
-        toast.success("✅ الاتصال ناجح! تحقق من Facebook Events Manager");
+        tToast.success("facebookPixel.msg_931c");
         await loadSettings(true); // Reload to get updated status
       } else {
-        toast.error(`❌ فشل الاتصال: ${response.message}`);
+        toast.error(i18n.t("facebookPixel.msg_vcygkc", { message: message }));
       }
     } catch (error: unknown) {
-      toast.error(`❌ خطأ: ${getErrorMessage(error, "فشل الاتصال")}`);
+      toast.error(`❌ خطأ: ${getErrorMessage(error, i18n.t("facebookPixel.msg_dbf2"))}`);
     } finally {
       setTesting(false);
     }
@@ -503,7 +505,7 @@ const FacebookPixelSettings: React.FC = () => {
       window.location.href = authResponse.data.authUrl;
     } catch (error: unknown) {
       console.error("Error in easy connect:", error);
-      toast.error("فشل الربط مع Facebook للـ Pixels");
+      tToast.error("facebookPixel.msg_0877");
       setFetchingPixels(false);
     }
   };
@@ -521,7 +523,7 @@ const FacebookPixelSettings: React.FC = () => {
       if (response.data.success && response.data.pixels.length > 0) {
         setPixels(response.data.pixels);
         setShowPixelSelector(true);
-        toast.success(`✅ تم العثور على ${response.data.pixels.length} Pixel`);
+        toast.success(i18n.t("facebookPixel.msg_s5gii5", { length: length }));
       } else if (response.data.needsAuth || response.data.noBusinesses) {
         // Need to authenticate - لكن فقط إذا طلب المستخدم ذلك
         if (autoRedirect) {
@@ -609,7 +611,7 @@ const FacebookPixelSettings: React.FC = () => {
 
   const handleSelectPixel = async (pixel: FacebookOAuthPixel) => {
     try {
-      const loadingToast = toast.loading("جاري ربط Pixel...");
+      const loadingToast = tToast.loading("facebookPixel.loading_connect_d006");
 
       // Generate access token
       let accessToken = "";
@@ -642,12 +644,12 @@ const FacebookPixelSettings: React.FC = () => {
       setShowPixelSelector(false);
 
       toast.dismiss(loadingToast);
-      toast.success("✅ تم ربط Pixel بنجاح!");
+      tToast.success("facebookPixel.success_connect_3ac1");
 
       await loadSettings(true);
     } catch (error: unknown) {
       console.error("Error selecting pixel:", error);
-      toast.error("فشل ربط Pixel");
+      tToast.error("facebookPixel.failed_connect_4859");
     }
   };
 
@@ -661,7 +663,7 @@ const FacebookPixelSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading diagnostics:", error);
-      toast.error("فشل تحميل التشخيص");
+      tToast.error("facebookPixel.failed_load_ed28");
     } finally {
       setLoadingDiagnostics(false);
     }
@@ -674,14 +676,14 @@ const FacebookPixelSettings: React.FC = () => {
       if (response.success) {
         setTokenPermissions(response.data);
         if (response.data.valid) {
-          toast.success("✅ Token صالح");
+          tToast.success("facebookPixel.msg_75da");
         } else {
-          toast.error("❌ Token غير صالح أو منتهي الصلاحية");
+          tToast.error("facebookPixel.msg_49a8");
         }
       }
     } catch (error: unknown) {
       console.error("Error checking token:", error);
-      toast.error(getErrorMessage(error, "فشل فحص Token"));
+      toast.error(getErrorMessage(error, i18n.t("facebookPixel.failed_check_1804")));
     } finally {
       setCheckingToken(false);
     }
@@ -701,12 +703,12 @@ const FacebookPixelSettings: React.FC = () => {
 
   const handleAddPixel = async () => {
     if (!newPixel.pixelId || !newPixel.pixelName) {
-      toast.error("يرجى إدخال Pixel ID واسم Pixel");
+      tToast.error("facebookPixel.required_enter_5012");
       return;
     }
 
     if (!/^\d{16}$/.test(newPixel.pixelId)) {
-      toast.error("Pixel ID يجب أن يكون 16 رقم");
+      tToast.error("facebookPixel.msg_1bac");
       return;
     }
 
@@ -714,7 +716,7 @@ const FacebookPixelSettings: React.FC = () => {
       setAddingPixel(true);
       const response = await storefrontSettingsService.addPixel(newPixel);
       if (response.success) {
-        toast.success("✅ تم إضافة Pixel بنجاح");
+        tToast.success("facebookPixel.msg_293c");
         setShowAddPixelModal(false);
         setNewPixel({
           pixelId: "",
@@ -735,7 +737,7 @@ const FacebookPixelSettings: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error("Error adding pixel:", error);
-      toast.error(getErrorMessage(error, "فشل إضافة Pixel"));
+      toast.error(getErrorMessage(error, i18n.t("facebookPixel.msg_395b")));
     } finally {
       setAddingPixel(false);
     }
@@ -747,12 +749,12 @@ const FacebookPixelSettings: React.FC = () => {
     try {
       const response = await storefrontSettingsService.deletePixel(pixelId);
       if (response.success) {
-        toast.success("✅ تم حذف Pixel بنجاح");
+        tToast.success("facebookPixel.success_delete_df0b");
         await loadMultiplePixels();
       }
     } catch (error: unknown) {
       console.error("Error deleting pixel:", error);
-      toast.error(getErrorMessage(error, "فشل حذف Pixel"));
+      toast.error(getErrorMessage(error, i18n.t("facebookPixel.failed_delete_f091")));
     }
   };
 
@@ -761,14 +763,14 @@ const FacebookPixelSettings: React.FC = () => {
       setTestingPixelId(pixelId);
       const response = await storefrontSettingsService.testPixelById(pixelId);
       if (response.success && response.data.success) {
-        toast.success("✅ اختبار Pixel ناجح");
+        tToast.success("facebookPixel.test_success_59dc");
       } else {
-        toast.error("❌ فشل اختبار Pixel");
+        tToast.error("facebookPixel.failed_test_e3c7");
       }
       await loadMultiplePixels();
     } catch (error: unknown) {
       console.error("Error testing pixel:", error);
-      toast.error(getErrorMessage(error, "فشل اختبار Pixel"));
+      toast.error(getErrorMessage(error, i18n.t("facebookPixel.failed_test_1971")));
     } finally {
       setTestingPixelId(null);
     }
@@ -780,13 +782,13 @@ const FacebookPixelSettings: React.FC = () => {
         isPrimary: true,
       });
       if (response.success) {
-        toast.success("✅ تم تعيين Pixel كأساسي");
+        tToast.success("facebookPixel.success_assign_65dc");
         await loadMultiplePixels();
         await loadSettings(true);
       }
     } catch (error: unknown) {
       console.error("Error setting primary:", error);
-      toast.error(getErrorMessage(error, "فشل تعيين Pixel كأساسي"));
+      toast.error(getErrorMessage(error, i18n.t("facebookPixel.failed_assign_d2eb")));
     }
   };
 
@@ -804,9 +806,9 @@ const FacebookPixelSettings: React.FC = () => {
     } catch (error: unknown) {
       console.error("Error loading business accounts:", error);
       if (getAxiosErrorData(error)?.needsAuth) {
-        toast.error("يجب ربط حساب Facebook أولاً");
+        tToast.error("facebookPixel.connect_account_7723");
       } else {
-        toast.error("فشل جلب Business Accounts");
+        tToast.error("facebookPixel.failed_fetch_e086");
       }
     } finally {
       setLoadingBusinessAccounts(false);
@@ -821,12 +823,12 @@ const FacebookPixelSettings: React.FC = () => {
 
   const handleCreatePixel = async () => {
     if (!newPixelName.trim()) {
-      toast.error("يرجى إدخال اسم Pixel");
+      tToast.error("facebookPixel.required_enter_name_c004");
       return;
     }
 
     if (!selectedBusinessId) {
-      toast.error("يرجى اختيار Business Account");
+      tToast.error("facebookPixel.required_select_6f4d");
       return;
     }
 
@@ -837,7 +839,7 @@ const FacebookPixelSettings: React.FC = () => {
         selectedBusinessId,
       );
       if (response.success) {
-        toast.success(`✅ تم إنشاء Pixel بنجاح! ID: ${response.data.pixelId}`);
+        toast.success(i18n.t("facebookPixel.msg_1l2s94", { pixelId: pixelId }));
         setShowCreatePixelModal(false);
         setNewPixelName("");
         await loadMultiplePixels();
@@ -846,9 +848,9 @@ const FacebookPixelSettings: React.FC = () => {
     } catch (error: unknown) {
       console.error("Error creating pixel:", error);
       if (getAxiosErrorData(error)?.needsAuth) {
-        toast.error("يجب ربط حساب Facebook أولاً");
+        tToast.error("facebookPixel.connect_account_7723");
       } else {
-        toast.error(getErrorMessage(error, "فشل إنشاء Pixel"));
+        toast.error(getErrorMessage(error, i18n.t("facebookPixel.failed_create_23a9")));
       }
     } finally {
       setCreatingPixel(false);
