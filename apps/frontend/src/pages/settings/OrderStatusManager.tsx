@@ -24,6 +24,8 @@ import {
   Cog,
 } from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 // ═══════════════════════════════════════════════════════════════
@@ -156,11 +158,11 @@ const OrderStatusManager: React.FC = () => {
         setStatuses(data.data);
       } else {
         console.error("❌ Error:", data.message);
-        toast.error(data.message || "خطأ في جلب الحالات");
+        toast.error(data.message || i18n.t("orderStatusManager.error_fetch_fe2a"));
       }
     } catch (error) {
       console.error("❌ Fetch error:", error);
-      toast.error("خطأ في جلب الحالات");
+      tToast.error("orderStatusManager.error_fetch_fe2a");
     } finally {
       setLoading(false);
     }
@@ -175,13 +177,13 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success(data.message || "تم تهيئة الحالات الافتراضية بنجاح");
+        toast.success(data.message || i18n.t("orderStatusManager.msg_8149"));
         fetchStatuses();
       } else {
-        toast.error(data.message || "خطأ في تهيئة الحالات");
+        toast.error(data.message || i18n.t("orderStatusManager.msg_e0af"));
       }
     } catch (error) {
-      toast.error("خطأ في تهيئة الحالات الافتراضية");
+      tToast.error("orderStatusManager.msg_d864");
     } finally {
       setSyncing(false);
     }
@@ -189,7 +191,7 @@ const OrderStatusManager: React.FC = () => {
 
   const createStatus = async () => {
     if (!newStatus.code || !newStatus.name) {
-      toast.error("الكود والاسم مطلوبان");
+      tToast.error("orderStatusManager.msg_e1a9");
       return;
     }
 
@@ -201,7 +203,7 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم إنشاء الحالة بنجاح");
+        tToast.success("orderStatusManager.success_create_67d7");
         setShowAddModal(false);
         setNewStatus({
           code: "",
@@ -225,7 +227,7 @@ const OrderStatusManager: React.FC = () => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error("خطأ في إنشاء الحالة");
+      tToast.error("orderStatusManager.error_create_9567");
     }
   };
 
@@ -238,14 +240,14 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم تحديث الحالة بنجاح");
+        tToast.success("orderStatusManager.success_update_dfad");
         setEditingStatus(null);
         fetchStatuses();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error("خطأ في تحديث الحالة");
+      tToast.error("orderStatusManager.error_update_f3e8");
     }
   };
 
@@ -264,13 +266,13 @@ const OrderStatusManager: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم حذف الحالة بنجاح");
+        tToast.success("orderStatusManager.success_delete_f86e");
         fetchStatuses();
       } else {
-        toast.error(data.message || "لا يمكن حذف هذه الحالة");
+        toast.error(data.message || i18n.t("orderStatusManager.msg_8f8d"));
       }
     } catch (error) {
-      toast.error("خطأ في حذف الحالة");
+      tToast.error("orderStatusManager.error_delete_e809");
     }
   };
 
@@ -300,7 +302,7 @@ const OrderStatusManager: React.FC = () => {
         body: JSON.stringify({ statusIds: items.map((i) => i.id) }),
       });
     } catch (error) {
-      toast.error("خطأ في حفظ الترتيب");
+      tToast.error("orderStatusManager.error_save_9d9b");
       fetchStatuses();
     }
   };

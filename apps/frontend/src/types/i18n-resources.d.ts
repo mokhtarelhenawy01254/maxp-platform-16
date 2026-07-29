@@ -956,6 +956,16 @@ declare module 'react-i18next' {
         retry: string;
         errorPrefix: string;
       };
+      budgetAlerts: {
+        msg_de0a: string;
+        msg_5b24: string;
+        msg_de51: string;
+        msg_d260: string;
+        success_create_4d9c: string;
+        success_send_4249: string;
+        success_delete_2449: string;
+        msg_914b: string;
+      };
       createAd: {
         msg_ed79: string;
         msg_c49c: string;
@@ -2475,6 +2485,61 @@ declare module 'react-i18next' {
         noSearchResults: string;
         noText: string;
       };
+      unifiedComments: {
+        pageTitle: string;
+        pageSubtitle: string;
+        postCommentsTitle: string;
+        postCommentsSubtitle: string;
+        backToPosts: string;
+        postId: string;
+        responseMethod: string;
+        responseSettings: string;
+        search: string;
+        searchPlaceholder: string;
+        status: string;
+        allPosts: string;
+        allComments: string;
+        responded: string;
+        pending: string;
+        itemsCount: string;
+        refresh: string;
+        delete: string;
+        fixedResponse: string;
+        manualResponse: string;
+        notSpecified: string;
+        noComments: string;
+        noCommentsDesc: string;
+        loadingComments: string;
+        loadingPosts: string;
+        selected: string;
+        comment: string;
+        comments: string;
+        deleteAll: string;
+        cancelSelection: string;
+        selectComments: string;
+        confirmDelete: string;
+        deletedSuccessfully: string;
+        deleteError: string;
+        replied: string;
+        reply: string;
+        replyPrompt: string;
+        enterReply: string;
+        replySaved: string;
+        replyError: string;
+        confirmDeleteComment: string;
+        repliedAt: string;
+        lastComment: string;
+        responses: string;
+        actions: string;
+        viewComments: string;
+        noPosts: string;
+        showing: string;
+        to: string;
+        of: string;
+        result: string;
+        previous: string;
+        next: string;
+      };
       broadcast: {
         title: string;
         newBroadcast: string;
@@ -3072,61 +3137,6 @@ declare module 'react-i18next' {
           fri: string;
           sat: string;
         };
-      };
-      unifiedComments: {
-        pageTitle: string;
-        pageSubtitle: string;
-        postCommentsTitle: string;
-        postCommentsSubtitle: string;
-        backToPosts: string;
-        postId: string;
-        responseMethod: string;
-        responseSettings: string;
-        search: string;
-        searchPlaceholder: string;
-        status: string;
-        allPosts: string;
-        allComments: string;
-        responded: string;
-        pending: string;
-        itemsCount: string;
-        refresh: string;
-        delete: string;
-        fixedResponse: string;
-        manualResponse: string;
-        notSpecified: string;
-        noComments: string;
-        noCommentsDesc: string;
-        loadingComments: string;
-        loadingPosts: string;
-        selected: string;
-        comment: string;
-        comments: string;
-        deleteAll: string;
-        cancelSelection: string;
-        selectComments: string;
-        confirmDelete: string;
-        deletedSuccessfully: string;
-        deleteError: string;
-        replied: string;
-        reply: string;
-        replyPrompt: string;
-        enterReply: string;
-        replySaved: string;
-        replyError: string;
-        confirmDeleteComment: string;
-        repliedAt: string;
-        lastComment: string;
-        responses: string;
-        actions: string;
-        viewComments: string;
-        noPosts: string;
-        showing: string;
-        to: string;
-        of: string;
-        result: string;
-        previous: string;
-        next: string;
       };
       unifiedInbox: {
         title: string;
@@ -5412,6 +5422,15 @@ declare module 'react-i18next' {
         oneDayAgo: string;
         twoDaysAgo: string;
       };
+      textGallery: {
+        msg_b002: string;
+        success_save_13c8: string;
+        failed_save_5d61: string;
+        success_update_8adb: string;
+        failed_update_38bf: string;
+        failed_delete_2cad: string;
+        failed_update_status_7f81: string;
+      };
       globalTimer: {
         taskRunning: string;
         resume: string;
@@ -5527,6 +5546,17 @@ declare module 'react-i18next' {
         success_create_9ea4: string;
         msg_83be: string;
         msg_2a18: string;
+      };
+      benefits: {
+        failed_fetch_81e2: string;
+        failed_fetch_cfae: string;
+        msg_7103: string;
+        success_login_9cb9: string;
+        name_required_6cb0: string;
+        success_update_38b1: string;
+        success_create_3efd: string;
+        success_delete_aded: string;
+        failed_delete_29dd: string;
       };
       createGoal: {
         msg_7016: string;
@@ -8599,6 +8629,16 @@ declare module 'react-i18next' {
         deleteNoteConfirmMessage: string;
         deleting: string;
         yesDelete: string;
+        failed_load_1612: string;
+        msg_2c62: string;
+        msg_ce95: string;
+        success_update_status_4792: string;
+        success_add_477c: string;
+        msg_a504: string;
+        success_delete_42f8: string;
+        success_save_a5c2: string;
+        msg_911a: string;
+        success_update_status_5c48: string;
       };
       orderInvoiceSettings: {
         k_1: string;
@@ -11297,6 +11337,15 @@ declare module 'react-i18next' {
         errorResume: string;
         errorCancel: string;
       };
+      publicApp: {
+        msg_bffe: string;
+        msg_45d5: string;
+        msg_1dfc: string;
+        msg_530b: string;
+        msg_28dd: string;
+        msg_5424: string;
+        success_send_7721: string;
+      };
       reports: {
         title: string;
         salesReport: string;
@@ -11588,6 +11637,21 @@ declare module 'react-i18next' {
         msg_vcygkc: string;
         msg_s5gii5: string;
         msg_1l2s94: string;
+      };
+      orderStatusManager: {
+        error_fetch_fe2a: string;
+        msg_d864: string;
+        msg_e1a9: string;
+        success_create_67d7: string;
+        error_create_9567: string;
+        success_update_dfad: string;
+        error_update_f3e8: string;
+        success_delete_f86e: string;
+        error_delete_e809: string;
+        error_save_9d9b: string;
+        msg_8149: string;
+        msg_e0af: string;
+        msg_8f8d: string;
       };
       promotionSettings: {
         pageTitle: string;
@@ -12837,6 +12901,24 @@ declare module 'react-i18next' {
         copyError: string;
         previewBlocked: string;
         previewNoCompany: string;
+      };
+      companyDetails: {
+        unable_load_1117: string;
+        unable_load_156e: string;
+        success_update_a26a: string;
+        msg_ba2c: string;
+        success_update_813a: string;
+        success_status_c11c: string;
+        success_delete_c4fc: string;
+        msg_8a85: string;
+        msg_624b: string;
+        msg_2bcf: string;
+        msg_06f8: string;
+        msg_c925: string;
+        msg_0fdd: string;
+        msg_1f2a: string;
+        loading_activate_8824: string;
+        msg_378c: string;
       };
       platform: {
         title: string;
@@ -14099,6 +14181,47 @@ declare module 'react-i18next' {
         currentPassword: string;
         newPassword: string;
         confirmNewPassword: string;
+      };
+      wooImport: {
+        msg_1451: string;
+        msg_48e6: string;
+        failed_fetch_454e: string;
+        error_fetch_5a91: string;
+        msg_f1d1: string;
+        msg_dc3a: string;
+        success_send_ff9e: string;
+        msg_41af: string;
+        msg_b87b: string;
+        msg_e256: string;
+        msg_26c8: string;
+        msg_8c96: string;
+        msg_4145: string;
+      };
+      wooImportEnhanced: {
+        msg_917f: string;
+        msg_db7e: string;
+        msg_7b2f: string;
+        msg_2bd1: string;
+        msg_6a66: string;
+        msg_2ece: string;
+        msg_bbcd: string;
+        msg_48ef: string;
+        msg_81b0: string;
+        msg_d4d4: string;
+      };
+      wooSettings: {
+        failed_fetch_3c76: string;
+        msg_3d1d: string;
+        success_save_1406: string;
+        error_save_1cdd: string;
+        msg_3f49: string;
+        msg_c337: string;
+        msg_6f64: string;
+        msg_032e: string;
+        msg_d72d: string;
+        msg_3bc6: string;
+        msg_912d: string;
+        msg_df71: string;
       };
     };
   }

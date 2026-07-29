@@ -59,6 +59,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 
 interface Enrollment {
   id: string;
@@ -173,7 +174,7 @@ const Benefits: React.FC = () => {
       setDetailsOpen(true);
     } catch (error) {
       console.error("Error fetching benefit details:", error);
-      toast.error("فشل في جلب تفاصيل الميزة");
+      tToast.error("benefits.failed_fetch_81e2");
       navigate("/hr/benefits");
     } finally {
       setLoading(false);
@@ -208,7 +209,7 @@ const Benefits: React.FC = () => {
       );
     } catch (error) {
       console.error("Error fetching benefits:", error);
-      toast.error("فشل في جلب المزايا");
+      tToast.error("benefits.failed_fetch_cfae");
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ const Benefits: React.FC = () => {
 
   const handleEnroll = async () => {
     if (!enrollmentFormData.employeeId) {
-      toast.error("يرجى اختيار موظف");
+      tToast.error("benefits.msg_7103");
       return;
     }
 
@@ -226,7 +227,7 @@ const Benefits: React.FC = () => {
         benefitId: selectedBenefit?.id,
         ...enrollmentFormData,
       });
-      toast.success("تم تسجيل الموظف في الميزة بنجاح");
+      tToast.success("benefits.success_login_9cb9");
       setEnrollmentFormData({
         employeeId: "",
         startDate: new Date().toISOString().split("T")[0],
@@ -246,7 +247,7 @@ const Benefits: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      toast.error("اسم الميزة مطلوب");
+      tToast.error("benefits.name_required_6cb0");
       return;
     }
 
@@ -254,10 +255,10 @@ const Benefits: React.FC = () => {
       setSubmitting(true);
       if (editingId) {
         await api.put(`/hr/benefits/${editingId}`, formData);
-        toast.success("تم تحديث الميزة بنجاح");
+        tToast.success("benefits.success_update_38b1");
       } else {
         await api.post("/hr/benefits", formData);
-        toast.success("تم إنشاء الميزة بنجاح");
+        tToast.success("benefits.success_create_3efd");
       }
       setDialogOpen(false);
       resetForm();
@@ -282,11 +283,11 @@ const Benefits: React.FC = () => {
 
     try {
       await api.delete(`/hr/benefits/${id}`);
-      toast.success("تم حذف الميزة بنجاح");
+      tToast.success("benefits.success_delete_aded");
       fetchBenefits();
     } catch (error) {
       console.error("Error deleting benefit:", error);
-      toast.error("فشل في حذف الميزة");
+      tToast.error("benefits.failed_delete_29dd");
     }
   };
 

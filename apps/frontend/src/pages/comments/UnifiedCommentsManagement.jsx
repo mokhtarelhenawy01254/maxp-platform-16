@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
@@ -53,7 +54,7 @@ const UnifiedCommentsManagement = () => {
       if (result.success && activePostId) fetchComments(activePostId);
     }).catch((error) => {
       console.error("Error deleting comment:", error);
-      toast.error("فشل حذف التعليق");
+      tToast.error("unifiedComments.failed_delete_c894");
     });
   }, [activePostId]);
   const executeBulkDelete = useCallback(() => {
@@ -61,7 +62,7 @@ const UnifiedCommentsManagement = () => {
       if (result.success) {
         if (activePostId) fetchComments(activePostId);
         setSelectedComments([]);
-        toast.success("تم حذف التعليقات بنجاح");
+        tToast.success("unifiedComments.success_delete_a35c");
       }
     }).catch((error) => {
       console.error("Error deleting comments:", error);
@@ -80,7 +81,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
-      toast.error("فشل تحميل المنشورات");
+      tToast.error("unifiedComments.failed_load_c6bd");
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
-      toast.error("فشل تحميل التعليقات");
+      tToast.error("unifiedComments.failed_load_5aa6");
     } finally {
       setLoading(false);
     }
@@ -132,7 +133,7 @@ const UnifiedCommentsManagement = () => {
 
   const handleUpdateResponse = async (commentId, response) => {
     if (!response || !response.trim()) {
-      toast.warning("الرجاء إدخال رد قبل الحفظ.");
+      tToast.warning("unifiedComments.msg_91bc");
       return;
     }
 
@@ -145,7 +146,7 @@ const UnifiedCommentsManagement = () => {
         if (activePostId) {
           fetchComments(activePostId);
         }
-        toast.success("تم حفظ الرد وإرساله إلى فيسبوك بنجاح!");
+        tToast.success("unifiedComments.success_save_8822");
       }
     } catch (error) {
       toast.error("خطأ في تحديث رد التعليق: " + error.message);
@@ -176,7 +177,7 @@ const UnifiedCommentsManagement = () => {
 
   const handleBulkDelete = () => {
     if (selectedComments.length === 0) {
-      toast.warning("الرجاء اختيار تعليقات لحذفها");
+      tToast.warning("unifiedComments.msg_2f31");
       return;
     }
 

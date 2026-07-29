@@ -111,7 +111,7 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
   // Save new text
   const saveText = async () => {
     if (!newContent.trim() && newImages.length === 0) {
-      alert("يرجى إدخال محتوى النص أو إرفاق صورة على الأقل");
+      alert(i18n.t("textGallery.msg_b002"));
       return;
     }
 
@@ -157,10 +157,10 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
       setNewContent("");
       setNewImages([]);
       setNewImagePreviews([]);
-      alert("✅ تم حفظ النص بنجاح!");
+      alert(i18n.t("textGallery.success_save_13c8"));
     } catch (error) {
       console.error("Error saving text:", error);
-      alert("فشل حفظ النص. حاول مرة أخرى.");
+      alert(i18n.t("textGallery.failed_save_5d61"));
     } finally {
       setSaving(false);
     }
@@ -173,7 +173,7 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
       editExistingImages.length === 0 &&
       editImages.length === 0
     ) {
-      alert("يرجى إدخال محتوى النص أو إرفاق صورة على الأقل");
+      alert(i18n.t("textGallery.msg_b002"));
       return;
     }
 
@@ -219,10 +219,10 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
       setEditImages([]);
       setEditImagePreviews([]);
       setEditExistingImages([]);
-      alert("✅ تم تحديث النص بنجاح!");
+      alert(i18n.t("textGallery.success_update_8adb"));
     } catch (error) {
       console.error("Error updating text:", error);
-      alert("فشل تحديث النص. حاول مرة أخرى.");
+      alert(i18n.t("textGallery.failed_update_38bf"));
     } finally {
       setUpdating(false);
     }
@@ -239,7 +239,7 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
       setSavedTexts((prev) => prev.filter((t) => t.id !== textId));
     } catch (error) {
       console.error("Error deleting text:", error);
-      alert("فشل حذف النص. حاول مرة أخرى.");
+      alert(i18n.t("textGallery.failed_delete_2cad"));
     } finally {
       setDeleting(null);
     }
@@ -258,7 +258,7 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
       await loadTexts();
     } catch (error) {
       console.error("Error toggling pin:", error);
-      alert("فشل تحديث حالة التثبيت. حاول مرة أخرى.");
+      alert(i18n.t("textGallery.failed_update_status_7f81"));
     } finally {
       setPinning(null);
     }

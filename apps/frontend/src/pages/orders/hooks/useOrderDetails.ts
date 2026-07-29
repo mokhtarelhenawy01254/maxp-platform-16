@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import i18n from "../../../i18n";
+import { tToast } from "../../../utils/i18n-toast";
 import { OrderDetailsType, Government, Area } from "../types";
 import {
   validateOrderItems,
@@ -534,7 +536,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       }
     } catch (error) {
       console.error("Error fetching order:", error);
-      toast.error("فشل تحميل تفاصيل الطلب");
+      tToast.error("orderDetails.failed_load_1612");
     } finally {
       setLoading(false);
     }
@@ -611,7 +613,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     const trimmedNotes = String(notes || "").trim();
 
     if (isCancellationStatus(normalizedStatus) && !trimmedNotes) {
-      toast.error("سبب إلغاء الطلب مطلوب");
+      tToast.error("orderDetails.msg_2c62");
       return false;
     }
 
@@ -628,14 +630,14 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       if (response.data.success) {
         if (response.data.data?.workflowStatus === "pending") {
           toast.success(
-            response.data.message || "تم تقديم طلب تغيير الحالة للمراجعة",
+            response.data.message || i18n.t("orderDetails.msg_911a"),
           );
           return true;
         }
 
         await fetchOrderDetails();
         await fetchAllowedTransitions(normalizedStatus);
-        toast.success(response.data.message || "تم تحديث حالة الطلب بنجاح");
+        toast.success(response.data.message || i18n.t("orderDetails.success_update_status_5c48"));
         return true;
       }
       return false;
@@ -652,7 +654,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     notes: string,
   ) => {
     if (order?.metadata?.isGuestOrder) {
-      toast.error("حالة الدفع غير متاحة حالياً لطلبات الضيوف");
+      tToast.error("orderDetails.msg_ce95");
       return false;
     }
 
@@ -671,7 +673,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             ? { ...prev, paymentStatus: newPaymentStatus.toUpperCase() as any }
             : null,
         );
-        toast.success("تم تحديث حالة الدفع بنجاح");
+        tToast.success("orderDetails.success_update_status_4792");
         return true;
       }
       return false;
@@ -695,7 +697,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
       if (response.data.success) {
         setOrderNotes((prev) => [response.data.data, ...prev]);
-        toast.success("تم إضافة الملاحظة بنجاح");
+        tToast.success("orderDetails.success_add_477c");
         return true;
       }
       return false;
@@ -719,7 +721,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         setOrderNotes((prev) =>
           prev.map((n) => (n.id === noteId ? response.data.data : n)),
         );
-        toast.success("تم تعديل الملاحظة بنجاح");
+        tToast.success("orderDetails.msg_a504");
         return true;
       }
       return false;
@@ -739,7 +741,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       );
       if (response.data.success) {
         setOrderNotes((prev) => prev.filter((n) => n.id !== noteId));
-        toast.success("تم حذف الملاحظة بنجاح");
+        tToast.success("orderDetails.success_delete_42f8");
         return true;
       }
       return false;
@@ -863,7 +865,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
 
       await fetchOrderDetails();
       setIsEditing(false);
-      toast.success("تم حفظ التغييرات بنجاح");
+      tToast.success("orderDetails.success_save_a5c2");
       return true;
     } catch (e: any) {
       console.error("Save error:", e);

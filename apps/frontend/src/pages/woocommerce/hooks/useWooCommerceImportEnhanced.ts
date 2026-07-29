@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { tToast } from "../../../utils/i18n-toast";
 import io, { Socket } from "socket.io-client";
 import tokenManager from "../../../utils/tokenManager";
 import { wooCommerceStorage } from "../../../utils/storage";
@@ -297,7 +298,7 @@ export function useWooCommerceImportEnhanced({
       return response.data;
     },
     onSuccess: () => {
-      toast.success("🚀 تم بدء الاستيراد في الخلفية");
+      tToast.success("wooImportEnhanced.msg_917f");
       queryClient?.invalidateQueries({
         queryKey: ["woocommerce", "import-jobs"],
       });
@@ -313,13 +314,13 @@ export function useWooCommerceImportEnhanced({
       await apiClient(`/import-jobs/pause/${jobId}`, { method: "POST" });
     },
     onSuccess: () => {
-      toast.success("⏸️ تم إيقاف الاستيراد مؤقتاً");
+      tToast.success("wooImportEnhanced.msg_db7e");
       queryClient?.invalidateQueries({
         queryKey: ["woocommerce", "import-jobs"],
       });
     },
     onError: () => {
-      toast.error("❌ فشل في إيقاف الاستيراد");
+      tToast.error("wooImportEnhanced.msg_7b2f");
     },
   });
 
@@ -329,13 +330,13 @@ export function useWooCommerceImportEnhanced({
       await apiClient(`/import-jobs/resume/${jobId}`, { method: "POST" });
     },
     onSuccess: () => {
-      toast.success("▶️ تم استئناف الاستيراد");
+      tToast.success("wooImportEnhanced.msg_2bd1");
       queryClient?.invalidateQueries({
         queryKey: ["woocommerce", "import-jobs"],
       });
     },
     onError: () => {
-      toast.error("❌ فشل في استئناف الاستيراد");
+      tToast.error("wooImportEnhanced.msg_6a66");
     },
   });
 
@@ -345,13 +346,13 @@ export function useWooCommerceImportEnhanced({
       await apiClient(`/import-jobs/cancel/${jobId}`, { method: "POST" });
     },
     onSuccess: () => {
-      toast.success("🛑 تم إلغاء الاستيراد");
+      tToast.success("wooImportEnhanced.msg_2ece");
       queryClient?.invalidateQueries({
         queryKey: ["woocommerce", "import-jobs"],
       });
     },
     onError: () => {
-      toast.error("❌ فشل في إلغاء الاستيراد");
+      tToast.error("wooImportEnhanced.msg_bbcd");
     },
   });
 
@@ -384,7 +385,7 @@ export function useWooCommerceImportEnhanced({
       });
     },
     onError: () => {
-      toast.error("❌ فشل في استيراد الطلبات المحددة");
+      tToast.error("wooImportEnhanced.msg_48ef");
     },
   });
 
@@ -406,7 +407,7 @@ export function useWooCommerceImportEnhanced({
     });
 
     socket.on("import:completed", () => {
-      toast.success("🎉 تم اكتمال الاستيراد بنجاح!");
+      tToast.success("wooImportEnhanced.msg_81b0");
       queryClient?.invalidateQueries({
         queryKey: ["woocommerce", "import-jobs"],
       });
@@ -438,7 +439,7 @@ export function useWooCommerceImportEnhanced({
       if (stats.percentage > 90) {
         console.warn("⚠️ Memory usage critical! Clearing query cache...");
         queryClient?.clear();
-        toast.error("🧠 تم مسح ذاكرة التخزين المؤقت بسبب ضغط الذاكرة");
+        tToast.error("wooImportEnhanced.msg_d4d4");
       }
     };
 
