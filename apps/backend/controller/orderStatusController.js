@@ -923,7 +923,36 @@ const getStatusesWithTemplates = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
 
-    const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+    const prisma = getSharedPrismaClient();
+
+    // Fix: ensure order PENDING status exists (conflict with payment PENDING)
+    const orderPending = await prisma.orderStatusConfig.findFirst({
+      where: { companyId, code: 'PENDING', statusType: 'order' }
+    });
+    if (!orderPending) {
+      const paymentPending = await prisma.orderStatusConfig.findFirst({
+        where: { companyId, code: 'PENDING', statusType: 'payment' }
+      });
+      if (paymentPending) {
+        // Rename payment PENDING to PAYMENT_PENDING to free up the code
+        await prisma.orderStatusConfig.update({
+          where: { id: paymentPending.id },
+          data: { code: 'PAYMENT_PENDING' }
+        });
+        // Create order PENDING
+        const def = DEFAULT_ORDER_STATUSES.find(s => s.code === 'PENDING');
+        if (def) {
+          await prisma.orderStatusConfig.create({
+            data: {
+              companyId, ...def,
+              statusType: 'order', source: 'system', isSystemStatus: true
+            }
+          });
+        }
+      }
+    }
+
+    const statuses = await prisma.orderStatusConfig.findMany({
       where: {
         companyId,
         isActive: true,
