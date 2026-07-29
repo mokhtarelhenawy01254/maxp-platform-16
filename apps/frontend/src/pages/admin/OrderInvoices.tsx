@@ -718,7 +718,7 @@ const OrderInvoices: React.FC = () => {
                     <TableBody>
                       {invoices.map((invoice) => {
                         const statusMeta = getPaymentStatusMeta(
-                          invoice.paymentStatus, paymentStatusMeta,
+                          invoice.paymentStatus,
                         );
 
                         return (
