@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -460,7 +462,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     try {
       const token = getAccessToken();
       if (!newCategory.name.trim()) {
-        toast.error("اسم القسم مطلوب");
+        tToast.error("tasks.name_required_9466");
         return;
       }
 
@@ -478,12 +480,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchCategories();
         setShowCategoryModal(false);
         setNewCategory({ name: "", description: "", color: "#6366f1" });
-        toast.success("تم إنشاء القسم بنجاح");
+        tToast.success("tasks.success_create_d422");
       } else {
-        toast.error(data.error || "فشل في إنشاء القسم");
+        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_1d0b"));
       }
     } catch (error) {
-      toast.error("فشل في إنشاء القسم");
+      tToast.error("tasks.failed_create_1d0b");
     }
   };
 
@@ -511,12 +513,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       if (data.success) {
         fetchCategories();
         setEditingCategory(null);
-        toast.success("تم تحديث القسم بنجاح");
+        tToast.success("tasks.success_update_6b8e");
       } else {
-        toast.error(data.error || "فشل في تحديث القسم");
+        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_ef21"));
       }
     } catch (error) {
-      toast.error("فشل في تحديث القسم");
+      tToast.error("tasks.failed_update_ef21");
     }
   };
 
@@ -535,12 +537,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       const data = await response.json();
       if (data.success) {
         fetchCategories();
-        toast.success("تم حذف القسم بنجاح");
+        tToast.success("tasks.success_delete_904a");
       } else {
-        toast.error(data.error || "فشل في حذف القسم");
+        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_93ed"));
       }
     } catch (error) {
-      toast.error("فشل في حذف القسم");
+      tToast.error("tasks.failed_delete_93ed");
     }
     });
   };
@@ -587,9 +589,9 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          toast.error("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى");
+          tToast.error("tasks.expired_session_please_5957");
         } else {
-          toast.error("تعذر تحميل المهام. حاول مجدداً.");
+          tToast.error("tasks.unable_load_tasks_f3df");
         }
         return;
       }
@@ -610,7 +612,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         }
       }
     } catch (error) {
-      toast.error("تعذر الاتصال بالخادم. تحقق من اتصالك.");
+      tToast.error("tasks.unable_connect_check_ccf9");
     } finally {
       setLoading(false);
     }
@@ -630,7 +632,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          toast.error("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى");
+          tToast.error("tasks.expired_session_please_5957");
         }
         return;
       }
@@ -643,7 +645,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         );
       }
     } catch (error) {
-      toast.error("تعذر تحميل المشاريع. حاول مجدداً.");
+      tToast.error("tasks.unable_load_436e");
     }
   };
 
@@ -678,7 +680,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       const token = getAccessToken();
 
       if (!token) {
-        toast.error("يجب تسجيل الدخول أولاً");
+        tToast.error("tasks.login_login_2098");
         return;
       }
 
@@ -713,12 +715,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             localStorage.getItem("userName") || "",
           ),
         );
-        toast.success("تم إنشاء المهمة بنجاح");
+        tToast.success("tasks.success_create_7c46");
       } else {
-        toast.error(data.error || "فشل في إنشاء المهمة");
+        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_608b"));
       }
     } catch (error) {
-      toast.error("فشل في إنشاء المهمة");
+      tToast.error("tasks.failed_create_608b");
     }
   };
 
@@ -744,10 +746,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         if (selectedTask && selectedTask.id === taskId) {
           setSelectedTask(data.data);
         }
-        toast.success("تم تحديث حالة المهمة بنجاح");
+        tToast.success("tasks.success_update_ea66");
       }
     } catch (error) {
-      toast.error("فشل في تحديث حالة المهمة");
+      tToast.error("tasks.failed_update_0068");
     }
   };
 
@@ -779,12 +781,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           teamMembers: [],
           tags: [],
         });
-        toast.success("تم إنشاء المشروع بنجاح");
+        tToast.success("tasks.success_create_2cab");
       } else {
-        toast.error(data.error || "فشل في إنشاء المشروع");
+        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_19dc"));
       }
     } catch (error) {
-      toast.error("فشل في إنشاء المشروع");
+      tToast.error("tasks.failed_create_19dc");
     }
   };
 
@@ -827,12 +829,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchTasks();
         setShowEditTaskModal(false);
         setEditingTask(null);
-        toast.success("تم تحديث المهمة بنجاح");
+        tToast.success("tasks.success_update_b5ad");
       } else {
-        toast.error(data.error || "فشل في تحديث المهمة");
+        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_c51e"));
       }
     } catch (error) {
-      toast.error("فشل في تحديث المهمة");
+      tToast.error("tasks.failed_update_c51e");
     }
   };
 
@@ -840,7 +842,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   const duplicateTask = async (task: Task) => {
     try {
       const token = getAccessToken();
-      if (!token) { toast.error("يجب تسجيل الدخول أولاً"); return; }
+      if (!token) { tToast.error("tasks.login_login_2098"); return; }
 
       const response = await fetch(buildApiUrl("tasks"), {
         method: "POST",
@@ -871,12 +873,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       const data = await response.json();
       if (data.success) {
         fetchTasks();
-        toast.success("تم تكرار المهمة بنجاح");
+        tToast.success("tasks.msg_178a");
       } else {
-        toast.error(data.error || "فشل في تكرار المهمة");
+        toast.error(data.error || i18n.t("tasks.فشل_في_تكرار_56ed"));
       }
     } catch (error) {
-      toast.error("فشل في تكرار المهمة");
+      tToast.error("tasks.msg_56ed");
     }
   };
 
@@ -897,12 +899,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchTasks();
         setShowTaskModal(false);
         setSelectedTask(null);
-        toast.success("تم حذف المهمة بنجاح");
+        tToast.success("tasks.success_delete_04cd");
       } else {
-        toast.error(data.error || "فشل في حذف المهمة");
+        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_6cbf"));
       }
     } catch (error) {
-      toast.error("فشل في حذف المهمة");
+      tToast.error("tasks.failed_delete_6cbf");
     }
     });
   };
@@ -929,12 +931,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchProjects();
         setShowEditProjectModal(false);
         setEditingProject(null);
-        toast.success("تم تحديث المشروع بنجاح");
+        tToast.success("tasks.success_update_2a08");
       } else {
-        toast.error(data.error || "فشل في تحديث المشروع");
+        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_f0bf"));
       }
     } catch (error) {
-      toast.error("فشل في تحديث المشروع");
+      tToast.error("tasks.failed_update_f0bf");
     }
   };
 
@@ -955,12 +957,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchProjects();
         setShowProjectModal(false);
         setSelectedProject(null);
-        toast.success("تم حذف المشروع بنجاح");
+        tToast.success("tasks.success_delete_7093");
       } else {
-        toast.error(data.error || "فشل في حذف المشروع");
+        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_09e9"));
       }
     } catch (error) {
-      toast.error("فشل في حذف المشروع");
+      tToast.error("tasks.failed_delete_09e9");
     }
     });
   };
@@ -1123,7 +1125,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     }
     fetchTasks();
     setSelectedTasks([]);
-    toast.success(`تم تحديث ${selectedTasks.length} مهمة`);
+    toast.success(i18n.t("tasks.success_update_selectedTaskslength_task_4e85", { length: length }));
   };
 
   const handleBulkDelete = async () => {
@@ -1139,7 +1141,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     }
     fetchTasks();
     setSelectedTasks([]);
-    toast.success(`تم حذف ${selectedTasks.length} مهمة`);
+    toast.success(i18n.t("tasks.success_delete_selectedTaskslength_task_9484", { length: length }));
   };
 
   // Export to CSV
@@ -1214,7 +1216,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     );
 
     setWorkspaceSettings(persisted);
-    toast.success("تم حفظ إعدادات مساحة المهام");
+    tToast.success("tasks.success_save_36c3");
   };
 
   const resetWorkspacePreferences = () => {
@@ -1226,7 +1228,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     );
 
     setWorkspaceSettings(persisted);
-    toast.success("تمت استعادة الإعدادات الافتراضية");
+    tToast.success("tasks.msg_c991");
   };
 
   const setActiveTab = (tab: TaskPageTab) => {
