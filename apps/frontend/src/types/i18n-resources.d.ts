@@ -2511,6 +2511,10 @@ declare module 'react-i18next' {
         msg_8e60: string;
         msg_6ebe: string;
         msg_3297: string;
+        msg_5470: string;
+        msg_2ae6: string;
+        msg_1e96: string;
+        msg_6164: string;
       };
       postSettings: {
         loadingPostSettings: string;
@@ -3671,6 +3675,7 @@ declare module 'react-i18next' {
         unable_request_sync_791e: string;
         error_error_during_d123: string;
         error_error_during_be74: string;
+        msg_1fa1: string;
       };
       whatsappInbox: {
         dashboardTitle: string;

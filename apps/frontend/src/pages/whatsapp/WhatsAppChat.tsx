@@ -1760,7 +1760,7 @@ const WhatsAppChatContent: React.FC = () => {
           tToast.success("whatsappChat.success_select_a6fd");
         },
         (error) => {
-          toast.error('فشل تحديد الموقع: ' + error.message);
+          toast.error(i18n.t("whatsappChat.msg_1fa1", { error: error.message })));
         }
       );
     } else {

@@ -53,5 +53,6 @@
   "msg_36fc": "قريباً",
   "unable_request_sync_791e": "تعذر طلب مزامنة الرسائل",
   "error_error_during_d123": "حدث خطأ أثناء الإرسال",
-  "error_error_during_be74": "حدث خطأ أثناء رفع الملف"
+  "error_error_during_be74": "حدث خطأ أثناء رفع الملف",
+  "msg_1fa1": "فشل تحديد الموقع:  {{error}}"
 }

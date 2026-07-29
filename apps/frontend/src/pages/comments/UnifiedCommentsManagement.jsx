@@ -66,7 +66,7 @@ const UnifiedCommentsManagement = () => {
       }
     }).catch((error) => {
       console.error("Error deleting comments:", error);
-      toast.error("حدث خطأ أثناء حذف التعليقات: " + error.message);
+      toast.error(i18n.t("UnifiedCommentsManagement.msg_f647", { error: error.message })));
     });
   }, [selectedComments, activePostId]);
 
@@ -149,7 +149,7 @@ const UnifiedCommentsManagement = () => {
         tToast.success("unifiedComments.success_save_8822");
       }
     } catch (error) {
-      toast.error("خطأ في تحديث رد التعليق: " + error.message);
+      toast.error(i18n.t("UnifiedCommentsManagement.msg_0b87", { error: error.message })));
     }
   };
 
