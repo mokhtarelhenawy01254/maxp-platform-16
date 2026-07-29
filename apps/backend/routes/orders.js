@@ -1642,7 +1642,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
         'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'DRAFT', 'TRASH',
         'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-        'PENDING_PREPARATION', 'PREPARING', 'READY'
+        'PENDING_PREPARATION', 'PREPARING', 'READY',
+        'STOCK_SHORTAGE', 'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
       ].includes(upperStatus);
 
       if (isValidPrismaEnum) {
