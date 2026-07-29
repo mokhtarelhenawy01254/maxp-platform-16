@@ -2228,6 +2228,22 @@ class EnhancedOrderService {
             include
           });
         }
+
+        // Fallback: try by turbo shipment code
+        if (!order) {
+          whereClause = {
+            OR: [
+              { turboShipmentId: orderId },
+              { turboTrackingNumber: orderId }
+            ],
+            companyId: companyId
+          };
+          console.log('🔍 [ENHANCED-ORDER] Fallback to turbo code:', whereClause);
+          order = await this.getPrisma().order.findFirst({
+            where: whereClause,
+            include
+          });
+        }
       }
 
       // Log if found in Order table
@@ -2348,6 +2364,120 @@ class EnhancedOrderService {
             customer: null,
             conversation: null
           };
+        }
+      }
+
+      // If still not found, try by turboTrackingNumber (كود الشحن)
+      if (!order && orderId) {
+        console.log('🔍 [ENHANCED-ORDER] Not found by ID/orderNumber, trying turboTrackingNumber:', orderId);
+        order = await this.getPrisma().order.findFirst({
+          where: {
+            turboTrackingNumber: orderId,
+            companyId: companyId
+          },
+          include
+        });
+
+        if (order) {
+          console.log('✅ [ENHANCED-ORDER] Found in Order table by turboTrackingNumber');
+        } else {
+          console.log('🔍 [ENHANCED-ORDER] Trying GuestOrder by turboTrackingNumber...');
+          const guestOrder = await this.getPrisma().guestOrder.findFirst({
+            where: {
+              turboTrackingNumber: orderId,
+              companyId: companyId
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              guestName: true,
+              guestEmail: true,
+              guestPhone: true,
+              shippingAddress: true,
+              items: true,
+              total: true,
+              shippingCost: true,
+              discountAmount: true,
+              status: true,
+              paymentStatus: true,
+              paymentMethod: true,
+              currency: true,
+              notes: true,
+              createdAt: true,
+              updatedAt: true,
+              isViewed: true,
+              turboShipmentId: true,
+              turboTrackingNumber: true,
+              turboShipmentStatus: true,
+              turboLabelUrl: true,
+              turboMetadata: true,
+              companyId: true
+            }
+          });
+
+          if (guestOrder) {
+            console.log('✅ [ENHANCED-ORDER] Found in GuestOrder table by turboTrackingNumber');
+            let items = guestOrder.items || [];
+            if (typeof items === 'string') {
+              try { items = JSON.parse(items); } catch (e) { items = []; }
+            }
+
+            let shippingAddress = guestOrder.shippingAddress || {};
+            if (typeof shippingAddress === 'string') {
+              try { shippingAddress = JSON.parse(shippingAddress); } catch (e) { shippingAddress = {}; }
+            }
+
+            const totalAmount = parseFloat(guestOrder.total || 0);
+            const shippingAmount = parseFloat(guestOrder.shippingCost || 0);
+            const discountAmount = parseFloat(guestOrder.discountAmount || 0);
+            const calculatedSubtotal = totalAmount - shippingAmount + discountAmount;
+
+            order = {
+              id: guestOrder.id,
+              orderNumber: guestOrder.orderNumber,
+              customerName: guestOrder.guestName || '',
+              customerEmail: guestOrder.guestEmail || '',
+              customerPhone: guestOrder.guestPhone || '',
+              customerAddress: typeof shippingAddress === 'object' ? (shippingAddress.address || shippingAddress.street || '') : '',
+              city: typeof shippingAddress === 'object' ? (shippingAddress.city || '') : '',
+              status: guestOrder.status || 'PENDING',
+              paymentStatus: 'UNAVAILABLE',
+              paymentMethod: guestOrder.paymentMethod || 'غير محدد',
+              orderItems: items.map((item, index) => ({
+                id: `guest-item-${index}`,
+                productId: item.productId || null,
+                productName: item.name || item.productName || '',
+                productColor: item.color || '',
+                productSize: item.size || '',
+                productSku: item.sku || item.productSku || '',
+                price: parseFloat(item.price || 0),
+                quantity: parseInt(item.quantity || 1),
+                total: parseFloat(item.total || (item.price * item.quantity) || 0),
+                product: null
+              })),
+              subtotal: calculatedSubtotal,
+              tax: 0,
+              shipping: shippingAmount,
+              total: totalAmount,
+              currency: guestOrder.currency || 'EGP',
+              confidence: null,
+              extractionMethod: null,
+              conversationId: null,
+              notes: guestOrder.notes || '',
+              createdAt: guestOrder.createdAt,
+              updatedAt: guestOrder.updatedAt,
+              isViewed: guestOrder.isViewed ?? false,
+              turboShipmentId: guestOrder.turboShipmentId,
+              turboTrackingNumber: guestOrder.turboTrackingNumber,
+              turboShipmentStatus: guestOrder.turboShipmentStatus,
+              turboLabelUrl: guestOrder.turboLabelUrl,
+              turboMetadata: guestOrder.turboMetadata,
+              statusHistory: [],
+              orderNotes: [],
+              customer: null,
+              conversation: null
+            };
+          }
         }
       }
 

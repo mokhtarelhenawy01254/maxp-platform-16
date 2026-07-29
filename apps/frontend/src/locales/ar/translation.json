@@ -7521,6 +7521,9 @@
       "codDeposit": {
         "description": "الدفعة المقدمة لطلبات COD — تقليل المرتجعات"
       },
+      "agentWorkspace": {
+        "description": "مساحة عمل الأجنت — تأكيد الطلبات، إدارة المكالمات، والمتابعات"
+      },
       "products": {
         "description": "كتالوج المنتجات والتصنيفات"
       },
@@ -9825,7 +9828,7 @@
     "title": "تغيير سريع للحالة",
     "description": "ابحث عن أوردر وعدل حالته بسرعة",
     "orderCode": "كود الطلب",
-    "orderCodePlaceholder": "أدخل كود الطلب (مثال: ORD-12345)",
+    "orderCodePlaceholder": "أدخل كود الطلب أو كود الشحن (مثال: ORD-12345)",
     "newStatus": "الحالة الجديدة",
     "selectStatus": "اختر الحالة",
     "searchFirst": "ابحث عن طلب أولاً",
