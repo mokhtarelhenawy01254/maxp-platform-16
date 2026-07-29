@@ -78,6 +78,7 @@ sync_frontend_dist() {
   echo "   Dest:   /var/www/frontend2/dist/index.html"
   ls -la "$source_dir/index.html" 2>&1
   sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index-v2.html
   ls -la /var/www/frontend2/dist/index.html 2>&1
   echo "   New index.html hash refs:"
   grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html || echo "   (no index refs found)"
@@ -695,6 +696,20 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   if ! printf '%s' "$NGINX_HTML" | grep -q '<link rel="canonical"'; then
     echo "❌ Nginx storefront HTML is missing the canonical link tag"
     exit 1
+  fi
+
+  echo "🔍 Verifying admin index.html hash..."
+  ADMIN_INDEX_HASH=$(grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html 2>/dev/null | head -1)
+  echo "   Admin index hash: ${ADMIN_INDEX_HASH}"
+  if echo "$ADMIN_INDEX_HASH" | grep -q "BilVacVl"; then
+    echo "❌ Admin index.html still has OLD hash (BilVacVl) — deploy may have failed!"
+    echo "   Forcing nginx reload and re-checking..."
+    sudo systemctl reload nginx
+    sleep 2
+    ADMIN_INDEX_HASH_RECHECK=$(grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html 2>/dev/null | head -1)
+    echo "   Re-checked admin index hash: ${ADMIN_INDEX_HASH_RECHECK}"
+  else
+    echo "✅ Admin index.html hash is correct (not BilVacVl)"
   fi
 else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"
