@@ -5,6 +5,25 @@ import {
   installChunkLoadRecovery,
   recoverFromChunkLoadError,
 } from "./utils/chunkLoadRecovery";
+import { clearAllSWCaches } from "./utils/swCacheFlush";
+
+// Auto-purge legacy SW caches once for all existing clients
+const SW_MIGRATION_VERSION = "maxp_sw_v2_20260729";
+if (typeof window !== "undefined") {
+  try {
+    if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
+      void clearAllSWCaches().then(() => {
+        try {
+          localStorage.setItem("maxp:sw_migrated", SW_MIGRATION_VERSION);
+        } catch {
+          // Ignore storage quota error
+        }
+      });
+    }
+  } catch {
+    // Ignore private browsing error
+  }
+}
 
 const OPTIONAL_GOOGLE_FONTS_ID = "optional-google-fonts";
 const OPTIONAL_GOOGLE_FONTS_HREF =
@@ -227,6 +246,15 @@ if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MOD
         }
       });
     });
+  });
+
+  // Auto-reload when new controller takes over
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 

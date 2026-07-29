@@ -31,11 +31,23 @@ export async function clearAllSWCaches(): Promise<boolean> {
     }
   }
 
-  // 2. Notify waiting or active service worker to skip waiting
+  // 2. Unregister legacy workers (/push-sw.js) and notify active/waiting workers
   if ("serviceWorker" in navigator && navigator.serviceWorker) {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (const reg of registrations) {
+        const scriptUrl =
+          reg.active?.scriptURL ||
+          reg.waiting?.scriptURL ||
+          reg.installing?.scriptURL ||
+          "";
+
+        if (scriptUrl.includes("/push-sw.js")) {
+          console.warn("[SW-Flush] Unregistering legacy push-sw.js worker:", scriptUrl);
+          await reg.unregister().catch(() => false);
+          continue;
+        }
+
         if (reg.waiting) {
           reg.waiting.postMessage("SKIP_WAITING");
         } else if (reg.active) {
