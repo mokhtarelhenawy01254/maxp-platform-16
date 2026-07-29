@@ -496,6 +496,7 @@ exports.createApp = async (req, res) => {
     const ALLOWED_FIELDS = [
       'slug', 'name', 'description', 'logo', 'images',
       'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'ppuBillingMethod',
       'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
       'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
       'category', 'icon', 'coverImage', 'engineCompatibility',
@@ -554,6 +555,7 @@ exports.updateApp = async (req, res) => {
     const ALLOWED_FIELDS = [
       'slug', 'name', 'description', 'logo', 'images',
       'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'ppuBillingMethod',
       'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
       'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
       'category', 'icon', 'coverImage', 'engineCompatibility',

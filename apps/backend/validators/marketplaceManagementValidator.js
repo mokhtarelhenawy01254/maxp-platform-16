@@ -23,6 +23,7 @@ const appSchema = z.object({
   pricingModel: z.enum(['FREE', 'SUBSCRIPTION', 'PAY_PER_USE']).nullish(),
   unitPrice: z.number().min(0).nullish(),
   unitName: z.string().max(100).nullish(),
+  ppuBillingMethod: z.enum(['PER_ORDER', 'PER_ITEM', 'PERCENTAGE']).nullish(),
   features: z.union([z.string(), z.array(z.string())]).nullish(),
   requiredApps: z.array(z.string()).nullish(),
 });
