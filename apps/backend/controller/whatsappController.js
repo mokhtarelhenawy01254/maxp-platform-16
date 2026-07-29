@@ -3292,6 +3292,32 @@ async function labelChat(req, res) {
     }
 }
 
+async function syncLabels(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const labels = await WhatsAppManager.syncLabels(targetSessionId);
+        res.json({ success: true, labels, message: 'تمت المزامنة بنجاح' });
+    } catch (error) {
+        console.error('❌ Error syncing labels:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات' });
+    }
+}
+
 async function getLabels(req, res) {
     try {
         const { companyId } = req.user;
@@ -4363,6 +4389,7 @@ module.exports = {
     // Labels
     labelChat,
     getLabels,
+    syncLabels,
     createLabel,
     deleteLabel,
     addLabelToChat,

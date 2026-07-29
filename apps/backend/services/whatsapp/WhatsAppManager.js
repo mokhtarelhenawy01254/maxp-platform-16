@@ -30,7 +30,7 @@ const MetaCloudProvider = require('./providers/MetaCloudProvider');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers, isJidNewsletter;
+let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
@@ -39,6 +39,7 @@ const initBaileys = async () => {
     downloadMediaMessage = baileys.downloadMediaMessage;
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
+    S_WHATSAPP_NET = baileys.S_WHATSAPP_NET;
 
 };
 const crypto = require('crypto');
@@ -4620,6 +4621,53 @@ async function getLabels(sessionId) {
 }
 
 /**
+ * مزامنة يدوية للتصنيفات — يعيد تعبئة cache الـ labels من Baileys
+ */
+async function syncLabels(sessionId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return [];
+        throw new Error('Session not found');
+    }
+
+    try {
+        // نمسح cache عشان events تعيد تعبئته من Baileys
+        session.labels.clear();
+        session.labelAssociations.clear();
+        console.log('🔄 Labels cache cleared for session:', sessionId);
+
+        // نطلب label sync من Baileys عبر إنشاء تصنيف مؤقت وحذفه (forced refresh)
+        // لو socket شغال، Baileys هيرد بالأحداث ويعيد ملء الـ cache
+        const tempLabelId = `sync_${Date.now()}`;
+        try {
+            await session.sock.addLabel(tempLabelId, {
+                id: tempLabelId,
+                name: `__sync_${Date.now()}`,
+                color: 0,
+                deleted: true
+            });
+        } catch { /* silent - هذا كافٍ لتحفيز re-sync */ }
+
+        // انتظر شوية عشان events تلحق تشتغل
+        await new Promise(r => setTimeout(r, 500));
+
+        // أعيد قراءة الـ labels من cache
+        const labels = Array.from(session.labels.values());
+        return labels.map(label => ({
+            id: label.id,
+            name: label.name,
+            color: formatLabelColor(label.color),
+            predefinedId: label.predefinedId,
+            chatCount: session.labelAssociations.get(label.id)?.size || 0
+        }));
+    } catch (error) {
+        console.error('❌ Error syncing labels:', error);
+        return getLabels(sessionId);
+    }
+}
+
+/**
  * إنشاء علامة جديدة
  */
 async function createLabel(sessionId, name, color) {
@@ -5299,6 +5347,7 @@ module.exports = {
     // Labels
     labelChat,
     getLabels,
+    syncLabels,
     createLabel,
     deleteLabel,
     removeChatLabel,

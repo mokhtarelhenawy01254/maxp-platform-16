@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Plus, Tag, Trash2 } from "lucide-react";
+import { Check, Plus, RefreshCw, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
@@ -59,6 +59,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 }) => {
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [assignedLabels, setAssignedLabels] = useState<string[]>(initialLabels);
@@ -99,6 +100,20 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       await loadLabels();
     } catch {
       tToast.error("LabelsDialog.failed_create_739e");
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await api.post("/whatsapp/labels/sync", { sessionId });
+      setLabels(response.data.labels || []);
+      toast.success(response.data.message || "تمت المزامنة");
+      onLabelsUpdated?.();
+    } catch {
+      toast.error("فشلت المزامنة");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -266,6 +281,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         <DialogFooter className="border-t border-[color:var(--shell-control-border)] bg-white/55">
           <Button variant="outline" onClick={onClose}>
             إغلاق
+          </Button>
+          <Button variant="secondary" onClick={handleSync} disabled={syncing}>
+            <RefreshCw className={cn("size-4", syncing && "animate-spin")} />
+            {syncing ? "جاري المزامنة..." : "مزامنة"}
           </Button>
         </DialogFooter>
       </DialogContent>
