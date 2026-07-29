@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
 import ErrorBoundary from "../components/ErrorBoundary";
+import { ThemeProvider } from "../components/theme-provider";
 
 const SwUpdateToast: React.FC = () => {
   React.useEffect(() => {
