@@ -7,6 +7,11 @@ import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ThemeProvider } from "../components/theme-provider";
+import AppRoot from "../AppRoot";
+
+const LazyToaster = React.lazy(() =>
+  import("sonner").then((module) => ({ default: module.Toaster })),
+);
 
 const SwUpdateToast: React.FC = () => {
   React.useEffect(() => {
