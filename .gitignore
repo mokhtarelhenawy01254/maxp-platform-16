@@ -248,8 +248,8 @@ woo_check.txt
 !frontend/public/assets/themes/**/*.png
 !frontend/public/assets/themes/**/*.jpg
 # Allow MaxP brand Open Graph cover image (served from / for link previews)
-!frontend/public/og-cover.png
-!frontend/public/og-cover.svg
+!apps/frontend/public/og-cover.png
+!apps/frontend/public/og-cover.svg
 !backend/TEAM_SYNC.md
 !backend/Bugs.md
 !backend/Structure.md

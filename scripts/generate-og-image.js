@@ -3,24 +3,25 @@ const path = require("path");
 const fs = require("fs");
 
 const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#080d11"/>
+  <rect width="1200" height="630" fill="#060b0e"/>
   <defs>
-    <radialGradient id="bg-glow" cx="20%" cy="20%" r="70%">
-      <stop offset="0%" stop-color="#0d9488" stop-opacity="0.30"/>
-      <stop offset="50%" stop-color="#0284c7" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#080d11" stop-opacity="0"/>
+    <radialGradient id="bg-glow" cx="25%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#0d9488" stop-opacity="0.35"/>
+      <stop offset="45%" stop-color="#0284c7" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#060b0e" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="card-glow" cx="80%" cy="80%" r="60%">
-      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.20"/>
-      <stop offset="100%" stop-color="#080d11" stop-opacity="0"/>
+    <radialGradient id="card-glow" cx="80%" cy="75%" r="65%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#060b0e" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#2dd4bf"/>
-      <stop offset="100%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
     </linearGradient>
     <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="rgba(45, 212, 191, 0.5)"/>
-      <stop offset="100%" stop-color="rgba(56, 189, 248, 0.15)"/>
+      <stop offset="0%" stop-color="rgba(45, 212, 191, 0.6)"/>
+      <stop offset="100%" stop-color="rgba(56, 189, 248, 0.2)"/>
     </linearGradient>
   </defs>
 
@@ -28,66 +29,71 @@ const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" x
   <rect width="1200" height="630" fill="url(#bg-glow)"/>
   <rect width="1200" height="630" fill="url(#card-glow)"/>
 
-  <!-- Top Brand Tag -->
-  <rect x="80" y="70" width="160" height="38" rx="19" fill="rgba(13, 148, 136, 0.2)" stroke="rgba(45, 212, 191, 0.4)"/>
-  <circle cx="102" cy="89" r="6" fill="#2dd4bf"/>
-  <text x="118" y="95" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#2dd4bf">MAXP PLATFORM</text>
+  <!-- Subtle Grid Lines -->
+  <g opacity="0.04">
+    <path d="M0 126 H1200 M0 252 H1200 M0 378 H1200 M0 504 H1200" stroke="#ffffff" stroke-width="1"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630" stroke="#ffffff" stroke-width="1"/>
+  </g>
 
-  <!-- Main Headline (Arabic) -->
-  <text x="80" y="180" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="900" fill="#ffffff">منصة إدارة التواصل والتجارة الإلكترونية</text>
+  <!-- Giant MAXP Logo -->
+  <text x="80" y="165" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="900" letter-spacing="2" fill="url(#brand-grad)">MAXP</text>
   
-  <text x="80" y="245" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" fill="#94a3b8">منصة متكاملة لإدارة المحادثات، الذكاء الاصطناعي، والمتاجر الرقمية</text>
+  <!-- Subtitle Tagline -->
+  <text x="80" y="235" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="800" fill="#ffffff">منصة إدارة التواصل والتجارة الإلكترونية</text>
+  
+  <text x="80" y="285" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="500" fill="#94a3b8">إدارة المحادثات الموحدة · الذكاء الاصطناعي AI Agents · المتاجر الرقمية</text>
 
   <!-- Key Capability Badges -->
-  <g transform="translate(80, 290)">
+  <g transform="translate(80, 340)">
     <!-- Badge 1 -->
-    <rect x="0" y="0" width="220" height="48" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(45, 212, 191, 0.3)"/>
-    <text x="20" y="30" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#38bdf8">⚡ AI Agents &amp; Automation</text>
+    <rect x="0" y="0" width="220" height="50" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(45, 212, 191, 0.35)"/>
+    <text x="20" y="31" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#2dd4bf">⚡ AI Agents &amp; Bot</text>
 
     <!-- Badge 2 -->
-    <rect x="235" y="0" width="220" height="48" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(45, 212, 191, 0.3)"/>
-    <text x="255" y="30" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#2dd4bf">💬 Unified Inbox</text>
+    <rect x="235" y="0" width="220" height="50" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(56, 189, 248, 0.35)"/>
+    <text x="255" y="31" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#38bdf8">💬 Unified Inbox</text>
 
     <!-- Badge 3 -->
-    <rect x="470" y="0" width="220" height="48" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(45, 212, 191, 0.3)"/>
-    <text x="490" y="30" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#a855f7">🛍️ E-Commerce Stores</text>
+    <rect x="470" y="0" width="220" height="50" rx="14" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(168, 85, 247, 0.35)"/>
+    <text x="490" y="31" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#a855f7">🛍️ E-Commerce Stores</text>
   </g>
 
-  <!-- Illustration Glass Card Container (Right Side) -->
-  <g transform="translate(800, 70)">
-    <rect x="0" y="0" width="320" height="485" rx="24" fill="rgba(15, 23, 42, 0.85)" stroke="url(#border-grad)" stroke-width="1.5"/>
+  <!-- Right Visual Preview Component -->
+  <g transform="translate(790, 65)">
+    <rect x="0" y="0" width="330" height="495" rx="24" fill="rgba(15, 23, 42, 0.88)" stroke="url(#border-grad)" stroke-width="1.5"/>
     
-    <!-- Mini UI Card Top Header -->
-    <rect x="25" y="30" width="270" height="65" rx="14" fill="rgba(30, 41, 59, 0.8)"/>
-    <circle cx="60" cy="62.5" r="18" fill="url(#brand-grad)"/>
-    <rect x="95" y="52" width="130" height="9" rx="4.5" fill="#e2e8f0"/>
-    <rect x="95" y="68" width="90" height="7" rx="3.5" fill="#64748b"/>
+    <!-- Mini Header -->
+    <rect x="25" y="30" width="280" height="70" rx="16" fill="rgba(30, 41, 59, 0.8)"/>
+    <circle cx="65" cy="65" r="20" fill="url(#brand-grad)"/>
+    <text x="65" y="71" font-family="system-ui, sans-serif" font-size="16" font-weight="900" fill="#060b0e" text-anchor="middle">M</text>
+    <text x="100" y="60" font-family="system-ui, sans-serif" font-size="18" font-weight="900" fill="#ffffff">MAXP</text>
+    <text x="100" y="80" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#2dd4bf">Active Suite</text>
 
-    <!-- Chat Bubbles Simulation -->
-    <rect x="25" y="115" width="220" height="60" rx="14" fill="rgba(13, 148, 136, 0.25)" stroke="rgba(45, 212, 191, 0.3)"/>
-    <rect x="42" y="134" width="150" height="8" rx="4" fill="#2dd4bf"/>
-    <rect x="42" y="150" width="110" height="7" rx="3.5" fill="#94a3b8"/>
+    <!-- Interactive Chat Mockup -->
+    <rect x="25" y="125" width="230" height="65" rx="14" fill="rgba(13, 148, 136, 0.25)" stroke="rgba(45, 212, 191, 0.3)"/>
+    <rect x="42" y="145" width="160" height="9" rx="4.5" fill="#2dd4bf"/>
+    <rect x="42" y="163" width="110" height="7" rx="3.5" fill="#94a3b8"/>
 
-    <rect x="75" y="190" width="220" height="60" rx="14" fill="rgba(56, 189, 248, 0.25)" stroke="rgba(56, 189, 248, 0.3)"/>
-    <rect x="92" y="209" width="160" height="8" rx="4" fill="#38bdf8"/>
-    <rect x="92" y="225" width="100" height="7" rx="3.5" fill="#94a3b8"/>
+    <rect x="75" y="205" width="230" height="65" rx="14" fill="rgba(56, 189, 248, 0.25)" stroke="rgba(56, 189, 248, 0.3)"/>
+    <rect x="92" y="225" width="170" height="9" rx="4.5" fill="#38bdf8"/>
+    <rect x="92" y="243" width="120" height="7" rx="3.5" fill="#94a3b8"/>
 
-    <!-- Metrics Card -->
-    <rect x="25" y="268" width="270" height="190" rx="18" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(51, 65, 85, 0.8)"/>
-    <text x="45" y="303" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#94a3b8">Live Platform Metrics</text>
-    <text x="45" y="348" font-family="system-ui, sans-serif" font-size="38" font-weight="900" fill="#2dd4bf">99.9%</text>
-    <text x="45" y="375" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#cbd5e1">AI Customer Resolution &amp; Uptime</text>
+    <!-- Analytics Widget -->
+    <rect x="25" y="290" width="280" height="180" rx="18" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(51, 65, 85, 0.8)"/>
+    <text x="45" y="325" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#94a3b8">MAXP Unified Platform</text>
+    <text x="45" y="372" font-family="system-ui, sans-serif" font-size="40" font-weight="900" fill="#2dd4bf">MAXP</text>
+    <text x="175" y="370" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#38bdf8">99.9% Online</text>
     
-    <!-- Status Bar -->
-    <rect x="45" y="398" width="230" height="38" rx="12" fill="rgba(45, 212, 191, 0.12)"/>
-    <circle cx="65" cy="417" r="5" fill="#2dd4bf"/>
-    <text x="80" y="422" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#2dd4bf">System Active · maxp.online</text>
+    <!-- Status Pill -->
+    <rect x="45" y="405" width="245" height="40" rx="12" fill="rgba(45, 212, 191, 0.12)"/>
+    <circle cx="65" cy="425" r="5" fill="#2dd4bf"/>
+    <text x="82" y="430" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#2dd4bf">maxp.online</text>
   </g>
 
-  <!-- Bottom Platform Domain Badge -->
-  <g transform="translate(80, 505)">
-    <rect x="0" y="0" width="380" height="50" rx="25" fill="url(#brand-grad)"/>
-    <text x="190" y="32" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="900" fill="#080d11" text-anchor="middle">https://maxp.online</text>
+  <!-- Bottom Platform Domain Pill -->
+  <g transform="translate(80, 500)">
+    <rect x="0" y="0" width="380" height="52" rx="26" fill="url(#brand-grad)"/>
+    <text x="190" y="33" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#060b0e" text-anchor="middle">https://maxp.online</text>
   </g>
 
 </svg>`;
@@ -101,5 +107,5 @@ console.log("Saved SVG:", svgPath);
 sharp(Buffer.from(svg))
   .png({ quality: 100 })
   .toFile(pngPath)
-  .then(() => console.log("Successfully generated og-cover.png at:", pngPath))
+  .then(() => console.log("Successfully generated MAXP og-cover.png at:", pngPath))
   .catch((err) => console.error("Sharp error:", err));
