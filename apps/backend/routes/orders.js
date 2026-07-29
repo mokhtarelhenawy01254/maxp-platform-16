@@ -1988,8 +1988,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     if (customStatusFilter) {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND status = $2`;
-      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND status = $2`;
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
       const params = [companyId, customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;
