@@ -1325,16 +1325,16 @@ const PreparationQueue: React.FC = () => {
       ) : null}
 
       {!preparationSettings.enabled ? (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
-          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700" />
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
           <span className="font-semibold">{t('preparation.k_1')}</span>
           <span className="text-amber-700">{t('preparation.k_2')}</span>
         </div>
       ) : null}
 
       {allOverdueShortageFollowUpCount > 0 ? (
-        <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900">
-          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700" />
+        <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-400" />
           <span className="font-semibold">{t('preparation.overdueBanner', { count: allOverdueShortageFollowUpCount })}</span>
           <span className="text-orange-700">{t('preparation.k_3')}</span>
         </div>
@@ -1388,7 +1388,7 @@ const PreparationQueue: React.FC = () => {
         />
       )}
 
-      <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-700">
           <PreparationBulkActions
             compact
             selectedOrdersCount={selectedOrders.length}
@@ -1413,20 +1413,20 @@ const PreparationQueue: React.FC = () => {
           />
         </div>
 
-      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100">
+      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:shadow-gray-900/30">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5 dark:border-gray-700">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
             <input
               type="checkbox"
               checked={allVisibleSelected}
               onChange={toggleSelectAllVisible}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
             />
             {t('preparation.selectAllCheckbox')}
           </label>
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('preparation.k_4')}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{t('preparation.k_4')}</span>
           {inventoryLoading && (
-            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
+            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
               <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
               {t('preparation.checkingInventory')}
             </div>
@@ -1443,8 +1443,8 @@ const PreparationQueue: React.FC = () => {
               onClick={() => setShowFilters((prev) => !prev)}
               className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition ${
                 showFilters
-                  ? "border-amber-200 bg-amber-50 text-amber-700"
-                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200"
               }`}
               title={showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
             >
@@ -1455,35 +1455,35 @@ const PreparationQueue: React.FC = () => {
             <button
               type="button"
               onClick={() => setColumnSettingsOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200"
               title={t("preparation.table.columnSettings")}
             >
               <Cog6ToothIcon className="h-3.5 w-3.5" />
             </button>
             {columnSettingsOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-                <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                <div className="border-b border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400 dark:border-gray-700 dark:text-gray-500">
                   {t("preparation.table.visibleColumns")}
                 </div>
                 {PREPARATION_TABLE_COLUMNS.map((col) => (
                   <label
                     key={col}
-                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50"
+                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                   >
                     <input
                       type="checkbox"
                       checked={visibleColumns.includes(col)}
                       onChange={() => toggleColumn(col)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
                     />
                     {t(PREPARATION_COLUMN_LABEL_KEYS[col])}
                   </label>
                 ))}
 
-                <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400">
+                <div className="mt-1 border-t border-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-400 dark:border-gray-700 dark:text-gray-500">
                   {t("preparation.table.showHideFilters")}
                 </div>
-                <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50">
+                <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50">
                   <input
                     type="checkbox"
                     checked={showFilters}
@@ -1495,8 +1495,8 @@ const PreparationQueue: React.FC = () => {
                 {PREPARATION_FILTER_SECTIONS.map((section) => (
                   <label
                     key={section}
-                    className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-gray-50 ${
-                      showFilters ? "text-gray-700" : "text-gray-300 pointer-events-none"
+                    className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                      showFilters ? "text-gray-700 dark:text-gray-300" : "text-gray-300 dark:text-gray-600 pointer-events-none"
                     }`}
                   >
                     <input
@@ -1504,7 +1504,7 @@ const PreparationQueue: React.FC = () => {
                       checked={showFilters && visibleFilterSections.includes(section)}
                       onChange={() => toggleFilterSection(section)}
                       disabled={!showFilters}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-500 dark:text-amber-400"
                     />
                     {t(PREPARATION_FILTER_SECTION_LABEL_KEYS[section])}
                   </label>
@@ -1519,22 +1519,22 @@ const PreparationQueue: React.FC = () => {
             {[1, 2, 3, 4, 5].map((row) => (
               <div
                 key={row}
-                className="flex animate-pulse items-center gap-3 border-b border-gray-100 px-4 py-3"
+                className="flex animate-pulse items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-700"
               >
-                <div className="h-4 w-4 rounded bg-gray-200" />
-                <div className="h-4 w-16 rounded bg-gray-200" />
-                <div className="h-4 w-24 rounded bg-gray-200" />
-                <div className="mr-auto h-4 w-20 rounded bg-gray-200" />
+                <div className="h-4 w-4 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="mr-auto h-4 w-20 rounded bg-gray-200 dark:bg-gray-700" />
               </div>
             ))}
           </div>
         ) : paginatedOrders.length === 0 ? (
-          <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center">
-            <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">
+          <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center dark:border-gray-600 dark:bg-gray-800/50">
+            <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('preparation.emptyState.title')}
             </h3>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
+            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">
               {t('preparation.emptyState.desc')}
             </p>
           </div>
@@ -1679,20 +1679,20 @@ const PreparationQueue: React.FC = () => {
           </>
         )}
 
-        <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5">
+        <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-3 max-sm:justify-center">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               {t('preparation.pagination.pageInfo', { page: pagination.page, totalPages, count: currentPageCount })}
             </p>
 
-            <label className="flex items-center gap-1.5 text-xs text-gray-400">
+            <label className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
               {t('preparation.pagination.show')}
               <select
                 value={uiState.pageSize}
                 onChange={(e) =>
                   uiActions.setPageSize(Number(e.target.value) as PageSize)
                 }
-                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-amber-400"
+                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-amber-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:focus:border-amber-500"
               >
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
@@ -1708,7 +1708,7 @@ const PreparationQueue: React.FC = () => {
             <button
               onClick={uiActions.goToPreviousPage}
               disabled={pagination.page === 1}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
             >
               <ChevronRightIcon className="h-3.5 w-3.5" />
               {t('preparation.pagination.previous')}
@@ -1717,7 +1717,7 @@ const PreparationQueue: React.FC = () => {
             <button
               onClick={() => uiActions.goToNextPage(totalPages)}
               disabled={pagination.page === totalPages}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
             >
               {t('preparation.pagination.next')}
               <ChevronLeftIcon className="h-3.5 w-3.5" />

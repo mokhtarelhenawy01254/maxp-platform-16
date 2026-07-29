@@ -19,21 +19,21 @@ const PreparationOrderNotices = ({
   return (
     <div className="space-y-1.5">
       {order.notes ? (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <div className="flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
           <span className="font-semibold shrink-0">{t("preparation.notices.notes")}</span>
           <span>{order.notes}</span>
         </div>
       ) : null}
 
       {!order.isReady ? (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300">
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{t("preparation.notices.needsReview")}</span>
         </div>
       ) : null}
 
       {order.stage === "STOCK_SHORTAGE" ? (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300">
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{t("preparation.notices.shortageHold")}</span>
         </div>
