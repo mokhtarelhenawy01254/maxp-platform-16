@@ -173,7 +173,7 @@ function CommentCard({ comment, selected, onToggleSelect, onDelete, onReplySent 
                   tToast.error("postComments.msg_8e60");
                 }
               } catch (err) {
-                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message })));
+                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message }));
               } finally {
                 setDeleting(false);
               }
@@ -333,7 +333,7 @@ const PostComments = () => {
         setComments(response.data || []);
       }
     } catch (error) {
-      toast.error(i18n.t("postComments.msg_1e96", { error: error.message })));
+      toast.error(i18n.t("postComments.msg_1e96", { error: error.message }));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -392,7 +392,7 @@ const PostComments = () => {
                   tToast.error("postComments.msg_3297");
                 }
               } catch (err) {
-                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message })));
+                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message }));
               } finally {
                 setDeletingBulk(false);
               }

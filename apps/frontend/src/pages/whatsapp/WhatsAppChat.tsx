@@ -1760,7 +1760,7 @@ const WhatsAppChatContent: React.FC = () => {
           tToast.success("whatsappChat.success_select_a6fd");
         },
         (error) => {
-          toast.error(i18n.t("whatsappChat.msg_1fa1", { error: error.message })));
+          toast.error(i18n.t("whatsappChat.msg_1fa1", { error: error.message }));
         }
       );
     } else {
@@ -2059,7 +2059,7 @@ const WhatsAppChatContent: React.FC = () => {
         onAddStatus={() => setStatusDialogOpen(true)}
         onOpenBroadcast={() => setBroadcastDialogOpen(true)}
         onOpenCheckNumber={() => setCheckNumberDialogOpen(true)}
-        onOpenLabels={() => setLabelDialogOpen(true)}
+        onOpenLabels={() => { setSelectedContactForLabel(null); setLabelDialogOpen(true); }}
         onBulkDelete={handleBulkDeleteChats}
         onDeleteAll={handleDeleteAllChats}
         labels={labels}
@@ -2140,9 +2140,14 @@ const WhatsAppChatContent: React.FC = () => {
             <div className="chat-right-panel-container">
               <ChatRightPanel
                 contact={selectedContact}
+                labels={labels}
                 onOpenOrder={() => setShowQuickOrderModal(true)}
                 onOpenTasks={() => setShowQuickCreateTaskModal(true)}
                 onClose={() => setShowRightPanel(false)}
+                onOpenLabels={() => {
+                  setSelectedContactForLabel(selectedContact);
+                  setLabelDialogOpen(true);
+                }}
               />
             </div>
           </>
