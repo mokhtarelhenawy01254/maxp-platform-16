@@ -74,7 +74,10 @@
       "description": "Order management and analytics"
     },
     "codDeposit": {
-      "description": "COD deposit — reduce returns with upfront payment"
+      "description": "COD deposit management"
+    },
+    "agentWorkspace": {
+      "description": "Agent workspace for order confirmation, calls, and follow-ups"
     },
     "products": {
       "description": "Product catalog and categories"

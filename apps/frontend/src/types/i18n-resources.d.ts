@@ -7514,6 +7514,9 @@ declare module 'react-i18next' {
           codDeposit: {
             description: string;
           };
+          agentWorkspace: {
+            description: string;
+          };
           products: {
             description: string;
           };

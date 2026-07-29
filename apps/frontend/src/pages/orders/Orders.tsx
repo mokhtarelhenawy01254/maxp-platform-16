@@ -15,6 +15,7 @@ import {
   AFFILIATE_OPERATION_APP_SLUGS,
   MERCHANT_OPERATION_APP_SLUGS,
   ORDER_SOURCE_TRACKING_APP_SLUGS,
+  AGENT_WORKSPACE_APP_SLUGS,
   getCurrentCompanyActiveApps,
   hasAnyCompanyAppSlug,
   normalizeCompanyAppSlug,
@@ -934,6 +935,10 @@ const Orders: React.FC = () => {
   const hasMerchantOperationsApp = hasAnyCompanyAppSlug(
     activeCompanyAppSlugSet,
     MERCHANT_OPERATION_APP_SLUGS,
+  );
+  const hasAgentWorkspace = hasAnyCompanyAppSlug(
+    activeCompanyAppSlugSet,
+    AGENT_WORKSPACE_APP_SLUGS,
   );
   const merchantOperationFilterIsActive = Boolean(
     filters.merchantId ||
@@ -2422,15 +2427,17 @@ const Orders: React.FC = () => {
               >
                 {t("orders.allOrders")}
               </button>
-              <button
-                onClick={() => navigate("/orders/workspace")}
-                title={t('orders.workspaceSubtitle')}
-                className="relative inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
-              >
-                <BriefcaseIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
-                <span className="sm:hidden">{t('orders.myWorkspace')}</span>
-              </button>
+              {hasAgentWorkspace && (
+                <button
+                  onClick={() => navigate("/orders/workspace")}
+                  title={t('orders.workspaceSubtitle')}
+                  className="relative inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
+                >
+                  <BriefcaseIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
+                  <span className="sm:hidden">{t('orders.myWorkspace')}</span>
+                </button>
+              )}
 
               {!loading && (
                 <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">

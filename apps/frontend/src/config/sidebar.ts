@@ -622,7 +622,7 @@ export const getSidebarConfig = (
             icon: ArchiveBoxIcon,
             items: [
                 { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders'), requiredPermissions: ['orders.view'] },
-                { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace'), requiredPermissions: ['orders.workspace.view'] },
+                { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace'), requiredPermissions: ['orders.workspace.view'], hidden: !isAppActive('agent-workspace') },
                 { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
                 { to: '/orders/automation', icon: BoltIcon, label: t('sidebar.orderAutomation', 'أتمتة الحالات'), requiredPermissions: ['orders.automation.view'] },
                 { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },

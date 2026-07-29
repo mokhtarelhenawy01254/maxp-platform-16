@@ -1257,5 +1257,55 @@
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
     "updatedAt": "2026-07-21T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-agent-workspace",
+    "slug": "agent-workspace",
+    "name": "مركز التأكيد والمتابعة",
+    "nameEn": "Confirmation & Follow-up Center",
+    "description": "مساحة عمل موحدة لفريق التأكيد — إدارة اتصالات العملاء، تأكيد الطلبات، جدولة المتابعات، وتحديث الحالات.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": ["store"],
+    "positioning": {
+      "audience": "فرق التأكيد والمتابعة الداخلية التي تدير الطلبات الواردة.",
+      "surface": "داخل صفحة مركز التأكيد والمتابعة بشكل مباشر.",
+      "outcome": "تسريع وتيرة تأكيد الطلبات وتقليل الفاقد من الطلبات المعلقة."
+    },
+    "features": {
+      "orderConfirmation": {
+        "enabled": true,
+        "name": "تأكيد الطلبات",
+        "description": "عرض الطلبات المعلقة وتأكيدها أو إلغاؤها بنقرة واحدة.",
+        "access": "FREE"
+      },
+      "callManagement": {
+        "enabled": true,
+        "name": "إدارة المكالمات",
+        "description": "تسجيل محاولات الاتصال بالعملاء ومتابعة حالتهم.",
+        "access": "FREE"
+      },
+      "followUpScheduling": {
+        "enabled": true,
+        "name": "جدولة المتابعات",
+        "description": "إضافة متابعات زمنية للطلبات مع إشعارات للأجنت المسؤول.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "user-circle",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-29T00:00:00.000Z",
+    "updatedAt": "2026-07-29T00:00:00.000Z"
   }
 ]

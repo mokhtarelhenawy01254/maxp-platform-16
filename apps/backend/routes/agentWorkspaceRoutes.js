@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require("../utils/verifyToken");
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 const agentWorkspaceController = require('../controller/agentWorkspaceController');
 
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('agent-workspace'));
 
 /**
  * @route GET /api/v1/agent-workspace/my-orders

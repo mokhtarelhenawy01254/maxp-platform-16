@@ -74,7 +74,10 @@
       "description": "إدارة الطلبات والإحصائيات"
     },
     "codDeposit": {
-      "description": "الدفعة المقدمة لطلبات COD — تقليل المرتجعات"
+      "description": "إدارة الدفعة المقدمة COD"
+    },
+    "agentWorkspace": {
+      "description": "مساحة عمل الأجنت — تأكيد الطلبات، إدارة المكالمات، والمتابعات"
     },
     "products": {
       "description": "كتالوج المنتجات والتصنيفات"

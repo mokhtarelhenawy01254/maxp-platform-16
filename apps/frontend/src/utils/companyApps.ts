@@ -9,6 +9,7 @@ export const ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS = new Set([
 export const ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS = new Set([
   "order-confirmation-distribution",
 ]);
+export const AGENT_WORKSPACE_APP_SLUGS = new Set(["agent-workspace"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
