@@ -2228,6 +2228,22 @@ class EnhancedOrderService {
             include
           });
         }
+
+        // Fallback: try by turbo shipment code
+        if (!order) {
+          whereClause = {
+            OR: [
+              { turboShipmentId: orderId },
+              { turboTrackingNumber: orderId }
+            ],
+            companyId: companyId
+          };
+          console.log('🔍 [ENHANCED-ORDER] Fallback to turbo code:', whereClause);
+          order = await this.getPrisma().order.findFirst({
+            where: whereClause,
+            include
+          });
+        }
       }
 
       // Log if found in Order table
