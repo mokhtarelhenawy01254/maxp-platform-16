@@ -818,3 +818,255 @@
 [data-template="template-2"] .dark svg.text-gray-600 {
   color: #8a8f98 !important;
 }
+
+/* -------------------------------------------
+   FACEBOOK INBOX — Mobile responsive under Template 2
+   ------------------------------------------- */
+
+/* Inbox shell — full height with proper background */
+[data-template="template-2"] .business-inbox-shell {
+  background: var(--color-background);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stage — the main three-column area */
+[data-template="template-2"] .business-inbox-stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--inbox-default-col, 280px 1fr 0px);
+  overflow: hidden;
+  gap: 0.45rem;
+  padding: 0.45rem;
+}
+
+/* Columns */
+[data-template="template-2"] .business-inbox-column {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Chat column fills remaining space */
+[data-template="template-2"] .business-inbox-column.flex-1 {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Header row */
+[data-template="template-2"] .business-inbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* Chat stage */
+[data-template="template-2"] .business-chat-stage {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  overscroll-behavior: contain;
+}
+
+/* Chat composer */
+[data-template="template-2"] .business-chat-composer {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* Conversation cards */
+[data-template="template-2"] .business-conversation-card {
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+[data-template="template-2"] .business-conversation-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+[data-template="template-2"] .business-conversation-card[data-state="selected"] {
+  background: rgba(94, 106, 210, 0.08);
+}
+
+/* Conversation list search */
+[data-template="template-2"] .business-inbox-search-wrap {
+  position: relative;
+}
+[data-template="template-2"] .business-inbox-search {
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  color: var(--color-foreground);
+  font-size: 0.8125rem;
+  outline: none;
+}
+[data-template="template-2"] .business-inbox-search:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(94,106,210,0.1);
+}
+[data-template="template-2"] .business-inbox-search::placeholder {
+  color: var(--color-muted-foreground);
+  opacity: 0.6;
+}
+
+/* Tabs */
+[data-template="template-2"] .business-inbox-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+[data-template="template-2"] .business-inbox-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+  border-radius: 9999px;
+  white-space: nowrap;
+  transition: all 0.1s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+[data-template="template-2"] .business-inbox-tab[data-active="true"] {
+  background: rgba(94,106,210,0.12);
+  color: #828fff;
+}
+[data-template="template-2"] .business-inbox-tab:hover {
+  background: rgba(255,255,255,0.05);
+}
+[data-template="template-2"] .business-inbox-tab-count {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.06);
+  color: var(--color-muted-foreground);
+}
+[data-template="template-2"] .business-inbox-tab[data-active="true"] .business-inbox-tab-count {
+  background: rgba(94,106,210,0.2);
+  color: #828fff;
+}
+
+/* Empty state */
+[data-template="template-2"] .business-inbox-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+  padding: 2rem 1rem;
+}
+
+/* Filter chips */
+[data-template="template-2"] .inbox-filter-chip {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: transparent;
+  color: var(--color-muted-foreground);
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+[data-template="template-2"] .inbox-filter-chip[data-active="true"],
+[data-template="template-2"] .inbox-filter-chip--active {
+  background: rgba(94,106,210,0.12);
+  border-color: rgba(94,106,210,0.25);
+  color: #828fff;
+}
+
+/* --- MOBILE: max-width 767px --- */
+@media (max-width: 767px) {
+  [data-template="template-2"] .business-inbox-shell--conversation-active .business-inbox-stage {
+    grid-template-columns: var(--inbox-conversation-active-col, 1fr 0px 0px);
+  }
+
+  [data-template="template-2"] .business-inbox-stage {
+    gap: 0;
+    padding: 0;
+  }
+
+  [data-template="template-2"] .business-inbox-column {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    border-inline-width: 0;
+    border-block-end-width: 0;
+  }
+
+  [data-template="template-2"] .business-inbox-column--list,
+  [data-template="template-2"] .business-inbox-column--profile {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  [data-template="template-2"] .business-inbox-header {
+    padding: 0.7rem 0.75rem;
+  }
+
+  [data-template="template-2"] .business-chat-stage {
+    padding: 0.35rem 0.5rem;
+  }
+
+  [data-template="template-2"] .business-conversation-card {
+    padding: 0.55rem 0.65rem;
+  }
+
+  [data-template="template-2"] .business-conversation-avatar,
+  [data-template="template-2"] .business-conversation-fallback {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  [data-template="template-2"] .business-conversation-fallback {
+    font-size: 0.82rem;
+  }
+
+  [data-template="template-2"] .business-inbox-tab {
+    min-height: 1.85rem;
+    padding: 0.28rem 0.52rem;
+    font-size: 0.7rem;
+  }
+
+  /* Hide list when conversation active, hide chat when no conversation */
+  [data-template="template-2"]
+    .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column.flex-1,
+  [data-template="template-2"]
+    .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column--profile {
+    display: none;
+  }
+
+  [data-template="template-2"]
+    .business-inbox-shell--conversation-active
+    .business-inbox-column--list {
+    display: none;
+  }
+
+  [data-template="template-2"] .business-inbox-stage {
+    overflow-x: hidden;
+  }
+}
+
+/* -- Inbox grid CSS variables -- */
+[data-template="template-2"] {
+  --inbox-default-col: 320px 1fr 0px;
+  --inbox-conversation-active-col: 0px 1fr 0px;
+}
