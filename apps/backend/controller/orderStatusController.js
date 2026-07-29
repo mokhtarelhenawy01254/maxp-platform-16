@@ -924,8 +924,12 @@ const getStatusesWithTemplates = async (req, res) => {
     }
 
     const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
-      where: { companyId, isActive: true, statusType: 'order' },
-      orderBy: { sortOrder: 'asc' }
+      where: {
+        companyId,
+        isActive: true,
+        statusType: { in: ['order', 'preparation', 'shipping', 'payment'] }
+      },
+      orderBy: [{ statusType: 'asc' }, { sortOrder: 'asc' }]
     });
 
     const templates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({

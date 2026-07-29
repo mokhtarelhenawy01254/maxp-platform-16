@@ -29,6 +29,7 @@ interface StatusWithTemplate {
   name: string;
   color: string;
   sortOrder: number;
+  statusType: string;
   notifyCustomer: boolean;
   isSystemStatus: boolean;
   template: Template | null;
@@ -248,6 +249,11 @@ export default function OrderStatusTemplatesPage() {
                         {status.isSystemStatus && (
                           <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                             {t("orders.system", "نظامي")}
+                          </span>
+                        )}
+                        {status.statusType && status.statusType !== "order" && (
+                          <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                            {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
                           </span>
                         )}
                       </div>
