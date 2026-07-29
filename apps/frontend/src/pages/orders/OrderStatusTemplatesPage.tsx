@@ -10,6 +10,7 @@ import {
   DocumentTextIcon,
   BellIcon,
   BellSlashIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 interface Template {
@@ -61,7 +62,25 @@ export default function OrderStatusTemplatesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showVariables, setShowVariables] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
+
+  const ORDER_VARIABLES = [
+    { var: "{{customerName}}", desc: "اسم العميل" },
+    { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
+    { var: "{{orderNumber}}", desc: "رقم الطلب" },
+    { var: "{{orderDate}}", desc: "تاريخ الطلب" },
+    { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
+    { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
+    { var: "{{total}}", desc: "إجمالي الطلب" },
+    { var: "{{subtotal}}", desc: "المجموع الفرعي" },
+    { var: "{{shipping}}", desc: "قيمة الشحن" },
+    { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
+    { var: "{{trackingNumber}}", desc: "رقم التتبع" },
+    { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
+    { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
+    { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
+  ];
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -364,9 +383,47 @@ export default function OrderStatusTemplatesPage() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder={t("orders.messageContentPlaceholder", "اكتب رسالتك هنا...")}
                 />
-                <p className="mt-1 text-[11px] text-slate-400">
-                  {t("orders.templateVariables", "المتغيرات المتاحة:")} {"{{customerName}}, {{orderNumber}}, {{status}}, {{orderItems}}, {{total}}"}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowVariables(!showVariables)}
+                  className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                >
+                  <ChevronDownIcon
+                    className={`h-3.5 w-3.5 transition ${showVariables ? "rotate-180" : ""}`}
+                  />
+                  {showVariables
+                    ? t("orders.hideVariables", "إخفاء المتغيرات")
+                    : t("orders.showVariables", "عرض كل المتغيرات المتاحة")}
+                </button>
+
+                {showVariables && (
+                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-slate-50 text-right dark:bg-slate-800">
+                          <th className="px-3 py-1.5 font-medium text-slate-500 dark:text-slate-400">
+                            {t("orders.variable", "المتغير")}
+                          </th>
+                          <th className="px-3 py-1.5 font-medium text-slate-500 dark:text-slate-400">
+                            {t("orders.description", "الوصف")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {ORDER_VARIABLES.map((v) => (
+                          <tr key={v.var} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td className="whitespace-nowrap px-3 py-1.5 font-mono text-indigo-600 dark:text-indigo-400">
+                              {v.var}
+                            </td>
+                            <td className="px-3 py-1.5 text-slate-600 dark:text-slate-400">
+                              {v.desc}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
