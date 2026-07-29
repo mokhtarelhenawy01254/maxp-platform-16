@@ -468,7 +468,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <aside
       dir={i18n.dir()}
       className={cn(
-        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 lg:border-r",
+        "whatsapp-theme-transition relative flex h-full max-lg:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] lg:min-h-0 lg:w-[390px] lg:min-w-[360px] lg:border-b-0 ltr:lg:border-r rtl:lg:border-l",
         className,
       )}
     >
@@ -694,17 +694,26 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       )}
       </div>
 
-      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
-              aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
-              className="whatsapp-search-input h-7 rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
-            />
+      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-2 space-y-2 shrink-0">
+        <div className="relative w-full">
+          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+          <Input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
+            aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
+            className="whatsapp-search-input h-8 w-full rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
+          />
+          {searchTerm ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSearchTerm("")}
+              className="absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+            >
+              <X className="size-3" />
+            </Button>
+          ) : (
             <Button
               variant="ghost"
               size="icon-sm"
@@ -714,7 +723,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 )
               }
               className={cn(
-                "absolute end-0.5 top-0.5 size-6 rounded-lg",
+                "absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md",
                 filterType === "unread"
                   ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
                   : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
@@ -723,40 +732,40 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             >
               <Filter className="size-3.5" />
             </Button>
-          </div>
-          {/* Filter pills inline with search on desktop */}
-          <div className="wa-filter-strip shrink-0">
-            <FilterPill
-              active={filterType === "all" && !showArchived}
-              label={t("whatsapp.sidebar.all")}
-              count={conversations.length}
-              onClick={() => { setFilterType("all"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={filterType === "unread"}
-              label={t("whatsapp.sidebar.unread")}
-              count={unreadCount}
-              onClick={() => { setFilterType("unread"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={filterType === "groups"}
-              label={t("whatsapp.sidebar.groups")}
-              count={groupCount}
-              onClick={() => { setFilterType("groups"); setShowArchived(false); }}
-            />
-            <FilterPill
-              active={showArchived}
-              label={t("whatsapp.sidebar.archive") || "الأرشيف"}
-              count={conversations.filter(c => c.isArchived).length}
-              onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
-            />
-            <FilterPill
-              active={filterType === "statuses"}
-              label={t("whatsapp.sidebar.statuses")}
-              count={statuses.length}
-              onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
-            />
-          </div>
+          )}
+        </div>
+        {/* Filter pills full width horizontal strip */}
+        <div className="wa-filter-strip flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          <FilterPill
+            active={filterType === "all" && !showArchived}
+            label={t("whatsapp.sidebar.all")}
+            count={conversations.length}
+            onClick={() => { setFilterType("all"); setShowArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "unread"}
+            label={t("whatsapp.sidebar.unread")}
+            count={unreadCount}
+            onClick={() => { setFilterType("unread"); setShowArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "groups"}
+            label={t("whatsapp.sidebar.groups")}
+            count={groupCount}
+            onClick={() => { setFilterType("groups"); setShowArchived(false); }}
+          />
+          <FilterPill
+            active={showArchived}
+            label={t("whatsapp.sidebar.archive") || "الأرشيف"}
+            count={conversations.filter(c => c.isArchived).length}
+            onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
+          />
+          <FilterPill
+            active={filterType === "statuses"}
+            label={t("whatsapp.sidebar.statuses")}
+            count={statuses.length}
+            onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
+          />
         </div>
       </div>
 

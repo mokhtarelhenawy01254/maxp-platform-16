@@ -572,16 +572,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
                 { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
-                { 
-                    to: '/whatsapp/templates', 
-                    icon: DocumentTextIcon, 
-                    label: t('sidebar.whatsappTemplates'),
-                    children: [
-                        { to: '/whatsapp/templates?category=ORDERS', label: t('sidebar.whatsappTemplatesOrders') },
-                        { to: '/whatsapp/templates?category=HR', label: t('sidebar.whatsappTemplatesHR') },
-                        { to: '/whatsapp/templates?category=SYSTEM', label: t('sidebar.whatsappTemplatesSystem') },
-                    ]
-                },
+                { to: '/whatsapp/templates', icon: DocumentTextIcon, label: t('sidebar.whatsappTemplates') },
                 { to: '/whatsapp/routing', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
                 { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
                 { to: '/whatsapp/cloud-connect', icon: GlobeAltIcon, label: t('sidebar.whatsappCloudConnect') },
@@ -649,6 +640,7 @@ export const getSidebarConfig = (
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
                 { to: '/settings/cod-deposit', icon: BanknotesIcon, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
+                { to: '/orders/status-templates', icon: DocumentTextIcon, label: t('sidebar.orderStatusTemplates', 'قوالب الواتساب للحالات'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل

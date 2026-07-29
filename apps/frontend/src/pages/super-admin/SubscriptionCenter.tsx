@@ -138,6 +138,7 @@ type MarketplaceManagementItem = {
   pricingModel?: PricingModel;
   unitPrice?: number;
   unitName?: string;
+  ppuBillingMethod?: "PER_ORDER" | "PER_ITEM" | "PERCENTAGE";
   feature?: string;
   price?: number;
   unit?: string;
@@ -339,6 +340,7 @@ const createDefaultMarketplaceFormData = (
   pricingModel: "SUBSCRIPTION",
   unitPrice: 0,
   unitName: "",
+  ppuBillingMethod: "PER_ORDER",
   feature: type === "pricing" ? "" : undefined,
   price: type === "pricing" ? 0 : undefined,
   unit: type === "pricing" ? "" : undefined,
@@ -3041,6 +3043,19 @@ const MarketplaceItemDialog = ({
                 <div className="space-y-1">
                   <Label>اسم الوحدة (لـ PPU)</Label>
                   <Input name="unitName" value={formData.unitName ?? ""} onChange={handleChange} disabled={formData.pricingModel !== "PAY_PER_USE"} placeholder="مثال: رسالة، موظف" />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>طريقة احتساب التكلفة (PPU)</Label>
+                  <Select value={formData.ppuBillingMethod ?? "PER_ORDER"} onValueChange={(v) => setFieldValue("ppuBillingMethod", v as "PER_ORDER" | "PER_ITEM" | "PERCENTAGE")} disabled={formData.pricingModel !== "PAY_PER_USE"}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PER_ORDER">ثابت لكل طلب (unitPrice × 1)</SelectItem>
+                      <SelectItem value="PER_ITEM">حسب عدد المنتجات (unitPrice × عدد items)</SelectItem>
+                      <SelectItem value="PERCENTAGE">نسبة من إجمالي الطلب (unitPrice%)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

@@ -454,7 +454,7 @@ const PreparationQueue: React.FC = () => {
     }
 
     return tabs;
-  }, [preparationStatuses, statusLabelMap, SHORTAGE_HOLD_STATUS]);
+  }, [preparationStatuses, statusLabelMap]);
 
   const enabledQcChecks = useMemo(
     () =>
@@ -637,9 +637,11 @@ const PreparationQueue: React.FC = () => {
 
   const stageCounts = summary.stageCounts;
   const totalPages = Math.max(1, pagination.pages);
-  const paginatedOrders = preparationOrders;
+  // NOTE: server-side pagination already ran; this is just the inventory-enriched
+  // version of the current page's orders — not a client-side slice.
+  const enrichedOrders = preparationOrders;
   const visibleOrdersCount = summary.filteredTotal;
-  const currentPageCount = paginatedOrders.length;
+  const currentPageCount = enrichedOrders.length;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
 
@@ -689,8 +691,8 @@ const PreparationQueue: React.FC = () => {
 
   const selectedSet = useMemo(() => new Set(selectedOrders), [selectedOrders]);
   const allVisibleSelected =
-    paginatedOrders.length > 0 &&
-    paginatedOrders.every((order) => selectedSet.has(order.orderNumber));
+    enrichedOrders.length > 0 &&
+    enrichedOrders.every((order) => selectedSet.has(order.orderNumber));
 
   const updateLocalStatuses = useCallback(
     (orderNumbers: string[], nextStatus: string) => {
@@ -844,7 +846,7 @@ const PreparationQueue: React.FC = () => {
     async (
       orderNumber: string,
       overrides: Partial<ShortageHoldDetails> = {},
-      options?: { successMessage?: string | null },
+      options?: { successMessage?: string | null; skipRefresh?: boolean },
     ) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       if (!order) {
@@ -878,7 +880,13 @@ const PreparationQueue: React.FC = () => {
           toast.success(options?.successMessage || t('preparation.page.shortageHoldSaved'));
         }
 
-        void fetchAll();
+        // Skip refresh when the caller (e.g. handleMarkAsShortageHold /
+        // handleReleaseShortageHold) will trigger handleSingleStatusUpdate,
+        // which already calls fetchAll — avoids a double network round-trip.
+        if (!options?.skipRefresh) {
+          void fetchAll();
+        }
+
         return true;
       } catch (error: unknown) {
         console.error("Failed to save shortage hold details:", error);
@@ -1033,7 +1041,7 @@ const PreparationQueue: React.FC = () => {
     const validOrders: PreparationOrder[] = [];
     const invalidOrders: PreparationOrder[] = [];
 
-    paginatedOrders.forEach((order) => {
+    enrichedOrders.forEach((order) => {
       const validation = validateTransition(order, bulkStatus);
       if (validation.valid) {
         validOrders.push(order);
@@ -1064,6 +1072,8 @@ const PreparationQueue: React.FC = () => {
       shortageFollowUp: shortageFollowUpFilter,
       shortageOwner: shortageOwnerFilter,
       productFilter,
+      colorFilter: uiState.productColorFilter || undefined,
+      sizeFilter: uiState.productSizeFilter || undefined,
       productId: uiState.productIdFilter || undefined,
       variantId: uiState.variantIdFilter || undefined,
       itemCountFilter,
@@ -1115,6 +1125,10 @@ const PreparationQueue: React.FC = () => {
     shortageFollowUpFilter,
     shortageOwnerFilter,
     productFilter,
+    uiState.productColorFilter,
+    uiState.productSizeFilter,
+    uiState.productIdFilter,
+    uiState.variantIdFilter,
     itemCountFilter,
     notPrintedFilter,
     noShippingCodeFilter,
@@ -1252,6 +1266,7 @@ const PreparationQueue: React.FC = () => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       const currentDraft =
         shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
+      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
       const saved = await saveShortageHoldDetails(
         orderNumber,
         {
@@ -1260,7 +1275,7 @@ const PreparationQueue: React.FC = () => {
           releasedAt: "",
           state: "held",
         },
-        { successMessage: null },
+        { successMessage: null, skipRefresh: true },
       );
       if (!saved) return;
 
@@ -1274,6 +1289,7 @@ const PreparationQueue: React.FC = () => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
       const currentDraft =
         shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
+      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
       const saved = await saveShortageHoldDetails(
         orderNumber,
         {
@@ -1281,7 +1297,7 @@ const PreparationQueue: React.FC = () => {
           releasedAt: new Date().toISOString(),
           state: "released",
         },
-        { successMessage: null },
+        { successMessage: null, skipRefresh: true },
       );
       if (!saved) return;
 
@@ -1306,12 +1322,12 @@ const PreparationQueue: React.FC = () => {
   const toggleSelectAllVisible = () => {
     if (allVisibleSelected) {
       uiActions.clearVisibleSelection(
-        paginatedOrders.map((order) => order.orderNumber),
+        enrichedOrders.map((order) => order.orderNumber),
       );
       return;
     }
 
-    const visibleIds = paginatedOrders.map((order) => order.orderNumber);
+    const visibleIds = enrichedOrders.map((order) => order.orderNumber);
     uiActions.selectVisibleOrders(visibleIds);
   };
 
@@ -1528,7 +1544,7 @@ const PreparationQueue: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : paginatedOrders.length === 0 ? (
+        ) : enrichedOrders.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center dark:border-gray-600 dark:bg-gray-800/50">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1542,7 +1558,7 @@ const PreparationQueue: React.FC = () => {
           <>
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
-              {paginatedOrders.map((order) => {
+              {enrichedOrders.map((order) => {
                 const shortageHoldDetails =
                   shortageHoldDrafts[order.orderNumber] ||
                   buildShortageHoldDetails(order.metadata);
@@ -1637,7 +1653,7 @@ const PreparationQueue: React.FC = () => {
             {/* Desktop table view */}
             <div className="mt-3 hidden md:block">
               <PreparationOrdersTable
-                orders={paginatedOrders}
+                orders={enrichedOrders}
                 statusSelections={statusSelections}
                 statusOptions={statusOptions}
                 statusLabelMap={statusLabelMap}

@@ -15,6 +15,7 @@ const dropshippingService = require('../services/dropshippingService');
 const EmailService = require('../services/email/EmailService');
 const internalSyncService = require('../services/internalSyncService');
 const { trackStorefrontAppUsage } = require('../services/storefrontAppUsageService');
+const { billOrderPpuApps } = require('../services/orderBasedBillingService');
 const { resolvePublicShippingQuote } = require('../controller/shippingZoneController');
 const {
   extractSubdomainMiddleware,
@@ -2273,6 +2274,21 @@ router.post('/', async (req, res) => {
       }
     } catch (distError) {
       console.error('❌ [CREATE-ORDER] Error in auto-distribution:', distError.message);
+    }
+
+    try {
+      const trackedTotal = Number(order?.finalTotal || finalTotal || 0);
+      const itemsCount = Array.isArray(cartItems) ? cartItems.length : 0;
+
+      await billOrderPpuApps({
+        companyId: company.id,
+        orderNumber: order?.orderNumber || orderNumber || '',
+        orderTotal: trackedTotal,
+        itemsCount,
+        metadata: { paymentMethod },
+      });
+    } catch (ppuError) {
+      console.error('❌ [PPU-BILLING] Error billing PPU apps:', ppuError.message);
     }
 
     try {

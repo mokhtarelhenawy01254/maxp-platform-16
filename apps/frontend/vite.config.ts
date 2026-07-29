@@ -170,11 +170,6 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
     return 'vendor-icons';
   }
 
-  // Isolate Radix UI primitives
-  if (packageName.startsWith('@radix-ui/')) {
-    return 'vendor-radix';
-  }
-
   // Keep tiny class-name helpers independent from MUI. Storefront sections use
   // cn(...) in the PDP critical path, so this must not pull the full MUI chunk.
   if (

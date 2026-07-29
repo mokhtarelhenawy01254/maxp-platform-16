@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 

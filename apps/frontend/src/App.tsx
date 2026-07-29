@@ -260,6 +260,10 @@ const OrderStatusAutomationPage = React.lazy(
   () => import("./pages/orders/OrderStatusAutomationPage"),
 );
 
+const OrderStatusTemplatesPage = React.lazy(
+  () => import("./pages/orders/OrderStatusTemplatesPage"),
+);
+
 const Categories = React.lazy(() => import("./pages/categories/Categories"));
 const CompetitorList = React.lazy(() => import("./pages/competitors/CompetitorList"));
 const CompetitorAdd = React.lazy(() => import("./pages/competitors/CompetitorAdd"));
@@ -4000,6 +4004,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <OrderStatusAutomationPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/status-templates"
+                  element={
+                    <Layout>
+                      <OrderStatusTemplatesPage />
                     </Layout>
                   }
                 />

@@ -1,5 +1,18 @@
 # Team Sync Updates
 
+- **[SEO / SOCIAL PREVIEW] Open Graph & Twitter Card Full System Fix (2026-07-29):**
+  1. **Root Cause Diagnosed**: All MaxP shared links on Telegram/WhatsApp/Facebook showed the wrong preview image (elegant-luxe theme screenshot) because `index.html` had hardcoded storefront-specific `og:image`. Social crawlers never execute JavaScript, so per-page React meta updates were invisible to them.
+  2. **Brand OG Cover Image**: Generated `og-cover.png` (1200×630px) — a premium dark-theme MaxP brand image with platform tagline, feature badges, and the `https://maxp.online` domain pill — using the `sharp` SVG→PNG pipeline. Saved to `apps/frontend/public/og-cover.png`.
+  3. **`index.html` Updated**: Replaced broken `og:image` with `https://maxp.online/og-cover.png`; added `og:site_name`, `og:locale`, `og:image:width/height`, `twitter:site`. Upgraded title to `MaxP — منصة إدارة التواصل والتجارة الإلكترونية`.
+  4. **`platformSeoMiddleware.js` Created**: New Express middleware at `apps/backend/middleware/platformSeoMiddleware.js`. Intercepts social crawler HTML requests for known platform routes (`/landing/ai-inbox`, `/landing/messaging`, `/landing/medical`, `/landing/employees`, `/landing/marketing`, `/super-admin/*`, `/admin/*`) and server-side-injects per-route OG/Twitter tags before the HTML shell is sent. Admin/super-admin routes also get `noindex, nofollow`.
+  5. **`server.js` Updated**: Registered `handlePlatformSeo` middleware in catch-all `app.get('*')` **before** `storefrontHtmlController.handleStorefrontShell` so platform routes are intercepted first.
+  6. **`storefrontSeoService.js` Updated**: Added `PLATFORM_OG_COVER` constant; used as ultimate fallback `defaultImage` when a storefront has neither a theme OG image nor a company logo.
+  7. **Result**: Each page now gets a unique, contextually-relevant link preview on all social platforms — storefront products show product images, landing pages show their own copy, admin routes are protected from indexing, and everything falls back to the MaxP brand cover.
+
+- **[FRONTEND / WHATSAPP] WhatsApp Templates UI Polish & Sidebar Cleanup (2026-03-09):**
+  1. **Sidebar Navigation**: Removed child sub-menu items (`ORDERS`, `HR`, `SYSTEM`) under `/whatsapp/templates` in `sidebar.ts` so the sidebar menu is streamlined, relying on the internal tab system on the templates page itself.
+  2. **Page Filter Layout Fix**: Redesigned category tabs and search input layout in `WhatsAppTemplates.tsx` from `flex-col-reverse` stacking to a clean, responsive layout that displays search and categories cleanly in both RTL and LTR.
+
 - **[FRONTEND / PWA SECURITY] Service Worker Scope Unification & Comprehensive SW Cache Flush Overhaul (2026-07-29):**
   1. **SW Scope Collision Fix**: Consolidated Service Worker registration under `/sw.js` across `browserNotifications.ts` and `pushNotifications.ts` to prevent `/push-sw.js` from overwriting VitePWA Workbox caching on scope `/`.
   2. **Security & Privacy (API Cache Removal)**: Removed `/api/` NetworkFirst caching in `src/sw.js` to ensure no sensitive user or tenant API data persists in browser `CacheStorage` across sessions.

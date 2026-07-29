@@ -250,7 +250,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   };
 
   return (
-    <aside className="flex w-80 flex-col border-l border-border/50 bg-card">
+    <aside className="flex h-full w-80 shrink-0 min-h-0 flex-col overflow-hidden border-border/50 bg-card ltr:border-l rtl:border-r">
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
         <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           التفاصيل

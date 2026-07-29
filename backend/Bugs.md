@@ -1,3 +1,40 @@
+### [SEO / SOCIAL PREVIEW] Open Graph Link Preview Showing Wrong Image & Same Preview for All Pages (2026-07-29)
+
+- **Severity**: 🟡 MEDIUM — Every shared link on Telegram, WhatsApp, Facebook, etc. showed the theme `preview.png` (elegant-luxe store screenshot) regardless of which page was shared.
+- **Root Cause**:
+  1. `apps/frontend/index.html` had hardcoded `og:image` pointing to `/assets/themes/elegant-luxe/preview.png` — a storefront theme screenshot, not an official MaxP brand image.
+  2. Because MaxP is a React SPA, social-media crawlers (Telegram, WhatsApp, Facebook) fetch the raw HTML shell from the server **before JavaScript runs**, so they always see the static values in `index.html`, regardless of per-page JS meta updates.
+  3. No server-side meta injection existed for platform routes (`/landing/*`, `/super-admin/*`, `/admin/*`) — only storefront subdomains had SSR-style meta injection via `storefrontHtmlController`.
+- **Fix**:
+  1. Generated a professional MaxP brand OG cover image (`1200×630px`) using the `sharp` SVG→PNG pipeline and saved it to `apps/frontend/public/og-cover.png`.
+  2. Updated `index.html` with the new canonical `og:image`, proper `og:site_name`, `og:locale`, `og:image:width/height`, `twitter:site`, and cleaner brand titles.
+  3. Created `apps/backend/middleware/platformSeoMiddleware.js` — an Express middleware that intercepts social crawler GET requests to known platform routes (`/landing/*`, `/super-admin/*`, `/admin/*`) and server-side-injects per-route OG/Twitter tags before sending the HTML shell.
+  4. Registered `handlePlatformSeo` in `server.js` on the catch-all `app.get('*')` **before** `storefrontHtmlController.handleStorefrontShell`, so platform routes are handled first.
+  5. Updated `storefrontSeoService.js` to fall back to `https://maxp.online/og-cover.png` when a storefront has no logo or theme OG image configured.
+- **Files Modified**:
+  - `apps/frontend/index.html`
+  - `apps/frontend/public/og-cover.png` (NEW)
+  - `apps/frontend/public/og-cover.svg` (NEW)
+  - `apps/backend/middleware/platformSeoMiddleware.js` (NEW)
+  - `apps/backend/services/storefrontSeoService.js`
+  - `apps/backend/server.js`
+  - `scripts/generate-og-image.js` (NEW)
+
+---
+
+### [FRONTEND / UI] WhatsApp Templates Page Layout Stacking & Sidebar Sub-menu Clean Up (2026-07-29)
+
+- **Severity**: 🟡 MEDIUM — Layout breakage in RTL mode & redundant sidebar sub-items for templates.
+- **Root Cause**:
+  1. `WhatsAppTemplates.tsx` used `flex-col-reverse` on the search/category tabs filter bar, which in RTL mode broke into a vertical stack layout when rendered in narrow or medium containers.
+  2. `sidebar.ts` contained `children` sub-items (`ORDERS`, `HR`, `SYSTEM`) under `/whatsapp/templates`, which cluttered the sidebar menu while the page itself already manages category filtering dynamically via tab controls.
+- **Fix**:
+  1. Replaced `flex-col-reverse` with a clear inline search bar and `flex-wrap` category tabs in `WhatsAppTemplates.tsx`.
+  2. Removed `children` array from `/whatsapp/templates` item in `sidebar.ts`.
+- **Files**: `apps/frontend/src/pages/whatsapp/WhatsAppTemplates.tsx`, `apps/frontend/src/config/sidebar.ts`
+
+---
+
 ### [FRONTEND / PWA] Service Worker Scope Conflict, Sensitive API Cache Leak & Flush Architecture Overhaul (2026-07-29)
 
 - **Severity**: 🔴 HIGH — Potential SW scope collision, persistent stale bundles, and sensitive API response caching in `CacheStorage`.

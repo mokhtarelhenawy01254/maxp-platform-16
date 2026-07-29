@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import VariantSelector from '../components/VariantSelector';
@@ -3358,27 +3358,27 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   );
 
   const shippingPolicyDialog = (
-    <Dialog.Root open={isShippingDialogOpen} onOpenChange={setIsShippingDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isShippingDialogOpen} onOpenChange={setIsShippingDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[92vh] overflow-y-auto rounded-t-[1.6rem] border-t border-border bg-card p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-2xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-foreground sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-foreground sm:text-2xl">
                 {shippingModalTitle}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-muted-foreground">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-muted-foreground">
                 {prefersArabicCopy
                   ? 'هذه النافذة تشرح سياسة الشحن والاستبدال، بينما موعد الوصول المتوقع يظل ظاهرًا في الشريط المختصر أعلى مساحة الحسم.'
                   : 'This modal explains shipping and returns, while the estimated arrival stays visible in the utility strip above the decision area.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-6 grid gap-4">
@@ -3440,9 +3440,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   const sizeGuideTriggerButton =
@@ -3480,27 +3480,27 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     ) : null;
 
   const sizeGuideDialog = (
-    <Dialog.Root open={isSizeGuideDialogOpen} onOpenChange={setIsSizeGuideDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isSizeGuideDialogOpen} onOpenChange={setIsSizeGuideDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[88vh] overflow-y-auto rounded-t-[1.6rem] border-t border-border bg-card p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-foreground sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-foreground sm:text-2xl">
                 {sizeGuideModalTitle}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-muted-foreground">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-muted-foreground">
                 {prefersArabicCopy
                   ? 'مرجع سريع فقط للمقاس الأنسب، من غير شرح طويل أو تكرار داخل الصفحة.'
                   : 'A short size reference without extra copy or repetition on the page.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-5 space-y-4">
@@ -3557,33 +3557,33 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               ) : null}
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   const questionDialog = (
-    <Dialog.Root open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup
           dir={theme.direction}
           className="fixed inset-x-0 bottom-0 z-[95] w-full max-h-[92vh] overflow-y-auto rounded-t-[1.6rem] border-t border-[#ead8ca] bg-white p-0 shadow-2xl animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[1.4rem] md:border"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="relative p-5 sm:p-6">
-            <Dialog.Close className={`absolute top-4 rounded-full border border-[#ead8ca] bg-white p-2 text-[#8f5c44] transition-colors hover:text-[#2d211e] ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
+            <DialogPrimitive.Close className={`absolute top-4 rounded-full border border-[#ead8ca] bg-white p-2 text-[#8f5c44] transition-colors hover:text-[#2d211e] ${theme.direction === 'rtl' ? 'left-4' : 'right-4'}`}>
               <X className="h-4 w-4" />
-            </Dialog.Close>
+            </DialogPrimitive.Close>
             <div className="space-y-2 pe-12">
-              <Dialog.Title className="text-lg font-black text-[#2d211e] sm:text-2xl">
+              <DialogPrimitive.Title className="text-lg font-black text-[#2d211e] sm:text-2xl">
                 {prefersArabicCopy ? 'اسألي عن المنتج' : 'Ask a question'}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm leading-6 text-[#6f5a54]">
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-sm leading-6 text-[#6f5a54]">
                 {prefersArabicCopy
                   ? 'اكتبي سؤالك عن المقاس أو الخامة أو الاستبدال، وسيصل إلى فريق المتجر مع اسم المنتج المختار.'
                   : 'Ask about fit, material, or delivery and the request will be sent with the current product context.'}
-              </Dialog.Description>
+              </DialogPrimitive.Description>
             </div>
 
             <div className="mt-5 rounded-[1.25rem] border border-[#ead8ca] bg-[#fffaf6] p-4">
@@ -3639,9 +3639,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               </button>
             </form>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 
   // Common UI Sections for Premium Variants

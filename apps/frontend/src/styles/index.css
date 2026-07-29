@@ -2,10 +2,8 @@
 @import "tw-animate-css";
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=Manrope:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@100..900&display=swap");
 @import "./sidebar-elite.css";
-@import "./layout-enterprise.css";
 @import "./whatsapp-dark.css";
 @import "./whatsapp-responsive.css";
-@import "./expert-responsive.css";
 @import "./marketplace-premium.css";
 /* @import "shadcn/tailwind.css"; */
 
@@ -6399,4 +6397,101 @@ select {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Layout: Enterprise — merged from layout-enterprise.css */
+[data-theme="business-os-enterprise"] .business-horizontal-nav {
+  width: 100%;
+  border-bottom: 1px solid var(--app-header-border);
+}
+
+[data-theme="business-os-enterprise"] .no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+[data-theme="business-os-enterprise"] .no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  [data-theme="business-os-enterprise"] .business-auth-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-theme="business-os-enterprise"] .business-auth-aside {
+    min-height: auto;
+  }
+  [data-theme="business-os-enterprise"] .business-auth-stage {
+    min-height: auto;
+    padding-bottom: 2rem;
+  }
+}
+
+/* Expert Blocks System - Responsiveness — merged from expert-responsive.css */
+@media screen and (max-width: 991px) {
+  .expert-container {
+    flex-direction: column !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+    gap: 2.5rem !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .expert-container > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    text-align: center !important;
+  }
+
+  .expert-container img {
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .expert-container h1 {
+    font-size: 3rem !important;
+    line-height: 1.1 !important;
+  }
+
+  [id*="hero"] .expert-container {
+    min-height: auto !important;
+  }
+}
+
+.viewport-mobile .expert-container {
+  flex-direction: column !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+  gap: 2.5rem !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.viewport-mobile .expert-container > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+  text-align: center !important;
+}
+
+.viewport-mobile .expert-container img {
+  margin: 0 auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.viewport-mobile .expert-container h1 {
+  font-size: 2.5rem !important;
+  line-height: 1.1 !important;
+}
+
+.viewport-mobile [id*="hero"] .expert-container {
+  min-height: auto !important;
 }

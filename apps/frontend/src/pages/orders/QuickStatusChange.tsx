@@ -161,8 +161,10 @@ const QuickStatusChange: React.FC = () => {
 
     } finally {
       setSearchLoading(false);
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
     }
   }, [orderCode, selectedStatus, workflowEnabled, t]);
 
@@ -207,7 +209,9 @@ const QuickStatusChange: React.FC = () => {
     } finally {
       setChangeLoading(false);
       setOrderCode("");
-      inputRef.current?.focus();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   }, [currentOrder, selectedStatus, workflowEnabled, t]);
 
