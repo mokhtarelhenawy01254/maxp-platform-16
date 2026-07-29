@@ -86,10 +86,10 @@ function ReplyBox({ commentId, onReplySent }) {
         tToast.success("postComments.success_send_e82a");
         onReplySent?.();
       } else {
-        toast.error(i18n.t("postComments.msg_6164", { error: result.message || "خطأ غير معروف" })));
+        toast.error(i18n.t("postComments.msg_6164", { error: result.message || "خطأ غير معروف" }));
       }
     } catch (err) {
-      toast.error(i18n.t("postComments.msg_5470", { error: err.message })));
+      toast.error(i18n.t("postComments.msg_5470", { error: err.message }));
     } finally {
       setSending(false);
     }
