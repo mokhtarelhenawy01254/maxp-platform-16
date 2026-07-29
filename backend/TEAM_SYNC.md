@@ -1,5 +1,9 @@
 # Team Sync Updates
 
+- **[FRONTEND / WHATSAPP] WhatsApp Templates UI Polish & Sidebar Cleanup (2026-03-09):**
+  1. **Sidebar Navigation**: Removed child sub-menu items (`ORDERS`, `HR`, `SYSTEM`) under `/whatsapp/templates` in `sidebar.ts` so the sidebar menu is streamlined, relying on the internal tab system on the templates page itself.
+  2. **Page Filter Layout Fix**: Redesigned category tabs and search input layout in `WhatsAppTemplates.tsx` from `flex-col-reverse` stacking to a clean, responsive layout that displays search and categories cleanly in both RTL and LTR.
+
 - **[FRONTEND / PWA SECURITY] Service Worker Scope Unification & Comprehensive SW Cache Flush Overhaul (2026-07-29):**
   1. **SW Scope Collision Fix**: Consolidated Service Worker registration under `/sw.js` across `browserNotifications.ts` and `pushNotifications.ts` to prevent `/push-sw.js` from overwriting VitePWA Workbox caching on scope `/`.
   2. **Security & Privacy (API Cache Removal)**: Removed `/api/` NetworkFirst caching in `src/sw.js` to ensure no sensitive user or tenant API data persists in browser `CacheStorage` across sessions.

@@ -119,10 +119,14 @@ const getPaymentStatusLabel = (status?: string) => {
   return labels[String(status || "").toUpperCase()] || normalizeText(status);
 };
 
+const stripNonAscii = (v: string): string =>
+  v.replace(/[^\x20-\x7E]/g, "").trim() || "N/A";
+
 const generateBarcodeSvg = (value: string, height = 50, width = 2): string => {
+  const safe = stripNonAscii(value);
   try {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    JsBarcode(svg, value, {
+    JsBarcode(svg, safe, {
       format: "CODE128", width, height,
       displayValue: false, background: "#ffffff",
       lineColor: "#000000", margin: 0,

@@ -544,11 +544,13 @@ export const usePreparationQueueData = ({
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const fetchedProductIdsRef = useRef("");
+  const inventoryLoadingRef = useRef(false);
 
   const ensureInventory = useCallback(async () => {
     const key = [...productIds].sort().join(",");
-    if (fetchedProductIdsRef.current === key || inventoryLoading || productIds.length === 0) return;
+    if (fetchedProductIdsRef.current === key || inventoryLoadingRef.current || productIds.length === 0) return;
     fetchedProductIdsRef.current = key;
+    inventoryLoadingRef.current = true;
     setInventoryLoading(true);
     try {
       const data = await fetchInventory();
@@ -556,9 +558,10 @@ export const usePreparationQueueData = ({
     } catch {
       fetchedProductIdsRef.current = "";
     } finally {
+      inventoryLoadingRef.current = false;
       setInventoryLoading(false);
     }
-  }, [productIds, inventoryLoading, fetchInventory]);
+  }, [productIds, fetchInventory]);
 
   const fetchAll = useCallback(
     async (showRefreshToast = false) => {

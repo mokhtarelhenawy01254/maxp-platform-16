@@ -8391,6 +8391,22 @@ declare module 'react-i18next' {
         returnCustomValue: string;
         returnDefaultValue: string;
         returnDescription: string;
+        activityLog: string;
+        addNote: string;
+        addNotePlaceholder: string;
+        adding: string;
+        add: string;
+        allActivities: string;
+        statusChanges: string;
+        notes: string;
+        save: string;
+        edited: string;
+        editNote: string;
+        deleteNote: string;
+        deleteNoteConfirmTitle: string;
+        deleteNoteConfirmMessage: string;
+        deleting: string;
+        yesDelete: string;
       };
       orderInvoiceSettings: {
         k_1: string;
@@ -9536,6 +9552,7 @@ declare module 'react-i18next' {
           noProductResults: string;
           productColorAll: string;
           productSizeAll: string;
+          allVariants: string;
         };
         columns: {
           customer: string;
@@ -9798,6 +9815,7 @@ declare module 'react-i18next' {
         };
         fallbackCustomerName: string;
         fallbackWarehouseName: string;
+        k_10: string;
       };
       quickStatus: {
         title: string;
