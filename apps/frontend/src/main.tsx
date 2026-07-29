@@ -206,7 +206,22 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-
+// Service Worker auto-update: reload when a new version takes over
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then((reg) => {
+    let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+    reg.addEventListener("updatefound", () => {
+      const installing = reg.installing;
+      if (!installing) return;
+      installing.addEventListener("statechange", () => {
+        if (installing.state === "installed" && navigator.serviceWorker.controller) {
+          clearTimeout(reloadTimer);
+          reloadTimer = setTimeout(() => window.location.reload(), 500);
+        }
+      });
+    });
+  });
+}
 
 // Hot Module Replacement (HMR) for development
 if (import.meta.hot) {
