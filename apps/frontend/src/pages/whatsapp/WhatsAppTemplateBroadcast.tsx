@@ -4,6 +4,7 @@ import {
   Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,7 +200,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
       toast.success(`تم تحميل ${phones.length} عميل يحمل الوسم: ${tagName}`);
     } catch (err: any) {
-      toast.error("فشل في تحميل العملاء حسب الوسم");
+      tToast.error("whatsapp_WhatsAppTemplateBroadcast.failed_load_914a");
     }
   }, []);
 
@@ -217,7 +218,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       toast.success(`تم استيراد ${phones.length} جهة اتصال من "${categoryName}"`);
       setActiveTab("create");
     } catch (err: any) {
-      toast.error("فشل في استيراد جهات الاتصال");
+      tToast.error("whatsapp_WhatsAppTemplateBroadcast.msg_e35f");
     } finally {
       setImportingCategoryId(null);
     }
@@ -225,7 +226,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
   const handleCreateCampaign = useCallback(async () => {
     if (!campaignName || !selectedTemplate || recipients.length === 0) {
-      toast.error("اسم الحملة والقالب ومستلم واحد على الأقل مطلوب");
+      tToast.error("whatsapp_WhatsAppTemplateBroadcast.msg_03ea");
       return;
     }
     try {
@@ -255,7 +256,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setSendProgress({ current: 0, total: recipients.length, status: "sending" });
       if (scheduleAt) {
         setResult({ scheduled: true, scheduledAt: scheduleAt });
-        toast.success("تم جدولة الحملة");
+        tToast.success("whatsapp_WhatsAppTemplateBroadcast.msg_be37");
         setSending(false);
         setSendProgress(null);
         return;

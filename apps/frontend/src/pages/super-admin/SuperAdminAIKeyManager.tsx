@@ -46,6 +46,7 @@ import {
 } from "../../components/ui/table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   Plus, Trash2, Copy, FlaskConical, Search, RefreshCw,
   Eye, EyeOff, Check, X,
@@ -412,12 +413,12 @@ function KeyManagerContent() {
   }
   function handleCopyKey(apiKey?: string, masked?: string) {
     const keyToCopy = apiKey || masked;
-    if (!keyToCopy) { toast.error("المفتاح غير متاح للنسخ"); return; }
-    navigator.clipboard.writeText(keyToCopy).then(() => toast.success("تم نسخ المفتاح"), () => toast.error("فشل النسخ"));
+    if (!keyToCopy) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_d605"); return; }
+    navigator.clipboard.writeText(keyToCopy).then(() => tToast.success("super-admin_SuperAdminAIKeyManager.msg_6d70"), () => tToast.error("super-admin_SuperAdminAIKeyManager.msg_332e"));
   }
   function handleRefresh() {
     queryClient.invalidateQueries({ queryKey: ["ai-admin"] });
-    toast.success("تم تحديث البيانات");
+    tToast.success("super-admin_SuperAdminAIKeyManager.success_update_1f20");
   }
   function usagePercent(key: AiKey) {
     if (!key.max_requests_per_day) return 0;
@@ -632,7 +633,7 @@ function AddKeyDialog({ providers, onClose, onCreated, createKeyMutation }: {
     if (value === "OPENROUTER" && !modelsText) setModelsText("openrouter/auto");
   }
   function handleSave() {
-    if (!provider || !name || !apiKey) { toast.error("المزود والاسم والمفتاح مطلوبون"); return; }
+    if (!provider || !name || !apiKey) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_a104"); return; }
     const models = modelsText.split("\n").map((m) => m.trim()).filter(Boolean);
     createKeyMutation.mutate({
       provider, name, api_key: apiKey,
@@ -694,7 +695,7 @@ function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
   const [maxRequests, setMaxRequests] = useState(String(target.max_requests_per_day || 1500));
 
   function handleSave() {
-    if (!name) { toast.error("الاسم مطلوب"); return; }
+    if (!name) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_b4d5"); return; }
     const payload: AiKeyUpdatePayload = { name };
     if (apiKey) payload.api_key = apiKey;
     payload.key_type = keyType;

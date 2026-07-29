@@ -8,6 +8,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateAdTestData,
@@ -47,7 +48,7 @@ const CreateABTest: React.FC = () => {
       );
     } catch (error: any) {
       console.error("Error loading campaigns:", error);
-      toast.error("فشل في تحميل الحملات");
+      tToast.error("advertising_CreateABTest.failed_load_c1ee");
     } finally {
       setLoadingCampaigns(false);
     }
@@ -67,21 +68,21 @@ const CreateABTest: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم الاختبار");
+          tToast.error("advertising_CreateABTest.please_name_d31f");
           return false;
         }
         if (!formData.testType) {
-          toast.error("يرجى اختيار نوع الاختبار");
+          tToast.error("advertising_CreateABTest.msg_2a40");
           return false;
         }
         return true;
       case 2:
         if (!formData.campaignId) {
-          toast.error("يرجى اختيار الحملة");
+          tToast.error("advertising_CreateABTest.msg_c09f");
           return false;
         }
         if (formData.variants.length < 2) {
-          toast.error("يرجى إضافة متغيرين على الأقل");
+          tToast.error("advertising_CreateABTest.please_add_6156");
           return false;
         }
         return true;
@@ -112,7 +113,7 @@ const CreateABTest: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createAdTest(formData);
-      toast.success("تم إنشاء الاختبار بنجاح");
+      tToast.success("advertising_CreateABTest.success_create_2b73");
       navigate("/advertising/facebook-ads/tests");
     } catch (error: any) {
       console.error("Error creating test:", error);

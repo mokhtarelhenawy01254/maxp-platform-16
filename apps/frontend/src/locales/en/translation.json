@@ -1,4 +1,30 @@
 {
+  "PaymentPage": {
+    "msg_04b5": "حجم الملف يجب أن يكون أقل من 5 ميجابايت",
+    "msg_3dbc": "يرجى اختيار صورة الإيصال أولاً",
+    "success_send_f112": "تم إرسال الإيصال بنجاح!",
+    "error_send_3b6c": "خطأ في إرسال الإيصال"
+  },
+  "UsersManagement": {
+    "msg_8387": "فشل نسخ الرابط",
+    "msg_fc1e": "تم تصدير البيانات بنجاح",
+    "success_delete_ae63": "تم حذف المستخدم بنجاح",
+    "msg_6812": "تم إلغاء الدعوة بنجاح",
+    "success_send_62b7": "تم إرسال رابط إعادة تعيين كلمة المرور",
+    "success_send_59c9": "تم إعادة إرسال الدعوة بنجاح",
+    "error_error_6424": "حدث خطأ أثناء التحديث الجماعي",
+    "error_error_a658": "حدث خطأ أثناء تنفيذ العملية",
+    "error_error_c008": "حدث خطأ أثناء إعادة الإرسال"
+  },
+  "WalletManagement": {
+    "msg_9034": "اسم المحفظة ورقمها مطلوبان.",
+    "success_update_c3e3": "تم تحديث المحفظة بنجاح",
+    "msg_1efc": "تمت إضافة المحفظة بنجاح",
+    "success_delete_cda7": "تم حذف المحفظة بنجاح",
+    "msg_834a": "أدخل مبلغًا صحيحًا أكبر من صفر.",
+    "msg_2a19": "قيمة البونص غير صحيحة.",
+    "success_add_ca6f": "تم إضافة الرصيد بنجاح"
+  },
   "FormsBuilderPage": {
     "msg_da6d": "عنوان النموذج مطلوب",
     "msg_a286": "الرابط المختصر مطلوب",
@@ -983,6 +1009,14 @@
     "success_delete_7527": "تم حذف التنبيه",
     "msg_28e0": "تم فحص تنبيهات الرصيد الآن"
   },
+  "CreateABTest": {
+    "failed_load_c1ee": "فشل في تحميل الحملات",
+    "please_name_d31f": "يرجى إدخال اسم الاختبار",
+    "msg_2a40": "يرجى اختيار نوع الاختبار",
+    "msg_c09f": "يرجى اختيار الحملة",
+    "please_add_6156": "يرجى إضافة متغيرين على الأقل",
+    "success_create_2b73": "تم إنشاء الاختبار بنجاح"
+  },
   "CreateCampaign": {
     "failed_load_7ed0": "فشل في تحميل حسابات Facebook Ads",
     "please_name_c07b": "يرجى إدخال اسم الحملة",
@@ -991,6 +1025,22 @@
     "msg_136c": "يرجى اختيار مكان التحويل",
     "msg_4753": "يرجى اختيار موقع جغرافي واحد على الأقل",
     "success_create_76a9": "تم إنشاء الحملة بنجاح!"
+  },
+  "CreateCustomAudience": {
+    "failed_load_0ade": "فشل في تحميل حسابات Facebook Ads",
+    "please_name_d64c": "يرجى إدخال اسم الجمهور",
+    "msg_fefb": "يرجى اختيار نوع الجمهور",
+    "please_add_0126": "يرجى إضافة قائمة عملاء",
+    "msg_7a97": "يرجى إدخال Pixel ID",
+    "success_create_d55e": "تم إنشاء الجمهور بنجاح"
+  },
+  "CreateDynamicAd": {
+    "failed_load_54a9": "فشل في تحميل Catalogs",
+    "failed_load_fa45": "فشل في تحميل Product Sets",
+    "please_name_e56c": "يرجى إدخال اسم الإعلان",
+    "msg_8fe0": "يرجى اختيار Catalog",
+    "msg_b753": "يرجى اختيار Product Set",
+    "success_create_6286": "تم إنشاء Dynamic Ad بنجاح"
   },
   "ProductLandingPages": {
     "msg_11ec": "اختار منتج أولاً",
@@ -5207,6 +5257,14 @@
     "editUser": "Edit User",
     "inviteNewUser": "Invite New User"
   },
+  "OrderModalEnhanced": {
+    "msg_1ca3": "خطأ غير معروف",
+    "msg_2012": "الرجاء اختيار اللون أولاً",
+    "msg_b619": "الرجاء اختيار المقاس أولاً",
+    "msg_d722": "الرجاء اختيار المدينة",
+    "msg_09ce": "الرجاء إدخال رقم الهاتف",
+    "error_error_ad3b": "حدث خطأ أثناء إنشاء الطلب"
+  },
   "customerAnalytics": {
     "title": "Customer Analytics",
     "subtitle": "Key Customer Statistics",
@@ -5540,6 +5598,14 @@
     "pause": "Pause",
     "stop": "Stop Task"
   },
+  "Advances": {
+    "error_error_0c59": "حدث خطأ أثناء جلب البيانات",
+    "msg_0709": "تم الموافقة على الطلب",
+    "msg_20d9": "تم رفض الطلب",
+    "success_delete_c219": "تم حذف الطلب بنجاح",
+    "error_error_7491": "حدث خطأ أثناء حذف الطلب",
+    "msg_408c": "تم تعليم السلفة كمسددة"
+  },
   "CompanyPolicy": {
     "msg_e09d": "يرجى ملء جميع الحقول المطلوبة",
     "success_create_6d9e": "تم إنشاء السياسة بنجاح",
@@ -5575,6 +5641,21 @@
     "msg_d0f3": "فشل تعيين الشركة كافتراضية",
     "failed_load_ff88": "فشل تحميل البيانات"
   },
+  "ShiftDetails": {
+    "failed_fetch_7074": "فشل في جلب تفاصيل المناوبة",
+    "success_delete_dd40": "تم حذف المناوبة بنجاح",
+    "failed_delete_a11e": "فشل في حذف المناوبة",
+    "success_update_5ce6": "تم تحديث المناوبة بنجاح",
+    "msg_8f31": "تم إلغاء تعيين الموظف بنجاح",
+    "msg_1d22": "فشل في إلغاء التعيين"
+  },
+  "Shifts": {
+    "success_create_c830": "تم إنشاء المناوبة بنجاح",
+    "success_update_bb31": "تم تحديث المناوبة بنجاح",
+    "msg_744f": "فشل في تغيير حالة المناوبة",
+    "success_delete_06fc": "تم حذف المناوبة بنجاح",
+    "failed_delete_901a": "فشل في حذف المناوبة"
+  },
   "applicationForms": {
     "msg_0a56": "يرجى إدخال عنوان الفورم",
     "success_create_aa40": "تم إنشاء الفورم بنجاح",
@@ -5593,6 +5674,14 @@
     "please_add_ffef": "يرجى إضافة خيارين على الأقل",
     "msg_ba5c": "تم نسخ رابط الاستبيان",
     "msg_ed0e": "تمت إضافة الرد إلى مسار التوظيف"
+  },
+  "AssetRequests": {
+    "msg_d2d3": "فشل في الموافقة على الطلب",
+    "please_reason_7dfe": "يرجى إدخال سبب الرفض",
+    "msg_b942": "فشل في رفض الطلب",
+    "msg_f5d7": "يرجى اختيار الأصل",
+    "msg_713d": "تم تخصيص الأصل بنجاح",
+    "msg_eda3": "فشل في تخصيص الأصل"
   },
   "DocumentsSection": {
     "msg_3c68": "فشل في رفع المستند",
@@ -7025,6 +7114,22 @@
     "msg_87c4": "فشل في فتح نافذة الطباعة",
     "msg_06d8": "لا توجد بيانات للتصدير"
   },
+  "ApplicantsSection": {
+    "success_delete_026c": "تم حذف المتقدم بنجاح",
+    "failed_delete_951f": "فشل حذف المتقدم",
+    "success_update_status_7ae4": "تم تحديث حالة المتقدم",
+    "failed_update_a9eb": "فشل في تحديث الحالة",
+    "msg_0d23": "يرجى تعبئة الحقول المطلوبة",
+    "success_add_3282": "تم إضافة المتقدم بنجاح 🎉"
+  },
+  "JobPostingsSection": {
+    "success_create_66f5": "تم إنشاء الوظيفة بنجاح",
+    "failed_create_5462": "فشل في إنشاء الوظيفة",
+    "success_delete_0815": "تم حذف الوظيفة بنجاح",
+    "failed_delete_fc8a": "فشل في حذف الوظيفة",
+    "success_update_status_49df": "تم تحديث حالة الوظيفة",
+    "failed_update_22de": "فشل في تحديث الحالة"
+  },
   "rewards": {
     "title": "Rewards",
     "pageTitle": "Rewards & Incentives System",
@@ -8340,6 +8445,14 @@
       "update": "Update",
       "add": "Add"
     }
+  },
+  "MerchantProfile": {
+    "msg_5068": "تعذر تحديد التاجر المطلوب",
+    "success_update_a91e": "تم تحديث بيانات التاجر بنجاح",
+    "msg_f1ca": "اختر منتجًا أولًا",
+    "msg_39bc": "أدخل سعر تاجر صحيحًا",
+    "msg_c969": "أدخل قيمة مخزون صحيحة",
+    "msg_2366": "تم ربط المنتج بالتاجر بنجاح"
   },
   "OrderModal": {
     "msg_fe97": "خطأ غير معروف",
@@ -11622,6 +11735,15 @@
     "k_54": "the previous",
     "k_55": "the next"
   },
+  "TicketDetails": {
+    "failed_load_cd6e": "فشل تحميل تفاصيل التذكرة",
+    "msg_0d3f": "يرجى إدخال رسالة أو رفع صورة",
+    "msg_8919": "معرف التذكرة غير موجود",
+    "success_send_02a0": "تم إرسال الرد بنجاح",
+    "msg_47f7": "يرجى رفع ملف صورة فقط",
+    "msg_ff96": "حجم الصورة يجب أن يكون أقل من 10MB",
+    "failed_send_234e": "فشل إرسال الرد"
+  },
   "affiliates": {
     "loadFailed": "فشل تحميل قائمة المسوقين",
     "updateFailed": "Failed to update affiliate",
@@ -13082,6 +13204,20 @@
     "previewBlocked": "Browser blocked the preview tab. Allow popups and try again.",
     "previewNoCompany": "Could not identify company for preview"
   },
+  "StaffCompanyAccess": {
+    "msg_7dc0": "تمت إضافة الصلاحية بنجاح",
+    "msg_968c": "خطأ في الاتصال",
+    "msg_abf3": "تم الحذف بنجاح",
+    "msg_bd23": "تم تعيين شركة النظام كشركة أساسية بنجاح"
+  },
+  "SuperAdminAIKeyManager": {
+    "msg_d605": "المفتاح غير متاح للنسخ",
+    "msg_6d70": "تم نسخ المفتاح",
+    "msg_332e": "فشل النسخ",
+    "success_update_1f20": "تم تحديث البيانات",
+    "msg_a104": "المزود والاسم والمفتاح مطلوبون",
+    "msg_b4d5": "الاسم مطلوب"
+  },
   "companyDetails": {
     "unable_load_1117": "تعذر تحميل أعضاء الشركة",
     "unable_load_156e": "تعذر تحميل صفحات فيسبوك",
@@ -13984,6 +14120,15 @@
       "correctedReply": "Corrected Reply"
     }
   },
+  "TaskTemplates": {
+    "failed_create_7f8d": "فشل في إنشاء القالب",
+    "failed_update_bf44": "فشل في تحديث القالب",
+    "failed_delete_3434": "فشل في حذف القالب",
+    "msg_e4d8": "اسم القالب وعنوان المهمة مطلوبان",
+    "success_create_c37f": "تم إنشاء القالب بنجاح",
+    "success_update_85c7": "تم تحديث القالب بنجاح",
+    "success_delete_746e": "تم حذف القالب بنجاح"
+  },
   "taskIntegrations": {
     "msg_a3c9": "أدخل Base URL الخاصة بـ OpenClaw أولًا",
     "msg_9d3f": "أدخل Hook Token أو استخدم إعدادًا محفوظًا مسبقًا",
@@ -14380,6 +14525,14 @@
     "msg_a442": "تم مسح قائمة الرغبات",
     "error_error_d538": "حدث خطأ في مسح القائمة"
   },
+  "LabelsDialog": {
+    "failed_load_d47f": "فشل تحميل التصنيفات",
+    "success_create_d4d4": "تم إنشاء التصنيف",
+    "failed_create_739e": "فشل إنشاء التصنيف",
+    "success_delete_eff8": "تم حذف التصنيف",
+    "failed_delete_2c9b": "فشل حذف التصنيف",
+    "failed_update_2bc4": "فشل تحديث التصنيف للمحادثة"
+  },
   "PrivacySettingsDialog": {
     "failed_fetch_6cd1": "فشل جلب قائمة المحظورين",
     "msg_0f47": "تم إلغاء الحظر بنجاح",
@@ -14388,6 +14541,22 @@
     "msg_b631": "فشل الحظر",
     "success_update_8d4d": "تم تحديث الإعدادات",
     "failed_update_bf9a": "فشل تحديث الإعدادات"
+  },
+  "WhatsAppMetaTemplates": {
+    "msg_5d29": "اسم القالب ومحتوى الرسالة مطلوبان",
+    "msg_7367": "اسم القالب يجب أن يكون بين 1 و 512 حرف (أحرف إنجليزية صغيرة، أرقام، _ فقط)",
+    "success_create_b7fe": "تم إنشاء القالب بنجاح — سيمر بمراجعة ميتا قبل التفعيل",
+    "msg_bfc1": "بيانات التعديل غير مكتملة",
+    "msg_e04d": "يوجد أخطاء توافق مع سياسات Meta — راجع رسائل الفحص أعلاه",
+    "success_update_ee74": "تم تحديث القالب — سيمر بمراجعة ميتا",
+    "success_delete_3acd": "تم حذف القالب",
+    "failed_create_1d9d": "فشل إنشاء القالب"
+  },
+  "WhatsAppTemplateBroadcast": {
+    "failed_load_914a": "فشل في تحميل العملاء حسب الوسم",
+    "msg_e35f": "فشل في استيراد جهات الاتصال",
+    "msg_03ea": "اسم الحملة والقالب ومستلم واحد على الأقل مطلوب",
+    "msg_be37": "تم جدولة الحملة"
   },
   "wooImport": {
     "msg_1451": "تم اكتمال الاستيراد بنجاح!",

@@ -4,7 +4,33 @@
 declare module 'react-i18next' {
   interface Resources {
     translation: {
-            FormsBuilderPage: {
+            PaymentPage: {
+        msg_04b5: string;
+        msg_3dbc: string;
+        success_send_f112: string;
+        error_send_3b6c: string;
+      };
+      UsersManagement: {
+        msg_8387: string;
+        msg_fc1e: string;
+        success_delete_ae63: string;
+        msg_6812: string;
+        success_send_62b7: string;
+        success_send_59c9: string;
+        error_error_6424: string;
+        error_error_a658: string;
+        error_error_c008: string;
+      };
+      WalletManagement: {
+        msg_9034: string;
+        success_update_c3e3: string;
+        msg_1efc: string;
+        success_delete_cda7: string;
+        msg_834a: string;
+        msg_2a19: string;
+        success_add_ca6f: string;
+      };
+      FormsBuilderPage: {
         msg_da6d: string;
         msg_a286: string;
         msg_ed2d: string;
@@ -976,6 +1002,14 @@ declare module 'react-i18next' {
         success_delete_7527: string;
         msg_28e0: string;
       };
+      CreateABTest: {
+        failed_load_c1ee: string;
+        please_name_d31f: string;
+        msg_2a40: string;
+        msg_c09f: string;
+        please_add_6156: string;
+        success_create_2b73: string;
+      };
       CreateCampaign: {
         failed_load_7ed0: string;
         please_name_c07b: string;
@@ -984,6 +1018,22 @@ declare module 'react-i18next' {
         msg_136c: string;
         msg_4753: string;
         success_create_76a9: string;
+      };
+      CreateCustomAudience: {
+        failed_load_0ade: string;
+        please_name_d64c: string;
+        msg_fefb: string;
+        please_add_0126: string;
+        msg_7a97: string;
+        success_create_d55e: string;
+      };
+      CreateDynamicAd: {
+        failed_load_54a9: string;
+        failed_load_fa45: string;
+        please_name_e56c: string;
+        msg_8fe0: string;
+        msg_b753: string;
+        success_create_6286: string;
       };
       ProductLandingPages: {
         msg_11ec: string;
@@ -5200,6 +5250,14 @@ declare module 'react-i18next' {
         editUser: string;
         inviteNewUser: string;
       };
+      OrderModalEnhanced: {
+        msg_1ca3: string;
+        msg_2012: string;
+        msg_b619: string;
+        msg_d722: string;
+        msg_09ce: string;
+        error_error_ad3b: string;
+      };
       customerAnalytics: {
         title: string;
         subtitle: string;
@@ -5533,6 +5591,14 @@ declare module 'react-i18next' {
         pause: string;
         stop: string;
       };
+      Advances: {
+        error_error_0c59: string;
+        msg_0709: string;
+        msg_20d9: string;
+        success_delete_c219: string;
+        error_error_7491: string;
+        msg_408c: string;
+      };
       CompanyPolicy: {
         msg_e09d: string;
         success_create_6d9e: string;
@@ -5568,6 +5634,21 @@ declare module 'react-i18next' {
         msg_d0f3: string;
         failed_load_ff88: string;
       };
+      ShiftDetails: {
+        failed_fetch_7074: string;
+        success_delete_dd40: string;
+        failed_delete_a11e: string;
+        success_update_5ce6: string;
+        msg_8f31: string;
+        msg_1d22: string;
+      };
+      Shifts: {
+        success_create_c830: string;
+        success_update_bb31: string;
+        msg_744f: string;
+        success_delete_06fc: string;
+        failed_delete_901a: string;
+      };
       applicationForms: {
         msg_0a56: string;
         success_create_aa40: string;
@@ -5586,6 +5667,14 @@ declare module 'react-i18next' {
         please_add_ffef: string;
         msg_ba5c: string;
         msg_ed0e: string;
+      };
+      AssetRequests: {
+        msg_d2d3: string;
+        please_reason_7dfe: string;
+        msg_b942: string;
+        msg_f5d7: string;
+        msg_713d: string;
+        msg_eda3: string;
       };
       DocumentsSection: {
         msg_3c68: string;
@@ -7018,6 +7107,22 @@ declare module 'react-i18next' {
         msg_87c4: string;
         msg_06d8: string;
       };
+      ApplicantsSection: {
+        success_delete_026c: string;
+        failed_delete_951f: string;
+        success_update_status_7ae4: string;
+        failed_update_a9eb: string;
+        msg_0d23: string;
+        success_add_3282: string;
+      };
+      JobPostingsSection: {
+        success_create_66f5: string;
+        failed_create_5462: string;
+        success_delete_0815: string;
+        failed_delete_fc8a: string;
+        success_update_status_49df: string;
+        failed_update_22de: string;
+      };
       rewards: {
         title: string;
         pageTitle: string;
@@ -8333,6 +8438,14 @@ declare module 'react-i18next' {
           update: string;
           add: string;
         };
+      };
+      MerchantProfile: {
+        msg_5068: string;
+        success_update_a91e: string;
+        msg_f1ca: string;
+        msg_39bc: string;
+        msg_c969: string;
+        msg_2366: string;
       };
       OrderModal: {
         msg_fe97: string;
@@ -11615,6 +11728,15 @@ declare module 'react-i18next' {
         k_54: string;
         k_55: string;
       };
+      TicketDetails: {
+        failed_load_cd6e: string;
+        msg_0d3f: string;
+        msg_8919: string;
+        success_send_02a0: string;
+        msg_47f7: string;
+        msg_ff96: string;
+        failed_send_234e: string;
+      };
       affiliates: {
         loadFailed: string;
         updateFailed: string;
@@ -13075,6 +13197,20 @@ declare module 'react-i18next' {
         previewBlocked: string;
         previewNoCompany: string;
       };
+      StaffCompanyAccess: {
+        msg_7dc0: string;
+        msg_968c: string;
+        msg_abf3: string;
+        msg_bd23: string;
+      };
+      SuperAdminAIKeyManager: {
+        msg_d605: string;
+        msg_6d70: string;
+        msg_332e: string;
+        success_update_1f20: string;
+        msg_a104: string;
+        msg_b4d5: string;
+      };
       companyDetails: {
         unable_load_1117: string;
         unable_load_156e: string;
@@ -13977,6 +14113,15 @@ declare module 'react-i18next' {
           correctedReply: string;
         };
       };
+      TaskTemplates: {
+        failed_create_7f8d: string;
+        failed_update_bf44: string;
+        failed_delete_3434: string;
+        msg_e4d8: string;
+        success_create_c37f: string;
+        success_update_85c7: string;
+        success_delete_746e: string;
+      };
       taskIntegrations: {
         msg_a3c9: string;
         msg_9d3f: string;
@@ -14373,6 +14518,14 @@ declare module 'react-i18next' {
         msg_a442: string;
         error_error_d538: string;
       };
+      LabelsDialog: {
+        failed_load_d47f: string;
+        success_create_d4d4: string;
+        failed_create_739e: string;
+        success_delete_eff8: string;
+        failed_delete_2c9b: string;
+        failed_update_2bc4: string;
+      };
       PrivacySettingsDialog: {
         failed_fetch_6cd1: string;
         msg_0f47: string;
@@ -14381,6 +14534,22 @@ declare module 'react-i18next' {
         msg_b631: string;
         success_update_8d4d: string;
         failed_update_bf9a: string;
+      };
+      WhatsAppMetaTemplates: {
+        msg_5d29: string;
+        msg_7367: string;
+        success_create_b7fe: string;
+        msg_bfc1: string;
+        msg_e04d: string;
+        success_update_ee74: string;
+        success_delete_3acd: string;
+        failed_create_1d9d: string;
+      };
+      WhatsAppTemplateBroadcast: {
+        failed_load_914a: string;
+        msg_e35f: string;
+        msg_03ea: string;
+        msg_be37: string;
       };
       wooImport: {
         msg_1451: string;

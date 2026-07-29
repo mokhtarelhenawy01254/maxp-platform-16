@@ -25,6 +25,7 @@ import {
   Search,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -365,11 +366,11 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const handleCreate = useCallback(async () => {
     if (!sanitizedName || !form.bodyText) {
-      toast.error("اسم القالب ومحتوى الرسالة مطلوبان");
+      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_5d29");
       return;
     }
     if (!nameValid) {
-      toast.error("اسم القالب يجب أن يكون بين 1 و 512 حرف (أحرف إنجليزية صغيرة، أرقام، _ فقط)");
+      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_7367");
       return;
     }
     const checkPassed = handleComplianceCheck(form);
@@ -384,7 +385,7 @@ const WhatsAppMetaTemplates: React.FC<{
         withCompanyConfig(),
       );
       addHistory({ action: "created", name: sanitizedName, language: form.language, timestamp: Date.now(), category: form.category });
-      toast.success("تم إنشاء القالب بنجاح — سيمر بمراجعة ميتا قبل التفعيل");
+      tToast.success("whatsapp_WhatsAppMetaTemplates.success_create_b7fe");
       setCreateOpen(false);
       setForm({ ...initialForm });
       setVarValues({});
@@ -393,7 +394,7 @@ const WhatsAppMetaTemplates: React.FC<{
       fetchTemplates();
     } catch (err: any) {
       const metaMsg = err?.response?.data?.error;
-      toast.error(metaMsg || "فشل إنشاء القالب", { duration: 8000 });
+      toast.error(metaMsg || i18n.t("whatsapp_WhatsAppMetaTemplates.failed_create_1d9d"), { duration: 8000 });
     } finally {
       setSending(false);
     }
@@ -401,14 +402,14 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const handleEdit = useCallback(async () => {
     if (!editForm || !editForm.name) {
-      toast.error("بيانات التعديل غير مكتملة");
+      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_bfc1");
       return;
     }
     const results = runComplianceCheck(editForm);
     setEditComplianceResults(results);
     setEditShowCompliance(true);
     if (results.some(r => r.severity === "error")) {
-      toast.error("يوجد أخطاء توافق مع سياسات Meta — راجع رسائل الفحص أعلاه");
+      tToast.error("whatsapp_WhatsAppMetaTemplates.msg_e04d");
       return;
     }
     try {
@@ -421,7 +422,7 @@ const WhatsAppMetaTemplates: React.FC<{
         withCompanyConfig(),
       );
       addHistory({ action: "edited", name: editForm.name, language: editForm.language, timestamp: Date.now(), category: editForm.category });
-      toast.success("تم تحديث القالب — سيمر بمراجعة ميتا");
+      tToast.success("whatsapp_WhatsAppMetaTemplates.success_update_ee74");
       setEditOpen(false);
       setEditForm(null);
       fetchTemplates();
@@ -439,7 +440,7 @@ const WhatsAppMetaTemplates: React.FC<{
         ...withCompanyConfig(),
       });
       addHistory({ action: "deleted", name: templateName, language: "", timestamp: Date.now() });
-      toast.success("تم حذف القالب");
+      tToast.success("whatsapp_WhatsAppMetaTemplates.success_delete_3acd");
       setDeleteConfirm(null);
       fetchTemplates();
     } catch (err: any) {

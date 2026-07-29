@@ -35,6 +35,7 @@ import { Label } from "../../components/ui/label";
 import { calculateWorkHours, validateShiftTimes } from "../../utils/shiftHelpers";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import AssignShiftDialog from "../../components/hr/AssignShiftDialog";
 
 interface ShiftAssignment {
@@ -96,7 +97,7 @@ const ShiftDetails: React.FC = () => {
       setShift(response.data.shift);
     } catch (error: any) {
       console.error("Error fetching shift details:", error);
-      toast.error("فشل في جلب تفاصيل المناوبة");
+      tToast.error("hr_ShiftDetails.failed_fetch_7074");
       navigate("/hr/shifts");
     } finally {
       setLoading(false);
@@ -106,11 +107,11 @@ const ShiftDetails: React.FC = () => {
   const handleDeleteShift = async () => {
     try {
       await api.delete(`/hr/shifts/${id}`);
-      toast.success("تم حذف المناوبة بنجاح");
+      tToast.success("hr_ShiftDetails.success_delete_dd40");
       navigate("/hr/shifts");
     } catch (error) {
       console.error("Error deleting shift:", error);
-      toast.error("فشل في حذف المناوبة");
+      tToast.error("hr_ShiftDetails.failed_delete_a11e");
     }
   };
 
@@ -136,7 +137,7 @@ const ShiftDetails: React.FC = () => {
     if (!validateForm()) return;
     try {
       await api.put(`/hr/shifts/${id}`, formData);
-      toast.success("تم تحديث المناوبة بنجاح");
+      tToast.success("hr_ShiftDetails.success_update_5ce6");
       setEditDialogOpen(false);
       fetchShiftDetails();
     } catch (error: any) {
@@ -164,13 +165,13 @@ const ShiftDetails: React.FC = () => {
 
     try {
       await api.delete(`/hr/shifts/assignments/${assignmentToDelete}`);
-      toast.success("تم إلغاء تعيين الموظف بنجاح");
+      tToast.success("hr_ShiftDetails.msg_8f31");
       setDeleteDialogOpen(false);
       setAssignmentToDelete(null);
       fetchShiftDetails();
     } catch (error) {
       console.error("Error removing assignment:", error);
-      toast.error("فشل في إلغاء التعيين");
+      tToast.error("hr_ShiftDetails.msg_1d22");
     }
   };
 

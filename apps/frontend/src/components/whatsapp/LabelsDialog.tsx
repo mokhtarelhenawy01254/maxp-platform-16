@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Plus, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -69,7 +70,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       setLabels(response.data.labels || []);
     } catch (error) {
       console.error("Error loading labels:", error);
-      toast.error("فشل تحميل التصنيفات");
+      tToast.error("components_LabelsDialog.failed_load_d47f");
     } finally {
       setLoading(false);
     }
@@ -93,11 +94,11 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         name: newLabelName,
         color: selectedColor,
       });
-      toast.success("تم إنشاء التصنيف");
+      tToast.success("components_LabelsDialog.success_create_d4d4");
       setNewLabelName("");
       await loadLabels();
     } catch {
-      toast.error("فشل إنشاء التصنيف");
+      tToast.error("components_LabelsDialog.failed_create_739e");
     }
   };
 
@@ -108,10 +109,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 
     try {
       await api.delete(`/whatsapp/labels/${labelId}`, { data: { sessionId } });
-      toast.success("تم حذف التصنيف");
+      tToast.success("components_LabelsDialog.success_delete_eff8");
       await loadLabels();
     } catch {
-      toast.error("فشل حذف التصنيف");
+      tToast.error("components_LabelsDialog.failed_delete_2c9b");
     }
   };
 
@@ -139,7 +140,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       }
       onLabelsUpdated?.();
     } catch {
-      toast.error("فشل تحديث التصنيف للمحادثة");
+      tToast.error("components_LabelsDialog.failed_update_2bc4");
       setAssignedLabels(
         isAssigned
           ? [...assignedLabels, labelId]

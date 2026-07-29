@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useTranslation } from "react-i18next";
 import { getImageUrl } from "../utils/imageUrl";
 import {
@@ -963,7 +964,7 @@ const UsersManagement: React.FC = () => {
       await navigator.clipboard.writeText(inviteUrl);
       toast.success(t("users.linkCopied") || "تم نسخ رابط الدعوة");
     } catch {
-      toast.error("فشل نسخ الرابط");
+      tToast.error("UsersManagement_UsersManagement.msg_8387");
     }
   };
 
@@ -999,7 +1000,7 @@ const UsersManagement: React.FC = () => {
     link.download = `users_${new Date().toISOString().split("T")[0] || "export"}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تصدير البيانات بنجاح");
+    tToast.success("UsersManagement_UsersManagement.msg_fc1e");
   };
 
   const handleBulkToggle = async (nextValue: boolean) => {
@@ -1043,7 +1044,7 @@ const UsersManagement: React.FC = () => {
       await fetchUsers();
       setError(null);
     } catch (toggleError: unknown) {
-      toast.error(getErrorMessage(toggleError, "حدث خطأ أثناء التحديث الجماعي"));
+      toast.error(getErrorMessage(toggleError, i18n.t("UsersManagement_UsersManagement.error_error_6424")));
     }
   };
 
@@ -1075,7 +1076,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || String(t("users.deleteError")));
           }
-          toast.success("تم حذف المستخدم بنجاح");
+          tToast.success("UsersManagement_UsersManagement.success_delete_ae63");
           await fetchUsers();
           break;
         }
@@ -1106,7 +1107,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || "فشل إلغاء الدعوة");
           }
-          toast.success("تم إلغاء الدعوة بنجاح");
+          tToast.success("UsersManagement_UsersManagement.msg_6812");
           await fetchInvitations();
           break;
         }
@@ -1120,7 +1121,7 @@ const UsersManagement: React.FC = () => {
           if (!response.success) {
             throw new Error(response.message || "فشل إرسال رابط إعادة التعيين");
           }
-          toast.success("تم إرسال رابط إعادة تعيين كلمة المرور");
+          tToast.success("UsersManagement_UsersManagement.success_send_62b7");
           break;
         }
       }
@@ -1130,7 +1131,7 @@ const UsersManagement: React.FC = () => {
     } catch (actionError: unknown) {
       const nextError = getErrorMessage(
         actionError,
-        "حدث خطأ أثناء تنفيذ العملية",
+        i18n.t("UsersManagement_UsersManagement.error_error_a658"),
       );
       setError(nextError);
       toast.error(nextError);
@@ -1154,10 +1155,10 @@ const UsersManagement: React.FC = () => {
       if (!response.success) {
         throw new Error(response.message || "فشل إعادة إرسال الدعوة");
       }
-      toast.success("تم إعادة إرسال الدعوة بنجاح");
+      tToast.success("UsersManagement_UsersManagement.success_send_59c9");
       await fetchInvitations();
     } catch (resendError: unknown) {
-      toast.error(getErrorMessage(resendError, "حدث خطأ أثناء إعادة الإرسال"));
+      toast.error(getErrorMessage(resendError, i18n.t("UsersManagement_UsersManagement.error_error_c008")));
     }
   };
 

@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -164,7 +165,7 @@ const ApplicantsSection: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم حذف المتقدم بنجاح");
+        tToast.success("hr_ApplicantsSection.success_delete_026c");
         setApplicants((currentApplicants) =>
           currentApplicants.filter(
             (currentApplicant) => currentApplicant.id !== applicant.id,
@@ -178,7 +179,7 @@ const ApplicantsSection: React.FC = () => {
 
         fetchApplicants();
       } else {
-        toast.error("فشل حذف المتقدم");
+        tToast.error("hr_ApplicantsSection.failed_delete_951f");
       }
     } catch (error: any) {
       console.error("Error deleting applicant:", error);
@@ -205,17 +206,17 @@ const ApplicantsSection: React.FC = () => {
         `/hr/recruitment/applicants/${applicantId}/status`,
         { status },
       );
-      toast.success("تم تحديث حالة المتقدم");
+      tToast.success("hr_ApplicantsSection.success_update_status_7ae4");
       fetchApplicants();
     } catch (error) {
-      toast.error("فشل في تحديث الحالة");
+      tToast.error("hr_ApplicantsSection.failed_update_a9eb");
     }
   };
 
   const handleAddApplicant = async () => {
     try {
       if (!newApplicant.name || !newApplicant.email || !newApplicant.jobId) {
-        toast.error("يرجى تعبئة الحقول المطلوبة");
+        tToast.error("hr_ApplicantsSection.msg_0d23");
         return;
       }
 
@@ -232,7 +233,7 @@ const ApplicantsSection: React.FC = () => {
         payload,
       );
       if (response.data.success) {
-        toast.success("تم إضافة المتقدم بنجاح 🎉");
+        tToast.success("hr_ApplicantsSection.success_add_3282");
         setShowAddModal(false);
         resetAddForm();
         fetchApplicants();

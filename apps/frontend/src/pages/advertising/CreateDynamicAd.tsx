@@ -8,6 +8,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateDynamicAdData,
@@ -52,7 +53,7 @@ const CreateDynamicAd: React.FC = () => {
       setCatalogs(data.filter((c) => c.status === "ACTIVE"));
     } catch (error: any) {
       console.error("Error loading catalogs:", error);
-      toast.error("فشل في تحميل Catalogs");
+      tToast.error("advertising_CreateDynamicAd.failed_load_54a9");
     } finally {
       setLoadingData(false);
     }
@@ -66,7 +67,7 @@ const CreateDynamicAd: React.FC = () => {
       setProductSets(sets);
     } catch (error: any) {
       console.error("Error loading product sets:", error);
-      toast.error("فشل في تحميل Product Sets");
+      tToast.error("advertising_CreateDynamicAd.failed_load_fa45");
     }
   };
 
@@ -78,17 +79,17 @@ const CreateDynamicAd: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم الإعلان");
+          tToast.error("advertising_CreateDynamicAd.please_name_e56c");
           return false;
         }
         if (!formData.catalogId) {
-          toast.error("يرجى اختيار Catalog");
+          tToast.error("advertising_CreateDynamicAd.msg_8fe0");
           return false;
         }
         return true;
       case 2:
         if (!formData.productSetId) {
-          toast.error("يرجى اختيار Product Set");
+          tToast.error("advertising_CreateDynamicAd.msg_b753");
           return false;
         }
         return true;
@@ -119,7 +120,7 @@ const CreateDynamicAd: React.FC = () => {
     try {
       setLoading(true);
       await facebookAdsService.createDynamicAd(adSetId, formData);
-      toast.success("تم إنشاء Dynamic Ad بنجاح");
+      tToast.success("advertising_CreateDynamicAd.success_create_6286");
       navigate(-1); // رجوع للصفحة السابقة
     } catch (error: any) {
       console.error("Error creating dynamic ad:", error);
