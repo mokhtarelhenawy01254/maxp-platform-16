@@ -1062,8 +1062,26 @@ async function getConversations(req, res) {
             window: computeWindowStatus(contact)
         }));
 
+        // 🏷️ Enrich with native WhatsApp labels from in-memory session
+        const uniqueSessionIds = [...new Set(contacts.map(c => c.sessionId))];
+        const chatLabelIds = new Map(); // chatJid -> labelId[]
+        for (const sid of uniqueSessionIds) {
+            const session = WhatsAppManager.getSession(sid);
+            if (!session?.labelAssociations) continue;
+            for (const [labelId, chatJids] of session.labelAssociations) {
+                for (const jid of chatJids) {
+                    if (!chatLabelIds.has(jid)) chatLabelIds.set(jid, []);
+                    chatLabelIds.get(jid).push(labelId);
+                }
+            }
+        }
+        const conversationsWithLabels = conversationsWithLastMessage.map(contact => ({
+            ...contact,
+            labels: chatLabelIds.get(contact.jid) || []
+        }));
+
         res.json({
-            conversations: conversationsWithLastMessage,
+            conversations: conversationsWithLabels,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),

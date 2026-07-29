@@ -22,6 +22,8 @@ interface ChatRightPanelProps {
   onOpenOrder: () => void;
   onOpenTasks: () => void;
   onClose?: () => void;
+  onOpenLabels?: () => void;
+  labels?: { id: string; name: string; color: string }[];
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -44,7 +46,7 @@ const ORDER_STATUS_THEME: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'ملغي', color: '#ef4444' },
 };
 
-const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose }) => {
+const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose, onOpenLabels, labels = [] }) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
@@ -427,6 +429,32 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                         <Plus className="size-3.5" />
                       </Button>
                     </div>
+                  </div>
+
+                  <div style={sectionStyle}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">تصنيفات واتساب</h4>
+                    {contact.labels && contact.labels.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {contact.labels.map(labelId => {
+                          const def = labels.find(l => l.id === labelId);
+                          return def ? (
+                            <span key={labelId}
+                              className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+                              style={{ backgroundColor: def.color }}>
+                              {def.name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mb-2">لا توجد تصنيفات</p>
+                    )}
+                    {onOpenLabels ? (
+                      <Button variant="outline" size="sm" className="w-full gap-1 mt-1 text-xs" onClick={onOpenLabels}>
+                        <Tag className="size-3" />
+                        إدارة التصنيفات
+                      </Button>
+                    ) : null}
                   </div>
 
                   {activeJourney ? (
