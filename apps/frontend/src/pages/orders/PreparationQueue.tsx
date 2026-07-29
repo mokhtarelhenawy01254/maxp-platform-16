@@ -691,8 +691,8 @@ const PreparationQueue: React.FC = () => {
 
   const selectedSet = useMemo(() => new Set(selectedOrders), [selectedOrders]);
   const allVisibleSelected =
-    paginatedOrders.length > 0 &&
-    paginatedOrders.every((order) => selectedSet.has(order.orderNumber));
+    enrichedOrders.length > 0 &&
+    enrichedOrders.every((order) => selectedSet.has(order.orderNumber));
 
   const updateLocalStatuses = useCallback(
     (orderNumbers: string[], nextStatus: string) => {
@@ -1041,7 +1041,7 @@ const PreparationQueue: React.FC = () => {
     const validOrders: PreparationOrder[] = [];
     const invalidOrders: PreparationOrder[] = [];
 
-    paginatedOrders.forEach((order) => {
+    enrichedOrders.forEach((order) => {
       const validation = validateTransition(order, bulkStatus);
       if (validation.valid) {
         validOrders.push(order);
@@ -1322,12 +1322,12 @@ const PreparationQueue: React.FC = () => {
   const toggleSelectAllVisible = () => {
     if (allVisibleSelected) {
       uiActions.clearVisibleSelection(
-        paginatedOrders.map((order) => order.orderNumber),
+        enrichedOrders.map((order) => order.orderNumber),
       );
       return;
     }
 
-    const visibleIds = paginatedOrders.map((order) => order.orderNumber);
+    const visibleIds = enrichedOrders.map((order) => order.orderNumber);
     uiActions.selectVisibleOrders(visibleIds);
   };
 
@@ -1544,7 +1544,7 @@ const PreparationQueue: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : paginatedOrders.length === 0 ? (
+        ) : enrichedOrders.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center dark:border-gray-600 dark:bg-gray-800/50">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1558,7 +1558,7 @@ const PreparationQueue: React.FC = () => {
           <>
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
-              {paginatedOrders.map((order) => {
+              {enrichedOrders.map((order) => {
                 const shortageHoldDetails =
                   shortageHoldDrafts[order.orderNumber] ||
                   buildShortageHoldDetails(order.metadata);
@@ -1653,7 +1653,7 @@ const PreparationQueue: React.FC = () => {
             {/* Desktop table view */}
             <div className="mt-3 hidden md:block">
               <PreparationOrdersTable
-                orders={paginatedOrders}
+                orders={enrichedOrders}
                 statusSelections={statusSelections}
                 statusOptions={statusOptions}
                 statusLabelMap={statusLabelMap}
