@@ -11,6 +11,7 @@ import {
   BellIcon,
   BellSlashIcon,
   ChevronDownIcon,
+  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 
 interface Template {
@@ -65,6 +66,10 @@ export default function OrderStatusTemplatesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showVariables, setShowVariables] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
+
+  const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
+  const [selectedMetaSession, setSelectedMetaSession] = useState("");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const ORDER_VARIABLES = [
     { var: "{{customerName}}", desc: "اسم العميل" },
@@ -121,6 +126,7 @@ export default function OrderStatusTemplatesPage() {
       isActive: status.template?.isActive ?? true,
     });
     setDialogOpen(true);
+    fetchMetaSessions();
   };
 
   const handleSave = async () => {
@@ -180,6 +186,36 @@ export default function OrderStatusTemplatesPage() {
       toast.error(err?.response?.data?.message || t("orders.toggleError", "حدث خطأ في تحديث الإشعار"));
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const fetchMetaSessions = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/whatsapp/sessions");
+      const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = res.data?.sessions || [];
+      const cloud = list.filter(s => s.provider === 'META_CLOUD');
+      setMetaSessions(cloud);
+      if (cloud.length > 0 && !selectedMetaSession) {
+        setSelectedMetaSession(cloud[0].id);
+      }
+    } catch { /* ignore */ }
+  }, [selectedMetaSession]);
+
+  const publishToMeta = async (templateId: string) => {
+    if (!selectedMetaSession) {
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      return;
+    }
+    setPublishingId(templateId);
+    try {
+      await apiClient.post(`/whatsapp-notifications/templates/${templateId}/publish`, {
+        sessionId: selectedMetaSession,
+      });
+      toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.publishFailed", "فشل النشر على ميتا"));
+    } finally {
+      setPublishingId(null);
     }
   };
 
@@ -464,6 +500,45 @@ export default function OrderStatusTemplatesPage() {
                 {t("common.save", "حفظ")}
               </button>
             </div>
+
+            {selectedStatus?.template?.id && (
+              <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  {t("orders.metaPublish", "النشر على Meta Cloud API")}
+                </p>
+                {metaSessions.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedMetaSession}
+                      onChange={(e) => setSelectedMetaSession(e.target.value)}
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    >
+                      {metaSessions.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => publishToMeta(selectedStatus.template!.id!)}
+                      disabled={publishingId === selectedStatus.template!.id}
+                      className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {publishingId === selectedStatus.template!.id ? (
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      ) : (
+                        <GlobeAltIcon className="h-3.5 w-3.5" />
+                      )}
+                      {t("orders.publish", "نشر")}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    {t("orders.noMetaSession", "لا توجد جلسة ميتا متصلة. اربط حساب Meta Cloud API أولاً.")}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
