@@ -15,7 +15,7 @@ const ADMIN_CRITICAL_GOOGLE_FONTS_HREF =
 
 let adminShellAssetsPromise: Promise<void> | null = null;
 
-type RootWindow = Window & typeof globalThis & { __MAXP_APP_ROOT__?: Root };
+type RootWindow = Window & typeof globalThis & { __MAXP_APP_ROOT__?: Root; __SW_UPDATE_PENDING__?: boolean };
 
 // Get root element
 const rootElement = document.getElementById("root");
@@ -206,17 +206,24 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Service Worker auto-update: reload when a new version takes over
+// Service Worker auto-update: notify user when a new version is ready
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js").then((reg) => {
-    let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+    const notify = () => {
+      window.__SW_UPDATE_PENDING__ = true;
+      window.dispatchEvent(new CustomEvent("sw-update-ready"));
+    };
+
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      notify();
+    }
+
     reg.addEventListener("updatefound", () => {
       const installing = reg.installing;
       if (!installing) return;
       installing.addEventListener("statechange", () => {
         if (installing.state === "installed" && navigator.serviceWorker.controller) {
-          clearTimeout(reloadTimer);
-          reloadTimer = setTimeout(() => window.location.reload(), 500);
+          notify();
         }
       });
     });

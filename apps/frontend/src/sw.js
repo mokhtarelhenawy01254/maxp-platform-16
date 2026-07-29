@@ -1,5 +1,5 @@
-import { precacheAndRoute } from 'workbox-precaching';
-import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { registerRoute } from 'workbox-routing';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -27,10 +27,10 @@ registerRoute(
 
 registerRoute(
   ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
-  new StaleWhileRevalidate({
+  new CacheFirst({
     cacheName: 'assets',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 24 * 60 * 60 }),
     ],
   }),
 );
@@ -41,6 +41,7 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    cleanupOutdatedCaches();
     await self.clients.claim();
     if (self.registration.navigationPreload) {
       await self.registration.navigationPreload.enable();
