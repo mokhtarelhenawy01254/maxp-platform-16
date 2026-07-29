@@ -16,6 +16,7 @@
     "test:tasks-production-smoke": "node scripts/tasks-production-regression.cjs",
     "test:storefront-routing": "vitest run --environment jsdom --passWithNoTests src/registry/__tests__",
     "test:catalog-diff-smoke": "jest --config jest.config.cjs src/pages/super-admin/__tests__/SubscriptionCenter.catalogDiff.test.tsx --runInBand",
+    "i18n:lint": "node ../../scripts/i18n-lint.js",
     "i18n:merge": "node ../../scripts/merge-translations.js",
     "i18n:split": "node ../../scripts/split-translations.js",
     "i18n:check": "node ../../scripts/i18n-check.js",

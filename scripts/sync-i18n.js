@@ -28,7 +28,7 @@ function syncObject(source, target) {
     if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
       result[key] = syncObject(source[key], target[key] || {});
     } else {
-      result[key] = target[key] !== undefined ? target[key] : source[key];
+      result[key] = target[key] !== undefined ? target[key] : '\u26A0\uFE0F EN:' + source[key];
     }
   }
   return result;
