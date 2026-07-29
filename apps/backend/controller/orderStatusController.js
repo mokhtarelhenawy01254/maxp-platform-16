@@ -28,7 +28,7 @@ const DEFAULT_ORDER_STATUSES = [
 ];
 
 const DEFAULT_PAYMENT_STATUSES = [
-  { code: 'PENDING', name: 'في انتظار الدفع', nameEn: 'Pending', color: '#F59E0B', icon: 'Clock', sortOrder: 1 },
+  { code: 'PAYMENT_PENDING', name: 'في انتظار الدفع', nameEn: 'Pending', color: '#F59E0B', icon: 'Clock', sortOrder: 1 },
   { code: 'COMPLETED', name: 'مدفوع', nameEn: 'Completed', color: '#10B981', icon: 'CheckCircle', sortOrder: 2 },
   { code: 'PARTIALLY_PAID', name: 'مدفوع جزئياً', nameEn: 'Partially Paid', color: '#3B82F6', icon: 'CreditCard', sortOrder: 3 },
   { code: 'FAILED', name: 'فشل الدفع', nameEn: 'Failed', color: '#EF4444', icon: 'XCircle', sortOrder: 4 },
