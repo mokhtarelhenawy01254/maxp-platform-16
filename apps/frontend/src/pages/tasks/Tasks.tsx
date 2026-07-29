@@ -482,7 +482,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setNewCategory({ name: "", description: "", color: "#6366f1" });
         tToast.success("tasks.success_create_d422");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_1d0b"));
+        toast.error(data.error || i18n.t("tasks.msg_cae9"));
       }
     } catch (error) {
       tToast.error("tasks.failed_create_1d0b");
@@ -515,7 +515,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setEditingCategory(null);
         tToast.success("tasks.success_update_6b8e");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_ef21"));
+        toast.error(data.error || i18n.t("tasks.msg_8581"));
       }
     } catch (error) {
       tToast.error("tasks.failed_update_ef21");
@@ -539,7 +539,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchCategories();
         tToast.success("tasks.success_delete_904a");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_93ed"));
+        toast.error(data.error || i18n.t("tasks.msg_c6d3"));
       }
     } catch (error) {
       tToast.error("tasks.failed_delete_93ed");
@@ -717,7 +717,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         );
         tToast.success("tasks.success_create_7c46");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_608b"));
+        toast.error(data.error || i18n.t("tasks.msg_6bd6"));
       }
     } catch (error) {
       tToast.error("tasks.failed_create_608b");
@@ -783,7 +783,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         });
         tToast.success("tasks.success_create_2cab");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_إنشاء_19dc"));
+        toast.error(data.error || i18n.t("tasks.msg_8d05"));
       }
     } catch (error) {
       tToast.error("tasks.failed_create_19dc");
@@ -831,7 +831,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setEditingTask(null);
         tToast.success("tasks.success_update_b5ad");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_c51e"));
+        toast.error(data.error || i18n.t("tasks.msg_3840"));
       }
     } catch (error) {
       tToast.error("tasks.failed_update_c51e");
@@ -875,7 +875,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         fetchTasks();
         tToast.success("tasks.msg_178a");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_تكرار_56ed"));
+        toast.error(data.error || i18n.t("tasks.msg_bbd2"));
       }
     } catch (error) {
       tToast.error("tasks.msg_56ed");
@@ -901,7 +901,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setSelectedTask(null);
         tToast.success("tasks.success_delete_04cd");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_6cbf"));
+        toast.error(data.error || i18n.t("tasks.msg_f06f"));
       }
     } catch (error) {
       tToast.error("tasks.failed_delete_6cbf");
@@ -933,7 +933,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setEditingProject(null);
         tToast.success("tasks.success_update_2a08");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_تحديث_f0bf"));
+        toast.error(data.error || i18n.t("tasks.msg_199a"));
       }
     } catch (error) {
       tToast.error("tasks.failed_update_f0bf");
@@ -959,7 +959,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setSelectedProject(null);
         tToast.success("tasks.success_delete_7093");
       } else {
-        toast.error(data.error || i18n.t("tasks.فشل_في_حذف_09e9"));
+        toast.error(data.error || i18n.t("tasks.msg_34d5"));
       }
     } catch (error) {
       tToast.error("tasks.failed_delete_09e9");

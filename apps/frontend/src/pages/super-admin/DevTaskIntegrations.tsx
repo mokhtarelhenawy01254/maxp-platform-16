@@ -178,7 +178,7 @@ const DevTaskIntegrations: React.FC = () => {
       await navigator.clipboard.writeText(value);
       toast.success(successMessage);
     } catch (_error) {
-      tToast.error("super-admin_DevTaskIntegrations.msg_3354");
+      tToast.error("DevTaskIntegrations.msg_3354");
     }
   };
 
@@ -197,7 +197,7 @@ const DevTaskIntegrations: React.FC = () => {
       setProjects(projectsResponse.data || []);
     } catch (error: unknown) {
       console.error("Failed to load dev task integrations:", error);
-      setLoadError(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.failed_load_0534")));
+      setLoadError(getErrorMessage(error, i18n.t("DevTaskIntegrations.failed_load_0534")));
     } finally {
       setLoading(false);
     }
@@ -238,17 +238,17 @@ const DevTaskIntegrations: React.FC = () => {
   const saveCredential = async () => {
     try {
       if (!formState.name.trim()) {
-        tToast.error("super-admin_DevTaskIntegrations.name_required_1041");
+        tToast.error("DevTaskIntegrations.name_required_1041");
         return;
       }
 
       if (formState.scopes.length === 0) {
-        tToast.error("super-admin_DevTaskIntegrations.msg_9272");
+        tToast.error("DevTaskIntegrations.msg_9272");
         return;
       }
 
       if (!formState.defaultProjectId) {
-        tToast.error("super-admin_DevTaskIntegrations.msg_dbef");
+        tToast.error("DevTaskIntegrations.msg_dbef");
         return;
       }
 
@@ -256,7 +256,7 @@ const DevTaskIntegrations: React.FC = () => {
         hasWriteScope(formState.scopes) &&
         !formState.defaultReporterMemberId
       ) {
-        tToast.error("super-admin_DevTaskIntegrations.msg_53d1");
+        tToast.error("DevTaskIntegrations.msg_53d1");
         return;
       }
 
@@ -303,7 +303,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to save credential:", error);
-      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.failed_save_96d4")));
+      toast.error(getErrorMessage(error, i18n.t("DevTaskIntegrations.failed_save_96d4")));
     } finally {
       setSubmitting(false);
     }
@@ -327,7 +327,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to rotate credential:", error);
-      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.msg_71f8")));
+      toast.error(getErrorMessage(error, i18n.t("DevTaskIntegrations.msg_71f8")));
     } finally {
       setRotatingCredentialId(null);
     }
@@ -356,7 +356,7 @@ const DevTaskIntegrations: React.FC = () => {
       await loadData();
     } catch (error: unknown) {
       console.error("Failed to revoke credential:", error);
-      toast.error(getErrorMessage(error, i18n.t("super-admin_DevTaskIntegrations.msg_7de3")));
+      toast.error(getErrorMessage(error, i18n.t("DevTaskIntegrations.msg_7de3")));
     } finally {
       setRevokingCredentialId(null);
     }

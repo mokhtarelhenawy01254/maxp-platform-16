@@ -170,10 +170,10 @@ const DevGoalsList: React.FC = () => {
         setDeleteConfirm(null);
         fetchData();
       } else {
-        alert(data.error || i18n.t("super-admin_DevGoalsList.failed_delete_5bfb"));
+        alert(data.error || i18n.t("DevGoalsList.failed_delete_5bfb"));
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalsList.msg_6e3a"));
+      alert(i18n.t("DevGoalsList.msg_6e3a"));
     }
   };
 

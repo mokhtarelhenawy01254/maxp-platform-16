@@ -83,7 +83,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
       setSelectedVariantId(nextSettings.activeLandingId);
     } catch (error) {
       console.error("Failed to load platform homepage variants", error);
-      tToast.error("super-admin_PlatformSiteHomepageTemplates.failed_load_a341");
+      tToast.error("PlatformSiteHomepageTemplates.failed_load_a341");
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
       });
       setSettings(saved);
       setSelectedVariantId(saved.activeLandingId);
-      tToast.success("super-admin_PlatformSiteHomepageTemplates.success_update_b605");
+      tToast.success("PlatformSiteHomepageTemplates.success_update_b605");
     } catch (error: any) {
       const message =
         error?.response?.data?.message || "فشل تحديث الصفحة الرئيسية العامة";

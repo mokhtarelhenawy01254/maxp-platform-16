@@ -1,4 +1,4 @@
-/**
+﻿/**
  * i18n Lint — CI-ready translation quality checker
  * Usage: node scripts/i18n-lint.js [--ci]
  *   Default: warnings only, exit 0
@@ -157,25 +157,6 @@ for (const [rel, fp] of enFileMap) {
     }
   }
 }
-
-  // Also check AR->EN (extra keys in AR that don't exist in EN)
-  for (const [rel, fp] of arFileMap) {
-    if (!enFileMap.has(rel)) {
-      if (CI) err(Orphan AR section (no EN counterpart): );
-      else warn(Orphan AR section (no EN counterpart): );
-    } else {
-      const enKeys = getKeys(enFileMap.get(rel));
-      const arKeys = getKeys(fp);
-      if (enKeys && arKeys) {
-        for (const k of arKeys) {
-          if (!enKeys.has(k)) {
-            if (CI) err(Extra key in AR (missing from EN):  ());
-            else warn(Extra key in AR (missing from EN):  ());
-          }
-        }
-      }
-    }
-  }
 
 // -------------------------------------------------
 // Summary

@@ -465,7 +465,7 @@ const ProjectFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.description.trim()) {
-      alert(i18n.t("super-admin_DevProjects.msg_f4a8"));
+      alert(i18n.t("DevProjects.msg_f4a8"));
       return;
     }
 
@@ -494,10 +494,10 @@ const ProjectFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || i18n.t("super-admin_DevProjects.failed_create_b90e"));
+        alert(data.error || i18n.t("DevProjects.failed_create_b90e"));
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevProjects.msg_58f7"));
+      alert(i18n.t("DevProjects.msg_58f7"));
     } finally {
       setSaving(false);
     }

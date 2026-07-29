@@ -152,7 +152,7 @@ const DevGoalForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.startDate || !formData.endDate) {
-      alert(i18n.t("super-admin_DevGoalForm.msg_2fbd"));
+      alert(i18n.t("DevGoalForm.msg_2fbd"));
       return;
     }
 
@@ -188,10 +188,10 @@ const DevGoalForm: React.FC = () => {
       if (data.success) {
         navigate(`/super-admin/dev-goals/${data.data.id}`);
       } else {
-        alert(data.error || i18n.t("super-admin_DevGoalForm.failed_save_7680"));
+        alert(data.error || i18n.t("DevGoalForm.failed_save_7680"));
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalForm.msg_58e7"));
+      alert(i18n.t("DevGoalForm.msg_58e7"));
     } finally {
       setSaving(false);
     }

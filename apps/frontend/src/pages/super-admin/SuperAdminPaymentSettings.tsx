@@ -70,7 +70,7 @@ export default function SuperAdminPaymentSettings() {
         setSettings(response.data.data);
       }
     } catch (error: any) {
-      tToast.error("super-admin_SuperAdminPaymentSettings.error_fetch_922f");
+      tToast.error("SuperAdminPaymentSettings.error_fetch_922f");
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export default function SuperAdminPaymentSettings() {
 
   const handleSave = async () => {
     if (!settings.merchantId || !settings.apiKey) {
-      tToast.error("super-admin_SuperAdminPaymentSettings.msg_d1a0");
+      tToast.error("SuperAdminPaymentSettings.msg_d1a0");
       return;
     }
 
@@ -107,7 +107,7 @@ export default function SuperAdminPaymentSettings() {
         { headers: getAuthHeaders() }
       );
       if (response.data.success) {
-        tToast.success("super-admin_SuperAdminPaymentSettings.success_save_a705");
+        tToast.success("SuperAdminPaymentSettings.success_save_a705");
         setIsDirty(false);
         // Re-fetch to get masked secretKey
         await fetchSettings();
@@ -121,7 +121,7 @@ export default function SuperAdminPaymentSettings() {
 
   const handleTest = async () => {
     if (!settings.merchantId || !settings.apiKey) {
-      tToast.error("super-admin_SuperAdminPaymentSettings.msg_7700");
+      tToast.error("SuperAdminPaymentSettings.msg_7700");
       return;
     }
 
@@ -135,7 +135,7 @@ export default function SuperAdminPaymentSettings() {
       );
       setTestResult({
         success: response.data.success,
-        message: response.data.message || i18n.t("super-admin_SuperAdminPaymentSettings.msg_25c4"),
+        message: response.data.message || i18n.t("SuperAdminPaymentSettings.msg_25c4"),
       });
     } catch (error: any) {
       setTestResult({

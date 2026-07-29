@@ -86,10 +86,10 @@ function ReplyBox({ commentId, onReplySent }) {
         tToast.success("postComments.success_send_e82a");
         onReplySent?.();
       } else {
-        toast.error(i18n.t("PostComments.msg_6164", { error: result.message || "خطأ غير معروف" })));
+        toast.error(i18n.t("postComments.msg_6164", { error: result.message || "خطأ غير معروف" })));
       }
     } catch (err) {
-      toast.error(i18n.t("PostComments.msg_5470", { error: err.message })));
+      toast.error(i18n.t("postComments.msg_5470", { error: err.message })));
     } finally {
       setSending(false);
     }
@@ -173,7 +173,7 @@ function CommentCard({ comment, selected, onToggleSelect, onDelete, onReplySent 
                   tToast.error("postComments.msg_8e60");
                 }
               } catch (err) {
-                toast.error(i18n.t("PostComments.msg_2ae6", { error: err.message })));
+                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message })));
               } finally {
                 setDeleting(false);
               }
@@ -333,7 +333,7 @@ const PostComments = () => {
         setComments(response.data || []);
       }
     } catch (error) {
-      toast.error(i18n.t("PostComments.msg_1e96", { error: error.message })));
+      toast.error(i18n.t("postComments.msg_1e96", { error: error.message })));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -392,7 +392,7 @@ const PostComments = () => {
                   tToast.error("postComments.msg_3297");
                 }
               } catch (err) {
-                toast.error(i18n.t("PostComments.msg_2ae6", { error: err.message })));
+                toast.error(i18n.t("postComments.msg_2ae6", { error: err.message })));
               } finally {
                 setDeletingBulk(false);
               }

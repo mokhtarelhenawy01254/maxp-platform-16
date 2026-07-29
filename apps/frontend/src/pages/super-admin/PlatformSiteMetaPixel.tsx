@@ -78,7 +78,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
       setSettings(nextSettings);
     } catch (error) {
       console.error("Failed to load platform site Meta pixel settings", error);
-      tToast.error("super-admin_PlatformSiteMetaPixel.failed_load_41c7");
+      tToast.error("PlatformSiteMetaPixel.failed_load_41c7");
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
     const pixelId = trimmedPixelId;
 
     if (settings.isEnabled && !PIXEL_ID_REGEX.test(pixelId)) {
-      tToast.error("super-admin_PlatformSiteMetaPixel.msg_3ee4");
+      tToast.error("PlatformSiteMetaPixel.msg_3ee4");
       return;
     }
 
@@ -150,7 +150,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
         pixelId,
       });
       setSettings(savedSettings);
-      tToast.success("super-admin_PlatformSiteMetaPixel.success_save_9b3e");
+      tToast.success("PlatformSiteMetaPixel.success_save_9b3e");
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||

@@ -30,7 +30,7 @@ export default function SuperAdminSupportSettings() {
         setPhone(res.data.data.phone || "");
       }
     } catch {
-      tToast.error("super-admin_SuperAdminSupportSettings.error_fetch_386a");
+      tToast.error("SuperAdminSupportSettings.error_fetch_386a");
     } finally {
       setLoading(false);
     }
@@ -45,10 +45,10 @@ export default function SuperAdminSupportSettings() {
         { headers: getAuthHeaders() },
       );
       if (res.data.success) {
-        tToast.success("super-admin_SuperAdminSupportSettings.success_save_bcfb");
+        tToast.success("SuperAdminSupportSettings.success_save_bcfb");
       }
     } catch {
-      tToast.error("super-admin_SuperAdminSupportSettings.failed_save_f02c");
+      tToast.error("SuperAdminSupportSettings.failed_save_f02c");
     } finally {
       setSaving(false);
     }

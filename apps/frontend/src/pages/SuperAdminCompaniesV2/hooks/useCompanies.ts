@@ -83,7 +83,7 @@ export function useBulkMutations() {
       const res = await apiClient.put("/admin/companies/bulk-status", { companyIds, isActive });
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في تحديث الحالة");
     },
-    onSuccess: () => { invalidate(); tToast.success("SuperAdminCompaniesV2_useCompanies.msg_43e0"); },
+    onSuccess: () => { invalidate(); tToast.success("useCompanies.msg_43e0"); },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في تحديث الحالة")),
   });
 
@@ -113,7 +113,7 @@ export function useCompanyMutations() {
       const res = await apiClient.post("/admin/companies", payload);
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في إنشاء الشركة");
     },
-    onSuccess: () => { invalidate(); tToast.success("SuperAdminCompaniesV2_useCompanies.success_create_30c4"); },
+    onSuccess: () => { invalidate(); tToast.success("useCompanies.success_create_30c4"); },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في إنشاء الشركة")),
   });
 
@@ -122,7 +122,7 @@ export function useCompanyMutations() {
       const res = await apiClient.put(`/admin/companies/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في تحديث الشركة");
     },
-    onSuccess: () => { invalidate(); tToast.success("SuperAdminCompaniesV2_useCompanies.success_update_1110"); },
+    onSuccess: () => { invalidate(); tToast.success("useCompanies.success_update_1110"); },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في تحديث الشركة")),
   });
 
@@ -174,7 +174,7 @@ export function useSaveFollowUp() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin", "companies"] });
-      tToast.success("SuperAdminCompaniesV2_useCompanies.success_update_78ed");
+      tToast.success("useCompanies.success_update_78ed");
     },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في تحديث المتابعة")),
   });
@@ -189,7 +189,7 @@ export function useAddEmployee() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin", "companies"] });
-      tToast.success("SuperAdminCompaniesV2_useCompanies.msg_f60e");
+      tToast.success("useCompanies.msg_f60e");
     },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في إضافة الموظف")),
   });
@@ -204,7 +204,7 @@ export function useTransferOwnership() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin", "companies"] });
-      tToast.success("SuperAdminCompaniesV2_useCompanies.msg_143a");
+      tToast.success("useCompanies.msg_143a");
     },
     onError: (err: Error) => toast.error(extractErrorMessage(err, "فشل في نقل الملكية")),
   });

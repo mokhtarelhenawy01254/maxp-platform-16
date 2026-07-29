@@ -413,12 +413,12 @@ function KeyManagerContent() {
   }
   function handleCopyKey(apiKey?: string, masked?: string) {
     const keyToCopy = apiKey || masked;
-    if (!keyToCopy) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_d605"); return; }
-    navigator.clipboard.writeText(keyToCopy).then(() => tToast.success("super-admin_SuperAdminAIKeyManager.msg_6d70"), () => tToast.error("super-admin_SuperAdminAIKeyManager.msg_332e"));
+    if (!keyToCopy) { tToast.error("SuperAdminAIKeyManager.msg_d605"); return; }
+    navigator.clipboard.writeText(keyToCopy).then(() => tToast.success("SuperAdminAIKeyManager.msg_6d70"), () => tToast.error("super-admin_SuperAdminAIKeyManager.msg_332e"));
   }
   function handleRefresh() {
     queryClient.invalidateQueries({ queryKey: ["ai-admin"] });
-    tToast.success("super-admin_SuperAdminAIKeyManager.success_update_1f20");
+    tToast.success("SuperAdminAIKeyManager.success_update_1f20");
   }
   function usagePercent(key: AiKey) {
     if (!key.max_requests_per_day) return 0;
@@ -633,7 +633,7 @@ function AddKeyDialog({ providers, onClose, onCreated, createKeyMutation }: {
     if (value === "OPENROUTER" && !modelsText) setModelsText("openrouter/auto");
   }
   function handleSave() {
-    if (!provider || !name || !apiKey) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_a104"); return; }
+    if (!provider || !name || !apiKey) { tToast.error("SuperAdminAIKeyManager.msg_a104"); return; }
     const models = modelsText.split("\n").map((m) => m.trim()).filter(Boolean);
     createKeyMutation.mutate({
       provider, name, api_key: apiKey,
@@ -695,7 +695,7 @@ function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
   const [maxRequests, setMaxRequests] = useState(String(target.max_requests_per_day || 1500));
 
   function handleSave() {
-    if (!name) { tToast.error("super-admin_SuperAdminAIKeyManager.msg_b4d5"); return; }
+    if (!name) { tToast.error("SuperAdminAIKeyManager.msg_b4d5"); return; }
     const payload: AiKeyUpdatePayload = { name };
     if (apiKey) payload.api_key = apiKey;
     payload.key_type = keyType;

@@ -271,7 +271,7 @@ const PlatformSignupCoupons: React.FC = () => {
       setSummary(response.summary);
     } catch (error) {
       console.error("Failed to load platform signup coupons", error);
-      tToast.error("super-admin_PlatformSignupCoupons.failed_load_ccaf");
+      tToast.error("PlatformSignupCoupons.failed_load_ccaf");
     } finally {
       setLoading(false);
     }
@@ -366,7 +366,7 @@ const PlatformSignupCoupons: React.FC = () => {
         setCoupons((previous) =>
           previous.filter((coupon) => coupon.id !== couponPendingRemoval.id),
         );
-        tToast.success("super-admin_PlatformSignupCoupons.success_delete_6248");
+        tToast.success("PlatformSignupCoupons.success_delete_6248");
       } else {
         setCoupons((previous) =>
           previous.map((coupon) =>
@@ -375,7 +375,7 @@ const PlatformSignupCoupons: React.FC = () => {
               : coupon,
           ),
         );
-        tToast.success("super-admin_PlatformSignupCoupons.msg_42c7");
+        tToast.success("PlatformSignupCoupons.msg_42c7");
       }
 
       setCouponPendingRemoval(null);

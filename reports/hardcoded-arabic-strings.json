@@ -1,5 +1,5 @@
 {
-  "total": 117,
+  "total": 109,
   "byCategory": {
     "alert": [
       {
@@ -272,39 +272,9 @@
       },
       {
         "file": "pages\\comments\\PostComments.jsx",
-        "line": 89,
-        "category": "toast",
-        "string": "فشل الإرسال: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 92,
-        "category": "toast",
-        "string": "خطأ في الإرسال: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 176,
-        "category": "toast",
-        "string": "خطأ: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 336,
-        "category": "toast",
-        "string": "فشل تحميل التعليقات: "
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
         "line": 388,
         "category": "toast",
         "string": "تم حذف ${selectedComments.length} تعليق"
-      },
-      {
-        "file": "pages\\comments\\PostComments.jsx",
-        "line": 395,
-        "category": "toast",
-        "string": "خطأ: "
       },
       {
         "file": "pages\\comments\\PostSettings.jsx",
@@ -317,18 +287,6 @@
         "line": 159,
         "category": "toast",
         "string": "حدث خطأ أثناء تطبيق طريقة الرد: "
-      },
-      {
-        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
-        "line": 69,
-        "category": "toast",
-        "string": "حدث خطأ أثناء حذف التعليقات: "
-      },
-      {
-        "file": "pages\\comments\\UnifiedCommentsManagement.jsx",
-        "line": 152,
-        "category": "toast",
-        "string": "خطأ في تحديث رد التعليق: "
       },
       {
         "file": "pages\\hr\\assets\\AssetList.tsx",
@@ -593,12 +551,6 @@
         "line": 1319,
         "category": "toast",
         "string": "تم حذف ${jids.length} محادثة بنجاح"
-      },
-      {
-        "file": "pages\\whatsapp\\WhatsAppChat.tsx",
-        "line": 1763,
-        "category": "toast",
-        "string": "فشل تحديد الموقع: "
       },
       {
         "file": "pages\\whatsapp\\WhatsAppTemplateBroadcast.tsx",

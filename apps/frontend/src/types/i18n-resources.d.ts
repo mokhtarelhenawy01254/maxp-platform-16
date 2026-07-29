@@ -970,6 +970,16 @@ declare module 'react-i18next' {
         answeredBy: string;
         showContext: string;
       };
+      aiPlayground: {
+        promptPlaceholder: string;
+        send: string;
+        sending: string;
+        stop: string;
+        reply: string;
+        copied: string;
+        emptyReply: string;
+        receivingReply: string;
+      };
       subAgents: {
         title: string;
         loadFailed: string;
@@ -12716,13 +12726,13 @@ declare module 'react-i18next' {
         verificationFailed: string;
         rateUpdateFailed: string;
         commissionRate: string;
-        'فشل_تحميل_قائمة_المسوقين': string;
-        'يجب_إدخال_سبب_واضح': string;
-        'برجاء_إدخال_قيمة_عمولة': string;
-        'تم_تحديث_العمولة_بنجاح': string;
-        'فشل_تحديث_العمولة': string;
-        'تم_تحديث_ضوابط_المسوق': string;
-        'يجب_إدخال_سبب_واضح_1': string;
+        msg_630e: string;
+        msg_8021: string;
+        msg_02f6: string;
+        msg_c30a: string;
+        msg_2d5e: string;
+        msg_b841: string;
+        msg_0a5c: string;
         suspendReasonRequired: string;
         invalidCommissionValue: string;
         commissionRateMax: string;
@@ -15150,16 +15160,16 @@ declare module 'react-i18next' {
         msg_c991: string;
         success_update_selectedTaskslength_task_4e85: string;
         success_delete_selectedTaskslength_task_9484: string;
-        'فشل_في_إنشاء_1d0b': string;
-        'فشل_في_تحديث_ef21': string;
-        'فشل_في_حذف_93ed': string;
-        'فشل_في_إنشاء_608b': string;
-        'فشل_في_إنشاء_19dc': string;
-        'فشل_في_تحديث_c51e': string;
-        'فشل_في_تكرار_56ed': string;
-        'فشل_في_حذف_6cbf': string;
-        'فشل_في_تحديث_f0bf': string;
-        'فشل_في_حذف_09e9': string;
+        msg_cae9: string;
+        msg_8581: string;
+        msg_c6d3: string;
+        msg_6bd6: string;
+        msg_8d05: string;
+        msg_3840: string;
+        msg_bbd2: string;
+        msg_f06f: string;
+        msg_199a: string;
+        msg_34d5: string;
       };
       faqManagement: {
         title: string;
@@ -15491,6 +15501,16 @@ declare module 'react-i18next' {
         error_error_2ec3: string;
         msg_a442: string;
         error_error_d538: string;
+      };
+      errorHandler: {
+        network: string;
+        authentication: string;
+        rate_limit: string;
+        timeout: string;
+        validation: string;
+        fetch_failed: string;
+        timeout_error: string;
+        generic: string;
       };
       LabelsDialog: {
         failed_load_d47f: string;

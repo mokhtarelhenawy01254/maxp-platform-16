@@ -171,7 +171,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalDetails.failed_save_181b"));
+      alert(i18n.t("DevGoalDetails.failed_save_181b"));
     }
   };
 
@@ -185,7 +185,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalDetails.msg_892b"));
+      alert(i18n.t("DevGoalDetails.msg_892b"));
     }
   };
 
@@ -205,7 +205,7 @@ const DevGoalDetails: React.FC = () => {
         fetchGoal();
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalDetails.failed_add_9743"));
+      alert(i18n.t("DevGoalDetails.failed_add_9743"));
     }
   };
 
@@ -219,7 +219,7 @@ const DevGoalDetails: React.FC = () => {
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
-      alert(i18n.t("super-admin_DevGoalDetails.failed_update_f56b"));
+      alert(i18n.t("DevGoalDetails.failed_update_f56b"));
     }
   };
 

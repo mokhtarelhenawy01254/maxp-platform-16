@@ -55,7 +55,7 @@ export default function BillingOverview() {
       }
     } catch (error) {
       console.error("Error fetching billing data:", error);
-      tToast.error("super-admin_BillingOverview.error_fetch_fec6");
+      tToast.error("BillingOverview.error_fetch_fec6");
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function BillingOverview() {
       );
 
       if (response.data.success) {
-        toast.success(response.data.message || i18n.t("super-admin_BillingOverview.msg_23a3"));
+        toast.success(response.data.message || i18n.t("BillingOverview.msg_23a3"));
         fetchBillingData();
       }
     } catch (error: any) {

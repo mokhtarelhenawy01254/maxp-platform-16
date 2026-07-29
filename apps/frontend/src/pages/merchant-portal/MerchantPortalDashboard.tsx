@@ -180,7 +180,7 @@ const MerchantPortalDashboard: React.FC = () => {
   const requestMerchantPayout = async () => {
     const availableAmount = Number(payoutSummary?.balances.availableAmount || 0);
     if (availableAmount <= 0) {
-      tToast.error("merchant-portal_MerchantPortalDashboard.msg_ea8b");
+      tToast.error("MerchantPortalDashboard.msg_ea8b");
       return;
     }
 
@@ -197,7 +197,7 @@ const MerchantPortalDashboard: React.FC = () => {
           },
         },
       );
-      tToast.success("merchant-portal_MerchantPortalDashboard.success_send_8bfa");
+      tToast.success("MerchantPortalDashboard.success_send_8bfa");
       await loadPortal();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "تعذر إنشاء طلب السحب"));

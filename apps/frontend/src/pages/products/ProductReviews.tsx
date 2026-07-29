@@ -87,7 +87,7 @@ const ProductReviews: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error fetching reviews:", error);
-      tToast.error("ProductReviews.error_error_0e19");
+      tToast.error("productReviews.error_error_0e19");
     } finally {
       setLoading(false);
     }
@@ -97,12 +97,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/approve`, {});
       if (response.data.success) {
-        tToast.success("ProductReviews.msg_58e7");
+        tToast.success("productReviews.msg_58e7");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error approving review:", error);
-      tToast.error("ProductReviews.error_error_17aa");
+      tToast.error("productReviews.error_error_17aa");
     }
   };
 
@@ -110,12 +110,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/reject`, {});
       if (response.data.success) {
-        tToast.success("ProductReviews.msg_b0b0");
+        tToast.success("productReviews.msg_b0b0");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error rejecting review:", error);
-      tToast.error("ProductReviews.error_error_b208");
+      tToast.error("productReviews.error_error_b208");
     }
   };
 
@@ -127,12 +127,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.delete(`/reviews/${reviewId}`);
       if (response.data.success) {
-        tToast.success("ProductReviews.success_delete_9520");
+        tToast.success("productReviews.success_delete_9520");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error deleting review:", error);
-      tToast.error("ProductReviews.error_error_e0c6");
+      tToast.error("productReviews.error_error_e0c6");
     }
   };
 

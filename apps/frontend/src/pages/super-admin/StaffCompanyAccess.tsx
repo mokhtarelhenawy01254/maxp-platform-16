@@ -99,12 +99,12 @@ const StaffCompanyAccess = () => {
       if (data.success) {
         fetchStaff();
         setShowAddModal(false);
-        alert(i18n.t("super-admin_StaffCompanyAccess.msg_7dc0"));
+        alert(i18n.t("StaffCompanyAccess.msg_7dc0"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert(i18n.t("super-admin_StaffCompanyAccess.msg_968c"));
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 
@@ -121,12 +121,12 @@ const StaffCompanyAccess = () => {
       const data = await res.json();
       if (data.success) {
         fetchStaff();
-        alert(i18n.t("super-admin_StaffCompanyAccess.msg_abf3"));
+        alert(i18n.t("StaffCompanyAccess.msg_abf3"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert(i18n.t("super-admin_StaffCompanyAccess.msg_968c"));
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 
@@ -142,12 +142,12 @@ const StaffCompanyAccess = () => {
       const data = await res.json();
       if (data.success) {
         fetchStaff();
-        alert(i18n.t("super-admin_StaffCompanyAccess.msg_bd23"));
+        alert(i18n.t("StaffCompanyAccess.msg_bd23"));
       } else {
         alert("فشل: " + data.message);
       }
     } catch (error) {
-      alert(i18n.t("super-admin_StaffCompanyAccess.msg_968c"));
+      alert(i18n.t("StaffCompanyAccess.msg_968c"));
     }
   };
 

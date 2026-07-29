@@ -204,7 +204,7 @@ const SuperAdminAppExplanations: React.FC = () => {
             fetchExplanations();
         } catch (err) {
             console.error(err);
-            alert(i18n.t("super-admin_SuperAdminAppExplanations.error_error_62e5"));
+            alert(i18n.t("SuperAdminAppExplanations.error_error_62e5"));
         }
     };
 

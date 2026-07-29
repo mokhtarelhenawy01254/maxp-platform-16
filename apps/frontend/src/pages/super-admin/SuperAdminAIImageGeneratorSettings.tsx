@@ -79,8 +79,8 @@ export default function SuperAdminAIImageGeneratorSettings() {
     setSaving(true);
     try {
       const res = await axios.put(buildApiUrl("super-admin/ai-image-generator-settings"), { config }, { headers: getAuthHeaders() });
-      if (res.data.success) { tToast.success("super-admin_SuperAdminAIImageGeneratorSettings.success_save_d643"); setConfig(res.data.data); }
-    } catch { tToast.error("super-admin_SuperAdminAIImageGeneratorSettings.error_save_f591"); }
+      if (res.data.success) { tToast.success("SuperAdminAIImageGeneratorSettings.success_save_d643"); setConfig(res.data.data); }
+    } catch { tToast.error("SuperAdminAIImageGeneratorSettings.error_save_f591"); }
     finally { setSaving(false); }
   };
 
@@ -94,7 +94,7 @@ export default function SuperAdminAIImageGeneratorSettings() {
     await axios.put(buildApiUrl(`super-admin/ai-image-generator-settings/companies/${companyId}`), data, { headers: getAuthHeaders() });
     setEditingCompany(null);
     await fetchCompanies();
-    tToast.success("super-admin_SuperAdminAIImageGeneratorSettings.success_save_c57f");
+    tToast.success("SuperAdminAIImageGeneratorSettings.success_save_c57f");
   };
 
   const updateTierModel = (tierKey: string, model: string) => {

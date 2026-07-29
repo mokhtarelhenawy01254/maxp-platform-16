@@ -407,7 +407,7 @@ const ReleaseFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.version.trim() || !formData.name.trim()) {
-      alert(i18n.t("super-admin_DevReleases.msg_43a1"));
+      alert(i18n.t("DevReleases.msg_43a1"));
       return;
     }
 
@@ -430,10 +430,10 @@ const ReleaseFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || i18n.t("super-admin_DevReleases.failed_create_38bf"));
+        alert(data.error || i18n.t("DevReleases.failed_create_38bf"));
       }
     } catch (err) {
-      alert(i18n.t("super-admin_DevReleases.msg_f389"));
+      alert(i18n.t("DevReleases.msg_f389"));
     } finally {
       setSaving(false);
     }

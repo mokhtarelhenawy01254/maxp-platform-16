@@ -36,7 +36,7 @@ const SuperAdminLandingPages: React.FC = () => {
       const rawBundles = Array.isArray(bundleData) ? bundleData : bundleData?.data || [];
       setBundles(rawBundles.map((b: any) => ({ slug: b.slug, name: b.name, price: b.monthlyPrice })));
     } catch {
-      tToast.error("super-admin_SuperAdminLandingPages.failed_load_65d1");
+      tToast.error("SuperAdminLandingPages.failed_load_65d1");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ const SuperAdminLandingPages: React.FC = () => {
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       toast.success(updated.isActive ? "تم تفعيل الصفحة" : "تم إخفاء الصفحة");
     } catch {
-      tToast.error("super-admin_SuperAdminLandingPages.failed_update_status_4f34");
+      tToast.error("SuperAdminLandingPages.failed_update_status_4f34");
     } finally {
       setToggling(null);
     }
@@ -62,9 +62,9 @@ const SuperAdminLandingPages: React.FC = () => {
       setSaving(page.id);
       const updated = await lpAdminService.update(page.id, { bundleSlug });
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      tToast.success("super-admin_SuperAdminLandingPages.msg_bae8");
+      tToast.success("SuperAdminLandingPages.msg_bae8");
     } catch {
-      tToast.error("super-admin_SuperAdminLandingPages.failed_update_dddb");
+      tToast.error("SuperAdminLandingPages.failed_update_dddb");
     } finally {
       setSaving(null);
     }
@@ -75,9 +75,9 @@ const SuperAdminLandingPages: React.FC = () => {
       setSaving(page.id);
       const updated = await lpAdminService.update(page.id, { activationType });
       setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      tToast.success("super-admin_SuperAdminLandingPages.success_update_e302");
+      tToast.success("SuperAdminLandingPages.success_update_e302");
     } catch {
-      tToast.error("super-admin_SuperAdminLandingPages.failed_update_58c9");
+      tToast.error("SuperAdminLandingPages.failed_update_58c9");
     } finally {
       setSaving(null);
     }
