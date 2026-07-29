@@ -1651,8 +1651,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
         guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
       } else {
-        whereClause.status = upperStatus;
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
+        // Status value is not recognized — ignore filter instead of crashing
+        console.warn(`[ORDERS] Ignoring unrecognized status filter value: "${rawStatus}"`);
       }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
