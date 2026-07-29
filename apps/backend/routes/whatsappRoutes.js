@@ -9,6 +9,7 @@ const whatsappController = require('../controller/whatsappController');
 const whatsappNotificationRoutes = require('./whatsappNotificationRoutes');
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
@@ -221,54 +222,54 @@ router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إنشاء جلسة جديدة
-router.get('/sessions/debug', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getDebugSessions);
-router.post('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createSession);
+router.get('/sessions/debug', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getDebugSessions);
+router.post('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.createSession);
 
 // ✅ إنشاء جلسة باستخدام Pairing Code (بدون QR)
-router.post('/sessions/pairing-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createSessionWithPairingCode);
+router.post('/sessions/pairing-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.createSessionWithPairingCode);
 
 // جلب كل الجلسات
-router.get('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getSessions);
+router.get('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getSessions);
 
 // جلب جلسة محددة
-router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getSession);
+router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getSession);
 
 // تحديث جلسة
-router.put('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateSession);
+router.put('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.updateSession);
 
 // حذف جلسة
-router.delete('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteSession);
+router.delete('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.deleteSession);
 
 // بدء الاتصال بجلسة
-router.post('/sessions/:id/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.connectSession);
+router.post('/sessions/:id/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.connectSession);
 
 // طلب مزامنة الرسائل التاريخية يدوياً
-router.post('/sessions/:id/history-sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.requestHistorySync);
+router.post('/sessions/:id/history-sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.requestHistorySync);
 
 // قطع الاتصال بجلسة
-router.post('/sessions/:id/disconnect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.disconnectSession);
+router.post('/sessions/:id/disconnect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.disconnectSession);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 💬 المحادثات والرسائل
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب المحادثات
-router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getConversations);
+router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getConversations);
 
 // جلب رسائل محادثة
-router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getMessages);
+router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getMessages);
 
 // إرسال رسالة نصية
-router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMessage);
+router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendMessage);
 
 // تصحيح رد الوكيل الآلي
-router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.correctAIMessage);
+router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.correctAIMessage);
 
 // إرسال وسائط
-router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMedia);
+router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendMedia);
 
 // رفع وإرسال ملف
-router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), upload.single('file'), async (req, res) => {
+router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم رفع ملف' });
@@ -360,74 +361,74 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
 });
 
 // تحديد الرسائل كمقروءة
-router.post('/messages/read', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.markAsRead);
+router.post('/messages/read', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.markAsRead);
 
 // إرسال رسالة بأزرار تفاعلية
-router.post('/messages/send-buttons', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendButtons);
+router.post('/messages/send-buttons', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendButtons);
 
 // إرسال رسالة بقائمة
-router.post('/messages/send-list', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendList);
+router.post('/messages/send-list', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendList);
 
 // إرسال منتج
-router.post('/messages/send-product', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendProduct);
+router.post('/messages/send-product', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendProduct);
 
 // إرسال تفاعل (Reaction)
-router.post('/messages/send-reaction', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendReaction);
+router.post('/messages/send-reaction', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendReaction);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📸 الحالات (Status Updates)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب الحالات
-router.get('/:sessionId/statuses', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getStatuses);
+router.get('/:sessionId/statuses', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getStatuses);
 
 // نشر حالة جديدة
-router.post('/:sessionId/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), upload.single('media'), whatsappController.postStatus);
+router.post('/:sessionId/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), upload.single('media'), whatsappController.postStatus);
 
 // تحديد الحالة كمشاهدة
-router.put('/:sessionId/status/:statusId/view', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.markStatusViewed);
+router.put('/:sessionId/status/:statusId/view', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.markStatusViewed);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 👤 جهات الاتصال
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // تحديث جهة اتصال
-router.put('/contacts/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateContact);
+router.put('/contacts/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.updateContact);
 
 // ربط جهة اتصال بعميل
-router.post('/contacts/:id/link-customer', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.linkCustomer);
+router.post('/contacts/:id/link-customer', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.linkCustomer);
 
 // تغيير الجلسة المرتبطة بجهة اتصال
-router.put('/contacts/:id/reassign-session', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.reassignContactSession);
+router.put('/contacts/:id/reassign-session', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.reassignContactSession);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 الردود السريعة
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب الردود السريعة
-router.get('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getQuickReplies);
+router.get('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.getQuickReplies);
 
 // إنشاء رد سريع
-router.post('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createQuickReply);
+router.post('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.createQuickReply);
 
 // تحديث رد سريع
-router.put('/quick-replies/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateQuickReply);
+router.put('/quick-replies/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.updateQuickReply);
 
 // حذف رد سريع
-router.delete('/quick-replies/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteQuickReply);
+router.delete('/quick-replies/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.deleteQuickReply);
 
 // إرسال رد سريع
-router.post('/quick-replies/:id/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendQuickReply);
+router.post('/quick-replies/:id/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendQuickReply);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⚙️ الإعدادات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب الإعدادات
-router.get('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getSettings);
+router.get('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.getSettings);
 
 // تحديث الإعدادات
-router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateSettings);
+router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.updateSettings);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 الإحصائيات
@@ -438,82 +439,82 @@ router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إنشاء مجموعة
-router.post('/groups', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createGroup);
+router.post('/groups', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.createGroup);
 
 // جلب جميع المجموعات (يجب أن يسبق /groups/:jid لتجنب shadowing)
-router.get('/groups/all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupFetchAllParticipating);
+router.get('/groups/all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.groupFetchAllParticipating);
 
 // جلب بيانات مجموعة
-router.get('/groups/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getGroupMetadata);
+router.get('/groups/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.getGroupMetadata);
 
 // تحديث اسم المجموعة
-router.put('/groups/:jid/subject', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupSubject);
+router.put('/groups/:jid/subject', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.updateGroupSubject);
 
 // تحديث وصف المجموعة
-router.put('/groups/:jid/description', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupDescription);
+router.put('/groups/:jid/description', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.updateGroupDescription);
 
 // تحديث إعدادات المجموعة
-router.put('/groups/:jid/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupSettings);
+router.put('/groups/:jid/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.updateGroupSettings);
 
 // إضافة/إزالة مشاركين
-router.put('/groups/:jid/participants', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupParticipants);
+router.put('/groups/:jid/participants', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.updateGroupParticipants);
 
 // الخروج من المجموعة
-router.post('/groups/:jid/leave', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.leaveGroup);
+router.post('/groups/:jid/leave', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.leaveGroup);
 
 // جلب رابط الدعوة
-router.get('/groups/:jid/invite-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getGroupInviteCode);
+router.get('/groups/:jid/invite-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.getGroupInviteCode);
 
 // إلغاء رابط الدعوة
-router.post('/groups/:jid/revoke-invite', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.revokeGroupInviteCode);
+router.post('/groups/:jid/revoke-invite', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.revokeGroupInviteCode);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 الإحصائيات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب الإحصائيات
-router.get('/stats', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getStats);
+router.get('/stats', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.analytics.view'), whatsappController.getStats);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 إدارة الرسائل
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // تعديل رسالة
-router.post('/messages/edit', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.editMessage);
+router.post('/messages/edit', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.editMessage);
 
 // حذف رسالة
-router.post('/messages/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteMessage);
+router.post('/messages/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.deleteMessage);
 
 // إعادة توجيه رسالة
-router.post('/messages/forward', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.forwardMessage);
+router.post('/messages/forward', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.forwardMessage);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 💬 إدارة المحادثات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // أرشفة محادثة
-router.post('/chats/archive', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.archiveChat);
+router.post('/chats/archive', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.archiveChat);
 
 // تثبيت محادثة
-router.post('/chats/pin', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.pinChat);
+router.post('/chats/pin', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.pinChat);
 
 // كتم محادثة
-router.post('/chats/mute', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.muteChat);
+router.post('/chats/mute', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.muteChat);
 
 // تحديد كغير مقروء
-router.post('/chats/unread', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.markChatUnread);
+router.post('/chats/unread', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.markChatUnread);
 
 // حذف محادثة
-router.post('/chats/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChat);
+router.post('/chats/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.deleteChat);
 
 // حذف محادثات متعددة
-router.post('/chats/delete-bulk', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChatsBulk);
+router.post('/chats/delete-bulk', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.deleteChatsBulk);
 
 // حذف كل المحادثات
-router.post('/chats/delete-all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteAllChats);
+router.post('/chats/delete-all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.deleteAllChats);
 
 // مسح محتوى المحادثة
-router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.clearChat);
+router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.clearChat);
 
 // Migration endpoint
 router.post('/migrate-auth', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.migrateAuthToDatabase);
@@ -523,186 +524,186 @@ router.post('/migrate-auth', verifyToken.authenticateToken, checkAppAccess('what
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // حظر جهة اتصال
-router.post('/contacts/block', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.blockContact);
+router.post('/contacts/block', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.blockContact);
 
 // إلغاء حظر جهة اتصال
-router.post('/contacts/unblock', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.unblockContact);
+router.post('/contacts/unblock', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.unblockContact);
 
 // التحقق من الرقم
-router.post('/check-number', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.checkNumber);
+router.post('/check-number', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.contacts.manage'), whatsappController.checkNumber);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 👤 الملف الشخصي
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // مزامنة الملف الشخصي
-router.post('/profile/sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.syncProfile);
+router.post('/profile/sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.syncProfile);
 
 // جلب الملف الشخصي
-router.get('/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getProfile);
+router.get('/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.getProfile);
 
 // تحديث الملف الشخصي
-router.post('/profile/update', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), upload.single('picture'), whatsappController.updateProfile);
+router.post('/profile/update', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), upload.single('picture'), whatsappController.updateProfile);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🏢 Business Profile
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب ملف الأعمال
-router.get('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getBusinessProfile);
+router.get('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.getBusinessProfile);
 
 // تعيين ملف الأعمال
-router.post('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.setBusinessProfile);
+router.post('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.setBusinessProfile);
 
 // تحديث ملف الأعمال
-router.put('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateBusinessProfile);
+router.put('/business/profile', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.updateBusinessProfile);
 
 // جلب ساعات العمل
-router.get('/business/hours', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getBusinessHours);
+router.get('/business/hours', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.getBusinessHours);
 
 // تعيين ساعات العمل
-router.post('/business/hours', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.setBusinessHours);
+router.post('/business/hours', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.setBusinessHours);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📢 البث (Broadcast)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال بث جماعي
-router.post('/broadcast/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendBroadcast);
+router.post('/broadcast/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), whatsappController.sendBroadcast);
 
 // إنشاء قائمة بث
-router.post('/broadcast/lists', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createBroadcastList);
+router.post('/broadcast/lists', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), whatsappController.createBroadcastList);
 
 // جلب قوائم البث
-router.get('/broadcast/lists', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getBroadcastLists);
+router.get('/broadcast/lists', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), whatsappController.getBroadcastLists);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🏷️ العلامات (Labels)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إضافة علامة للمحادثة
-router.post('/labels/chat', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.labelChat);
+router.post('/labels/chat', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.labelChat);
 
 // جلب العلامات
-router.get('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getLabels);
+router.get('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.getLabels);
 
 // إنشاء علامة جديدة
-router.post('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createLabel);
+router.post('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.createLabel);
 
 // حذف علامة
-router.delete('/labels/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteLabel);
+router.delete('/labels/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.deleteLabel);
 
 // إضافة علامة لمحادثة (route متوافق مع LabelsDialog)
-router.post('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.addLabelToChat);
+router.post('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.addLabelToChat);
 
 // إزالة علامة من محادثة
-router.delete('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.removeLabelFromChat);
+router.delete('/labels/:labelId/chat/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.removeLabelFromChat);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⭐ الرسائل المميزة (Starred Messages)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // تمييز رسالة
-router.post('/messages/star', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.starMessage);
+router.post('/messages/star', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.starMessage);
 
 // إلغاء تمييز رسالة
-router.post('/messages/unstar', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.unstarMessage);
+router.post('/messages/unstar', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.unstarMessage);
 
 // جلب الرسائل المميزة
-router.get('/messages/starred', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getStarredMessages);
+router.get('/messages/starred', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getStarredMessages);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔒 الخصوصية المتقدمة
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب قائمة المحظورين
-router.get('/privacy/blocklist', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.fetchBlocklist);
+router.get('/privacy/blocklist', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.fetchBlocklist);
 
 // جلب إعدادات الخصوصية
-router.get('/privacy/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.fetchPrivacySettings);
+router.get('/privacy/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.fetchPrivacySettings);
 
 // تعيين إعدادات الخصوصية
-router.post('/privacy/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.setPrivacy);
+router.post('/privacy/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.setPrivacy);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 👥 ميزات المجموعات المتقدمة
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // تفعيل/تعطيل الرسائل المؤقتة
-router.post('/groups/:jid/ephemeral', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupToggleEphemeral);
+router.post('/groups/:jid/ephemeral', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.groupToggleEphemeral);
 
 // تحديث صورة المجموعة
-router.post('/groups/:jid/picture', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), upload.single('image'), whatsappController.groupUpdatePicture);
+router.post('/groups/:jid/picture', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), upload.single('image'), whatsappController.groupUpdatePicture);
 
 // قبول دعوة للمجموعة
-router.post('/groups/invite/accept', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupInviteAccept);
+router.post('/groups/invite/accept', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.groupInviteAccept);
 
 // رفض دعوة للمجموعة
-router.post('/groups/invite/reject', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupInviteReject);
+router.post('/groups/invite/reject', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.groupInviteReject);
 
 // معلومات عن رابط الدعوة
-router.get('/groups/invite/info', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupInviteInfo);
+router.get('/groups/invite/info', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.groups.manage'), whatsappController.groupInviteInfo);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 الحالة (Status)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب حالة مستخدم
-router.get('/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getStatus);
+router.get('/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getStatus);
 
 // تعيين حالة المستخدم
-router.post('/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.setStatus);
+router.post('/status', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.setStatus);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔗 معلومات الرابط
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // الحصول على معلومات رابط
-router.get('/url/info', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getUrlInfo);
+router.get('/url/info', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.getUrlInfo);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 الاستطلاعات والطلبات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال استطلاع
-router.post('/messages/send-poll', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendPoll);
+router.post('/messages/send-poll', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendPoll);
 
 // إرسال طلب
-router.post('/messages/send-order', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendOrder);
+router.post('/messages/send-order', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendOrder);
 
 // إرسال كتالوج
-router.post('/messages/send-catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendCatalog);
+router.post('/messages/send-catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendCatalog);
 
 // جلب الكتالوج
-router.get('/catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getCatalog);
+router.get('/catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getCatalog);
 
 // جلب المنتجات
-router.get('/products', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getProducts);
+router.get('/products', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getProducts);
 
 // جلب السلة
-router.get('/cart', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getCart);
+router.get('/cart', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getCart);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔗 Facebook Embedded Sign-Up
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب إعدادات Facebook (App ID, Redirect URI)
-router.get('/facebook/config', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getFacebookConfig);
+router.get('/facebook/config', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getFacebookConfig);
 
 // استلام كود OAuth من Facebook وإنشاء جلسة واتساب
-router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookConnect);
+router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.facebookConnect);
 
 // استلام بيانات Embedded Sign-Up من Facebook SDK وإنشاء جلسة واتساب (WABA + رقم)
-router.post('/facebook/connect-embedded', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookEmbeddedConnect);
+router.post('/facebook/connect-embedded', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.facebookEmbeddedConnect);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 قوالب الرسائل
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال رسالة قالب
-router.post('/messages/send-template', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendTemplateMessage);
+router.post('/messages/send-template', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.templates'), whatsappController.sendTemplateMessage);
 
 // جلب قوالب الرسائل
-router.get('/templates', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getMessageTemplate);
+router.get('/templates', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.templates'), whatsappController.getMessageTemplate);
 
 module.exports = router;

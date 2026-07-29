@@ -63,6 +63,16 @@ const PERMISSIONS = {
   'teams.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'teams.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 
+  // WhatsApp
+  'whatsapp.reply': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.broadcast': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.groups.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.chats.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.contacts.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.labels.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'whatsapp.analytics.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'whatsapp.quick-replies.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
   // Number Assignments
   'numbers.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'numbers.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],

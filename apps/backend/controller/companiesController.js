@@ -1725,6 +1725,7 @@ const updateUser = async (req, res) => {
       hireDate,
       contractType,
       baseSalary,
+      settings, // ✅ Add user settings support (e.g., defaultPage)
     } = req.body;
 
     console.log(
@@ -1792,6 +1793,20 @@ const updateUser = async (req, res) => {
       );
     }
 
+    // ✅ Merge settings if provided (e.g., defaultPage)
+    let mergedSettings = undefined;
+    if (settings && typeof settings === 'object') {
+      const existingUser = await getSharedPrismaClient().user.findUnique({
+        where: { id: userId },
+        select: { settings: true },
+      });
+      let current = {};
+      if (existingUser?.settings) {
+        try { current = JSON.parse(existingUser.settings); } catch { current = {}; }
+      }
+      mergedSettings = { ...current, ...settings };
+    }
+
     // ✅ FIX: Update user and UserCompany record
     const updatedUser = await getSharedPrismaClient().user.update({
       where: { id: userId },
@@ -1811,6 +1826,7 @@ const updateUser = async (req, res) => {
         ...(baseSalary !== undefined && {
           baseSalary: baseSalary ? parseFloat(baseSalary) : null,
         }),
+        ...(mergedSettings !== undefined && { settings: JSON.stringify(mergedSettings) }),
         // Note: role and isActive are in UserCompany table, not User table
       },
       select: {

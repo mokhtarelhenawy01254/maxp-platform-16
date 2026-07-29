@@ -41,6 +41,8 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
+import { DefaultPageSelector } from "../../components/settings/DefaultPageSelector";
+import { apiClient } from "../../services/apiClient";
 
 interface Employee {
   id: string;
@@ -163,6 +165,14 @@ const InfoField = ({
 );
 
 
+const sectionAccents: Record<string, { bar: string; text: string; iconBg: string }> = {
+  violet: { bar: "from-violet-500/20 to-violet-500/0", text: "text-violet-600 dark:text-violet-400", iconBg: "bg-violet-500/10 dark:bg-violet-500/15" },
+  emerald: { bar: "from-emerald-500/20 to-emerald-500/0", text: "text-emerald-600 dark:text-emerald-400", iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15" },
+  rose: { bar: "from-rose-500/20 to-rose-500/0", text: "text-rose-600 dark:text-rose-400", iconBg: "bg-rose-500/10 dark:bg-rose-500/15" },
+  indigo: { bar: "from-indigo-500/20 to-indigo-500/0", text: "text-indigo-600 dark:text-indigo-400", iconBg: "bg-indigo-500/10 dark:bg-indigo-500/15" },
+  amber: { bar: "from-amber-500/20 to-amber-500/0", text: "text-amber-600 dark:text-amber-400", iconBg: "bg-amber-500/10 dark:bg-amber-500/15" },
+};
+
 const SectionCard = ({
   icon: Icon,
   title,
@@ -174,24 +184,19 @@ const SectionCard = ({
   accent?: string;
   children: React.ReactNode;
 }) => {
-  const accents: Record<string, string> = {
-    violet: "from-violet-500/20 to-violet-500/0 text-violet-600 dark:text-violet-400",
-    emerald: "from-emerald-500/20 to-emerald-500/0 text-emerald-600 dark:text-emerald-400",
-    rose: "from-rose-500/20 to-rose-500/0 text-rose-600 dark:text-rose-400",
-    indigo: "from-indigo-500/20 to-indigo-500/0 text-indigo-600 dark:text-indigo-400",
-    amber: "from-amber-500/20 to-amber-500/0 text-amber-600 dark:text-amber-400",
-  };
-  const cls = accents[accent] || accents.violet;
+  const a = sectionAccents[accent] || sectionAccents.violet;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-xl transition-all duration-300"
     >
-      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${cls.split(" ")[0]} ${cls.split(" ")[1]}`} />
+      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${a.bar}`} />
       <div className="p-6">
-        <h3 className={`flex items-center gap-2.5 text-sm font-bold uppercase tracking-widest mb-6 ${cls.split(" ")[2]}`}>
-          <Icon className="w-4 h-4" />
+        <h3 className={`flex items-center gap-2.5 text-sm font-bold uppercase tracking-widest mb-6 ${a.text}`}>
+          <span className={`w-6 h-6 rounded-lg ${a.iconBg} flex items-center justify-center`}>
+            <Icon className="w-3.5 h-3.5" />
+          </span>
           {title}
         </h3>
         {children}
@@ -249,6 +254,8 @@ const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [myCustody, setMyCustody] = useState<CustodyAsset[]>([]);
   const [warnings, setWarnings] = useState<WarningRecord[]>([]);
+  const [defaultPage, setDefaultPage] = useState("/apps");
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const TABS = useMemo(() => ALL_TABS.filter(tab => !tab.requiresHr || hasHrBasic), [hasHrBasic]);
 
@@ -355,6 +362,32 @@ const Profile: React.FC = () => {
     fetchProfileData();
     return () => clearTimeout(timer);
   }, [fetchProfileData]);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        const res = await apiClient.get("/user/settings", { _skipErrorToast: true } as Record<string, unknown>);
+        if (res.data?.success && res.data?.data?.defaultPage) {
+          setDefaultPage(res.data.data.defaultPage);
+        }
+      } catch {
+        // silent
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleDefaultPageChange = async (page: string) => {
+    setDefaultPage(page);
+    try {
+      await apiClient.put("/user/settings", { settings: { defaultPage: page } });
+    } catch {
+      // silent
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -611,6 +644,15 @@ const Profile: React.FC = () => {
               </div>
             </section>
           )}
+
+          {/* Default Landing Page - Merchant/Affiliate */}
+          <section className="mt-6 rounded-3xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-slate-900/80 p-6 shadow-sm">
+            <DefaultPageSelector
+              value={defaultPage}
+              onChange={handleDefaultPageChange}
+              disabled={settingsLoading}
+            />
+          </section>
         </div>
       </motion.div>
     );
@@ -876,7 +918,6 @@ const Profile: React.FC = () => {
                   </div>
                 )}
 
-                {/* Quick Contact */}
                 <div className="grid grid-cols-1 gap-4">
                   <div className="p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">{t("employee.profile.quickContact")}</p>
@@ -903,6 +944,15 @@ const Profile: React.FC = () => {
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* Default Landing Page */}
+                <div className="rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-white dark:bg-slate-800/30 p-5 transition-all">
+                  <DefaultPageSelector
+                    value={defaultPage}
+                    onChange={handleDefaultPageChange}
+                    disabled={settingsLoading}
+                  />
                 </div>
               </TabsContent>
 

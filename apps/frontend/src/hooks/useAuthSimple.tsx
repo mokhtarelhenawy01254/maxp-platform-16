@@ -47,6 +47,7 @@ interface User {
   company: Company | null;
   companies?: Company[];         // قائمة الشركات التي ينتمي إليها المستخدم
   hasMultipleCompanies?: boolean; // هل لديه أكثر من شركة؟
+  settings?: string | Record<string, unknown> | null; // JSON string or parsed object (e.g., { defaultPage, sidebarLayout })
   devStats?: {
     xp: number;
     level: number;

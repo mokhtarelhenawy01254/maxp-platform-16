@@ -198,6 +198,14 @@ const PERMISSIONS = [
   { key: 'whatsapp.sessions', name: 'إدارة جلسات واتساب', domain: 'WHATSAPP' },
   { key: 'whatsapp.templates', name: 'إدارة القوالب', domain: 'WHATSAPP' },
   { key: 'whatsapp.settings', name: 'إعدادات واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.reply', name: 'الرد على رسائل واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.broadcast', name: 'البث الجماعي', domain: 'WHATSAPP' },
+  { key: 'whatsapp.groups.manage', name: 'إدارة المجموعات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.chats.manage', name: 'إدارة المحادثات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.contacts.manage', name: 'إدارة جهات الاتصال', domain: 'WHATSAPP' },
+  { key: 'whatsapp.labels.manage', name: 'إدارة العلامات', domain: 'WHATSAPP' },
+  { key: 'whatsapp.analytics.view', name: 'عرض تحليلات واتساب', domain: 'WHATSAPP' },
+  { key: 'whatsapp.quick-replies.manage', name: 'إدارة الردود السريعة', domain: 'WHATSAPP' },
 
   // Facebook
   { key: 'facebook.pages', name: 'إدارة الصفحات', domain: 'FACEBOOK' },
@@ -299,6 +307,9 @@ const BUILT_IN_ROLES = {
       'marketing.campaigns', 'marketing.coupons', 'marketing.broadcast',
       'inventory.view',
       'hr.employees', 'hr.attendance',
+      'whatsapp.reply', 'whatsapp.broadcast', 'whatsapp.groups.manage',
+      'whatsapp.chats.manage', 'whatsapp.contacts.manage', 'whatsapp.labels.manage',
+      'whatsapp.analytics.view', 'whatsapp.quick-replies.manage',
     ],
   },
   AGENT: {
@@ -320,6 +331,8 @@ const BUILT_IN_ROLES = {
       'reports.view', 'reports.view.own',
       'notifications.view',
       'inventory.view',
+      'whatsapp.reply',
+      'whatsapp.quick-replies.manage',
     ],
   },
   AFFILIATE: {

@@ -15,6 +15,7 @@ import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
+import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
@@ -2527,8 +2528,8 @@ const AppContent = () => {
               />
             ) : isAuthenticated ? (
               <>
-                {/* Root redirect to apps */}
-                <Route path="/" element={<Navigate to="/apps" replace />} />
+                {/* Root redirect: check user's defaultPage preference */}
+                <Route path="/" element={<DefaultPageRedirect />} />
                 {/* App Dashboard Routes */}
                 <Route
                   path="/company-dashboard"
