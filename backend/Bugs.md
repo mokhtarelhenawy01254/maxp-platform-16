@@ -14,9 +14,10 @@
   5. Added automatic one-time SW cache purge (`maxp_sw_v2_20260729`) in `main.tsx` to automatically wipe stale caches stored in existing browsers.
   6. Added self-unregistration in `public/push-sw.js` on activate to gracefully release scope `/` to `/sw.js`.
   7. Added `controllerchange` listener in `main.tsx` for automatic client reloads when new SW takes control.
-  8. Integrated `clearAllSWCaches()` into `chunkLoadRecovery.ts` to automatically purge corrupt SW caches whenever a `ChunkLoadError` is intercepted before page reload.
-  9. Restricted automatic SW registration in `main.tsx` to production environments (`import.meta.env.PROD`).
-  10. Added comprehensive Jest unit tests (`swCacheFlush.test.ts`, `chunkLoadRecovery.test.ts`, and updated `browserNotifications.test.ts`).
+  8. Hardened `scripts/deploy-remote.sh` (`sync_frontend_dist`) to explicitly `cp -f` the newly built `sw.js`, `push-sw.js`, and `manifest.webmanifest` binaries onto `/var/www/frontend2/dist/` to prevent `rsync` permission blocks from serving outdated SW files.
+  9. Integrated `clearAllSWCaches()` into `chunkLoadRecovery.ts` to automatically purge corrupt SW caches whenever a `ChunkLoadError` is intercepted before page reload.
+  10. Restricted automatic SW registration in `main.tsx` to production environments (`import.meta.env.PROD`).
+  11. Added comprehensive Jest unit tests (`swCacheFlush.test.ts`, `chunkLoadRecovery.test.ts`, and updated `browserNotifications.test.ts`).
 - **Files**: `apps/frontend/src/sw.js`, `apps/frontend/src/utils/swCacheFlush.ts`, `apps/frontend/src/utils/chunkLoadRecovery.ts`, `apps/frontend/src/utils/browserNotifications.ts`, `apps/frontend/src/utils/pushNotifications.ts`, `apps/frontend/src/bootstrap/AdminAppBootstrap.tsx`, `apps/frontend/src/hooks/useAuthSimple.tsx`, `apps/frontend/src/main.tsx`
 
 ---

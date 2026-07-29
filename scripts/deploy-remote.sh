@@ -73,19 +73,34 @@ sync_frontend_dist() {
 
   sudo rm -rf /var/www/frontend2/dist/products
 
-  echo "📄 Copying new index.html..."
+  echo "📄 Copying new entrypoint and SW files..."
   echo "   Source: $source_dir/index.html"
   echo "   Dest:   /var/www/frontend2/dist/index.html"
   ls -la "$source_dir/index.html" 2>&1
   sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index.html
   sudo cp -f "$source_dir/index.html" /var/www/frontend2/dist/index-v2.html
-  ls -la /var/www/frontend2/dist/index.html 2>&1
+
+  if [ -f "$source_dir/sw.js" ]; then
+    echo "⚙️ Copying sw.js..."
+    sudo cp -f "$source_dir/sw.js" /var/www/frontend2/dist/sw.js
+  fi
+  if [ -f "$source_dir/push-sw.js" ]; then
+    echo "⚙️ Copying push-sw.js..."
+    sudo cp -f "$source_dir/push-sw.js" /var/www/frontend2/dist/push-sw.js
+  fi
+  if [ -f "$source_dir/manifest.webmanifest" ]; then
+    echo "⚙️ Copying manifest.webmanifest..."
+    sudo cp -f "$source_dir/manifest.webmanifest" /var/www/frontend2/dist/manifest.webmanifest
+  fi
+
   echo "   New index.html hash refs:"
   grep -o 'index-[^".]*' /var/www/frontend2/dist/index.html || echo "   (no index refs found)"
 
   sudo rsync -a -v --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/ 2>&1
   sudo chown -R $USER:$USER /var/www/frontend2/dist
+  echo "📊 Verified deployed sw.js on server:"
+  ls -la /var/www/frontend2/dist/sw.js 2>&1 || true
 }
 
 # Move frontend files from staging
