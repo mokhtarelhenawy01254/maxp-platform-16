@@ -11182,6 +11182,33 @@ declare module 'react-i18next' {
         k_54: string;
         k_55: string;
       };
+      affiliates: {
+        loadFailed: string;
+        updateFailed: string;
+        deleteFailed: string;
+        rateUpdateSuccess: string;
+        statusUpdated: string;
+        deleteSuccess: string;
+        statusUpdateFailed: string;
+        updateSuccess: string;
+        verificationFailed: string;
+        rateUpdateFailed: string;
+        commissionRate: string;
+        'فشل_تحميل_قائمة_المسوقين': string;
+        'يجب_إدخال_سبب_واضح': string;
+        'برجاء_إدخال_قيمة_عمولة': string;
+        'تم_تحديث_العمولة_بنجاح': string;
+        'فشل_تحديث_العمولة': string;
+        'تم_تحديث_ضوابط_المسوق': string;
+        'يجب_إدخال_سبب_واضح_1': string;
+        suspendReasonRequired: string;
+        invalidCommissionValue: string;
+        commissionRateMax: string;
+        commissionUpdated: string;
+        commissionUpdateFailed: string;
+        controlsUpdated: string;
+        rejectionReasonRequired: string;
+      };
       customDomain: {
         pageTitle: string;
         pageDescription: string;

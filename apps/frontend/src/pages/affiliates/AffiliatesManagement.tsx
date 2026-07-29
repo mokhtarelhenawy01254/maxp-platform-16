@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   UserGroupIcon,
   PencilIcon,
@@ -143,7 +144,7 @@ const AffiliatesManagement: React.FC = () => {
         setAffiliates(response.data.data);
       }
     } catch (_error: unknown) {
-      toast.error("فشل تحميل قائمة المسوقين");
+      tToast.error("affiliates.loadFailed");
     } finally {
       setLoading(false);
     }
@@ -172,7 +173,7 @@ const AffiliatesManagement: React.FC = () => {
 
     const normalizedReason = enteredReason.trim();
     if (newStatus === "SUSPENDED" && !normalizedReason) {
-      toast.error("يجب إدخال سبب واضح قبل إيقاف المسوق");
+      tToast.error("affiliates.suspendReasonRequired");
       return;
     }
 
@@ -188,11 +189,11 @@ const AffiliatesManagement: React.FC = () => {
         },
       );
       if (response.data.success) {
-        toast.success("تم تحديث حالة المسوق بنجاح");
+        tToast.success("affiliates.statusUpdated");
         fetchAffiliates();
       }
     } catch (_error: unknown) {
-      toast.error("فشل تحديث حالة المسوق");
+      tToast.error("affiliates.statusUpdateFailed");
     }
   };
 
@@ -202,12 +203,12 @@ const AffiliatesManagement: React.FC = () => {
       if (!affiliate) return;
 
       if (!Number.isFinite(newCommission) || newCommission < 0) {
-        toast.error("برجاء إدخال قيمة عمولة صالحة");
+        tToast.error("affiliates.invalidCommissionValue");
         return;
       }
 
       if (affiliate.commissionType === "PERCENTAGE" && newCommission > 100) {
-        toast.error("نسبة العمولة لا يمكن أن تتجاوز 100%");
+        tToast.error("affiliates.commissionRateMax");
         return;
       }
 
@@ -218,12 +219,12 @@ const AffiliatesManagement: React.FC = () => {
         commissionRate: newCommission,
       });
       if (response.data.success) {
-        toast.success("تم تحديث العمولة بنجاح");
+        tToast.success("affiliates.commissionUpdated");
         setEditingCommission(null);
         fetchAffiliates();
       }
     } catch (_error: unknown) {
-      toast.error("فشل تحديث العمولة");
+      tToast.error("affiliates.commissionUpdateFailed");
     }
   };
 
@@ -252,7 +253,7 @@ const AffiliatesManagement: React.FC = () => {
         canViewCustomerData: policyForm.canViewCustomerData,
       });
       if (response.data.success) {
-        toast.success("تم تحديث ضوابط المسوق بنجاح");
+        tToast.success("affiliates.controlsUpdated");
         setEditingPolicyAffiliate(null);
         fetchAffiliates();
       }
@@ -312,7 +313,7 @@ const AffiliatesManagement: React.FC = () => {
 
       reviewNote = enteredReason.trim();
       if (!reviewNote) {
-        toast.error("يجب إدخال سبب واضح قبل رفض مستند الاعتماد");
+        tToast.error("affiliates.rejectionReasonRequired");
         return;
       }
     }
