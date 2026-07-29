@@ -1014,7 +1014,6 @@ const OrderDetails: React.FC = () => {
           {showOrderSourceCard && <OrderSourceCard order={order} />}
           {showOrderAttributionCard && <OrderAttributionCard order={order} />}
 
-          {/* مبلغ التحصيل في حالة المرتجع */}
           {(() => {
             const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })() : (order.metadata || {});
             const returnAmt = meta.returnAmount || null;
@@ -1023,13 +1022,13 @@ const OrderDetails: React.FC = () => {
             return displayAmount > 0 ? (
               <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">💰 مبلغ التحصيل في حالة المرتجع</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("orderDetails.returnCollectionLabel")}</span>
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                    {displayAmount.toFixed(2)} ج.م
+                    {t("orderDetails.returnAmount", { amount: displayAmount.toFixed(2) })}
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
-                  {returnAmt ? 'قيمة مخصصة' : 'افتراضي: مصاريف الشحن'} — يظهر في شركة الشحن كمبلغ التحصيل عند الإرجاع
+                  {returnAmt ? t("orderDetails.returnCustomValue") : t("orderDetails.returnDefaultValue")} — {t("orderDetails.returnDescription")}
                 </p>
               </div>
             ) : null;
