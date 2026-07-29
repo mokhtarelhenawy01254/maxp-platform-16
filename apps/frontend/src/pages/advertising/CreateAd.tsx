@@ -17,6 +17,8 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import {
   facebookAdsService,
   CreateAdData,
@@ -117,13 +119,13 @@ const CreateAd: React.FC = () => {
 
     // Validate image
     if (!file.type.startsWith("image/")) {
-      toast.error("الملف المحدد ليس صورة");
+      tToast.error("createAd.msg_ed79");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
       // 10MB
-      toast.error("حجم الصورة كبير جداً. الحد الأقصى 10MB");
+      tToast.error("createAd.msg_c49c");
       return;
     }
 
@@ -140,13 +142,13 @@ const CreateAd: React.FC = () => {
 
     // Validate video
     if (!file.type.startsWith("video/")) {
-      toast.error("الملف المحدد ليس فيديو");
+      tToast.error("createAd.msg_4399");
       return;
     }
 
     if (file.size > 500 * 1024 * 1024) {
       // 500MB
-      toast.error("حجم الفيديو كبير جداً. الحد الأقصى 500MB");
+      tToast.error("createAd.msg_18cb");
       return;
     }
 
@@ -208,7 +210,7 @@ const CreateAd: React.FC = () => {
         toast.success("تم رفع الصورة بنجاح", { id: "upload-image" });
         return response.data.hash;
       } else {
-        throw new Error(response.data.error || "فشل في رفع الصورة");
+        throw new Error(response.data.error || i18n.t("createAd.msg_ba32"));
       }
     } catch (error: any) {
       console.error("Error uploading image:", error);
@@ -250,7 +252,7 @@ const CreateAd: React.FC = () => {
         toast.success("تم رفع الفيديو بنجاح", { id: "upload-video" });
         return response.data.videoId;
       } else {
-        throw new Error(response.data.error || "فشل في رفع الفيديو");
+        throw new Error(response.data.error || i18n.t("createAd.msg_ce27"));
       }
     } catch (error: any) {
       console.error("Error uploading video:", error);
@@ -267,11 +269,11 @@ const CreateAd: React.FC = () => {
     switch (step) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("يرجى إدخال اسم الإعلان");
+          tToast.error("createAd.please_name_6078");
           return false;
         }
         if (!formData.creativeType) {
-          toast.error("يرجى اختيار نوع الإعلان");
+          tToast.error("createAd.msg_b525");
           return false;
         }
         return true;
@@ -281,7 +283,7 @@ const CreateAd: React.FC = () => {
           !formData.imageFile &&
           !formData.imageUrl
         ) {
-          toast.error("يرجى إضافة صورة للإعلان");
+          tToast.error("createAd.please_add_3894");
           return false;
         }
         if (
@@ -289,17 +291,17 @@ const CreateAd: React.FC = () => {
           !formData.videoFile &&
           !formData.videoUrl
         ) {
-          toast.error("يرجى إضافة فيديو للإعلان");
+          tToast.error("createAd.please_add_8d7d");
           return false;
         }
         return true;
       case 3:
         if (!formData.primaryText.trim()) {
-          toast.error("يرجى إدخال نص الإعلان");
+          tToast.error("createAd.msg_705f");
           return false;
         }
         if (!formData.linkUrl.trim()) {
-          toast.error("يرجى إدخال رابط الإعلان");
+          tToast.error("createAd.msg_c6bf");
           return false;
         }
         return true;
@@ -399,7 +401,7 @@ const CreateAd: React.FC = () => {
       };
 
       await facebookAdsService.createAd(adData);
-      toast.success("تم إنشاء الإعلان بنجاح!");
+      tToast.success("createAd.success_create_69a9");
       navigate(`/advertising/facebook-ads/campaigns/${adSetId}/adset`);
     } catch (error: any) {
       console.error("Error creating ad:", error);

@@ -49,6 +49,8 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { envConfig } from "../../config/environment";
 
 type AutoCloseReviewStatus = "PENDING" | "REVIEWED" | "ADJUSTED" | "DISMISSED";
@@ -354,13 +356,13 @@ const Attendance: React.FC = () => {
     if (!idToDelete) return;
     try {
       await api.delete(`/hr/attendance/${idToDelete}`);
-      toast.success("تم حذف السجل بنجاح");
+      tToast.success("attendance.success_delete_8e6c");
       setDeleteDialogOpen(false);
       setIdToDelete(null);
       fetchTodayStats();
       fetchAttendance();
     } catch (error: any) {
-      toast.error("فشل الحذف، حاول مرة أخرى");
+      tToast.error("attendance.msg_138c");
       console.error(error);
     }
   };
@@ -387,7 +389,7 @@ const Attendance: React.FC = () => {
         `/hr/attendance/${selectedAutoCloseRecord.id}/auto-close-review`,
         autoCloseReviewForm,
       );
-      toast.success("تم حفظ مراجعة الإغلاق التلقائي");
+      tToast.success("attendance.success_save_e260");
       setShowAutoCloseReviewDialog(false);
       setSelectedAutoCloseRecord(null);
       fetchAttendance();
@@ -494,7 +496,7 @@ const Attendance: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching attendance:", error);
-      toast.error("حدث خطأ أثناء جلب سجل الحضور");
+      tToast.error("attendance.error_error_7db4");
     } finally {
       setLoading(false);
     }
@@ -506,7 +508,7 @@ const Attendance: React.FC = () => {
         employeeId: empId,
         method: "manual",
       });
-      toast.success("تم تسجيل الحضور بنجاح");
+      tToast.success("attendance.success_login_9112");
       fetchTodayStats();
       fetchAttendance();
     } catch (error: any) {
@@ -520,7 +522,7 @@ const Attendance: React.FC = () => {
         employeeId: empId,
         method: "manual",
       });
-      toast.success("تم تسجيل الانصراف بنجاح");
+      tToast.success("attendance.success_login_2d09");
       fetchTodayStats();
       fetchAttendance();
     } catch (error: any) {
@@ -532,7 +534,7 @@ const Attendance: React.FC = () => {
 
   const handleManualAttendance = async () => {
     if (!manualForm.employeeId) {
-      toast.error("يجب اختيار موظف");
+      tToast.error("attendance.msg_98c9");
       return;
     }
 
@@ -572,10 +574,10 @@ const Attendance: React.FC = () => {
 
       if (isEditMode && editingRecordId && !editingRecordId.startsWith("temp-")) {
         await api.put(`/hr/attendance/${editingRecordId}`, payload);
-        toast.success("تم تحديث سجل الحضور بنجاح");
+        tToast.success("attendance.success_update_8d09");
       } else {
         await api.post("/hr/attendance/manual", payload);
-        toast.success("تم إنشاء سجل الحضور بنجاح");
+        tToast.success("attendance.success_create_9ea4");
       }
 
       setShowManualDialog(false);
@@ -759,9 +761,9 @@ const Attendance: React.FC = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("تم تصدير البيانات بنجاح");
+      tToast.success("attendance.msg_83be");
     } catch (error) {
-      toast.error("فشل في تصدير البيانات");
+      tToast.error("attendance.msg_2a18");
     }
   };
 
@@ -1361,7 +1363,7 @@ const Attendance: React.FC = () => {
                       employeeId: manualForm.employeeId,
                       method: "manual"
                     });
-                    toast.success("تم تسجيل الانصراف بنجاح");
+                    tToast.success("attendance.success_login_2d09");
                     setShowManualDialog(false);
                     fetchAttendance();
                   } catch (err: any) {

@@ -43,6 +43,8 @@ import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { motion, AnimatePresence } from "framer-motion";
 import DepartmentCard from "./components/DepartmentCard";
@@ -307,7 +309,7 @@ const Departments: React.FC = () => {
 
   const handleAddDepartment = async () => {
     if (!canManage) {
-      toast.error("غير مصرح لك بإضافة أقسام");
+      tToast.error("departments.msg_956a");
       return;
     }
 
@@ -329,7 +331,7 @@ const Departments: React.FC = () => {
             formData.managerId === "none" ? null : formData.managerId || null,
         };
         await api.post("/hr/departments", submitData);
-        toast.success("تم إضافة القسم بنجاح");
+        tToast.success("departments.success_add_cd5f");
         setShowAddDialog(false);
         resetForm();
         fetchDepartments();
@@ -388,7 +390,7 @@ const Departments: React.FC = () => {
     if (!selectedDepartment) return;
 
     if (!canManage) {
-      toast.error("غير مصرح لك بتعديل الأقسام");
+      tToast.error("departments.msg_b6d5");
       return;
     }
 
@@ -408,7 +410,7 @@ const Departments: React.FC = () => {
           formData.managerId === "none" ? null : formData.managerId || null,
       };
       await api.put(`/hr/departments/${selectedDepartment.id}`, submitData);
-      toast.success("تم تحديث القسم بنجاح");
+      tToast.success("departments.success_update_530d");
       const manager = submitData.managerId
         ? employees.find((e) => e.id === submitData.managerId)
         : null;
@@ -451,13 +453,13 @@ const Departments: React.FC = () => {
     if (!selectedDepartment) return;
 
     if (!canManage) {
-      toast.error("غير مصرح لك بحذف الأقسام");
+      tToast.error("departments.msg_6286");
       return;
     }
 
     try {
       await api.delete(`/hr/departments/${selectedDepartment.id}`);
-      toast.success("تم حذف القسم بنجاح");
+      tToast.success("departments.success_delete_a80e");
       setShowDeleteDialog(false);
       setSelectedDepartment(null);
       fetchDepartments();
@@ -480,12 +482,12 @@ const Departments: React.FC = () => {
     if (!selectedDepartment) return;
 
     if (!canManage) {
-      toast.error("غير مصرح لك بتعيين موظفين");
+      tToast.error("departments.msg_c841");
       return;
     }
 
     if (assignEmployeesSelection.length === 0) {
-      toast.error("اختر موظف واحد على الأقل");
+      tToast.error("departments.msg_bca4");
       return;
     }
 
@@ -513,7 +515,7 @@ const Departments: React.FC = () => {
 
   const handleRemoveFromDepartment = async (employeeId: string) => {
     if (!canManage) {
-      toast.error("غير مصرح لك بتغيير قسم الموظفين");
+      tToast.error("departments.msg_7409");
       return;
     }
 
@@ -528,7 +530,7 @@ const Departments: React.FC = () => {
       await api.put(`/hr/employees/${employeeToRemove}`, {
         departmentId: null,
       });
-      toast.success("تم إزالة الموظف من القسم");
+      tToast.success("departments.msg_0e11");
       setShowRemoveConfirm(false);
       setEmployeeToRemove(null);
       fetchDepartments();

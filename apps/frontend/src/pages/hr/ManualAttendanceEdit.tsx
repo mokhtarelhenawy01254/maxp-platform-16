@@ -30,6 +30,8 @@ import {
 } from "../../components/ui/table";
 import api from "../../services/api";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 interface AttendanceRecord {
   id: string;
@@ -142,7 +144,7 @@ const ManualAttendanceEdit: React.FC = () => {
       setEmployees(employeesList);
     } catch (error) {
       console.error("❌ Error fetching employees:", error);
-      toast.error("حدث خطأ أثناء جلب قائمة الموظفين");
+      tToast.error("manualAttendance.error_error_e58c");
     }
   };
 
@@ -169,7 +171,7 @@ const ManualAttendanceEdit: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching attendance:", error);
-      toast.error("حدث خطأ أثناء جلب سجل الحضور");
+      tToast.error("manualAttendance.error_error_9b3e");
     } finally {
       setLoading(false);
     }
@@ -246,7 +248,7 @@ const ManualAttendanceEdit: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching all employees:", error);
-      toast.error("حدث خطأ أثناء جلب الموظفين");
+      tToast.error("manualAttendance.error_error_6ea7");
     } finally {
       setLoading(false);
     }
@@ -319,14 +321,14 @@ const ManualAttendanceEdit: React.FC = () => {
 
   const validateTimes = (checkIn: string, checkOut: string): boolean => {
     if (!checkIn) {
-      toast.error("يجب إدخال وقت الحضور");
+      tToast.error("manualAttendance.msg_eb5f");
       return false;
     }
 
     try {
       const checkInTime = new Date(`2000-01-01T${checkIn}:00`);
       if (isNaN(checkInTime.getTime())) {
-        toast.error("تنسيق وقت الحضور غير صحيح");
+        tToast.error("manualAttendance.msg_a1db");
         return false;
       }
 
@@ -334,25 +336,25 @@ const ManualAttendanceEdit: React.FC = () => {
         const checkOutTime = new Date(`2000-01-01T${checkOut}:00`);
 
         if (isNaN(checkOutTime.getTime())) {
-          toast.error("تنسيق وقت الانصراف غير صحيح");
+          tToast.error("manualAttendance.msg_c4bf");
           return false;
         }
 
         if (checkOutTime <= checkInTime) {
-          toast.error("وقت الانصراف يجب أن يكون بعد وقت الحضور");
+          tToast.error("manualAttendance.msg_95b8");
           return false;
         }
 
         const workHours = calculateWorkHours(checkIn, checkOut);
         if (workHours > 24) {
-          toast.error("ساعات العمل غير منطقية (أكثر من 24 ساعة)");
+          tToast.error("manualAttendance.msg_8aad");
           return false;
         }
       }
 
       return true;
     } catch (error) {
-      toast.error("خطأ في التحقق من الأوقات");
+      tToast.error("manualAttendance.msg_dafe");
       return false;
     }
   };
@@ -374,7 +376,7 @@ const ManualAttendanceEdit: React.FC = () => {
         : records;
       const record = allRecords.find((r) => r.id === recordId);
       if (!record) {
-        toast.error("السجل غير موجود");
+        tToast.error("manualAttendance.msg_4c48");
         return;
       }
 
@@ -401,7 +403,7 @@ const ManualAttendanceEdit: React.FC = () => {
             earlyLeaveMinutes:
               editingData.earlyHours * 60 + editingData.earlyMins,
           });
-          toast.success("تم حفظ سجل الحضور بنجاح");
+          tToast.success("manualAttendance.success_save_e3c5");
         } catch (error: any) {
           // إذا فشل الإنشاء بسبب وجود السجل، نحاول التحديث
           if (
@@ -429,7 +431,7 @@ const ManualAttendanceEdit: React.FC = () => {
                 earlyLeaveMinutes:
                   editingData.earlyHours * 60 + editingData.earlyMins,
               });
-              toast.success("تم تحديث سجل الحضور بنجاح");
+              tToast.success("manualAttendance.success_update_d969");
             } else {
               throw error;
             }
@@ -449,7 +451,7 @@ const ManualAttendanceEdit: React.FC = () => {
           earlyLeaveMinutes:
             editingData.earlyHours * 60 + editingData.earlyMins,
         });
-        toast.success("تم حفظ التعديلات بنجاح");
+        tToast.success("manualAttendance.success_save_5920");
       }
 
       cancelEditing(recordId);

@@ -18,5 +18,11 @@
   "reply": "Reply",
   "delete": "Delete",
   "replyPrompt": "Write your reply here:",
-  "repliedAt": "Replied at"
+  "repliedAt": "Replied at",
+  "msg_82fc": "اكتب رداً أولاً",
+  "success_send_e82a": "تم إرسال الرد بنجاح ✓",
+  "success_delete_ea34": "تم حذف التعليق",
+  "msg_8e60": "فشل الحذف",
+  "msg_6ebe": "اختر تعليقاً على الأقل",
+  "msg_3297": "فشل الحذف الجماعي"
 }

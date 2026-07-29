@@ -9,10 +9,8 @@
   "addNew": "Add New Product",
   "editTitle": "Edit Product",
   "editProduct": "Edit Product",
-  "editTitle": "Edit Product",
   "save": "Save Product",
   "addProduct": "Save Product",
-  "save": "Save Product",
   "updateProduct": "Update Product",
   "productName": "Product Name *",
   "description": "Description",
@@ -215,5 +213,13 @@
     "selectMaterial": "Material",
     "selectStyle": "Style",
     "selectOther": "Other"
-  }
+  },
+  "error_error_1879": "حدث خطأ أثناء الحذف",
+  "success_update_fdb7": "تم تحديث المنتج بنجاح",
+  "failed_update_9e0f": "فشل في تحديث المنتج",
+  "error_error_ea72": "حدث خطأ أثناء التحديث",
+  "msg_70a7": "فشل في نسخ المنتج",
+  "msg_bd2e": "تم تصدير المنتجات بنجاح!",
+  "msg_0437": "فشل التصدير",
+  "error_error_7d31": "حدث خطأ أثناء استيراد الملف"
 }

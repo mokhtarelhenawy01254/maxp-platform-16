@@ -18,6 +18,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -164,7 +166,7 @@ const ApplicationFormsSection: React.FC = () => {
 
   const handleCreateForm = async () => {
     if (!newForm.title.trim()) {
-      toast.error("يرجى إدخال عنوان الفورم");
+      tToast.error("applicationForms.msg_0a56");
       return;
     }
 
@@ -174,20 +176,20 @@ const ApplicationFormsSection: React.FC = () => {
         newForm,
       );
       if (response.data.success) {
-        toast.success("تم إنشاء الفورم بنجاح");
+        tToast.success("applicationForms.success_create_aa40");
         setShowCreateModal(false);
         fetchForms();
         resetForm();
       }
     } catch (error) {
       console.error("Error creating form:", error);
-      toast.error("حدث خطأ أثناء إنشاء الفورم");
+      tToast.error("applicationForms.error_error_81bb");
     }
   };
 
   const handleUpdateForm = async () => {
     if (!selectedForm || !newForm.title.trim()) {
-      toast.error("يرجى إدخال عنوان الفورم");
+      tToast.error("applicationForms.msg_0a56");
       return;
     }
 
@@ -197,14 +199,14 @@ const ApplicationFormsSection: React.FC = () => {
         newForm,
       );
       if (response.data.success) {
-        toast.success("تم تحديث الفورم بنجاح");
+        tToast.success("applicationForms.success_update_89da");
         setShowEditModal(false);
         fetchForms();
         resetForm();
       }
     } catch (error) {
       console.error("Error updating form:", error);
-      toast.error("حدث خطأ أثناء تحديث الفورم");
+      tToast.error("applicationForms.error_error_485e");
     }
   };
 
@@ -216,12 +218,12 @@ const ApplicationFormsSection: React.FC = () => {
         `/hr/recruitment/forms/${formId}`,
       );
       if (response.data.success) {
-        toast.success("تم حذف الفورم بنجاح");
+        tToast.success("applicationForms.success_delete_d329");
         fetchForms();
       }
     } catch (error) {
       console.error("Error deleting form:", error);
-      toast.error("حدث خطأ أثناء حذف الفورم");
+      tToast.error("applicationForms.error_error_f86a");
     }
   };
 
@@ -245,7 +247,7 @@ const ApplicationFormsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching form details:", error);
-      toast.error("حدث خطأ أثناء جلب تفاصيل الفورم");
+      tToast.error("applicationForms.error_error_6bea");
     }
   };
 
@@ -262,7 +264,7 @@ const ApplicationFormsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching responses:", error);
-      toast.error("حدث خطأ أثناء جلب الردود");
+      tToast.error("applicationForms.error_error_b108");
     }
   };
 
@@ -277,7 +279,7 @@ const ApplicationFormsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching response details:", error);
-      toast.error("حدث خطأ أثناء جلب تفاصيل الرد");
+      tToast.error("applicationForms.error_error_088a");
     }
   };
 
@@ -289,14 +291,14 @@ const ApplicationFormsSection: React.FC = () => {
         `/hr/recruitment/responses/${responseId}`,
       );
       if (response.data.success) {
-        toast.success("تم حذف الرد بنجاح");
+        tToast.success("applicationForms.success_delete_62be");
         if (selectedForm) {
           handleViewResponses(selectedForm);
         }
       }
     } catch (error) {
       console.error("Error deleting response:", error);
-      toast.error("حدث خطأ أثناء حذف الرد");
+      tToast.error("applicationForms.error_error_d252");
     }
   };
 
@@ -342,7 +344,7 @@ const ApplicationFormsSection: React.FC = () => {
       }
     } catch (error) {
       console.error("Error updating response contact status:", error);
-      toast.error("حدث خطأ أثناء تحديث حالة التواصل");
+      tToast.error("applicationForms.error_error_55c6");
     } finally {
       setUpdatingResponseId(null);
     }
@@ -380,7 +382,7 @@ const ApplicationFormsSection: React.FC = () => {
         );
 
         toast.success(
-          response.data.message || "تمت إضافة الرد إلى مسار التوظيف",
+          response.data.message || i18n.t("applicationForms.msg_ed0e"),
         );
       }
     } catch (error: any) {
@@ -431,7 +433,7 @@ const ApplicationFormsSection: React.FC = () => {
 
   const addQuestion = () => {
     if (!newQuestion.questionText.trim()) {
-      toast.error("يرجى إدخال نص السؤال");
+      tToast.error("applicationForms.msg_ab6b");
       return;
     }
 
@@ -439,7 +441,7 @@ const ApplicationFormsSection: React.FC = () => {
       newQuestion.questionType,
     );
     if (needsOptions && newQuestion.options.length < 2) {
-      toast.error("يرجى إضافة خيارين على الأقل");
+      tToast.error("applicationForms.please_add_ffef");
       return;
     }
 
@@ -517,7 +519,7 @@ const ApplicationFormsSection: React.FC = () => {
   const copyFormLink = (formId: string) => {
     const link = `${window.location.origin}/apply/${formId}`;
     navigator.clipboard.writeText(link);
-    toast.success("تم نسخ رابط الاستبيان");
+    tToast.success("applicationForms.msg_ba5c");
   };
 
   const filteredForms = forms.filter(

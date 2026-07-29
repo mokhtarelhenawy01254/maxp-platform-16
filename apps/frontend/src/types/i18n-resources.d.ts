@@ -956,6 +956,21 @@ declare module 'react-i18next' {
         retry: string;
         errorPrefix: string;
       };
+      createAd: {
+        msg_ed79: string;
+        msg_c49c: string;
+        msg_4399: string;
+        msg_18cb: string;
+        please_name_6078: string;
+        msg_b525: string;
+        please_add_3894: string;
+        please_add_8d7d: string;
+        msg_705f: string;
+        msg_c6bf: string;
+        success_create_69a9: string;
+        msg_ba32: string;
+        msg_ce27: string;
+      };
       abandonedCartAnalytics: {
         title: string;
         subtitle: string;
@@ -2344,6 +2359,12 @@ declare module 'react-i18next' {
         delete: string;
         replyPrompt: string;
         repliedAt: string;
+        msg_82fc: string;
+        success_send_e82a: string;
+        success_delete_ea34: string;
+        msg_8e60: string;
+        msg_6ebe: string;
+        msg_3297: string;
       };
       postSettings: {
         loadingPostSettings: string;
@@ -2896,6 +2917,27 @@ declare module 'react-i18next' {
         chooseProduct: string;
         facebookPost: string;
         errorPrefix: string;
+      };
+      groupInfoDrawer: {
+        failed_fetch_9a86: string;
+        success_update_094b: string;
+        failed_update_8a12: string;
+        failed_fetch_951a: string;
+        msg_ea61: string;
+        msg_af8c: string;
+        success_update_name_3dac: string;
+        failed_update_name_6554: string;
+        success_update_334d: string;
+        failed_update_359b: string;
+        msg_fdee: string;
+        msg_6d2b: string;
+        msg_9d7c: string;
+        msg_e073: string;
+        success_add_9bf2: string;
+        failed_add_d449: string;
+        msg_6845: string;
+        msg_6c41: string;
+        msg_fd2e: string;
       };
       inbox: {
         tabs: {
@@ -5376,6 +5418,25 @@ declare module 'react-i18next' {
         pause: string;
         stop: string;
       };
+      applicationForms: {
+        msg_0a56: string;
+        success_create_aa40: string;
+        error_error_81bb: string;
+        success_update_89da: string;
+        error_error_485e: string;
+        success_delete_d329: string;
+        error_error_f86a: string;
+        error_error_6bea: string;
+        error_error_b108: string;
+        error_error_088a: string;
+        success_delete_62be: string;
+        error_error_d252: string;
+        error_error_55c6: string;
+        msg_ab6b: string;
+        please_add_ffef: string;
+        msg_ba5c: string;
+        msg_ed0e: string;
+      };
       attendance: {
         pageTitle: string;
         manualRecord: string;
@@ -5455,6 +5516,44 @@ declare module 'react-i18next' {
         errorSelectEmployee: string;
         errorCheckOutBeforeCheckIn: string;
         errorExport: string;
+        success_delete_8e6c: string;
+        msg_138c: string;
+        success_save_e260: string;
+        error_error_7db4: string;
+        success_login_9112: string;
+        success_login_2d09: string;
+        msg_98c9: string;
+        success_update_8d09: string;
+        success_create_9ea4: string;
+        msg_83be: string;
+        msg_2a18: string;
+      };
+      createGoal: {
+        msg_7016: string;
+        msg_08a6: string;
+        msg_3b44: string;
+        msg_f7b6: string;
+        msg_a533: string;
+        msg_fbbb: string;
+        msg_fe4e: string;
+        msg_9472: string;
+        success_update_d398: string;
+        success_create_c282: string;
+        unable_save_6d4d: string;
+        success_delete_377b: string;
+        unable_delete_f427: string;
+      };
+      departments: {
+        msg_956a: string;
+        success_add_cd5f: string;
+        msg_b6d5: string;
+        success_update_530d: string;
+        msg_6286: string;
+        success_delete_a80e: string;
+        msg_c841: string;
+        msg_bca4: string;
+        msg_7409: string;
+        msg_0e11: string;
       };
       employee: {
         dashboard: {
@@ -6712,6 +6811,42 @@ declare module 'react-i18next' {
           salary: string;
           performance: string;
         };
+      };
+      hrSettings: {
+        msg_9d30: string;
+        unable_load_6108: string;
+        msg_ea7d: string;
+        msg_0101: string;
+        msg_fca0: string;
+        msg_092a: string;
+        msg_ff3c: string;
+        msg_0d63: string;
+        msg_7cfc: string;
+        msg_4dae: string;
+      };
+      manualAttendance: {
+        error_error_e58c: string;
+        error_error_9b3e: string;
+        error_error_6ea7: string;
+        msg_eb5f: string;
+        msg_a1db: string;
+        msg_c4bf: string;
+        msg_95b8: string;
+        msg_8aad: string;
+        msg_dafe: string;
+        msg_4c48: string;
+        success_save_e3c5: string;
+        success_update_d969: string;
+        success_save_5920: string;
+      };
+      payroll: {
+        error_error_79b4: string;
+        msg_52b3: string;
+        msg_4ddf: string;
+        msg_d787: string;
+        success_update_ffdd: string;
+        msg_87c4: string;
+        msg_06d8: string;
       };
       rewards: {
         title: string;
@@ -11104,6 +11239,25 @@ declare module 'react-i18next' {
           selectStyle: string;
           selectOther: string;
         };
+        error_error_1879: string;
+        success_update_fdb7: string;
+        failed_update_9e0f: string;
+        error_error_ea72: string;
+        msg_70a7: string;
+        msg_bd2e: string;
+        msg_0437: string;
+        error_error_7d31: string;
+      };
+      productsTrash: {
+        failed_fetch_bddf: string;
+        msg_b52a: string;
+        msg_9da5: string;
+        success_delete_4f2e: string;
+        failed_delete_ec26: string;
+        msg_8a1a: string;
+        msg_2483: string;
+        msg_1884: string;
+        failed_delete_c5b3: string;
       };
       stockAnalytics: {
         title: string;
@@ -13567,6 +13721,23 @@ declare module 'react-i18next' {
           originalReply: string;
           correctedReply: string;
         };
+      };
+      taskIntegrations: {
+        msg_a3c9: string;
+        msg_9d3f: string;
+        msg_43bd: string;
+        msg_a6c0: string;
+        msg_e3f1: string;
+        msg_218b: string;
+        name_required_d4fe: string;
+        msg_770f: string;
+        msg_7395: string;
+        msg_6566: string;
+        msg_b920: string;
+        msg_2cdf: string;
+        msg_9461: string;
+        msg_e7d5: string;
+        msg_22fd: string;
       };
       tasks: {
         title: string;

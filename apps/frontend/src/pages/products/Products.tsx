@@ -6,6 +6,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { getImageUrl } from "../../utils/imageUrl";
 
 // Sub-components
@@ -111,7 +113,7 @@ const Products: React.FC = () => {
       const count = await handleBulkDelete();
       if (count) toast.success(`تم حذف ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error("حدث خطأ أثناء الحذف");
+      tToast.error("products.error_error_1879");
     }
   };
 
@@ -144,10 +146,10 @@ const Products: React.FC = () => {
   const onSaveQuickEdit = async (id: string) => {
     try {
       const success = await saveQuickEdit(id);
-      if (success) toast.success("تم تحديث المنتج بنجاح");
-      else toast.error("فشل في تحديث المنتج");
+      if (success) tToast.success("products.success_update_fdb7");
+      else tToast.error("products.failed_update_9e0f");
     } catch (err) {
-      toast.error("حدث خطأ أثناء التحديث");
+      tToast.error("products.error_error_ea72");
     }
   };
 
@@ -155,7 +157,7 @@ const Products: React.FC = () => {
     try {
       const success = await handleDuplicate(product);
       if (success) toast.success(`✅ تم نسخ المنتج "${product.name}" بنجاح`);
-      else toast.error("فشل في نسخ المنتج");
+      else tToast.error("products.msg_70a7");
     } catch (err: any) {
       toast.error(`❌ ${err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ غير متوقع"}`);
     }
@@ -187,10 +189,10 @@ const Products: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        toast.success("تم تصدير المنتجات بنجاح!");
+        tToast.success("products.msg_bd2e");
       }
     } catch {
-      toast.error("فشل التصدير");
+      tToast.error("products.msg_0437");
     }
   };
 
@@ -223,7 +225,7 @@ const Products: React.FC = () => {
       setShowImportModal(false);
       toast.success(`تم استيراد ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error("حدث خطأ أثناء استيراد الملف");
+      tToast.error("products.error_error_7d31");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };

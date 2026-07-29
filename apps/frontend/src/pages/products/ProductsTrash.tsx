@@ -10,6 +10,8 @@ import {
     ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 
@@ -51,7 +53,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error fetching deleted products:", error);
-            toast.error("فشل في جلب المنتجات المحذوفة");
+            tToast.error("productsTrash.failed_fetch_bddf");
         } finally {
             setLoading(false);
         }
@@ -68,7 +70,7 @@ const ProductsTrash: React.FC = () => {
             const { apiClient } = await import("../../services/apiClient");
             const response = await apiClient.post(`/products/${productId}/restore`);
             if (response.data.success) {
-                toast.success("تم استعادة المنتج بنجاح");
+                tToast.success("productsTrash.msg_b52a");
                 setProducts((prev) => prev.filter((p) => p.id !== productId));
                 setSelectedProducts((prev) => {
                     const newSet = new Set(prev);
@@ -78,7 +80,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error restoring product:", error);
-            toast.error("فشل في استعادة المنتج");
+            tToast.error("productsTrash.msg_9da5");
         } finally {
             setRestoring(null);
         }
@@ -95,7 +97,7 @@ const ProductsTrash: React.FC = () => {
             const { apiClient } = await import("../../services/apiClient");
             const response = await apiClient.delete(`/products/${productId}/permanent`);
             if (response.data.success) {
-                toast.success("تم حذف المنتج نهائياً");
+                tToast.success("productsTrash.success_delete_4f2e");
                 setProducts((prev) => prev.filter((p) => p.id !== productId));
                 setSelectedProducts((prev) => {
                     const newSet = new Set(prev);
@@ -105,7 +107,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error permanently deleting product:", error);
-            toast.error("فشل في حذف المنتج نهائياً");
+            tToast.error("productsTrash.failed_delete_ec26");
         } finally {
             setDeleting(null);
         }
@@ -114,7 +116,7 @@ const ProductsTrash: React.FC = () => {
     // استعادة الكل
     const handleRestoreAll = async () => {
         if (selectedProducts.size === 0) {
-            toast.error("يرجى اختيار منتجات للاستعادة");
+            tToast.error("productsTrash.msg_8a1a");
             return;
         }
 
@@ -140,7 +142,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error restoring all products:", error);
-            toast.error("فشل في استعادة المنتجات");
+            tToast.error("productsTrash.msg_2483");
         } finally {
             setLoading(false);
         }
@@ -149,7 +151,7 @@ const ProductsTrash: React.FC = () => {
     // حذف نهائي للكل
     const handlePermanentDeleteAll = async () => {
         if (selectedProducts.size === 0) {
-            toast.error("يرجى اختيار منتجات للحذف");
+            tToast.error("productsTrash.msg_1884");
             return;
         }
 
@@ -179,7 +181,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error deleting all products:", error);
-            toast.error("فشل في حذف المنتجات");
+            tToast.error("productsTrash.failed_delete_c5b3");
         } finally {
             setLoading(false);
         }

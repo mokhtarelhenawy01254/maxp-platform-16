@@ -14,6 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 
 import {
   BusinessPageHero,
@@ -477,37 +479,37 @@ const CreateGoal: React.FC = () => {
 
   const validateForm = () => {
     if (!form.title.trim()) {
-      toast.error("عنوان الهدف مطلوب");
+      tToast.error("createGoal.msg_7016");
       return false;
     }
 
     if (!form.targetValue || toNumber(form.targetValue) <= 0) {
-      toast.error("القيمة المستهدفة يجب أن تكون أكبر من صفر");
+      tToast.error("createGoal.msg_08a6");
       return false;
     }
 
     if (!form.startDate || !form.endDate) {
-      toast.error("حدد تاريخ البداية والنهاية");
+      tToast.error("createGoal.msg_3b44");
       return false;
     }
 
     if (new Date(form.startDate) > new Date(form.endDate)) {
-      toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+      tToast.error("createGoal.msg_f7b6");
       return false;
     }
 
     if (form.goalType === "PROJECT" && !form.projectId) {
-      toast.error("اختر المشروع المرتبط بالهدف");
+      tToast.error("createGoal.msg_a533");
       return false;
     }
 
     if (form.goalType === "EMPLOYEE" && !form.employeeId) {
-      toast.error("اختر الموظف المسؤول عن الهدف");
+      tToast.error("createGoal.msg_fbbb");
       return false;
     }
 
     if (form.goalType === "DEPARTMENT" && !form.departmentId) {
-      toast.error("اختر القسم المسؤول عن الهدف");
+      tToast.error("createGoal.msg_fe4e");
       return false;
     }
 
@@ -517,7 +519,7 @@ const CreateGoal: React.FC = () => {
       );
 
       if (!hasValidAssignment) {
-        toast.error("أضف على الأقل توزيعًا واحدًا على موظف");
+        tToast.error("createGoal.msg_9472");
         return false;
       }
     }
@@ -585,16 +587,16 @@ const CreateGoal: React.FC = () => {
 
       if (isEdit) {
         await api.put(`/tasks/goals/${id}`, payload);
-        toast.success("تم تحديث الهدف بنجاح");
+        tToast.success("createGoal.success_update_d398");
       } else {
         await api.post("/tasks/goals", payload);
-        toast.success("تم إنشاء الهدف بنجاح");
+        tToast.success("createGoal.success_create_c282");
       }
 
       navigate("/goals");
     } catch (error) {
       console.error("Error saving goal:", error);
-      toast.error("تعذر حفظ الهدف");
+      tToast.error("createGoal.unable_save_6d4d");
     } finally {
       setLoading(false);
     }
@@ -612,11 +614,11 @@ const CreateGoal: React.FC = () => {
     try {
       setLoading(true);
       await api.delete(`/tasks/goals/${id}`);
-      toast.success("تم حذف الهدف");
+      tToast.success("createGoal.success_delete_377b");
       navigate("/goals");
     } catch (error) {
       console.error("Error deleting goal:", error);
-      toast.error("تعذر حذف الهدف");
+      tToast.error("createGoal.unable_delete_f427");
     } finally {
       setLoading(false);
     }

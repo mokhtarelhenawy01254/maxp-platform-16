@@ -20,6 +20,7 @@ import {
   Filter,
 } from "lucide-react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 /* ────────────────────────────────────────────
    Helper: Avatar initials with deterministic colour
@@ -73,7 +74,7 @@ function ReplyBox({ commentId, onReplySent }) {
   const send = async () => {
     const trimmed = text.trim();
     if (!trimmed) {
-      toast.warning("اكتب رداً أولاً");
+      tToast.warning("postComments.msg_82fc");
       textareaRef.current?.focus();
       return;
     }
@@ -82,7 +83,7 @@ function ReplyBox({ commentId, onReplySent }) {
       const result = await CommentService.sendManualResponseToFacebook(commentId, trimmed);
       if (result.success) {
         setText("");
-        toast.success("تم إرسال الرد بنجاح ✓");
+        tToast.success("postComments.success_send_e82a");
         onReplySent?.();
       } else {
         toast.error("فشل الإرسال: " + (result.message || "خطأ غير معروف"));
@@ -166,10 +167,10 @@ function CommentCard({ comment, selected, onToggleSelect, onDelete, onReplySent 
               try {
                 const result = await CommentService.deleteFacebookComment(comment.id);
                 if (result.success) {
-                  toast.success("تم حذف التعليق");
+                  tToast.success("postComments.success_delete_ea34");
                   onDelete?.(comment.id);
                 } else {
-                  toast.error("فشل الحذف");
+                  tToast.error("postComments.msg_8e60");
                 }
               } catch (err) {
                 toast.error("خطأ: " + err.message);
@@ -361,7 +362,7 @@ const PostComments = () => {
   /* ── Bulk Delete ── */
   const handleBulkDelete = () => {
     if (selectedComments.length === 0) {
-      toast.warning("اختر تعليقاً على الأقل");
+      tToast.warning("postComments.msg_6ebe");
       return;
     }
     toast(
@@ -388,7 +389,7 @@ const PostComments = () => {
                   setComments((prev) => prev.filter((c) => !selectedComments.includes(c.id)));
                   setSelectedComments([]);
                 } else {
-                  toast.error("فشل الحذف الجماعي");
+                  tToast.error("postComments.msg_3297");
                 }
               } catch (err) {
                 toast.error("خطأ: " + err.message);

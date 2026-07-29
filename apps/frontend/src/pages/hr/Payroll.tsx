@@ -46,6 +46,7 @@ import { Checkbox } from '../../components/ui/checkbox';
 import PayrollSimulator from './components/PayrollSimulator';
 import api from '../../services/api';
 import { toast } from 'sonner';
+import { tToast } from "../../utils/i18n-toast";
 import { useCompany } from '../../contexts/CompanyContext';
 
 interface Payroll {
@@ -221,7 +222,7 @@ const Payroll: React.FC = () => {
       }));
     } catch (error) {
       console.error('❌ [Payroll] Error fetching payrolls:', error);
-      toast.error('حدث خطأ أثناء جلب كشوف الرواتب');
+      tToast.error("payroll.error_error_79b4");
     } finally {
       setLoading(false);
     }
@@ -293,7 +294,7 @@ const Payroll: React.FC = () => {
   const handleApprove = async (payrollId: string) => {
     try {
       await api.post(`/hr/payroll/${payrollId}/approve`);
-      toast.success('تم اعتماد كشف الراتب');
+      tToast.success("payroll.msg_52b3");
       fetchPayrolls();
       if (!isMyPayroll) {
         fetchSummary();
@@ -313,7 +314,7 @@ const Payroll: React.FC = () => {
 
   const handleBulkPay = () => {
     if (selectedIds.length === 0) {
-      toast.error('اختر كشوف الرواتب أولاً');
+      tToast.error("payroll.msg_4ddf");
       return;
     }
     setSelectedPayroll(null);
@@ -328,7 +329,7 @@ const Payroll: React.FC = () => {
         await api.post(`/hr/payroll/${selectedPayroll.id}/pay`, {
           method: paymentMethod
         });
-        toast.success('تم صرف الراتب بنجاح');
+        tToast.success("payroll.msg_d787");
       } else {
         await api.post('/hr/payroll/bulk-pay', {
           payrollIds: selectedIds,
@@ -351,7 +352,7 @@ const Payroll: React.FC = () => {
 
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) {
-      toast.error('اختر كشوف الرواتب أولاً');
+      tToast.error("payroll.msg_4ddf");
       return;
     }
 
@@ -463,7 +464,7 @@ const Payroll: React.FC = () => {
       };
 
       await api.put(`/hr/payroll/${selectedPayroll.id}`, payload);
-      toast.success('تم تحديث كشف الراتب بنجاح');
+      tToast.success("payroll.success_update_ffdd");
       setShowEditDialog(false);
       fetchPayrolls();
       fetchSummary();
@@ -918,13 +919,13 @@ const Payroll: React.FC = () => {
         printWindow.close();
       }, 500);
     } else {
-      toast.error('فشل في فتح نافذة الطباعة');
+      tToast.error("payroll.msg_87c4");
     }
   };
 
   const handleExportBankFile = () => {
     if (payrolls.length === 0) {
-      toast.error('لا توجد بيانات للتصدير');
+      tToast.error("payroll.msg_06d8");
       return;
     }
 
