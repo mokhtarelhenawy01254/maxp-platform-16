@@ -4,7 +4,43 @@
 declare module 'react-i18next' {
   interface Resources {
     translation: {
-            agentProfiles: {
+            PaymentPage: {
+        msg_04b5: string;
+        msg_3dbc: string;
+        success_send_f112: string;
+        error_send_3b6c: string;
+      };
+      UsersManagement: {
+        msg_8387: string;
+        msg_fc1e: string;
+        success_delete_ae63: string;
+        msg_6812: string;
+        success_send_62b7: string;
+        success_send_59c9: string;
+        error_error_6424: string;
+        error_error_a658: string;
+        error_error_c008: string;
+      };
+      WalletManagement: {
+        msg_9034: string;
+        success_update_c3e3: string;
+        msg_1efc: string;
+        success_delete_cda7: string;
+        msg_834a: string;
+        msg_2a19: string;
+        success_add_ca6f: string;
+      };
+      FormsBuilderPage: {
+        msg_da6d: string;
+        msg_a286: string;
+        msg_ed2d: string;
+        msg_6b79: string;
+        success_update_4ef5: string;
+        success_create_ad1a: string;
+        success_delete_49c8: string;
+        msg_d548: string;
+      };
+      agentProfiles: {
         time: {
           now: string;
           minutesAgo: string;
@@ -934,6 +970,16 @@ declare module 'react-i18next' {
         answeredBy: string;
         showContext: string;
       };
+      aiPlayground: {
+        promptPlaceholder: string;
+        send: string;
+        sending: string;
+        stop: string;
+        reply: string;
+        copied: string;
+        emptyReply: string;
+        receivingReply: string;
+      };
       subAgents: {
         title: string;
         loadFailed: string;
@@ -955,6 +1001,122 @@ declare module 'react-i18next' {
         noTools: string;
         retry: string;
         errorPrefix: string;
+      };
+      BudgetAlertsPage: {
+        msg_c1b0: string;
+        msg_74b3: string;
+        msg_0efb: string;
+        msg_fe1b: string;
+        success_create_2b78: string;
+        success_send_d688: string;
+        success_delete_7527: string;
+        msg_28e0: string;
+      };
+      CreateABTest: {
+        failed_load_c1ee: string;
+        please_name_d31f: string;
+        msg_2a40: string;
+        msg_c09f: string;
+        please_add_6156: string;
+        success_create_2b73: string;
+      };
+      CreateCampaign: {
+        failed_load_7ed0: string;
+        please_name_c07b: string;
+        msg_0457: string;
+        msg_61ce: string;
+        msg_136c: string;
+        msg_4753: string;
+        success_create_76a9: string;
+      };
+      CreateCustomAudience: {
+        failed_load_0ade: string;
+        please_name_d64c: string;
+        msg_fefb: string;
+        please_add_0126: string;
+        msg_7a97: string;
+        success_create_d55e: string;
+      };
+      CreateDynamicAd: {
+        failed_load_54a9: string;
+        failed_load_fa45: string;
+        please_name_e56c: string;
+        msg_8fe0: string;
+        msg_b753: string;
+        success_create_6286: string;
+      };
+      ProductLandingPages: {
+        msg_11ec: string;
+        success_create_88aa: string;
+        msg_d05d: string;
+        msg_637e: string;
+        success_update_7714: string;
+        msg_51eb: string;
+        msg_eeb5: string;
+      };
+      budgetAlerts: {
+        msg_de0a: string;
+        msg_5b24: string;
+        msg_de51: string;
+        msg_d260: string;
+        success_create_4d9c: string;
+        success_send_4249: string;
+        success_delete_2449: string;
+        msg_914b: string;
+      };
+      createAd: {
+        msg_ed79: string;
+        msg_c49c: string;
+        msg_4399: string;
+        msg_18cb: string;
+        please_name_6078: string;
+        msg_b525: string;
+        please_add_3894: string;
+        please_add_8d7d: string;
+        msg_705f: string;
+        msg_c6bf: string;
+        success_create_69a9: string;
+        msg_ba32: string;
+        msg_ce27: string;
+      };
+      AffiliateProducts: {
+        error_error_ad12: string;
+        msg_f09a: string;
+        success_update_c846: string;
+        error_error_59e1: string;
+        msg_46fb: string;
+        msg_0153: string;
+        msg_ccdb: string;
+      };
+      AffiliateProfile: {
+        msg_996e: string;
+        success_update_status_085a: string;
+        msg_47d6: string;
+        success_update_6452: string;
+        success_update_d401: string;
+        msg_de2f: string;
+        success_update_status_fd25: string;
+      };
+      AffiliateQuickActions: {
+        error_error_d0bd: string;
+        error_error_8409: string;
+      };
+      CompanyConsumerDetail: {
+        failed_load_23e0: string;
+        failed_load_7101: string;
+        failed_load_569e: string;
+        failed_load_8127: string;
+        msg_1641: string;
+        success_send_161a: string;
+        error_error_9b4a: string;
+      };
+      CompanyProviderDetail: {
+        failed_load_0d15: string;
+        failed_load_728a: string;
+        failed_load_c88c: string;
+        msg_ff78: string;
+        error_error_fe90: string;
+        msg_badc: string;
       };
       abandonedCartAnalytics: {
         title: string;
@@ -2082,6 +2244,15 @@ declare module 'react-i18next' {
         deactivatedMessage: string;
         videoNotSupported: string;
       };
+      Appointments: {
+        msg_0e7d: string;
+        failed_update_fa54: string;
+        please_name_4ff9: string;
+        msg_6355: string;
+        msg_54f2: string;
+        msg_9ec8: string;
+        success_update_status_c132: string;
+      };
       billing: {
         payments: {
           title: string;
@@ -2344,6 +2515,16 @@ declare module 'react-i18next' {
         delete: string;
         replyPrompt: string;
         repliedAt: string;
+        msg_82fc: string;
+        success_send_e82a: string;
+        success_delete_ea34: string;
+        msg_8e60: string;
+        msg_6ebe: string;
+        msg_3297: string;
+        msg_5470: string;
+        msg_2ae6: string;
+        msg_1e96: string;
+        msg_6164: string;
       };
       postSettings: {
         loadingPostSettings: string;
@@ -2453,6 +2634,61 @@ declare module 'react-i18next' {
         selectPage: string;
         noSearchResults: string;
         noText: string;
+      };
+      unifiedComments: {
+        pageTitle: string;
+        pageSubtitle: string;
+        postCommentsTitle: string;
+        postCommentsSubtitle: string;
+        backToPosts: string;
+        postId: string;
+        responseMethod: string;
+        responseSettings: string;
+        search: string;
+        searchPlaceholder: string;
+        status: string;
+        allPosts: string;
+        allComments: string;
+        responded: string;
+        pending: string;
+        itemsCount: string;
+        refresh: string;
+        delete: string;
+        fixedResponse: string;
+        manualResponse: string;
+        notSpecified: string;
+        noComments: string;
+        noCommentsDesc: string;
+        loadingComments: string;
+        loadingPosts: string;
+        selected: string;
+        comment: string;
+        comments: string;
+        deleteAll: string;
+        cancelSelection: string;
+        selectComments: string;
+        confirmDelete: string;
+        deletedSuccessfully: string;
+        deleteError: string;
+        replied: string;
+        reply: string;
+        replyPrompt: string;
+        enterReply: string;
+        replySaved: string;
+        replyError: string;
+        confirmDeleteComment: string;
+        repliedAt: string;
+        lastComment: string;
+        responses: string;
+        actions: string;
+        viewComments: string;
+        noPosts: string;
+        showing: string;
+        to: string;
+        of: string;
+        result: string;
+        previous: string;
+        next: string;
       };
       broadcast: {
         title: string;
@@ -2897,6 +3133,27 @@ declare module 'react-i18next' {
         facebookPost: string;
         errorPrefix: string;
       };
+      groupInfoDrawer: {
+        failed_fetch_9a86: string;
+        success_update_094b: string;
+        failed_update_8a12: string;
+        failed_fetch_951a: string;
+        msg_ea61: string;
+        msg_af8c: string;
+        success_update_name_3dac: string;
+        failed_update_name_6554: string;
+        success_update_334d: string;
+        failed_update_359b: string;
+        msg_fdee: string;
+        msg_6d2b: string;
+        msg_9d7c: string;
+        msg_e073: string;
+        success_add_9bf2: string;
+        failed_add_d449: string;
+        msg_6845: string;
+        msg_6c41: string;
+        msg_fd2e: string;
+      };
       inbox: {
         tabs: {
           all: string;
@@ -3030,61 +3287,6 @@ declare module 'react-i18next' {
           fri: string;
           sat: string;
         };
-      };
-      unifiedComments: {
-        pageTitle: string;
-        pageSubtitle: string;
-        postCommentsTitle: string;
-        postCommentsSubtitle: string;
-        backToPosts: string;
-        postId: string;
-        responseMethod: string;
-        responseSettings: string;
-        search: string;
-        searchPlaceholder: string;
-        status: string;
-        allPosts: string;
-        allComments: string;
-        responded: string;
-        pending: string;
-        itemsCount: string;
-        refresh: string;
-        delete: string;
-        fixedResponse: string;
-        manualResponse: string;
-        notSpecified: string;
-        noComments: string;
-        noCommentsDesc: string;
-        loadingComments: string;
-        loadingPosts: string;
-        selected: string;
-        comment: string;
-        comments: string;
-        deleteAll: string;
-        cancelSelection: string;
-        selectComments: string;
-        confirmDelete: string;
-        deletedSuccessfully: string;
-        deleteError: string;
-        replied: string;
-        reply: string;
-        replyPrompt: string;
-        enterReply: string;
-        replySaved: string;
-        replyError: string;
-        confirmDeleteComment: string;
-        repliedAt: string;
-        lastComment: string;
-        responses: string;
-        actions: string;
-        viewComments: string;
-        noPosts: string;
-        showing: string;
-        to: string;
-        of: string;
-        result: string;
-        previous: string;
-        next: string;
       };
       unifiedInbox: {
         title: string;
@@ -3426,6 +3628,64 @@ declare module 'react-i18next' {
           rowsPerPage: string;
           displayedRows: string;
         };
+      };
+      whatsappChat: {
+        success_publish_5ce3: string;
+        failed_publish_960d: string;
+        msg_e1cd: string;
+        failed_update_status_7075: string;
+        msg_18a1: string;
+        msg_1f79: string;
+        failed_clear_cdd5: string;
+        failed_delete_6e98: string;
+        failed_update_status_9511: string;
+        failed_update_status_73cc: string;
+        success_select_9a6b: string;
+        failed_select_status_be9a: string;
+        msg_29a7: string;
+        msg_71a8: string;
+        success_delete_57de: string;
+        failed_delete_f800: string;
+        success_copy_3ea5: string;
+        success_send_3257: string;
+        failed_send_869b: string;
+        msg_6131: string;
+        msg_5a7e: string;
+        msg_ef4e: string;
+        success_send_3f0b: string;
+        failed_send_8954: string;
+        msg_292e: string;
+        success_send_714a: string;
+        failed_send_0a36: string;
+        success_send_fd2a: string;
+        failed_send_6b1d: string;
+        success_send_2909: string;
+        failed_send_f8fe: string;
+        failed_load_229c: string;
+        success_select_a6fd: string;
+        msg_2cdb: string;
+        success_send_6ef9: string;
+        failed_send_84ec: string;
+        msg_f28c: string;
+        failed_load_055c: string;
+        success_send_f1a1: string;
+        failed_send_c7f6: string;
+        msg_f18b: string;
+        msg_0a94: string;
+        msg_0e02: string;
+        success_update_a33f: string;
+        failed_update_a3e3: string;
+        success_update_1cca: string;
+        failed_update_c47f: string;
+        msg_6016: string;
+        msg_ae22: string;
+        success_send_ba8a: string;
+        failed_send_8f23: string;
+        msg_36fc: string;
+        unable_request_sync_791e: string;
+        error_error_during_d123: string;
+        error_error_during_be74: string;
+        msg_1fa1: string;
       };
       whatsappInbox: {
         dashboardTitle: string;
@@ -5005,6 +5265,92 @@ declare module 'react-i18next' {
         editUser: string;
         inviteNewUser: string;
       };
+      CreateCompanyModal: {
+        success_create_60f4: string;
+        failed_create_0bca: string;
+      };
+      RichTextEditor: {
+        msg_c246: string;
+      };
+      WaybillGenerator: {
+        msg_1794: string;
+        msg_e5f7: string;
+      };
+      CustomerProfile: {
+        msg_bf82: string;
+        msg_8262: string;
+        msg_b667: string;
+      };
+      OrderModal: {
+        msg_fe97: string;
+        msg_a03a: string;
+        msg_f4e5: string;
+        msg_f9fe: string;
+        failed_create_ff97: string;
+      };
+      ImageGalleryModal: {
+        error_error_fcf9: string;
+        failed_delete_e86b: string;
+      };
+      QuickCreateTaskModal: {
+        login_login_dff4: string;
+        success_create_7fd6: string;
+        failed_create_9b04: string;
+      };
+      FacebookSetupGuide: {
+        msg_1aca: string;
+      };
+      AssignShiftDialog: {
+        failed_fetch_d7b6: string;
+        msg_d0f6: string;
+        msg_06cd: string;
+      };
+      OrderConfirmationModal: {
+        msg_1966: string;
+        success_send_d5ae: string;
+      };
+      RatingButtons: {
+        error_error_1ca7: string;
+      };
+      StorefrontImagePickerModal: {
+        unable_load_cffc: string;
+        msg_6895: string;
+        msg_6cd9: string;
+      };
+      StorefrontPageSectionsEditor: {
+        msg_b0d6: string;
+        msg_8a5e: string;
+      };
+      TaskDependencies: {
+        failed_add_c36d: string;
+      };
+      BroadcastDialog: {
+        msg_995e: string;
+        msg_7386: string;
+      };
+      BusinessProfileDialog: {
+        success_update_9be1: string;
+        failed_update_5c61: string;
+      };
+      CreateGroupDialog: {
+        please_name_3daa: string;
+        msg_4c38: string;
+        success_create_6766: string;
+      };
+      ProfileDialog: {
+        success_update_7fa9: string;
+        failed_update_293c: string;
+        msg_fc01: string;
+        msg_5720: string;
+      };
+      OrderModalEnhanced: {
+        msg_1ca3: string;
+        msg_2012: string;
+        msg_b619: string;
+        msg_d722: string;
+        msg_09ce: string;
+        error_error_ad3b: string;
+      };
       customerAnalytics: {
         title: string;
         subtitle: string;
@@ -5313,11 +5659,145 @@ declare module 'react-i18next' {
         oneDayAgo: string;
         twoDaysAgo: string;
       };
+      QuickOrderModal: {
+        failed_fetch_fdd8: string;
+        msg_7c93: string;
+        msg_e784: string;
+        success_delete_b9f1: string;
+        msg_337c: string;
+        msg_55c5: string;
+        success_create_5c00: string;
+        msg_4223: string;
+      };
+      textGallery: {
+        msg_b002: string;
+        success_save_13c8: string;
+        failed_save_5d61: string;
+        success_update_8adb: string;
+        failed_update_38bf: string;
+        failed_delete_2cad: string;
+        failed_update_status_7f81: string;
+      };
       globalTimer: {
         taskRunning: string;
         resume: string;
         pause: string;
         stop: string;
+      };
+      useCheckout: {
+        msg_bdcc: string;
+        msg_64d9: string;
+      };
+      useCheckoutFormSettings: {
+        error_load_c04f: string;
+        success_save_db4a: string;
+        error_save_d031: string;
+        msg_7e92: string;
+        msg_6249: string;
+      };
+      useElessiProductDetails: {
+        msg_0924: string;
+        msg_df74: string;
+        unable_add_f585: string;
+      };
+      useTrackOrder: {
+        msg_132a: string;
+        error_error_cd62: string;
+        msg_2905: string;
+      };
+      Advances: {
+        error_error_0c59: string;
+        msg_0709: string;
+        msg_20d9: string;
+        success_delete_c219: string;
+        error_error_7491: string;
+        msg_408c: string;
+      };
+      CompanyPolicy: {
+        msg_e09d: string;
+        success_create_6d9e: string;
+        failed_create_b4c3: string;
+        success_update_c338: string;
+        failed_update_7a20: string;
+        success_delete_e3d8: string;
+        failed_delete_5065: string;
+        failed_load_3491: string;
+      };
+      Deductions: {
+        msg_8727: string;
+        msg_dc9a: string;
+        please_reason_7f8b: string;
+        msg_04f1: string;
+        msg_cec9: string;
+        success_delete_59dc: string;
+      };
+      Documents: {
+        failed_fetch_e440: string;
+        msg_4014: string;
+        msg_4e4b: string;
+        success_delete_8d08: string;
+        failed_delete_f267: string;
+        msg_a4fe: string;
+        msg_e8eb: string;
+      };
+      MyCompaniesDashboard: {
+        failed_load_5e4a: string;
+        msg_e43b: string;
+        msg_0952: string;
+        msg_5853: string;
+        msg_d0f3: string;
+        failed_load_ff88: string;
+      };
+      ShiftDetails: {
+        failed_fetch_7074: string;
+        success_delete_dd40: string;
+        failed_delete_a11e: string;
+        success_update_5ce6: string;
+        msg_8f31: string;
+        msg_1d22: string;
+      };
+      Shifts: {
+        success_create_c830: string;
+        success_update_bb31: string;
+        msg_744f: string;
+        success_delete_06fc: string;
+        failed_delete_901a: string;
+      };
+      applicationForms: {
+        msg_0a56: string;
+        success_create_aa40: string;
+        error_error_81bb: string;
+        success_update_89da: string;
+        error_error_485e: string;
+        success_delete_d329: string;
+        error_error_f86a: string;
+        error_error_6bea: string;
+        error_error_b108: string;
+        error_error_088a: string;
+        success_delete_62be: string;
+        error_error_d252: string;
+        error_error_55c6: string;
+        msg_ab6b: string;
+        please_add_ffef: string;
+        msg_ba5c: string;
+        msg_ed0e: string;
+      };
+      AssetRequests: {
+        msg_d2d3: string;
+        please_reason_7dfe: string;
+        msg_b942: string;
+        msg_f5d7: string;
+        msg_713d: string;
+        msg_eda3: string;
+      };
+      DocumentsSection: {
+        msg_3c68: string;
+        msg_8a25: string;
+        msg_fd1d: string;
+        msg_4ae4: string;
+        msg_a01e: string;
+        please_name_78ee: string;
+        msg_7330: string;
       };
       attendance: {
         pageTitle: string;
@@ -5398,6 +5878,55 @@ declare module 'react-i18next' {
         errorSelectEmployee: string;
         errorCheckOutBeforeCheckIn: string;
         errorExport: string;
+        success_delete_8e6c: string;
+        msg_138c: string;
+        success_save_e260: string;
+        error_error_7db4: string;
+        success_login_9112: string;
+        success_login_2d09: string;
+        msg_98c9: string;
+        success_update_8d09: string;
+        success_create_9ea4: string;
+        msg_83be: string;
+        msg_2a18: string;
+      };
+      benefits: {
+        failed_fetch_81e2: string;
+        failed_fetch_cfae: string;
+        msg_7103: string;
+        success_login_9cb9: string;
+        name_required_6cb0: string;
+        success_update_38b1: string;
+        success_create_3efd: string;
+        success_delete_aded: string;
+        failed_delete_29dd: string;
+      };
+      createGoal: {
+        msg_7016: string;
+        msg_08a6: string;
+        msg_3b44: string;
+        msg_f7b6: string;
+        msg_a533: string;
+        msg_fbbb: string;
+        msg_fe4e: string;
+        msg_9472: string;
+        success_update_d398: string;
+        success_create_c282: string;
+        unable_save_6d4d: string;
+        success_delete_377b: string;
+        unable_delete_f427: string;
+      };
+      departments: {
+        msg_956a: string;
+        success_add_cd5f: string;
+        msg_b6d5: string;
+        success_update_530d: string;
+        msg_6286: string;
+        success_delete_a80e: string;
+        msg_c841: string;
+        msg_bca4: string;
+        msg_7409: string;
+        msg_0e11: string;
       };
       employee: {
         dashboard: {
@@ -6655,6 +7184,58 @@ declare module 'react-i18next' {
           salary: string;
           performance: string;
         };
+      };
+      hrSettings: {
+        msg_9d30: string;
+        unable_load_6108: string;
+        msg_ea7d: string;
+        msg_0101: string;
+        msg_fca0: string;
+        msg_092a: string;
+        msg_ff3c: string;
+        msg_0d63: string;
+        msg_7cfc: string;
+        msg_4dae: string;
+      };
+      manualAttendance: {
+        error_error_e58c: string;
+        error_error_9b3e: string;
+        error_error_6ea7: string;
+        msg_eb5f: string;
+        msg_a1db: string;
+        msg_c4bf: string;
+        msg_95b8: string;
+        msg_8aad: string;
+        msg_dafe: string;
+        msg_4c48: string;
+        success_save_e3c5: string;
+        success_update_d969: string;
+        success_save_5920: string;
+      };
+      payroll: {
+        error_error_79b4: string;
+        msg_52b3: string;
+        msg_4ddf: string;
+        msg_d787: string;
+        success_update_ffdd: string;
+        msg_87c4: string;
+        msg_06d8: string;
+      };
+      ApplicantsSection: {
+        success_delete_026c: string;
+        failed_delete_951f: string;
+        success_update_status_7ae4: string;
+        failed_update_a9eb: string;
+        msg_0d23: string;
+        success_add_3282: string;
+      };
+      JobPostingsSection: {
+        success_create_66f5: string;
+        failed_create_5462: string;
+        success_delete_0815: string;
+        failed_delete_fc8a: string;
+        success_update_status_49df: string;
+        failed_update_22de: string;
       };
       rewards: {
         title: string;
@@ -7972,6 +8553,14 @@ declare module 'react-i18next' {
           add: string;
         };
       };
+      MerchantProfile: {
+        msg_5068: string;
+        success_update_a91e: string;
+        msg_f1ca: string;
+        msg_39bc: string;
+        msg_c969: string;
+        msg_2366: string;
+      };
       bosta: {
         title: string;
         trackingNumber: string;
@@ -8407,6 +8996,16 @@ declare module 'react-i18next' {
         deleteNoteConfirmMessage: string;
         deleting: string;
         yesDelete: string;
+        failed_load_1612: string;
+        msg_2c62: string;
+        msg_ce95: string;
+        success_update_status_4792: string;
+        success_add_477c: string;
+        msg_a504: string;
+        success_delete_42f8: string;
+        success_save_a5c2: string;
+        msg_911a: string;
+        success_update_status_5c48: string;
       };
       orderInvoiceSettings: {
         k_1: string;
@@ -10291,6 +10890,894 @@ declare module 'react-i18next' {
         k_43: string;
         k_44: string;
       };
+      OwnerReports: {
+        msg_9431: string;
+        msg_d5a6: string;
+        failed_load_2917: string;
+        failed_load_7c13: string;
+        msg_f9f4: string;
+        msg_1d9e: string;
+      };
+      CancellationAnalytics: {
+        success_save_84b0: string;
+        failed_save_3bab: string;
+      };
+      FacebookStatusPage: {
+        failed_load_c05f: string;
+        msg_a055: string;
+        success_send_7129: string;
+        error_send_1df1: string;
+      };
+      PublicCompanyLinks: {
+        msg_c9d0: string;
+      };
+      ServiceRequestForm: {
+        msg_a413: string;
+        success_send_7517: string;
+        error_error_7eca: string;
+      };
+      useCompanies: {
+        msg_43e0: string;
+        success_create_30c4: string;
+        success_update_1110: string;
+        success_update_78ed: string;
+        msg_f60e: string;
+        msg_143a: string;
+      };
+      index: {
+        msg_f7bf: string;
+      };
+      EducationTeacherPaymentsPage: {
+        msg_7d6d: string;
+        failed_create_3a00: string;
+        msg_88aa: string;
+        success_create_4d53: string;
+        msg_71a6: string;
+      };
+      ServiceManagementPage: {
+        name_required_6f37: string;
+        error_error_0d92: string;
+        msg_9174: string;
+      };
+      ServiceOrdersPage: {
+        msg_1aba: string;
+        error_error_1393: string;
+      };
+      BranchModal: {
+        msg_d137: string;
+        msg_b798: string;
+        msg_6f5e: string;
+      };
+      ABTestDetails: {
+        msg_86d5: string;
+        msg_8980: string;
+        msg_bb33: string;
+        msg_5e37: string;
+      };
+      ABTestsManagement: {
+        msg_cba6: string;
+        msg_e722: string;
+        success_delete_414c: string;
+      };
+      AdDetails: {
+        success_update_b872: string;
+        msg_39be: string;
+        msg_d051: string;
+      };
+      AdPreview: {
+        msg_068f: string;
+        success_load_bb63: string;
+      };
+      AdvantagePlusShopping: {
+        please_name_2fae: string;
+        msg_d0eb: string;
+        msg_fa84: string;
+        msg_9ca6: string;
+        success_create_aae3: string;
+      };
+      AttributionSettings: {
+        msg_c7b7: string;
+        success_save_97ba: string;
+      };
+      AudiencesManagement: {
+        success_update_1209: string;
+        success_delete_e963: string;
+      };
+      AutomationRules: {
+        failed_load_3df3: string;
+        name_required_4c30: string;
+        success_create_b833: string;
+        success_delete_5fdc: string;
+        failed_delete_4c17: string;
+      };
+      CampaignDetails: {
+        success_update_c9e9: string;
+        msg_c0fb: string;
+        msg_00e5: string;
+        success_delete_b4c9: string;
+      };
+      CatalogDetails: {
+        failed_load_53c9: string;
+        success_delete_6559: string;
+        msg_fa82: string;
+      };
+      CatalogsManagement: {
+        success_update_522e: string;
+        success_delete_47bf: string;
+        msg_eddf: string;
+      };
+      ConversionApiDashboard: {
+        msg_c0d9: string;
+        failed_send_a09d: string;
+      };
+      CreateAdSet: {
+        failed_load_3afc: string;
+        please_name_c33c: string;
+        msg_bdb9: string;
+        msg_a209: string;
+        success_create_52e7: string;
+      };
+      CreateAdWizard: {
+        success_activate_0a35: string;
+        msg_93bd: string;
+      };
+      CreateCatalog: {
+        success_create_8f33: string;
+      };
+      CreateLookalikeAudience: {
+        failed_load_9cfe: string;
+        msg_30e5: string;
+        success_create_ddc4: string;
+      };
+      CustomAudienceDetails: {
+        success_delete_12fd: string;
+      };
+      DynamicCreativeOptimization: {
+        msg_ccda: string;
+        please_add_c24d: string;
+        please_add_ddc3: string;
+        please_add_00c2: string;
+        success_create_6a5d: string;
+      };
+      FacebookAdsConnection: {
+        msg_261d: string;
+        msg_375c: string;
+        msg_19f6: string;
+        msg_e833: string;
+        msg_990c: string;
+      };
+      FacebookAdsDashboard: {
+        success_update_4f77: string;
+        msg_2888: string;
+        success_update_f698: string;
+      };
+      FacebookAdsDiagnosis: {
+        success_update_aa38: string;
+      };
+      FacebookPixelSettings: {
+        msg_15c2: string;
+      };
+      LeadFormsManagement: {
+        failed_load_5cf0: string;
+        failed_load_4459: string;
+        msg_b2ef: string;
+        success_create_b5a7: string;
+        msg_afda: string;
+      };
+      MediaBuyingReports: {
+        msg_dd34: string;
+        msg_c2d1: string;
+        msg_17dc: string;
+        msg_d8c5: string;
+      };
+      OverlayCampaignDetails: {
+        failed_load_5709: string;
+        msg_2e2c: string;
+        msg_7a62: string;
+      };
+      OverlayCampaigns: {
+        msg_47da: string;
+        success_create_85f3: string;
+        msg_1d0b: string;
+        msg_02a0: string;
+      };
+      SavedAudiences: {
+        failed_load_70fc: string;
+        please_name_1f06: string;
+        success_create_a80c: string;
+        success_delete_e94c: string;
+      };
+      AffiliateCommission: {
+        msg_af1c: string;
+        msg_208d: string;
+        success_send_448b: string;
+      };
+      AffiliateDashboard: {
+        msg_8552: string;
+        msg_6c14: string;
+        msg_ea5b: string;
+        msg_e5e2: string;
+      };
+      AffiliateOrderDetails: {
+        msg_7afd: string;
+        msg_1b99: string;
+      };
+      AffiliateOrders: {
+        error_error_9817: string;
+      };
+      AffiliateProductsVisibility: {
+        failed_load_20b1: string;
+        failed_load_e3ee: string;
+        msg_d8af: string;
+        msg_eddc: string;
+      };
+      AffiliateRegister: {
+        msg_564e: string;
+      };
+      AffiliateSystemSettings: {
+        msg_66a5: string;
+      };
+      CompanyAffiliateDashboard: {
+        error_error_3711: string;
+      };
+      ResetPassword: {
+        msg_db5c: string;
+        msg_75cd: string;
+      };
+      CampaignPredictionCalculator: {
+        msg_1512: string;
+        success_save_3135: string;
+      };
+      Conversations: {
+        error_error_e429: string;
+      };
+      TelegramConversationsPro: {
+        failed_update_status_ffd1: string;
+      };
+      CashbackSettings: {
+        error_error_6d32: string;
+        msg_faa7: string;
+        msg_3170: string;
+        msg_2ddf: string;
+        success_save_fe44: string;
+      };
+      LoyaltyPrograms: {
+        error_error_b7ee: string;
+        error_error_a7e1: string;
+      };
+      AssignShift: {
+        failed_fetch_3c57: string;
+        msg_59ee: string;
+      };
+      ClearanceChecklist: {
+        failed_load_eca3: string;
+        failed_update_a0ad: string;
+      };
+      CreateAdvance: {
+        error_error_3c32: string;
+        success_create_6559: string;
+      };
+      CreateFeedback: {
+        msg_ad77: string;
+        failed_load_cfaf: string;
+        msg_79e3: string;
+        success_update_293e: string;
+        msg_1de5: string;
+      };
+      CreatePerformanceReview: {
+        failed_fetch_8148: string;
+        msg_aee9: string;
+        success_update_80c1: string;
+        success_create_a683: string;
+      };
+      CreatePromotion: {
+        failed_load_a9d9: string;
+        msg_c6e2: string;
+        msg_754a: string;
+        msg_1de3: string;
+        success_create_e6da: string;
+      };
+      CreateResignation: {
+        failed_load_4801: string;
+        msg_640c: string;
+        success_login_7609: string;
+      };
+      CreateTraining: {
+        failed_load_7dfb: string;
+        msg_e5a0: string;
+        success_update_d670: string;
+        success_add_818b: string;
+        success_delete_b773: string;
+      };
+      CreateWarning: {
+        failed_load_dbdf: string;
+        msg_a319: string;
+        msg_c304: string;
+      };
+      DecisionResignation: {
+        failed_load_753d: string;
+      };
+      EditPromotion: {
+        msg_0242: string;
+        msg_d62b: string;
+        success_update_a27f: string;
+      };
+      EditWarning: {
+        msg_1d83: string;
+        success_update_3427: string;
+      };
+      EmployeeDetails: {
+        error_error_e639: string;
+      };
+      EmployeeEdit: {
+        failed_load_e53e: string;
+        success_update_9e9c: string;
+      };
+      EmployeesPromotion: {
+        success_delete_044f: string;
+        failed_update_d7a0: string;
+        failed_delete_c80d: string;
+      };
+      Feedback: {
+        failed_fetch_9062: string;
+        success_delete_0947: string;
+        failed_delete_e7e4: string;
+        success_send_a8d1: string;
+      };
+      Goals: {
+        unable_load_2181: string;
+      };
+      HRReports: {
+        msg_80be: string;
+        msg_ed25: string;
+        msg_4045: string;
+      };
+      MyAdvances: {
+        failed_fetch_10f6: string;
+        msg_aa97: string;
+        success_send_a21b: string;
+      };
+      PayrollTesting: {
+        failed_account_1ffd: string;
+        failed_fetch_8a11: string;
+        msg_98c4: string;
+        msg_f478: string;
+      };
+      PerformanceReviews: {
+        failed_fetch_f64e: string;
+        success_delete_9529: string;
+        failed_delete_4e3b: string;
+      };
+      PositionsManagement: {
+        msg_1afe: string;
+        success_update_7e3b: string;
+        success_create_8e61: string;
+        success_delete_f7bf: string;
+      };
+      Resignations: {
+        failed_fetch_eabb: string;
+      };
+      SalaryHistory: {
+        failed_fetch_2afd: string;
+      };
+      SalaryUpdates: {
+        failed_fetch_4bd4: string;
+        msg_f4a3: string;
+        msg_bdbc: string;
+      };
+      SettlementDetailsModal: {
+        failed_fetch_bd95: string;
+        msg_6598: string;
+        error_error_cfd1: string;
+      };
+      Training: {
+        failed_fetch_8c5b: string;
+      };
+      WarningDetails: {
+        success_delete_d2a6: string;
+      };
+      Warnings: {
+        failed_fetch_a188: string;
+        success_delete_8ccd: string;
+        failed_delete_e465: string;
+        success_login_0831: string;
+        failed_login_4439: string;
+      };
+      AssetCategories: {
+        failed_add_92d0: string;
+        failed_delete_6b1d: string;
+      };
+      AssetList: {
+        msg_b785: string;
+        loading_update_4408: string;
+        msg_c0e9: string;
+        msg_20bb: string;
+      };
+      AssetSuppliers: {
+        failed_add_606a: string;
+        failed_delete_4959: string;
+      };
+      AssetsOverviewDashboard: {
+        error_error_3ff5: string;
+      };
+      MyAssetRequests: {
+        msg_bf3c: string;
+        success_send_7573: string;
+        failed_send_d330: string;
+      };
+      AssetMaintenanceSection: {
+        error_error_85aa: string;
+        msg_b270: string;
+        success_login_record_39c0: string;
+        failed_save_efc0: string;
+      };
+      AssetRequestsSection: {
+        please_reason_9729: string;
+        success_send_b0f3: string;
+        failed_send_3330: string;
+        failed_update_e7e1: string;
+      };
+      ReceiptFormSection: {
+        msg_ad05: string;
+        msg_c899: string;
+        msg_0eef: string;
+        msg_3fad: string;
+      };
+      PayrollSimulator: {
+        failed_fetch_36f4: string;
+        msg_2d8c: string;
+        msg_4b00: string;
+        success_save_47f4: string;
+      };
+      HiringPipelineSection: {
+        msg_875d: string;
+        msg_a559: string;
+        success_delete_28f8: string;
+        failed_delete_15ad: string;
+      };
+      InterviewsSection: {
+        failed_fetch_cbf5: string;
+        msg_faf7: string;
+        msg_d55d: string;
+        success_update_a5d2: string;
+        failed_update_fa1c: string;
+      };
+      AttendanceReport: {
+        failed_fetch_2d8e: string;
+        msg_74cd: string;
+      };
+      EmployeeReport: {
+        failed_fetch_50e6: string;
+        msg_57a7: string;
+        msg_5832: string;
+        msg_8609: string;
+        msg_9b34: string;
+      };
+      LateAbsenceReport: {
+        failed_fetch_c08d: string;
+        msg_fffa: string;
+      };
+      LeaveReport: {
+        failed_fetch_8d4c: string;
+        msg_f68b: string;
+      };
+      OvertimeReport: {
+        failed_fetch_b96c: string;
+        msg_9613: string;
+      };
+      PayrollReport: {
+        failed_fetch_f53f: string;
+        msg_6788: string;
+      };
+      PerformanceReport: {
+        failed_fetch_78fc: string;
+        msg_bbfd: string;
+      };
+      TurnoverReport: {
+        failed_fetch_6374: string;
+        msg_d2ae: string;
+      };
+      CreateEditReward: {
+        success_update_6490: string;
+        success_add_ab3d: string;
+      };
+      RewardApplication: {
+        failed_load_f3f5: string;
+        msg_d0bb: string;
+        msg_1402: string;
+        msg_c569: string;
+      };
+      RewardDetails: {
+        msg_7955: string;
+        msg_1c5d: string;
+        success_delete_48dd: string;
+      };
+      RewardsList: {
+        success_delete_7170: string;
+      };
+      WorkReportFormBuilder: {
+        unable_load_c717: string;
+        msg_92ff: string;
+        msg_b98e: string;
+        success_update_f51f: string;
+        success_create_3fbf: string;
+      };
+      WorkReportFormPreview: {
+        unable_load_1744: string;
+      };
+      WorkReportFormsDashboard: {
+        unable_load_2c82: string;
+        success_delete_06ce: string;
+        unable_delete_2762: string;
+      };
+      WorkReportRecordsPage: {
+        unable_load_ea41: string;
+      };
+      WorkReportSubmissionPage: {
+        success_save_2d7a: string;
+      };
+      Inventory: {
+        success_update_9a49: string;
+        failed_update_ff8a: string;
+        msg_68e2: string;
+        msg_aec8: string;
+        msg_7ffe: string;
+      };
+      InventoryAudits: {
+        msg_b003: string;
+      };
+      AiInboxLanding: {
+        msg_8228: string;
+        failed_create_0a24: string;
+        msg_cfb7: string;
+        msg_b100: string;
+      };
+      MedicalLanding: {
+        msg_da67: string;
+        failed_create_2bac: string;
+        msg_9147: string;
+        msg_94ce: string;
+      };
+      MessagingLanding: {
+        msg_9dca: string;
+        failed_create_931a: string;
+        msg_ccb3: string;
+        msg_c26f: string;
+      };
+      TermsAndConditions: {
+        failed_load_0ab1: string;
+        success_save_3b44: string;
+        failed_save_90be: string;
+      };
+      AppDetails: {
+        error_fetch_5849: string;
+        msg_2949: string;
+        please_login_login_ac18: string;
+      };
+      AppSettings: {
+        unable_load_9624: string;
+        msg_565c: string;
+        success_save_0151: string;
+        error_error_8032: string;
+      };
+      BundleDetails: {
+        msg_3844: string;
+        error_error_02ae: string;
+      };
+      UpsellManualManager: {
+        unable_load_6178: string;
+        msg_11d8: string;
+        success_save_00ab: string;
+        unable_save_5607: string;
+      };
+      MerchantPortalDashboard: {
+        msg_ea8b: string;
+        success_send_8bfa: string;
+      };
+      MerchantRegister: {
+        success_login_a40a: string;
+      };
+      MerchantsList: {
+        error_error_2f2d: string;
+        success_login_3fe0: string;
+        msg_8395: string;
+      };
+      Opportunities: {
+        success_update_e8ba: string;
+        failed_update_25e9: string;
+      };
+      SimplifiedProductSelectionModal: {
+        failed_fetch_c827: string;
+        msg_0e6c: string;
+      };
+      useTurboShipping: {
+        msg_d8b2: string;
+        msg_2fbc: string;
+      };
+      CompanyOrdersDetails: {
+        failed_load_e304: string;
+        failed_load_e2ac: string;
+        msg_075a: string;
+        msg_9ac6: string;
+      };
+      OwnerAttendanceReport: {
+        failed_load_cef6: string;
+        success_create_27b7: string;
+        failed_create_878d: string;
+        msg_6004: string;
+        msg_6657: string;
+      };
+      OwnerUsersManagement: {
+        msg_60da: string;
+        success_delete_9115: string;
+        msg_295b: string;
+        failed_load_47f1: string;
+      };
+      WooCommerceImport: {
+        msg_9c80: string;
+        msg_d18b: string;
+        msg_7f37: string;
+        msg_c438: string;
+        failed_fetch_579a: string;
+        msg_b68b: string;
+      };
+      PublicAffiliateRegister: {
+        msg_95a1: string;
+        msg_1eeb: string;
+      };
+      PublicMerchantRegister: {
+        msg_79bb: string;
+        success_create_account_4e42: string;
+      };
+      AdvancedReports: {
+        success_create_fc99: string;
+        failed_create_649d: string;
+      };
+      Reports: {
+        error_error_3799: string;
+      };
+      ShippingReport: {
+        success_update_531b: string;
+        failed_load_dc84: string;
+        success_save_9691: string;
+        msg_c494: string;
+      };
+      BostaSettings: {
+        failed_load_f24b: string;
+        msg_d142: string;
+        success_save_6d9e: string;
+      };
+      DuplicateOrderSettings: {
+        success_save_eed8: string;
+      };
+      IncompleteOrdersSettings: {
+        error_fetch_53e5: string;
+        success_save_8fed: string;
+        error_save_bccf: string;
+      };
+      LateCancellationSettings: {
+        success_save_767c: string;
+      };
+      MinimumOrderSettings: {
+        failed_fetch_084b: string;
+        msg_6377: string;
+        success_save_d446: string;
+        failed_save_d041: string;
+      };
+      OrderColumnsSettings: {
+        success_update_f41e: string;
+        failed_update_d0d4: string;
+        error_error_f49e: string;
+        success_save_ba84: string;
+        failed_save_ed22: string;
+      };
+      OrderConfirmationSettings: {
+        success_save_8804: string;
+      };
+      OrderPreparationSettings: {
+        unable_load_d994: string;
+        msg_775a: string;
+        success_save_1e4d: string;
+        failed_save_8951: string;
+        msg_a1d9: string;
+      };
+      RatingSettingsManager: {
+        success_save_3111: string;
+        failed_save_dfaf: string;
+      };
+      StoreSettings: {
+        msg_126b: string;
+        success_save_ccce: string;
+      };
+      StorefrontVisualEditorPage: {
+        success_save_ddb7: string;
+        msg_b399: string;
+        msg_7f54: string;
+        unable_load_eddf: string;
+        failed_save_8619: string;
+        msg_e1b9: string;
+      };
+      TurboStatusMapping: {
+        failed_load_4efb: string;
+        success_save_7f59: string;
+      };
+      TurboTickets: {
+        failed_load_c772: string;
+        msg_1e25: string;
+        msg_4493: string;
+        success_send_9cde: string;
+        failed_send_e199: string;
+      };
+      ListItemsEditor: {
+        error_error_0ba3: string;
+      };
+      BillingOverview: {
+        error_fetch_fec6: string;
+        msg_23a3: string;
+      };
+      DevGoalDetails: {
+        failed_save_181b: string;
+        msg_892b: string;
+        failed_add_9743: string;
+        failed_update_f56b: string;
+      };
+      DevGoalForm: {
+        failed_save_7680: string;
+        msg_2fbd: string;
+        msg_58e7: string;
+      };
+      DevGoalsList: {
+        failed_delete_5bfb: string;
+        msg_6e3a: string;
+      };
+      DevProjects: {
+        failed_create_b90e: string;
+        msg_f4a8: string;
+        msg_58f7: string;
+      };
+      DevReleases: {
+        failed_create_38bf: string;
+        msg_43a1: string;
+        msg_f389: string;
+      };
+      DevTaskIntegrations: {
+        msg_3354: string;
+        name_required_1041: string;
+        msg_9272: string;
+        msg_dbef: string;
+        msg_53d1: string;
+        failed_load_0534: string;
+        failed_save_96d4: string;
+        msg_71f8: string;
+        msg_7de3: string;
+      };
+      DevTaskSettings: {
+        msg_74b2: string;
+        success_save_eb53: string;
+        error_error_3bd3: string;
+        msg_fdf4: string;
+      };
+      DevTeam: {
+        failed_delete_b4ec: string;
+        msg_e835: string;
+        msg_9a18: string;
+      };
+      PlatformPartnerManagement: {
+        error_load_1fe0: string;
+        success_save_3c98: string;
+      };
+      PlatformSignupCoupons: {
+        failed_load_ccaf: string;
+        success_delete_6248: string;
+        msg_42c7: string;
+      };
+      PlatformSiteHomepageTemplates: {
+        failed_load_a341: string;
+        success_update_b605: string;
+      };
+      PlatformSiteMetaPixel: {
+        failed_load_41c7: string;
+        msg_3ee4: string;
+        success_save_9b3e: string;
+      };
+      SubscriptionCenter: {
+        unable_fetch_f426: string;
+      };
+      SuperAdminAIImageGeneratorSettings: {
+        success_save_d643: string;
+        error_save_f591: string;
+        success_save_c57f: string;
+      };
+      SuperAdminAppExplanations: {
+        error_error_62e5: string;
+      };
+      SuperAdminLandingPages: {
+        failed_load_65d1: string;
+        failed_update_status_4f34: string;
+        msg_bae8: string;
+        failed_update_dddb: string;
+        success_update_e302: string;
+        failed_update_58c9: string;
+      };
+      SuperAdminPaymentSettings: {
+        error_fetch_922f: string;
+        msg_d1a0: string;
+        success_save_a705: string;
+        msg_7700: string;
+        msg_25c4: string;
+      };
+      SuperAdminSupportSettings: {
+        error_fetch_386a: string;
+        success_save_bcfb: string;
+        failed_save_f02c: string;
+      };
+      TelegramAutoReply: {
+        success_delete_b17d: string;
+      };
+      TelegramBulkMessages: {
+        success_send_242e: string;
+      };
+      TelegramCampaigns: {
+        success_create_6e83: string;
+        msg_2651: string;
+        success_delete_09d0: string;
+      };
+      TelegramScheduler: {
+        msg_5a62: string;
+      };
+      WhatsAppConversationAnalytics: {
+        msg_6297: string;
+        failed_load_eab0: string;
+      };
+      WhatsAppEmployeeAnalytics: {
+        msg_2f97: string;
+        failed_load_61c5: string;
+      };
+      ChatRightPanel: {
+        success_update_506f: string;
+        failed_update_1f8e: string;
+      };
+      MessageBubble: {
+        msg_fbfd: string;
+      };
+      WooCommerceSync: {
+        please_activate_dc67: string;
+        msg_3a63: string;
+        msg_56af: string;
+      };
+      SettingsTab: {
+        msg_b231: string;
+        msg_65a3: string;
+      };
+      StatusMappingTab: {
+        msg_d2df: string;
+      };
+      useWooCommerceExport: {
+        error_fetch_dd37: string;
+        msg_f0f7: string;
+        msg_d65f: string;
+      };
+      useWooCommerceProducts: {
+        msg_0311: string;
+        error_fetch_1808: string;
+        msg_244d: string;
+      };
+      useWooCommerceStatus: {
+        msg_8a1a: string;
+        failed_fetch_eccf: string;
+        msg_33d0: string;
+        msg_0288: string;
+      };
+      CommissionsManagement: {
+        error_error_d02d: string;
+        success_update_a539: string;
+        error_error_dffd: string;
+        msg_eebb: string;
+        msg_6a52: string;
+        reason_required_09eb: string;
+        msg_9672: string;
+        msg_b64d: string;
+      };
       posPage: {
         pageTitle: string;
         searchPlaceholder: string;
@@ -10862,6 +12349,13 @@ declare module 'react-i18next' {
         k_31: string;
         k_32: string;
         k_33: string;
+        error_error_0e19: string;
+        msg_58e7: string;
+        error_error_17aa: string;
+        msg_b0b0: string;
+        error_error_b208: string;
+        success_delete_9520: string;
+        error_error_e0c6: string;
       };
       products: {
         title: string;
@@ -11079,6 +12573,26 @@ declare module 'react-i18next' {
           selectStyle: string;
           selectOther: string;
         };
+        error_error_1879: string;
+        success_update_fdb7: string;
+        failed_update_9e0f: string;
+        error_error_ea72: string;
+        msg_70a7: string;
+        msg_bd2e: string;
+        msg_0437: string;
+        error_error_7d31: string;
+        error_error_e01c: string;
+      };
+      productsTrash: {
+        failed_fetch_bddf: string;
+        msg_b52a: string;
+        msg_9da5: string;
+        success_delete_4f2e: string;
+        failed_delete_ec26: string;
+        msg_8a1a: string;
+        msg_2483: string;
+        msg_1884: string;
+        failed_delete_c5b3: string;
       };
       stockAnalytics: {
         title: string;
@@ -11117,6 +12631,15 @@ declare module 'react-i18next' {
         errorPause: string;
         errorResume: string;
         errorCancel: string;
+      };
+      publicApp: {
+        msg_bffe: string;
+        msg_45d5: string;
+        msg_1dfc: string;
+        msg_530b: string;
+        msg_28dd: string;
+        msg_5424: string;
+        success_send_7721: string;
       };
       reports: {
         title: string;
@@ -11214,6 +12737,68 @@ declare module 'react-i18next' {
         k_54: string;
         k_55: string;
       };
+      TicketDetails: {
+        failed_load_cd6e: string;
+        msg_0d3f: string;
+        msg_8919: string;
+        success_send_02a0: string;
+        msg_47f7: string;
+        msg_ff96: string;
+        failed_send_234e: string;
+      };
+      affiliates: {
+        loadFailed: string;
+        updateFailed: string;
+        deleteFailed: string;
+        rateUpdateSuccess: string;
+        statusUpdated: string;
+        deleteSuccess: string;
+        statusUpdateFailed: string;
+        updateSuccess: string;
+        verificationFailed: string;
+        rateUpdateFailed: string;
+        commissionRate: string;
+        msg_630e: string;
+        msg_8021: string;
+        msg_02f6: string;
+        msg_c30a: string;
+        msg_2d5e: string;
+        msg_b841: string;
+        msg_0a5c: string;
+        suspendReasonRequired: string;
+        invalidCommissionValue: string;
+        commissionRateMax: string;
+        commissionUpdated: string;
+        commissionUpdateFailed: string;
+        controlsUpdated: string;
+        rejectionReasonRequired: string;
+      };
+      companySettings: {
+        error_error_8fc3: string;
+        name_company_0ea7: string;
+        success_update_name_f3af: string;
+        error_error_83b4: string;
+        success_update_description_5c21: string;
+        error_error_9650: string;
+        msg_fd5b: string;
+        msg_6c7a: string;
+        success_update_link_a69d: string;
+        error_error_932c: string;
+        success_update_3e76: string;
+        error_error_a004: string;
+        error_error_d9e4: string;
+        msg_3708: string;
+        success_update_9101: string;
+        error_error_83ad: string;
+        success_update_ad9b: string;
+        error_error_0376: string;
+        msg_ce27: string;
+        msg_9311: string;
+        msg_d9fc: string;
+        error_error_bf55: string;
+        msg_005a: string;
+        msg_bcf1: string;
+      };
       customDomain: {
         pageTitle: string;
         pageDescription: string;
@@ -11279,6 +12864,98 @@ declare module 'react-i18next' {
         deliveryRatePercentage: string;
         performanceByRegion: string;
         shippingCompanyPerformance: string;
+      };
+      facebookPixel: {
+        _success__2b52: string;
+        failed_load__11f2: string;
+        please_enter_pixel_9b40: string;
+        pixel_id__1bac: string;
+        please_enter_access_3a76: string;
+        _success_save_09ef: string;
+        _failed_save_0771: string;
+        _pixel_id_fc88: string;
+        ___ad5a: string;
+        failed___0877: string;
+        ___3507: string;
+        _success__24a1: string;
+        failed__pixel_4859: string;
+        failed_load__ed28: string;
+        _token__75da: string;
+        _token__49a8: string;
+        please_enter_pixel_5012: string;
+        _success__293c: string;
+        _success_delete_df0b: string;
+        __pixel_59dc: string;
+        _failed__e3c7: string;
+        _success__65dc: string;
+        ___7723: string;
+        failed_fetch_business_e086: string;
+        please_enter__c004: string;
+        please__business_6f4d: string;
+        ___ff6a: string;
+        ___8df4: string;
+        failed__134e: string;
+        failed__dbf2: string;
+        failed__token_1804: string;
+        failed__pixel_395b: string;
+        failed_delete_pixel_f091: string;
+        failed__pixel_1971: string;
+        failed__pixel_d2eb: string;
+        failed_create_pixel_23a9: string;
+        success_connect_account_7c2d: string;
+        failed_load_settings_11f2: string;
+        required_enter_9b40: string;
+        msg_1bac: string;
+        required_enter_3a76: string;
+        success_save_settings_09ef: string;
+        failed_save_settings_0771: string;
+        msg_d7b6: string;
+        msg_931c: string;
+        msg_0877: string;
+        loading_connect_d006: string;
+        success_connect_3ac1: string;
+        failed_connect_4859: string;
+        failed_load_ed28: string;
+        msg_75da: string;
+        msg_49a8: string;
+        required_enter_5012: string;
+        msg_1bac_1: string;
+        msg_293c: string;
+        success_delete_df0b: string;
+        test_success_59dc: string;
+        failed_test_e3c7: string;
+        success_assign_65dc: string;
+        connect_account_7723: string;
+        failed_fetch_e086: string;
+        required_enter_name_c004: string;
+        required_select_6f4d: string;
+        connect_account_7723_1: string;
+        msg_134e: string;
+        msg_dbf2: string;
+        failed_check_1804: string;
+        msg_395b: string;
+        failed_delete_f091: string;
+        failed_test_1971: string;
+        failed_assign_d2eb: string;
+        failed_create_23a9: string;
+        msg_vcygkc: string;
+        msg_s5gii5: string;
+        msg_1l2s94: string;
+      };
+      orderStatusManager: {
+        error_fetch_fe2a: string;
+        msg_d864: string;
+        msg_e1a9: string;
+        success_create_67d7: string;
+        error_create_9567: string;
+        success_update_dfad: string;
+        error_update_f3e8: string;
+        success_delete_f86e: string;
+        error_delete_e809: string;
+        error_save_9d9b: string;
+        msg_8149: string;
+        msg_e0af: string;
+        msg_8f8d: string;
       };
       promotionSettings: {
         pageTitle: string;
@@ -12529,6 +14206,45 @@ declare module 'react-i18next' {
         previewBlocked: string;
         previewNoCompany: string;
       };
+      ProductImageLandingPage: {
+        success_send_29d8: string;
+        msg_648c: string;
+      };
+      OrderSummary: {
+        msg_c088: string;
+      };
+      StaffCompanyAccess: {
+        msg_7dc0: string;
+        msg_968c: string;
+        msg_abf3: string;
+        msg_bd23: string;
+      };
+      SuperAdminAIKeyManager: {
+        msg_d605: string;
+        msg_6d70: string;
+        msg_332e: string;
+        success_update_1f20: string;
+        msg_a104: string;
+        msg_b4d5: string;
+      };
+      companyDetails: {
+        unable_load_1117: string;
+        unable_load_156e: string;
+        success_update_a26a: string;
+        msg_ba2c: string;
+        success_update_813a: string;
+        success_status_c11c: string;
+        success_delete_c4fc: string;
+        msg_8a85: string;
+        msg_624b: string;
+        msg_2bcf: string;
+        msg_06f8: string;
+        msg_c925: string;
+        msg_0fdd: string;
+        msg_1f2a: string;
+        loading_activate_8824: string;
+        msg_378c: string;
+      };
       platform: {
         title: string;
         description: string;
@@ -12886,6 +14602,31 @@ declare module 'react-i18next' {
           STOREFRONT: string;
           THEME: string;
         };
+      };
+      subscriptionCenter: {
+        success_update_4fdf: string;
+        failed_fetch_d415: string;
+        msg_b558: string;
+        msg_26af: string;
+        msg_2c0e: string;
+        msg_6f39: string;
+        msg_eb61: string;
+        msg_9d6d: string;
+        msg_1144: string;
+        msg_c6b7: string;
+        msg_cc19: string;
+        msg_6f63: string;
+        failed_update_a0da: string;
+        msg_6d79: string;
+        msg_94b7: string;
+        msg_4f19: string;
+        msg_6b19: string;
+        success_update_78cf: string;
+        failed_update_3eb1: string;
+        msg_cae9: string;
+        msg_264a: string;
+        saveError: string;
+        templateUpdateFailed: string;
       };
       superAdmin: {
         title: string;
@@ -13388,11 +15129,79 @@ declare module 'react-i18next' {
           correctedReply: string;
         };
       };
+      TaskTemplates: {
+        failed_create_7f8d: string;
+        failed_update_bf44: string;
+        failed_delete_3434: string;
+        msg_e4d8: string;
+        success_create_c37f: string;
+        success_update_85c7: string;
+        success_delete_746e: string;
+      };
+      taskIntegrations: {
+        msg_a3c9: string;
+        msg_9d3f: string;
+        msg_43bd: string;
+        msg_a6c0: string;
+        msg_e3f1: string;
+        msg_218b: string;
+        name_required_d4fe: string;
+        msg_770f: string;
+        msg_7395: string;
+        msg_6566: string;
+        msg_b920: string;
+        msg_2cdf: string;
+        msg_9461: string;
+        msg_e7d5: string;
+        msg_22fd: string;
+      };
       tasks: {
         title: string;
         newTask: string;
         taskList: string;
         completedTasks: string;
+        name_required_9466: string;
+        success_create_d422: string;
+        failed_create_1d0b: string;
+        success_update_6b8e: string;
+        failed_update_ef21: string;
+        success_delete_904a: string;
+        failed_delete_93ed: string;
+        expired_session_please_5957: string;
+        unable_load_tasks_f3df: string;
+        unable_connect_check_ccf9: string;
+        unable_load_436e: string;
+        login_login_2098: string;
+        success_create_7c46: string;
+        failed_create_608b: string;
+        success_update_ea66: string;
+        failed_update_0068: string;
+        success_create_2cab: string;
+        failed_create_19dc: string;
+        success_update_b5ad: string;
+        failed_update_c51e: string;
+        msg_178a: string;
+        msg_56ed: string;
+        success_delete_04cd: string;
+        failed_delete_6cbf: string;
+        success_update_2a08: string;
+        failed_update_f0bf: string;
+        success_delete_7093: string;
+        failed_delete_09e9: string;
+        success_save_36c3: string;
+        msg_c991: string;
+        success_update_selectedTaskslength_task_4e85: string;
+        success_delete_selectedTaskslength_task_9484: string;
+        msg_cae9: string;
+        msg_8581: string;
+        msg_c6d3: string;
+        msg_6bd6: string;
+        msg_8d05: string;
+        msg_3840: string;
+        msg_bbd2: string;
+        msg_f06f: string;
+        msg_199a: string;
+        msg_34d5: string;
       };
       faqManagement: {
         title: string;
@@ -13706,6 +15515,108 @@ declare module 'react-i18next' {
         currentPassword: string;
         newPassword: string;
         confirmNewPassword: string;
+      };
+      useKeyMutations: {
+        success_create_a7bf: string;
+        failed_update_status_4d28: string;
+        success_delete_fd98: string;
+        failed_delete_782c: string;
+        success_update_b9b2: string;
+        success_update_428b: string;
+        success_update_76a9: string;
+      };
+      useWishlistPage: {
+        error_error_d13d: string;
+        success_delete_3958: string;
+        error_error_10f3: string;
+        msg_27db: string;
+        error_error_2ec3: string;
+        msg_a442: string;
+        error_error_d538: string;
+      };
+      errorHandler: {
+        network: string;
+        authentication: string;
+        rate_limit: string;
+        timeout: string;
+        validation: string;
+        fetch_failed: string;
+        timeout_error: string;
+        generic: string;
+      };
+      LabelsDialog: {
+        failed_load_d47f: string;
+        success_create_d4d4: string;
+        failed_create_739e: string;
+        success_delete_eff8: string;
+        failed_delete_2c9b: string;
+        failed_update_2bc4: string;
+      };
+      PrivacySettingsDialog: {
+        failed_fetch_6cd1: string;
+        msg_0f47: string;
+        msg_4588: string;
+        msg_7f33: string;
+        msg_b631: string;
+        success_update_8d4d: string;
+        failed_update_bf9a: string;
+      };
+      WhatsAppMetaTemplates: {
+        msg_5d29: string;
+        msg_7367: string;
+        success_create_b7fe: string;
+        msg_bfc1: string;
+        msg_e04d: string;
+        success_update_ee74: string;
+        success_delete_3acd: string;
+        failed_create_1d9d: string;
+      };
+      WhatsAppTemplateBroadcast: {
+        failed_load_914a: string;
+        msg_e35f: string;
+        msg_03ea: string;
+        msg_be37: string;
+      };
+      wooImport: {
+        msg_1451: string;
+        msg_48e6: string;
+        failed_fetch_454e: string;
+        error_fetch_5a91: string;
+        msg_f1d1: string;
+        msg_dc3a: string;
+        success_send_ff9e: string;
+        msg_41af: string;
+        msg_b87b: string;
+        msg_e256: string;
+        msg_26c8: string;
+        msg_8c96: string;
+        msg_4145: string;
+      };
+      wooImportEnhanced: {
+        msg_917f: string;
+        msg_db7e: string;
+        msg_7b2f: string;
+        msg_2bd1: string;
+        msg_6a66: string;
+        msg_2ece: string;
+        msg_bbcd: string;
+        msg_48ef: string;
+        msg_81b0: string;
+        msg_d4d4: string;
+      };
+      wooSettings: {
+        failed_fetch_3c76: string;
+        msg_3d1d: string;
+        success_save_1406: string;
+        error_save_1cdd: string;
+        msg_3f49: string;
+        msg_c337: string;
+        msg_6f64: string;
+        msg_032e: string;
+        msg_d72d: string;
+        msg_3bc6: string;
+        msg_912d: string;
+        msg_df71: string;
       };
     };
   }
