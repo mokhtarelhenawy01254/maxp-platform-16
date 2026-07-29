@@ -11266,6 +11266,32 @@ declare module 'react-i18next' {
         controlsUpdated: string;
         rejectionReasonRequired: string;
       };
+      companySettings: {
+        error_error_8fc3: string;
+        name_company_0ea7: string;
+        success_update_name_f3af: string;
+        error_error_83b4: string;
+        success_update_description_5c21: string;
+        error_error_9650: string;
+        msg_fd5b: string;
+        msg_6c7a: string;
+        success_update_link_a69d: string;
+        error_error_932c: string;
+        success_update_3e76: string;
+        error_error_a004: string;
+        error_error_d9e4: string;
+        msg_3708: string;
+        success_update_9101: string;
+        error_error_83ad: string;
+        success_update_ad9b: string;
+        error_error_0376: string;
+        msg_ce27: string;
+        msg_9311: string;
+        msg_d9fc: string;
+        error_error_bf55: string;
+        msg_005a: string;
+        msg_bcf1: string;
+      };
       customDomain: {
         pageTitle: string;
         pageDescription: string;
