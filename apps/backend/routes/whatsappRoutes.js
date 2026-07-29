@@ -222,17 +222,17 @@ router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إنشاء جلسة جديدة
-router.get('/sessions/debug', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getDebugSessions);
+router.get('/sessions/debug', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getDebugSessions);
 router.post('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.createSession);
 
 // ✅ إنشاء جلسة باستخدام Pairing Code (بدون QR)
 router.post('/sessions/pairing-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.createSessionWithPairingCode);
 
-// جلب كل الجلسات
-router.get('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getSessions);
+// جلب كل الجلسات (للقراءة فقط — أي شخص عنده صلاحية عرض المحادثات)
+router.get('/sessions', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getSessions);
 
-// جلب جلسة محددة
-router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.getSession);
+// جلب جلسة محددة (للقراءة فقط)
+router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getSession);
 
 // تحديث جلسة
 router.put('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.updateSession);
@@ -405,8 +405,8 @@ router.put('/contacts/:id/reassign-session', verifyToken.authenticateToken, chec
 // 📝 الردود السريعة
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// جلب الردود السريعة
-router.get('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.getQuickReplies);
+// جلب الردود السريعة (للقراءة فقط)
+router.get('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getQuickReplies);
 
 // إنشاء رد سريع
 router.post('/quick-replies', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.quick-replies.manage'), whatsappController.createQuickReply);
@@ -424,8 +424,8 @@ router.post('/quick-replies/:id/send', verifyToken.authenticateToken, checkAppAc
 // ⚙️ الإعدادات
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// جلب الإعدادات
-router.get('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.getSettings);
+// جلب الإعدادات (للقراءة فقط)
+router.get('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getSettings);
 
 // تحديث الإعدادات
 router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.updateSettings);
