@@ -1,3 +1,5 @@
+import { clearAllSWCaches } from "./swCacheFlush";
+
 const RECOVERY_ATTEMPT_KEY = "maxp:chunk-load-recovery:last-attempt";
 const RECOVERY_SOURCE_KEY = "maxp:chunk-load-recovery:last-source";
 const RECOVERY_GUARD_WINDOW_MS = 15_000;
@@ -99,6 +101,9 @@ export const recoverFromChunkLoadError = (
   }
 
   markRecoveryAttempt(source, now);
+
+  // Purge SW caches to prevent reloading stale or corrupt SW entries
+  void clearAllSWCaches();
 
   window.setTimeout(() => {
     window.location.reload();

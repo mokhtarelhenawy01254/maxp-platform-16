@@ -1,5 +1,5 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { NetworkFirst, CacheFirst } from 'workbox-strategies';
+import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { registerRoute } from 'workbox-routing';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -15,22 +15,15 @@ registerRoute(
   }),
 );
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
-  new NetworkFirst({
-    cacheName: 'api',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
-  }),
-);
+// Note: Broad /api/ route caching removed to prevent caching sensitive user/tenant data in SW CacheStorage.
+// API state management is safely handled in-memory by React Query.
 
 registerRoute(
   ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'font',
-  new CacheFirst({
+  new StaleWhileRevalidate({
     cacheName: 'assets',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   }),
 );

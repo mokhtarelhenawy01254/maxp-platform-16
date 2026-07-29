@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
 import { toast } from "sonner";
+import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
 import ErrorBoundary from "../components/ErrorBoundary";
 
@@ -10,11 +11,13 @@ const SwUpdateToast: React.FC = () => {
   React.useEffect(() => {
     const show = () => {
       toast("تحديث جديد متاح", {
-        description: "اضغط للتحديث فوراً",
+        description: "اضغط للتحديث وتحديث الكاش فوراً",
         duration: Infinity,
         action: {
           label: "تحديث",
-          onClick: () => window.location.reload(),
+          onClick: () => {
+            void flushSWCacheAndReload();
+          },
         },
       });
     };

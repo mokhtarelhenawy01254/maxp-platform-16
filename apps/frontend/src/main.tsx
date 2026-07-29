@@ -206,8 +206,8 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Service Worker auto-update: notify user when a new version is ready
-if ("serviceWorker" in navigator) {
+// Service Worker auto-update: notify user when a new version is ready (Production only)
+if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
   navigator.serviceWorker.register("/sw.js").then((reg) => {
     const notify = () => {
       window.__SW_UPDATE_PENDING__ = true;
