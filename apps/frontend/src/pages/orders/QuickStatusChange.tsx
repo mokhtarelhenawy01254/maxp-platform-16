@@ -264,7 +264,7 @@ const QuickStatusChange: React.FC = () => {
                 value={orderCode}
                 onChange={(e) => setOrderCode(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="ابحث برقم الأوردر أو الكود..."
+                placeholder={t("quickStatus.orderCodePlaceholder")}
                 className="w-full px-6 py-5 pr-14 text-2xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors tracking-wider font-mono"
                 disabled={searchLoading}
               />

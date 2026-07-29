@@ -9826,7 +9826,7 @@
     "title": "Quick Status Change",
     "description": "Search for an order and quickly change its status",
     "orderCode": "Order Code",
-    "orderCodePlaceholder": "Enter order code (e.g. ORD-12345)",
+    "orderCodePlaceholder": "Enter order code or tracking number (e.g. ORD-12345)",
     "newStatus": "New Status",
     "selectStatus": "Select status",
     "searchFirst": "Search for an order first",
