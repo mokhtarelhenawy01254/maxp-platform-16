@@ -366,7 +366,7 @@ async function seed() {
   // Upsert built-in roles (no companyId = global)
   for (const [key, role] of Object.entries(BUILT_IN_ROLES)) {
     let dbRole = await prisma.role.findFirst({
-      where: { key, companyId: null },
+      where: { key, OR: [{ companyId: '__system__' }, { companyId: null }] },
     });
 
     if (dbRole) {
@@ -378,6 +378,12 @@ async function seed() {
           priority: role.priority,
         },
       });
+      if (dbRole.companyId === null) {
+        await prisma.role.update({
+          where: { id: dbRole.id },
+          data: { companyId: '__system__' },
+        });
+      }
     } else {
       dbRole = await prisma.role.create({
         data: {
