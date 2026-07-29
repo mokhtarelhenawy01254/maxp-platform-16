@@ -2020,9 +2020,9 @@ const WhatsAppChatContent: React.FC = () => {
 
 
   return (
-    <div className="whatsapp-workspace-root whatsapp-theme-transition flex min-h-0 flex-col overflow-hidden">
+    <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
+      <div className="whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
       {/* Sidebar */}
       <ChatSidebar
         className={cn("wa-panel-sidebar", selectedContact && "max-lg:hidden")}
@@ -2063,7 +2063,7 @@ const WhatsAppChatContent: React.FC = () => {
         labels={labels}
       />
 
-      <div className="relative flex min-w-0 flex-1">
+      <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">
         <ChatWindow
           showRightPanel={showRightPanel}
           onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}

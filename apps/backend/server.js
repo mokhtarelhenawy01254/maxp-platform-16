@@ -391,6 +391,7 @@ const {
   extractSubdomainMiddleware,
 } = require("./middleware/subdomainMiddleware");
 const storefrontHtmlController = require("./controller/storefrontHtmlController");
+const { handlePlatformSeo } = require("./middleware/platformSeoMiddleware");
 const {
   securityHeaders,
   sanitizeRequest,
@@ -1117,6 +1118,7 @@ try {
 app.get(
   "*",
   extractSubdomainMiddleware,
+  handlePlatformSeo,
   storefrontHtmlController.handleStorefrontShell,
 );
 

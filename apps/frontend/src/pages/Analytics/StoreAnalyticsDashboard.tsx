@@ -17,17 +17,15 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-  Filler,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  ResponsiveContainer,
+} from "recharts";
 import {
   AnalyticsData,
   DataHealthStatus,
@@ -42,16 +40,7 @@ import {
   getTopProductPurchases,
 } from "./storeAnalyticsDashboard.utils";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-);
+
 
 type FilterState = {
   period: string;
@@ -398,112 +387,19 @@ const StoreAnalyticsDashboard: React.FC = () => {
     [analytics, dailyData],
   );
 
-  const chartOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index" as const,
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          position: "top" as const,
-          align: "start" as const,
-          labels: {
-            color: isDarkMode ? "#d7e4f4" : "#32445d",
-            font: {
-              family: "Manrope, Geist Variable, sans-serif",
-            },
-            usePointStyle: true,
-            boxWidth: 10,
-          },
-        },
-        tooltip: {
-          backgroundColor: isDarkMode ? "#0b1729" : "#ffffff",
-          titleColor: isDarkMode ? "#edf4ff" : "#0f1b2d",
-          bodyColor: isDarkMode ? "#d7e4f4" : "#32445d",
-          borderColor: isDarkMode ? "#24384f" : "#d7e4f4",
-          borderWidth: 1,
-          rtl: true,
-        },
-      },
-      scales: {
-        x: {
-          grid: {
-            display: false,
-          },
-          ticks: {
-            color: isDarkMode ? "#93abc7" : "#647991",
-          },
-        },
-        y: {
-          type: "linear" as const,
-          position: "right" as const,
-          grid: {
-            color: isDarkMode
-              ? "rgba(147, 171, 199, 0.14)"
-              : "rgba(100, 121, 145, 0.14)",
-          },
-          ticks: {
-            color: isDarkMode ? "#93abc7" : "#647991",
-          },
-          title: {
-            display: true,
-            text: "الزيارات",
-            color: isDarkMode ? "#93abc7" : "#647991",
-          },
-        },
-        y1: {
-          type: "linear" as const,
-          position: "left" as const,
-          grid: {
-            drawOnChartArea: false,
-          },
-          ticks: {
-            color: isDarkMode ? "#93abc7" : "#647991",
-          },
-          title: {
-            display: true,
-            text: "الإيراد",
-            color: isDarkMode ? "#93abc7" : "#647991",
-          },
-        },
-      },
-    }),
-    [isDarkMode],
-  );
-
   const chartData = useMemo(
-    () => ({
-      labels: dailyData.map((point) => formatDateLabel(point.date)),
-      datasets: [
-        {
-          label: "الزيارات",
-          data: dailyData.map((point) => coerceNumber(point.totalVisits)),
-          borderColor: "#2f6bff",
-          backgroundColor: "rgba(47, 107, 255, 0.12)",
-          fill: true,
-          tension: 0.38,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          yAxisID: "y",
-        },
-        {
-          label: "الإيراد",
-          data: dailyData.map((point) => coerceNumber(point.totalRevenue)),
-          borderColor: "#14b87a",
-          backgroundColor: "rgba(20, 184, 122, 0.1)",
-          fill: true,
-          tension: 0.34,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          yAxisID: "y1",
-        },
-      ],
-    }),
+    () => dailyData.map((point) => ({
+      date: formatDateLabel(point.date),
+      visits: coerceNumber(point.totalVisits),
+      revenue: coerceNumber(point.totalRevenue),
+    })),
     [dailyData],
   );
+
+  const strokeColor = isDarkMode ? "#93abc7" : "#647991";
+  const gridColor = isDarkMode ? "rgba(147, 171, 199, 0.14)" : "rgba(100, 121, 145, 0.14)";
+  const tooltipBg = isDarkMode ? "#0b1729" : "#ffffff";
+  const tooltipText = isDarkMode ? "#edf4ff" : "#0f1b2d";
 
   const highlightedProduct = topProducts[0] ?? null;
   const rankedProducts = highlightedProduct
@@ -903,7 +799,18 @@ const StoreAnalyticsDashboard: React.FC = () => {
             <div className="mt-5">
               {dailyData.length > 0 ? (
                 <div className="h-[360px]">
-                  <Line data={chartData} options={chartOptions} />
+                  <ResponsiveContainer width="100%" height={360}>
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
+                      <YAxis yAxisId="left" orientation="right" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الزيارات", angle: -90, position: "insideRight", fill: strokeColor, style: { fontSize: 12 } }} />
+                      <YAxis yAxisId="right" orientation="left" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الإيراد", angle: 90, position: "insideLeft", fill: strokeColor, style: { fontSize: 12 } }} />
+                      <Tooltip contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }} />
+                      <Legend wrapperStyle={{ color: strokeColor }} />
+                      <Area yAxisId="left" type="monotone" dataKey="visits" name="الزيارات" stroke="#2f6bff" fill="rgba(47, 107, 255, 0.12)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                      <Area yAxisId="right" type="monotone" dataKey="revenue" name="الإيراد" stroke="#14b87a" fill="rgba(20, 184, 122, 0.1)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               ) : (
                 <EmptyPanel

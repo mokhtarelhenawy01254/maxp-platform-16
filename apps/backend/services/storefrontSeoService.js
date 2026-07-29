@@ -2,6 +2,10 @@ const path = require("path");
 
 const DEFAULT_THEME_ID = "modern-minimal";
 
+/** Absolute URL for the MaxP platform OG cover — used as ultimate fallback when
+ *  a storefront has no logo/theme image configured. */
+const PLATFORM_OG_COVER = "https://maxp.online/og-cover.png";
+
 const PAGE_NAME_MAP = {
   "": "الرئيسية",
   shop: "المتجر",
@@ -288,7 +292,7 @@ const buildStorefrontSeoMetadata = ({
   const defaultImage =
     resolveAbsoluteUrl(templateSeo.defaultOgImage, currentUrl) ||
     resolveAbsoluteUrl(company?.logo, currentUrl) ||
-    null;
+    PLATFORM_OG_COVER;
   const faviconUrl =
     resolveAbsoluteUrl(templateSeo.faviconUrl, currentUrl) ||
     resolveAbsoluteUrl(company?.logo, currentUrl) ||

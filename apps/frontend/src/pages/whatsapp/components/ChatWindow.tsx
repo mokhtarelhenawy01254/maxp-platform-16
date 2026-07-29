@@ -141,7 +141,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return (
       <div
         className={cn(
-          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:var(--color-muted)] px-space-6 text-center",
+          "whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col items-center justify-center bg-[color:var(--color-muted)]/40 px-space-6 text-center",
           className,
         )}
       >
@@ -165,13 +165,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div
       className={cn(
-        "whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--app-panel-bg)]",
+        "whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--app-panel-bg)]",
         className,
       )}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="wa-glass-header flex items-center justify-between gap-space-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-space-3 py-space-1">
+      <div className="wa-glass-header flex items-center justify-between gap-space-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-space-3 py-space-1 shrink-0">
         <div className="flex min-w-0 items-center gap-space-2">
           {onBackToList ? (
             <Button
@@ -357,7 +357,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
-      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3">
+      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3 shrink-0">
         {replyingTo ? (
           <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">

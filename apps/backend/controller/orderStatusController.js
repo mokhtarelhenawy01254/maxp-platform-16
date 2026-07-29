@@ -912,6 +912,49 @@ const getStatusStats = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/v1/order-status/with-templates
+ * جلب جميع حالات الطلبات مع القوالب المرتبطة بكل حالة
+ */
+const getStatusesWithTemplates = async (req, res) => {
+  try {
+    const companyId = getRequestCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+      where: { companyId, isActive: true, statusType: 'order' },
+      orderBy: { sortOrder: 'asc' }
+    });
+
+    const templates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where: {
+        companyId,
+        eventType: { in: statuses.map(s => s.code) },
+        isActive: true
+      }
+    });
+
+    const templateMap = {};
+    for (const t of templates) {
+      templateMap[t.eventType] = t;
+    }
+
+    const result = statuses.map(s => ({
+      ...s,
+      template: templateMap[s.code] || null,
+      hasTemplate: !!templateMap[s.code]
+    }));
+
+    res.json({ success: true, data: result });
+
+  } catch (error) {
+    console.error('❌ [ORDER-STATUS] Error getting statuses with templates:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب البيانات', error: error.message });
+  }
+};
+
 module.exports = {
   getAllStatuses,
   getStatusById,
@@ -924,6 +967,7 @@ module.exports = {
   initializeStatuses,
   getStatusStats,
   initializeDefaultStatuses,
-  DEFAULT_ORDER_STATUSES
+  DEFAULT_ORDER_STATUSES,
+  getStatusesWithTemplates
 };
 

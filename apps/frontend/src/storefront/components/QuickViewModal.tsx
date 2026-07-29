@@ -1,5 +1,5 @@
 import React from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { X, ShoppingCart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Product } from '../hooks/useProducts';
@@ -102,10 +102,10 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   );
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content dir={theme.direction} className="fixed inset-x-0 bottom-0 z-50 w-full max-h-[95vh] overflow-y-auto bg-card p-0 shadow-2xl rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] md:max-w-4xl md:max-h-[90vh] md:rounded-xl md:border md:animate-in md:zoom-in-95" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={onClose}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
+        <DialogPrimitive.Popup dir={theme.direction} className="fixed inset-x-0 bottom-0 z-50 w-full max-h-[95vh] overflow-y-auto bg-card p-0 shadow-2xl rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-300 md:inset-auto md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] md:max-w-4xl md:max-h-[90vh] md:rounded-xl md:border md:animate-in md:zoom-in-95" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             {/* Gallery Section */}
             <div className="aspect-square bg-muted">
@@ -125,12 +125,12 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
             {/* Info Section */}
             <div className="p-8 flex flex-col h-full relative">
-              <Dialog.Close className={`absolute top-4 p-2 rounded-full hover:bg-muted transition-colors ${isRtl ? 'left-4' : 'right-4'}`}>
+              <DialogPrimitive.Close className="absolute top-4 p-2 rounded-full hover:bg-muted transition-colors cursor-pointer" style={isRtl ? { left: '1rem' } : { right: '1rem' }}>
                 <X size={20} />
-              </Dialog.Close>
+              </DialogPrimitive.Close>
 
               <div className="space-y-4 flex-grow">
-                <Dialog.Title className="text-3xl font-bold font-heading">{name}</Dialog.Title>
+                <DialogPrimitive.Title className="text-3xl font-bold font-heading">{name}</DialogPrimitive.Title>
                 <div dir="ltr" className={`text-2xl font-semibold text-primary font-sans ${isRtl ? 'text-right' : 'text-left'}`}>{displayPrice}</div>
                 
                 <div className="prose prose-sm text-muted-foreground line-clamp-6">
@@ -159,9 +159,9 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 

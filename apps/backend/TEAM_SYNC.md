@@ -1,4 +1,15 @@
 
+
+---
+## [2026-03-09] WhatsApp Workspace Scroll & RTL Layout Resolved
+
+Fixed WhatsApp workspace scrolling and design layout bugs on `/whatsapp#chat`:
+
+- Fixed viewport height propagation (`h-full`, `min-h-0 overflow-hidden`) across `whatsapp-workspace-root`, `WhatsAppChat`, `ChatWindow`, and `ChatRightPanel`.
+- Prevented outer browser window scrolling so header and message input bars stay pinned.
+- Fixed RTL mode border divider for `.wa-panel-sidebar` and `ChatRightPanel`.
+- Refactored sidebar search input and filter strip into two stacked, full-width responsive rows.
+
 ---
 ## [2026-07-24] Turbo Sub-Service Test Coverage Added
 

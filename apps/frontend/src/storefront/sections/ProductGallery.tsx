@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowRightLeft, Heart } from "lucide-react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useParams } from "react-router-dom";
 import { useProduct } from "../hooks/useProduct";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
@@ -945,17 +945,17 @@ const GalleryZoomDialog = ({
   const closeLabel = prefersArabicCopy ? "\u0625\u063a\u0644\u0627\u0642" : "Close";
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#3f2f35]/35 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-[#3f2f35]/35 backdrop-blur-sm data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0" />
+        <DialogPrimitive.Popup
           className="fixed left-0 top-0 z-50 h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 bg-[linear-gradient(180deg,#fffdfa_0%,#f8efe8_100%)] p-0 text-[#3f2f35] shadow-none sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[94vh] sm:w-full sm:max-w-[min(96vw,76rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[1.5rem] sm:border sm:border-[#ead8cf] sm:shadow-[0_40px_120px_-50px_rgba(79,59,66,0.45)]"
           dir={prefersArabicCopy ? "rtl" : "ltr"}
         >
-          <Dialog.Title className="sr-only">
+          <DialogPrimitive.Title className="sr-only">
             {prefersArabicCopy ? "تكبير صور المنتج" : "Product image zoom"}
-          </Dialog.Title>
-          <Dialog.Close
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Close
             className="absolute end-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#ead8cf] bg-white/92 text-[#4f3b42] shadow-[0_18px_28px_-18px_rgba(79,59,66,0.5)] transition-colors hover:bg-white hover:text-[#d86b55]"
             aria-label={closeLabel}
           >
@@ -974,7 +974,7 @@ const GalleryZoomDialog = ({
               <path d="M18 6 6 18" />
               <path d="m6 6 12 12" />
             </svg>
-          </Dialog.Close>
+          </DialogPrimitive.Close>
 
         <div className="flex h-full flex-col gap-0 sm:grid sm:h-auto sm:gap-4 sm:p-4">
           <div className="flex items-center justify-between gap-3 px-4 pt-5 pb-3 pe-14 sm:px-0 sm:pt-0 sm:pb-0 sm:pe-10">
@@ -1074,9 +1074,9 @@ const GalleryZoomDialog = ({
             </div>
           ) : null}
         </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 

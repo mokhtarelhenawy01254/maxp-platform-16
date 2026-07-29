@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiClient } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface OrderItem {
   id: string;
