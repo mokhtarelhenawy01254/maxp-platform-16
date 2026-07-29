@@ -195,12 +195,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
     if (selectedProducts.length === 0) return;
 
     if (!selectedCity) {
-      alert("الرجاء اختيار المدينة");
+      alert(i18n.t("components_OrderModal.msg_a03a"));
       return;
     }
 
     if (!customerPhone) {
-      alert("الرجاء إدخال رقم الهاتف");
+      alert(i18n.t("components_OrderModal.msg_f4e5"));
       return;
     }
 
@@ -208,7 +208,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
       setCreatingOrder(true);
 
       if (!getAccessToken()) {
-        alert("يرجى تسجيل الدخول أولاً");
+        alert(i18n.t("components_OrderModal.msg_f9fe"));
         return;
       }
 
@@ -294,12 +294,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
           handleClose();
         }, 2000);
       } else {
-        alert("فشل في إنشاء الطلب: " + (data.error || "خطأ غير معروف"));
+        alert("فشل في إنشاء الطلب: " + (data.error || i18n.t("components_OrderModal.msg_fe97")));
         console.log(data.error);
       }
     } catch (error) {
       console.error("Error creating order:", error);
-      alert("فشل في إنشاء الطلب");
+      alert(i18n.t("components_OrderModal.failed_create_ff97"));
     } finally {
       setCreatingOrder(false);
     }

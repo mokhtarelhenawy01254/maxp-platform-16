@@ -1,4 +1,14 @@
 {
+  "FormsBuilderPage": {
+    "msg_da6d": "عنوان النموذج مطلوب",
+    "msg_a286": "الرابط المختصر مطلوب",
+    "msg_ed2d": "أضف حقل واحد على الأقل",
+    "msg_6b79": "جميع الحقول must have labels",
+    "success_update_4ef5": "تم تحديث النموذج",
+    "success_create_ad1a": "تم إنشاء النموذج",
+    "success_delete_49c8": "تم حذف النموذج",
+    "msg_d548": "تم نسخ الرابط"
+  },
   "agentProfiles": {
     "time": {
       "now": "Now",
@@ -963,6 +973,34 @@
     "retry": "Retry",
     "errorPrefix": "Error"
   },
+  "BudgetAlertsPage": {
+    "msg_c1b0": "اختار حساب إعلاني الأول",
+    "msg_74b3": "اكتب رقم WhatsApp واحد على الأقل",
+    "msg_0efb": "اختار الحملة المراد مراقبتها",
+    "msg_fe1b": "قيمة التنبيه غير صحيحة",
+    "success_create_2b78": "تم إنشاء تنبيه WhatsApp للإعلانات",
+    "success_send_d688": "تم إرسال اختبار التنبيه",
+    "success_delete_7527": "تم حذف التنبيه",
+    "msg_28e0": "تم فحص تنبيهات الرصيد الآن"
+  },
+  "CreateCampaign": {
+    "failed_load_7ed0": "فشل في تحميل حسابات Facebook Ads",
+    "please_name_c07b": "يرجى إدخال اسم الحملة",
+    "msg_0457": "يرجى اختيار هدف الحملة",
+    "msg_61ce": "يرجى إدخال ميزانية صحيحة",
+    "msg_136c": "يرجى اختيار مكان التحويل",
+    "msg_4753": "يرجى اختيار موقع جغرافي واحد على الأقل",
+    "success_create_76a9": "تم إنشاء الحملة بنجاح!"
+  },
+  "ProductLandingPages": {
+    "msg_11ec": "اختار منتج أولاً",
+    "success_create_88aa": "تم إنشاء المسودة",
+    "msg_d05d": "تم الحفظ",
+    "msg_637e": "لا يمكن النشر بدون صور",
+    "success_update_7714": "تم تحديث الحالة",
+    "msg_51eb": "انشر الصفحة أولاً لنسخ رابط العملاء",
+    "msg_eeb5": "تم نسخ الرابط"
+  },
   "budgetAlerts": {
     "msg_de0a": "اختار حساب إعلاني الأول",
     "msg_5b24": "اكتب رقم WhatsApp واحد على الأقل",
@@ -987,6 +1025,45 @@
     "success_create_69a9": "تم إنشاء الإعلان بنجاح!",
     "msg_ba32": "فشل في رفع الصورة",
     "msg_ce27": "فشل في رفع الفيديو"
+  },
+  "AffiliateProducts": {
+    "error_error_ad12": "حدث خطأ أثناء جلب المنتجات",
+    "msg_f09a": "برجاء إدخال هامش ربح صالح",
+    "success_update_c846": "تم تحديث الهامش بنجاح",
+    "error_error_59e1": "حدث خطأ أثناء التحديث",
+    "msg_46fb": "تم إزالة المنتج من كتالوجك",
+    "msg_0153": "تم نسخ الرابط!",
+    "msg_ccdb": "لم نتمكن من النسخ تلقائيا، افتح الرابط وانسخه يدويا."
+  },
+  "AffiliateProfile": {
+    "msg_996e": "يجب إدخال سبب واضح قبل الإيقاف",
+    "success_update_status_085a": "تم تحديث حالة المسوق",
+    "msg_47d6": "قيمة العمولة غير صالحة",
+    "success_update_6452": "تم تحديث العمولة",
+    "success_update_d401": "تم تحديث ضوابط المسوق",
+    "msg_de2f": "يجب إدخال سبب رفض المستند",
+    "success_update_status_fd25": "تم تحديث حالة المستند"
+  },
+  "AffiliateQuickActions": {
+    "error_error_d0bd": "حدث خطأ أثناء تحميل المنتجات",
+    "error_error_8409": "حدث خطأ أثناء حفظ التعديلات"
+  },
+  "CompanyConsumerDetail": {
+    "failed_load_23e0": "فشل تحميل بيانات المسوق",
+    "failed_load_7101": "فشل تحميل الطلبات",
+    "failed_load_569e": "فشل تحميل العمولات",
+    "failed_load_8127": "فشل تحميل طلبات السحب",
+    "msg_1641": "اختر طريقة الدفع",
+    "success_send_161a": "تم إرسال طلب السحب بنجاح",
+    "error_error_9b4a": "حدث خطأ أثناء إرسال الطلب"
+  },
+  "CompanyProviderDetail": {
+    "failed_load_0d15": "فشل تحميل الطلبات",
+    "failed_load_728a": "فشل تحميل العمولات",
+    "failed_load_c88c": "فشل تحميل طلبات السحب",
+    "msg_ff78": "تم تسجيل الدفع بنجاح",
+    "error_error_fe90": "حدث خطأ",
+    "msg_badc": "تم إلغاء طلب السحب"
   },
   "abandonedCartAnalytics": {
     "title": "Abandoned Cart Analytics",
@@ -2113,6 +2190,15 @@
     "deactivationError": "Error deactivating tool",
     "deactivatedMessage": "Deactivated {{name}}",
     "videoNotSupported": "Your browser does not support video playback."
+  },
+  "Appointments": {
+    "msg_0e7d": "فشل في حجز الموعد",
+    "failed_update_fa54": "فشل في تحديث حالة الموعد",
+    "please_name_4ff9": "يرجى إدخال اسم العميل",
+    "msg_6355": "يرجى تسجيل الدخول أولاً",
+    "msg_54f2": "غير مصرح - يرجى تسجيل الدخول مرة أخرى",
+    "msg_9ec8": "تم حجز الموعد بنجاح",
+    "success_update_status_c132": "تم تحديث حالة الموعد بنجاح"
   },
   "billing": {
     "payments": {
@@ -5429,6 +5515,16 @@
     "oneDayAgo": "1 day ago",
     "twoDaysAgo": "2 days ago"
   },
+  "QuickOrderModal": {
+    "failed_fetch_fdd8": "فشل في جلب المنتجات",
+    "msg_7c93": "تم زيادة الكمية",
+    "msg_e784": "تمت الإضافة للسلة",
+    "success_delete_b9f1": "تم حذف المنتج",
+    "msg_337c": "السلة فارغة",
+    "msg_55c5": "بيانات العميل ناقصة",
+    "success_create_5c00": "تم إنشاء الطلب بنجاح!",
+    "msg_4223": "خطأ غير معروف"
+  },
   "textGallery": {
     "msg_b002": "يرجى إدخال محتوى النص أو إرفاق صورة على الأقل",
     "success_save_13c8": "✅ تم حفظ النص بنجاح!",
@@ -5443,6 +5539,41 @@
     "resume": "Resume",
     "pause": "Pause",
     "stop": "Stop Task"
+  },
+  "CompanyPolicy": {
+    "msg_e09d": "يرجى ملء جميع الحقول المطلوبة",
+    "success_create_6d9e": "تم إنشاء السياسة بنجاح",
+    "failed_create_b4c3": "فشل في إنشاء السياسة",
+    "success_update_c338": "تم تحديث السياسة بنجاح",
+    "failed_update_7a20": "فشل في تحديث السياسة",
+    "success_delete_e3d8": "تم حذف السياسة",
+    "failed_delete_5065": "فشل في حذف السياسة",
+    "failed_load_3491": "فشل في تحميل السياسات"
+  },
+  "Deductions": {
+    "msg_8727": "يرجى اختيار موظف",
+    "msg_dc9a": "يرجى إدخال مبلغ صحيح أكبر من صفر",
+    "please_reason_7f8b": "يرجى إدخال سبب الخصم (5 أحرف على الأقل)",
+    "msg_04f1": "تمت الموافقة على الخصم بنجاح",
+    "msg_cec9": "تم رفض الخصم بنجاح",
+    "success_delete_59dc": "تم حذف الخصم بنجاح"
+  },
+  "Documents": {
+    "failed_fetch_e440": "فشل في جلب المستندات",
+    "msg_4014": "الرجاء اختيار ملف",
+    "msg_4e4b": "تم رفع المستند بنجاح",
+    "success_delete_8d08": "تم حذف المستند بنجاح",
+    "failed_delete_f267": "فشل في حذف المستند",
+    "msg_a4fe": "تم التحقق من المستند",
+    "msg_e8eb": "فشل في التحقق من المستند"
+  },
+  "MyCompaniesDashboard": {
+    "failed_load_5e4a": "فشل تحميل لوحة التحكم",
+    "msg_e43b": "جاري التصدير...",
+    "msg_0952": "فشل التصدير",
+    "msg_5853": "فشل في تبديل الشركة. حاول مرة أخرى.",
+    "msg_d0f3": "فشل تعيين الشركة كافتراضية",
+    "failed_load_ff88": "فشل تحميل البيانات"
   },
   "applicationForms": {
     "msg_0a56": "يرجى إدخال عنوان الفورم",
@@ -5462,6 +5593,15 @@
     "please_add_ffef": "يرجى إضافة خيارين على الأقل",
     "msg_ba5c": "تم نسخ رابط الاستبيان",
     "msg_ed0e": "تمت إضافة الرد إلى مسار التوظيف"
+  },
+  "DocumentsSection": {
+    "msg_3c68": "فشل في رفع المستند",
+    "msg_8a25": "نوع الملف غير مدعوم. يرجى رفع صور أو PDF أو Word/Excel.",
+    "msg_fd1d": "حجم الملف يتجاوز 20 ميجابايت.",
+    "msg_4ae4": "يرجى اختيار الأصل",
+    "msg_a01e": "يرجى اختيار ملف أو إدخال رابط الملف",
+    "please_name_78ee": "يرجى إدخال اسم الملف",
+    "msg_7330": "تم رفع المستند بنجاح"
   },
   "attendance": {
     "pageTitle": "Attendance & Departure",
@@ -8201,6 +8341,13 @@
       "add": "Add"
     }
   },
+  "OrderModal": {
+    "msg_fe97": "خطأ غير معروف",
+    "msg_a03a": "الرجاء اختيار المدينة",
+    "msg_f4e5": "الرجاء إدخال رقم الهاتف",
+    "msg_f9fe": "يرجى تسجيل الدخول أولاً",
+    "failed_create_ff97": "فشل في إنشاء الطلب"
+  },
   "bosta": {
     "title": "Bosta Shipping",
     "trackingNumber": "Tracking Number",
@@ -10498,6 +10645,24 @@
     "k_43": "Optional Webhook URL - used to automatically receive shipment status updates",
     "k_44": "When automatic shipping is enabled, a shipment will be automatically created when any order is confirmed"
   },
+  "OwnerReports": {
+    "msg_9431": "تم التبديل للشركة بنجاح",
+    "msg_d5a6": "فشل التبديل للشركة",
+    "failed_load_2917": "فشل تحميل التقرير",
+    "failed_load_7c13": "فشل تحميل تقرير الحضور",
+    "msg_f9f4": "تم تصدير التقرير",
+    "msg_1d9e": "فشل التصدير"
+  },
+  "CommissionsManagement": {
+    "error_error_d02d": "حدث خطأ أثناء جلب العمولات وطلبات السحب",
+    "success_update_a539": "تم تحديث الحالة بنجاح",
+    "error_error_dffd": "حدث خطأ أثناء التحديث",
+    "msg_eebb": "رقم العملية مطلوب لتسجيل التحويل",
+    "msg_6a52": "تم تسجيل تحويل طلب السحب بنجاح",
+    "reason_required_09eb": "سبب الإلغاء مطلوب",
+    "msg_9672": "تم إلغاء طلب السحب وإرجاع العمولات للمسوق",
+    "msg_b64d": "تم رفع إثبات التحويل بنجاح"
+  },
   "posPage": {
     "pageTitle": "Point of Sale",
     "searchPlaceholder": "Search... (F2)",
@@ -11068,7 +11233,14 @@
     "k_30": "Revoke consent",
     "k_31": "page",
     "k_32": "the previous",
-    "k_33": "the next"
+    "k_33": "the next",
+    "error_error_0e19": "حدث خطأ في جلب التقييمات",
+    "msg_58e7": "تم الموافقة على التقييم بنجاح",
+    "error_error_17aa": "حدث خطأ في الموافقة على التقييم",
+    "msg_b0b0": "تم رفض التقييم بنجاح",
+    "error_error_b208": "حدث خطأ في رفض التقييم",
+    "success_delete_9520": "تم حذف التقييم بنجاح",
+    "error_error_e0c6": "حدث خطأ في حذف التقييم"
   },
   "products": {
     "title": "Products",
@@ -11293,7 +11465,8 @@
     "msg_70a7": "فشل في نسخ المنتج",
     "msg_bd2e": "تم تصدير المنتجات بنجاح!",
     "msg_0437": "فشل التصدير",
-    "error_error_7d31": "حدث خطأ أثناء استيراد الملف"
+    "error_error_7d31": "حدث خطأ أثناء استيراد الملف",
+    "error_error_e01c": "حدث خطأ أثناء حذف المنتجات"
   },
   "productsTrash": {
     "failed_fetch_bddf": "فشل في جلب المنتجات المحذوفة",
@@ -14188,6 +14361,33 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmNewPassword": "Confirm New Password"
+  },
+  "useKeyMutations": {
+    "success_create_a7bf": "تم إنشاء المفتاح بنجاح",
+    "failed_update_status_4d28": "فشل تحديث حالة المفتاح",
+    "success_delete_fd98": "تم حذف المفتاح",
+    "failed_delete_782c": "فشل حذف المفتاح",
+    "success_update_b9b2": "تم تحديث المفتاح بنجاح",
+    "success_update_428b": "تم تحديث الإعدادات العامة",
+    "success_update_76a9": "تم تحديث ترتيب المزودين"
+  },
+  "useWishlistPage": {
+    "error_error_d13d": "حدث خطأ في جلب قائمة الرغبات",
+    "success_delete_3958": "تم حذف المنتج من المفضلة",
+    "error_error_10f3": "حدث خطأ في حذف المنتج",
+    "msg_27db": "تمت إضافة المنتج للسلة",
+    "error_error_2ec3": "حدث خطأ في إضافة المنتج",
+    "msg_a442": "تم مسح قائمة الرغبات",
+    "error_error_d538": "حدث خطأ في مسح القائمة"
+  },
+  "PrivacySettingsDialog": {
+    "failed_fetch_6cd1": "فشل جلب قائمة المحظورين",
+    "msg_0f47": "تم إلغاء الحظر بنجاح",
+    "msg_4588": "فشل إلغاء الحظر",
+    "msg_7f33": "تم الحظر بنجاح",
+    "msg_b631": "فشل الحظر",
+    "success_update_8d4d": "تم تحديث الإعدادات",
+    "failed_update_bf9a": "فشل تحديث الإعدادات"
   },
   "wooImport": {
     "msg_1451": "تم اكتمال الاستيراد بنجاح!",

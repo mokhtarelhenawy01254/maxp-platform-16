@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getCurrencyByCode } from "../../utils/currency";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   CurrencyDollarIcon,
   MagnifyingGlassIcon,
@@ -65,7 +66,7 @@ const AffiliateQuickActions: React.FC = () => {
         setProducts(response.data.data);
       }
     } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل المنتجات");
+      tToast.error("affiliates_AffiliateQuickActions.error_error_d0bd");
     } finally {
       setLoading(false);
     }
@@ -169,7 +170,7 @@ const AffiliateQuickActions: React.FC = () => {
       setPendingChanges({});
       fetchProducts();
     } catch (error) {
-      toast.error("حدث خطأ أثناء حفظ التعديلات");
+      tToast.error("affiliates_AffiliateQuickActions.error_error_8409");
     } finally {
       setSaving(false);
     }

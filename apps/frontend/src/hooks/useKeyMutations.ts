@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { aiAdminService } from "../services/aiAdminService";
 import type { CreateAiKeyPayload, AiKeyUpdatePayload, AiTestResult, DashboardStats, GlobalConfig } from "../types/ai-admin";
 
@@ -9,7 +10,7 @@ export function useCreateKey() {
   return useMutation({
     mutationFn: (payload: CreateAiKeyPayload) => aiAdminService.createKey(payload),
     onSuccess: () => {
-      toast.success("تم إنشاء المفتاح بنجاح");
+      tToast.success("hooks_useKeyMutations.success_create_a7bf");
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "keys"] });
     },
     onError: (err: any) => {
@@ -29,7 +30,7 @@ export function useToggleKeyStatus() {
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "keys"] });
     },
     onError: () => {
-      toast.error("فشل تحديث حالة المفتاح");
+      tToast.error("hooks_useKeyMutations.failed_update_status_4d28");
     },
   });
 }
@@ -40,11 +41,11 @@ export function useDeleteKey() {
   return useMutation({
     mutationFn: (id: string) => aiAdminService.deleteKey(id),
     onSuccess: () => {
-      toast.success("تم حذف المفتاح");
+      tToast.success("hooks_useKeyMutations.success_delete_fd98");
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "keys"] });
     },
     onError: () => {
-      toast.error("فشل حذف المفتاح");
+      tToast.error("hooks_useKeyMutations.failed_delete_782c");
     },
   });
 }
@@ -72,7 +73,7 @@ export function useUpdateKey() {
     mutationFn: ({ id, payload }: { id: string; payload: AiKeyUpdatePayload }) =>
       aiAdminService.updateKey(id, payload),
     onSuccess: () => {
-      toast.success("تم تحديث المفتاح بنجاح");
+      tToast.success("hooks_useKeyMutations.success_update_b9b2");
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "keys"] });
     },
     onError: (err: any) => {
@@ -86,7 +87,7 @@ export function useUpdateGlobalConfig() {
   return useMutation({
     mutationFn: (payload: Partial<GlobalConfig>) => aiAdminService.updateGlobalConfig(payload),
     onSuccess: () => {
-      toast.success("تم تحديث الإعدادات العامة");
+      tToast.success("hooks_useKeyMutations.success_update_428b");
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "config"] });
     },
     onError: (err: any) => {
@@ -100,7 +101,7 @@ export function useSetProviderPriority() {
   return useMutation({
     mutationFn: (providers: string[]) => aiAdminService.setProviderPriority(providers),
     onSuccess: () => {
-      toast.success("تم تحديث ترتيب المزودين");
+      tToast.success("hooks_useKeyMutations.success_update_76a9");
       queryClient.invalidateQueries({ queryKey: ["ai-admin", "config"] });
     },
     onError: (err: any) => {

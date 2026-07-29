@@ -215,17 +215,17 @@ const Deductions: React.FC = () => {
     try {
       // Client-side validation
       if (!createForm.employeeId) {
-        alert("يرجى اختيار موظف");
+        alert(i18n.t("hr_Deductions.msg_8727"));
         return;
       }
 
       if (!createForm.amount || parseFloat(createForm.amount) <= 0) {
-        alert("يرجى إدخال مبلغ صحيح أكبر من صفر");
+        alert(i18n.t("hr_Deductions.msg_dc9a"));
         return;
       }
 
       if (!createForm.reason || createForm.reason.trim().length < 5) {
-        alert("يرجى إدخال سبب الخصم (5 أحرف على الأقل)");
+        alert(i18n.t("hr_Deductions.please_reason_7f8b"));
         return;
       }
 
@@ -289,7 +289,7 @@ const Deductions: React.FC = () => {
     try {
       const response = await api.post(`/hr/deductions/${id}/approve`);
       if (response.data.success) {
-        alert("تمت الموافقة على الخصم بنجاح");
+        alert(i18n.t("hr_Deductions.msg_04f1"));
         loadData();
       }
     } catch (error: any) {
@@ -307,7 +307,7 @@ const Deductions: React.FC = () => {
         reason,
       });
       if (response.data.success) {
-        alert("تم رفض الخصم بنجاح");
+        alert(i18n.t("hr_Deductions.msg_cec9"));
         loadData();
       }
     } catch (error: any) {
@@ -322,7 +322,7 @@ const Deductions: React.FC = () => {
     try {
       const response = await api.delete(`/hr/deductions/${id}`);
       if (response.data.success) {
-        alert("تم حذف الخصم بنجاح");
+        alert(i18n.t("hr_Deductions.success_delete_59dc"));
         loadData();
       }
     } catch (error: any) {

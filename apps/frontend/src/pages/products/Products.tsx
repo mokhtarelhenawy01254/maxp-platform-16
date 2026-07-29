@@ -170,7 +170,7 @@ const Products: React.FC = () => {
         toast.success(`تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح`);
       }
     } catch (err: any) {
-      toast.error(err.message || "حدث خطأ أثناء حذف المنتجات");
+      toast.error(err.message || i18n.t("products_Products.error_error_e01c"));
     }
   };
 

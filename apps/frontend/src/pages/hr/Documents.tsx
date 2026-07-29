@@ -31,6 +31,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Document {
   id: string;
@@ -71,7 +72,7 @@ const Documents: React.FC = () => {
       setDocuments(response.data.documents || []);
     } catch (error) {
       console.error("Error fetching documents:", error);
-      toast.error("فشل في جلب المستندات");
+      tToast.error("hr_Documents.failed_fetch_e440");
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ const Documents: React.FC = () => {
 
   const handleUpload = async () => {
     if (!selectedFile || !employeeId) {
-      toast.error("الرجاء اختيار ملف");
+      tToast.error("hr_Documents.msg_4014");
       return;
     }
 
@@ -106,7 +107,7 @@ const Documents: React.FC = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("تم رفع المستند بنجاح");
+      tToast.success("hr_Documents.msg_4e4b");
       setUploadDialog(false);
       setSelectedFile(null);
       setFormData({ name: "", type: "other", expiryDate: "", notes: "" });
@@ -122,22 +123,22 @@ const Documents: React.FC = () => {
 
     try {
       await api.delete(`/hr/documents/${id}`);
-      toast.success("تم حذف المستند بنجاح");
+      tToast.success("hr_Documents.success_delete_8d08");
       fetchDocuments();
     } catch (error) {
       console.error("Error deleting document:", error);
-      toast.error("فشل في حذف المستند");
+      tToast.error("hr_Documents.failed_delete_f267");
     }
   };
 
   const handleVerify = async (id: string) => {
     try {
       await api.post(`/hr/documents/${id}/verify`);
-      toast.success("تم التحقق من المستند");
+      tToast.success("hr_Documents.msg_a4fe");
       fetchDocuments();
     } catch (error) {
       console.error("Error verifying document:", error);
-      toast.error("فشل في التحقق من المستند");
+      tToast.error("hr_Documents.msg_e8eb");
     }
   };
 

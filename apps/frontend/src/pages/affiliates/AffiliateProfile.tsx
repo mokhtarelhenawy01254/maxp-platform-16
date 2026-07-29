@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import {
   AdjustmentsHorizontalIcon,
   ArrowLeftIcon,
@@ -376,7 +377,7 @@ const AffiliateProfile: React.FC = () => {
     );
     if (enteredReason === null) return;
     if (nextStatus === "SUSPENDED" && !enteredReason.trim()) {
-      toast.error("يجب إدخال سبب واضح قبل الإيقاف");
+      tToast.error("affiliates_AffiliateProfile.msg_996e");
       return;
     }
 
@@ -386,7 +387,7 @@ const AffiliateProfile: React.FC = () => {
         status: nextStatus,
         statusReason: enteredReason.trim() || null,
       });
-      toast.success("تم تحديث حالة المسوق");
+      tToast.success("affiliates_AffiliateProfile.success_update_status_085a");
       await loadProfile();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل تحديث حالة المسوق"));
@@ -399,7 +400,7 @@ const AffiliateProfile: React.FC = () => {
     if (!affiliate) return;
     const nextRate = Number(commissionRate);
     if (!Number.isFinite(nextRate) || nextRate < 0) {
-      toast.error("قيمة العمولة غير صالحة");
+      tToast.error("affiliates_AffiliateProfile.msg_47d6");
       return;
     }
 
@@ -408,7 +409,7 @@ const AffiliateProfile: React.FC = () => {
       await apiClient.put(`/affiliates/${affiliate.id}/commission`, {
         commissionRate: nextRate,
       });
-      toast.success("تم تحديث العمولة");
+      tToast.success("affiliates_AffiliateProfile.success_update_6452");
       await loadProfile();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل تحديث العمولة"));
@@ -426,7 +427,7 @@ const AffiliateProfile: React.FC = () => {
         canCreateOrdersForOthers: policyForm.canCreateOrdersForOthers,
         canViewCustomerData: policyForm.canViewCustomerData,
       });
-      toast.success("تم تحديث ضوابط المسوق");
+      tToast.success("affiliates_AffiliateProfile.success_update_d401");
       await loadProfile();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل تحديث ضوابط المسوق"));
@@ -443,7 +444,7 @@ const AffiliateProfile: React.FC = () => {
       if (note === null) return;
       reviewNote = note.trim();
       if (!reviewNote) {
-        toast.error("يجب إدخال سبب رفض المستند");
+        tToast.error("affiliates_AffiliateProfile.msg_de2f");
         return;
       }
     }
@@ -454,7 +455,7 @@ const AffiliateProfile: React.FC = () => {
         status,
         reviewNote: reviewNote || null,
       });
-      toast.success("تم تحديث حالة المستند");
+      tToast.success("affiliates_AffiliateProfile.success_update_status_fd25");
       await loadProfile();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل تحديث مستند المسوق"));

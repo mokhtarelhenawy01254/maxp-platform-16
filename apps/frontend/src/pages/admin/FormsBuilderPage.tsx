@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { Plus, FileText, Eye, BarChart3, Copy, Trash2, Loader2, Users, MousePointerClick, TrendingUp, ExternalLink, X } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -111,10 +112,10 @@ function FormModal({ form, onClose, onSave }: { form?: FormDefinition | null; on
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!title.trim()) return toast.error("عنوان النموذج مطلوب");
-    if (!slug.trim()) return toast.error("الرابط المختصر مطلوب");
-    if (fields.length === 0) return toast.error("أضف حقل واحد على الأقل");
-    if (fields.some((f) => !f.label.trim())) return toast.error("جميع الحقول must have labels");
+    if (!title.trim()) return tToast.error("admin_FormsBuilderPage.msg_da6d");
+    if (!slug.trim()) return tToast.error("admin_FormsBuilderPage.msg_a286");
+    if (fields.length === 0) return tToast.error("admin_FormsBuilderPage.msg_ed2d");
+    if (fields.some((f) => !f.label.trim())) return tToast.error("admin_FormsBuilderPage.msg_6b79");
 
     setSaving(true);
     try {
@@ -122,10 +123,10 @@ function FormModal({ form, onClose, onSave }: { form?: FormDefinition | null; on
       const body = { title: title.trim(), slug: slug.trim(), description, fields, pixelId: pixelId.trim() || undefined, pixelToken: pixelToken.trim() || undefined, thankYouTitle, thankYouBody, submitLabel };
       if (form) {
         await fetchJson(buildApiUrl(`/forms/${form.id}`), { method: "PUT", headers, body: JSON.stringify(body) });
-        toast.success("تم تحديث النموذج");
+        tToast.success("admin_FormsBuilderPage.success_update_4ef5");
       } else {
         await fetchJson(buildApiUrl("/forms"), { method: "POST", headers, body: JSON.stringify(body) });
-        toast.success("تم إنشاء النموذج");
+        tToast.success("admin_FormsBuilderPage.success_create_ad1a");
       }
       onSave();
     } catch (err: any) {
@@ -353,7 +354,7 @@ const FormsBuilderPage: React.FC = () => {
     try {
       const headers = { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" };
       await fetchJson(buildApiUrl(`/forms/${form.id}`), { method: "DELETE", headers });
-      toast.success("تم حذف النموذج");
+      tToast.success("admin_FormsBuilderPage.success_delete_49c8");
       loadForms();
     } catch (err: any) {
       toast.error(err.message);
@@ -363,7 +364,7 @@ const FormsBuilderPage: React.FC = () => {
   const copyPublicUrl = (slug: string) => {
     const cid = user?.companyId ? `?companyId=${user.companyId}` : "";
     navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}${cid}`);
-    toast.success("تم نسخ الرابط");
+    tToast.success("admin_FormsBuilderPage.msg_d548");
   };
 
   const filtered = forms.filter((f) => f.title.includes(search) || f.slug.includes(search));

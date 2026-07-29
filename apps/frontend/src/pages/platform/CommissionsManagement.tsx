@@ -11,6 +11,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 
 interface Commission {
   id: string;
@@ -111,7 +112,7 @@ const CommissionsManagement: React.FC = () => {
         setPayouts(payoutsResponse.data.data || []);
       }
     } catch (error: any) {
-      toast.error("حدث خطأ أثناء جلب العمولات وطلبات السحب");
+      tToast.error("platform_CommissionsManagement.error_error_d02d");
     } finally {
       setLoading(false);
     }
@@ -127,11 +128,11 @@ const CommissionsManagement: React.FC = () => {
         { status },
       );
       if (response.data.success) {
-        toast.success("تم تحديث الحالة بنجاح");
+        tToast.success("platform_CommissionsManagement.success_update_a539");
         loadData();
       }
     } catch (error: any) {
-      toast.error("حدث خطأ أثناء التحديث");
+      tToast.error("platform_CommissionsManagement.error_error_dffd");
     }
   };
 
@@ -143,7 +144,7 @@ const CommissionsManagement: React.FC = () => {
 
     const normalizedTransactionId = transactionId.trim();
     if (!normalizedTransactionId) {
-      toast.error("رقم العملية مطلوب لتسجيل التحويل");
+      tToast.error("platform_CommissionsManagement.msg_eebb");
       return;
     }
 
@@ -162,7 +163,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم تسجيل تحويل طلب السحب بنجاح");
+        tToast.success("platform_CommissionsManagement.msg_6a52");
         loadData();
       }
     } catch (error: any) {
@@ -180,7 +181,7 @@ const CommissionsManagement: React.FC = () => {
 
     const normalizedReason = reason.trim();
     if (!normalizedReason) {
-      toast.error("سبب الإلغاء مطلوب");
+      tToast.error("platform_CommissionsManagement.reason_required_09eb");
       return;
     }
 
@@ -194,7 +195,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم إلغاء طلب السحب وإرجاع العمولات للمسوق");
+        tToast.success("platform_CommissionsManagement.msg_9672");
         loadData();
       }
     } catch (error: any) {
@@ -237,7 +238,7 @@ const CommissionsManagement: React.FC = () => {
       );
 
       if (response.data.success) {
-        toast.success("تم رفع إثبات التحويل بنجاح");
+        tToast.success("platform_CommissionsManagement.msg_b64d");
         loadData();
       }
     } catch (error: any) {

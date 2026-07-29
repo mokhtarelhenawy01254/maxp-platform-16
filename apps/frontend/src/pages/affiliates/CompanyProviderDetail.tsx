@@ -13,6 +13,7 @@ import {
     DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import tokenManager from "../../utils/tokenManager";
 
 interface OrderItem {
@@ -113,7 +114,7 @@ const CompanyProviderDetail: React.FC = () => {
                 setOrdersPage(result.data.page);
             }
         } catch {
-            toast.error("فشل تحميل الطلبات");
+            tToast.error("affiliates_CompanyProviderDetail.failed_load_0d15");
         } finally {
             setLoadingOrders(false);
         }
@@ -134,7 +135,7 @@ const CompanyProviderDetail: React.FC = () => {
                 setCommissionsSummary(result.data.summary);
             }
         } catch {
-            toast.error("فشل تحميل العمولات");
+            tToast.error("affiliates_CompanyProviderDetail.failed_load_728a");
         } finally {
             setLoadingCommissions(false);
         }
@@ -154,7 +155,7 @@ const CompanyProviderDetail: React.FC = () => {
                 setPayoutsPage(result.data.page);
             }
         } catch {
-            toast.error("فشل تحميل طلبات السحب");
+            tToast.error("affiliates_CompanyProviderDetail.failed_load_c88c");
         } finally {
             setLoadingPayouts(false);
         }
@@ -195,14 +196,14 @@ const CompanyProviderDetail: React.FC = () => {
             });
             const result = await resp.json();
             if (result.success) {
-                toast.success("تم تسجيل الدفع بنجاح");
+                tToast.success("affiliates_CompanyProviderDetail.msg_ff78");
                 loadPayouts(payoutsPage);
                 loadSummary();
             } else {
                 toast.error(result.message || "فشل تسجيل الدفع");
             }
         } catch {
-            toast.error("حدث خطأ");
+            tToast.error("affiliates_CompanyProviderDetail.error_error_fe90");
         }
     };
 
@@ -217,14 +218,14 @@ const CompanyProviderDetail: React.FC = () => {
             });
             const result = await resp.json();
             if (result.success) {
-                toast.success("تم إلغاء طلب السحب");
+                tToast.success("affiliates_CompanyProviderDetail.msg_badc");
                 loadPayouts(payoutsPage);
                 loadSummary();
             } else {
                 toast.error(result.message || "فشل الإلغاء");
             }
         } catch {
-            toast.error("حدث خطأ");
+            tToast.error("affiliates_CompanyProviderDetail.error_error_fe90");
         }
     };
 

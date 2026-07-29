@@ -18,6 +18,8 @@ import {
   Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
 
 interface CompanySalesData {
@@ -196,15 +198,15 @@ const OwnerReports: React.FC = () => {
         if (response.data.token) {
           localStorage.setItem("accessToken", response.data.token);
         }
-        toast.success("تم التبديل للشركة بنجاح");
+        tToast.success("owner_OwnerReports.msg_9431");
         // Reload to stay on current page with new company context
         window.location.reload();
       } else {
-        toast.error(response.data.message || "فشل التبديل للشركة");
+        toast.error(response.data.message || i18n.t("owner_OwnerReports.msg_d5a6"));
       }
     } catch (error) {
       console.error("Failed to switch company:", error);
-      toast.error("فشل التبديل للشركة");
+      tToast.error("owner_OwnerReports.msg_d5a6");
     }
   };
 
@@ -225,11 +227,11 @@ const OwnerReports: React.FC = () => {
       if (response.data.success) {
         setReportData(response.data.data);
       } else {
-        toast.error(response.data.message || "فشل تحميل التقرير");
+        toast.error(response.data.message || i18n.t("owner_OwnerReports.failed_load_2917"));
       }
     } catch (error) {
       console.error("Failed to fetch report", error);
-      toast.error("فشل تحميل التقرير");
+      tToast.error("owner_OwnerReports.failed_load_2917");
     } finally {
       setIsLoading(false);
     }
@@ -255,11 +257,11 @@ const OwnerReports: React.FC = () => {
         };
         setTodayAttendanceData(transformedData);
       } else {
-        toast.error(response.data.message || "فشل تحميل تقرير الحضور");
+        toast.error(response.data.message || i18n.t("owner_OwnerReports.failed_load_7c13"));
       }
     } catch (error) {
       console.error("Failed to fetch attendance", error);
-      toast.error("فشل تحميل تقرير الحضور");
+      tToast.error("owner_OwnerReports.failed_load_7c13");
     } finally {
       setIsLoading(false);
     }
@@ -301,9 +303,9 @@ const OwnerReports: React.FC = () => {
       link.download = `sales-report-${startDate}-to-${endDate}.csv`;
       link.click();
 
-      toast.success("تم تصدير التقرير");
+      tToast.success("owner_OwnerReports.msg_f9f4");
     } catch (error) {
-      toast.error("فشل التصدير");
+      tToast.error("owner_OwnerReports.msg_1d9e");
     } finally {
       setIsExporting(false);
     }
@@ -349,9 +351,9 @@ const OwnerReports: React.FC = () => {
       link.download = `today-attendance-${todayAttendanceData.date}.csv`;
       link.click();
 
-      toast.success("تم تصدير التقرير");
+      tToast.success("owner_OwnerReports.msg_f9f4");
     } catch (error) {
-      toast.error("فشل التصدير");
+      tToast.error("owner_OwnerReports.msg_1d9e");
     } finally {
       setIsExporting(false);
     }

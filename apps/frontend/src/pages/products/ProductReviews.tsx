@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import {
@@ -86,7 +87,7 @@ const ProductReviews: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error fetching reviews:", error);
-      toast.error("حدث خطأ في جلب التقييمات");
+      tToast.error("products_ProductReviews.error_error_0e19");
     } finally {
       setLoading(false);
     }
@@ -96,12 +97,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/approve`, {});
       if (response.data.success) {
-        toast.success("تم الموافقة على التقييم بنجاح");
+        tToast.success("products_ProductReviews.msg_58e7");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error approving review:", error);
-      toast.error("حدث خطأ في الموافقة على التقييم");
+      tToast.error("products_ProductReviews.error_error_17aa");
     }
   };
 
@@ -109,12 +110,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.put(`/reviews/${reviewId}/reject`, {});
       if (response.data.success) {
-        toast.success("تم رفض التقييم بنجاح");
+        tToast.success("products_ProductReviews.msg_b0b0");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error rejecting review:", error);
-      toast.error("حدث خطأ في رفض التقييم");
+      tToast.error("products_ProductReviews.error_error_b208");
     }
   };
 
@@ -126,12 +127,12 @@ const ProductReviews: React.FC = () => {
     try {
       const response = await apiClient.delete(`/reviews/${reviewId}`);
       if (response.data.success) {
-        toast.success("تم حذف التقييم بنجاح");
+        tToast.success("products_ProductReviews.success_delete_9520");
         fetchReviews();
       }
     } catch (error: any) {
       console.error("Error deleting review:", error);
-      toast.error("حدث خطأ في حذف التقييم");
+      tToast.error("products_ProductReviews.error_error_e0c6");
     }
   };
 

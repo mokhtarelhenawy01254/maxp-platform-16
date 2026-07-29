@@ -14,6 +14,8 @@ import {
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import i18n from "../../i18n";
+import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
@@ -636,7 +638,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error("فشل في جلب المنتجات");
+      tToast.error("components_QuickOrderModal.failed_fetch_fdd8");
     } finally {
       setLoadingProducts(false);
     }
@@ -709,7 +711,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             : item;
         }),
       );
-      toast.success("تم زيادة الكمية");
+      tToast.success("components_QuickOrderModal.msg_7c93");
     } else {
       const price = variant ? parseFloat(String(variant.price)) : product.price;
       const image = variant && variant.image ? variant.image : product.image;
@@ -739,7 +741,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           sku,
         },
       ]);
-      toast.success("تمت الإضافة للسلة");
+      tToast.success("components_QuickOrderModal.msg_e784");
     }
 
     setShowVariantModal(false);
@@ -788,7 +790,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         return !isMatch;
       }),
     );
-    toast.success("تم حذف المنتج");
+    tToast.success("components_QuickOrderModal.success_delete_b9f1");
   };
 
   // Calculate totals
@@ -803,11 +805,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   // Create order
   const handleCreateOrder = async () => {
     if (cartItems.length === 0) {
-      toast.error("السلة فارغة");
+      tToast.error("components_QuickOrderModal.msg_337c");
       return;
     }
     if (!phone || !customerName) {
-      toast.error("بيانات العميل ناقصة");
+      tToast.error("components_QuickOrderModal.msg_55c5");
       return;
     }
 
@@ -849,7 +851,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       const response = await apiClient.post("/orders-enhanced", payload);
 
       if (response.data.success) {
-        toast.success("تم إنشاء الطلب بنجاح!");
+        tToast.success("components_QuickOrderModal.success_create_5c00");
         const orderId = response.data.order?.id || response.data.data?.id;
 
         if (onOrderCreated && orderId) {
@@ -862,7 +864,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         onClose();
       } else {
         toast.error(
-          "فشل إنشاء الطلب: " + (response.data.error || "خطأ غير معروف"),
+          "فشل إنشاء الطلب: " + (response.data.error || i18n.t("components_QuickOrderModal.msg_4223")),
         );
       }
     } catch (error: any) {

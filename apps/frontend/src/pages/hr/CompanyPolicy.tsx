@@ -52,6 +52,7 @@ import {
 } from "../../components/ui/select";
 import { Badge } from "../../components/ui/badge";
 import { toast } from "sonner";
+import { tToast } from "../../utils/i18n-toast";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import api from "../../services/api";
@@ -112,7 +113,7 @@ const CompanyPolicy: React.FC = () => {
     } catch (error) {
       console.error("Failed to fetch policies:", error);
       // Fallback to empty or mock if needed, but for now show error
-      // toast.error('فشل في تحميل السياسات');
+      // tToast.error("hr_CompanyPolicy.failed_load_3491");
     } finally {
       setLoading(false);
     }
@@ -127,14 +128,14 @@ const CompanyPolicy: React.FC = () => {
 
   const handleCreate = async () => {
     if (!formData.title || !formData.content) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      tToast.error("hr_CompanyPolicy.msg_e09d");
       return;
     }
 
     try {
       const { data } = await api.post("/hr/policies", formData);
       if (data.success) {
-        toast.success("تم إنشاء السياسة بنجاح");
+        tToast.success("hr_CompanyPolicy.success_create_6d9e");
         setPolicies([data.policy, ...policies]);
         setIsAddDialogOpen(false);
         setFormData({
@@ -145,7 +146,7 @@ const CompanyPolicy: React.FC = () => {
         });
       }
     } catch (error) {
-      toast.error("فشل في إنشاء السياسة");
+      tToast.error("hr_CompanyPolicy.failed_create_b4c3");
     }
   };
 
@@ -161,14 +162,14 @@ const CompanyPolicy: React.FC = () => {
       });
 
       if (data.success) {
-        toast.success("تم تحديث السياسة بنجاح");
+        tToast.success("hr_CompanyPolicy.success_update_c338");
         setPolicies(
           policies.map((p) => (p.id === editingPolicy.id ? data.policy : p)),
         );
         setEditingPolicy(null);
       }
     } catch (error) {
-      toast.error("فشل في تحديث السياسة");
+      tToast.error("hr_CompanyPolicy.failed_update_7a20");
     }
   };
 
@@ -178,9 +179,9 @@ const CompanyPolicy: React.FC = () => {
     try {
       await api.delete(`/hr/policies/${id}`);
       setPolicies(policies.filter((p) => p.id !== id));
-      toast.success("تم حذف السياسة");
+      tToast.success("hr_CompanyPolicy.success_delete_e3d8");
     } catch (error) {
-      toast.error("فشل في حذف السياسة");
+      tToast.error("hr_CompanyPolicy.failed_delete_5065");
     }
   };
 
