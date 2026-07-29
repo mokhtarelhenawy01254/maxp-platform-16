@@ -49,6 +49,8 @@
   "featured": "Featured",
   "installed": "Installed",
   "active": "Active",
+"trial": "Trial",
+"cancelled": "Cancelled",
   "cancel": "Cancel",
   "deactivate": "Deactivate",
   "activating": "Deactivating...",

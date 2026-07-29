@@ -49,6 +49,8 @@
   "featured": "مميز",
   "installed": "مثبت",
   "active": "نشط",
+"trial": "تجريبي",
+"cancelled": "ملغي",
   "cancel": "إلغاء",
   "deactivate": "إلغاء",
   "activating": "جاري الإلغاء...",

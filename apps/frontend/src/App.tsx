@@ -1157,6 +1157,7 @@ const StorefrontThemesMarketplace = React.lazy(
 );
 const AppDetails = React.lazy(() => import("./pages/marketplace/AppDetails"));
 const AppSettings = React.lazy(() => import("./pages/marketplace/AppSettings"));
+const MyApps = React.lazy(() => import("./pages/marketplace/MyApps"));
 const CustomerWalletRouteEntry = React.lazy(
   () => import("./pages/wallet/WalletRouteEntry"),
 );
@@ -1451,6 +1452,7 @@ if (typeof window !== "undefined") {
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
+  p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
 }
 
@@ -2608,6 +2610,15 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppDetails />
+                    </Layout>
+                  }
+                />
+                {/* My Apps (Installed) */}
+                <Route
+                  path="/my-apps"
+                  element={
+                    <Layout>
+                      <MyApps />
                     </Layout>
                   }
                 />

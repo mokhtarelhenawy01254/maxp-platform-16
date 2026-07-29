@@ -61,6 +61,7 @@ import {
     UserPlusIcon,
     CalculatorIcon,
     TrophyIcon,
+    Squares2X2Icon,
     ArrowsRightLeftIcon,
     AcademicCapIcon,
     BookOpenIcon,
@@ -469,6 +470,7 @@ export const getSidebarConfig = (
                 title: t('sidebar.marketplace'),
                 icon: CubeIcon,
                 items: [
+                    { to: '/my-apps', icon: Squares2X2Icon, label: t('sidebar.myApps') },
                     { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
                     { to: '/marketplace/bundles', icon: GiftIcon, label: t('sidebar.browseBundles') },
                     { to: '/payments', icon: WalletIcon, label: t('sidebar.myPayments') },
@@ -1116,6 +1118,7 @@ export const getSidebarConfig = (
             title: t('sidebar.marketplace'),
             icon: CubeIcon,
             items: [
+                { to: '/my-apps', icon: Squares2X2Icon, label: t('sidebar.myApps') },
                 { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
                 { to: '/marketplace/themes', icon: SwatchIcon, label: t('sidebar.storeThemes') },
                 { to: '/marketplace/bundles', icon: GiftIcon, label: t('sidebar.browseBundles') },
