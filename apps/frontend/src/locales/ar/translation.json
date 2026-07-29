@@ -9555,7 +9555,8 @@
       "noShippingCode": "بدون كود شحن",
       "noProductResults": "لا توجد منتجات مطابقة",
       "productColorAll": "اللون (الكل)",
-      "productSizeAll": "المقاس (الكل)"
+      "productSizeAll": "المقاس (الكل)",
+      "allVariants": "جميع المتغيرات"
     },
     "columns": {
       "customer": "العميل",
@@ -9816,8 +9817,9 @@
       "previous": "السابق",
       "next": "التالي"
     },
-    "fallbackCustomerName": "[AR] Unknown Customer",
-    "fallbackWarehouseName": "[AR] Unnamed Warehouse"
+    "fallbackCustomerName": "عميل غير معروف",
+    "fallbackWarehouseName": "مخزن غير مسمى",
+    "k_10": "جاهز للشحن"
   },
   "quickStatus": {
     "title": "تغيير سريع للحالة",
