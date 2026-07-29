@@ -161,6 +161,8 @@ const QuickStatusChange: React.FC = () => {
 
     } finally {
       setSearchLoading(false);
+      inputRef.current?.focus();
+      inputRef.current?.select();
     }
   }, [orderCode, selectedStatus, workflowEnabled, t]);
 
@@ -204,6 +206,8 @@ const QuickStatusChange: React.FC = () => {
       toast.error(msg);
     } finally {
       setChangeLoading(false);
+      setOrderCode("");
+      inputRef.current?.focus();
     }
   }, [currentOrder, selectedStatus, workflowEnabled, t]);
 
