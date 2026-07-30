@@ -13112,6 +13112,19 @@ declare module 'react-i18next' {
         k_47: string;
         k_48: string;
         k_49: string;
+        defaultPage: string;
+        defaultPageHint: string;
+        selectDefaultPage: string;
+        page_apps: string;
+        'page_company-dashboard': string;
+        page_orders: string;
+        page_products: string;
+        page_customers: string;
+        page_users: string;
+        page_profile: string;
+        page_settings: string;
+        page_marketplace: string;
+        page_whatsapp: string;
       };
       settingsPrimitives: {
         alertSuccess: string;

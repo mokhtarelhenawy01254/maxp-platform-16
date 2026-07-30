@@ -1,3 +1,16 @@
+### [FRONTEND / WHATSAPP] Chat Viewport Height Overflow & Input Bar Off-Screen Cutoff (2026-07-30)
+
+- **Severity**: 🔴 HIGH — Chat input box (`wa-input-bar`) was pushed 64px off-screen below the viewport fold, making the chat panel appear frozen.
+- **Root Cause**:
+  1. `main.business-shell-main` did not constrain height (`h-full max-h-full`) when `shouldRemovePadding` was active on `/whatsapp`.
+  2. `.whatsapp-workspace-root` calculated `height: 100%` against outer viewport height instead of remaining flex space after header (64px), pushing the bottom 64px (the input bar) below the screen.
+- **Fix**:
+  1. Added `h-full max-h-full` to `main.business-shell-main` in `Layout.tsx`.
+  2. Added strict height constraints (`max-height: 100%`, `flex: 1 1 0%`) to `.whatsapp-workspace-root`, `.wa-panel-sidebar`, and `.wa-panel-chat` in `whatsapp-responsive.css`.
+- **Files Modified**: `apps/frontend/src/components/layout/Layout.tsx`, `apps/frontend/src/styles/whatsapp-responsive.css`
+
+---
+
 ### [FRONTEND / WHATSAPP] Hidden Scrollbars in Enterprise Dark Theme (2026-07-30)
 
 - **Severity**: 🟡 MEDIUM — Scrollbars in WhatsApp chat window & conversation list auto-hidden or invisible in dark theme.

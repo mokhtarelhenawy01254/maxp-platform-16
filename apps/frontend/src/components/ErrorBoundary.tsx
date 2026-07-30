@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { Button } from "./ui/button";
 import errorTracking from "../services/errorTracking";
 import { recoverFromChunkLoadError } from "../utils/chunkLoadRecovery";
 
@@ -118,19 +119,13 @@ class ErrorBoundary extends Component<Props, State> {
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={this.handleReset}
-                  className="btn btn-primary btn-md"
-                >
+                <Button onClick={this.handleReset}>
                   المحاولة مرة أخرى
-                </button>
+                </Button>
 
-                <button
-                  onClick={this.handleReload}
-                  className="btn btn-outline btn-md"
-                >
+                <Button variant="outline" onClick={this.handleReload}>
                   إعادة تحميل الصفحة
-                </button>
+                </Button>
               </div>
 
               <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">

@@ -90,20 +90,6 @@ html *::after {
   to { opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html,
-  html *,
-  html *::before,
-  html *::after {
-    transition: none !important;
-  }
-
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-}
-
 /* Hide decorative overflow rails while preserving touch/trackpad scrolling. */
 .no-scrollbar {
   -ms-overflow-style: none;
@@ -1057,52 +1043,7 @@ h6 {
 }
 
 /* Focus styles */
-.focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
-}
 
-/* Button variants */
-.btn {
-  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:pointer-events-none disabled:opacity-50;
-}
-
-.btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
-}
-
-.btn-secondary {
-  @apply bg-secondary-600 text-white hover:bg-secondary-700 active:bg-secondary-800;
-}
-
-.btn-outline {
-  @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700;
-}
-
-.btn-ghost {
-  @apply text-gray-700 hover:bg-gray-100 active:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700;
-}
-
-.btn-destructive {
-  @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
-}
-
-/* Size variants */
-.btn-sm {
-  @apply h-8 px-3 text-xs;
-}
-
-.btn-md {
-  @apply h-10 px-4 py-2;
-}
-
-.btn-lg {
-  @apply h-12 px-6 text-base;
-}
-
-/* Input styles */
-.input {
-  @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:placeholder:text-gray-400;
-}
 
 /* ✅ FIX: منع zoom على inputs و textareas في الموبايل */
 input[type="text"],
@@ -1189,23 +1130,21 @@ select {
   }
 
   /* ✅ FIX: منع zoom تلقائي في الموبايل */
-  @media screen and (max-width: 768px) {
-    * {
-      -webkit-tap-highlight-color: transparent;
-      -webkit-touch-callout: none;
-    }
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
 
-    textarea,
-    input {
-      -webkit-user-select: text;
-      user-select: text;
-    }
+  textarea,
+  input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 
-    /* منع double-tap zoom */
-    html {
-      touch-action: manipulation;
-      -ms-touch-action: manipulation;
-    }
+  /* منع double-tap zoom */
+  html {
+    touch-action: manipulation;
+    -ms-touch-action: manipulation;
   }
 }
 
@@ -1214,55 +1153,6 @@ select {
 }
 
 /* Card styles */
-.card {
-  @apply rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800;
-}
-
-.card-header {
-  @apply flex flex-col space-y-1.5 p-6;
-}
-
-.card-title {
-  @apply text-lg font-semibold leading-none tracking-tight;
-}
-
-.card-description {
-  @apply text-sm text-gray-600 dark:text-gray-400;
-}
-
-.card-content {
-  @apply p-6 pt-0;
-}
-
-.card-footer {
-  @apply flex items-center p-6 pt-0;
-}
-
-/* Badge styles */
-.badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
-}
-
-.badge-primary {
-  @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300;
-}
-
-.badge-secondary {
-  @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300;
-}
-
-.badge-success {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300;
-}
-
-.badge-warning {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300;
-}
-
-.badge-error {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300;
-}
-
 /* Animation utilities */
 .animate-in {
   animation: animate-in 0.2s ease-out;
@@ -6390,21 +6280,6 @@ select {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-primary);
   border-radius: 8px;
-}
-
-/* ════════════════════════════════════════════════
-   Accessibility: Respect reduced motion
-   ════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 /* Layout: Enterprise — merged from layout-enterprise.css */

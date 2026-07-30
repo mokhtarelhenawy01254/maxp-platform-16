@@ -10,12 +10,21 @@
 .whatsapp-workspace-root {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0%;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
   container-type: inline-size;
   container-name: wa-root;
+}
+
+.wa-panel-sidebar,
+.wa-panel-chat,
+.chat-right-panel-container {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
 }
 
 /* ── 3. View Transitions — Sidebar ↔ Chat ── */

@@ -1,5 +1,9 @@
 # Team Sync Updates
 
+- **[FRONTEND / WHATSAPP] Chat Viewport Height Overflow & Input Bar Cutoff Fix (2026-07-30):**
+  1. **Root Cause**: `main.business-shell-main` lacked `h-full max-h-full` when `shouldRemovePadding` was active on `/whatsapp`. Combined with `h-full` on `.whatsapp-workspace-root`, this caused the chat workspace to expand to 100vh below the app header, pushing the bottom chat input bar (`wa-input-bar`) 64px off-screen at the bottom of the viewport.
+  2. **Fix**: Added `h-full max-h-full` to both `main.business-shell-main` blocks in `Layout.tsx` and added strict `max-height: 100%` and `flex: 1 1 0%` constraints to `.whatsapp-workspace-root`, `.wa-panel-sidebar`, and `.wa-panel-chat` in `whatsapp-responsive.css`. The input bar now stays 100% visible and accessible at the bottom of the screen.
+
 - **[FRONTEND / WHATSAPP] Enterprise Dark Theme Scrollbar Visibility Fix (2026-07-30):**
   1. **Theme Selector Fix**: Added `[data-theme="business-os-enterprise"]` selector overrides to `whatsapp-responsive.css` and `index.css` scrollbar rules. Previously, dark mode scrollbar styles only targeted `.dark`, missing the enterprise theme container (`data-theme="business-os-enterprise"`).
   2. **High-Contrast Thumb & Solid Track**: Upgraded thumb colors to high-contrast slate `rgba(148, 163, 184, 0.65)` with solid hover `rgba(226, 232, 240, 0.9)` and `7px` width, preventing Chromium overlay scrollbar engines from auto-hiding the scrollbar.
