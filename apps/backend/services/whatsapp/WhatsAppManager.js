@@ -1499,6 +1499,8 @@ async function createSession(sessionId, companyId, options = {}) {
                 } else {
                     sd.labelAssociations.get(association.labelId).delete(association.chatId);
                 }
+                // 💾 Persist to DB
+                persistLabelAssociation(sessionId, association.chatId, association.labelId, type === 'add').catch(() => {});
             }
         });
 
@@ -4621,6 +4623,29 @@ async function getLabels(sessionId) {
 }
 
 /**
+ * حفظ/إزالة تصنيف لمحادثة في الداتابيز
+ */
+async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
+    try {
+        const prisma = getSharedPrismaClient();
+        const contact = await prisma.whatsAppContact.findFirst({
+            where: { sessionId, jid: chatJid }
+        });
+        if (!contact) return;
+        const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+        const updated = isAdd
+            ? (current.includes(labelId) ? current : [...current, labelId])
+            : current.filter(id => id !== labelId);
+        await prisma.whatsAppContact.update({
+            where: { id: contact.id },
+            data: { labels: JSON.stringify(updated) }
+        });
+    } catch (err) {
+        console.error('❌ Error persisting label association:', err.message);
+    }
+}
+
+/**
  * مزامنة يدوية للتصنيفات — يسأل واتساب مباشرة عن التصنيفات
  */
 async function syncLabels(sessionId) {
@@ -4703,6 +4728,35 @@ async function syncLabels(sessionId) {
         } else {
             // Fallback: حاول نستخدم الـ cache الموجود
             console.log('⚠️ Could not fetch labels from WhatsApp, checking existing cache');
+        }
+
+        // 💾 Persist associations to DB
+        try {
+            const prisma = getSharedPrismaClient();
+            const allContacts = await prisma.whatsAppContact.findMany({
+                where: { sessionId },
+                select: { id: true, jid: true, labels: true }
+            });
+            for (const contact of allContacts) {
+                const assignedLabels = [];
+                for (const [labelId, jids] of session.labelAssociations) {
+                    if (jids.has(contact.jid)) {
+                        assignedLabels.push(labelId);
+                    }
+                }
+                const dbLabels = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                // Merge: prefer in-memory (fresh from WhatsApp), keep DB-only labels too
+                const merged = Array.from(new Set([...assignedLabels, ...dbLabels]));
+                if (JSON.stringify(merged) !== contact.labels) {
+                    await prisma.whatsAppContact.update({
+                        where: { id: contact.id },
+                        data: { labels: JSON.stringify(merged) }
+                    });
+                }
+            }
+            console.log(`💾 Labels persisted to DB for session: ${sessionId}`);
+        } catch (dbErr) {
+            console.error('❌ Error persisting labels to DB:', dbErr.message);
         }
 
         console.log(`🔄 Labels sync completed for session: ${sessionId} (${remoteLabels.length} labels)`);

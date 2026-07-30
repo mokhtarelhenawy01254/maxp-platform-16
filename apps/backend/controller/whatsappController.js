@@ -981,6 +981,7 @@ async function getConversations(req, res) {
                     isArchived: true,
                     isPinned: true,
                     isMuted: true,
+                    labels: true,
                     whatsAppSession: {
                         select: { name: true, phoneNumber: true }
                     },
@@ -1062,9 +1063,9 @@ async function getConversations(req, res) {
             window: computeWindowStatus(contact)
         }));
 
-        // 🏷️ Enrich with native WhatsApp labels from in-memory session
+        // 🏷️ Resolve labels: DB (persistent) + in-memory (Baileys) fallback
         const uniqueSessionIds = [...new Set(contacts.map(c => c.sessionId))];
-        const chatLabelIds = new Map(); // chatJid -> labelId[]
+        const chatLabelIds = new Map();
         for (const sid of uniqueSessionIds) {
             const session = WhatsAppManager.getSession(sid);
             if (!session?.labelAssociations) continue;
@@ -1075,10 +1076,18 @@ async function getConversations(req, res) {
                 }
             }
         }
-        const conversationsWithLabels = conversationsWithLastMessage.map(contact => ({
-            ...contact,
-            labels: chatLabelIds.get(contact.jid) || []
-        }));
+        const conversationsWithLabels = conversationsWithLastMessage.map(contact => {
+            let labelIds = [];
+            // 1. Try DB-stored labels first (persistent)
+            if (contact.labels) {
+                try { labelIds = JSON.parse(contact.labels); } catch {}
+            }
+            // 2. Fallback to in-memory Baileys labels
+            if (labelIds.length === 0 && chatLabelIds.has(contact.jid)) {
+                labelIds = chatLabelIds.get(contact.jid);
+            }
+            return { ...contact, labels: labelIds };
+        });
 
         res.json({
             conversations: conversationsWithLabels,
@@ -3416,6 +3425,20 @@ async function addLabelToChat(req, res) {
         }
 
         const result = await WhatsAppManager.labelChat(targetSessionId, jid, labelId);
+        // 💾 Persist to DB
+        try {
+            const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                where: { sessionId: targetSessionId, jid }
+            });
+            if (contact) {
+                const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                if (!current.includes(labelId)) current.push(labelId);
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contact.id },
+                    data: { labels: JSON.stringify(current) }
+                });
+            }
+        } catch (dbErr) { console.error('❌ Error persisting label to DB:', dbErr.message); }
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error adding label to chat:', error);
@@ -3443,6 +3466,20 @@ async function removeLabelFromChat(req, res) {
         }
 
         const result = await WhatsAppManager.removeChatLabel(targetSessionId, jid, labelId);
+        // 💾 Persist to DB
+        try {
+            const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
+                where: { sessionId: targetSessionId, jid }
+            });
+            if (contact) {
+                const current = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
+                const updated = current.filter(id => id !== labelId);
+                await getSharedPrismaClient().whatsAppContact.update({
+                    where: { id: contact.id },
+                    data: { labels: JSON.stringify(updated) }
+                });
+            }
+        } catch (dbErr) { console.error('❌ Error removing label from DB:', dbErr.message); }
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error removing label from chat:', error);
