@@ -1,5 +1,10 @@
 # Team Sync Updates
 
+- **[FRONTEND / SW & I18N] ServiceWorker Navigation Strategy & Codebase Hook Import Normalization (2026-03-09 / 2026-07-30):**
+  1. **Service Worker Navigation Strategy**: Updated `sw.js` navigation strategy to `NetworkOnly` for HTML navigation requests, preventing stale `index.html` cache loops on new deployments. Bumped `CACHE_PREFIX` to `maxp-v4` and added auto-unregister for old service worker registrations in `main.tsx`.
+  2. **Codebase-Wide Hook Import Restorations**: Executed codebase-wide AST/regex scan to identify and restore missing imports for `useTranslation`, `useAuth`, `useCompany`, `useNavigate`, `useLocation`, and `useParams` across 289 files in `apps/frontend/src`. Normalized all import statements strictly to line 1 at top of files.
+  3. **Deployment Verification**: Verified 100% clean production bundle creation (`npm run build`), committed and pushed to `omokhtar748-hub/maxp-platform7.git`, and confirmed successful CI/CD deployment execution (Run #30537560123) on production server `maxp.online`.
+
 - **Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction (FEATURE & BUG FIX / COMPLETE):**
   1. Implemented `ensureShippingReturnRequestsSynced` in `returnController.js` to automatically sync all shipping returned orders (`returned_to_company` / `status_5`) into `ReturnRequest` records so they display seamlessly on `https://maxp.online/returns` without manual steps.
   2. Fixed invocation signature of `syncTurboStatusToOrder` in `turboController.js` from positional args to structured object parameter.
