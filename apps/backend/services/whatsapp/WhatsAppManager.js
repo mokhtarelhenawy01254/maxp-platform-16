@@ -4789,9 +4789,24 @@ async function createLabel(sessionId, name, color) {
     try {
         const labelId = crypto.randomUUID();
         const colorIndex = resolveLabelColor(color);
-        await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
-        console.log(`🏷️ Label created: ${name} (${labelId}) color=${colorIndex}`);
-        return { id: labelId, name, color: formatLabelColor(colorIndex) };
+
+        // 💾 Store in-memory cache first (so it's available immediately)
+        const colorHex = formatLabelColor(colorIndex);
+        session.labels.set(labelId, {
+            id: labelId,
+            name,
+            color: colorIndex,
+        });
+
+        // 📡 Try Baileys sync (non-blocking - don't fail if disconnected)
+        try {
+            await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
+            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`);
+        } catch (baileysErr) {
+            console.log(`⚠️ Label saved locally (Baileys unavailable): ${name} (${labelId})`);
+        }
+
+        return { id: labelId, name, color: colorHex };
     } catch (error) {
         console.error('❌ Error creating label:', error);
         throw error;
@@ -4810,8 +4825,18 @@ async function deleteLabel(sessionId, labelId) {
     }
 
     try {
-        await session.sock.addLabel(labelId, { id: labelId, deleted: true });
-        console.log(`🏷️ Label deleted: ${labelId}`);
+        // 💾 Remove from in-memory cache first
+        session.labels.delete(labelId);
+        session.labelAssociations.delete(labelId);
+
+        // 📡 Try Baileys sync (non-blocking)
+        try {
+            await session.sock.addLabel(labelId, { id: labelId, deleted: true });
+            console.log(`🏷️ Label deleted via Baileys: ${labelId}`);
+        } catch (baileysErr) {
+            console.log(`⚠️ Label removed locally (Baileys unavailable): ${labelId}`);
+        }
+
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting label:', error);
