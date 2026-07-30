@@ -299,17 +299,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 title={user?.company?.name || t("sidebar.platformName")}
                 companyName={user?.company?.name}
               >
-                <div 
-                  className="business-brand-glyph" 
-                  title={user?.company?.name || t("sidebar.platformName")}
-                  data-admin={user?.role === "SUPER_ADMIN" ? "true" : "false"}
-                >
-                  {user?.role === "SUPER_ADMIN" ? (
-                    <ShieldCheckIcon className="h-6 w-6 text-white" />
-                  ) : (
-                    user?.company?.name?.charAt(0) || "M"
-                  )}
-                </div>
+                <img src="/logo.png" alt="MAX-P" className="h-10 w-10 object-contain rounded-xl shadow-md" />
               </CompanyLogo>
             </Link>
           </div>
@@ -360,9 +350,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 className="business-sidebar-company-logo"
                 companyName={user?.company?.name}
               >
-                <div className="business-brand-glyph business-brand-glyph--small">
-                  {user?.company?.name?.charAt(0) || "M"}
-                </div>
+                <img src="/logo.png" alt="MAX-P" className="h-9 w-9 object-contain rounded-lg shadow-md" />
               </CompanyLogo>
 
               <div className="business-sidebar-company-copy">

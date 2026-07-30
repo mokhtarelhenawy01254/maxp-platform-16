@@ -104,9 +104,9 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
       {/* Form Side */}
       <div className="elite-auth-form-side">
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
-          <Link to="/" className="elite-brand-logo">
-            <div className="logo-icon">M</div>
-            <span className="logo-text">{t("auth.brandName")}</span>
+          <Link to="/" className="elite-brand-logo flex items-center gap-2">
+            <img src="/logo.png" alt="MAX-P" className="h-9 w-auto object-contain rounded-lg" />
+            <span className="logo-text font-black text-xl">{t("auth.brandName")}</span>
           </Link>
 
           <div className="form-header">

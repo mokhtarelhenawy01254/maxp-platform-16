@@ -324,11 +324,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                 className="h-12 w-12 rounded-xl object-cover mr-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
                 companyName={user?.company?.name}
               >
-                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl mr-3 shadow-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">
-                    {user?.company?.name?.charAt(0) || "M"}
-                  </span>
-                </div>
+                <img src="/logo.png" alt="MAX-P" className="h-12 w-12 object-contain rounded-xl shadow-lg mr-3" />
               </CompanyLogo>
               <div>
                 <h1 className="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
@@ -360,14 +356,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
               className="h-10 w-10 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
               companyName={user?.company?.name}
             >
-              <div
-                className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center"
-                title={user?.company?.name}
-              >
-                <span className="text-white font-bold text-lg">
-                  {user?.company?.name?.charAt(0) || "M"}
-                </span>
-              </div>
+              <img src="/logo.png" alt="MAX-P" className="h-10 w-10 object-contain rounded-xl shadow-lg" />
             </CompanyLogo>
           </Link>
         )}

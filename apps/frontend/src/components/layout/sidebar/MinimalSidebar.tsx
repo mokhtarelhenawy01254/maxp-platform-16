@@ -350,12 +350,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
           title={user?.company?.name}
           companyName={user?.company?.name}
         >
-          <div
-            className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
-            title={user?.company?.name}
-          >
-            {user?.company?.name?.charAt(0) || "M"}
-          </div>
+          <img src="/logo.png" alt="MAX-P" className="h-12 w-12 object-contain rounded-xl shadow-lg" />
         </CompanyLogo>
       </Link>
 

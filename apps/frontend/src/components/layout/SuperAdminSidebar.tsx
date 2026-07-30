@@ -117,9 +117,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ mobileOpen, setMo
   const content = (
     <nav className="flex h-full flex-col overflow-x-hidden transition-all duration-300 bg-card text-foreground" role="navigation" aria-label={i18n.t("superAdmin.sidebar.brandName")} dir={i18n.dir()}>
       <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="flex size-10 items-center justify-center rounded-full bg-primary shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-          <Shield className="size-5 text-primary-foreground" />
-        </div>
+        <img src="/logo.png" alt="MAX-P" className="size-10 object-contain rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)]" />
         {!isCollapsed && (
           <div>
             <p className="text-sm font-black leading-tight tracking-tight">{i18n.t("superAdmin.sidebar.brandName")}</p>
