@@ -376,6 +376,9 @@ export default defineConfig(({ mode }) => {
             { src: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
           ],
         },
+        injectManifest: {
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        },
       }),
       !disableCompression &&
         viteCompression({
