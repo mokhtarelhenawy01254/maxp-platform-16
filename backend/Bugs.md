@@ -1,3 +1,18 @@
+### [FRONTEND / ICONS & HOOKS] Codebase-wide Heroicons Migration, Lucide Validation & Missing Imports Fix (2026-07-30)
+- **Severity**: 🔴 CRITICAL — Production build failed due to uninstalled `@heroicons/react` package imports across 439 files, missing hook/utility imports across 855 files, and invalid lucide-react icon export references.
+- **Root Cause**:
+  1. Multiple pages imported icons from `@heroicons/react/24/outline` which was not present in production dependencies.
+  2. AST/regex replacements created invalid `as X as Y` alias syntaxes and referenced unexported lucide icon names (`SlidersVertical`, etc.).
+  3. React hooks (`useAuth`, `useCompany`, `useTranslation`, `useNavigate`, `useLocation`, `useParams`) and utility functions (`toast`, `cn`, `formatCurrency`, `formatDate`) were used without top-level import statements.
+- **Fix**:
+  1. Built a complete mapping script (`fix_heroicons.js`, `fix_invalid_lucide.js`) to migrate all `@heroicons/react` imports to native `lucide-react` equivalents across 439 files.
+  2. Validated all icon imports against the actual runtime CJS exports of `lucide-react`, mapping unexported icons to safe fallbacks (`Circle`, `Sliders`, `Edit`, `Calendar`, etc.).
+  3. Injected missing hook and utility imports across all 855 frontend files and normalized all imports strictly to top-of-file.
+  4. Verified 100% clean production Vite build (`✓ built in 1m 23s`) and deployed live via GitHub Actions run `#30540650344`.
+- **Files Modified**: 855 files under `apps/frontend/src`
+
+---
+
 ### [BUG FIX & ENHANCEMENT / RETURNS & TURBO] Auto-Sync Shipping Returns to `/returns` & 3-Way Turbo Status Distinction
 - **Date**: 2026-07-23 / 2026-03-09
 - **Context & Requirement**:
