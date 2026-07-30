@@ -511,7 +511,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  aria-label="إغلاق الإشعارات"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -595,7 +596,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           {!notification.isRead && (
                             <button
                               onClick={() => markAsRead(notification.id)}
-                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                               title="تحديد كمقروء"
                             >
                               <EyeIcon className="w-4 h-4" />
@@ -603,7 +604,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           )}
                           <button
                             onClick={() => deleteNotification(notification.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                             title="حذف"
                           >
                             <TrashIcon className="w-4 h-4" />

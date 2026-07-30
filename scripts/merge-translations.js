@@ -28,8 +28,14 @@ function mergeFiles(lang) {
 
   files.sort().forEach(file => {
     const sectionName = path.basename(file, '.json');
-    const content = JSON.parse(fs.readFileSync(path.join(sectionsDir, file), 'utf8'));
-    merged[sectionName] = content;
+    const filePath = path.join(sectionsDir, file);
+    try {
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      merged[sectionName] = content;
+    } catch (err) {
+      console.error(`❌ ERROR in ${lang}/sections/${file}: ${err.message}`);
+      process.exit(1);
+    }
   });
 
   const outputPath = path.join(LOCALES_DIR, lang, 'translation.json');
@@ -50,6 +56,15 @@ function mergeFiles(lang) {
       const backupPath = outputPath.replace('.json', '.backup.json');
       fs.writeFileSync(backupPath, JSON.stringify(existing, null, 2), 'utf8');
       console.warn(`   Backup saved to ${lang}/translation.backup.json`);
+
+      // Write scratch report
+      const scratchDir = path.join(__dirname, '../scratch');
+      if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(scratchDir, `lost-keys-${lang}.json`),
+        JSON.stringify(lostKeys, null, 2),
+        'utf8'
+      );
     }
   }
 

@@ -554,7 +554,7 @@ const Reminders: React.FC = () => {
                       {reminder.canSnooze &&
                         reminder.snoozeCount < reminder.maxSnooze && (
                           <div className="relative group">
-                            <button className="text-yellow-600 hover:text-yellow-800 p-1 text-sm">
+                            <button className="min-h-[44px] min-w-[44px] flex items-center justify-center text-yellow-600 hover:text-yellow-800 p-2 text-sm rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors" aria-label="تأجيل التنبيه">
                               <ClockIcon className="h-5 w-5" />
                             </button>
                             <div className="absolute left-0 mt-1 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">

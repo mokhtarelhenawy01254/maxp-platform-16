@@ -12,10 +12,19 @@
   "statSubValues": {
     "ordersCount": "{{count}} orders",
     "ordersCount_one": "{{count}} order",
+    "ordersCount_two": "{{count}} orders",
+    "ordersCount_few": "{{count}} orders",
+    "ordersCount_many": "{{count}} orders",
     "piecesCount": "{{count}} pieces",
     "piecesCount_one": "{{count}} piece",
+    "piecesCount_two": "{{count}} pieces",
+    "piecesCount_few": "{{count}} pieces",
+    "piecesCount_many": "{{count}} pieces",
     "piecesAssigned": "{{count}} pieces assigned",
-    "piecesAssigned_one": "{{count}} piece assigned"
+    "piecesAssigned_one": "{{count}} piece assigned",
+    "piecesAssigned_two": "{{count}} pieces assigned",
+    "piecesAssigned_few": "{{count}} pieces assigned",
+    "piecesAssigned_many": "{{count}} pieces assigned"
   },
   "moneyCards": {
     "expectedForMerchant": "Expected for Merchant",

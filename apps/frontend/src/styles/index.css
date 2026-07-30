@@ -7,6 +7,20 @@
 @import "./whatsapp-responsive.css";
 @import "./expert-responsive.css";
 @import "./marketplace-premium.css";
+
+/* 📱 2026 Mobile Accessibility & Touch Target Utilities */
+@layer utilities {
+  button, [role="button"] {
+    touch-action: manipulation;
+  }
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+}
 /* @import "shadcn/tailwind.css"; */
 
 /* Geist Variable — self-hosted via /assets/files/ */
