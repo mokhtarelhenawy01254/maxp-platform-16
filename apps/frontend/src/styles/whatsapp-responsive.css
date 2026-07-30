@@ -541,20 +541,20 @@
 
 /* ── 26. Custom Messages Area Background ── */
 .whatsapp-messages-area {
-  background-color: #ffffff !important; /* Pure white in light mode */
+  background-color: oklch(1.000 0.000 0.0) !important; /* Pure white in light mode */
   background-image: none !important;
 }
 
 :root {
-  --whatsapp-message-incoming: #f0f2f5;
+  --whatsapp-message-incoming: oklch(0.960 0.005 258.3);
 }
 
 .dark {
-  --whatsapp-message-incoming: #1f2c33 !important;
+  --whatsapp-message-incoming: oklch(0.284 0.022 232.0) !important;
 }
 
 .dark .whatsapp-messages-area {
-  background-color: #0b141a !important; /* Dark WhatsApp slate-green */
+  background-color: oklch(0.185 0.018 238.2) !important; /* Dark WhatsApp slate-green */
   background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0) !important;
   background-size: 20px 20px !important;
 }

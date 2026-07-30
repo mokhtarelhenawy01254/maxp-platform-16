@@ -1,31 +1,31 @@
 :root {
-  --role-ceo: #6366f1;
-  --role-sales: #10b981;
-  --role-support: #f59e0b;
-  --role-shipping: #3b82f6;
-  --role-inventory: #8b5cf6;
-  --role-marketing: #ec4899;
-  --role-facebook-sales-support: #0ea5e9;
-  --role-default: #64748b;
+  --role-ceo: oklch(0.585 0.204 277.1);
+  --role-sales: oklch(0.696 0.149 162.5);
+  --role-support: oklch(0.769 0.165 70.1);
+  --role-shipping: oklch(0.623 0.188 259.8);
+  --role-inventory: oklch(0.606 0.219 292.7);
+  --role-marketing: oklch(0.656 0.212 354.3);
+  --role-facebook-sales-support: oklch(0.685 0.148 237.3);
+  --role-default: oklch(0.554 0.041 257.4);
   
-  --channel-facebook: #1877f2;
-  --channel-whatsapp: #16a34a;
-  --channel-dashboard: #7c3aed;
+  --channel-facebook: oklch(0.589 0.203 257.9);
+  --channel-whatsapp: oklch(0.627 0.170 149.2);
+  --channel-dashboard: oklch(0.541 0.247 293.0);
 }
 
 .dark {
-  --role-ceo: #818cf8;
-  --role-sales: #34d399;
-  --role-support: #fbbf24;
-  --role-shipping: #60a5fa;
-  --role-inventory: #a78bfa;
-  --role-marketing: #f472b6;
-  --role-facebook-sales-support: #38bdf8;
-  --role-default: #94a3b8;
+  --role-ceo: oklch(0.680 0.158 276.9);
+  --role-sales: oklch(0.773 0.153 163.2);
+  --role-support: oklch(0.837 0.164 84.4);
+  --role-shipping: oklch(0.714 0.143 254.6);
+  --role-inventory: oklch(0.709 0.159 293.5);
+  --role-marketing: oklch(0.725 0.175 349.8);
+  --role-facebook-sales-support: oklch(0.754 0.139 232.7);
+  --role-default: oklch(0.711 0.035 256.8);
   
-  --channel-facebook: #60a5fa;
-  --channel-whatsapp: #4ade80;
-  --channel-dashboard: #a78bfa;
+  --channel-facebook: oklch(0.714 0.143 254.6);
+  --channel-whatsapp: oklch(0.800 0.182 151.7);
+  --channel-dashboard: oklch(0.709 0.159 293.5);
 }
 
 .app-dashboard-root {

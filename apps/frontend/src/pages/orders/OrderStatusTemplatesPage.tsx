@@ -12,6 +12,9 @@ import {
   BellSlashIcon,
   ChevronDownIcon,
   GlobeAltIcon,
+  Cog6ToothIcon,
+  ClockIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 
 interface Template {
@@ -43,6 +46,17 @@ interface TemplateFormState {
   isActive: boolean;
 }
 
+interface SettingsForm {
+  isEnabled: boolean;
+  orderNotificationsEnabled: boolean;
+  defaultSessionId: string;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  rateLimitPerMinute: number;
+  stickySessionEnabled: boolean;
+}
+
 const emptyTemplateForm = (): TemplateFormState => ({
   name: "",
   content: "",
@@ -56,8 +70,35 @@ const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
 {{orderItems}}
 شكراً لتعاملك معنا! ✨`;
 
+const ORDER_VARIABLES = [
+  { var: "{{customerName}}", desc: "اسم العميل" },
+  { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
+  { var: "{{orderNumber}}", desc: "رقم الطلب" },
+  { var: "{{orderDate}}", desc: "تاريخ الطلب" },
+  { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
+  { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
+  { var: "{{total}}", desc: "إجمالي الطلب" },
+  { var: "{{subtotal}}", desc: "المجموع الفرعي" },
+  { var: "{{shipping}}", desc: "قيمة الشحن" },
+  { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
+  { var: "{{trackingNumber}}", desc: "رقم التتبع" },
+  { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
+  { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
+  { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
+];
+
+const TABS = [
+  { key: "all", label: "الكل" },
+  { key: "order", label: "الطلبات" },
+  { key: "payment", label: "الدفع" },
+  { key: "preparation", label: "التجهيز" },
+  { key: "shipping", label: "الشحن" },
+];
+
 export default function OrderStatusTemplatesPage() {
   const { t, i18n } = useTranslation();
+  const [activeTab, setActiveTab] = useState("all");
+
   const [statuses, setStatuses] = useState<StatusWithTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,22 +112,10 @@ export default function OrderStatusTemplatesPage() {
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
-  const ORDER_VARIABLES = [
-    { var: "{{customerName}}", desc: "اسم العميل" },
-    { var: "{{customerPhone}}", desc: "رقم هاتف العميل" },
-    { var: "{{orderNumber}}", desc: "رقم الطلب" },
-    { var: "{{orderDate}}", desc: "تاريخ الطلب" },
-    { var: "{{orderItems}}", desc: "تفاصيل المنتجات (الاسم، اللون، المقاس، الكمية)" },
-    { var: "{{status}}", desc: "اسم الحالة النصي (مثال: قيد المعالجة)" },
-    { var: "{{total}}", desc: "إجمالي الطلب" },
-    { var: "{{subtotal}}", desc: "المجموع الفرعي" },
-    { var: "{{shipping}}", desc: "قيمة الشحن" },
-    { var: "{{currency}}", desc: "العملة (مثال: EGP)" },
-    { var: "{{trackingNumber}}", desc: "رقم التتبع" },
-    { var: "{{trackingLink}}", desc: "رابط تتبع الطلب" },
-    { var: "{{estimatedDays}}", desc: "الأيام التقديرية للشحن" },
-    { var: "{{reason}}", desc: "سبب الإلغاء أو الرفض" },
-  ];
+  const [settings, setSettings] = useState<SettingsForm | null>(null);
+  const [settingsSessions, setSettingsSessions] = useState<{ id: string; name: string; phoneNumber?: string; status: string }[]>([]);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -103,10 +132,26 @@ export default function OrderStatusTemplatesPage() {
     }
   }, [t]);
 
+  const fetchSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await apiClient.get("/whatsapp/notifications/settings");
+      if (res.data?.success) {
+        setSettings(res.data.settings);
+        setSettingsSessions(res.data.sessions || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch settings", err);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     document.title = `${t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")} | MaxP`;
     fetchData();
-  }, [fetchData, t]);
+    fetchSettings();
+  }, [fetchData, fetchSettings, t]);
 
   const openCreateDialog = (status: StatusWithTemplate) => {
     setSelectedStatus(status);
@@ -135,7 +180,6 @@ export default function OrderStatusTemplatesPage() {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return;
     }
-
     setSaving(true);
     try {
       const isEdit = !!selectedStatus.template?.id;
@@ -146,7 +190,6 @@ export default function OrderStatusTemplatesPage() {
         content: templateForm.content,
         isActive: templateForm.isActive,
       };
-
       if (isEdit) {
         await apiClient.put(`/whatsapp/notifications/templates/${selectedStatus.template!.id}`, payload);
         toast.success(t("orders.templateUpdated", "تم تحديث القالب بنجاح"));
@@ -154,11 +197,9 @@ export default function OrderStatusTemplatesPage() {
         await apiClient.post("/whatsapp/notifications/templates", payload);
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
       }
-
       setDialogOpen(false);
       fetchData();
     } catch (err: any) {
-      console.error("Failed to save template", err);
       toast.error(err?.response?.data?.message || t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
     } finally {
       setSaving(false);
@@ -172,9 +213,7 @@ export default function OrderStatusTemplatesPage() {
         notifyCustomer: !status.notifyCustomer,
       });
       setStatuses((prev) =>
-        prev.map((s) =>
-          s.id === status.id ? { ...s, notifyCustomer: !s.notifyCustomer } : s
-        )
+        prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: !s.notifyCustomer } : s))
       );
       toast.success(
         status.notifyCustomer
@@ -182,8 +221,7 @@ export default function OrderStatusTemplatesPage() {
           : t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
       );
     } catch (err: any) {
-      console.error("Failed to toggle notifyCustomer", err);
-      toast.error(err?.response?.data?.message || t("orders.toggleError", "حدث خطأ في تحديث الإشعار"));
+      toast.error(err?.response?.data?.message || t("orders.toggleError", "حدث خطأ"));
     } finally {
       setTogglingId(null);
     }
@@ -193,12 +231,12 @@ export default function OrderStatusTemplatesPage() {
     try {
       const res = await apiClient.get("/whatsapp/sessions");
       const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = res.data?.sessions || [];
-      const cloud = list.filter(s => s.provider === 'META_CLOUD');
+      const cloud = list.filter((s) => s.provider === "META_CLOUD");
       setMetaSessions(cloud);
       if (cloud.length > 0 && !selectedMetaSession) {
         setSelectedMetaSession(cloud[0].id);
       }
-    } catch { /* ignore */ }
+    } catch {}
   }, [selectedMetaSession]);
 
   const publishToMeta = async (templateId: string) => {
@@ -208,9 +246,7 @@ export default function OrderStatusTemplatesPage() {
     }
     setPublishingId(templateId);
     try {
-      await apiClient.post(`/whatsapp-notifications/templates/${templateId}/publish`, {
-        sessionId: selectedMetaSession,
-      });
+      await apiClient.post(`/whatsapp-notifications/templates/${templateId}/publish`, { sessionId: selectedMetaSession });
       toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
     } catch (err: any) {
       toast.error(err?.response?.data?.error || t("orders.publishFailed", "فشل النشر على ميتا"));
@@ -219,179 +255,397 @@ export default function OrderStatusTemplatesPage() {
     }
   };
 
-  const statusesWithoutTemplate = statuses.filter((s) => !s.hasTemplate);
-  const statusesWithTemplate = statuses.filter((s) => s.hasTemplate);
+  const handleSaveSettings = async () => {
+    if (!settings) return;
+    setSettingsSaving(true);
+    try {
+      const res = await apiClient.put("/whatsapp/notifications/settings", settings);
+      if (res.data?.success) {
+        toast.success(t("orders.settingsSaved", "تم حفظ الإعدادات"));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.settingsError", "فشل حفظ الإعدادات"));
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const filteredStatuses = activeTab === "all"
+    ? statuses
+    : statuses.filter((s) => s.statusType === activeTab);
+
+  const statusesWithoutTemplate = filteredStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+    <div className="mx-auto max-w-6xl px-4 py-4">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
           {t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
           {t("orders.statusTemplatesDesc", "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات")}
         </p>
       </div>
 
-      {hasGaps && (
-        <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
-          <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
-          <p className="text-sm">
-            {t("orders.statusTemplatesGap", {
-              defaultValue: "{{count}} حالة بدون قالب واتساب",
-              count: statusesWithoutTemplate.length,
-            })}
-          </p>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
+        {TABS.map((tab) => {
+          const count = tab.key === "all" ? statuses.length : statuses.filter((s) => s.statusType === tab.key).length;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`whitespace-nowrap px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+                activeTab === tab.key
+                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                  : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+              }`}
+            >
+              {tab.label}
+              <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
+                {count}
+              </span>
+            </button>
+          );
+        })}
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`mr-auto flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === "settings"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+          }`}
+        >
+          <Cog6ToothIcon className="h-4 w-4" />
+          الإعدادات
+        </button>
+      </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <span className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-          <p>{t("common.loading", "جار التحميل...")}</p>
-        </div>
-      ) : statuses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-20 text-center dark:border-white/10">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900/50">
-            <DocumentTextIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />
-          </div>
-          <p className="text-base font-semibold text-slate-800 dark:text-slate-300">
-            {t("orders.noStatuses", "لا توجد حالات طلبات")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {statuses.map((status) => {
-            const hasTemplate = status.hasTemplate;
-            return (
-              <div
-                key={status.id}
-                className="group rounded-xl border border-slate-200/70 bg-white p-4 transition hover:shadow-sm dark:border-white/10 dark:bg-slate-900/50"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <span
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-                      style={{ backgroundColor: status.color || "#6B7280" }}
-                    >
-                      {status.sortOrder}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                          {status.name}
-                        </span>
-                        {status.isSystemStatus && (
-                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                            {t("orders.system", "نظامي")}
-                          </span>
-                        )}
-                        {status.statusType && status.statusType !== "order" && (
-                          <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                            {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="font-mono">{status.code}</span>
-                        <button
-                          onClick={() => toggleNotify(status)}
-                          disabled={togglingId === status.id}
-                          className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition ${
-                            status.notifyCustomer
-                              ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
-                              : "bg-slate-50 text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-500"
-                          }`}
-                        >
-                          {togglingId === status.id ? (
-                            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          ) : status.notifyCustomer ? (
-                            <BellIcon className="h-3.5 w-3.5" />
-                          ) : (
-                            <BellSlashIcon className="h-3.5 w-3.5" />
-                          )}
-                          {status.notifyCustomer
-                            ? t("orders.notifyOn", "الإشعار مفعل")
-                            : t("orders.notifyOff", "الإشعار متوقف")}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+      {activeTab === "settings" ? (
+        /* ⚙️ Settings Panel */
+        <div className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
+          <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
+            <Cog6ToothIcon className="ml-1.5 inline h-5 w-5" />
+            إعدادات إشعارات واتساب للطلبات
+          </h2>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    {hasTemplate ? (
-                      <span className="flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                        <CheckCircleIcon className="h-3.5 w-3.5" />
-                        {t("orders.hasTemplate", "يوجد قالب")}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                        <XCircleIcon className="h-3.5 w-3.5" />
-                        {t("orders.noTemplate", "بدون قالب")}
-                      </span>
-                    )}
-
-                    {hasTemplate ? (
-                      <button
-                        onClick={() => openEditDialog(status)}
-                        className="flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                      >
-                        <PencilSquareIcon className="h-3.5 w-3.5" />
-                        {t("common.edit", "تعديل")}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => openCreateDialog(status)}
-                        disabled={!status.notifyCustomer}
-                        title={
-                          !status.notifyCustomer
-                            ? t("orders.enableNotifyFirst", "فعّل إرسال الإشعار أولاً من إعدادات الحالة")
-                            : ""
-                        }
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                          status.notifyCustomer
-                            ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                            : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-                        }`}
-                      >
-                        <PlusIcon className="h-3.5 w-3.5" />
-                        {t("orders.createTemplate", "إضافة قالب")}
-                      </button>
-                    )}
-                  </div>
+          {settingsLoading ? (
+            <div className="flex justify-center py-10">
+              <span className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
+            </div>
+          ) : !settings ? (
+            <p className="text-sm text-slate-400">لا توجد إعدادات</p>
+          ) : (
+            <div className="space-y-5 max-w-xl">
+              {/* General toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">تفعيل إشعارات واتساب</p>
+                  <p className="text-xs text-slate-500">تشغيل أو إيقاف جميع إشعارات الواتساب</p>
                 </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.isEnabled}
+                    onChange={(e) => setSettings((p) => p ? { ...p, isEnabled: e.target.checked } : p)}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                </label>
+              </div>
 
-                {hasTemplate && status.template?.content && (
-                  <div className="mt-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-900/30">
-                    <p className="mb-1 text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                      {t("orders.templatePreview", "معاينة القالب")}
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              {/* Order notifications toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">إشعارات حالات الطلبات</p>
+                  <p className="text-xs text-slate-500">إرسال رسالة واتساب عند تغيير حالة الطلب</p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.orderNotificationsEnabled}
+                    onChange={(e) => setSettings((p) => p ? { ...p, orderNotificationsEnabled: e.target.checked } : p)}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                </label>
+              </div>
+
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              {/* Default session */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">الجلسة الأساسية</label>
+                <p className="mb-2 text-xs text-slate-500">جلسة الواتساب اللي هتتبعت منها الرسايل</p>
+                <select
+                  value={settings.defaultSessionId || ""}
+                  onChange={(e) => setSettings((p) => p ? { ...p, defaultSessionId: e.target.value || null } : p)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="">تلقائي (أي جلسة متصلة)</option>
+                  {settingsSessions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} {s.phoneNumber ? `(${s.phoneNumber})` : ""} - {s.status === "CONNECTED" ? "🟢" : "🔴"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              {/* Sticky session */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">تثبيت الجلسة (Sticky Session)</p>
+                  <p className="text-xs text-slate-500">نفس العميل يستخدم نفس الجلسة دايمًا</p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.stickySessionEnabled}
+                    onChange={(e) => setSettings((p) => p ? { ...p, stickySessionEnabled: e.target.checked } : p)}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                </label>
+              </div>
+
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              {/* Quiet hours */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      <ClockIcon className="ml-1 inline h-4 w-4" />
+                      ساعات الهدوء
                     </p>
-                    <p className="whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-300 line-clamp-3">
-                      {status.template.content}
-                    </p>
+                    <p className="text-xs text-slate-500">ما ترسلش رسايل في الوقت ده</p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={settings.quietHoursEnabled}
+                      onChange={(e) => setSettings((p) => p ? { ...p, quietHoursEnabled: e.target.checked } : p)}
+                      className="peer sr-only"
+                    />
+                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                  </label>
+                </div>
+                {settings.quietHoursEnabled && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <div>
+                      <label className="text-xs text-slate-500">من</label>
+                      <input
+                        type="time"
+                        value={settings.quietHoursStart}
+                        onChange={(e) => setSettings((p) => p ? { ...p, quietHoursStart: e.target.value } : p)}
+                        className="mt-1 block rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    <span className="mt-5 text-slate-400">→</span>
+                    <div>
+                      <label className="text-xs text-slate-500">إلى</label>
+                      <input
+                        type="time"
+                        value={settings.quietHoursEnd}
+                        onChange={(e) => setSettings((p) => p ? { ...p, quietHoursEnd: e.target.value } : p)}
+                        className="mt-1 block rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
-            );
-          })}
+
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              {/* Rate limit */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">
+                  <BoltIcon className="ml-1 inline h-4 w-4" />
+                  حد الإرسال (رسالة/دقيقة)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={settings.rateLimitPerMinute}
+                  onChange={(e) => setSettings((p) => p ? { ...p, rateLimitPerMinute: parseInt(e.target.value) || 30 } : p)}
+                  className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+
+              <hr className="border-slate-200 dark:border-slate-700" />
+
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsSaving}
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {settingsSaving && (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
+                حفظ الإعدادات
+              </button>
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          {/* Gap banner */}
+          {hasGaps && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
+              <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
+              <span>
+                {statusesWithoutTemplate.length} حالة بدون قالب واتساب
+                {activeTab !== "all" ? " في هذا القسم" : ""}
+              </span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <span className="mb-3 inline-block h-7 w-7 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
+              <p className="text-sm">{t("common.loading", "جار التحميل...")}</p>
+            </div>
+          ) : filteredStatuses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-16 text-center dark:border-white/10">
+              <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
+                لا توجد حالات في هذا القسم
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredStatuses.map((status) => {
+                const hasTemplate = status.hasTemplate;
+                return (
+                  <div
+                    key={status.id}
+                    className="group rounded-lg border border-slate-200/70 bg-white p-3.5 transition hover:shadow-sm dark:border-white/10 dark:bg-slate-900/50"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <span
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
+                          style={{ backgroundColor: status.color || "#6B7280" }}
+                        >
+                          {status.sortOrder}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                              {status.name}
+                            </span>
+                            {status.isSystemStatus && (
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                {t("orders.system", "نظامي")}
+                              </span>
+                            )}
+                            {status.statusType && status.statusType !== "order" && (
+                              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="font-mono">{status.code}</span>
+                            <button
+                              onClick={() => toggleNotify(status)}
+                              disabled={togglingId === status.id}
+                              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                                status.notifyCustomer
+                                  ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
+                                  : "bg-slate-50 text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-500"
+                              }`}
+                            >
+                              {togglingId === status.id ? (
+                                <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : status.notifyCustomer ? (
+                                <BellIcon className="h-3 w-3" />
+                              ) : (
+                                <BellSlashIcon className="h-3 w-3" />
+                              )}
+                              {status.notifyCustomer ? "مفعل" : "متوقف"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {hasTemplate ? (
+                          <>
+                            <span className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                              <CheckCircleIcon className="h-3 w-3" />
+                              يوجد قالب
+                            </span>
+                            <button
+                              onClick={() => openEditDialog(status)}
+                              className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
+                            >
+                              <PencilSquareIcon className="h-3 w-3" />
+                              تعديل
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                              <XCircleIcon className="h-3 w-3" />
+                              بدون قالب
+                            </span>
+                            <button
+                              onClick={() => openCreateDialog(status)}
+                              disabled={!status.notifyCustomer}
+                              title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
+                              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
+                                status.notifyCustomer
+                                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                                  : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                              }`}
+                            >
+                              <PlusIcon className="h-3 w-3" />
+                              إضافة
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {hasTemplate && status.template?.content && (
+                      <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
+                        <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                          معاينة القالب
+                        </p>
+                        <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300 line-clamp-2">
+                          {status.template.content}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
+      {/* Template dialog */}
       {dialogOpen && selectedStatus && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
               {selectedStatus.template?.id
-                ? t("orders.editTemplateFor", "تعديل قالب: {{name}}", { name: selectedStatus.name })
-                : t("orders.createTemplateFor", "إنشاء قالب: {{name}}", { name: selectedStatus.name })}
+                ? `تعديل قالب: ${selectedStatus.name}`
+                : `إنشاء قالب: ${selectedStatus.name}`}
             </h2>
 
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {t("orders.eventType", "نوع الحدث")}
-                </label>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
                 <input
                   type="text"
                   value={selectedStatus.code}
@@ -401,65 +655,53 @@ export default function OrderStatusTemplatesPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {t("orders.templateName", "اسم القالب")}
-                </label>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">اسم القالب</label>
                 <input
                   type="text"
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm((p) => ({ ...p, name: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder={t("orders.templateNamePlaceholder", "مثال: قالب تأكيد الطلب")}
+                  placeholder="مثال: قالب تأكيد الطلب"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {t("orders.messageContent", "محتوى الرسالة")}
-                  <span className="text-red-500">*</span>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  محتوى الرسالة <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={templateForm.content}
                   onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value }))}
-                  rows={8}
+                  rows={6}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder={t("orders.messageContentPlaceholder", "اكتب رسالتك هنا...")}
+                  placeholder="اكتب رسالتك هنا..."
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowVariables(!showVariables)}
                   className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
                 >
-                  <ChevronDownIcon
-                    className={`h-3.5 w-3.5 transition ${showVariables ? "rotate-180" : ""}`}
-                  />
-                  {showVariables
-                    ? t("orders.hideVariables", "إخفاء المتغيرات")
-                    : t("orders.showVariables", "عرض كل المتغيرات المتاحة")}
+                  <ChevronDownIcon className={`h-3 w-3 transition ${showVariables ? "rotate-180" : ""}`} />
+                  {showVariables ? "إخفاء المتغيرات" : "عرض كل المتغيرات المتاحة"}
                 </button>
 
                 {showVariables && (
-                  <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                    <table className="w-full text-xs">
+                  <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="w-full text-[11px]">
                       <thead>
                         <tr className="bg-slate-50 text-right dark:bg-slate-800">
-                          <th className="px-3 py-1.5 font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.variable", "المتغير")}
-                          </th>
-                          <th className="px-3 py-1.5 font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.description", "الوصف")}
-                          </th>
+                          <th className="px-2 py-1 font-medium text-slate-500">المتغير</th>
+                          <th className="px-2 py-1 font-medium text-slate-500">الوصف</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {ORDER_VARIABLES.map((v) => (
                           <tr key={v.var} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <td className="whitespace-nowrap px-3 py-1.5 font-mono text-indigo-600 dark:text-indigo-400">
+                            <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
                               {v.var}
                             </td>
-                            <td className="px-3 py-1.5 text-slate-600 dark:text-slate-400">
-                              {v.desc}
-                            </td>
+                            <td className="px-2 py-1 text-slate-600 dark:text-slate-400">{v.desc}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -477,41 +719,37 @@ export default function OrderStatusTemplatesPage() {
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 <label htmlFor="template-active" className="text-sm text-slate-700 dark:text-slate-300">
-                  {t("orders.templateActive", "قالب نشط")}
+                  قالب نشط
                 </label>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3">
+            <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                {t("common.cancel", "إلغاء")}
+                إلغاء
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !templateForm.content.trim()}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
               >
-                {saving && (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                )}
-                {t("common.save", "حفظ")}
+                {saving && <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                حفظ
               </button>
             </div>
 
             {selectedStatus?.template?.id && (
-              <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
-                <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  {t("orders.metaPublish", "النشر على Meta Cloud API")}
-                </p>
+              <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+                <p className="mb-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">النشر على Meta Cloud API</p>
                 {metaSessions.length > 0 ? (
                   <div className="flex items-center gap-2">
                     <select
                       value={selectedMetaSession}
                       onChange={(e) => setSelectedMetaSession(e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     >
                       {metaSessions.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -522,20 +760,18 @@ export default function OrderStatusTemplatesPage() {
                     <button
                       onClick={() => publishToMeta(selectedStatus.template!.id!)}
                       disabled={publishingId === selectedStatus.template!.id}
-                      className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                      className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
                     >
                       {publishingId === selectedStatus.template!.id ? (
-                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
                         <GlobeAltIcon className="h-3.5 w-3.5" />
                       )}
-                      {t("orders.publish", "نشر")}
+                      نشر
                     </button>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
-                    {t("orders.noMetaSession", "لا توجد جلسة ميتا متصلة. اربط حساب Meta Cloud API أولاً.")}
-                  </p>
+                  <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة</p>
                 )}
               </div>
             )}

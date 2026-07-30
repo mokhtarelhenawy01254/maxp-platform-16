@@ -1,62 +1,62 @@
 /* ReactQuill Dark Mode Styles */
 .dark .dark-mode-quill .ql-toolbar {
-  background-color: #374151 !important;
-  border-color: #4b5563 !important;
+  background-color: oklch(0.373 0.031 259.7) !important;
+  border-color: oklch(0.446 0.026 256.8) !important;
   border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-stroke {
-  stroke: #d1d5db !important;
+  stroke: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-fill {
-  fill: #d1d5db !important;
+  fill: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-picker-label {
-  color: #d1d5db !important;
+  color: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-picker-options {
-  background-color: #374151 !important;
-  border-color: #4b5563 !important;
+  background-color: oklch(0.373 0.031 259.7) !important;
+  border-color: oklch(0.446 0.026 256.8) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-picker-item {
-  color: #d1d5db !important;
+  color: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar .ql-picker-item:hover {
-  background-color: #4b5563 !important;
+  background-color: oklch(0.446 0.026 256.8) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar button {
-  color: #d1d5db !important;
+  color: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar button:hover {
-  background-color: #4b5563 !important;
+  background-color: oklch(0.446 0.026 256.8) !important;
 }
 
 .dark .dark-mode-quill .ql-toolbar button.ql-active {
-  background-color: #3b82f6 !important;
+  background-color: oklch(0.623 0.188 259.8) !important;
   color: white !important;
 }
 
 .dark .dark-mode-quill .ql-container {
-  background-color: #1f2937 !important;
-  border-color: #4b5563 !important;
-  color: #f9fafb !important;
+  background-color: oklch(0.278 0.030 256.8) !important;
+  border-color: oklch(0.446 0.026 256.8) !important;
+  color: oklch(0.985 0.002 247.8) !important;
   border-radius: 0 0 0.5rem 0.5rem;
 }
 
 .dark .dark-mode-quill .ql-editor {
-  background-color: #1f2937 !important;
-  color: #f9fafb !important;
+  background-color: oklch(0.278 0.030 256.8) !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor.ql-blank::before {
-  color: #9ca3af !important;
+  color: oklch(0.714 0.019 261.3) !important;
 }
 
 .dark .dark-mode-quill .ql-editor h1,
@@ -65,98 +65,98 @@
 .dark .dark-mode-quill .ql-editor h4,
 .dark .dark-mode-quill .ql-editor h5,
 .dark .dark-mode-quill .ql-editor h6 {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor p {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor ul,
 .dark .dark-mode-quill .ql-editor ol {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor li {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor strong {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor em {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor u {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor s {
-  color: #f9fafb !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor a {
-  color: #60a5fa !important;
+  color: oklch(0.714 0.143 254.6) !important;
 }
 
 .dark .dark-mode-quill .ql-editor blockquote {
-  border-left-color: #4b5563 !important;
-  color: #d1d5db !important;
+  border-left-color: oklch(0.446 0.026 256.8) !important;
+  color: oklch(0.872 0.009 258.3) !important;
 }
 
 .dark .dark-mode-quill .ql-editor pre {
-  background-color: #111827 !important;
-  color: #f9fafb !important;
-  border: 1px solid #4b5563 !important;
+  background-color: oklch(0.210 0.032 264.7) !important;
+  color: oklch(0.985 0.002 247.8) !important;
+  border: 1px solid oklch(0.446 0.026 256.8) !important;
 }
 
 .dark .dark-mode-quill .ql-editor code {
-  background-color: #111827 !important;
-  color: #f9fafb !important;
+  background-color: oklch(0.210 0.032 264.7) !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 /* Tooltip styles */
 .dark .dark-mode-quill .ql-tooltip {
-  background-color: #374151 !important;
-  border-color: #4b5563 !important;
-  color: #f9fafb !important;
+  background-color: oklch(0.373 0.031 259.7) !important;
+  border-color: oklch(0.446 0.026 256.8) !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-tooltip input {
-  background-color: #1f2937 !important;
-  border-color: #4b5563 !important;
-  color: #f9fafb !important;
+  background-color: oklch(0.278 0.030 256.8) !important;
+  border-color: oklch(0.446 0.026 256.8) !important;
+  color: oklch(0.985 0.002 247.8) !important;
 }
 
 .dark .dark-mode-quill .ql-tooltip .ql-action {
-  color: #60a5fa !important;
+  color: oklch(0.714 0.143 254.6) !important;
 }
 
 .dark .dark-mode-quill .ql-tooltip .ql-remove {
-  color: #f87171 !important;
+  color: oklch(0.711 0.166 22.2) !important;
 }
 
 /* Snow theme specific overrides */
 .dark .dark-mode-quill.ql-snow .ql-tooltip {
-  background-color: #374151 !important;
-  border: 1px solid #4b5563 !important;
+  background-color: oklch(0.373 0.031 259.7) !important;
+  border: 1px solid oklch(0.446 0.026 256.8) !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
 }
 
 .dark .dark-mode-quill.ql-snow .ql-tooltip::before {
-  border-bottom-color: #374151 !important;
+  border-bottom-color: oklch(0.373 0.031 259.7) !important;
 }
 
 .dark .dark-mode-quill.ql-snow .ql-tooltip[data-mode="link"]::before {
-  border-bottom-color: #374151 !important;
+  border-bottom-color: oklch(0.373 0.031 259.7) !important;
 }
 
 .dark .dark-mode-quill.ql-snow .ql-tooltip[data-mode="formula"]::before {
-  border-bottom-color: #374151 !important;
+  border-bottom-color: oklch(0.373 0.031 259.7) !important;
 }
 
 .dark .dark-mode-quill.ql-snow .ql-tooltip[data-mode="video"]::before {
-  border-bottom-color: #374151 !important;
+  border-bottom-color: oklch(0.373 0.031 259.7) !important;
 }

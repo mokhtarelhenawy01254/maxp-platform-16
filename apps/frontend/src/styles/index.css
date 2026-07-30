@@ -120,31 +120,31 @@ html *::after {
 
 /* CSS Variables for theming */
 :root {
-  --color-primary: #2f6bff;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #22c7c9;
-  --color-secondary-foreground: #04101d;
-  --color-tertiary: #8b5cf6;
-  --color-tertiary-foreground: #ffffff;
-  --color-background: #f4f8fc;
-  --color-foreground: #0f1b2d;
-  --color-muted: #dce6f1;
-  --color-muted-foreground: #647991;
-  --color-border: #c9d6e4;
-  --color-input: #ffffff;
-  --color-ring: #2f6bff;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-warning: #f59e0b;
-  --color-warning-foreground: #ffffff;
-  --color-success: #14b87a;
-  --color-success-foreground: #ffffff;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f1b2d;
-  --color-accent: #dce6f1;
-  --color-accent-foreground: #0f1b2d;
-  --color-info: #2f6bff;
-  --color-info-foreground: #ffffff;
+  --color-primary: oklch(0.581 0.229 263.9);
+  --color-primary-foreground: oklch(1.000 0.000 0.0);
+  --color-secondary: oklch(0.754 0.123 196.2);
+  --color-secondary-foreground: oklch(0.169 0.033 249.5);
+  --color-tertiary: oklch(0.606 0.219 292.7);
+  --color-tertiary-foreground: oklch(1.000 0.000 0.0);
+  --color-background: oklch(0.977 0.007 247.9);
+  --color-foreground: oklch(0.221 0.039 258.3);
+  --color-muted: oklch(0.921 0.018 250.6);
+  --color-muted-foreground: oklch(0.568 0.045 252.0);
+  --color-border: oklch(0.870 0.024 250.1);
+  --color-input: oklch(1.000 0.000 0.0);
+  --color-ring: oklch(0.581 0.229 263.9);
+  --color-destructive: oklch(0.637 0.208 25.3);
+  --color-destructive-foreground: oklch(1.000 0.000 0.0);
+  --color-warning: oklch(0.769 0.165 70.1);
+  --color-warning-foreground: oklch(1.000 0.000 0.0);
+  --color-success: oklch(0.692 0.153 159.9);
+  --color-success-foreground: oklch(1.000 0.000 0.0);
+  --color-card: oklch(1.000 0.000 0.0);
+  --color-card-foreground: oklch(0.221 0.039 258.3);
+  --color-accent: oklch(0.921 0.018 250.6);
+  --color-accent-foreground: oklch(0.221 0.039 258.3);
+  --color-info: oklch(0.581 0.229 263.9);
+  --color-info-foreground: oklch(1.000 0.000 0.0);
 
   /* Theme Fonts */
   --theme-font-heading: "Cairo", "Geist Variable", sans-serif;
@@ -175,10 +175,10 @@ html *::after {
   /* App Shell Backgrounds (Managed by Appearance Settings) */
   --app-bg-gradient: linear-gradient(
     135deg,
-    #f6fbff 0%,
-    #eef5fd 28%,
-    #e7f0fa 54%,
-    #f4f9fc 100%
+    oklch(0.985 0.008 241.7) 0%,
+    oklch(0.967 0.013 251.6) 28%,
+    oklch(0.951 0.017 250.8) 54%,
+    oklch(0.979 0.007 233.6) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -263,16 +263,16 @@ html *::after {
   --whatsapp-bg: var(--color-background);
   --whatsapp-surface: var(--color-card);
   --whatsapp-surface-hover: var(--color-muted);
-  --whatsapp-surface-active: #f0f1f3;
+  --whatsapp-surface-active: oklch(0.958 0.003 264.5);
   --whatsapp-surface-strong: var(--color-card);
   --whatsapp-surface-elevated: var(--color-card);
   --whatsapp-surface-overlay: var(--color-muted);
   --whatsapp-surface-muted: var(--color-muted);
   --whatsapp-input-bg: var(--color-muted);
   --whatsapp-typing-bg: rgba(255, 255, 255, 0.92);
-  --whatsapp-message-outgoing: #d9fdd3;
-  --whatsapp-message-outgoing-text: #1f2d1f;
-  --whatsapp-message-incoming: #ffffff;
+  --whatsapp-message-outgoing: oklch(0.957 0.067 141.1);
+  --whatsapp-message-outgoing-text: oklch(0.280 0.032 144.7);
+  --whatsapp-message-incoming: oklch(1.000 0.000 0.0);
   --whatsapp-message-incoming-text: var(--color-foreground);
   --whatsapp-bubble-shadow: 0 8px 24px rgba(15, 27, 45, 0.08);
   --whatsapp-panel-border: color-mix(
@@ -322,28 +322,28 @@ html *::after {
 
 @theme inline {
   --color-primary: var(--color-primary);
-  --color-primary-50: #eef4ff;
-  --color-primary-100: #d9e5ff;
-  --color-primary-200: #b8ceff;
-  --color-primary-300: #8eaeff;
-  --color-primary-400: #5f88ff;
-  --color-primary-500: #2f6bff;
-  --color-primary-600: #2156d4;
-  --color-primary-700: #1c45a6;
-  --color-primary-800: #193a87;
-  --color-primary-900: #172f6c;
+  --color-primary-50: oklch(0.966 0.016 262.8);
+  --color-primary-100: oklch(0.921 0.038 265.8);
+  --color-primary-200: oklch(0.852 0.073 266.0);
+  --color-primary-300: oklch(0.759 0.122 267.1);
+  --color-primary-400: oklch(0.656 0.182 267.0);
+  --color-primary-500: oklch(0.581 0.229 263.9);
+  --color-primary-600: oklch(0.501 0.202 263.5);
+  --color-primary-700: oklch(0.426 0.163 263.6);
+  --color-primary-800: oklch(0.374 0.135 263.6);
+  --color-primary-900: oklch(0.326 0.111 264.7);
   --color-primary-foreground: var(--color-primary-foreground);
   --color-secondary: var(--color-secondary);
-  --color-secondary-50: #ecfcfc;
-  --color-secondary-100: #cff8f8;
-  --color-secondary-200: #a6eff0;
-  --color-secondary-300: #6fe3e5;
-  --color-secondary-400: #3ad3d5;
-  --color-secondary-500: #22c7c9;
-  --color-secondary-600: #149ea0;
-  --color-secondary-700: #117c7f;
-  --color-secondary-800: #145f61;
-  --color-secondary-900: #154e50;
+  --color-secondary-50: oklch(0.979 0.017 196.9);
+  --color-secondary-100: oklch(0.950 0.042 196.5);
+  --color-secondary-200: oklch(0.905 0.072 197.0);
+  --color-secondary-300: oklch(0.850 0.105 196.9);
+  --color-secondary-400: oklch(0.792 0.123 196.3);
+  --color-secondary-500: oklch(0.754 0.123 196.2);
+  --color-secondary-600: oklch(0.635 0.105 196.5);
+  --color-secondary-700: oklch(0.534 0.087 197.9);
+  --color-secondary-800: oklch(0.444 0.069 197.7);
+  --color-secondary-900: oklch(0.389 0.057 198.5);
   --color-secondary-foreground: var(--color-secondary-foreground);
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
@@ -362,41 +362,41 @@ html *::after {
   --color-success-foreground: var(--color-success-foreground);
   --color-warning: var(--color-warning);
   --color-warning-foreground: var(--color-warning-foreground);
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
-  --color-red-100: #fee2e2;
-  --color-red-300: #fca5a5;
-  --color-red-500: #ef4444;
-  --color-red-600: #dc2626;
-  --color-red-700: #b91c1c;
-  --color-red-800: #991b1b;
-  --color-red-900: #7f1d1d;
-  --color-green-100: #dcfce7;
-  --color-green-300: #86efac;
-  --color-green-800: #166534;
-  --color-green-900: #14532d;
-  --color-yellow-100: #fef9c3;
-  --color-yellow-300: #fde047;
-  --color-yellow-800: #854d0e;
-  --color-yellow-900: #713f12;
-  --color-white: #ffffff;
-  --color-indigo-50: #eef2ff;
-  --color-indigo-100: #e0e7ff;
-  --color-indigo-200: #c7d2fe;
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;
-  --color-indigo-700: #4338ca;
-  --color-indigo-800: #3730a3;
-  --color-indigo-900: #312e81;
+  --color-gray-50: oklch(0.985 0.002 247.8);
+  --color-gray-100: oklch(0.967 0.003 264.5);
+  --color-gray-200: oklch(0.928 0.006 264.5);
+  --color-gray-300: oklch(0.872 0.009 258.3);
+  --color-gray-400: oklch(0.714 0.019 261.3);
+  --color-gray-500: oklch(0.551 0.023 264.4);
+  --color-gray-600: oklch(0.446 0.026 256.8);
+  --color-gray-700: oklch(0.373 0.031 259.7);
+  --color-gray-800: oklch(0.278 0.030 256.8);
+  --color-gray-900: oklch(0.210 0.032 264.7);
+  --color-red-100: oklch(0.936 0.031 17.7);
+  --color-red-300: oklch(0.808 0.103 19.6);
+  --color-red-500: oklch(0.637 0.208 25.3);
+  --color-red-600: oklch(0.577 0.215 27.3);
+  --color-red-700: oklch(0.505 0.190 27.5);
+  --color-red-800: oklch(0.444 0.161 26.9);
+  --color-red-900: oklch(0.396 0.133 25.7);
+  --color-green-100: oklch(0.962 0.043 156.7);
+  --color-green-300: oklch(0.871 0.136 154.4);
+  --color-green-800: oklch(0.448 0.108 151.3);
+  --color-green-900: oklch(0.393 0.090 152.5);
+  --color-yellow-100: oklch(0.973 0.069 103.2);
+  --color-yellow-300: oklch(0.905 0.166 98.1);
+  --color-yellow-800: oklch(0.476 0.103 61.9);
+  --color-yellow-900: oklch(0.421 0.090 57.7);
+  --color-white: oklch(1.000 0.000 0.0);
+  --color-indigo-50: oklch(0.962 0.018 272.3);
+  --color-indigo-100: oklch(0.930 0.033 272.8);
+  --color-indigo-200: oklch(0.870 0.062 274.0);
+  --color-indigo-400: oklch(0.680 0.158 276.9);
+  --color-indigo-500: oklch(0.585 0.204 277.1);
+  --color-indigo-600: oklch(0.511 0.230 277.0);
+  --color-indigo-700: oklch(0.457 0.215 277.0);
+  --color-indigo-800: oklch(0.398 0.177 277.4);
+  --color-indigo-900: oklch(0.359 0.135 278.7);
   --font-sans: "Geist Variable", "Cairo", sans-serif;
   --font-heading: var(--font-sans);
   --radius-lg: var(--theme-radius);
@@ -425,26 +425,79 @@ html *::after {
   --shadow-xs: var(--shadow-xs);
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-raised: 0 4px 16px rgba(0, 0, 0, 0.09);
+
+  /* Fonts — migrated from tailwind.config.cjs */
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Animations — migrated from tailwind.config.cjs */
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-fade-out: fadeOut 0.5s ease-in-out;
+  --animate-slide-in-right: slideInRight 0.3s ease-out;
+  --animate-slide-in-left: slideInLeft 0.3s ease-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+  --animate-bounce-subtle: bounceSubtle 2s infinite;
+  --animate-pulse-slow: pulse 3s infinite;
+
+  /* Colors: tertiary — migrated from tailwind.config.cjs */
+  --color-tertiary-50: oklch(0.969 0.016 293.8);
+  --color-tertiary-100: oklch(0.943 0.028 294.6);
+  --color-tertiary-200: oklch(0.894 0.055 293.3);
+  --color-tertiary-300: oklch(0.811 0.101 293.6);
+  --color-tertiary-400: oklch(0.709 0.159 293.5);
+  --color-tertiary-500: oklch(0.606 0.219 292.7);
+  --color-tertiary-600: oklch(0.541 0.247 293.0);
+  --color-tertiary-700: oklch(0.491 0.241 292.6);
+  --color-tertiary-800: oklch(0.432 0.211 292.8);
+  --color-tertiary-900: oklch(0.380 0.178 293.7);
+  --color-tertiary-950: oklch(0.283 0.135 291.1);
+
+  /* Colors: luxe — migrated from tailwind.config.cjs */
+  --color-luxe-50: oklch(0.978 0.008 73.7);
+  --color-luxe-100: oklch(0.934 0.022 69.8);
+  --color-luxe-200: oklch(0.856 0.042 67.2);
+  --color-luxe-300: oklch(0.774 0.064 66.6);
+  --color-luxe-400: oklch(0.687 0.086 63.8);
+  --color-luxe-500: oklch(0.531 0.116 59.3);
+  --color-luxe-600: oklch(0.477 0.104 59.0);
+  --color-luxe-700: oklch(0.414 0.090 57.7);
+  --color-luxe-800: oklch(0.361 0.075 57.7);
+  --color-luxe-900: oklch(0.302 0.058 56.7);
+
+  /* Colors: success shades — for EmployeesLanding */
+  --color-success-50: oklch(0.982 0.018 155.8);
+  --color-success-100: oklch(0.962 0.043 156.7);
+  --color-success-700: oklch(0.527 0.137 150.1);
+
+  /* Colors: error shades — for EmployeesLanding */
+  --color-error-50: oklch(0.971 0.013 17.4);
+  --color-error-100: oklch(0.936 0.031 17.7);
+  --color-error-700: oklch(0.505 0.190 27.5);
+
+  /* Backdrop blur — migrated from config */
+  --backdrop-blur-xs: 2px;
+
+  /* Screens — migrated from config */
+  --breakpoint-3xl: 1600px;
 }
 
 .dark {
-  --color-background: #071120;
-  --color-foreground: #edf4ff;
-  --color-muted: #0e1b2e;
-  --color-muted-foreground: #93abc7;
-  --color-border: #22374f;
-  --color-input: #0d192a;
-  --color-card: #0d1a2d;
-  --color-card-foreground: #edf4ff;
-  --color-accent: #15273f;
-  --color-accent-foreground: #edf4ff;
+  --color-background: oklch(0.177 0.035 257.7);
+  --color-foreground: oklch(0.965 0.017 259.4);
+  --color-muted: oklch(0.221 0.042 257.8);
+  --color-muted-foreground: oklch(0.733 0.049 252.4);
+  --color-border: oklch(0.331 0.051 252.6);
+  --color-input: oklch(0.212 0.038 257.2);
+  --color-card: oklch(0.217 0.042 257.8);
+  --color-card-foreground: oklch(0.965 0.017 259.4);
+  --color-accent: oklch(0.270 0.051 256.1);
+  --color-accent-foreground: oklch(0.965 0.017 259.4);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #071120 0%,
-    #091729 28%,
-    #0c1d34 54%,
-    #06101d 100%
+    oklch(0.177 0.035 257.7) 0%,
+    oklch(0.203 0.041 255.4) 28%,
+    oklch(0.230 0.050 256.5) 54%,
+    oklch(0.171 0.032 254.4) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -527,18 +580,18 @@ html *::after {
   /* WhatsApp Chat Dark Mode Variables */
   --whatsapp-bg: var(--color-background);
   --whatsapp-surface: var(--color-card);
-  --whatsapp-surface-hover: #1a2c42;
-  --whatsapp-surface-active: #1f3350;
+  --whatsapp-surface-hover: oklch(0.289 0.047 254.1);
+  --whatsapp-surface-active: oklch(0.319 0.058 257.6);
   --whatsapp-surface-strong: var(--color-card);
   --whatsapp-surface-elevated: var(--color-card);
   --whatsapp-surface-overlay: var(--color-muted);
   --whatsapp-surface-muted: var(--color-muted);
   --whatsapp-input-bg: var(--color-muted);
   --whatsapp-typing-bg: rgba(7, 17, 32, 0.92);
-  --whatsapp-message-outgoing: #005c4b;
-  --whatsapp-message-outgoing-text: #e9edef;
-  --whatsapp-message-incoming: #1f2c33;
-  --whatsapp-message-incoming-text: #e9edef;
+  --whatsapp-message-outgoing: oklch(0.424 0.080 174.4);
+  --whatsapp-message-outgoing-text: oklch(0.944 0.005 228.8);
+  --whatsapp-message-incoming: oklch(0.284 0.022 232.0);
+  --whatsapp-message-incoming-text: oklch(0.944 0.005 228.8);
   --whatsapp-bubble-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   --whatsapp-panel-border: color-mix(
     in srgb,
@@ -563,20 +616,20 @@ html *::after {
 }
 
 .dark[data-dark-style="midnight"] {
-  --color-background: #081223;
-  --color-foreground: #e2e8f0;
-  --color-muted: #0f172a;
-  --color-muted-foreground: #94a3b8;
-  --color-border: #1e3a66;
-  --color-input: #0f172a;
+  --color-background: oklch(0.183 0.038 260.2);
+  --color-foreground: oklch(0.929 0.013 255.5);
+  --color-muted: oklch(0.208 0.040 265.8);
+  --color-muted-foreground: oklch(0.711 0.035 256.8);
+  --color-border: oklch(0.351 0.084 259.1);
+  --color-input: oklch(0.208 0.040 265.8);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #081223 0%,
-    #0b1430 25%,
-    #0f1a3b 50%,
-    #0a1229 75%,
-    #071021 100%
+    oklch(0.183 0.038 260.2) 0%,
+    oklch(0.201 0.057 267.6) 25%,
+    oklch(0.229 0.065 267.2) 50%,
+    oklch(0.189 0.048 267.3) 75%,
+    oklch(0.175 0.038 261.5) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -596,41 +649,41 @@ html *::after {
     );
   --app-header-bg: linear-gradient(
     to left,
-    #081223 0%,
+    oklch(0.183 0.038 260.2) 0%,
     rgba(11, 20, 48, 0.95) 50%,
     rgba(7, 16, 33, 0.9) 100%
   );
   --app-header-border: rgba(59, 130, 246, 0.18);
   --app-rail-bg: linear-gradient(
     to bottom,
-    #0b1430 0%,
-    #0f1a3b 55%,
-    #071021 100%
+    oklch(0.201 0.057 267.6) 0%,
+    oklch(0.229 0.065 267.2) 55%,
+    oklch(0.175 0.038 261.5) 100%
   );
   --app-rail-border: rgba(59, 130, 246, 0.22);
   --app-panel-bg: linear-gradient(
     to bottom,
-    #0a132b 0%,
-    #0d1733 55%,
-    #091126 100%
+    oklch(0.194 0.050 266.3) 0%,
+    oklch(0.213 0.057 266.8) 55%,
+    oklch(0.183 0.045 266.3) 100%
   );
   --app-panel-border: rgba(59, 130, 246, 0.16);
 }
 
 .dark[data-dark-style="aurora"] {
-  --color-background: #061018;
-  --color-foreground: #e2f2ff;
-  --color-muted: #0f202e;
-  --color-muted-foreground: #94a3b8;
-  --color-border: #22445a;
-  --color-input: #0f202e;
+  --color-background: oklch(0.167 0.023 242.5);
+  --color-foreground: oklch(0.953 0.024 242.3);
+  --color-muted: oklch(0.236 0.035 244.9);
+  --color-muted-foreground: oklch(0.711 0.035 256.8);
+  --color-border: oklch(0.371 0.055 239.0);
+  --color-input: oklch(0.236 0.035 244.9);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #061018 0%,
-    #0b1f2c 40%,
-    #0d2b34 70%,
-    #061018 100%
+    oklch(0.167 0.023 242.5) 0%,
+    oklch(0.230 0.036 239.5) 40%,
+    oklch(0.271 0.039 220.8) 70%,
+    oklch(0.167 0.023 242.5) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -650,41 +703,41 @@ html *::after {
     );
   --app-header-bg: linear-gradient(
     to left,
-    #061018 0%,
+    oklch(0.167 0.023 242.5) 0%,
     rgba(11, 31, 44, 0.95) 55%,
     rgba(6, 16, 24, 0.9) 100%
   );
   --app-header-border: rgba(34, 211, 238, 0.2);
   --app-rail-bg: linear-gradient(
     to bottom,
-    #071521 0%,
-    #0b1c28 55%,
-    #061018 100%
+    oklch(0.190 0.032 245.8) 0%,
+    oklch(0.218 0.033 241.2) 55%,
+    oklch(0.167 0.023 242.5) 100%
   );
   --app-rail-border: rgba(34, 211, 238, 0.18);
   --app-panel-bg: linear-gradient(
     to bottom,
-    #071521 0%,
-    #0a1a26 55%,
-    #05101a 100%
+    oklch(0.190 0.032 245.8) 0%,
+    oklch(0.210 0.032 242.8) 55%,
+    oklch(0.168 0.027 245.5) 100%
   );
   --app-panel-border: rgba(34, 211, 238, 0.15);
 }
 
 .dark[data-dark-style="amethyst"] {
-  --color-background: #120b1f;
-  --color-foreground: #f4eefe;
-  --color-muted: #231435;
-  --color-muted-foreground: #c4b5fd;
-  --color-border: #3a245a;
-  --color-input: #231435;
+  --color-background: oklch(0.171 0.041 298.1);
+  --color-foreground: oklch(0.958 0.022 302.9);
+  --color-muted: oklch(0.230 0.063 302.7);
+  --color-muted-foreground: oklch(0.811 0.101 293.6);
+  --color-border: oklch(0.317 0.094 299.9);
+  --color-input: oklch(0.230 0.063 302.7);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #120b1f 0%,
-    #1b0f2b 35%,
-    #24123a 70%,
-    #120b1f 100%
+    oklch(0.171 0.041 298.1) 0%,
+    oklch(0.201 0.055 301.4) 35%,
+    oklch(0.232 0.075 301.5) 70%,
+    oklch(0.171 0.041 298.1) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -704,42 +757,42 @@ html *::after {
     );
   --app-header-bg: linear-gradient(
     to left,
-    #120b1f 0%,
+    oklch(0.171 0.041 298.1) 0%,
     rgba(27, 15, 43, 0.95) 55%,
     rgba(18, 11, 31, 0.9) 100%
   );
   --app-header-border: rgba(167, 139, 250, 0.2);
   --app-rail-bg: linear-gradient(
     to bottom,
-    #140c24 0%,
-    #1b0f2b 55%,
-    #120b1f 100%
+    oklch(0.180 0.048 296.6) 0%,
+    oklch(0.201 0.055 301.4) 55%,
+    oklch(0.171 0.041 298.1) 100%
   );
   --app-rail-border: rgba(167, 139, 250, 0.18);
   --app-panel-bg: linear-gradient(
     to bottom,
-    #150c26 0%,
-    #1b0f2b 55%,
-    #120b1f 100%
+    oklch(0.183 0.052 297.0) 0%,
+    oklch(0.201 0.055 301.4) 55%,
+    oklch(0.171 0.041 298.1) 100%
   );
   --app-panel-border: rgba(167, 139, 250, 0.16);
 }
 
 .dark[data-dark-style="royal"] {
-  --color-background: #100820;
-  --color-foreground: #f3edff;
-  --color-muted: #201236;
-  --color-muted-foreground: #c4b5fd;
-  --color-border: #4a2974;
-  --color-input: #201236;
+  --color-background: oklch(0.162 0.049 296.0);
+  --color-foreground: oklch(0.956 0.025 301.1);
+  --color-muted: oklch(0.223 0.068 298.7);
+  --color-muted-foreground: oklch(0.811 0.101 293.6);
+  --color-border: oklch(0.364 0.124 300.6);
+  --color-input: oklch(0.223 0.068 298.7);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #140b33 0%,
-    #24104a 25%,
-    #311463 50%,
-    #251257 75%,
-    #160b36 100%
+    oklch(0.192 0.075 287.5) 0%,
+    oklch(0.243 0.101 293.2) 25%,
+    oklch(0.289 0.128 293.4) 50%,
+    oklch(0.260 0.116 288.2) 75%,
+    oklch(0.197 0.079 288.7) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -759,39 +812,39 @@ html *::after {
     );
   --app-header-bg: linear-gradient(
     to left,
-    #160b36 0%,
+    oklch(0.197 0.079 288.7) 0%,
     rgba(30, 14, 60, 0.95) 55%,
     rgba(24, 11, 54, 0.9) 100%
   );
   --app-header-border: rgba(139, 92, 246, 0.2);
   --app-rail-bg: linear-gradient(
     to bottom,
-    #1a0d3a 0%,
-    #231050 55%,
-    #2b1462 100%
+    oklch(0.210 0.082 290.9) 0%,
+    oklch(0.248 0.109 289.6) 55%,
+    oklch(0.281 0.127 288.9) 100%
   );
   --app-rail-border: rgba(139, 92, 246, 0.22);
   --app-panel-bg: linear-gradient(
     to bottom,
-    #190c38 0%,
-    #1f0f4a 55%,
-    #28135b 100%
+    oklch(0.205 0.081 291.2) 0%,
+    oklch(0.235 0.102 288.4) 55%,
+    oklch(0.269 0.119 289.1) 100%
   );
   --app-panel-border: rgba(139, 92, 246, 0.18);
 }
 .dark[data-dark-style="oled"] {
-  --color-background: #000000;
-  --color-foreground: #f8fafc;
-  --color-muted: #111111;
-  --color-muted-foreground: #94a3b8;
-  --color-border: #262626;
-  --color-input: #111111;
+  --color-background: oklch(0.000 0.000 0.0);
+  --color-foreground: oklch(0.984 0.003 247.9);
+  --color-muted: oklch(0.178 0.000 0.0);
+  --color-muted-foreground: oklch(0.711 0.035 256.8);
+  --color-border: oklch(0.269 0.000 0.0);
+  --color-input: oklch(0.178 0.000 0.0);
 
   --app-bg-gradient: linear-gradient(
     135deg,
-    #000000 0%,
-    #050505 40%,
-    #000000 100%
+    oklch(0.000 0.000 0.0) 0%,
+    oklch(0.115 0.000 0.0) 40%,
+    oklch(0.000 0.000 0.0) 100%
   );
   --app-bg-glow:
     radial-gradient(
@@ -806,23 +859,23 @@ html *::after {
     );
   --app-header-bg: linear-gradient(
     to left,
-    #000000 0%,
-    #050505 55%,
-    #000000 100%
+    oklch(0.000 0.000 0.0) 0%,
+    oklch(0.115 0.000 0.0) 55%,
+    oklch(0.000 0.000 0.0) 100%
   );
   --app-header-border: rgba(82, 82, 82, 0.45);
   --app-rail-bg: linear-gradient(
     to bottom,
-    #050505 0%,
-    #0b0b0b 55%,
-    #050505 100%
+    oklch(0.115 0.000 0.0) 0%,
+    oklch(0.150 0.000 0.0) 55%,
+    oklch(0.115 0.000 0.0) 100%
   );
   --app-rail-border: rgba(82, 82, 82, 0.4);
   --app-panel-bg: linear-gradient(
     to bottom,
-    #040404 0%,
-    #0a0a0a 55%,
-    #040404 100%
+    oklch(0.107 0.000 0.0) 0%,
+    oklch(0.145 0.000 0.0) 55%,
+    oklch(0.107 0.000 0.0) 100%
   );
   --app-panel-border: rgba(82, 82, 82, 0.35);
 }
@@ -1239,6 +1292,28 @@ select {
   }
 }
 
+/* Animation keyframes — migrated from tailwind.config.cjs */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes slideUp { from { transform: translateY(100%); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes bounceSubtle { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+
+/* Scrollbar utilities — migrated from tailwind.config.cjs */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none }
+}
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  &::-webkit-scrollbar { width: 6px; height: 6px }
+  &::-webkit-scrollbar-track { background: var(--color-gray-100) }
+  &::-webkit-scrollbar-thumb { background: var(--color-gray-300); border-radius: 3px }
+  &::-webkit-scrollbar-thumb:hover { background: var(--color-gray-400); border-radius: 3px }
+}
+
 /* RTL support */
 [dir="rtl"] {
   .rtl\:rotate-180 {
@@ -1589,9 +1664,9 @@ select {
     var(--color-muted-foreground) 26%,
     transparent
   );
-  --business-success: #0ea973;
-  --business-warning: #d97706;
-  --business-danger: #dc2626;
+  --business-success: oklch(0.650 0.142 161.4);
+  --business-warning: oklch(0.666 0.157 58.3);
+  --business-danger: oklch(0.577 0.215 27.3);
   --business-chart-primary: var(--color-primary);
   --business-chart-secondary: var(--color-secondary);
   --business-chart-tertiary: color-mix(
@@ -2604,19 +2679,19 @@ select {
 [data-theme="business-os-enterprise"]
   .business-tone-card[data-tone="executive"]
   .business-tone-swatch {
-  background: linear-gradient(135deg, #0f5bff 0%, #1ac1cd 100%);
+  background: linear-gradient(135deg, oklch(0.545 0.252 262.8) 0%, oklch(0.740 0.123 203.0) 100%);
 }
 
 [data-theme="business-os-enterprise"]
   .business-tone-card[data-tone="teal"]
   .business-tone-swatch {
-  background: linear-gradient(135deg, #119fb4 0%, #59d4d1 100%);
+  background: linear-gradient(135deg, oklch(0.645 0.110 211.5) 0%, oklch(0.800 0.109 193.0) 100%);
 }
 
 [data-theme="business-os-enterprise"]
   .business-tone-card[data-tone="graphite"]
   .business-tone-swatch {
-  background: linear-gradient(135deg, #31455d 0%, #607c97 100%);
+  background: linear-gradient(135deg, oklch(0.384 0.048 253.5) 0%, oklch(0.575 0.053 247.8) 100%);
 }
 
 [data-theme="business-os-enterprise"] .business-tone-copy {
@@ -2762,7 +2837,7 @@ select {
   --storefront-themes-hero-shadow: 0 28px 64px -48px rgba(177, 118, 64, 0.18);
   --storefront-themes-hero-bg: linear-gradient(
     135deg,
-    #fff8ef 0%,
+    oklch(0.982 0.014 74.4) 0%,
     color-mix(in srgb, white 86%, var(--color-secondary) 14%) 52%,
     color-mix(in srgb, white 88%, var(--color-primary) 12%) 100%
   );
@@ -4012,7 +4087,7 @@ select {
 .business-inbox-profile,
 .business-chat-body {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 35%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, oklch(0.711 0.035 256.8)) 35%, transparent) transparent;
 }
 
 .business-inbox-column--list::-webkit-scrollbar,
@@ -4033,7 +4108,7 @@ select {
 .business-inbox-messages::-webkit-scrollbar-thumb,
 .business-inbox-profile::-webkit-scrollbar-thumb,
 .business-chat-body::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 40%, transparent);
+  background: color-mix(in srgb, var(--color-muted-foreground, oklch(0.711 0.035 256.8)) 40%, transparent);
   border-radius: 999px;
   transition: background 0.2s ease;
 }
@@ -4042,7 +4117,7 @@ select {
 .business-inbox-messages::-webkit-scrollbar-thumb:hover,
 .business-inbox-profile::-webkit-scrollbar-thumb:hover,
 .business-chat-body::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 70%, transparent);
+  background: color-mix(in srgb, var(--color-muted-foreground, oklch(0.711 0.035 256.8)) 70%, transparent);
 }
 
 /* Dark mode & Enterprise Theme scrollbar override */
@@ -4361,20 +4436,20 @@ select {
 
 [data-theme="business-os-enterprise"]
   .business-platform-indicator[data-platform="facebook"] {
-  background: color-mix(in srgb, #1877f2 10%, white);
-  color: #1877f2;
+  background: color-mix(in srgb, oklch(0.589 0.203 257.9) 10%, white);
+  color: oklch(0.589 0.203 257.9);
 }
 
 [data-theme="business-os-enterprise"]
   .business-platform-indicator[data-platform="whatsapp"] {
-  background: color-mix(in srgb, #22c55e 10%, white);
-  color: #16a34a;
+  background: color-mix(in srgb, oklch(0.723 0.192 149.6) 10%, white);
+  color: oklch(0.627 0.170 149.2);
 }
 
 [data-theme="business-os-enterprise"]
   .business-platform-indicator[data-platform="telegram"] {
-  background: color-mix(in srgb, #0ea5e9 10%, white);
-  color: #0284c7;
+  background: color-mix(in srgb, oklch(0.685 0.148 237.3) 10%, white);
+  color: oklch(0.588 0.139 242.0);
 }
 
 [data-theme="business-os-enterprise"] .business-chat-stage {
@@ -6084,15 +6159,15 @@ select {
   min-height: 2.6rem;
   border-radius: 12px;
   border: 1px solid var(--business-card-border);
-  background: var(--shell-control-bg, #FFFFFF);
-  color: var(--color-foreground, #1F2937);
+  background: var(--shell-control-bg, oklch(1.000 0.000 0.0));
+  color: var(--color-foreground, oklch(0.278 0.030 256.8));
   font-size: 0.875rem;
   outline: none;
   transition: all 0.2s ease;
 }
 
 [data-theme="business-os-enterprise"] .business-inbox-search:focus {
-  border-color: var(--color-primary, #3B82F6);
+  border-color: var(--color-primary, oklch(0.623 0.188 259.8));
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
@@ -6100,7 +6175,7 @@ select {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-muted-foreground, #9CA3AF);
+  color: var(--color-muted-foreground, oklch(0.714 0.019 261.3));
   width: 1.1rem;
   height: 1.1rem;
   pointer-events: none;
@@ -6122,9 +6197,9 @@ select {
   justify-content: center;
   padding: 0.375rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid var(--business-card-border, #E5E7EB);
-  background: var(--shell-control-bg, #FFFFFF);
-  color: var(--color-muted-foreground, #374151);
+  border: 1px solid var(--business-card-border, oklch(0.928 0.006 264.5));
+  background: var(--shell-control-bg, oklch(1.000 0.000 0.0));
+  color: var(--color-muted-foreground, oklch(0.373 0.031 259.7));
   font-size: 0.825rem;
   font-weight: 500;
   cursor: pointer;
@@ -6133,14 +6208,14 @@ select {
 }
 
 .inbox-filter-chip:hover {
-  background: var(--business-surface-hover, #F9FAFB);
-  border-color: color-mix(in srgb, var(--business-card-border, #E5E7EB) 80%, black);
+  background: var(--business-surface-hover, oklch(0.985 0.002 247.8));
+  border-color: color-mix(in srgb, var(--business-card-border, oklch(0.928 0.006 264.5)) 80%, black);
 }
 
 .inbox-filter-chip[data-active="true"] {
-  background: color-mix(in srgb, var(--color-primary, #3B82F6) 10%, #FFFFFF);
-  border-color: var(--color-primary, #3B82F6);
-  color: var(--color-primary, #3B82F6);
+  background: color-mix(in srgb, var(--color-primary, oklch(0.623 0.188 259.8)) 10%, oklch(1.000 0.000 0.0));
+  border-color: var(--color-primary, oklch(0.623 0.188 259.8));
+  color: var(--color-primary, oklch(0.623 0.188 259.8));
   font-weight: 600;
 }
 
@@ -6151,8 +6226,8 @@ select {
   left: 0;
   right: auto;
   width: 220px;
-  background: var(--shell-control-bg, #FFFFFF);
-  border: 1px solid var(--business-card-border, #E5E7EB);
+  background: var(--shell-control-bg, oklch(1.000 0.000 0.0));
+  border: 1px solid var(--business-card-border, oklch(0.928 0.006 264.5));
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
   padding: 0.5rem;
@@ -6168,8 +6243,8 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .inbox-platform-dropdown {
-  background: var(--business-surface-panel, #FFFFFF);
-  border-color: var(--business-card-border, #E5E7EB);
+  background: var(--business-surface-panel, oklch(1.000 0.000 0.0));
+  border-color: var(--business-card-border, oklch(0.928 0.006 264.5));
 }
 
 .inbox-dropdown-item {
@@ -6185,12 +6260,12 @@ select {
 
 
 .inbox-dropdown-item:hover {
-  background: var(--business-surface-hover, #F3F4F6);
+  background: var(--business-surface-hover, oklch(0.967 0.003 264.5));
 }
 
 .inbox-platform-text {
   font-size: 0.875rem;
-  color: var(--color-foreground, #1F2937);
+  color: var(--color-foreground, oklch(0.278 0.030 256.8));
   font-weight: 500;
   flex: 1;
 }
@@ -6214,7 +6289,7 @@ select {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1.5px solid var(--color-border, #D1D5DB);
+  border: 1.5px solid var(--color-border, oklch(0.872 0.009 258.3));
   background: transparent;
   position: relative;
   transition: all 0.15s ease;
@@ -6222,8 +6297,8 @@ select {
 }
 
 .inbox-checkbox-circle.checked {
-  background: var(--color-primary, #3B82F6);
-  border-color: var(--color-primary, #3B82F6);
+  background: var(--color-primary, oklch(0.623 0.188 259.8));
+  border-color: var(--color-primary, oklch(0.623 0.188 259.8));
 }
 
 .inbox-checkbox-circle.checked::after {
@@ -6235,37 +6310,37 @@ select {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: oklch(1.000 0.000 0.0);
 }
 
 /* Dark mode compatibility fixes */
 .dark .inbox-platform-dropdown {
-  background: var(--business-surface-panel, var(--shell-overlay-bg, #1F2937));
-  border-color: var(--business-card-border, var(--shell-control-border, #374151));
+  background: var(--business-surface-panel, var(--shell-overlay-bg, oklch(0.278 0.030 256.8)));
+  border-color: var(--business-card-border, var(--shell-control-border, oklch(0.373 0.031 259.7)));
 }
 
 .dark .inbox-dropdown-item:hover {
-  background: var(--business-surface-hover, var(--shell-control-hover, #374151));
+  background: var(--business-surface-hover, var(--shell-control-hover, oklch(0.373 0.031 259.7)));
 }
 
 .dark .inbox-platform-text {
-  color: var(--color-foreground, #F9FAFB);
+  color: var(--color-foreground, oklch(0.985 0.002 247.8));
 }
 
 .dark .inbox-filter-chip {
-  background: var(--shell-control-bg, #1F2937);
-  border-color: var(--business-card-border, var(--shell-control-border, #374151));
-  color: var(--color-muted-foreground, #D1D5DB);
+  background: var(--shell-control-bg, oklch(0.278 0.030 256.8));
+  border-color: var(--business-card-border, var(--shell-control-border, oklch(0.373 0.031 259.7)));
+  color: var(--color-muted-foreground, oklch(0.872 0.009 258.3));
 }
 
 .dark .inbox-filter-chip:hover {
-  background: var(--business-surface-hover, var(--shell-control-hover, #374151));
+  background: var(--business-surface-hover, var(--shell-control-hover, oklch(0.373 0.031 259.7)));
 }
 
 .dark .inbox-filter-chip[data-active="true"] {
   background: color-mix(in srgb, var(--color-primary) 20%, transparent);
-  border-color: var(--color-primary, #3B82F6);
-  color: var(--color-primary, #60A5FA);
+  border-color: var(--color-primary, oklch(0.623 0.188 259.8));
+  color: var(--color-primary, oklch(0.714 0.143 254.6));
 }
 
 /* ════════════════════════════════════════════════

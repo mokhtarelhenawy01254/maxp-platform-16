@@ -1502,6 +1502,7 @@ model WhatsAppContact {
   customerId            String?
   category              String?         @default("LEAD")
   tags                  String?         @db.Text
+  labels                String?         @db.Text
   notes                 String?         @db.Text
   lastMessageAt         DateTime?
   lastCustomerMessageAt DateTime?

@@ -7810,6 +7810,7 @@ model WhatsAppContact {
   category            String?         @default("LEAD")
   leadCategoryId      String?
   tags                String?
+  labels              String?
   notes               String?
   lastMessageAt       DateTime?
   unreadCount         Int             @default(0)

@@ -73,10 +73,10 @@
   border-color: color-mix(in srgb, var(--shell-control-border) 60%, transparent);
 }
 .dark .whatsapp-connection-badge.connected {
-  color: #34d399;
+  color: oklch(0.773 0.153 163.2);
 }
 .dark .whatsapp-connection-badge.disconnected {
-  color: #fbbf24;
+  color: oklch(0.837 0.164 84.4);
 }
 
 /* ── Unread Badge ── */
@@ -132,7 +132,7 @@
 
 /* ── Messages Area ── */
 .dark .whatsapp-messages-area {
-  background-color: #0b141a;
+  background-color: oklch(0.185 0.018 238.2);
 }
 
 /* ── Message Bubbles ── */
@@ -294,13 +294,13 @@
 
 /* ── Danger Buttons ── */
 .dark .whatsapp-danger-btn {
-  border-color: color-mix(in srgb, #ef4444 30%, transparent);
-  background-color: color-mix(in srgb, #ef4444 10%, var(--color-background));
-  color: #f87171;
+  border-color: color-mix(in srgb, oklch(0.637 0.208 25.3) 30%, transparent);
+  background-color: color-mix(in srgb, oklch(0.637 0.208 25.3) 10%, var(--color-background));
+  color: oklch(0.711 0.166 22.2);
 }
 .dark .whatsapp-danger-btn:hover {
-  background-color: color-mix(in srgb, #ef4444 18%, var(--color-background));
-  color: #fca5a5;
+  background-color: color-mix(in srgb, oklch(0.637 0.208 25.3) 18%, var(--color-background));
+  color: oklch(0.808 0.103 19.6);
 }
 
 /* ── Shadcn Select Content ── */
@@ -323,22 +323,22 @@
 
 /* ── Send Button ── */
 .dark .whatsapp-send-btn {
-  background-color: #005c4b;
+  background-color: oklch(0.424 0.080 174.4);
   color: white;
 }
 .dark .whatsapp-send-btn:hover {
-  background-color: color-mix(in srgb, #005c4b 80%, black 20%);
+  background-color: color-mix(in srgb, oklch(0.424 0.080 174.4) 80%, black 20%);
 }
 
 /* ── Status Icons ── */
 .dark .whatsapp-status-read {
-  color: #53bdeb;
+  color: oklch(0.755 0.117 229.7);
 }
 .dark .whatsapp-status-sent {
   color: var(--color-muted-foreground);
 }
 .dark .whatsapp-status-error {
-  color: #f87171;
+  color: oklch(0.711 0.166 22.2);
 }
 
 /* ── Document Attachment ── */
@@ -392,9 +392,9 @@
 
 /* ── Payment/Warning Message Styles ── */
 .dark .whatsapp-payment-warning {
-  border-color: color-mix(in srgb, #ef4444 40%, transparent);
-  background-color: color-mix(in srgb, #ef4444 12%, var(--color-background));
-  color: #fca5a5;
+  border-color: color-mix(in srgb, oklch(0.637 0.208 25.3) 40%, transparent);
+  background-color: color-mix(in srgb, oklch(0.637 0.208 25.3) 12%, var(--color-background));
+  color: oklch(0.808 0.103 19.6);
 }
 
 /* ── Group Badge ── */
