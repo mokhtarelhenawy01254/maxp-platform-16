@@ -4621,7 +4621,7 @@ async function getLabels(sessionId) {
 }
 
 /**
- * مزامنة يدوية للتصنيفات — يعيد تعبئة cache الـ labels من Baileys
+ * مزامنة يدوية للتصنيفات — يسأل واتساب مباشرة عن التصنيفات
  */
 async function syncLabels(sessionId) {
     const session = getSession(sessionId);
@@ -4632,27 +4632,81 @@ async function syncLabels(sessionId) {
     }
 
     try {
-        // نمسح cache عشان events تعيد تعبئته من Baileys
-        session.labels.clear();
-        session.labelAssociations.clear();
-        console.log('🔄 Labels cache cleared for session:', sessionId);
-
-        // نطلب label sync من Baileys عبر إنشاء تصنيف مؤقت وحذفه (forced refresh)
-        // لو socket شغال، Baileys هيرد بالأحداث ويعيد ملء الـ cache
-        const tempLabelId = `sync_${Date.now()}`;
+        // اسأل واتساب عن التصنيفات عبر IQ query
+        // WhatsApp بيخزن الـ labels كـ label edit actions في الـ critical block
+        let remoteLabels = [];
         try {
-            await session.sock.addLabel(tempLabelId, {
-                id: tempLabelId,
-                name: `__sync_${Date.now()}`,
-                color: 0,
-                deleted: true
+            const result = await session.sock.query({
+                tag: 'iq',
+                attrs: {
+                    xmlns: 'w:label:label',
+                    to: S_WHATSAPP_NET,
+                    type: 'get'
+                },
+                content: null
             });
-        } catch { /* silent - هذا كافٍ لتحفيز re-sync */ }
+            // الـ response بيحتوي على القائمة
+            if (result?.content) {
+                const children = Array.isArray(result.content) ? result.content : [result.content];
+                for (const child of children) {
+                    if (child.tag === 'label' && child.attrs) {
+                        remoteLabels.push({
+                            id: child.attrs.id,
+                            name: child.attrs.name,
+                            color: child.attrs.color || '0',
+                        });
+                    }
+                }
+            }
+        } catch (iqErr) {
+            console.log('⚠️ Label IQ query failed, trying fallback:', iqErr.message);
+        }
 
-        // انتظر شوية عشان events تلحق تشتغل
-        await new Promise(r => setTimeout(r, 500));
+        if (remoteLabels.length > 0) {
+            // ضيف التصنيفات المسترجعة للـ cache
+            session.labels.clear();
+            session.labelAssociations.clear();
+            for (const label of remoteLabels) {
+                session.labels.set(label.id, {
+                    id: label.id,
+                    name: label.name,
+                    color: parseInt(label.color) || 0,
+                });
+            }
 
-        // أعيد قراءة الـ labels من cache
+            // كمان حاول نجيب الـ associations لكل تصنيف
+            for (const label of remoteLabels) {
+                try {
+                    const assocResult = await session.sock.query({
+                        tag: 'iq',
+                        attrs: {
+                            xmlns: 'w:label:label',
+                            to: S_WHATSAPP_NET,
+                            type: 'get'
+                        },
+                        content: [{ tag: 'list', attrs: { id: label.id } }]
+                    });
+                    if (assocResult?.content) {
+                        const chats = Array.isArray(assocResult.content) ? assocResult.content : [assocResult.content];
+                        const jids = new Set();
+                        for (const entry of chats) {
+                            if (entry.tag === 'chat' && entry.attrs?.jid) {
+                                jids.add(entry.attrs.jid);
+                            }
+                        }
+                        if (jids.size > 0) {
+                            session.labelAssociations.set(label.id, jids);
+                        }
+                    }
+                } catch { /* skip associations for this label */ }
+            }
+        } else {
+            // Fallback: حاول نستخدم الـ cache الموجود
+            console.log('⚠️ Could not fetch labels from WhatsApp, checking existing cache');
+        }
+
+        console.log(`🔄 Labels sync completed for session: ${sessionId} (${remoteLabels.length} labels)`);
+
         const labels = Array.from(session.labels.values());
         return labels.map(label => ({
             id: label.id,
