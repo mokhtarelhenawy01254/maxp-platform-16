@@ -1,26 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Calendar,
-  Plus,
-  Check,
-  X,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Eye,
-  Palmtree,
-  Stethoscope,
-  Baby,
-  Heart,
-  GraduationCap,
-  AlertTriangle,
-  FileText,
-  ArrowRight,
-  RotateCcw,
-  Trash2,
-  Wallet,
-} from "lucide-react";
+import { Calendar, Plus, Check, X, Clock, ChevronLeft, ChevronRight, Download, Eye, Palmtree, Stethoscope, Baby, Heart, Book, AlertTriangle, File, ArrowRight, RotateCcw, Trash2, CreditCard } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";

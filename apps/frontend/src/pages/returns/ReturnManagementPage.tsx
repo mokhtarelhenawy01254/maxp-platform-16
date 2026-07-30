@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from "react";
 import {
   returnService,
@@ -6,17 +6,7 @@ import {
   ReviewDisplayConfig,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import {
-  Plus,
-  Filter,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Eye,
-  Edit,
-  Package,
-} from "lucide-react";
+import { Plus, Filter, RefreshCw, Check, X, Clock, Eye, Edit, Package } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 

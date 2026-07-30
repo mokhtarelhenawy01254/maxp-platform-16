@@ -1,5 +1,6 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, Tag as TagIcon, Circle as ChatBubbleBottomCenterTextIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import { PlusIcon, TrashIcon, TagIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { toast } from "sonner";

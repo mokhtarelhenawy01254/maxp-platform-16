@@ -1,19 +1,11 @@
+import { Activity as ChartBarIcon, ShoppingBag as ShoppingBagIcon, DollarSign as CurrencyDollarIcon, Truck as TruckIcon, Check as CheckCircleIcon, Clock as ClockIcon, ArrowLeft as ArrowLeftIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { config } from "../../config";
 import { apiClient } from "../../services/apiClient";
-import {
-  ChartBarIcon,
-  ShoppingBagIcon,
-  CurrencyDollarIcon,
-  TruckIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ArrowLeftIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface OrderStats {
   totalOrders: number;

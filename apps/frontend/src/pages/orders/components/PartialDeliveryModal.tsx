@@ -1,10 +1,6 @@
+import { Check as CheckCircleIcon, ShoppingBag as ShoppingBagIcon, X as XMarkIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  CheckCircleIcon,
-  ShoppingBagIcon,
-  XMarkIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useCurrency } from "../../../hooks/useCurrency";
 
 interface PartialDeliveryModalProps {

@@ -1,19 +1,11 @@
+import { Circle as TicketIcon, Truck as TruckIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, X as XCircleIcon, Circle as ClipboardDocumentListIcon, Star as SparklesIcon, DollarSign as BanknotesIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useEffect, useState } from "react"
-import { useTranslation } from "react-i18next"
 import { useDateFormat } from "../../hooks/useDateFormat"
 import { useCurrency } from "../../hooks/useCurrency"
 import { apiClient } from "../../services/apiClient"
-import {
-  TicketIcon,
-  TruckIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClipboardDocumentListIcon,
-  SparklesIcon,
-  BanknotesIcon,
-  ShoppingBagIcon,
-} from "@heroicons/react/24/outline"
+
 
 interface Coupon {
   id: string; name: string; code: string; description: string

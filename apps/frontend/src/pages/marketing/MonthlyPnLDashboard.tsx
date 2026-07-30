@@ -1,12 +1,7 @@
+import { Activity as ChartBarIcon, DollarSign as CurrencyDollarIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as SaveIcon, Trash2 as TrashIcon, Star as SparklesIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationCircleIcon, X as XCircleIcon, DollarSign as BanknotesIcon, Truck as TruckIcon, Circle as MegaphoneIcon, Globe as GlobeAltIcon, Circle as SquaresPlusIcon, Circle as UserGroupIcon, Circle as HomeModernIcon, Settings as Cog6ToothIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  ChartBarIcon, CurrencyDollarIcon, ExclamationTriangleIcon, InformationCircleIcon,
-  BookmarkIcon as SaveIcon, TrashIcon, SparklesIcon,
-  CheckCircleIcon, ExclamationCircleIcon, XCircleIcon,
-  BanknotesIcon, TruckIcon, MegaphoneIcon, GlobeAltIcon, SquaresPlusIcon,
-  UserGroupIcon, HomeModernIcon, Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from "recharts";

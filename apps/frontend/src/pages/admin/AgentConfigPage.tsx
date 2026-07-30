@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Brain,
-  Scale,
-  Puzzle,
-  Plus,
-  Trash2,
-  Save,
-  RotateCcw,
-  Lock,
-  Pencil,
-  CheckCircle2,
-} from "lucide-react";
+import { Brain, Activity, Puzzle, Plus, Trash2, Save, RotateCcw, Lock, Pencil, CheckCircle2 } from 'lucide-react';
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";

@@ -1,18 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  LockKeyhole,
-  MessageCircle,
-  PlugZap,
-  RefreshCw,
-  ShieldCheck,
-  Unplug,
-  Users,
-  WalletCards,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, LockKeyhole, MessageCircle, PlugZap, RefreshCw, ShieldCheck, Unplug, Users, WalletCards } from 'lucide-react';
 import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useAuth } from "../../hooks/useAuthSimple";

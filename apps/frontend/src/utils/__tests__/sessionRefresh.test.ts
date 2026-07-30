@@ -34,7 +34,7 @@ describe("sessionRefresh helpers", () => {
       }),
     });
 
-    const result = await refreshSessionTokens(fetchMock as unknown as typeof fetch);
+    const result = await refreshSessionTokens(fetchMock as typeof fetch);
 
     expect(result).toEqual({
       ok: true,
@@ -54,7 +54,7 @@ describe("sessionRefresh helpers", () => {
       }),
     });
 
-    const result = await refreshSessionTokens(fetchMock as unknown as typeof fetch);
+    const result = await refreshSessionTokens(fetchMock as typeof fetch);
 
     expect(result).toEqual({
       ok: false,
@@ -74,7 +74,7 @@ describe("sessionRefresh helpers", () => {
       }),
     });
 
-    const result = await refreshSessionTokens(fetchMock as unknown as typeof fetch);
+    const result = await refreshSessionTokens(fetchMock as typeof fetch);
 
     expect(result).toEqual({
       ok: false,

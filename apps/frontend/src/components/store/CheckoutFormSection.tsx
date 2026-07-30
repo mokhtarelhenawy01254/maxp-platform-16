@@ -1,13 +1,7 @@
+import { User as UserIcon, Pin as MapPinIcon, Plus as PlusIcon, Star as SparklesIcon, Grid as Squares2X2Icon, Circle as CheckBadgeIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import {
-  UserIcon,
-  MapPinIcon,
-  PlusIcon,
-  SparklesIcon,
-  Squares2X2Icon,
-  CheckBadgeIcon
-} from "@heroicons/react/24/outline";
-import { useTranslation } from "react-i18next";
+;
 import { getDirection } from "../../i18n";
 import { CheckoutFormSettings } from "../../services/checkoutFormSettingsService";
 import { SelectSetting, ToggleSetting } from "../settings/SettingControls";

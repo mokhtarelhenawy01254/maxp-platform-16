@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Loader2, Mic, Send, Trash2 } from "lucide-react";
+import { Loader2, Mic, Navigation, Trash2 } from 'lucide-react';
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { Button } from "@/components/ui/button";

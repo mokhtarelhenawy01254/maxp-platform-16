@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Activity, AlertTriangle, RefreshCw, Search } from "lucide-react";
+import { Activity, AlertTriangle, RefreshCw, Search } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

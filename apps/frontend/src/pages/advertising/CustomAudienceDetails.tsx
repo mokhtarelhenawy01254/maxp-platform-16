@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Trash2 as TrashIcon, Circle as UserGroupIcon, Calendar as CalendarIcon, Tag as TagIcon, Eye as EyeIcon } from 'lucide-react';
 /**
  * Custom Audience Details Page
  *
@@ -6,14 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  TrashIcon,
-  UserGroupIcon,
-  CalendarIcon,
-  TagIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

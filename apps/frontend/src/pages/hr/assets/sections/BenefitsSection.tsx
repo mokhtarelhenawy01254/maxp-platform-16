@@ -1,11 +1,6 @@
+import { Building as BuildingOfficeIcon, Circle as UserGroupIcon, User as UserIcon, Circle as PresentationChartLineIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React from "react";
-import {
-  BuildingOfficeIcon,
-  UserGroupIcon,
-  UserIcon,
-  PresentationChartLineIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const BenefitsSection: React.FC = () => {
   const benefitGroups = [

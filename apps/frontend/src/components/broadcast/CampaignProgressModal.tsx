@@ -1,9 +1,6 @@
+import { X as XMarkIcon, Check as CheckCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
-import {
-  XMarkIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { socketService } from "../../services/socketService";
 
 interface CampaignProgressModalProps {

@@ -1,14 +1,10 @@
+import { Circle as UserGroupIcon, Pencil as PencilIcon, Search as MagnifyingGlassIcon, Sliders as AdjustmentsHorizontalIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-import {
-  UserGroupIcon,
-  PencilIcon,
-  MagnifyingGlassIcon,
-  AdjustmentsHorizontalIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Affiliate {
   id: string;

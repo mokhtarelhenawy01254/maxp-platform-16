@@ -1,12 +1,6 @@
+import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, X as XCircleIcon, X as XMarkIcon, Bell as BellIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  XCircleIcon,
-  XMarkIcon,
-  BellIcon,
-} from "@heroicons/react/24/outline";
+;
 
 export type NotificationType = "success" | "error" | "warning" | "info";
 

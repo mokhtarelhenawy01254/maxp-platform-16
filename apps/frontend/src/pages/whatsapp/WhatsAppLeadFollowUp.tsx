@@ -1,9 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  CheckCircle2, ChevronDown, ChevronRight, Clock, Globe, Loader2, MessageSquare,
-  Plus, RefreshCw, Save, Sparkles, Trash2, Users, Zap, Settings2, Link2, Layers,
-} from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Clock, Globe, Loader2, MessageSquare, Plus, RefreshCw, Save, Star, Trash2, Users, Zap, Settings2, Link2, LayoutGrid } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

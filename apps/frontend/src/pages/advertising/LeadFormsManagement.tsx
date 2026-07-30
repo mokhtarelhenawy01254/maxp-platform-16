@@ -7,23 +7,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  FileText,
-  Plus,
-  Trash2,
-  Eye,
-  Download,
-  RefreshCw,
-  Users,
-  Mail,
-  Phone,
-  User,
-  MapPin,
-  Calendar,
-  X,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { File, Plus, Trash2, Eye, Download, RefreshCw, Users, Mail, Phone, User, Pin, Calendar, X, Loader2, Search } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 interface LeadForm {

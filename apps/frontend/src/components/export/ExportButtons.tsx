@@ -1,8 +1,6 @@
+import { Circle as DocumentArrowDownIcon, Printer as PrinterIcon } from 'lucide-react';
 import React from 'react';
-import {
-    DocumentArrowDownIcon,
-    PrinterIcon,
-} from '@heroicons/react/24/outline';
+;
 import {
     exportToCSV,
     exportToExcel,

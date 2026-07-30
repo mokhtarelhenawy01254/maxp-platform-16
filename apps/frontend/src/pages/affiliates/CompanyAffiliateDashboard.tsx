@@ -1,17 +1,7 @@
+import { Store as BuildingStorefrontIcon, DollarSign as CurrencyDollarIcon, ShoppingBag as ShoppingBagIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Clock as ClockIcon, Link as LinkIcon, Circle as UserGroupIcon, Circle as ArrowLeftCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-    BuildingStorefrontIcon,
-    CurrencyDollarIcon,
-    ShoppingBagIcon,
-    ArrowPathIcon,
-    ExclamationTriangleIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    LinkIcon,
-    UserGroupIcon,
-    ArrowLeftCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { useAuth } from "../../hooks/useAuthSimple";

@@ -1,15 +1,11 @@
+import { Eye as EyeIcon, Circle as SwatchIcon, Image as PhotoIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React from "react";
 import {
   ProductAttribute,
   ProductVariant,
   ProductVariantSettings,
 } from "../../types";
-import {
-  EyeIcon,
-  SwatchIcon,
-  PhotoIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { normalizeImagePath } from "../../../../utils/imageUrl";
 import {
   getVariantDisplaySupport,

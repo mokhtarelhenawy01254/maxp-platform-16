@@ -1,10 +1,6 @@
+import { Circle as ClipboardDocumentListIcon, Check as CheckCircleIcon, X as XCircleIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ClipboardDocumentListIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../../services/apiClient";
 
 interface AssetRequest {

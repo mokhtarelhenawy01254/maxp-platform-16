@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  FileText,
-  ArrowRight,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  User,
-  AlertCircle,
-} from "lucide-react";
+import { File, ArrowRight, Check, X, Calendar, User, AlertTriangle } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../services/api";
 

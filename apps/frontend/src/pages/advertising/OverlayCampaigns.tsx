@@ -1,12 +1,7 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, Circle as PlayIcon, Image as PhotoIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  PlusIcon,
-  TrashIcon,
-  PlayIcon,
-  PhotoIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";

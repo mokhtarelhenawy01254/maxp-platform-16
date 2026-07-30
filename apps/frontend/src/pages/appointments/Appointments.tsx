@@ -1,17 +1,10 @@
+import { Circle as CalendarDaysIcon, Plus as PlusIcon, Eye as EyeIcon, Check as CheckIcon, X as XMarkIcon, Clock as ClockIcon, User as UserIcon, Pin as MapPinIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import {
-  CalendarDaysIcon,
-  PlusIcon,
-  EyeIcon,
-  CheckIcon,
-  XMarkIcon,
-  ClockIcon,
-  UserIcon,
-  MapPinIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Appointment {
   id: string;

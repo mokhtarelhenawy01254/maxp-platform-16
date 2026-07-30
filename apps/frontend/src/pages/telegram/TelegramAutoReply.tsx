@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -15,8 +16,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { useTranslation } from "react-i18next";
-import { Plus, Edit, Trash2, Play, Square } from "lucide-react";
+import { Plus, Edit, Trash2, Play, Square } from 'lucide-react';
 import { toast } from "sonner";
 
 const TelegramAutoReply = () => {

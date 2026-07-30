@@ -1,8 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Shield, AlertTriangle, ShieldCheck, Loader2, Bot, Plus, Trash2, Edit2,
-  RefreshCw, X, ShieldAlert, Check, HelpCircle
-} from "lucide-react";
+import { Shield, AlertTriangle, ShieldCheck, Loader2, Bot, Plus, Trash2, Edit2, RefreshCw, X, ShieldAlert, Check, Info } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +13,6 @@ import {
 import { toast } from "sonner";
 import tokenManager from "../../../utils/tokenManager";
 import { buildApiUrl } from "../../../utils/urlHelper";
-import { useTranslation } from "react-i18next";
-
 interface GuardrailRule {
   id: string;
   agentId: string;

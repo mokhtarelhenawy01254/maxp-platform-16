@@ -1,8 +1,6 @@
+import { ExternalLink as ArrowTopRightOnSquareIcon, Star as SparklesIcon } from 'lucide-react';
 import React from "react";
-import {
-  ArrowTopRightOnSquareIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+;
 import type { ProductPageConversionSummaryItem } from "./productPageConversionSummaryItems";
 
 interface ProductPageConversionSummaryCardProps {

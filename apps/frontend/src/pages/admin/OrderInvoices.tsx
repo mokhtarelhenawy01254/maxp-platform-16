@@ -1,21 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  AlertCircle,
-  CalendarRange,
-  CheckCircle2,
-  ChevronsLeft,
-  ChevronsRight,
-  Clock3,
-  Eye,
-  Loader2,
-  Printer,
-  Receipt,
-  RefreshCw,
-  Search,
-  WalletCards,
-} from "lucide-react";
+import { AlertTriangle, CalendarRange, CheckCircle2, ChevronsLeft, ChevronsRight, Clock3, Eye, Loader2, Printer, File, RefreshCw, Search, WalletCards } from 'lucide-react';
 
 import { apiClient } from "../../services/apiClient";
 import { cn } from "../../lib/utils";

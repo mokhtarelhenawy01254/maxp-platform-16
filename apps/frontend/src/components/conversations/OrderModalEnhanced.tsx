@@ -1,14 +1,8 @@
+import { X as XMarkIcon, Plus as PlusIcon, Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon, Truck as TruckIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
-import {
-  XMarkIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
-  ShoppingCartIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ProductVariant {
   id: string;

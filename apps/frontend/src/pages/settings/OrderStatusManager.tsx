@@ -1,28 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Tag,
-  Plus,
-  Edit2,
-  Trash2,
-  Save,
-  X,
-  RefreshCw,
-  Link2,
-  Bell,
-  CheckCircle,
-  Clock,
-  Package,
-  Truck,
-  XCircle,
-  RotateCcw,
-  ShoppingCart,
-  CreditCard,
-  AlertCircle,
-  Loader2,
-  ChevronUp,
-  ChevronDown,
-  Cog,
-} from "lucide-react";
+import { Tag, Plus, Edit2, Trash2, Save, X, RefreshCw, Link2, Bell, Check, Clock, Package, Truck, RotateCcw, ShoppingBag, CreditCard, AlertTriangle, Loader2, ChevronUp, ChevronDown, Cog } from 'lucide-react';
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 

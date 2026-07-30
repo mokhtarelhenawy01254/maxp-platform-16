@@ -1,12 +1,6 @@
+import { DollarSign as CurrencyDollarIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, X as XCircleIcon, DollarSign as BanknotesIcon, Circle as ReceiptRefundIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  CurrencyDollarIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  XCircleIcon,
-  BanknotesIcon,
-  ReceiptRefundIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   AreaChart,
   Area,

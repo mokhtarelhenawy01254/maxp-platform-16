@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Circle as PlayIcon, Circle as PauseIcon, Activity as ChartBarIcon, Circle as BeakerIcon, Star as StarIcon } from 'lucide-react';
 /**
  * A/B Test Details Page
  *
@@ -6,14 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  PlayIcon,
-  PauseIcon,
-  ChartBarIcon,
-  BeakerIcon,
-  StarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

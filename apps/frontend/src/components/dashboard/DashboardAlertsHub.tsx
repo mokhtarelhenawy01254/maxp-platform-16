@@ -1,6 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { AlertTriangle as ExclamationTriangleIcon, Box as ArchiveBoxXMarkIcon, ShoppingBag as ShoppingCartIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
-import { ExclamationTriangleIcon, ArchiveBoxXMarkIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
+;
 import type { DashboardData } from "../../pages/dashboard/types";
 
 type Props = {

@@ -26,7 +26,7 @@ class MockIntersectionObserver {
           isIntersecting,
         } as IntersectionObserverEntry,
       ],
-      this as unknown as IntersectionObserver,
+      this as IntersectionObserver,
     );
   }
 }
@@ -43,7 +43,7 @@ afterEach(() => {
 describe('StorefrontProductImage deferred loading', () => {
   it('omits the image source until the element approaches the viewport', () => {
     window.IntersectionObserver =
-      MockIntersectionObserver as unknown as typeof IntersectionObserver;
+      MockIntersectionObserver as typeof IntersectionObserver;
 
     render(
       <StorefrontProductImage
@@ -73,7 +73,7 @@ describe('StorefrontProductImage deferred loading', () => {
   });
 
   it('loads immediately when intersection observer is unavailable', () => {
-    window.IntersectionObserver = undefined as unknown as typeof IntersectionObserver;
+    window.IntersectionObserver = undefined as typeof IntersectionObserver;
 
     render(
       <StorefrontProductImage

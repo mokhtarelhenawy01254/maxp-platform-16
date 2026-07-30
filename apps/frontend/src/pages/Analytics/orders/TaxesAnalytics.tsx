@@ -1,8 +1,6 @@
+import { Circle as ReceiptPercentIcon, Info as InformationCircleIcon } from 'lucide-react';
 import React, { useState } from "react";
-import {
-  ReceiptPercentIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const TaxesAnalytics: React.FC = () => {
   const [period, setPeriod] = useState("30");

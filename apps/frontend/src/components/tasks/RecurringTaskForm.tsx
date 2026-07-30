@@ -1,5 +1,6 @@
+import { RefreshCw as ArrowPathIcon, Calendar as CalendarIcon } from 'lucide-react';
 import React from "react";
-import { ArrowPathIcon, CalendarIcon } from "@heroicons/react/24/outline";
+;
 
 interface RecurringConfig {
   enabled: boolean;

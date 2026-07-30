@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 /**
  * 🎬 Creative Formats
  *
@@ -7,24 +8,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
-import {
-  Layers,
-  Film,
-  Smartphone,
-  Image,
-  Video,
-  Type,
-  Link,
-  Plus,
-  Trash2,
-  Loader2,
-  ArrowLeft,
-  CheckCircle,
-  Grid,
-  Play,
-  Zap,
-} from "lucide-react";
+import { Grid, Film, Phone, Image, Video, Type, Link, Plus, Trash2, Loader2, ArrowLeft, Check, Play, Zap } from 'lucide-react';
 import { facebookAdsService, StoriesReelsCreativeData } from "../../services/facebookAdsService";
 
 type CreativeType = "collection" | "stories" | "instant";

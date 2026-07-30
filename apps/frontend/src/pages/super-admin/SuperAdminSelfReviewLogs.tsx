@@ -1,10 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import {
-  RefreshCw, Download, CheckCircle, AlertTriangle,
-  Clock, Activity, Save, BarChart3, Settings2, ListChecks, Power, MessagesSquare,
-} from "lucide-react";
+import { RefreshCw, Download, Check, AlertTriangle, Clock, Activity, Save, BarChart, Settings2, ListChecks, Power, MessagesSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";

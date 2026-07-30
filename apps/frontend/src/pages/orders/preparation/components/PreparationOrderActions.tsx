@@ -1,11 +1,6 @@
-import { useTranslation } from "react-i18next";
-import {
-  ArrowPathIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  PrinterIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Printer as PrinterIcon, Truck as TruckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+;
 import { Link } from "react-router-dom";
 import type {
   PreparationOrder,

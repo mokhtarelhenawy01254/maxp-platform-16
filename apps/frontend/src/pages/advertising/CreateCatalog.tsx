@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, AlertTriangle as ExclamationCircleIcon } from 'lucide-react';
 /**
  * Create Catalog Page
  *
@@ -6,11 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  PlusIcon,
-  ExclamationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

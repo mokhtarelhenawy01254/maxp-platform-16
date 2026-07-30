@@ -1,24 +1,11 @@
+import { Plus as PlusIcon, Folder as FolderIcon, Circle as CalendarDaysIcon, User as UserIcon, Tag as TagIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as ArrowTrendingUpIcon, Check as CheckCircleIcon, Clock as ClockIcon, Eye as EyeIcon, Filter as FunnelIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  PlusIcon,
-  FolderIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  TagIcon,
-  PencilIcon,
-  TrashIcon,
-  ArrowTrendingUpIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  EyeIcon,
-  FunnelIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Project {
   id: string;

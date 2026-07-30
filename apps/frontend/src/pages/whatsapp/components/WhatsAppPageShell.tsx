@@ -1,8 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";

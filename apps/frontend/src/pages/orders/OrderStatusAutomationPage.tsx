@@ -1,10 +1,10 @@
+import { Trash2 as TrashIcon, Clock as ClockIcon, ArrowRight as ArrowRightIcon, Plus as PlusIcon, Zap as BoltIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
-import { TrashIcon, ClockIcon, ArrowRightIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { BoltIcon } from "@heroicons/react/24/solid";
+;
+;
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
-
 interface OrderStatusDefinition {
   code: string;
   name: string;

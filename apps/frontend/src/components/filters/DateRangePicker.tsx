@@ -1,5 +1,6 @@
+import { Calendar as CalendarIcon } from 'lucide-react';
 import React, { useState } from 'react';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+;
 
 interface DateRangePickerProps {
     onDateChange: (startDate: Date | null, endDate: Date | null, period: string) => void;

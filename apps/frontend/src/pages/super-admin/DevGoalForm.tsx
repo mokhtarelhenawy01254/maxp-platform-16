@@ -1,14 +1,10 @@
+import { ArrowRight as ArrowRightIcon, Plus as PlusIcon, X as XMarkIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import {
-  ArrowRightIcon,
-  PlusIcon,
-  XMarkIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);

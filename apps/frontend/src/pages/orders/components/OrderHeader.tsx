@@ -1,14 +1,8 @@
+import { ArrowLeft as ArrowLeftIcon, Check as CheckIcon, ChevronDown as ChevronDownIcon, ShoppingBag as ShoppingBagIcon, Pencil as PencilIcon, Printer as PrinterIcon, Truck as TruckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ShoppingBagIcon,
-  PencilIcon,
-  PrinterIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { getOrderStatusDisplay, getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { OrderDetailsType } from "../types";

@@ -1,16 +1,12 @@
+import { Info as InformationCircleIcon, ShoppingBag as ShoppingBagIcon, ShoppingBag as ShoppingCartIcon, Circle as UserCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import ProductSearchColumn from "./components/ProductSearchColumn";
 import CartColumn from "./components/CartColumn";
 import CheckoutColumn from "./components/CheckoutColumn";
 import { toast } from "sonner";
 import { CartItem } from "./types";
-import {
-  InformationCircleIcon,
-  ShoppingBagIcon,
-  ShoppingCartIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { extractVariantDisplayDetails } from "./utils/variantAttributes";
 import { useAuth } from "../../../hooks/useAuthSimple";
 

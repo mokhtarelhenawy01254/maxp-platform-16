@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Search as MagnifyingGlassIcon, Check as CheckCircleIcon, Filter as FunnelIcon, X as XMarkIcon, X as XCircleIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MagnifyingGlassIcon, CheckCircleIcon, FunnelIcon, XMarkIcon, XCircleIcon } from '@heroicons/react/24/outline';
+;
 import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCurrency } from '../../hooks/useCurrency';

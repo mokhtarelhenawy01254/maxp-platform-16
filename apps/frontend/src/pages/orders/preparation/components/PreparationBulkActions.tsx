@@ -1,12 +1,6 @@
-import { useTranslation } from "react-i18next";
-import {
-  ArrowPathIcon,
-  CheckCircleIcon,
-  PrinterIcon,
-  TruckIcon,
-  Squares2X2Icon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, Printer as PrinterIcon, Truck as TruckIcon, Grid as Squares2X2Icon, X as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+;
 import type { PreparationStatusOption } from "../types";
 
 interface PreparationBulkActionsProps {

@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-    MessageSquare,
-    Plus,
-    Star,
-    User,
-    Inbox,
-    Send as SendIcon,
-    Search,
-    Calendar,
-    AlertCircle,
-    Clock,
-    CheckCircle2,
-    Eye,
-} from "lucide-react";
+import { MessageSquare, Plus, Star, User, Mail, Navigation as SendIcon, Search, Calendar, AlertTriangle, Clock, CheckCircle2, Eye } from 'lucide-react';
 import {
     Card,
     CardContent,

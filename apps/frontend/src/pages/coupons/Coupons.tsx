@@ -1,18 +1,12 @@
+import { Circle as TicketIcon, Plus as PlusIcon, Eye as EyeIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Clipboard as ClipboardDocumentIcon, X as XMarkIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
-import {
-  TicketIcon,
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  ClipboardDocumentIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Coupon {
   id: string;

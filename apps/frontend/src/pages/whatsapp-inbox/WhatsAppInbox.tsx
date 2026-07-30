@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import { formatQueueLabel, formatWorkflowStatus } from './queuePresentation';

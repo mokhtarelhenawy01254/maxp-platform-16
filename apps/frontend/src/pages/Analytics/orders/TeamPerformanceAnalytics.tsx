@@ -1,10 +1,7 @@
+import { Users as UsersIcon, X as XCircleIcon, Circle as TrophyIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  UsersIcon,
-  XCircleIcon,
-  TrophyIcon,
-} from "@heroicons/react/24/outline";
+;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";

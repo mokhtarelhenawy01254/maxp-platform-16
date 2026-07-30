@@ -4,23 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Clock,
-  LogIn,
-  LogOut,
-  Calendar,
-  TrendingUp,
-  Target,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Timer,
-  MapPin,
-  Home,
-  ChevronLeft,
-  ChevronRight,
-  Building2,
-} from "lucide-react";
+import { Clock, LogIn, ArrowRight, Calendar, TrendingUp, Target, AlertTriangle, Check, X, Timer, Pin, Home, ChevronLeft, ChevronRight, Building } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

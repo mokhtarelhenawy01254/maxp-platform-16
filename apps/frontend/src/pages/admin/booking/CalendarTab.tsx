@@ -1,4 +1,5 @@
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
+;
 import { BookingAppointment, STATUS_MAP } from "./shared";
 
 interface Props {

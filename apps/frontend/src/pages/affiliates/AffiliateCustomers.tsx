@@ -1,13 +1,9 @@
+import { Circle as UserGroupIcon, ShoppingBag as ShoppingBagIcon, DollarSign as CurrencyDollarIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  UserGroupIcon,
-  ShoppingBagIcon,
-  CurrencyDollarIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useNavigate } from "react-router-dom";
 
 interface Customer {

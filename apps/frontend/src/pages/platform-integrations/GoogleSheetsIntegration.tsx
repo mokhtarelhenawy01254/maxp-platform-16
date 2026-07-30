@@ -1,13 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { Table as TableCellsIcon, Download as ArrowDownTrayIcon, Upload as ArrowUpTrayIcon, RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
-import {
-  TableCellsIcon,
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  ArrowPathIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 

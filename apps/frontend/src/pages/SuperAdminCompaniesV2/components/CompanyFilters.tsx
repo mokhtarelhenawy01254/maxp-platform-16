@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, ArrowDownUp, X, Loader2 } from "lucide-react";
+import { Search, ArrowDownUp, X, Loader2 } from 'lucide-react';
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";

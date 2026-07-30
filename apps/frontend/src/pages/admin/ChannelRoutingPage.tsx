@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2 } from "lucide-react";
+import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

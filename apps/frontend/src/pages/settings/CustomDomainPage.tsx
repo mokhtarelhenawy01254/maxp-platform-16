@@ -1,16 +1,7 @@
+import { Globe as GlobeAltIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, ExternalLink as ArrowTopRightOnSquareIcon, Clipboard as ClipboardDocumentCheckIcon, Clipboard as ClipboardIcon, Circle as ArrowsRightLeftIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  GlobeAltIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  ArrowTopRightOnSquareIcon,
-  ClipboardDocumentCheckIcon,
-  ClipboardIcon,
-  ArrowsRightLeftIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";

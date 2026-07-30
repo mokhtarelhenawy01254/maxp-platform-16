@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  MessageCircle, Bot, Users, BarChart3, Check, ChevronDown,
-  ArrowLeft, Smartphone, LayoutDashboard, X,
-  SendHorizontal, Sparkles, Zap, Shield, Globe, Clock, Menu, Star,
-} from "lucide-react";
+import { MessageCircle, Bot, Users, BarChart, Check, ChevronDown, ArrowLeft, Phone, LayoutDashboard, X, SendHorizontal, Star, Zap, Shield, Globe, Clock, Menu } from 'lucide-react';
 import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./aiInboxLanding.css";
 

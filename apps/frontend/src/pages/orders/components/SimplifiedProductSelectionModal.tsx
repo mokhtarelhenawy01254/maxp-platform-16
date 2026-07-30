@@ -1,10 +1,6 @@
+import { Search as MagnifyingGlassIcon, X as XMarkIcon, Plus as PlusIcon, Archive as ArchiveBoxIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  PlusIcon,
-  ArchiveBoxIcon,
-} from "@heroicons/react/24/outline";
+;
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
 import { toast } from "sonner";

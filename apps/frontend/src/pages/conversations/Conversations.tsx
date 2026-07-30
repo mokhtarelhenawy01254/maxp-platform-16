@@ -1,17 +1,8 @@
+import { Circle as PaperAirplaneIcon, Smile as FaceSmileIcon, Circle as PaperClipIcon, Search as MagnifyingGlassIcon, Circle as EllipsisVerticalIcon, Phone as PhoneIcon, Video as VideoCameraIcon, Info as InformationCircleIcon, Circle as UserCircleIcon, MessageSquare as ChatBubbleLeftRightIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
+import { useAuth } from '@/hooks/useAuthSimple';
 import React, { useState, useEffect, useRef } from "react";
-import {
-  PaperAirplaneIcon,
-  FaceSmileIcon,
-  PaperClipIcon,
-  MagnifyingGlassIcon,
-  EllipsisVerticalIcon,
-  PhoneIcon,
-  VideoCameraIcon,
-  InformationCircleIcon,
-  UserCircleIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";

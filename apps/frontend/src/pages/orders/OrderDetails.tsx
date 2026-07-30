@@ -1,12 +1,14 @@
+import { RefreshCw as ArrowPathIcon, CreditCard as CreditCardIcon, Circle as CalendarDaysIcon, Truck as TruckIcon, X as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon, XCircleIcon } from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";

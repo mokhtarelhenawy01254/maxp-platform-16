@@ -1,19 +1,9 @@
+import { Search as MagnifyingGlassIcon, Clipboard as ClipboardDocumentIcon, ExternalLink as ArrowTopRightOnSquareIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon, Filter as FunnelIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-import {
-  MagnifyingGlassIcon,
-  ClipboardDocumentIcon,
-  ArrowTopRightOnSquareIcon,
-  ArrowPathIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  FunnelIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/outline";
+;
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";

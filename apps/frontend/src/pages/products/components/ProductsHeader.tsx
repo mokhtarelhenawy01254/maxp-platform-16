@@ -1,13 +1,7 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, Upload as ArrowUpTrayIcon, Download as ArrowDownTrayIcon, Grid as Squares2X2Icon, List as ListBulletIcon } from 'lucide-react';
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  PlusIcon,
-  TrashIcon,
-  ArrowUpTrayIcon,
-  ArrowDownTrayIcon,
-  Squares2X2Icon,
-  ListBulletIcon,
-} from "@heroicons/react/24/outline";
+;
 import { ViewMode } from "./ProductsTypes";
 
 interface ProductsHeaderProps {

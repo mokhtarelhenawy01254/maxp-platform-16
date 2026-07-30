@@ -1,26 +1,10 @@
+import { ArrowRight as ArrowRightIcon, Circle as BuildingOffice2Icon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Circle as CalendarDaysIcon, Clock as ClockIcon, Check as CheckCircleIcon, X as XCircleIcon, Truck as TruckIcon, Circle as CubeIcon, User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, Eye as EyeIcon, Download as ArrowDownTrayIcon, Filter as FunnelIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowRightIcon,
-  BuildingOffice2Icon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  CalendarDaysIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  TruckIcon,
-  CubeIcon,
-  UserIcon,
-  PhoneIcon,
-  MapPinIcon,
-  EyeIcon,
-  ArrowDownTrayIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
-import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../utils/statusRegistry";
 
 interface OrderItem {

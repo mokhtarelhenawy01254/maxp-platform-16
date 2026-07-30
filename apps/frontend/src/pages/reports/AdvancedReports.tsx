@@ -1,18 +1,6 @@
+import { Activity as ChartBarIcon, Circle as DocumentChartBarIcon, Download as ArrowDownTrayIcon, Calendar as CalendarIcon, Circle as UserGroupIcon, ShoppingBag as ShoppingBagIcon, DollarSign as CurrencyDollarIcon, Eye as EyeIcon, Clock as ClockIcon, ArrowUp as ArrowUpIcon, ArrowDown as ArrowDownIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ChartBarIcon,
-  DocumentChartBarIcon,
-  ArrowDownTrayIcon,
-  CalendarIcon,
-  UserGroupIcon,
-  ShoppingBagIcon,
-  CurrencyDollarIcon,
-  EyeIcon,
-  ClockIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ChatBubbleLeftRightIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 
 interface DashboardData {

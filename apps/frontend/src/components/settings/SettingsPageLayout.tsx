@@ -1,5 +1,6 @@
+import { RefreshCw as ArrowPathIcon, Check as CheckIcon } from 'lucide-react';
 import React from "react";
-import { ArrowPathIcon, CheckIcon } from "@heroicons/react/24/outline";
+;
 
 interface SettingsPageLayoutProps {
     title: string;

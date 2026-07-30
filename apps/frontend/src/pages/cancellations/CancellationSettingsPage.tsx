@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import {
   cancellationService,
@@ -6,16 +6,7 @@ import {
   CancellationReasonCategory,
 } from "../../services/cancellationService";
 import { toast } from "sonner";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  FolderPlus,
-  Tag,
-  CheckCircle,
-  XCircle,
-  Sparkles,
-} from "lucide-react";
+import { Plus, Edit2, Trash2, Folder, Tag, Check, X, Star } from 'lucide-react';
 
 const getDefaultData = (t: any) => [
   {

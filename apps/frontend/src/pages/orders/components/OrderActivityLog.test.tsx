@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import OrderActivityLog from "./OrderActivityLog";

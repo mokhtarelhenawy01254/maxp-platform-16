@@ -1,26 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Clock,
-  Plus,
-  Check,
-  X,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Eye,
-  AlertCircle,
-  History,
-  Zap,
-  Timer,
-  Receipt,
-  RefreshCcw,
-  ArrowRight,
-  RotateCcw,
-  Loader2,
-  FileText,
-  Trash2,
-} from "lucide-react";
+import { Clock, Plus, Check, X, Calendar, ChevronLeft, ChevronRight, Download, Eye, AlertTriangle, History, Zap, Timer, File, RefreshCw, ArrowRight, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";

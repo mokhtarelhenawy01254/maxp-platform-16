@@ -1,11 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  PlusIcon, PencilIcon, TrashIcon, TagIcon, FolderIcon, SparklesIcon,
-} from "@heroicons/react/24/outline";
-import {
-  Users, Star, Shield, TrendingUp, AlertTriangle, Search, Crown, Medal, Gem, Trophy,
-} from "lucide-react";
+;
+import { Users, Star, Shield, TrendingUp, AlertTriangle, Search, Crown, Medal, Gem, Award, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Tag as TagIcon, Folder as FolderIcon, Star as SparklesIcon } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import analyticsService from "../../services/analyticsService";

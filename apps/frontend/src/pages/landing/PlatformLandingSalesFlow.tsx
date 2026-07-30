@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Layers3, TimerReset } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Layers3, TimerReset } from 'lucide-react';
 import { trackPlatformSiteLead } from "../../utils/platformSiteMetaPixel";
 import { primaryMarketingSection } from "./platformLandingContent";
 

@@ -1,5 +1,6 @@
+import { ExternalLink as ArrowTopRightOnSquareIcon, Clipboard as ClipboardDocumentIcon, Check as CheckIcon } from 'lucide-react';
 import { useState } from 'react';
-import { ArrowTopRightOnSquareIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
+;
 import { marketingSections } from '../landing/marketingLandingData';
 
 const SuperAdminMarketingLinks = () => {

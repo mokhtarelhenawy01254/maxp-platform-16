@@ -1,19 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  Activity,
-  AlertTriangle,
-  Bell,
-  Building2,
-  CheckCircle2,
-  Layers3,
-  MessageSquareText,
-  RadioTower,
-  RefreshCw,
-  Settings2,
-  Smartphone,
-} from "lucide-react";
+import { Activity, AlertTriangle, Bell, Building, CheckCircle2, Layers3, MessageSquareText, RadioTower, RefreshCw, Settings2, Phone } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

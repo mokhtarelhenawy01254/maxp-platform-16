@@ -31,24 +31,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from '../utils/marketplaceApps';
 import TrustedBadgePanel from '../components/TrustedBadgePanel';
-import {
-  AlarmClock,
-  BadgeCheck,
-  CheckCircle2,
-  Eye,
-  Facebook,
-  Heart,
-  Twitter,
-  ExternalLink,
-  MessageCircle,
-  Ruler,
-  Share2,
-  ShieldCheck,
-  Sparkles,
-  Truck,
-  RotateCcw,
-  X,
-} from 'lucide-react';
+import { AlarmClock, Check, CheckCircle2, Eye, Facebook, Heart, Twitter, ExternalLink, MessageCircle, Ruler, Share2, ShieldCheck, Star, Truck, RotateCcw, X } from 'lucide-react';
 import {
   calculateVolumeDiscountPricing,
   getProductVolumeDiscounts,

@@ -1,16 +1,8 @@
+import { ArrowLeft as ArrowLeftIcon, Search as MagnifyingGlassIcon, ShoppingBag as ShoppingBagIcon, Check as CheckIcon, X as XCircleIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  MagnifyingGlassIcon,
-  ShoppingBagIcon,
-  CheckIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/solid";
+;
+;
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 

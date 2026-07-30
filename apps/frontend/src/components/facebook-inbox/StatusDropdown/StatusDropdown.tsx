@@ -1,5 +1,6 @@
+import { ChevronDown as ChevronDownIcon, Check as CheckIcon } from 'lucide-react';
 import React, { useState } from "react";
-import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/outline";
+;
 import { ConversationStatus } from "../../../types/inbox.types";
 
 interface StatusDropdownProps {

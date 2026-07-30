@@ -1,15 +1,7 @@
+import { Check as CheckCircleIcon, Archive as ArchiveBoxIcon, Circle as BellSlashIcon, Clock as ClockIcon, Trash2 as TrashIcon, Circle as StarIconSolid, Circle as CheckCircleSolid } from 'lucide-react';
 import React, { useState } from "react";
-import {
-  CheckCircleIcon,
-  ArchiveBoxIcon,
-  BellSlashIcon,
-  ClockIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import {
-  StarIcon as StarIconSolid,
-  CheckCircleIcon as CheckCircleSolid,
-} from "@heroicons/react/24/solid";
+;
+;
 
 interface ConversationActionsBarProps {
   isPriority: boolean;

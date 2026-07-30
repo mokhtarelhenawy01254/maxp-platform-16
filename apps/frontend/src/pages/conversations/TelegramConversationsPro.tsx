@@ -1,40 +1,11 @@
+import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { useTranslation } from "react-i18next";
 import useSocket from "../../hooks/useSocket";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import LinkifiedText from "../../components/common/LinkifiedText";
-import {
-  Send,
-  Paperclip,
-  Smile,
-  MoreVertical,
-  Search,
-  Phone,
-  Check,
-  CheckCheck,
-  MessageCircle,
-  Bot,
-  Settings,
-  User,
-  MapPin,
-  File,
-  Image as ImageIcon,
-  Reply,
-  Forward,
-  Trash2,
-  Mic,
-  X,
-  Video,
-  Music,
-  Map,
-  Contact,
-  Edit,
-  Download,
-  Play,
-  Pause,
-  Volume2,
-} from "lucide-react";
+import { Navigation, Link, Smile, MoreVertical, Search, Phone, Check, CheckCheck, MessageCircle, Bot, Settings, User, Pin, File, Image as ImageIcon, Reply, Forward, Trash2, Mic, X, Video, Volume2, Contact, Edit, Download, Play, Pause } from 'lucide-react';
 
 // --- Types ---
 interface Message {

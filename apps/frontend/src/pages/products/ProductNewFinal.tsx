@@ -1,25 +1,13 @@
+import { ArrowLeft as ArrowLeftIcon, File as DocumentTextIcon, DollarSign as CurrencyDollarIcon, Circle as CubeIcon, Image as PhotoIcon, Circle as SwatchIcon, Truck as TruckIcon, Settings as Cog6ToothIcon, Eye as EyeIcon, Circle as MegaphoneIcon, X as XMarkIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getCurrencyByCode } from "../../utils/currency";
 import { apiClient } from "../../services/apiClient";
 import ThemeToggle from "../../components/ui/theme-toggle";
-import {
-  ArrowLeftIcon,
-  DocumentTextIcon,
-  CurrencyDollarIcon,
-  CubeIcon,
-  PhotoIcon,
-  SwatchIcon,
-  TruckIcon,
-  Cog6ToothIcon,
-  EyeIcon,
-  MegaphoneIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 
 // Hooks
 import { useProductForm } from "./hooks/useProductForm";

@@ -1,18 +1,6 @@
+import { X as XMarkIcon, Search as MagnifyingGlassIcon, Plus as PlusIcon, Minus as MinusIcon, Trash2 as TrashIcon, ShoppingBag as ShoppingCartIcon, User as UserIcon, Pin as MapPinIcon, Truck as TruckIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Archive as ArchiveBoxIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  MinusIcon,
-  TrashIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  MapPinIcon,
-  TruckIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ArchiveBoxIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";

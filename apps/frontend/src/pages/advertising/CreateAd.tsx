@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon, Image as PhotoIcon, Video as VideoCameraIcon, Circle as RectangleStackIcon, X as XMarkIcon, Plus as PlusIcon, Eye as EyeIcon } from 'lucide-react';
 /**
  * Create Ad Page
  *
@@ -6,16 +7,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  PhotoIcon,
-  VideoCameraIcon,
-  RectangleStackIcon,
-  XMarkIcon,
-  PlusIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

@@ -1,9 +1,10 @@
+import { Link as LinkIcon, ShoppingBag as ShoppingBagIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTheme } from "../../hooks/useTheme";
 import { useNavigate } from "react-router-dom";
-import { LinkIcon, ShoppingBagIcon, TrashIcon } from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   buildAffiliateProductUrl,

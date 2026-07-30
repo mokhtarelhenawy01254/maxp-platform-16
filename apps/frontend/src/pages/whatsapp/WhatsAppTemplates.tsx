@@ -1,17 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import {
-  CheckCircle,
-  Edit,
-  Eye,
-  FileText,
-  Plus,
-  Search,
-  Send,
-  Save,
-  RefreshCw,
-} from "lucide-react";
+import { Check, Edit, Eye, File, Plus, Search, Navigation, Save, RefreshCw } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";

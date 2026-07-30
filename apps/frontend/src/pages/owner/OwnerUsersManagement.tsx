@@ -1,14 +1,6 @@
+import { Users as UsersIcon, Circle as BuildingOffice2Icon, Search as MagnifyingGlassIcon, Circle as ArrowsRightLeftIcon, Plus as PlusIcon, Mail as EnvelopeIcon, Phone as PhoneIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  UsersIcon,
-  BuildingOffice2Icon,
-  MagnifyingGlassIcon,
-  ArrowsRightLeftIcon,
-  PlusIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

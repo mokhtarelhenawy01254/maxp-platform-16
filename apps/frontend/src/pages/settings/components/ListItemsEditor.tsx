@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { uploadService } from "../../../services/uploadService";
-import { Upload, Trash2, ChevronUp, ChevronDown, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Upload, Trash2, ChevronUp, ChevronDown, GripVertical, Image as ImageIcon } from 'lucide-react';
 
 export interface FieldDef {
     key: string;

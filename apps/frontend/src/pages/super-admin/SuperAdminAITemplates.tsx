@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -7,7 +8,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Checkbox } from "../../components/ui/checkbox";
 import { apiClient } from "../../services/apiClient";
-import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink, CheckSquare, CheckCheck, X } from "lucide-react";
+import { Bot, Search, Eye, Pencil, Clipboard, Navigation, Trash2, ChevronDown, ChevronUp, Plus, Grid, ExternalLink, CheckSquare, CheckCheck, X } from 'lucide-react';
 import {
   CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,

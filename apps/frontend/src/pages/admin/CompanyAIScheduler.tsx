@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  CalendarClock,
-  Play,
-  Trash2,
-  Plus,
-  Languages,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Pause,
-} from "lucide-react";
+import { CalendarClock, Play, Trash2, Plus, Languages, CheckCircle2, AlertTriangle, RefreshCw, Pause } from 'lucide-react';
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";

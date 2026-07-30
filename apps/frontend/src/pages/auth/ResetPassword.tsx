@@ -1,12 +1,8 @@
+import { Check as CheckIcon, Eye as EyeIcon, EyeOff as EyeSlashIcon, Lock as LockClosedIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import {
-  CheckIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockClosedIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";

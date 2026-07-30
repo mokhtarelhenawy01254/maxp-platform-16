@@ -1,13 +1,7 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, AlertTriangle as ExclamationCircleIcon, Minus as MinusIcon, Circle as EllipsisVerticalIcon, Image as PhotoIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  PlusIcon,
-  TrashIcon,
-  ExclamationCircleIcon,
-  MinusIcon,
-  EllipsisVerticalIcon,
-  PhotoIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useCurrency } from "../../../hooks/useCurrency";
 import { OrderItem } from "../types";
 import { validatePrice, validateQuantity } from "../../../utils/validation";

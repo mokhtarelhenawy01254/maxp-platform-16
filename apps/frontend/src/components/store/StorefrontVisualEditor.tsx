@@ -1,18 +1,6 @@
+import { AlignLeft as Bars3Icon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Monitor as ComputerDesktopIcon, Phone as DevicePhoneMobileIcon, EyeOff as EyeSlashIcon, Circle as PaintBrushIcon, Image as PhotoIcon, Plus as PlusIcon, Star as SparklesIcon, Grid as Squares2X2Icon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Bars3Icon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ComputerDesktopIcon,
-  DevicePhoneMobileIcon,
-  EyeSlashIcon,
-  PaintBrushIcon,
-  PhotoIcon,
-  PlusIcon,
-  SparklesIcon,
-  Squares2X2Icon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   DndContext,
   PointerSensor,
@@ -1051,7 +1039,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
           dir="rtl"
           className="order-1 min-w-0 border-t border-gray-200 bg-gray-50/70 px-4 py-4 dark:border-gray-700 dark:bg-gray-950/40 xl:order-2 xl:border-t-0"
         >
-          <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
+          <StorefrontThemeProvider initialTheme={previewTheme as StorefrontThemeInput}>
             <PreviewShellInner
               theme={previewTheme}
               selectedSectionKey={selectedSectionKey}

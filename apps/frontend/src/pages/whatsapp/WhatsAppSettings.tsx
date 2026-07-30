@@ -1,42 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  AlertCircle,
-  Bell,
-  CheckCircle2,
-  Clock,
-  Clock3,
-  Copy,
-  Database,
-  Edit,
-  FileText,
-  Globe,
-  Image as ImageIcon,
-  Link2,
-  Link2Off,
-  Lock,
-  MessageSquareText,
-  Package,
-  Plus,
-  QrCode,
-  RefreshCw,
-  Save,
-  Settings,
-  Smartphone,
-  Tag,
-  Trash2,
-  Users,
-  Video,
-  XCircle,
-  HelpCircle,
-  Briefcase,
-  Key,
-  Shuffle,
-  ChevronRight,
-  ChevronLeft,
-  Info,
-} from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, Clock, Clock3, Clipboard, Server, Edit, File, Globe, Image as ImageIcon, Link2, Link2Off, Lock, MessageSquareText, Package, Plus, Grid, RefreshCw, Save, Settings, Phone, Tag, Trash2, Users, Video, X, Info, Folder, Key, Shuffle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 

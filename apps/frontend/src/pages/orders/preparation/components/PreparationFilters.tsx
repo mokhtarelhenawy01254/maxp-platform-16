@@ -1,6 +1,7 @@
+import { ChevronDown as ChevronDownIcon, Filter as FunnelIcon, Search as MagnifyingGlassIcon, X as XMarkIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import type {

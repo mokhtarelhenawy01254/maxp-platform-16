@@ -1,12 +1,8 @@
+import { Search as MagnifyingGlassIcon, X as XMarkIcon, Sliders as AdjustmentsHorizontalIcon, Circle as BookmarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import {
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  AdjustmentsHorizontalIcon,
-  BookmarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface SearchFilters {
   query: string;

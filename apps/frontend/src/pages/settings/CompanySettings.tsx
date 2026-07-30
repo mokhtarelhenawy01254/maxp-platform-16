@@ -1,18 +1,9 @@
+import { Building as BuildingOfficeIcon, CreditCard as CreditCardIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, ArrowUp as ArrowUpIcon, DollarSign as CurrencyDollarIcon, ShieldCheck as ShieldCheckIcon, Globe as GlobeAltIcon, Star as SparklesIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
-import {
-  BuildingOfficeIcon,
-  CreditCardIcon,
-  ChartBarIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ArrowUpIcon,
-  CurrencyDollarIcon,
-  ShieldCheckIcon,
-  GlobeAltIcon,
-  SparklesIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   SUPPORTED_CURRENCIES,
   DEFAULT_CURRENCY,

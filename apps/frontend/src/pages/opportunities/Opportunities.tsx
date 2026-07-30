@@ -1,16 +1,10 @@
+import { Activity as ChartBarIcon, Plus as PlusIcon, Eye as EyeIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Filter as FunnelIcon, DollarSign as CurrencyDollarIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { buildApiUrl } from "../../utils/urlHelper";
-import {
-  ChartBarIcon,
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  FunnelIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Opportunity {
   id: string;

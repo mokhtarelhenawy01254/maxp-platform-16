@@ -14,7 +14,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Plus, Send, XCircle, Eye, RefreshCw, X } from "lucide-react";
+import { Plus, Navigation, X, Eye, RefreshCw } from 'lucide-react';
 import { toast } from "sonner";
 
 interface Userbot { id: string; label: string; clientPhone?: string; }

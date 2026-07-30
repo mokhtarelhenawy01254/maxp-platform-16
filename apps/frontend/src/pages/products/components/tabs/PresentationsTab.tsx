@@ -1,12 +1,6 @@
+import { X as XMarkIcon, Image as PhotoIcon, Plus as PlusIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Link as LinkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  XMarkIcon,
-  PhotoIcon,
-  PlusIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { getImageUrl } from "../../../../utils/imageUrl";
 import type { ProductPresentation } from "../../hooks/useProductPresentations";
 

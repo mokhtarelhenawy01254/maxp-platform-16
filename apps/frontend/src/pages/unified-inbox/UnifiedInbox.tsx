@@ -1,35 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  MagnifyingGlassIcon,
-  PaperAirplaneIcon,
-  ChatBubbleLeftRightIcon,
-  UserCircleIcon,
-  XMarkIcon,
-  ArrowPathIcon,
-  EllipsisVerticalIcon,
-  PaperClipIcon,
-  FaceSmileIcon,
-  ClockIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  CheckIcon,
-  LinkIcon,
-  BellSnoozeIcon,
-  PencilSquareIcon,
-  ShoppingCartIcon,
-  ArrowUturnLeftIcon,
-  HeartIcon,
-  ArrowTopRightOnSquareIcon,
-  TrashIcon,
-  StarIcon as StarOutlineIcon,
-  ArchiveBoxIcon,
-  NoSymbolIcon,
-} from "@heroicons/react/24/outline";
-import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
-import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide } from "lucide-react";
+;
+;
+import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide, Search as MagnifyingGlassIcon, Circle as PaperAirplaneIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as UserCircleIcon, X as XMarkIcon, RefreshCw as ArrowPathIcon, Circle as EllipsisVerticalIcon, Circle as PaperClipIcon, Smile as FaceSmileIcon, Clock as ClockIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Check as CheckIcon, Link as LinkIcon, Circle as BellSnoozeIcon, Edit as PencilSquareIcon, ShoppingBag as ShoppingCartIcon, Circle as ArrowUturnLeftIcon, Heart as HeartIcon, ExternalLink as ArrowTopRightOnSquareIcon, Trash2 as TrashIcon, Circle as StarOutlineIcon, Archive as ArchiveBoxIcon, Ban as NoSymbolIcon, Circle as StarSolidIcon } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
-import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
 
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";

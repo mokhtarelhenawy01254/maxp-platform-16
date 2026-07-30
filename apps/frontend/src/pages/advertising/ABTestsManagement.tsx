@@ -1,3 +1,4 @@
+import { Plus as PlusIcon, Circle as PlayIcon, Circle as PauseIcon, Trash2 as TrashIcon, Eye as EyeIcon, Activity as ChartBarIcon, Circle as BeakerIcon } from 'lucide-react';
 /**
  * A/B Tests Management Page
  *
@@ -6,15 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  PlusIcon,
-  PlayIcon,
-  PauseIcon,
-  TrashIcon,
-  EyeIcon,
-  ChartBarIcon,
-  BeakerIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

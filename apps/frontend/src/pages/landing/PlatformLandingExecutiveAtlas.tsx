@@ -1,11 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowLeft,
-  BarChart3,
-  Briefcase,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, BarChart, Folder, ShieldCheck } from 'lucide-react';
 import { trackPlatformSiteLead } from "../../utils/platformSiteMetaPixel";
 import { primaryMarketingSection } from "./platformLandingContent";
 

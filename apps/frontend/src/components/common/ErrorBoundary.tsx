@@ -1,8 +1,6 @@
+import { AlertTriangle as ExclamationTriangleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import { Component, ErrorInfo, ReactNode } from "react";
-import {
-  ExclamationTriangleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Props {
   children: ReactNode;

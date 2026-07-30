@@ -1,19 +1,9 @@
+import { Circle as DocumentDuplicateIcon, Plus as PlusIcon, ArrowLeft as ArrowLeftIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Clipboard as ClipboardDocumentIcon, Tag as TagIcon, Clock as ClockIcon, Folder as FolderIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-import {
-  DocumentDuplicateIcon,
-  PlusIcon,
-  ArrowLeftIcon,
-  PencilIcon,
-  TrashIcon,
-  XMarkIcon,
-  ClipboardDocumentIcon,
-  TagIcon,
-  ClockIcon,
-  FolderIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface TaskTemplate {
   id: string;

@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
-  History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
-  Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell, Image,
-} from "lucide-react";
+import { LayoutDashboard, Building, BarChart, Settings, Shield, DollarSign, CreditCard, Brain, History, Globe, Headphones, Tag, ChevronUp, ChevronDown, Folder, Activity, Sliders, Facebook, Award, GitBranch, Users, Clock, HardDrive, MessageSquare, Key, Play, Download, Code2, Zap, Brush, Server, Grid, Bell, Image } from 'lucide-react';
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

@@ -1,10 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { Trash2 as TrashIcon, Circle as CalculatorIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import {
-  TrashIcon,
-  CalculatorIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { CartItem } from "../types";
 import { useAuth } from "../../../../hooks/useAuthSimple";
 

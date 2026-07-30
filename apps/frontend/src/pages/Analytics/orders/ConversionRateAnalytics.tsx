@@ -1,6 +1,7 @@
+import { Activity as ChartBarIcon, X as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { ChartBarIcon, XCircleIcon } from "@heroicons/react/24/outline";
+;
 import {
   LineChart,
   Line,

@@ -2,18 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import {
-  Save,
-  ArrowRight,
-  AlertTriangle,
-  AlertCircle,
-  Calendar,
-  FileText,
-  User,
-  ShieldAlert,
-  Gavel,
-  Eye,
-} from "lucide-react";
+import { Save, ArrowRight, AlertTriangle, Calendar, File, User, ShieldAlert, Gavel, Eye } from 'lucide-react';
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";

@@ -1,14 +1,8 @@
+import { Circle as TicketIcon, Plus as PlusCircleIcon, ChevronRight as ChevronRightIcon, RefreshCw as ArrowPathIcon, Circle as PaperAirplaneIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-    TicketIcon,
-    PlusCircleIcon,
-    ChevronRightIcon,
-    ArrowPathIcon,
-    PaperAirplaneIcon,
-    XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 
 const TurboTickets: React.FC = () => {

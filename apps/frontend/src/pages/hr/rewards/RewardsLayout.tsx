@@ -1,5 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import {
   Card,
@@ -8,14 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from "../../../components/ui/card";
-import {
-  Gift,
-  Award,
-  ClipboardList,
-  Briefcase,
-  BarChart3,
-  User,
-} from "lucide-react";
+import { Gift, Award, Clipboard, Folder, BarChart, User } from 'lucide-react';
 import { useAuth } from "../../../hooks/useAuthSimple";
 
 // Import components (Lazy loaded)

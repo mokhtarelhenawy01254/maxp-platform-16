@@ -1,5 +1,7 @@
-import { useTranslation } from "react-i18next";
-import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
+;
 import { SHORTAGE_REASON_OPTIONS } from "../constants";
 import {
   getDateInputValueWithOffset,

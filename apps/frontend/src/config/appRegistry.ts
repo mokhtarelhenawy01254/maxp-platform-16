@@ -1,31 +1,6 @@
+import { Activity as ChartBarIcon, Circle as PaperAirplaneIcon, Archive as ArchiveBoxIcon, ShoppingBag as ShoppingBagIcon, Circle as SwatchIcon, Heart as HeartIcon, Circle as ClipboardDocumentListIcon, DollarSign as CurrencyDollarIcon, Circle as MegaphoneIcon, Circle as UserCircleIcon, Circle as BriefcaseIcon, Circle as BuildingOffice2Icon, Circle as UserGroupIcon, Calendar as CalendarIcon, Circle as PresentationChartLineIcon, Circle as ChatBubbleBottomCenterTextIcon, Circle as CubeIcon, DollarSign as BanknotesIcon, Bell as BellIcon, Settings as Cog6ToothIcon, Circle as WrenchScrewdriverIcon, Star as SparklesIcon, Clipboard as ClipboardDocumentCheckIcon, Truck as TruckIcon, Circle as ServerStackIcon } from 'lucide-react';
 import type React from 'react';
-import {
-  ChartBarIcon,
-  PaperAirplaneIcon,
-  ArchiveBoxIcon,
-  ShoppingBagIcon,
-  SwatchIcon,
-  HeartIcon,
-  ClipboardDocumentListIcon,
-  CurrencyDollarIcon,
-  MegaphoneIcon,
-  UserCircleIcon,
-  BriefcaseIcon,
-  BuildingOffice2Icon,
-  UserGroupIcon,
-  CalendarIcon,
-  PresentationChartLineIcon,
-  ChatBubbleBottomCenterTextIcon,
-  CubeIcon,
-  BanknotesIcon,
-  BellIcon,
-  Cog6ToothIcon,
-  WrenchScrewdriverIcon,
-  SparklesIcon,
-  ClipboardDocumentCheckIcon,
-  TruckIcon,
-  ServerStackIcon,
-} from '@heroicons/react/24/outline';
+;
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 
 export type AppCategory =

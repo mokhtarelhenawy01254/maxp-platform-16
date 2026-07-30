@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, ExternalLink, MapPin, ChevronDown, Tag, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, ExternalLink, Pin, ChevronDown, Tag, Plus, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxCustomerAvatarUrl, buildProxyImageUrl } from '../../../utils/imageUrl';

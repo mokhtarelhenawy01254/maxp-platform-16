@@ -1,5 +1,6 @@
+import { X as XMarkIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState } from "react";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+;
 
 interface TagsInputProps {
   tags: string[];

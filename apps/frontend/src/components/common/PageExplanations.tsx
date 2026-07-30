@@ -1,6 +1,7 @@
+import { Circle as PlayCircleIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { PlayCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import DOMPurify from "dompurify";
 

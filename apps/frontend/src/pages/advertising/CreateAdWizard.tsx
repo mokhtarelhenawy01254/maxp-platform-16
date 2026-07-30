@@ -8,30 +8,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Target,
-  DollarSign,
-  Users,
-  Layout,
-  Image,
-  CheckCircle,
-  ChevronRight,
-  ChevronLeft,
-  Loader2,
-  AlertCircle,
-  Sparkles,
-  Calendar,
-  Globe,
-  Zap,
-  Eye,
-  Facebook,
-  Instagram,
-  MessageCircle,
-  Search,
-  X,
-  Heart,
-  Smartphone,
-} from "lucide-react";
+import { Target, DollarSign, Users, Layout, Image, Check, ChevronRight, ChevronLeft, Loader2, AlertTriangle, Star, Calendar, Globe, Zap, Eye, Facebook, Instagram, MessageCircle, Search, X, Heart, Phone } from 'lucide-react';
 import {
   facebookAdsService,
   CreateFullAdData,

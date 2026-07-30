@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, ArrowRight } from "lucide-react";
+import { Mail, ArrowRight } from 'lucide-react';
 import { AuthSurface, AuthNotice } from "../../components/auth/AuthSurface";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import axios from "axios";

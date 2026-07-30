@@ -1,14 +1,9 @@
+import { AlignLeft as Bars3Icon, ChevronDown as ChevronDownIcon, Search as MagnifyingGlassIcon, X as XMarkIcon, Users as UsersIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  Bars3Icon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+;
 import "../../styles/hr-theme.css";
-import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";

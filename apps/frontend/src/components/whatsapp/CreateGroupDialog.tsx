@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Group, Loader2, Search, Users } from "lucide-react";
+import { Group, Loader2, Search, Users } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

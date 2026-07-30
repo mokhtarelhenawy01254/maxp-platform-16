@@ -1,12 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, Ban as NoSymbolIcon, ShieldAlert as ShieldExclamationIcon, X as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ArrowPathIcon,
-  CheckCircleIcon,
-  NoSymbolIcon,
-  ShieldExclamationIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   customerBlocklistService,
   CustomerBlockAction,

@@ -1,11 +1,8 @@
+import { Activity as ChartBarIcon, Circle as ArrowTrendingUpIcon, Eye as EyeIcon, Circle as UserGroupIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import {
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-  EyeIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+;
 import { broadcastService } from "../../services/broadcastService";
 
 interface CampaignMetrics {

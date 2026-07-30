@@ -1,5 +1,6 @@
+import { Search as MagnifyingGlassIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Plus as PlusIcon } from 'lucide-react';
 import { useMemo } from "react";
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
+;
 import { BookingDoctor, BookingBranch } from "./shared";
 import DoctorModal from "./DoctorModal";
 

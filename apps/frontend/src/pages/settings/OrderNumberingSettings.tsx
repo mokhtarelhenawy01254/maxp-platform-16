@@ -1,13 +1,9 @@
+import { Settings as Cog6ToothIcon, Check as CheckCircleIcon, X as XCircleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
-import {
-  Cog6ToothIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface OrderSettings {
   enableSequentialOrders: boolean;

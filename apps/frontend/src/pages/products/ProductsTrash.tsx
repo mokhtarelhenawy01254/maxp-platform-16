@@ -1,14 +1,8 @@
+import { Trash2 as TrashIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, X as XMarkIcon, Check as CheckIcon, Image as PhotoIcon, ChevronLeft as ChevronLeftIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-    TrashIcon,
-    ArrowPathIcon,
-    ExclamationTriangleIcon,
-    XMarkIcon,
-    CheckIcon,
-    PhotoIcon,
-    ChevronLeftIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";

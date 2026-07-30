@@ -1,25 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Download,
-  Calendar,
-  Users,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  FileText,
-  RefreshCw,
-  Check,
-  X,
-  Award,
-  AlertTriangle,
-  BookOpen,
-  Activity,
-  Shuffle,
-  UserCheck,
-  BarChart3,
-  PieChart as PieChartIcon,
-} from "lucide-react";
+import { Download, Calendar, Users, Clock, DollarSign, TrendingUp, TrendingDown, File, RefreshCw, Check, X, Award, AlertTriangle, Book, Activity, Shuffle, UserCheck, BarChart, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";

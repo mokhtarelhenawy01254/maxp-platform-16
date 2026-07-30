@@ -1,29 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  FileText,
-  Plus,
-  RefreshCw,
-  Trash2,
-  Globe,
-  Languages,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Pencil,
-  Image,
-  Video,
-  File,
-  MessageSquare,
-  Eye,
-  Library,
-  History,
-  ChevronDown,
-  ChevronRight,
-  Shield,
-  Search,
-} from "lucide-react";
+import { File, Plus, RefreshCw, Trash2, Globe, Languages, Check, X, Clock, AlertTriangle, Pencil, Image, Video, MessageSquare, Eye, Library, History, ChevronDown, ChevronRight, Shield, Search } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";

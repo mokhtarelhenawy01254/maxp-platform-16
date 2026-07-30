@@ -1,14 +1,6 @@
+import { Activity as ChartBarIcon, Clock as ClockIcon, Circle as UserGroupIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as ArrowTrendingUpIcon, ArrowDown as ArrowDownIcon, Eye as EyeIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ChartBarIcon,
-  ClockIcon,
-  UserGroupIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowTrendingUpIcon,
-  ArrowDownIcon,
-  EyeIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ConversationStats {
   totalConversations: number;

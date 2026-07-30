@@ -1,14 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { Search as MagnifyingGlassIcon, Clock as ClockIcon, User as UserIcon, ArrowRight as ArrowRightIcon, ShieldAlert as ShieldExclamationIcon, Circle as CheckBadgeIcon, ChevronDown as ChevronDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
-import {
-    MagnifyingGlassIcon,
-    ClockIcon,
-    UserIcon,
-    ArrowRightIcon,
-    ShieldExclamationIcon,
-    CheckBadgeIcon,
-    ChevronDownIcon
-} from '@heroicons/react/24/outline';
+;
 import orderWorkflowService from '../../../services/orderWorkflowService';
 
 const PAGE_SIZE = 20;

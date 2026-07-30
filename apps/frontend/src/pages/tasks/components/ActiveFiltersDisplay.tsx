@@ -1,3 +1,4 @@
+import { formatDate } from '@/utils/formatters';
 import React from "react";
 
 export interface ActiveFiltersDisplayProps {

@@ -1,7 +1,8 @@
+import { AlignLeft as Bars3Icon, Circle as ArrowUturnLeftIcon, Activity as ChartBarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Bars3Icon, ArrowUturnLeftIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+;
 import AppSidebar from './AppSidebar';
 import { sectionHasVisibleItems } from './helpers';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';

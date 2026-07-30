@@ -1,5 +1,5 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { COMPETITOR_STATUSES, type CompetitorStatus } from './CompetitorStatusBar';
 import i18n from '../../i18n';
 

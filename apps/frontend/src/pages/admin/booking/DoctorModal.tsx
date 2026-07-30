@@ -1,5 +1,6 @@
+import { X as XMarkIcon } from 'lucide-react';
 import { useState } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { BookingDoctor, BookingBranch, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface Props {

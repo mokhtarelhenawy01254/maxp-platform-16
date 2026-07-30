@@ -1,8 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { Search, SlidersHorizontal, BarChart3 } from "lucide-react";
+import { Search, Sliders, BarChart } from 'lucide-react';
 import { InboxTab } from "../../../types/inbox.types";
-import { useTranslation } from "react-i18next";
-
 interface InboxTabsProps {
   activeTab: InboxTab;
   onTabChange: (tab: InboxTab) => void;

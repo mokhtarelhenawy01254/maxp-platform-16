@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowUpRight, ShoppingCart, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ShoppingBag, Star } from 'lucide-react';
 import { storefrontFetch } from '../../utils/storefrontApi';
 import { useProducts, type Product } from '../hooks/useProducts';
 import { isMarketplaceThemePreview } from '../preview/previewContext';

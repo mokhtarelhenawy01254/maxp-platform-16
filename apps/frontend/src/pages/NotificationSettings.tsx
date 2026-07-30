@@ -1,18 +1,6 @@
+import { RefreshCw as ArrowPathIcon, Bell as BellIcon, Check as CheckCircleIcon, MessageSquare as ChatBubbleLeftRightIcon, Clock as ClockIcon, Settings as CogIcon, Monitor as ComputerDesktopIcon, Phone as DevicePhoneMobileIcon, Mail as EnvelopeIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as PlayIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ArrowPathIcon,
-  BellIcon,
-  CheckCircleIcon,
-  ChatBubbleLeftRightIcon,
-  ClockIcon,
-  CogIcon,
-  ComputerDesktopIcon,
-  DevicePhoneMobileIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  PlayIcon,
-} from "@heroicons/react/24/outline";
+;
 import api from "../services/api";
 import { useAuth } from "../hooks/useAuthSimple";
 import {

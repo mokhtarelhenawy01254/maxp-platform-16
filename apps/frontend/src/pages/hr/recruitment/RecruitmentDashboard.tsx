@@ -1,17 +1,6 @@
+import { Circle as BriefcaseIcon, Circle as UserGroupIcon, Clipboard as ClipboardDocumentCheckIcon, Circle as CalendarDaysIcon, Activity as ChartBarIcon, Plus as PlusIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Check as CheckCircleIcon, Clock as ClockIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  BriefcaseIcon,
-  UserGroupIcon,
-  ClipboardDocumentCheckIcon,
-  CalendarDaysIcon,
-  ChartBarIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import JobPostingsSection from "./sections/JobPostingsSection";

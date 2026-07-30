@@ -1,3 +1,4 @@
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
@@ -31,8 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Loader2, PlusIcon } from "lucide-react";
-import { BanknotesIcon } from "@heroicons/react/24/outline";
+import { Loader2, PlusIcon, DollarSign as BanknotesIcon } from 'lucide-react';
+;
 import { useDateFormat } from "../../hooks/useDateFormat";
 
 const MyAdvances: React.FC = () => {

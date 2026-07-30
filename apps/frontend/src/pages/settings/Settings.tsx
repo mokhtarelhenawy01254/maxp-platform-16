@@ -1,10 +1,8 @@
+import { Settings as Cog6ToothIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  Cog6ToothIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { getApiUrl } from "../../config/environment";
 import { useAuth } from "../../hooks/useAuthSimple";

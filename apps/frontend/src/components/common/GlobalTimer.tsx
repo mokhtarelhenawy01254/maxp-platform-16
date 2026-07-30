@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { Play, Pause, Square } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Play, Pause, Square } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { useTimer } from "../../contexts/TimerContext";
 import { useTheme } from "../../hooks/useTheme";

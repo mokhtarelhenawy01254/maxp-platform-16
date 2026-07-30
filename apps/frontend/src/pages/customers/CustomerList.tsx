@@ -1,17 +1,9 @@
+import { Plus as PlusIcon, Search as MagnifyingGlassIcon, Download as ArrowDownTrayIcon, Upload as ArrowUpTrayIcon, Eye as EyeIcon, Pencil as PencilIcon, Users as UsersIcon, ShoppingBag as ShoppingBagIcon, Tag as TagIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  PlusIcon,
-  MagnifyingGlassIcon,
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  EyeIcon,
-  PencilIcon,
-  UsersIcon,
-  ShoppingBagIcon,
-  TagIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   customerService,
   Customer,

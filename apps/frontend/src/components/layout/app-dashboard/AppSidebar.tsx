@@ -1,7 +1,8 @@
+import { Circle as ArrowUturnLeftIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+;
 import type { SidebarSection } from '../../../types/layout';
 import { useAuth } from '../../../hooks/useAuthSimple';
 import { buildStoreUrl } from '../../../utils/storeUrl';

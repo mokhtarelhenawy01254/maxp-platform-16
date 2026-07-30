@@ -1,8 +1,6 @@
+import { Download as ArrowDownTrayIcon, Info as InformationCircleIcon } from 'lucide-react';
 import React, { useState } from "react";
-import {
-  ArrowDownTrayIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const DownloadsAnalytics: React.FC = () => {
   const [period, setPeriod] = useState("30");

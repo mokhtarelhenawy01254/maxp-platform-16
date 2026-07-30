@@ -1,9 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getStatusDisplay } from "../../utils/statusRegistry";
 import { useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video } from 'lucide-react';
+;
+import { FileIcon, ImageIcon, Volume2, Link, ShoppingBag, Video, ShoppingBag as ShoppingCartIcon } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';

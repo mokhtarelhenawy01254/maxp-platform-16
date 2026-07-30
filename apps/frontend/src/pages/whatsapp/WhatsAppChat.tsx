@@ -1,37 +1,12 @@
+import { useTranslation } from 'react-i18next';
 /**
  * 📱 WhatsApp Chat Page
  * صفحة دردشة WhatsApp
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react';
-import {
-  AlertCircle,
-  Ban,
-  BarChart3,
-  Check,
-  CheckCheck,
-  Clock3,
-  Copy,
-  Forward,
-  List as ListIcon,
-  FileText,
-  Loader2,
-  MapPin,
-  MousePointerSquare,
-  PanelRightClose,
-  PanelRightOpen,
-  Phone,
-  PlusCircle,
-  Reply,
-  ShieldAlert,
-  SmilePlus,
-  Star,
-  Store,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, Ban, BarChart2, Check, CheckCheck, Clock3, Clipboard, Forward, List as ListIcon, File, Loader2, Pin, MousePointerSquare, PanelRightClose, PanelRightOpen, Phone, Plus, Reply, ShieldAlert, Smile, Star, Store, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, FileText, Eye, BarChart3, Copy, Trash2, Loader2, Users, MousePointerClick, TrendingUp, ExternalLink, X } from "lucide-react";
+import { Plus, File, Eye, BarChart, Clipboard, Trash2, Loader2, Users, MousePointerClick, TrendingUp, ExternalLink, X } from 'lucide-react';
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import { useAuth } from "../../hooks/useAuthSimple";

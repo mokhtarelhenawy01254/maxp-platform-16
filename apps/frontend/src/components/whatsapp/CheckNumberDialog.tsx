@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, MessageSquarePlus, Phone, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, MessageSquarePlus, Phone, X } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

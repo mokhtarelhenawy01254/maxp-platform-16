@@ -1,14 +1,7 @@
+import { X as XMarkIcon, File as DocumentTextIcon, Image as PhotoIcon, DollarSign as CurrencyDollarIcon, Circle as CubeIcon, Truck as TruckIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState } from "react";
 import { ProductVariant } from "../../types";
-import {
-  XMarkIcon,
-  DocumentTextIcon,
-  PhotoIcon,
-  CurrencyDollarIcon,
-  CubeIcon,
-  TruckIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { getImageUrl } from "../../../../utils/imageUrl";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
 

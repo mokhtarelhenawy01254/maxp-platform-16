@@ -1,17 +1,6 @@
+import { File as DocumentTextIcon, Printer as PrinterIcon, Download as ArrowDownTrayIcon, Circle as CheckBadgeIcon, Monitor as ComputerDesktopIcon, Camera as CameraIcon, RefreshCw as ArrowPathIcon, Circle as CloudArrowUpIcon, Plus as PlusCircleIcon, Circle as UserGroupIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  DocumentTextIcon,
-  PrinterIcon,
-  ArrowDownTrayIcon,
-  CheckBadgeIcon,
-  ComputerDesktopIcon,
-  CameraIcon,
-  ArrowPathIcon,
-  CloudArrowUpIcon,
-  PlusCircleIcon,
-  UserGroupIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";

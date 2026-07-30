@@ -1,5 +1,6 @@
+import { Pencil as PencilIcon, Trash2 as TrashIcon, Check as CheckIcon, Plus as PlusIcon } from 'lucide-react';
 import { useState, useMemo } from "react";
-import { PencilIcon, TrashIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+;
 import { BookingBranch, BranchFormData, DAY_NAMES } from "./shared";
 import BranchModal from "./BranchModal";
 

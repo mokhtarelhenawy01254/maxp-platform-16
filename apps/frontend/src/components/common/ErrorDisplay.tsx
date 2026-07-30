@@ -1,12 +1,6 @@
+import { AlertTriangle as ExclamationTriangleIcon, Wifi as WifiIcon, Server as ServerIcon, ShieldAlert as ShieldExclamationIcon, RefreshCw as ArrowPathIcon, X as XMarkIcon } from 'lucide-react';
 import React from "react";
-import {
-  ExclamationTriangleIcon,
-  WifiIcon,
-  ServerIcon,
-  ShieldExclamationIcon,
-  ArrowPathIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { ErrorState } from "../../hooks/useErrorHandler";
 
 interface ErrorDisplayProps {

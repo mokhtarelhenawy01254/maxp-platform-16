@@ -1,3 +1,5 @@
+import { Check as CheckCircleIcon, Clock as ClockIcon, User as UserIcon, Circle as PaperClipIcon, MessageSquare as ChatBubbleLeftIcon, Trash2 as TrashIcon, Check as CheckIcon, Plus as PlusIcon, X as XMarkIcon, Circle as PlayIcon, Circle as StopIcon, Circle as PauseIcon, Pencil as PencilIcon, Circle as DocumentDuplicateIcon, Circle as ClipboardDocumentListIcon, Star as SparklesIcon, Circle as LightBulbIcon, Circle as CloudArrowDownIcon, Circle as BriefcaseIcon, Circle as UserGroupIcon, Download as ArrowDownTrayIcon, Upload as ArrowUpTrayIcon } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
@@ -12,30 +14,7 @@ import TaskSidebar from "../../components/tasks/details/TaskSidebar";
 import TaskOverview from "../../components/tasks/details/TaskOverview";
 import TaskSubtasks from "../../components/tasks/details/TaskSubtasks";
 import TaskActivities from "../../components/tasks/details/TaskActivities";
-import {
-  CheckCircleIcon,
-  ClockIcon,
-  UserIcon,
-  PaperClipIcon,
-  ChatBubbleLeftIcon,
-  TrashIcon,
-  CheckIcon,
-  PlusIcon,
-  XMarkIcon,
-  PlayIcon,
-  StopIcon,
-  PauseIcon,
-  PencilIcon,
-  DocumentDuplicateIcon,
-  ClipboardDocumentListIcon,
-  SparklesIcon,
-  LightBulbIcon,
-  CloudArrowDownIcon,
-  BriefcaseIcon,
-  UserGroupIcon,
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const getAccessToken = (): string | null => tokenManager.getAccessToken();
 

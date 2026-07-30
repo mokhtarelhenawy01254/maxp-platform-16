@@ -1,19 +1,12 @@
+import { Bell as BellIcon, X as XMarkIcon, Check as CheckIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, X as XCircleIcon, Eye as EyeIcon, Trash2 as TrashIcon, Circle as BellSolidIcon } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
-import {
-  BellIcon,
-  XMarkIcon,
-  CheckIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  XCircleIcon,
-  EyeIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
+;
+;
 import { socketService } from "../../services/socketService";
 import {
   showBrowserNotification,

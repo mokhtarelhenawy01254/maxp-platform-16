@@ -1,26 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  BarChart3,
-  Clock,
-  Inbox,
-  MessageSquare,
-  Send,
-  UserCheck,
-  UserX,
-  Users,
-  RefreshCw,
-  Calendar,
-  Trophy,
-  ArrowDown,
-  Activity,
-  Zap,
-  Target,
-  Layers,
-  ChevronRight,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-} from "lucide-react";
+import { BarChart2, Clock, Mail, MessageSquare, Navigation, UserCheck, UserX, Users, RefreshCw, Calendar, Award, ArrowDown, Activity, Zap, Target, LayoutGrid, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import {
   motion,
   AnimatePresence,
@@ -437,7 +416,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
           : Promise.resolve(null),
       ]);
       setData(currRes.data as AnalyticsResponse);
-      setPrevData(prevRes ? (prevRes as unknown as AnalyticsResponse) : null);
+      setPrevData(prevRes ? (prevRes as AnalyticsResponse) : null);
     } catch {
       toast.error("فشل في تحميل تحليلات الموظفين");
     } finally {

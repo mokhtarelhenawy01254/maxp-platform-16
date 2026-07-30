@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../../services/apiClient';
 import { translateInboxApiError } from '../errorTranslation';
 import type {

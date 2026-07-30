@@ -1,17 +1,7 @@
+import { ShoppingBag as ShoppingCartIcon, Circle as CubeIcon, Circle as UserGroupIcon, Activity as ChartBarIcon, Settings as Cog6ToothIcon, DollarSign as CurrencyDollarIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as RocketLaunchIcon, Star as SparklesIcon, Link as LinkIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  ShoppingCartIcon,
-  CubeIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  CurrencyDollarIcon,
-  ChatBubbleLeftRightIcon,
-  RocketLaunchIcon,
-  SparklesIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { cn } from "../../lib/utils";
 
 interface QuickAction {

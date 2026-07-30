@@ -1,22 +1,10 @@
+import { Circle as UserGroupIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, User as UserIcon, Circle as BriefcaseIcon, Check as CheckCircleIcon, Clock as ClockIcon, X as XCircleIcon, Filter as FunnelIcon, Circle as ClipboardDocumentListIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  UserGroupIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  XMarkIcon,
-  UserIcon,
-  BriefcaseIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
-  FunnelIcon,
-  ClipboardDocumentListIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface TeamMember {
   id: string;

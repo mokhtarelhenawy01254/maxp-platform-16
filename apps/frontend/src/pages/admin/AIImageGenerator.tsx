@@ -1,25 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Sparkles,
-  Loader2,
-  Download,
-  Trash2,
-  Copy,
-  ExternalLink,
-  RefreshCw,
-  Grid3X3,
-  AlertCircle,
-  Info,
-  Wand2,
-  RotateCcw,
-  ImageIcon,
-  FileText,
-  Hash,
-  Type,
-  MessageSquare,
-  MoreVertical,
-  Layers,
-} from "lucide-react";
+import { Star, Loader2, Download, Trash2, Clipboard, ExternalLink, RefreshCw, Grid3X3, AlertTriangle, Info, Wand2, RotateCcw, ImageIcon, File, Tag, Type, MessageSquare, MoreVertical, Grid } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

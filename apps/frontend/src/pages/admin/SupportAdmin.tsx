@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-import {
-  Search,
-  Filter,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  MessageSquare,
-  Calendar,
-  Tag,
-  User,
-  BarChart3,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  Settings,
-} from "lucide-react";
+import { Search, Filter, Clock, Check, AlertTriangle, MessageSquare, Calendar, Tag, User, BarChart, Plus, Eye, Edit, Trash2, Settings } from 'lucide-react';
 import supportService, {
   Ticket,
   FAQ,

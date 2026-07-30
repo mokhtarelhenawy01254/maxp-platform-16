@@ -1,11 +1,6 @@
+import { ShoppingBag as ShoppingBagIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, X as XCircleIcon, Star as StarIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ShoppingBagIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  XCircleIcon,
-  StarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";

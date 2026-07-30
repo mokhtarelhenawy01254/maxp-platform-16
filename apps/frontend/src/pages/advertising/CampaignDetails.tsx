@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Circle as PauseIcon, Circle as PlayIcon, Trash2 as TrashIcon, RefreshCw as ArrowPathIcon, Plus as PlusIcon, ShoppingBag as ShoppingBagIcon, Activity as ChartBarIcon } from 'lucide-react';
 /**
  * Campaign Details Page
  *
@@ -6,16 +7,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  PauseIcon,
-  PlayIcon,
-  TrashIcon,
-  ArrowPathIcon,
-  PlusIcon,
-  ShoppingBagIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  DollarSign,
-  Plus,
-  Check,
-  X,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
-  Search,
-  Eye,
-  Edit2,
-  Trash,
-} from "lucide-react";
+import { DollarSign, Plus, Check, X, Calendar, ChevronLeft, ChevronRight, TrendingUp, Search, Eye, Edit2, Trash } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

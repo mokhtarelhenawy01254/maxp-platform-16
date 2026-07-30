@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Building2, Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase, ChevronDown, Check } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Building, Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Folder, ChevronDown, Check } from 'lucide-react';
 import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";

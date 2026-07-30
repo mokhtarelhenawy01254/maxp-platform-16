@@ -1,7 +1,8 @@
+import { Eye as EyeIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { EyeIcon } from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useDashboardLiveSync } from "../../hooks/useDashboardLiveSync";

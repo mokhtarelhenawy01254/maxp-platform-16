@@ -1,12 +1,6 @@
+import { RefreshCw as ArrowPathIcon, Activity as ChartBarIcon, Check as CheckCircleIcon, Circle as MegaphoneIcon, ShieldCheck as ShieldCheckIcon, Star as SparklesIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ArrowPathIcon,
-  ChartBarIcon,
-  CheckCircleIcon,
-  MegaphoneIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   DEFAULT_PLATFORM_SITE_META_PIXEL_SETTINGS,

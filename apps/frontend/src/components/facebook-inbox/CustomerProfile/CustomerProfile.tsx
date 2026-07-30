@@ -1,21 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
-import {
-  User,
-  Phone,
-  Mail,
-  Clock,
-  ShoppingBag,
-  Activity,
-  RefreshCw,
-  ExternalLink,
-  Bell,
-  BellOff,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
-import { NoSymbolIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, RefreshCw, ExternalLink, Bell, Volume2, VolumeX, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
+;
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
 import { useCustomerProfile } from "../../../hooks/inbox/useCustomerProfile";

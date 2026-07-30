@@ -1,11 +1,7 @@
+import { ChevronRight as ChevronRightIcon, Circle as ArrowRightOnRectangleIcon, Search as MagnifyingGlassIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ChevronRightIcon,
-  ArrowRightOnRectangleIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { SidebarSection } from "../../../types/layout";
 import { buildStoreUrl } from "../../../utils/storeUrl";

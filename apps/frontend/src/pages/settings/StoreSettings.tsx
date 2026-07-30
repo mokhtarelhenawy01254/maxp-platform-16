@@ -1,16 +1,9 @@
+import { Store as BuildingStorefrontIcon, Truck as TruckIcon, Circle as GiftIcon, File as DocumentTextIcon, CreditCard as CreditCardIcon, Pencil as PencilIcon, Trash2 as TrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-import {
-  BuildingStorefrontIcon,
-  TruckIcon,
-  GiftIcon,
-  DocumentTextIcon,
-  CreditCardIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import {

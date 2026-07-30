@@ -1,18 +1,6 @@
+import { RefreshCw as ArrowPathIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, AlignLeft as Bars3Icon, CreditCard as CreditCardIcon, Circle as HomeModernIcon, Search as MagnifyingGlassIcon, Image as PhotoIcon, ShoppingBag as ShoppingBagIcon, ShoppingBag as ShoppingCartIcon, Grid as Squares2X2Icon, Tag as TagIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowPathIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  Bars3Icon,
-  CreditCardIcon,
-  HomeModernIcon,
-  MagnifyingGlassIcon,
-  PhotoIcon,
-  ShoppingBagIcon,
-  ShoppingCartIcon,
-  Squares2X2Icon,
-  TagIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   DndContext,
   closestCenter,

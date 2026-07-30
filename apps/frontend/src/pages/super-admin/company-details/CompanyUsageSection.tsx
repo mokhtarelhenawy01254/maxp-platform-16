@@ -1,5 +1,7 @@
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import type { CompanyReview } from "./companyDetailsTypes";
-import { BarChart3, Package } from "lucide-react";
+import { BarChart, Package } from 'lucide-react';
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
 import { MiniStat } from "./MiniStat";

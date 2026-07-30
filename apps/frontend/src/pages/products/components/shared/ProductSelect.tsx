@@ -1,9 +1,6 @@
+import { Search as MagnifyingGlassIcon, Plus as PlusIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useMemo, useState } from "react";
-import {
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ProductLike {
   id: string | number;

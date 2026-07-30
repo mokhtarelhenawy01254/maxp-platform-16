@@ -32,26 +32,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-import {
-  FileText,
-  Filter,
-  CheckCircle,
-  XCircle,
-  Edit,
-  Search,
-  Download,
-  Eye,
-  Clock,
-  Shield,
-  Globe,
-  User,
-  Calendar,
-  ArrowRight,
-  Loader2,
-  Box,
-  ListChecks,
-  Terminal,
-} from "lucide-react";
+import { File, Filter, Check, X, Edit, Search, Download, Eye, Clock, Shield, Globe, User, Calendar, ArrowRight, Loader2, Box, ListChecks, Terminal } from 'lucide-react';
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import api from "../../services/api";

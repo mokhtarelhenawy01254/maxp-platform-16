@@ -1,13 +1,7 @@
+import { ArrowLeft as ArrowLeftIcon, RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Circle as PaintBrushIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  PaintBrushIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 
 import {

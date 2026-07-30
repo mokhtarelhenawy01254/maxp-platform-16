@@ -1,13 +1,10 @@
-import { useTranslation } from "react-i18next";
+import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Circle as ClipboardDocumentListIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ClipboardDocumentListIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";

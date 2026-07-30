@@ -1,5 +1,6 @@
+import { X as XMarkIcon, Printer as PrinterIcon } from 'lucide-react';
 import React from "react";
-import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
+;
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { printClean } from "../../utils/printClean";

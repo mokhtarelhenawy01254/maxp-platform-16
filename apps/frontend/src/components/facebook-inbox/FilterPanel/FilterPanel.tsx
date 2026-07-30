@@ -1,5 +1,6 @@
+import { X as XMarkIcon, Filter as FunnelIcon } from 'lucide-react';
 import React from "react";
-import { XMarkIcon, FunnelIcon } from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../../hooks/useAuthSimple";
 
 export interface FilterState {

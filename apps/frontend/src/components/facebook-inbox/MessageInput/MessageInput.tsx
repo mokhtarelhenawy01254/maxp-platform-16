@@ -1,10 +1,6 @@
+import { Circle as PaperAirplaneIcon, Circle as PaperClipIcon, Smile as FaceSmileIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useRef } from "react";
-import {
-  PaperAirplaneIcon,
-  PaperClipIcon,
-  FaceSmileIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import EmojiPicker from "emoji-picker-react";
 import QuickReplyDropdown, {
   QuickReply,

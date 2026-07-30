@@ -1,15 +1,7 @@
+import { Circle as CalculatorIcon, DollarSign as CurrencyDollarIcon, Activity as ChartBarIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as SaveIcon, Trash2 as TrashIcon, File as DocumentTextIcon, Star as SparklesIcon, Circle as ScaleIcon, RefreshCw as ArrowPathIcon, Printer as PrinterIcon, Download as ArrowDownTrayIcon, Check as CheckIcon, X as XMarkIcon, ShieldCheck as ShieldCheckIcon, Circle as RocketLaunchIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationCircleIcon, X as XCircleIcon, Circle as ArrowTrendingUpIcon, Circle as CubeIcon, Settings as Cog6ToothIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  CalculatorIcon, CurrencyDollarIcon, ChartBarIcon,
-  ExclamationTriangleIcon, InformationCircleIcon,
-  BookmarkIcon as SaveIcon, TrashIcon, DocumentTextIcon,
-  SparklesIcon, ScaleIcon, ArrowPathIcon,
-  PrinterIcon, ArrowDownTrayIcon, CheckIcon, XMarkIcon,
-  ShieldCheckIcon, RocketLaunchIcon,
-  CheckCircleIcon, ExclamationCircleIcon, XCircleIcon,
-  ArrowTrendingUpIcon, CubeIcon, Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";

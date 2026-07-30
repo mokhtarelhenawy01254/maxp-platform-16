@@ -1,6 +1,7 @@
+import { Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as MusicalNoteIcon, Image as PhotoIcon, Video as VideoCameraIcon, File as DocumentTextIcon, X as XMarkIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { PlusIcon, PencilIcon, TrashIcon, MusicalNoteIcon, PhotoIcon, VideoCameraIcon, DocumentTextIcon, XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { uploadService } from "../../services/uploadService";
 
 const CATEGORIES = [

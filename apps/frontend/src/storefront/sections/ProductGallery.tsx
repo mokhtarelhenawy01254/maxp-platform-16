@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRightLeft, Heart } from "lucide-react";
+import { ArrowRightLeft, Heart } from 'lucide-react';
 import * as Dialog from "@radix-ui/react-dialog";
 import { useParams } from "react-router-dom";
 import { useProduct } from "../hooks/useProduct";

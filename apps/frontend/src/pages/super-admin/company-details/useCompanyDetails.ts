@@ -1,9 +1,11 @@
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
-import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
+import { BarChart, Boxes, Building, CalendarClock, Facebook, File, Users, CreditCard } from 'lucide-react';
 import type { ElementType } from "react";
 import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";

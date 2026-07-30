@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon } from 'lucide-react';
 /**
  * Create Dynamic Ad Page
  *
@@ -6,7 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

@@ -1,5 +1,6 @@
+import { Circle as MegaphoneIcon } from 'lucide-react';
 import React from "react";
-import { MegaphoneIcon } from "@heroicons/react/24/outline";
+;
 
 interface WhatsappTabProps {
   whatsappNotify: {

@@ -1,16 +1,5 @@
 import { motion } from "framer-motion";
-import {
-  Rocket,
-  ShieldCheck,
-  Zap,
-  Layout,
-  MessageSquare,
-  BarChart3,
-  ArrowLeft,
-  CheckCircle2,
-  Globe,
-  Monitor
-} from "lucide-react";
+import { Zap, ShieldCheck, Layout, MessageSquare, BarChart, ArrowLeft, CheckCircle2, Globe, Monitor } from 'lucide-react';
 import { Link } from "react-router-dom";
 
 const MainAdsLanding = () => {

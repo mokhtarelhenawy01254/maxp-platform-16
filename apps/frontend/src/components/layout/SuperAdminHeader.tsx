@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { Menu, Lightbulb, LogOut } from "lucide-react";
+import { Menu, Star, ArrowRight } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

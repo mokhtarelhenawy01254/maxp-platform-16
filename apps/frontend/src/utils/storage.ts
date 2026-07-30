@@ -83,7 +83,7 @@ export function getItem<T>(key: string, defaultValue: T): T {
       });
     } catch {
       // If JSON parsing fails, return the raw string
-      return item as unknown as T;
+      return item as T;
     }
   } catch (error) {
     logError(error, { component: "storage", operation: "getItem", key });

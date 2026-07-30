@@ -1,6 +1,7 @@
+import { ChevronDown as ChevronDownIcon } from 'lucide-react';
 import React, { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+;
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../../utils/storeUrl";

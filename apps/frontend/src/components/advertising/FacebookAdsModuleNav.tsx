@@ -1,27 +1,6 @@
 import React from "react";
 import { Link, NavLink, useLocation, useSearchParams } from "react-router-dom";
-import {
-  Activity,
-  Archive,
-  BarChart3,
-  BellRing,
-  Boxes,
-  BrainCircuit,
-  ChevronDown,
-  ClipboardCheck,
-  FlaskConical,
-  Gauge,
-  Library,
-  LineChart,
-  Megaphone,
-  MousePointerClick,
-  Network,
-  PlugZap,
-  Search,
-  Target,
-  Users,
-  Wand2,
-} from "lucide-react";
+import { Activity, Box, Bell, Boxes, BrainCircuit, ChevronDown, Clipboard, Beaker, Gauge, Library, TrendingUp, Volume2, MousePointerClick, Network, PlugZap, Search, Target, Users, Wand2 } from 'lucide-react';
 
 interface FacebookAdsModuleNavProps {
   selectedAdAccountId?: string;

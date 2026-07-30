@@ -2,18 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import {
-  Package,
-  TrendingUp,
-  Gift,
-  ArrowRight,
-  MessageSquare,
-  Bot,
-  Mail,
-  Users,
-  Sparkles,
-  CreditCard,
-} from "lucide-react";
+import { Package, TrendingUp, Gift, ArrowRight, MessageSquare, Bot, Mail, Users, Star, CreditCard } from 'lucide-react';
 
 interface Bundle {
   id: string;

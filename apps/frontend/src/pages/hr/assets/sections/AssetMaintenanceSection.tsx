@@ -1,14 +1,6 @@
+import { Circle as WrenchScrewdriverIcon, Circle as CalendarDaysIcon, Circle as BellAlertIcon, Plus as PlusIcon, Activity as ChartBarIcon, ShieldAlert as ShieldExclamationIcon, Clock as ClockIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  WrenchScrewdriverIcon,
-  CalendarDaysIcon,
-  BellAlertIcon,
-  PlusIcon,
-  ChartBarIcon,
-  ShieldExclamationIcon,
-  ClockIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 import { format } from "date-fns";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { useCurrency } from "../../../../hooks/useCurrency";

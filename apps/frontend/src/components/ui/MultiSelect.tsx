@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Input } from "./input";
-import { Search, ChevronDown, X, Check } from "lucide-react";
+import { Search, ChevronDown, X, Check } from 'lucide-react';
 
 export interface MultiSelectOption {
   value: string;

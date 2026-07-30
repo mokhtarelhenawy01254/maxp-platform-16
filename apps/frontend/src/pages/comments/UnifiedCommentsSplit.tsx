@@ -1,24 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from "react";
 
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";
-import {
-  MessageSquare,
-  CheckCircle,
-  Clock,
-  Search,
-  RefreshCw,
-  Settings,
-  X,
-  Save,
-  TrendingUp,
-  Filter,
-  Grid3x3,
-  List,
-  ChevronRight,
-  Layout,
-} from "lucide-react";
+import { MessageSquare, Check, Clock, Search, RefreshCw, Settings, X, Save, TrendingUp, Filter, Grid3x3, List, ChevronRight, Layout } from 'lucide-react';
 
 const UnifiedCommentsSplit = () => {
   const { t, i18n } = useTranslation();

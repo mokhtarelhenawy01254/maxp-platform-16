@@ -1,17 +1,10 @@
-import { useTranslation } from "react-i18next";
+import { RefreshCw as ArrowPathIcon, Download as ArrowDownTrayIcon, Filter as FunnelIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
-import {
-  ArrowPathIcon,
-  ArrowDownTrayIcon,
-  FunnelIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface StatusRow {
   status: string;

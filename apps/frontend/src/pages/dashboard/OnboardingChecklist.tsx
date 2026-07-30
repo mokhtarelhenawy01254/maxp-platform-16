@@ -1,11 +1,6 @@
-import { useTranslation } from "react-i18next";
-import {
-  CheckCircleIcon,
-  PlusIcon,
-  BuildingStorefrontIcon,
-  ChatBubbleLeftRightIcon,
-  ShoppingCartIcon,
-} from "@heroicons/react/24/outline";
+import { Check as CheckCircleIcon, Plus as PlusIcon, Store as BuildingStorefrontIcon, MessageSquare as ChatBubbleLeftRightIcon, ShoppingBag as ShoppingCartIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+;
 import type { DashboardData } from "./types";
 
 type OnboardingStep = {

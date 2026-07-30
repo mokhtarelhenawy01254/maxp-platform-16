@@ -1,20 +1,6 @@
+import { Circle as CalculatorIcon, Activity as ChartBarIcon, DollarSign as CurrencyDollarIcon, Users as UsersIcon, Star as SparklesIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Info as InformationCircleIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Circle as ArrowTrendingUpIcon, Circle as LightBulbIcon, Minus as MinusIcon, Circle as SaveIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  CalculatorIcon,
-  ChartBarIcon,
-  CurrencyDollarIcon,
-  UsersIcon,
-  SparklesIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  InformationCircleIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ArrowTrendingUpIcon,
-  LightBulbIcon,
-  MinusIcon,
-  BookmarkIcon as SaveIcon,
-} from "@heroicons/react/24/outline";
+;
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import LineChart from "../../components/charts/LineChart";

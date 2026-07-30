@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Activity, CreditCard, Ticket, Users, Wallet } from "lucide-react";
+import { Activity, CreditCard, Tag, Users } from 'lucide-react';
 import type { CompanyReview, ActivityEntry } from "./companyDetailsTypes";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";

@@ -1,19 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  BarChart3,
-  MessageSquare,
-  Inbox,
-  Send,
-  Clock,
-  Calendar,
-  RefreshCw,
-  Tag,
-  MessageCircle,
-  TrendingUp,
-  User,
-  Megaphone,
-  Bot,
-} from "lucide-react";
+import { BarChart2, MessageSquare, Mail, Navigation, Clock, Calendar, RefreshCw, Tag, MessageCircle, TrendingUp, User, Volume2, Bot } from 'lucide-react';
 import { toast } from "sonner";
 
 import {

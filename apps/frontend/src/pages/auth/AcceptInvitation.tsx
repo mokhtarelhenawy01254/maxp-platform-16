@@ -1,13 +1,7 @@
+import { Circle as BuildingOffice2Icon, Check as CheckCircleIcon, Mail as EnvelopeIcon, AlertTriangle as ExclamationTriangleIcon, Lock as LockClosedIcon, User as UserIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  BuildingOffice2Icon,
-  CheckCircleIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  LockClosedIcon,
-  UserIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { tokenManager } from "../../utils/tokenManager";

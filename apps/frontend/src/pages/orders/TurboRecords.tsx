@@ -1,15 +1,11 @@
+import { Search as MagnifyingGlassIcon, RefreshCw as ArrowPathIcon, Truck as TruckIcon, Info as InformationCircleIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import {
-    MagnifyingGlassIcon,
-    ArrowPathIcon,
-    TruckIcon,
-    InformationCircleIcon,
-    CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";

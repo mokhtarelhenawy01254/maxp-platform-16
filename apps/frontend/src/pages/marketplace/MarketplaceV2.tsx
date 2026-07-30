@@ -1,20 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import {
-  Search, Package, Loader2, Crown,
-  Layers3, Sparkles, CheckCircle2, X, Zap,
-  Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart,
-  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
-  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Calendar, Truck, FileText, Percent,
-  Clock, CreditCard, Monitor, UserPlus, Image, Database,
-  HeartHandshake, Gift, GitBranch, ShoppingBag, Webhook,
-  Activity, FileSpreadsheet, Wallet, Award, Gamepad2,
-} from "lucide-react";
+import { Search, Package, Loader2, Crown, Layers3, Star, CheckCircle2, X, Zap, Store, Users, MessageSquare, BarChart, TrendingUp, DollarSign, Grid3X3, Heart, Bot, Camera, Volume2, ShoppingBag, PackageOpen, Clipboard, Route, Mail, Bell, Calendar, Truck, File, Percent, Clock, CreditCard, Monitor, Image, Server, HeartHandshake, Gift, GitBranch, Webhook, Activity, FileSpreadsheet, Award, Gamepad2 } from 'lucide-react';
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";

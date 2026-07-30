@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Calendar,
-  Clock,
-  Bell,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-} from "lucide-react";
+import { Calendar, Clock, Bell, Check, AlertTriangle, TrendingUp } from 'lucide-react';
 import { config } from "../../config";
 import tokenManager from "../../utils/tokenManager";
 

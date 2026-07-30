@@ -1,21 +1,6 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  Settings,
-  Tag,
-  ChevronLeft,
-  Calendar,
-  Hash,
-  LayoutGrid,
-  Star,
-  FileText,
-  LayoutDashboard,
-  Clock,
-  Copy,
-  Package,
-  CircleDollarSign,
-  AlertOctagon,
-} from "lucide-react";
+import { Settings, Tag, ChevronLeft, Calendar, Grid, Star, File, LayoutDashboard, Clock, Clipboard, Package, CircleDollarSign, AlertOctagon } from 'lucide-react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
 import ScheduledOrderSettings from "./ScheduledOrderSettings";

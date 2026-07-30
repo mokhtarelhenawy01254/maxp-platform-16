@@ -1,13 +1,6 @@
+import { ArrowLeft as ArrowLeftIcon, Circle as BriefcaseIcon, Check as CheckCircleIcon, Clipboard as ClipboardDocumentCheckIcon, Trash2 as TrashIcon, Circle as UserGroupIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
-import {
-  ArrowLeftIcon,
-  BriefcaseIcon,
-  CheckCircleIcon,
-  ClipboardDocumentCheckIcon,
-  TrashIcon,
-  UserGroupIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";

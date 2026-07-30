@@ -1,18 +1,12 @@
+import { DollarSign as CurrencyDollarIcon, Search as MagnifyingGlassIcon, RefreshCw as ArrowPathIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Zap as BoltIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getCurrencyByCode } from "../../utils/currency";
 import { toast } from "sonner";
-import {
-  CurrencyDollarIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  BoltIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Product {
   id: string;

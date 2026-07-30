@@ -1,11 +1,6 @@
+import { ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon, ExternalLink as ArrowTopRightOnSquareIcon, Clipboard as ClipboardDocumentIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useState } from "react";
-import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ArrowTopRightOnSquareIcon,
-  ClipboardDocumentIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { buildWebhookUrl } from "../../utils/urlHelper";
 
 interface GuideStep {

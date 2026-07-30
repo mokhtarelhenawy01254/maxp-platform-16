@@ -1,19 +1,6 @@
+import { File as DocumentIcon, Image as PhotoIcon, File as DocumentTextIcon, ShieldCheck as ShieldCheckIcon, Circle as BookOpenIcon, Trash2 as TrashIcon, Download as ArrowDownTrayIcon, Plus as PlusIcon, X as XMarkIcon, Eye as EyeIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Monitor as ComputerDesktopIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  DocumentIcon,
-  PhotoIcon,
-  DocumentTextIcon,
-  ShieldCheckIcon,
-  BookOpenIcon,
-  TrashIcon,
-  ArrowDownTrayIcon,
-  PlusIcon,
-  XMarkIcon,
-  EyeIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  ComputerDesktopIcon,
-} from "@heroicons/react/24/outline";
+;
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import axios from "axios";
 import { getApiUrl } from "../../../../config/environment";

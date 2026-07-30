@@ -1,3 +1,4 @@
+import { formatDate } from '@/utils/formatters';
 import React from "react";
 import { Product, SortField, SortDirection } from "./ProductsTypes";
 import ProductTableRow from "./ProductTableRow";

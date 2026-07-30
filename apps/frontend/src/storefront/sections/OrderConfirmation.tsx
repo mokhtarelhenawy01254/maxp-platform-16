@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { storefrontApi } from '../../utils/storefrontApi';
@@ -33,7 +34,6 @@ import {
   hasMarkedPurchaseTracked,
   markPurchaseTracked,
 } from '../utils/purchaseTrackingStorage';
-import { useTranslation } from 'react-i18next';
 import { getStatusDisplay } from '../../utils/statusRegistry';
 
 interface PurchaseTrackingItem {

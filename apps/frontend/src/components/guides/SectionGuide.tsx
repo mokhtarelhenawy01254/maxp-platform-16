@@ -1,6 +1,7 @@
+import { Info as QuestionMarkCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useState, useMemo } from "react";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
-import { useTranslation } from "react-i18next";
+;
 import { useLocation } from "react-router-dom";
 import {
   Dialog,

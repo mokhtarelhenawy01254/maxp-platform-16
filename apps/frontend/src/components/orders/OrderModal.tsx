@@ -1,14 +1,6 @@
+import { X as XMarkIcon, ShoppingBag as ShoppingCartIcon, Plus as PlusIcon, Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, Truck as TruckIcon, Phone as PhoneIcon, Calendar as CalendarIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  XMarkIcon,
-  ShoppingCartIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
-  TruckIcon,
-  PhoneIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { config } from "../../config";
 import tokenManager from "../../utils/tokenManager";
 

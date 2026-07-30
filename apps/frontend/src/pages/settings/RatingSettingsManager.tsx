@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Star,
-  ShieldAlert,
-  Award,
-  AlertTriangle,
-  Save,
-  Loader,
-} from "lucide-react";
+import { Star, ShieldAlert, Award, AlertTriangle, Save, Loader } from 'lucide-react';
 import { returnService } from "../../services/returnService";
 import { toast } from "sonner";
 

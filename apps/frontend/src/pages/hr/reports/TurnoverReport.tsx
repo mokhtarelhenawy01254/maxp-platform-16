@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Users,
-  UserPlus,
-  UserMinus,
-  TrendingUp,
-  Download,
-  RefreshCw,
-} from "lucide-react";
+import { Users, TrendingUp, Download, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";

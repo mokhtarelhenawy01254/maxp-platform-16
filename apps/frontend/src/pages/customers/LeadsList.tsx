@@ -1,17 +1,9 @@
+import { Plus as PlusIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Download as ArrowDownTrayIcon, Upload as ArrowUpTrayIcon, Eye as EyeIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Circle as UserGroupIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   customerService,
   Customer,

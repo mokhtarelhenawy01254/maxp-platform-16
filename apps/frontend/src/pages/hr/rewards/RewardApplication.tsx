@@ -1,5 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
-import { CheckCircle, AlertTriangle, Calculator, User } from "lucide-react";
+import { Check, AlertTriangle, Calculator, User } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../../services/api";
 

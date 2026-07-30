@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Plus, Tag, Trash2 } from "lucide-react";
+import { Check, Plus, Tag, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

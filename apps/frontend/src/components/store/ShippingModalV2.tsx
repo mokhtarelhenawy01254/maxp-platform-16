@@ -1,11 +1,7 @@
+import { X as XMarkIcon, Plus as PlusIcon, Trash2 as TrashIcon, Info as InformationCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  XMarkIcon,
-  PlusIcon,
-  TrashIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { ShippingZone, PricingTier, CanonicalGovernorate } from "../../services/storeSettingsService";
 import { GovernoratesSelector } from "./GovernorateSelector";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";

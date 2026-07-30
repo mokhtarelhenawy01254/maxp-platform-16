@@ -1,14 +1,8 @@
-import { useTranslation } from "react-i18next";
+import { Circle as ArrowsRightLeftIcon, ShieldCheck as ShieldCheckIcon, Clock as ClockIcon, Circle as CheckBadgeIcon, Sliders as AdjustmentsVerticalIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import {
-    ArrowsRightLeftIcon,
-    ShieldCheckIcon,
-    ClockIcon,
-    CheckBadgeIcon,
-    AdjustmentsVerticalIcon,
-    ChevronRightIcon
-} from '@heroicons/react/24/outline';
+;
 import orderWorkflowService, { OrderStatusDefinition, OrderWorkflowConfig } from '../../../services/orderWorkflowService';
 import TransitionRules from './TransitionRules';
 import ApprovalRules from './ApprovalRules';

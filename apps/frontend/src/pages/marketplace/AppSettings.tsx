@@ -1,22 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  AlertCircle,
-  ArrowLeft,
-  BarChart3,
-  BadgePercent,
-  CheckCircle2,
-  Clock3,
-  ExternalLink,
-  Mail,
-  MessageSquare,
-  Package,
-  Save,
-  Settings2,
-  ShieldCheck,
-  ShoppingCart,
-  Sparkles,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, BarChart, BadgePercent, CheckCircle2, Clock3, ExternalLink, Mail, MessageSquare, Package, Save, Settings2, ShieldCheck, ShoppingBag, Star } from 'lucide-react';
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import {

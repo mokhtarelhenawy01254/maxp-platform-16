@@ -46,14 +46,7 @@ import {
 } from "../../components/ui/table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { toast } from "sonner";
-import {
-  Plus, Trash2, Copy, FlaskConical, Search, RefreshCw,
-  Eye, EyeOff, Check, X,
-  Activity, Zap, Gauge, Loader2,
-  ChevronUp,
-  Info, ArrowUpDown, ArrowUp, ArrowDown,
-  ToggleLeft, ToggleRight, History, KeyRound,
-} from "lucide-react";
+import { Plus, Trash2, Clipboard, Beaker, Search, RefreshCw, Eye, EyeOff, Check, X, Activity, Zap, Gauge, Loader2, ChevronUp, Info, ArrowUp, ArrowDown, ToggleLeft, ToggleRight, History, KeyRound } from 'lucide-react';
 import { useAiProviders, useAiKeys, useAiDashboard } from "../../hooks/useAiAdminData";
 import {
   useCreateKey,

@@ -1,20 +1,6 @@
+import { Circle as BuildingOffice2Icon, Users as UsersIcon, Check as CheckCircleIcon, X as XCircleIcon, Download as ArrowDownTrayIcon, Circle as CalendarDaysIcon, Clock as ClockIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, MessageSquare as ChatBubbleLeftRightIcon, AlertTriangle as ExclamationTriangleIcon, ArrowRight as ArrowRightIcon, Activity as ChartBarIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  BuildingOffice2Icon,
-  UsersIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowDownTrayIcon,
-  CalendarDaysIcon,
-  ClockIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  ChatBubbleLeftRightIcon,
-  ExclamationTriangleIcon,
-  ArrowRightIcon,
-  ChartBarIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";

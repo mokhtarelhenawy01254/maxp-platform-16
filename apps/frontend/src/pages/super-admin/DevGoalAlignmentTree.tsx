@@ -1,16 +1,11 @@
+import { ArrowRight as ArrowRightIcon, Circle as FlagIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, Activity as ChartBarIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  ArrowRightIcon,
-  FlagIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);

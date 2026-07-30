@@ -1,5 +1,6 @@
+import { X as XMarkIcon, Eye as EyeIcon, Check as CheckIcon, Trash2 as TrashIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
-import { XMarkIcon, EyeIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+;
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService,
   STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fetchJson, api

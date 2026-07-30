@@ -21,7 +21,7 @@ import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
-import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save } from "lucide-react";
+import { Edit, Info, TrendingUp, Users, CreditCard, History, Landmark, Settings, Save } from 'lucide-react';
 
 const PlatformPartnerManagement = () => {
   const { formatPrice } = useCurrency();

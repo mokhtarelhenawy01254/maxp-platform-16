@@ -1,5 +1,6 @@
+import { Search as MagnifyingGlassIcon, Pencil as PencilIcon, Circle as DocumentDuplicateIcon, Eye as EyeIcon, Plus as PlusIcon } from 'lucide-react';
 import { useMemo } from "react";
-import { MagnifyingGlassIcon, PencilIcon, DocumentDuplicateIcon, EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
+;
 import { BookingService, BookingBranch, ServiceFormData } from "./shared";
 import ServiceModal from "./ServiceModal";
 import ServiceDetailModal from "./ServiceDetailModal";

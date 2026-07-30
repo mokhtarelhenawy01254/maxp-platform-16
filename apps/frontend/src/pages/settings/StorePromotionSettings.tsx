@@ -1,17 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  AlertCircle,
-  Calendar,
-  Gift,
-  PanelTop,
-  Plus,
-  RefreshCcw,
-  Save,
-  ShoppingCart,
-  Tag,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Calendar, Gift, PanelTop, Plus, RefreshCw, Save, ShoppingBag, Tag, Trash2 } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

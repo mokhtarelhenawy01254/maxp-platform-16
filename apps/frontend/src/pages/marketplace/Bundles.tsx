@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { Package, Check, Star, TrendingUp, Zap, Gift, MessageSquare, Bot, Sparkles, RefreshCw } from "lucide-react";
+import { Package, Check, Star, TrendingUp, Zap, Gift, MessageSquare, Bot, RefreshCw } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 interface Bundle {

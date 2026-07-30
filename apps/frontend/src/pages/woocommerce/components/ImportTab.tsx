@@ -1,13 +1,6 @@
+import { Download as ArrowDownTrayIcon, RefreshCw as ArrowPathIcon, Circle as PauseIcon, Circle as PlayIcon, Circle as StopIcon, X as XCircleIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React, { useEffect } from "react";
-import {
-  ArrowDownTrayIcon,
-  ArrowPathIcon,
-  PauseIcon,
-  PlayIcon,
-  StopIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { StatusBadge } from "./shared/StatusBadge";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { useWooCommerceImport } from "../hooks/useWooCommerceImport";

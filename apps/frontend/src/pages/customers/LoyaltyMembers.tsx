@@ -1,23 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import {
-  Users,
-  Search,
-  Filter,
-  Star,
-  Crown,
-  Medal,
-  Gem,
-  Trophy,
-  Award,
-  Eye,
-  Edit,
-  RefreshCw,
-  Gift,
-  DollarSign,
-  Plus,
-} from "lucide-react";
+import { Users, Search, Filter, Star, Crown, Medal, Gem, Award, Eye, Edit, RefreshCw, Gift, DollarSign, Plus } from 'lucide-react';
 import { customerService, Customer } from "../../services/customerService";
 
 interface CustomerLoyaltyProgram {

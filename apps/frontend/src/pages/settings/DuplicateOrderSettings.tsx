@@ -1,10 +1,8 @@
+import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/api";
-import {
-  CheckCircleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 type DuplicateOrderAction = "ignore" | "filter";
 

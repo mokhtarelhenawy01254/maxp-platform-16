@@ -1,30 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import {
-  AlertCircle,
-  AlertTriangle,
-  BarChart3,
-  Calendar,
-  Check,
-  ChevronRight,
-  DollarSign,
-  Download,
-  Loader2,
-  MessageSquare,
-  Package,
-  Shield,
-  ShoppingBag,
-  Sparkles,
-  Star,
-  Store,
-  Users,
-  X,
-  Zap,
-  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
-  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Truck, FileText, Percent, Heart, TrendingUp,
-} from "lucide-react";
+import { AlertTriangle, BarChart, Calendar, Check, ChevronRight, DollarSign, Download, Loader2, MessageSquare, Package, Shield, ShoppingBag, Star, Store, Users, X, Zap, Bot, Camera, Volume2, PackageOpen, Clipboard, Route, Mail, Bell, Truck, File, Percent, Heart, TrendingUp } from 'lucide-react';
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { FacebookIcon } from "../../components/icons/brands";

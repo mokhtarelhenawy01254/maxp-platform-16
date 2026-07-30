@@ -1,19 +1,7 @@
+import { ArrowDown as ArrowDownIcon, ArrowUp as ArrowUpIcon, AlignLeft as Bars3Icon, Check as CheckCircleIcon, ChevronLeft as ChevronLeftIcon, AlertTriangle as ExclamationCircleIcon, Search as MagnifyingGlassIcon, Circle as PaintBrushIcon, ShieldCheck as ShieldCheckIcon, Star as SparklesIcon, Grid as Squares2X2Icon, RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  Bars3Icon,
-  CheckCircleIcon,
-  ChevronLeftIcon,
-  ExclamationCircleIcon,
-  MagnifyingGlassIcon,
-  PaintBrushIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-  Squares2X2Icon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 import { AnimatePresence, motion } from "framer-motion";
 import { Switch } from "../../components/ui/switch";
 import { getSidebarConfig } from "../../config/sidebar";

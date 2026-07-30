@@ -1,8 +1,6 @@
+import { Circle as CalendarDaysIcon, Clock as ClockIcon, Check as CheckIcon, Circle as UserGroupIcon, Circle as BuildingOffice2Icon } from 'lucide-react';
 import { useMemo } from "react";
-import {
-  CalendarDaysIcon, ClockIcon, CheckIcon,
-  UserGroupIcon, BuildingOffice2Icon
-} from "@heroicons/react/24/outline";
+;
 import { BookingBranch, BookingDoctor, BookingAppointment, STATUS_MAP } from "./shared";
 
 interface Props {

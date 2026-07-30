@@ -1,8 +1,6 @@
+import { Plus as PlusIcon, Circle as ClipboardDocumentListIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  PlusIcon,
-  ClipboardDocumentListIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../../services/apiClient";
 
 interface AssetRequest {

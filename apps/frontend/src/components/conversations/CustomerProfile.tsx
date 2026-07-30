@@ -1,13 +1,7 @@
+import { X as XMarkIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Calendar as CalendarIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  XMarkIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  CalendarIcon,
-  NoSymbolIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
-import { useTranslation } from "react-i18next";
+;
 import { apiService } from "../../services/apiService";
 
 interface Customer {

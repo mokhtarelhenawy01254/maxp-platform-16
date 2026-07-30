@@ -1,22 +1,7 @@
+import { Activity as ChartBarIcon, Download as ArrowDownTrayIcon, Circle as CalendarDaysIcon, Circle as BuildingOffice2Icon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Circle as UserGroupIcon, AlertTriangle as ExclamationCircleIcon, Circle as SunIcon, Circle as ArrowUturnLeftIcon, Calendar as CalendarIcon, Grid as Squares2X2Icon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChartBarIcon,
-  ArrowDownTrayIcon,
-  CalendarDaysIcon,
-  BuildingOffice2Icon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  UserGroupIcon,
-  ExclamationCircleIcon,
-  SunIcon,
-  ArrowUturnLeftIcon,
-  CalendarIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

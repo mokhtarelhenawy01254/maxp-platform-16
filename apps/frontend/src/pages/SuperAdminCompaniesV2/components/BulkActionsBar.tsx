@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleOff, Trash2, X } from "lucide-react";
+import { CheckCircle2, CircleOff, Trash2, X } from 'lucide-react';
 import { Button } from "../../../components/ui/button";
 
 export function BulkActionsBar({

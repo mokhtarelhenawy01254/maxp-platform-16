@@ -1,12 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Percent,
-  DollarSign,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Plus, Pencil, Trash2, Percent, DollarSign } from 'lucide-react';
 import { apiClient } from "../services/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

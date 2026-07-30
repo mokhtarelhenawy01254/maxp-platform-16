@@ -1,12 +1,7 @@
+import { Clipboard as ClipboardDocumentCheckIcon, RefreshCw as ArrowPathIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  ClipboardDocumentCheckIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
-import { useTranslation } from "react-i18next";
+;
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useDateFormat } from "../../hooks/useDateFormat";
 

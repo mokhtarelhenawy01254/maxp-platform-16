@@ -1,10 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { ArrowLeft, Download, Mail, Printer } from "lucide-react";
+import { ArrowLeft, Download, Mail, Printer } from 'lucide-react';
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { printClean } from "../../utils/printClean";

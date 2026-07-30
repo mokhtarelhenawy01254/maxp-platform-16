@@ -1,14 +1,9 @@
+import { Circle as CubeIcon, AlertTriangle as ExclamationTriangleIcon, Plus as PlusIcon, Minus as MinusIcon, RefreshCw as ArrowPathIcon, Eye as EyeIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
-import {
-  CubeIcon,
-  ExclamationTriangleIcon,
-  PlusIcon,
-  MinusIcon,
-  ArrowPathIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+;
 import { companyAwareApi } from "../../services/companyAwareApi";
 import CreateInventoryProductDialog from "./components/CreateInventoryProductDialog";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -291,7 +286,7 @@ const Inventory: React.FC = () => {
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
         "/inventory/update-stock",
-        stockUpdate as unknown as Record<string, unknown>,
+        stockUpdate as Record<string, unknown>,
       );
 
       if (response.data.success) {

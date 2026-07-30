@@ -1,24 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 import { getImageUrl } from "../utils/imageUrl";
-import {
-  AlertTriangle,
-  ArrowDownToLine,
-  Eye,
-  KeyRound,
-  Loader2,
-  Mail,
-  MailPlus,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-  Trash2,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, Eye, KeyRound, Loader2, Mail, MailPlus, MoreHorizontal, Pencil, Plus, RefreshCw, ShieldCheck, Trash2, Users } from 'lucide-react';
 
 import {
   AlertDialog,

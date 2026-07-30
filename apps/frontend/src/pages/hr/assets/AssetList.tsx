@@ -1,16 +1,6 @@
+import { Search as MagnifyingGlassIcon, Filter as FunnelIcon, Edit as PencilSquareIcon, Trash2 as TrashIcon, Circle as UserPlusIcon, Circle as ArrowUturnLeftIcon, Circle as DocumentDuplicateIcon, Check as CheckIcon, X as XMarkIcon, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  PencilSquareIcon,
-  TrashIcon,
-  UserPlusIcon,
-  ArrowUturnLeftIcon,
-  DocumentDuplicateIcon,
-  CheckIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,

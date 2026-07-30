@@ -1,10 +1,6 @@
+import { Circle as CubeIcon, DollarSign as CurrencyDollarIcon, Clipboard as ClipboardDocumentCheckIcon, Circle as WrenchScrewdriverIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  CubeIcon,
-  CurrencyDollarIcon,
-  ClipboardDocumentCheckIcon,
-  WrenchScrewdriverIcon,
-} from "@heroicons/react/24/outline";
+;
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { useCurrency } from "../../../hooks/useCurrency";
 

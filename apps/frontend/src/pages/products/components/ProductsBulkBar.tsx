@@ -1,10 +1,6 @@
+import { Trash2 as TrashIcon, X as XMarkIcon, EyeOff as EyeSlashIcon, Eye as EyeIcon } from 'lucide-react';
 import React from "react";
-import {
-  TrashIcon,
-  XMarkIcon,
-  EyeSlashIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ProductsBulkBarProps {
   selectedCount: number;

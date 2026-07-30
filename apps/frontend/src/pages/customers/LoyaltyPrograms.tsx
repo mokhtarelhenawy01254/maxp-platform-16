@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import {
-  Gift,
-  Star,
-  Crown,
-  DollarSign,
-  Users,
-  Plus,
-  RefreshCw,
-  Edit,
-  Trash2,
-  Truck,
-  Tag,
-  Percent,
-  AlertCircle,
-} from "lucide-react";
+import { Gift, Star, Crown, DollarSign, Users, Plus, RefreshCw, Edit, Trash2, Truck, Tag, Percent, AlertTriangle } from 'lucide-react';
 
 interface CustomerLoyaltyProgram {
   id: string;

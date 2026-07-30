@@ -1,19 +1,6 @@
+import { Circle as CalendarDaysIcon, Clock as ClockIcon, User as UserIcon, Video as VideoCameraIcon, Pin as MapPinIcon, Plus as PlusIcon, Check as CheckCircleIcon, X as XCircleIcon, Phone as PhoneIcon, Building as BuildingOfficeIcon, X as XMarkIcon, Pencil as PencilIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  CalendarDaysIcon,
-  ClockIcon,
-  UserIcon,
-  VideoCameraIcon,
-  MapPinIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  PhoneIcon,
-  BuildingOfficeIcon,
-  XMarkIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";

@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import {
-  BarChart3,
-  Calendar,
-  User,
-  Target,
-  ArrowRight,
-  ShieldCheck,
-  Save,
-  Plus,
-  TrendingUp,
-} from "lucide-react";
+import { BarChart, Calendar, User, Target, ArrowRight, ShieldCheck, Save, Plus, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";

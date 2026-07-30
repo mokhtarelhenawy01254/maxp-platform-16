@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { GitBranch, Users, ExternalLink, RefreshCw } from "lucide-react";
+import { GitBranch, Users, ExternalLink, RefreshCw } from 'lucide-react';
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { useTheme } from "@/hooks/useTheme";

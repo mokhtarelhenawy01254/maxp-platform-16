@@ -670,7 +670,7 @@ const englishCopy: InboxWorkspaceCopy = {
     conversationTag: 'Conversation',
     pagination: 'Page',
     emptyTitle: 'No notifications yet',
-    emptyDescription: 'New messages, transfers, and status updates will appear here as soon as they happen.',
+    emptyDescription: 'New messages, transfers, and status updates will appear here as they happen.',
     errors: {
       load: 'We could not load inbox notifications right now.',
       markRead: 'We could not update this notification right now.',

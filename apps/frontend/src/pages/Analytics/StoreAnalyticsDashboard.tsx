@@ -1,3 +1,4 @@
+import { RefreshCw as ArrowPathIcon, Circle as CalendarDaysIcon, AlertTriangle as ExclamationTriangleIcon, Eye as EyeIcon, Info as InformationCircleIcon, ShoppingBag as ShoppingCartIcon, Circle as UserGroupIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import analyticsService from "../../services/analyticsService";
 import { Button } from "../../components/ui/button";
@@ -7,15 +8,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "../../components/ui/alert";
-import {
-  ArrowPathIcon,
-  CalendarDaysIcon,
-  ExclamationTriangleIcon,
-  EyeIcon,
-  InformationCircleIcon,
-  ShoppingCartIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   Chart as ChartJS,
   CategoryScale,

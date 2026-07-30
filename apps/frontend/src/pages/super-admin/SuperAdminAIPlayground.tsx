@@ -13,7 +13,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
-import { Send, Copy, RefreshCw, Bot, Timer, BarChart3, Radio } from "lucide-react";
+import { Navigation, Clipboard, RefreshCw, Bot, Timer, BarChart, Radio } from 'lucide-react';
 import { toast } from "sonner";
 import i18n from "../../i18n";
 

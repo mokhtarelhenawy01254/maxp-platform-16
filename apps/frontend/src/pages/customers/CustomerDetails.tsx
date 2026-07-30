@@ -1,27 +1,9 @@
+import { ArrowRight as ArrowRightIcon, Pencil as PencilIcon, Trash2 as TrashIcon, MessageSquare as ChatBubbleLeftRightIcon, ShoppingBag as ShoppingBagIcon, Clock as ClockIcon, File as DocumentTextIcon, User as UserIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Tag as TagIcon, Plus as PlusIcon, X as XMarkIcon, Download as ArrowDownTrayIcon, AlertTriangle as ExclamationTriangleIcon, Calendar as CalendarIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  ArrowRightIcon,
-  PencilIcon,
-  TrashIcon,
-  ChatBubbleLeftRightIcon,
-  ShoppingBagIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  UserIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  TagIcon,
-  PlusIcon,
-  XMarkIcon,
-  ArrowDownTrayIcon,
-  ExclamationTriangleIcon,
-  CalendarIcon,
-  NoSymbolIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import LoadingSpinner from "../../components/LoadingSpinner";

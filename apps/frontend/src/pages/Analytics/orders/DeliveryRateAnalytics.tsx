@@ -1,11 +1,7 @@
+import { Truck as TruckIcon, X as XCircleIcon, Check as CheckCircleIcon, Clock as ClockIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  TruckIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   LineChart,
   Line,

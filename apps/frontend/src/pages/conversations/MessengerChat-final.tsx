@@ -1,14 +1,6 @@
+import { Circle as PaperAirplaneIcon, Circle as PaperClipIcon, MessageSquare as ChatBubbleLeftRightIcon, Info as InformationCircleIcon, Search as MagnifyingGlassIcon, Trash2 as TrashIcon, Check as CheckIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
-import {
-  PaperAirplaneIcon,
-  PaperClipIcon,
-  ChatBubbleLeftRightIcon,
-  InformationCircleIcon,
-  MagnifyingGlassIcon,
-  TrashIcon,
-  CheckIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 import apiService, {
   Message,
   Conversation,

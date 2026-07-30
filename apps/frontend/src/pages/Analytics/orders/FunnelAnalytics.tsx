@@ -1,6 +1,7 @@
+import { Filter as FunnelIcon, X as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { FunnelIcon, XCircleIcon } from "@heroicons/react/24/outline";
+;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";

@@ -1,24 +1,7 @@
+import { Activity as ChartBarIcon, Check as CheckCircleIcon, X as XCircleIcon, Info as InformationCircleIcon, ShieldCheck as ShieldCheckIcon, Eye as EyeIcon, EyeOff as EyeSlashIcon, RefreshCw as ArrowPathIcon, File as DocumentTextIcon, Circle as RocketLaunchIcon, ChevronDown as ChevronDownIcon, Circle as WrenchScrewdriverIcon, Plus as PlusIcon, Trash2 as TrashIcon, Star as StarIcon, AlertTriangle as ExclamationTriangleIcon, Circle as BeakerIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { isAxiosError } from "axios";
-import {
-  ChartBarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  ShieldCheckIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  ArrowPathIcon,
-  DocumentTextIcon,
-  RocketLaunchIcon,
-  ChevronDownIcon,
-  WrenchScrewdriverIcon,
-  PlusIcon,
-  TrashIcon,
-  StarIcon,
-  ExclamationTriangleIcon,
-  BeakerIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 import { apiClient } from "../../services/apiClient";

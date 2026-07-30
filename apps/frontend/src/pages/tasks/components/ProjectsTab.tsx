@@ -1,11 +1,7 @@
+import { Eye as EyeIcon, Folder as FolderIcon, Pencil as PencilIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React from "react";
-import {
-  EyeIcon,
-  FolderIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { Button } from "../../../components/ui/button";
 import type { Project } from "../types";

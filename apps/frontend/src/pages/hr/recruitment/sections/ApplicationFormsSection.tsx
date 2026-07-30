@@ -1,20 +1,6 @@
+import { File as DocumentTextIcon, Plus as PlusIcon, Search as MagnifyingGlassIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Eye as EyeIcon, Circle as ClipboardDocumentListIcon, Circle as UserGroupIcon, Link as LinkIcon, Check as CheckCircleIcon, X as XCircleIcon, Info as QuestionMarkCircleIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  DocumentTextIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-  ClipboardDocumentListIcon,
-  UserGroupIcon,
-  LinkIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  QuestionMarkCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";

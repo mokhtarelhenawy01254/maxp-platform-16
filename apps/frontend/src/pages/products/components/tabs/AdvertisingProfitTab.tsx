@@ -1,11 +1,6 @@
+import { DollarSign as BanknotesIcon, DollarSign as CurrencyDollarIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Circle as SwatchIcon } from 'lucide-react';
 import React from "react";
-import {
-  BanknotesIcon,
-  CurrencyDollarIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  SwatchIcon,
-} from "@heroicons/react/24/outline";
+;
 import type { ProductFormData, ProductVariant } from "../../types";
 import {
   buildAdProfitabilityPreview,

@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { ShoppingCart, Receipt, CreditCard, Users } from "lucide-react";
+import { ShoppingBag, File, CreditCard, Users } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -1,22 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  RefreshCw,
-  Loader2,
-  Instagram,
-  Facebook,
-  Music,
-  ThumbsUp,
-  MessageCircle,
-  Eye,
-  CheckCircle,
-  Inbox,
-} from 'lucide-react';
+import { RefreshCw, Loader2, Instagram, Facebook, Volume2, ThumbsUp, MessageCircle, Eye, Check, Mail } from 'lucide-react';
 import axios from 'axios';
 import i18n from '../../../i18n';
 

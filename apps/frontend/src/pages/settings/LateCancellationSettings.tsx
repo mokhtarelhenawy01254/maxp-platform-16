@@ -1,12 +1,8 @@
+import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, ShieldAlert as ShieldExclamationIcon, Info as InformationCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/api";
-import {
-  CheckCircleIcon,
-  ArrowPathIcon,
-  ShieldExclamationIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface OrderStatusOption {
   code: string;

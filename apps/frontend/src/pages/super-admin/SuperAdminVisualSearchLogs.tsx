@@ -15,9 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import {
-  Search, RefreshCw, Image, CheckCircle, XCircle, ChevronLeft, ChevronRight, Info,
-} from "lucide-react";
+import { Search, RefreshCw, Image, Check, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Input } from "../../components/ui/input";
 
 interface VisualSearchLog {

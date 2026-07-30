@@ -1,16 +1,7 @@
+import { File as DocumentTextIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationCircleIcon, Circle as PaperAirplaneIcon, Circle as BriefcaseIcon, Pin as MapPinIcon, Building as BuildingOfficeIcon, Upload as ArrowUpTrayIcon, X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  DocumentTextIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  PaperAirplaneIcon,
-  BriefcaseIcon,
-  MapPinIcon,
-  BuildingOfficeIcon,
-  ArrowUpTrayIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion } from "framer-motion";
 import { apiClient } from "../../services/apiClient";
 import { toast, Toaster } from "sonner";

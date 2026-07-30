@@ -1,10 +1,6 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, Phone as PhoneIcon, Pin as MapPinIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  PlusIcon,
-  TrashIcon,
-  PhoneIcon,
-  MapPinIcon,
-} from "@heroicons/react/24/outline";
+;
 import { companyAwareApi } from "../../../services/companyAwareApi";
 
 const AssetSuppliers: React.FC = () => {

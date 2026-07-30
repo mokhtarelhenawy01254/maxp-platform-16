@@ -204,7 +204,7 @@ const BackInStockSignupCard: React.FC<BackInStockSignupCardProps> = ({
           <p className="text-[11px] leading-relaxed text-muted-foreground/60 max-w-[200px]">
             {isRTL
               ? "سنرسل لك التنبيه على الوسيلة المتاحة فور عودة الموديل أو المقاس."
-              : "We'll notify you across all saved channels as soon as inventory returns."}
+              : "We'll notify you across all saved channels as inventory returns."}
           </p>
           <button
             type="submit"

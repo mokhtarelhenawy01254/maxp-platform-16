@@ -1,30 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import {
-  Search,
-  ShoppingCart,
-  Trash2,
-  Plus,
-  Minus,
-  CreditCard,
-  RotateCcw,
-  Maximize,
-  Minimize,
-  Image as ImageIcon,
-  Loader2,
-  Printer,
-  FileText,
-  X,
-  Clock,
-  DollarSign,
-  Package,
-  TrendingUp,
-  Banknote,
-  Check,
-  Sun,
-  Moon,
-} from "lucide-react";
+import { Search, ShoppingBag, Trash2, Plus, Minus, CreditCard, RotateCcw, Maximize, Minimize, Image as ImageIcon, Loader2, Printer, File, X, Clock, DollarSign, Package, TrendingUp, Check, Star, Moon } from 'lucide-react';
 import { config } from "../../config";
 import { authService } from "../../services/authService";
 import { useTheme } from "../../hooks/useTheme";

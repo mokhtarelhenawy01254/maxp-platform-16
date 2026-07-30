@@ -1,20 +1,8 @@
+import { Sliders as AdjustmentsHorizontalIcon, ArrowLeft as ArrowLeftIcon, DollarSign as BanknotesIcon, Check as CheckCircleIcon, Circle as ClipboardDocumentListIcon, CreditCard as CreditCardIcon, File as DocumentTextIcon, Check as IdentificationIcon, Circle as ReceiptPercentIcon, ShoppingBag as ShoppingBagIcon, Circle as UserCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  AdjustmentsHorizontalIcon,
-  ArrowLeftIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  ClipboardDocumentListIcon,
-  CreditCardIcon,
-  DocumentTextIcon,
-  IdentificationIcon,
-  ReceiptPercentIcon,
-  ShoppingBagIcon,
-  UserCircleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 

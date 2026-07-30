@@ -1,9 +1,6 @@
+import { Sliders as AdjustmentsHorizontalIcon, Search as MagnifyingGlassIcon, X as XMarkIcon } from 'lucide-react';
 import React from "react";
-import {
-  AdjustmentsHorizontalIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";

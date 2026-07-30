@@ -1,23 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Phone as PhoneIcon, Calendar as CalendarIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon, ChevronRight as ChevronRightIcon, User as UserIcon, Pin as MapPinIcon, DollarSign as CurrencyDollarIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
 import { useCurrency } from '../../hooks/useCurrency';
 import { summarizeOrderDocumentItems } from '../../utils/orderDocumentQuantityOffers';
 import OrderConfirmationQueue from './OrderConfirmationQueue';
-import {
-  PhoneIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  ChevronRightIcon,
-  UserIcon,
-  MapPinIcon,
-  CurrencyDollarIcon,
-  ArrowPathIcon,
-} from '@heroicons/react/24/outline';
+;
 import { toast } from 'sonner';
 import EnhancedOrderModal from '../../components/orders/EnhancedOrderModal';
 

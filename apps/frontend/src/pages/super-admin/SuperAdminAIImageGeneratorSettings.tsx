@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Image, Save, Search, XCircle, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
+import { Image, Save, Search, X, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";

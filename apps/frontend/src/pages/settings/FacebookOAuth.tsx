@@ -1,14 +1,7 @@
+import { Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Trash2 as TrashIcon, Plus as PlusIcon, ExternalLink as ArrowTopRightOnSquareIcon, RefreshCw as ArrowPathIcon, Circle as UserGroupIcon, MessageSquare as ChatBubbleLeftRightIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
-  PlusIcon,
-  ArrowTopRightOnSquareIcon,
-  ArrowPathIcon,
-  UserGroupIcon,
-  ChatBubbleLeftRightIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../hooks/useAuthSimple";
 import { envConfig } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
@@ -16,7 +9,6 @@ import {
   emitFacebookPageSync,
   subscribeToFacebookPageSync,
 } from "../../utils/facebookPageSync";
-import { useTranslation } from "react-i18next";
 import i18n, { getDirection } from "../../i18n";
 
 interface FacebookPage {

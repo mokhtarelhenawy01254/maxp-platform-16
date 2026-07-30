@@ -1,3 +1,4 @@
+import { Plus as PlusIcon, Trash2 as TrashIcon, Eye as EyeIcon, RefreshCw as ArrowPathIcon, Folder as FolderIcon, ShoppingBag as ShoppingBagIcon, Link as LinkIcon, Clipboard as ClipboardDocumentIcon, File as DocumentTextIcon } from 'lucide-react';
 /**
  * Catalogs Management Page
  *
@@ -6,17 +7,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  PlusIcon,
-  TrashIcon,
-  EyeIcon,
-  ArrowPathIcon,
-  FolderIcon,
-  ShoppingBagIcon,
-  LinkIcon,
-  ClipboardDocumentIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

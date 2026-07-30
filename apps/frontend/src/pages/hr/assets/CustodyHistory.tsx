@@ -1,15 +1,6 @@
+import { Circle as ClipboardDocumentListIcon, User as UserIcon, Monitor as ComputerDesktopIcon, Search as MagnifyingGlassIcon, Calendar as CalendarIcon, Check as CheckCircleIcon, Edit as PencilSquareIcon, Circle as ArrowUturnLeftIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ClipboardDocumentListIcon,
-  UserIcon,
-  ComputerDesktopIcon,
-  MagnifyingGlassIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  PencilSquareIcon,
-  ArrowUturnLeftIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { format } from "date-fns";

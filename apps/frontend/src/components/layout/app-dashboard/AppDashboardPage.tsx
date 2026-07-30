@@ -1,8 +1,9 @@
+import { Activity as ChartBarIcon, Search as MagnifyingGlassIcon, Star as StarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { ChartBarIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
+;
 import AppCard from './AppCard';
 import AppCardSkeleton from './AppCardSkeleton';
 import { sectionHasVisibleItems } from './helpers';

@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from "../../../components/ui/alert";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";

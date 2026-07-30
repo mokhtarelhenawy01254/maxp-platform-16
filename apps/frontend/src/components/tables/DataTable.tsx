@@ -1,9 +1,6 @@
+import { ChevronUp as ChevronUpIcon, ChevronDown as ChevronDownIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
-import {
-    ChevronUpIcon,
-    ChevronDownIcon,
-    MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+;
 
 interface Column {
     key: string;

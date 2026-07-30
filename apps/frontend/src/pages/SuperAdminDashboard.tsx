@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Building2, Users, MessageSquare, Users2, TrendingUp, Clock, RefreshCw,
-  LayoutDashboard, Zap, Briefcase, Activity, Server, Wifi, Database,
-  HardDrive, AlertTriangle, CheckCircle, XCircle, ArrowUp, ArrowDown,
-  Layers, Power, PowerOff, Cpu,
-} from "lucide-react";
+import { Building, Users, MessageSquare, Users2, TrendingUp, Clock, RefreshCw, LayoutDashboard, Zap, Folder, Activity, Server, Wifi, HardDrive, AlertTriangle, Check, X, ArrowUp, ArrowDown, Grid, Power, PowerOff } from 'lucide-react';
 import { useAuth } from "../hooks/useAuthSimple";
 import { useTheme } from "../hooks/useTheme";
 import tokenManager from "../utils/tokenManager";

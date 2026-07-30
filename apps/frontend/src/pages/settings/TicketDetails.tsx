@@ -1,14 +1,7 @@
+import { ArrowLeft as ArrowLeftIcon, MessageSquare as ChatBubbleLeftRightIcon, Clock as ClockIcon, User as UserIcon, AlertTriangle as ExclamationCircleIcon, Circle as PaperAirplaneIcon, Image as PhotoIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  ChatBubbleLeftRightIcon,
-  ClockIcon,
-  UserIcon,
-  ExclamationCircleIcon,
-  PaperAirplaneIcon,
-  PhotoIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

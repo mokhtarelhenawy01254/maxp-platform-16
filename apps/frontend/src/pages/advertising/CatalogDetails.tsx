@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Trash2 as TrashIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingBagIcon, Plus as PlusIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Link as LinkIcon, Clipboard as ClipboardDocumentIcon } from 'lucide-react';
 /**
  * Catalog Details Page
  *
@@ -6,18 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  TrashIcon,
-  ArrowPathIcon,
-  ShoppingBagIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  LinkIcon,
-  ClipboardDocumentIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

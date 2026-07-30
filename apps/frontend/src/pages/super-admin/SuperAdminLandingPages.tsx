@@ -1,10 +1,6 @@
+import { RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { lpAdminService, type LpPage } from "../../services/lpAdminService";
 import i18n from "../../i18n";

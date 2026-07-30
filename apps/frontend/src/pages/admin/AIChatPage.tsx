@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Send,
-  Trash2,
-  Plus,
-  MessageSquare,
-  Bot,
-  User,
-  Sparkles,
-  Copy,
-} from "lucide-react";
+import { Navigation, Trash2, Plus, MessageSquare, Bot, User, Star, Clipboard } from 'lucide-react';
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";

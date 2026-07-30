@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Save, Eye, ShieldAlert, FileText, Calendar, Gavel } from "lucide-react";
+import { AlertTriangle, ArrowRight, Save, Eye, ShieldAlert, File, Calendar, Gavel } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

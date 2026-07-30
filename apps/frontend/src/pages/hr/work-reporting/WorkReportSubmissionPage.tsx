@@ -1,14 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  CalendarDays,
-  CheckCircle2,
-  Lock,
-  Save,
-  Sigma,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, Lock, Save, Sigma, Star } from 'lucide-react';
 import { toast } from "sonner";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { WorkReportFillContext, WorkReportField, WorkReportFieldValue } from "./types";

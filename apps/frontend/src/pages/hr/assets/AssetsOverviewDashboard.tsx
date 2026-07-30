@@ -1,3 +1,4 @@
+import { Home as HomeIcon, Circle as UserGroupIcon, Monitor as ComputerDesktopIcon, Settings as Cog6ToothIcon, Circle as ClipboardDocumentListIcon, Tag as TagIcon, Plus as PlusIcon, File as DocumentIcon, File as DocumentTextIcon, Circle as WrenchScrewdriverIcon, Activity as ChartBarIcon, Grid as Squares2X2Icon, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,21 +8,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { companyAwareApi } from "../../../services/companyAwareApi";
-import {
-  HomeIcon,
-  UserGroupIcon,
-  ComputerDesktopIcon,
-  Cog6ToothIcon,
-  ClipboardDocumentListIcon,
-  TagIcon,
-  PlusIcon,
-  DocumentIcon,
-  DocumentTextIcon,
-  WrenchScrewdriverIcon,
-  ChartBarIcon,
-  Squares2X2Icon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import OverviewSection from "./sections/OverviewSection";
 import WhyAssetsSection from "./sections/WhyAssetsSection";

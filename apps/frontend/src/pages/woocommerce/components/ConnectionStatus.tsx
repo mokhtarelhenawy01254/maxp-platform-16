@@ -1,13 +1,7 @@
+import { RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, Trash2 as TrashIcon, Plus as PlusIcon, Globe as GlobeAltIcon, Zap as BoltIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React from "react";
-import {
-  ArrowPathIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
-  PlusIcon,
-  GlobeAltIcon,
-  BoltIcon,
-} from "@heroicons/react/24/outline";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
+;
+;
 import { Settings } from "../types";
 
 interface ConnectionStatusProps {

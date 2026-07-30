@@ -5,7 +5,7 @@ import { useWishlistStore } from '../store/useWishlistStore';
 import { Product } from '../hooks/useProducts';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
-import { ShoppingCart, Heart, Eye, Plus, Sparkles, ArrowUpRight, Star } from 'lucide-react';
+import { ShoppingBag, Heart, Eye, Plus, Star, ArrowUpRight } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 import StorefrontProductImage from './StorefrontProductImage';
 import { formatStorefrontCurrency } from '../utils/currency';

@@ -1,14 +1,6 @@
+import { X as XMarkIcon, Circle as BuildingOffice2Icon, Mail as EnvelopeIcon, Phone as PhoneIcon, Globe as GlobeAltIcon, Pin as MapPinIcon, DollarSign as CurrencyDollarIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState } from "react";
-import {
-  XMarkIcon,
-  BuildingOffice2Icon,
-  EnvelopeIcon,
-  PhoneIcon,
-  GlobeAltIcon,
-  MapPinIcon,
-  CurrencyDollarIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../services/apiClient";
 

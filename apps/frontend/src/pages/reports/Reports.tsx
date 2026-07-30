@@ -1,22 +1,12 @@
+import { Activity as ChartBarIcon, Circle as DocumentChartBarIcon, Calendar as CalendarIcon, Download as ArrowDownTrayIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Circle as UserGroupIcon, PieChart as ChartPieIcon, Eye as EyeIcon, Circle as PresentationChartLineIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
 import { apiClient } from "../../services/apiClient";
-import {
-  ChartBarIcon,
-  DocumentChartBarIcon,
-  CalendarIcon,
-  ArrowDownTrayIcon,
-  ArrowPathIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  UserGroupIcon,
-  ChartPieIcon,
-  EyeIcon,
-  PresentationChartLineIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ReportData {
   id: string;

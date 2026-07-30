@@ -1,5 +1,5 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import type { WorkspaceNumber } from '../types';
 

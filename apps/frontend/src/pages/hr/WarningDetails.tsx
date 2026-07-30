@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  AlertTriangle,
-  Calendar,
-  User,
-  FileText,
-  ArrowRight,
-  Edit,
-  Trash2,
-  Clock,
-  CheckCircle2,
-} from "lucide-react";
+import { AlertTriangle, Calendar, User, File, ArrowRight, Edit, Trash2, Clock, CheckCircle2 } from 'lucide-react';
 import {
   Card,
   CardContent,

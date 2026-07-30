@@ -1,18 +1,9 @@
+import { Settings as Cog6ToothIcon, Circle as SwatchIcon, ShieldCheck as ShieldCheckIcon, Zap as BoltIcon, Plus as PlusIcon, Trash2 as TrashIcon, Check as CheckCircleIcon, Circle as TrophyIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect, useRef } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import {
-  Cog6ToothIcon,
-  SwatchIcon,
-  ShieldCheckIcon,
-  BoltIcon,
-  PlusIcon,
-  TrashIcon,
-  CheckCircleIcon,
-  TrophyIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface StatusItem {
   value: string;

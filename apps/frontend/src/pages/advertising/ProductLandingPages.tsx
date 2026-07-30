@@ -1,21 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowDown,
-  ArrowUp,
-  Copy,
-  Eye,
-  ExternalLink,
-  ImagePlus,
-  Loader2,
-  Pause,
-  Play,
-  Plus,
-  RefreshCw,
-  Save,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Clipboard, Eye, ExternalLink, ImagePlus, Loader2, Pause, Play, Plus, RefreshCw, Save, Search, Trash2 } from 'lucide-react';
 import {
   ProductLandingPage,
   ProductLandingProduct,

@@ -1,21 +1,7 @@
+import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowUpRight,
-  BarChart3,
-  CalendarDays,
-  Clock3,
-  Filter,
-  Gauge,
-  Layers3,
-  Megaphone,
-  RefreshCw,
-  Search,
-  Smartphone,
-  Target,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { ArrowUpRight, BarChart, Calendar, Clock3, Filter, Gauge, Layers3, Volume2, RefreshCw, Search, Phone, Target, Users, CreditCard } from 'lucide-react';
 import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";

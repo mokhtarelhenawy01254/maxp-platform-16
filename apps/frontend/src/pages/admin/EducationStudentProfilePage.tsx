@@ -1,10 +1,7 @@
+import { User as UserIcon, Phone as PhoneIcon, Circle as BookOpenIcon, Circle as CalendarDaysIcon, Clock as ClockIcon, Check as CheckCircleIcon, X as XCircleIcon, Activity as ChartBarIcon, ArrowRight as ArrowRightIcon, Circle as AcademicCapIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  UserIcon, PhoneIcon, BookOpenIcon, CalendarDaysIcon,
-  ClockIcon, CheckCircleIcon, XCircleIcon, ChartBarIcon,
-  ArrowRightIcon, AcademicCapIcon
-} from "@heroicons/react/24/outline";
+;
 
 const SESSION_STATUS: Record<string, { label: string; color: string }> = {
   SCHEDULED: { label: "مجدولة", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },

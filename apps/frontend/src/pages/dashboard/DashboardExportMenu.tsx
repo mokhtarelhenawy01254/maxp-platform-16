@@ -1,5 +1,6 @@
+import { Download as ArrowDownTrayIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -7,7 +8,7 @@ import {
   DropdownMenuItem,
 } from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+;
 import { exportToCSV, exportToExcel, exportToPDF, type ExportColumn } from "../../utils/exportHelpers";
 import type { DashboardData } from "./types";
 

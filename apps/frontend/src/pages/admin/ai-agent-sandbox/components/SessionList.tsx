@@ -2,16 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Plus,
-  Trash2,
-  MessageSquare,
-  Search,
-  Star,
-  Pin,
-  X,
-  Loader2
-} from "lucide-react";
+import { Plus, Trash2, MessageSquare, Search, Star, Pin, X, Loader2 } from 'lucide-react';
 import type { Session } from "../types/sandbox.types";
 
 interface SessionListProps {

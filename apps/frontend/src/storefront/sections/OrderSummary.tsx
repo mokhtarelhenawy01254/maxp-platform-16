@@ -24,7 +24,7 @@ import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
 } from "../utils/marketplaceApps";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import {
   getActiveStorePromotionFromCompany,
   calculateStorePromotionDiscount,

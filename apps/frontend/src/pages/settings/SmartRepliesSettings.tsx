@@ -1,16 +1,8 @@
+import { MessageSquare as ChatBubbleLeftRightIcon, ArrowLeft as ArrowLeftIcon, Plus as PlusIcon, Trash2 as TrashIcon, Pencil as PencilIcon, Check as CheckIcon, X as XMarkIcon, Star as SparklesIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  ChatBubbleLeftRightIcon,
-  ArrowLeftIcon,
-  PlusIcon,
-  TrashIcon,
-  PencilIcon,
-  CheckIcon,
-  XMarkIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 

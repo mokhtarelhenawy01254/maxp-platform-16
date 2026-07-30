@@ -1,5 +1,6 @@
+import { X as XMarkIcon, Trash2 as TrashIcon } from 'lucide-react';
 import { useState } from "react";
-import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { BookingBranch, BranchFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
 

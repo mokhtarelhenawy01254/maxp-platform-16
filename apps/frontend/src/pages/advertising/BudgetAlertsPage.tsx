@@ -1,12 +1,7 @@
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  BellRing,
-  Gauge,
-  RefreshCw,
-  Send,
-  SlidersHorizontal,
-  Trash2,
-} from "lucide-react";
+import { Bell, Gauge, RefreshCw, Navigation, Sliders, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";

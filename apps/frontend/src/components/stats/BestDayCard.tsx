@@ -1,5 +1,6 @@
+import { Circle as CalendarDaysIcon } from 'lucide-react';
 import React, { useMemo } from 'react';
-import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+;
 
 interface BestDayCardProps {
     stats: any;

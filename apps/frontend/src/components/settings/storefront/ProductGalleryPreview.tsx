@@ -1,12 +1,8 @@
+import { Circle as MagnifyingGlassPlusIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Circle as PlayIcon } from 'lucide-react';
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StorefrontSettings } from "../../../services/storefrontSettingsService";
-import {
-    MagnifyingGlassPlusIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    PlayIcon
-} from "@heroicons/react/24/outline";
+;
 
 interface ProductGalleryPreviewProps {
     settings: StorefrontSettings;

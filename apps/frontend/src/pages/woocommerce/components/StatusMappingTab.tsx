@@ -1,11 +1,7 @@
+import { RefreshCw as ArrowPathIcon, Circle as CloudArrowDownIcon, Check as CheckCircleIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useRef, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  ArrowPathIcon,
-  CloudArrowDownIcon,
-  CheckCircleIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { StatusBadge } from "./shared/StatusBadge";
 import { useWooCommerceStatus } from "../hooks/useWooCommerceStatus";
 import { Settings } from "../types";

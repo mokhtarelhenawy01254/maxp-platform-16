@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Sparkles, Clock, AlertTriangle, Users, CheckCircle2, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Building, Star, Clock, AlertTriangle, Users, CheckCircle2, Loader2, ArrowLeft, MessageCircle } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { tokenManager } from "../../utils/tokenManager";

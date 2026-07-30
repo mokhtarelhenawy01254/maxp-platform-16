@@ -1,17 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
-
-import {
-  Users,
-  Wallet,
-  TrendingUp,
-  Link as LinkIcon,
-  Copy,
-  Clock,
-  DollarSign,
-  AlertCircle,
-} from "lucide-react";
+import { Users, CreditCard, TrendingUp, Link as LinkIcon, Clipboard, Clock, DollarSign, AlertTriangle } from 'lucide-react';
 
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";

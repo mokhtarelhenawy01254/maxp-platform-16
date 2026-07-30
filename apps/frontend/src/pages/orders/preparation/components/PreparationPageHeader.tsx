@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+;
 
 interface PreparationPageHeaderProps {
   refreshing: boolean;

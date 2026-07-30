@@ -1,13 +1,7 @@
+import { User as UserIcon, MessageSquare as ChatBubbleLeftRightIcon, Globe as GlobeAltIcon, Circle as UserGroupIcon, Star as SparklesIcon, Clock as ClockIcon } from 'lucide-react';
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  UserIcon,
-  ChatBubbleLeftRightIcon,
-  GlobeAltIcon,
-  UserGroupIcon,
-  SparklesIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useDateFormat } from "../../../hooks/useDateFormat";
 
 interface OrderSourceCardProps {

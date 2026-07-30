@@ -1,38 +1,8 @@
+import { Camera as CameraIcon, Pencil as PencilIcon, Check as CheckIcon, X as XMarkIcon, Clock as ClockIcon, Star as StarIcon, Circle as TrophyIcon, Circle as CalendarDaysIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Circle as BriefcaseIcon, Building as BuildingOfficeIcon, DollarSign as CurrencyDollarIcon, File as DocumentTextIcon, User as UserIcon, Circle as CakeIcon, Star as SparklesIcon, Circle as GiftIcon, Heart as HeartIcon, Monitor as ComputerDesktopIcon, Circle as ClipboardDocumentListIcon, ShieldCheck as ShieldCheckIcon, Activity as ChartBarIcon, Circle as BellAlertIcon, Check as IdentificationIcon, Circle as WalletIcon, Circle as ArrowTrendingUpIcon, Circle as UserGroupIcon, DollarSign as BanknotesIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import {
-  CameraIcon,
-  PencilIcon,
-  CheckIcon,
-  XMarkIcon,
-  ClockIcon,
-  StarIcon,
-  TrophyIcon,
-  CalendarDaysIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  BriefcaseIcon,
-  BuildingOfficeIcon,
-  CurrencyDollarIcon,
-  DocumentTextIcon,
-  UserIcon,
-  CakeIcon,
-  SparklesIcon,
-  GiftIcon,
-  HeartIcon,
-  ComputerDesktopIcon,
-  ClipboardDocumentListIcon,
-  ShieldCheckIcon,
-  ChartBarIcon,
-  BellAlertIcon,
-  IdentificationIcon,
-  WalletIcon,
-  ArrowTrendingUpIcon,
-  UserGroupIcon,
-  BanknotesIcon,
-  ShoppingBagIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useTheme } from "../../hooks/useTheme";
 import api from "../../services/api";

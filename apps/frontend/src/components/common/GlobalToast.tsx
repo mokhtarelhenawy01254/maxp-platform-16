@@ -1,10 +1,7 @@
+import { X as XMarkIcon, Check as CheckCircleIcon, X as XCircleIcon, Info as InformationCircleIcon } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import React, { useEffect, useState } from "react";
-import {
-  XMarkIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 export interface ToastEventDetail {
   message: string;

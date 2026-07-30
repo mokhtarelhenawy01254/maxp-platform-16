@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-    Plus,
-    Edit,
-    Delete,
-    PlayCircle as VideoIcon,
-    FileText as TextIcon,
-} from "lucide-react";
+import { Plus, Edit, Delete, Play as VideoIcon, File as TextIcon } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

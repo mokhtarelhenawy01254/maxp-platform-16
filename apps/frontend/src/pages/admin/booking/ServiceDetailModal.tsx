@@ -1,4 +1,5 @@
-import { XMarkIcon, BuildingOffice2Icon } from "@heroicons/react/24/outline";
+import { X as XMarkIcon, Circle as BuildingOffice2Icon } from 'lucide-react';
+;
 import { BookingService, MODAL_CONTENT_CLS } from "./shared";
 
 interface Props {

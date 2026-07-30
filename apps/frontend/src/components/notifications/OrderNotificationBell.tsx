@@ -1,17 +1,12 @@
+import { Bell as BellIcon, ShoppingBag as ShoppingBagIcon, X as XMarkIcon, Check as CheckIcon, ArrowRight as ArrowRightIcon, Circle as BellSolidIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
 import { socketService } from "../../services/socketService";
-import {
-  BellIcon,
-  ShoppingBagIcon,
-  XMarkIcon,
-  CheckIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/outline";
-import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
+;
+;
 
 interface NewOrderItem {
   id: string;

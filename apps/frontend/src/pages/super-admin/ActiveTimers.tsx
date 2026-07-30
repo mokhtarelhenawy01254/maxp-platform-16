@@ -1,18 +1,11 @@
+import { Clock as ClockIcon, Circle as PlayIcon, Circle as StopIcon, Circle as PauseIcon, User as UserIcon, Folder as FolderIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTimer } from "../../contexts/TimerContext";
-import {
-  ClockIcon,
-  PlayIcon,
-  StopIcon,
-  PauseIcon,
-  UserIcon,
-  FolderIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ActiveTimerTask {
   id: string;

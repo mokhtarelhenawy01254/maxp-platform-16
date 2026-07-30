@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, {
   useState,
   useEffect,
@@ -5,7 +6,6 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { useTranslation } from "react-i18next";
 import InboxTabs from "../../components/facebook-inbox/InboxTabs/InboxTabs";
 import ConversationItem from "../../components/facebook-inbox/ConversationList/ConversationItem";
 import MessageBubble from "../../components/facebook-inbox/MessageBubble/MessageBubble";
@@ -24,12 +24,8 @@ import { useTagManagement } from "../../hooks/inbox/useTagManagement";
 import useSocket from "../../hooks/useSocket";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useAuth } from "../../hooks/useAuthSimple";
-import {
-  Menu,
-  PanelRightClose,
-  PanelRightOpen,
-} from "lucide-react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { Menu, PanelRightClose, PanelRightOpen, X as XMarkIcon } from 'lucide-react';
+;
 import { apiClient } from "../../services/apiClient";
 import { useDebounce } from "../../hooks/useDebounce";
 import { socketService } from "../../services/socketService";

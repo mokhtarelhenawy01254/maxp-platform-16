@@ -1,18 +1,6 @@
+import { RefreshCw as ArrowPathIcon, Circle as CalendarDaysIcon, Check as CheckCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationCircleIcon, Circle as MegaphoneIcon, Circle as PaperAirplaneIcon, Star as SparklesIcon, Circle as StopCircleIcon, Eye as EyeIcon, Circle as HistoryIcon, Activity as ChartBarIcon } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    ArrowPathIcon,
-    CalendarDaysIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    ExclamationCircleIcon,
-    MegaphoneIcon,
-    PaperAirplaneIcon,
-    SparklesIcon,
-    StopCircleIcon,
-    EyeIcon,
-    ClockIcon as HistoryIcon,
-    ChartBarIcon,
-} from '@heroicons/react/24/outline';
+;
 import { apiClient } from '../../services/apiClient';
 
 type Audience = 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers';

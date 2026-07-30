@@ -1,11 +1,7 @@
 import { useEffect, useId, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
-  AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
-  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock, BadgeCheck,
-} from "lucide-react";
+import { Building, Star, Download, RefreshCw, Plus, Loader2, AlertTriangle, CheckCircle2, Users, ArrowRight, Pencil, Eye, LogIn, Trash2, Facebook, X, Filter, Clock, Check } from 'lucide-react';
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";

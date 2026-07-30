@@ -1,5 +1,6 @@
+import { Circle as CalendarDaysIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState } from "react";
-import { CalendarDaysIcon, ClockIcon } from "@heroicons/react/24/outline";
+;
 
 interface PostponeOrderModalProps {
   isOpen: boolean;

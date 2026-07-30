@@ -1,6 +1,7 @@
+import { AlignLeft as Bars3Icon, X as XMarkIcon, Circle as UserCircleIcon, Circle as ArrowRightOnRectangleIcon, Settings as Cog6ToothIcon, Search as MagnifyingGlassIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as PlayIcon, Circle as PauseIcon, Circle as StopIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuthSimple";
 import { useCompany } from "../contexts/CompanyContext";
 import NotificationDropdown from "./notifications/NotificationDropdown";
@@ -8,18 +9,10 @@ import OrderNotificationBell from "./notifications/OrderNotificationBell";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import { envConfig } from "../config/environment";
 import { CompanyLogo } from "./ui/CompanyLogo";
-import {
-  Bars3Icon,
-  XMarkIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon,
-  Cog6ToothIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftRightIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import { useTimer } from "../contexts/TimerContext";
-import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
+;
 
 const GlobalTimer: React.FC = () => {
   const {

@@ -1,11 +1,6 @@
+import { AlertTriangle as ExclamationTriangleIcon, X as XMarkIcon, Download as ArrowDownTrayIcon, Trash2 as TrashIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ExclamationTriangleIcon,
-  XMarkIcon,
-  ArrowDownTrayIcon,
-  TrashIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 import errorTracking, { ErrorLog } from "../services/errorTracking";
 
 /**

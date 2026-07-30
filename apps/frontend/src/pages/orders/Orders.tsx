@@ -1,6 +1,8 @@
+import { ShoppingBag as ShoppingBagIcon, Eye as EyeIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, Printer as PrinterIcon, Filter as FunnelIcon, Info as InformationCircleIcon, Star as StarIcon, AlertTriangle as ExclamationTriangleIcon, Circle as RocketLaunchIcon, MessageSquare as ChatBubbleLeftRightIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Sliders as AdjustmentsHorizontalIcon, DollarSign as BanknotesIcon, Circle as CubeIcon, Truck as TruckIcon, Clock as ClockIcon, Circle as BriefcaseIcon, Zap as BoltIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
@@ -22,28 +24,7 @@ import {
 import EnhancedOrderModal from "../../components/orders/EnhancedOrderModal";
 import InvoiceModal from "../../components/orders/InvoiceModal";
 
-import {
-  ShoppingBagIcon,
-  EyeIcon,
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  PrinterIcon,
-  FunnelIcon,
-  InformationCircleIcon,
-  StarIcon,
-  ExclamationTriangleIcon,
-  RocketLaunchIcon,
-  ChatBubbleLeftRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  AdjustmentsHorizontalIcon,
-  BanknotesIcon,
-  CubeIcon,
-  TruckIcon,
-  ClockIcon,
-  BriefcaseIcon,
-  BoltIcon,
-} from "@heroicons/react/24/outline";
+;
 
 
 interface Order {

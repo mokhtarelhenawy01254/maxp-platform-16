@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Calendar, Download, Printer, DollarSign, ArrowLeft,
-  CreditCard, User as UserIcon, Building2,
-  TrendingUp, ShieldCheck, Zap, AlertCircle,
-  FileText, PieChart, Info, CheckCircle2,
-  ChevronLeft, ChevronRight, Wallet, History
-} from "lucide-react";
+import { Calendar, Download, Printer, DollarSign, ArrowLeft, CreditCard, User as UserIcon, Building, TrendingUp, ShieldCheck, Zap, AlertTriangle, File, PieChart, Info, CheckCircle2, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

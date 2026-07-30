@@ -1,17 +1,9 @@
+import { Link as LinkIcon, Plus as PlusIcon, X as XMarkIcon, ArrowRight as ArrowRightIcon, ArrowLeft as ArrowLeftIcon, AlertTriangle as ExclamationTriangleIcon, Check as CheckCircleIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import {
-  LinkIcon,
-  PlusIcon,
-  XMarkIcon,
-  ArrowRightIcon,
-  ArrowLeftIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Task {
   id: string;

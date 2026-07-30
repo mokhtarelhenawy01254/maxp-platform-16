@@ -1,15 +1,6 @@
+import { ChevronDown as ChevronDownIcon, Check as CheckIcon, User as UserIcon, Clock as ClockIcon, Circle as CalendarDaysIcon, Check as CheckCircleIcon, Tag as TagIcon, Star as SparklesIcon, Link as LinkIcon } from 'lucide-react';
 import React from "react";
-import {
-  ChevronDownIcon,
-  CheckIcon,
-  UserIcon,
-  ClockIcon,
-  CalendarDaysIcon,
-  CheckCircleIcon,
-  TagIcon,
-  SparklesIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { Task } from "../../../types/tasks";
 import {
   TASK_TYPES,

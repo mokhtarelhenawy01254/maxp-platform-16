@@ -1,10 +1,7 @@
+import { Circle as TicketIcon, X as XCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  TicketIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";

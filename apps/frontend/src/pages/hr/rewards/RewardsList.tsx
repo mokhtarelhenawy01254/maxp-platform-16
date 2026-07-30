@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
@@ -13,23 +13,7 @@ import {
   normalizeRewardStatus,
   type RewardUiStatus,
 } from "./rewardRecordUtils";
-import {
-  Award,
-  Search,
-  Filter,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  RefreshCw,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Check,
-  X,
-} from "lucide-react";
+import { Award, Search, Filter, Plus, Eye, Edit, Trash2, RefreshCw, DollarSign, Check, X, Clock, AlertTriangle } from 'lucide-react';
 
 interface RewardRecord {
   id: string;

@@ -1,13 +1,7 @@
+import { Activity as ChartBarIcon, RefreshCw as ArrowPathIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Pin as MapPinIcon, CreditCard as CreditCardIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  ChartBarIcon,
-  ArrowPathIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  MapPinIcon,
-  CreditCardIcon,
-} from "@heroicons/react/24/outline";
-import { useTranslation } from "react-i18next";
+;
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useCurrency } from "../../hooks/useCurrency";
 import {

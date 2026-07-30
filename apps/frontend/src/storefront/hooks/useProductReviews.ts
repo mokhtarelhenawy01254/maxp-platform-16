@@ -282,7 +282,7 @@ const normalizeReviewsResponse = (
   const reviewEntries = Array.isArray(payload?.reviews) ? payload?.reviews ?? [] : [];
   const reviews = reviewEntries.map((review, index) =>
     normalizeProductReviewRecord(
-      review as unknown as Record<string, unknown>,
+      review as Record<string, unknown>,
       index,
     ),
   );

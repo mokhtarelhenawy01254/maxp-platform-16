@@ -1,31 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Send,
-  Paperclip,
-  X,
-  Download,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Star,
-  MessageSquare,
-  User,
-  Shield,
-  Briefcase,
-  Building,
-  Mail,
-  Phone,
-  Calendar,
-  MoreVertical,
-  Flag,
-  Trash2,
-  Lock,
-  Search,
-  Filter,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Navigation, Link, X, Download, Clock, Check, AlertTriangle, Star, MessageSquare, User, Shield, Folder, Building, Mail, Phone, Calendar, MoreVertical, Tag, Trash2, Lock, Search, Filter } from 'lucide-react';
 import LinkifiedText from "../../components/common/LinkifiedText";
 import supportService, {
   Ticket,

@@ -1,15 +1,8 @@
+import { ArrowRight as ArrowRightIcon, User as UserIcon, Phone as PhoneIcon, Mail as EnvelopeIcon, Pin as MapPinIcon, Check as CheckIcon, Plus as PlusIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  ArrowRightIcon,
-  UserIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  CheckIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 
 interface CustomerFormData {

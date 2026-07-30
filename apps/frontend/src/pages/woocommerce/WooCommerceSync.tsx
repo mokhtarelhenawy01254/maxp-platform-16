@@ -1,14 +1,7 @@
+import { ArrowLeft as ArrowLeftIcon, Circle as CloudArrowDownIcon, Circle as CloudArrowUpIcon, Settings as Cog6ToothIcon, Circle as MapIcon, Circle as ClipboardDocumentListIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CloudArrowDownIcon,
-  CloudArrowUpIcon,
-  Cog6ToothIcon,
-  MapIcon,
-  ClipboardDocumentListIcon,
-  ShoppingBagIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 

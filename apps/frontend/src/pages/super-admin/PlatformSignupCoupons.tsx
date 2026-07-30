@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  CalendarRange,
-  Gift,
-  Plus,
-  RefreshCw,
-  Search,
-  Sparkles,
-  Ticket,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { CalendarRange, Gift, Plus, RefreshCw, Search, Star, Tag, Trash2, Users } from 'lucide-react';
 import { toast } from "sonner";
 
 import {

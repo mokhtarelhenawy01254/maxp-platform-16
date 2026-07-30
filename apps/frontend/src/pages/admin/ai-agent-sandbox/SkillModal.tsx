@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { SkillDefinition } from "./hooks/useAgentSandbox";
-import { Sparkles, Settings, Code } from "lucide-react";
+import { Star, Settings, Code } from 'lucide-react';
 
 interface SkillModalProps {
   open: boolean;

@@ -1,3 +1,4 @@
+import { AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useRef } from "react";
 import {
   Dialog,
@@ -5,7 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+;
 
 interface ConfirmationModalProps {
   isOpen: boolean;

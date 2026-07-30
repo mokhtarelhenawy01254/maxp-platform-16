@@ -1,12 +1,7 @@
+import { ChevronRight as ChevronRightIcon, Search as MagnifyingGlassIcon, X as XMarkIcon, ShieldCheck as ShieldCheckIcon, Circle as ArrowRightOnRectangleIcon } from 'lucide-react';
 import React, { useEffect, useId, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ChevronRightIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  ShieldCheckIcon,
-  ArrowRightOnRectangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useTheme } from "../../../hooks/useTheme";

@@ -1,13 +1,7 @@
-import { useTranslation } from "react-i18next";
+import { Plus as PlusIcon, Trash2 as TrashIcon, Circle as ArrowsRightLeftIcon, Circle as UserGroupIcon, ShieldCheck as ShieldCheckIcon, AlertTriangle as ExclamationCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
-import {
-    PlusIcon,
-    TrashIcon,
-    ArrowsRightLeftIcon,
-    UserGroupIcon,
-    ShieldCheckIcon,
-    ExclamationCircleIcon
-} from '@heroicons/react/24/outline';
+;
 import orderWorkflowService, {
     OrderStatusDefinition,
     OrderWorkflowTransition

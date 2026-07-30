@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Settings,
-  Clock,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  Users,
-  Award,
-  GraduationCap,
-  AlertTriangle,
-  FileText,
-  BarChart3,
-  ChevronLeft,
-} from "lucide-react";
+import { Settings, Clock, Calendar, DollarSign, TrendingUp, Users, Award, Book, AlertTriangle, File, BarChart, ChevronLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import AttendanceReport from "./AttendanceReport";

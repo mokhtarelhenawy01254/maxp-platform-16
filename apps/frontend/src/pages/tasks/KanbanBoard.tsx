@@ -1,20 +1,9 @@
+import { Grid as ViewColumnsIcon, Plus as PlusIcon, Clock as ClockIcon, MessageSquare as ChatBubbleLeftIcon, Circle as PaperClipIcon, Circle as UserCircleIcon, Calendar as CalendarIcon, ArrowLeft as ArrowLeftIcon, Filter as FunnelIcon, Circle as PlayIcon, Circle as StopIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-import {
-  ViewColumnsIcon,
-  PlusIcon,
-  ClockIcon,
-  ChatBubbleLeftIcon,
-  PaperClipIcon,
-  UserCircleIcon,
-  CalendarIcon,
-  ArrowLeftIcon,
-  FunnelIcon,
-  PlayIcon,
-  StopIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Task {
   id: string;

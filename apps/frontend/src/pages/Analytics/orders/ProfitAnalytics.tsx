@@ -1,12 +1,7 @@
+import { DollarSign as CurrencyDollarIcon, X as XCircleIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, Activity as ChartBarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  CurrencyDollarIcon,
-  XCircleIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   LineChart,
   Line,

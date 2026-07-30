@@ -1,13 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-  Trash2,
-  Plus,
-  ArrowLeft,
-  Save,
-  Printer,
-} from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Save, Printer } from 'lucide-react';
 import { useNavigate, useParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";

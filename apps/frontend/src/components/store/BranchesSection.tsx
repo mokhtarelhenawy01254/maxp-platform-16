@@ -1,14 +1,7 @@
+import { Store as BuildingStorefrontIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Pin as MapPinIcon, Phone as PhoneIcon, Clock as ClockIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { useTranslation } from "react-i18next";
-import {
-  BuildingStorefrontIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  MapPinIcon,
-  PhoneIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 import { Branch } from "../../services/storeSettingsService";
 
 interface BranchesSectionProps {

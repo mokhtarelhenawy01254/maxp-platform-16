@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
-import {
-  FileText,
-  Plus,
-  Edit,
-  Trash2,
-  Save,
-  ChevronDown,
-  ChevronRight,
-  BookOpen,
-  Clock,
-  Search,
-  Filter,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Eye,
-} from "lucide-react";
+import { File, Plus, Edit, Trash2, Save, ChevronDown, ChevronRight, Book, Clock, Search, Filter, AlertTriangle, Check, X, Eye } from 'lucide-react';
 import {
   Table,
   TableBody,

@@ -1,3 +1,4 @@
+import { DollarSign as BanknotesIcon, Activity as ChartBarIcon, Globe as GlobeAltIcon, Link as LinkIcon, Circle as MegaphoneIcon, ShoppingBag as ShoppingCartIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -10,15 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  BanknotesIcon,
-  ChartBarIcon,
-  GlobeAltIcon,
-  LinkIcon,
-  MegaphoneIcon,
-  ShoppingCartIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";

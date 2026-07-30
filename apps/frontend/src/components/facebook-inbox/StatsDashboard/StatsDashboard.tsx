@@ -1,3 +1,4 @@
+import { X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
@@ -10,7 +11,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { InboxConversation } from "../../../types/inbox.types";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../../services/apiClient";
 
 ChartJS.register(

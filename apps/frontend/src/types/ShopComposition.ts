@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 /**
  * 🏗️ Shop Composition Types
  * Enables JSON-driven page composition for storefront themes.

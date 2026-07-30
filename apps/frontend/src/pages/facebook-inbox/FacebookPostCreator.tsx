@@ -1,19 +1,10 @@
+import { Image as PhotoIcon, Video as VideoCameraIcon, Link as LinkIcon, Calendar as CalendarIcon, X as XMarkIcon, Check as CheckCircleIcon, Circle as PaperAirplaneIcon, Clock as ClockIcon, File as DocumentTextIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { uploadService } from "../../services/uploadService";
-import {
-  PhotoIcon,
-  VideoCameraIcon,
-  LinkIcon,
-  CalendarIcon,
-  XMarkIcon,
-  CheckCircleIcon,
-  PaperAirplaneIcon,
-  ClockIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface FacebookPage {
   id: string;

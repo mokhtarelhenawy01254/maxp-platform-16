@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  MessageCircle, Bot, Users, BarChart3, Check, ChevronDown,
-  ArrowLeft, Building2, Stethoscope, Calendar, Syringe,
-  Sparkles, Zap, Shield, Clock, Menu, X, Star, Heart, Search,
-  TrendingUp, Phone, Smartphone,
-} from "lucide-react";
+import { MessageCircle, Bot, Users, BarChart, Check, ChevronDown, ArrowLeft, Building, Stethoscope, Calendar, Syringe, Star, Zap, Shield, Clock, Menu, X, Heart, Search, TrendingUp, Phone } from 'lucide-react';
 import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./medicalLanding.css";
 

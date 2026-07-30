@@ -1,15 +1,9 @@
+import { Circle as UserGroupIcon, Plus as PlusIcon, Trash2 as TrashIcon, Building as BuildingOfficeIcon, AlertTriangle as ExclamationCircleIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import {
-  UserGroupIcon,
-  PlusIcon,
-  TrashIcon,
-  BuildingOfficeIcon,
-  ExclamationCircleIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Company {
   id: string;

@@ -1,16 +1,7 @@
+import { RefreshCw as ArrowPathIcon, Bell as BellIcon, Store as BuildingStorefrontIcon, Check as CheckCircleIcon, Clock as ClockIcon, Circle as CubeIcon, File as DocumentTextIcon, AlertTriangle as ExclamationTriangleIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowPathIcon,
-  BellIcon,
-  BuildingStorefrontIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  CubeIcon,
-  DocumentTextIcon,
-  ExclamationTriangleIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

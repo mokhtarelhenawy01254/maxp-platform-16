@@ -1,5 +1,6 @@
+import { ShoppingBag as ShoppingCartIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import { ShoppingCartIcon, PlusIcon } from "@heroicons/react/24/outline";
+;
 import { apiClient } from "../services/apiClient";
 
 interface Product {

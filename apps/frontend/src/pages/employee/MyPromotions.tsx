@@ -1,21 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import {
-    TrendingUp,
-    Calendar,
-    FileText,
-    Clock,
-    CheckCircle,
-    XCircle,
-    Info,
-    Loader2,
-    Award,
-    ArrowRight,
-    DollarSign,
-    Briefcase
-} from "lucide-react";
+import { TrendingUp, Calendar, File, Clock, Check, X, Info, Loader2, Award, ArrowRight, DollarSign, Folder } from 'lucide-react';
 import api from "../../services/api";
-import { useTranslation } from "react-i18next";
-
 interface Promotion {
     id: string;
     fromPositionId?: string;

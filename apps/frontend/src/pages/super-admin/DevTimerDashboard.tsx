@@ -1,24 +1,11 @@
+import { Clock as ClockIcon, Circle as PlayIcon, Circle as StopIcon, Circle as PauseIcon, Plus as PlusIcon, Trash2 as TrashIcon, Folder as FolderIcon, Circle as UserGroupIcon, Activity as ChartBarIcon, List as ListBulletIcon, X as XMarkIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTimer } from "../../contexts/TimerContext";
-import {
-  ClockIcon,
-  PlayIcon,
-  StopIcon,
-  PauseIcon,
-  PlusIcon,
-  TrashIcon,
-  FolderIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-  ListBulletIcon,
-  XMarkIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface TaskOption {
   id: string;

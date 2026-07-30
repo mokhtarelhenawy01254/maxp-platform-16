@@ -1,5 +1,7 @@
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import type { CompanyReview } from "./companyDetailsTypes";
-import { ArrowUpCircle, Wallet as WalletIcon } from "lucide-react";
+import { ArrowUpCircle, CreditCard as WalletIcon } from 'lucide-react';
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { MiniStat } from "./MiniStat";

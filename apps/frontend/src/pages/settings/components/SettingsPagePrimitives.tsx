@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getDirection } from "../../../i18n";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

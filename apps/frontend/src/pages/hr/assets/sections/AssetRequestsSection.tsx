@@ -1,17 +1,6 @@
+import { Plus as PlusIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Circle as CheckBadgeIcon, Tag as TagIcon, Circle as ChatBubbleLeftEllipsisIcon, User as UserIcon, Monitor as ComputerDesktopIcon, Circle as ArrowRightCircleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  PlusIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  CheckBadgeIcon,
-  TagIcon,
-  ChatBubbleLeftEllipsisIcon,
-  UserIcon,
-  ComputerDesktopIcon,
-  ArrowRightCircleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";

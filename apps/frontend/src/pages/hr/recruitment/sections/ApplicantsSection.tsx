@@ -1,19 +1,6 @@
+import { Circle as UserGroupIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Mail as EnvelopeIcon, Phone as PhoneIcon, File as DocumentTextIcon, Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon, Eye as EyeIcon, Star as StarIcon, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  UserGroupIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  DocumentTextIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  EyeIcon,
-  StarIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { toast } from "sonner";

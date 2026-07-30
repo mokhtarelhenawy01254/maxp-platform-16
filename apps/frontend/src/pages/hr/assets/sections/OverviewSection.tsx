@@ -1,11 +1,6 @@
+import { Monitor as ComputerDesktopIcon, Circle as UserGroupIcon, ShieldCheck as ShieldCheckIcon, PieChart as ChartPieIcon, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ComputerDesktopIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ChartPieIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/outline";
+;
 import { motion } from "framer-motion";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 

@@ -1,26 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Briefcase,
-  Building2,
-  DollarSign,
-  Clock,
-  FileText,
-  Award,
-  AlertTriangle,
-  GraduationCap,
-  Edit,
-  ArrowRight,
-  UserCircle,
-  CreditCard,
-  Heart,
-  ShieldHalf,
-} from "lucide-react";
+import { User, Mail, Phone, Pin, Calendar, Folder, Building, DollarSign, Clock, File, Award, AlertTriangle, Book, Edit, ArrowRight, CreditCard, Heart, ShieldHalf } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

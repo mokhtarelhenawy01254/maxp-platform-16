@@ -1,5 +1,6 @@
-import { useTranslation } from "react-i18next";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+;
 import type {
   PreparationOrder,
   ShortageFollowUpVisual,

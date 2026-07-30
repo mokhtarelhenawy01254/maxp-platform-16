@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X, Bell, User, Search, Settings } from "lucide-react";
+import { Menu, X, Bell, User, Search, Settings } from 'lucide-react';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;

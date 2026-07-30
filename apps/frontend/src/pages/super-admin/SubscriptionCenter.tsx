@@ -35,9 +35,7 @@ import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeC
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 import AppPricingSheet from "../subscription/AppPricingSheet";
-import {
-  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard,
-} from "lucide-react";
+import { Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building, Store, CreditCard } from 'lucide-react';
 
 type SubscriptionCenterProps = {
   initialTab?: number;

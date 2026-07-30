@@ -1,5 +1,6 @@
+import { X as XMarkIcon, ExternalLink as ArrowTopRightOnSquareIcon, Monitor as ComputerDesktopIcon, Phone as DevicePhoneMobileIcon, Circle as DeviceTabletIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { XMarkIcon, ArrowTopRightOnSquareIcon, ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon } from "@heroicons/react/24/outline";
+;
 
 export interface StorefrontPreviewModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { TrendingUp, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
+import { TrendingUp, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 

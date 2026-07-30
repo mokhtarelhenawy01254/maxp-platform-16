@@ -1,34 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { useTranslation } from "react-i18next";
-import {
-  AlertTriangle,
-  Archive,
-  ArchiveRestore,
-  Ban,
-  Camera,
-  Check,
-  CheckCheck,
-  Filter,
-  Loader2,
-  Megaphone,
-  MessageSquarePlus,
-  MoreVertical,
-  Pin,
-  RefreshCw,
-  Search,
-  Shield,
-  Store,
-  Tags,
-  Trash2,
-  User,
-  Users,
-  VolumeX,
-  Wifi,
-  WifiOff,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Box, ArchiveRestore, Ban, Camera, Check, CheckCheck, Filter, Loader2, Volume2, MessageSquarePlus, MoreVertical, Pin, RefreshCw, Search, Shield, Store, Tags, Trash2, User, Users, VolumeX, Wifi, WifiOff, X } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

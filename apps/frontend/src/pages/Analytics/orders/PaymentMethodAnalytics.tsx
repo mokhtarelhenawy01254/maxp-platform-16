@@ -1,13 +1,7 @@
+import { CreditCard as CreditCardIcon, DollarSign as BanknotesIcon, X as XCircleIcon, Info as InformationCircleIcon, Truck as TruckIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  CreditCardIcon,
-  BanknotesIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  TruckIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   PieChart,
   Pie,

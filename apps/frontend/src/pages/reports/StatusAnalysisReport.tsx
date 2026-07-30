@@ -7,18 +7,7 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
-import {
-  RefreshCw,
-  AlertTriangle,
-  Download,
-  Calendar,
-  Filter,
-  Activity,
-  ShoppingBag,
-  DollarSign,
-  TrendingUp,
-  Package,
-} from "lucide-react";
+import { RefreshCw, AlertTriangle, Download, Calendar, Filter, Activity, ShoppingBag, DollarSign, TrendingUp, Package } from 'lucide-react';
 import analyticsService from "../../services/analyticsService";
 import {
   Chart as ChartJS,

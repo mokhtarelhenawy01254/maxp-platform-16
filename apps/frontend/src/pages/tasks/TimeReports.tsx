@@ -1,17 +1,9 @@
+import { Clock as ClockIcon, ArrowLeft as ArrowLeftIcon, Activity as ChartBarIcon, Circle as UserGroupIcon, Folder as FolderIcon, Calendar as CalendarIcon, Download as ArrowDownTrayIcon, Filter as FunnelIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-import {
-  ClockIcon,
-  ArrowLeftIcon,
-  ChartBarIcon,
-  UserGroupIcon,
-  FolderIcon,
-  CalendarIcon,
-  ArrowDownTrayIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface TimeEntry {
   id: string;

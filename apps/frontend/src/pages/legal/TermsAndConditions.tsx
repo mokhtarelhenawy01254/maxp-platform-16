@@ -1,9 +1,6 @@
+import { Clipboard as ClipboardDocumentCheckIcon, Pencil as PencilIcon, Eye as EyeIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  ClipboardDocumentCheckIcon,
-  PencilIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import DOMPurify from "dompurify";

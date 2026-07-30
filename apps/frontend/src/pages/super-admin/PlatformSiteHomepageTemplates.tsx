@@ -1,14 +1,6 @@
+import { RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Zap as BoltIcon, Check as CheckCircleIcon, Eye as EyeIcon, Link as LinkIcon, Circle as MegaphoneIcon, Star as SparklesIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
-  BoltIcon,
-  CheckCircleIcon,
-  EyeIcon,
-  LinkIcon,
-  MegaphoneIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS,

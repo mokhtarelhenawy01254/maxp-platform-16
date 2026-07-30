@@ -1,7 +1,8 @@
+import { Check as CheckCircleIcon, RefreshCw as ArrowPathIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
-import { CheckCircleIcon, ArrowPathIcon, ClockIcon } from "@heroicons/react/24/outline";
+;
 
 const MIN_HOURS = 1;
 const MAX_HOURS = 720;

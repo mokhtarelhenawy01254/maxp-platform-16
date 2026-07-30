@@ -1,27 +1,11 @@
+import { useTranslation } from 'react-i18next';
 /**
  * 🏠 My Dashboard - Employee Dashboard
  * لوحة التحكم الشخصية للموظف
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Clock,
-  Calendar,
-  DollarSign,
-  FileText,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  Users,
-  Award,
-  Target,
-  CreditCard,
-  Briefcase,
-  AlertTriangle,
-  ChevronRight,
-  Plus,
-  ArrowRight,
-} from "lucide-react";
+import { Clock, Calendar, DollarSign, File, TrendingUp, AlertTriangle, Check, Users, Award, Target, CreditCard, Folder, ChevronRight, Plus, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -29,7 +13,6 @@ import { Progress } from "../../components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
 import { createStorageKey, getWithExpiry, setWithExpiry } from "../../utils/storage";

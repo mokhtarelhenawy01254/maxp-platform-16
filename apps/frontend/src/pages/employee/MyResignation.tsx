@@ -2,20 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import {
-    FileX,
-    ArrowRight,
-    Save,
-    Calendar,
-    History,
-    AlertCircle,
-    Info,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    HelpCircle,
-    Loader2
-} from "lucide-react";
+import { FileX, ArrowRight, Save, Calendar, History, AlertTriangle, Info, Clock, CheckCircle2, X, Loader2 } from 'lucide-react';
 import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Button } from "../../components/ui/button";

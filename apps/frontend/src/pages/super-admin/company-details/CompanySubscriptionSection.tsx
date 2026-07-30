@@ -1,5 +1,7 @@
+import { formatDate } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import type { CompanyReview } from "./companyDetailsTypes";
-import { CalendarDays, XOctagon, RefreshCw } from "lucide-react";
+import { Calendar, XOctagon, RefreshCw } from 'lucide-react';
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";

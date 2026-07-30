@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Building2,
-  Plus,
-  Trash2,
-  Users,
-  MoreVertical,
-  ChevronRight,
-  UserCircle,
-  X,
-  UserPlus,
-  Pencil,
-  Activity,
-} from "lucide-react";
+import { Building, Plus, Trash2, Users, MoreVertical, ChevronRight, User, X, Pencil, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -48,7 +36,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import DepartmentCard from "./components/DepartmentCard";
 import DepartmentSkeleton from "./components/DepartmentSkeleton";
 import HierarchyView from "./components/HierarchyView";
-import { LayoutGrid, Network as HierarchyIcon } from "lucide-react";
+import { Grid, Network as HierarchyIcon } from 'lucide-react';
 
 interface Department {
   id: string;

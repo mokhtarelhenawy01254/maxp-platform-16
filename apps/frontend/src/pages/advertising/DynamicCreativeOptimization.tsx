@@ -7,19 +7,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Sparkles,
-  Image,
-  Video,
-  Type,
-  Link,
-  Plus,
-  Trash2,
-  Loader2,
-  CheckCircle,
-  Zap,
-  BarChart3,
-} from "lucide-react";
+import { Star, Image, Video, Type, Link, Plus, Trash2, Loader2, Check, Zap, BarChart } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 const DynamicCreativeOptimization: React.FC = () => {

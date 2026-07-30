@@ -264,7 +264,7 @@ const normalizeConversionSuitePreset = (value: unknown): keyof typeof CONVERSION
 const buildConversionSuiteSettings = (rawSettings?: unknown): JsonRecord => {
   const defaults = deepMerge(
     {},
-    DEFAULT_CONVERSION_SUITE_SETTINGS as unknown as JsonRecord,
+    DEFAULT_CONVERSION_SUITE_SETTINGS as JsonRecord,
   );
   const raw = isRecord(rawSettings) ? rawSettings : {};
   const rawGeneral = isRecord(raw["general"]) ? raw["general"] : {};
@@ -358,13 +358,13 @@ export const getDefaultMarketplaceAppSettings = (slug: string): JsonRecord => {
     case "conversion-suite":
       return buildConversionSuiteSettings();
     case "ugc-reviews-pro":
-      return deepMerge({}, DEFAULT_UGC_REVIEWS_PRO_SETTINGS as unknown as JsonRecord);
+      return deepMerge({}, DEFAULT_UGC_REVIEWS_PRO_SETTINGS as JsonRecord);
     case "commerce-advanced":
-      return deepMerge({}, DEFAULT_COMMERCE_ADVANCED_SETTINGS as unknown as JsonRecord);
+      return deepMerge({}, DEFAULT_COMMERCE_ADVANCED_SETTINGS as JsonRecord);
     case "quantity-offers-pro":
-      return deepMerge({}, DEFAULT_QUANTITY_OFFERS_PRO_SETTINGS as unknown as JsonRecord);
+      return deepMerge({}, DEFAULT_QUANTITY_OFFERS_PRO_SETTINGS as JsonRecord);
     case "wholesale-pro":
-      return deepMerge({}, DEFAULT_WHOLESALE_PRO_SETTINGS as unknown as JsonRecord);
+      return deepMerge({}, DEFAULT_WHOLESALE_PRO_SETTINGS as JsonRecord);
     default:
       return {};
   }

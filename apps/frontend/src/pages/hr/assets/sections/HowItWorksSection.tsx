@@ -1,11 +1,6 @@
+import { Circle as UserPlusIcon, Circle as UserMinusIcon, Circle as ClipboardDocumentListIcon, X as XCircleIcon, Check as CheckCircleIcon } from 'lucide-react';
 import React from "react";
-import {
-  UserPlusIcon,
-  UserMinusIcon,
-  ClipboardDocumentListIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const HowItWorksSection: React.FC = () => {
   const examples = [

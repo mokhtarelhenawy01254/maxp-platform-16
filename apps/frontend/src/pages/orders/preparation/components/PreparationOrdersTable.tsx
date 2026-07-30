@@ -1,7 +1,9 @@
+import { ChevronDown as ChevronDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '@/utils/formatters';
 import { Fragment, memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+;
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   SHORTAGE_HOLD_STATUS,

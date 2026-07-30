@@ -1,3 +1,5 @@
+import { Download as ArrowDownTrayIcon, Calendar as CalendarIcon, Activity as ChartBarIcon, Pencil as PencilIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -5,12 +7,7 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import {
-  ArrowDownTrayIcon,
-  CalendarIcon,
-  ChartBarIcon,
-  PencilIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface ShippingReportData {
   orderId: string;

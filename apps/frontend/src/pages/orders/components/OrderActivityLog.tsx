@@ -1,14 +1,7 @@
+import { Check as CheckCircleIcon, MessageSquare as ChatBubbleLeftIcon, Calendar as CalendarIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Check as CheckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  CheckCircleIcon,
-  ChatBubbleLeftIcon,
-  CalendarIcon,
-  PencilIcon,
-  TrashIcon,
-  XMarkIcon,
-  CheckIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderDetailsType } from "../types";
 

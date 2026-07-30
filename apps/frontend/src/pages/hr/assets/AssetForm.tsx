@@ -1,6 +1,7 @@
+import { X as XMarkIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+;
 import { companyAwareApi } from "../../../services/companyAwareApi";
 
 interface AssetFormProps {

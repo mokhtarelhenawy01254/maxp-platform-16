@@ -1,4 +1,4 @@
-import { Activity, Clock } from "lucide-react";
+import { Activity, Clock } from 'lucide-react';
 import type { ActivityEntry } from "./companyDetailsTypes";
 import { formatDateTime } from "./helpers";
 import { Badge } from "../../../components/ui/badge";

@@ -1,7 +1,8 @@
-import { useTranslation } from "react-i18next";
+import { Truck as TruckIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Eye as EyeIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TruckIcon, PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+;
 // import { useAuth } from '../../hooks/useAuthSimple';
 import { envConfig } from '../../config/environment';
 import tokenManager from '../../utils/tokenManager';

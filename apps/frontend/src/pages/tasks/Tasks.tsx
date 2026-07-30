@@ -1,3 +1,5 @@
+import { Check as CheckIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -6,11 +8,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { tokenManager } from "../../utils/tokenManager";
-import {
-  CheckIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { TaskFilters } from "./components/TaskFilters";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import { TaskTable } from "./components/TaskTable";

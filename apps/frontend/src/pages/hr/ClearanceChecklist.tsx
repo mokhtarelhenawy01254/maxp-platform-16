@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  CheckSquare,
-  ArrowRight,
-  Save,
-  Circle,
-  CheckCircle2,
-} from "lucide-react";
+import { CheckSquare, ArrowRight, Save, Circle, CheckCircle2 } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../services/api";
 

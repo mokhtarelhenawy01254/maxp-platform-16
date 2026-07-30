@@ -1,15 +1,9 @@
+import { Check as CheckCircleIcon, Plus as PlusIcon, X as XMarkIcon, Trash2 as TrashIcon, Pencil as PencilIcon, AlignLeft as Bars3Icon, Circle as CheckCircleSolidIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import {
-  CheckCircleIcon,
-  PlusIcon,
-  XMarkIcon,
-  TrashIcon,
-  PencilIcon,
-  Bars3Icon,
-} from "@heroicons/react/24/outline";
-import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
+;
+;
 
 interface ChecklistItem {
   id: string;

@@ -1,17 +1,9 @@
+import { Bell as BellIcon, Clock as ClockIcon, Check as CheckCircleIcon, X as XMarkIcon, Plus as PlusIcon, Calendar as CalendarIcon, User as UserIcon, AlertTriangle as ExclamationTriangleIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect } from "react";
 import { useDateFormat } from "../hooks/useDateFormat";
 import api from "../services/api";
-import {
-  BellIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  PlusIcon,
-  CalendarIcon,
-  UserIcon,
-  ExclamationTriangleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface Reminder {
   id: string;

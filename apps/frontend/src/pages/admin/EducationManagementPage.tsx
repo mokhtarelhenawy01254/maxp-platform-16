@@ -1,13 +1,9 @@
+import { Circle as AcademicCapIcon, Circle as BookOpenIcon, Circle as GiftIcon, Circle as UserGroupIcon, Users as UsersIcon, Clock as ClockIcon, Circle as ChartBarSquareIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, X as XMarkIcon, Check as CheckIcon, Search as MagnifyingGlassIcon, Phone as PhoneIcon, Eye as EyeIcon } from 'lucide-react';
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import {
-  AcademicCapIcon, BookOpenIcon, GiftIcon, UserGroupIcon,
-  UsersIcon, ClockIcon, ChartBarSquareIcon, PlusIcon,
-  PencilIcon, TrashIcon, XMarkIcon, CheckIcon,
-  MagnifyingGlassIcon, PhoneIcon, EyeIcon
-} from "@heroicons/react/24/outline";
+;
 
 const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }

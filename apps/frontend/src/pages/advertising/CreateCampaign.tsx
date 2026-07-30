@@ -1,3 +1,4 @@
+import { ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Check as CheckCircleIcon, Info as InformationCircleIcon } from 'lucide-react';
 /**
  * Create Campaign Page
  *
@@ -6,12 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChevronRightIcon,
-  ChevronLeftIcon,
-  CheckCircleIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";

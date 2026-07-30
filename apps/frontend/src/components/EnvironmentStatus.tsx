@@ -1,10 +1,7 @@
+import { Check as CheckCircleIcon, X as XCircleIcon, Clock as ClockIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { testApiConnection, environmentInfo } from "../utils/environmentTest";
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface EnvironmentStatus {
   apiConnection: "loading" | "success" | "error";

@@ -1,33 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Bell,
-  Briefcase,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Edit,
-  Eye,
-  FileText,
-  Gift,
-  Megaphone,
-  Package,
-  Plus,
-  RefreshCw,
-  Save,
-  Search,
-  Send,
-  Settings,
-  ShoppingCart,
-  Smartphone,
-  TestTube,
-  TrendingUp,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, Bell, Folder, Check, Clock, DollarSign, Edit, Eye, File, Gift, Volume2, Package, Plus, RefreshCw, Save, Search, Navigation, Settings, ShoppingBag, Phone, TestTube, TrendingUp, Users, X } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

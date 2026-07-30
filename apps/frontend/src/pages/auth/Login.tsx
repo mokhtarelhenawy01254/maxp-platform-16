@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { AuthSurface, AuthNotice } from "../../components/auth/AuthSurface";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 

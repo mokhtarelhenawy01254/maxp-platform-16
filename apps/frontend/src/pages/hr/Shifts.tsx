@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Clock, Plus, Users, Edit, Trash2, Search,
-  TrendingUp, LayoutGrid, Table as TableIcon,
-  Copy, MoreVertical, CheckSquare, X, AlertCircle
-} from 'lucide-react';
+import { Clock, Plus, Users, Edit, Trash2, Search, TrendingUp, Grid, Table as TableIcon, Clipboard, MoreVertical, CheckSquare, X, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';

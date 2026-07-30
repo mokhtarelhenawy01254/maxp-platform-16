@@ -1,14 +1,7 @@
+import { RefreshCw as ArrowPathIcon, Clipboard as ClipboardDocumentIcon, Key as KeyIcon, Link as LinkIcon, Plus as PlusIcon, ShieldCheck as ShieldCheckIcon, Trash2 as TrashIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowPathIcon,
-  ClipboardDocumentIcon,
-  KeyIcon,
-  LinkIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";

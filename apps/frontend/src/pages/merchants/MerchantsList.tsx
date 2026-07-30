@@ -1,16 +1,9 @@
+import { Plus as PlusIcon, Pencil as PencilIcon, ShoppingBag as ShoppingBagIcon, Eye as EyeIcon, DollarSign as BanknotesIcon, Check as CheckCircleIcon, X as XCircleIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  PlusIcon,
-  PencilIcon,
-  ShoppingBagIcon,
-  EyeIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 
 interface Merchant {

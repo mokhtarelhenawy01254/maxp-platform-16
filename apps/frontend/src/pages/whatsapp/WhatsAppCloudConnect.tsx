@@ -1,16 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Facebook,
-  Globe,
-  Loader2,
-  LogIn,
-  Smartphone,
-  ShieldCheck,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Facebook, Globe, Loader2, LogIn, Phone, ShieldCheck } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

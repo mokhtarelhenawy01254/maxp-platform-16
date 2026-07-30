@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import {
   ReturnRequest,
@@ -6,16 +6,7 @@ import {
   ContactAttempt,
   ActivityLog,
 } from "../../services/returnService";
-import {
-  X,
-  Phone,
-  MessageCircle,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Shield,
-  Calendar,
-} from "lucide-react";
+import { X, Phone, MessageCircle, Clock, Check, Shield, Calendar } from 'lucide-react';
 import { toast } from "sonner";
 
 interface ReturnDetailsModalProps {

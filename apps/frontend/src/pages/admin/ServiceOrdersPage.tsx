@@ -1,6 +1,7 @@
+import { Eye as EyeIcon, X as XMarkIcon } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { EyeIcon, XMarkIcon } from "@heroicons/react/24/outline";
+;
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: "جديد", color: "bg-blue-100 text-blue-700" },

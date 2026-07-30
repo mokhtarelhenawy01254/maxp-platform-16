@@ -1,25 +1,11 @@
+import { ArrowRight as ArrowRightIcon, Circle as FlagIcon, Check as CheckCircleIcon, Clock as ClockIcon, AlertTriangle as ExclamationTriangleIcon, Plus as PlusIcon, Pencil as PencilIcon, Trash2 as TrashIcon, Link as LinkIcon, X as XMarkIcon, Circle as CalendarDaysIcon, User as UserIcon, MessageSquare as ChatBubbleLeftIcon, Activity as ChartBarIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
-import {
-  ArrowRightIcon,
-  FlagIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  LinkIcon,
-  XMarkIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  ChatBubbleLeftIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+;
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);

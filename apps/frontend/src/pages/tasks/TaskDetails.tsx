@@ -1,22 +1,7 @@
+import { ArrowLeft as ArrowLeftIcon, Calendar as CalendarIcon, Check as CheckIcon, Clock as ClockIcon, Eye as EyeIcon, Folder as FolderIcon, Circle as DependencyIcon, List as ListBulletIcon, Circle as PaperClipIcon, Pencil as PencilIcon, Circle as PlayIcon, Plus as PlusIcon, Circle as StopIcon, Trash2 as TrashIcon, Circle as UserCircleIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CalendarIcon,
-  CheckIcon,
-  ClockIcon,
-  EyeIcon,
-  FolderIcon,
-  LinkIcon as DependencyIcon,
-  ListBulletIcon,
-  PaperClipIcon,
-  PencilIcon,
-  PlayIcon,
-  PlusIcon,
-  StopIcon,
-  TrashIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 
 import {
   BusinessPageShell,

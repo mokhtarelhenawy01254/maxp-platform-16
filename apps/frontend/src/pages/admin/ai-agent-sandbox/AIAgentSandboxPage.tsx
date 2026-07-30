@@ -1,10 +1,5 @@
 import React, { useMemo, useState } from "react";
-import {
-  X,
-  AlertTriangle,
-  CheckCircle2,
-  Sparkles
-} from "lucide-react";
+import { X, AlertTriangle, CheckCircle2, Star } from 'lucide-react';
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { sandboxApi } from "./services/sandboxApi";
 import { SessionList } from "./components/SessionList";

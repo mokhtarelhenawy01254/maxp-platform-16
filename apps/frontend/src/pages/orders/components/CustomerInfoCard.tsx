@@ -1,14 +1,7 @@
+import { User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, AlertTriangle as ExclamationCircleIcon, RefreshCw as ArrowPathIcon, Ban as NoSymbolIcon, Check as CheckCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  UserIcon,
-  PhoneIcon,
-  MapPinIcon,
-  ExclamationCircleIcon,
-  ArrowPathIcon,
-  NoSymbolIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { OrderDetailsType, Government, Area } from "../types";
 import { validateEgyptianPhone } from "../../../utils/validation";
 import { useAuth } from "../../../hooks/useAuthSimple";

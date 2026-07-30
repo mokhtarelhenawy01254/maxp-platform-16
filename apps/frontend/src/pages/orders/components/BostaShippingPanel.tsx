@@ -1,6 +1,7 @@
+import { Truck as TruckIcon, Circle as DocumentArrowDownIcon, X as XMarkIcon, Plus as PlusIcon, RefreshCw as ArrowPathIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { TruckIcon, DocumentArrowDownIcon, XMarkIcon, PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+;
 
 interface BostaShippingPanelProps {
   order: any;

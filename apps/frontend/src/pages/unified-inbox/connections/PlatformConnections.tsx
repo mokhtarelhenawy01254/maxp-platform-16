@@ -1,18 +1,14 @@
+import { Check as CheckCircleIcon, X as XCircleIcon, RefreshCw as ArrowPathIcon, X as XMarkIcon, Trash2 as TrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { socketService } from "../../../services/socketService";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { envConfig } from "../../../config/environment";
 import tokenManager from "../../../utils/tokenManager";
 import { QRCodeSVG } from "qrcode.react";
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowPathIcon,
-  XMarkIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+;
 
 type PlatformId = "facebook" | "instagram" | "whatsapp" | "telegram" | "telegramUserbot";
 

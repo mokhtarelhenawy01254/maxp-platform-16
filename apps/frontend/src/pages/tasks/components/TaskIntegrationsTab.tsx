@@ -1,22 +1,9 @@
+import { RefreshCw as ArrowPathIcon, ExternalLink as ArrowTopRightOnSquareIcon, Check as CheckCircleIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Clock as ClockIcon, Circle as DocumentDuplicateIcon, AlertTriangle as ExclamationTriangleIcon, EyeOff as EyeSlashIcon, Key as KeyIcon, Link as LinkIcon, Plus as PlusIcon, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { buildApiUrl, buildAppUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
-import {
-  ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ClockIcon,
-  DocumentDuplicateIcon,
-  ExclamationTriangleIcon,
-  EyeSlashIcon,
-  KeyIcon,
-  LinkIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../../hooks/useAuthSimple";
 
 type CompanyUser = {

@@ -1,24 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Gift,
-  Plus,
-  Users,
-  DollarSign,
-  CheckCircle,
-  Trash2,
-  HeartPulse,
-  Shield,
-  PiggyBank,
-  Save,
-  Pencil,
-  Search,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Car,
-  Home,
-} from "lucide-react";
+import { Gift, Plus, Users, DollarSign, Check, Trash2, HeartPulse, Shield, PiggyBank, Save, Pencil, Search, Filter, ChevronLeft, ChevronRight, X, Car, Home } from 'lucide-react';
 import {
   Card,
   CardContent,

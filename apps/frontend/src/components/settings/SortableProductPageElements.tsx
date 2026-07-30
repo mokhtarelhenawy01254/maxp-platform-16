@@ -1,5 +1,6 @@
+import { Circle as ArrowsUpDownIcon } from 'lucide-react';
 import React, { useState } from "react";
-import { ArrowsUpDownIcon } from "@heroicons/react/24/outline";
+;
 
 export interface ProductPageElement {
   id: string;

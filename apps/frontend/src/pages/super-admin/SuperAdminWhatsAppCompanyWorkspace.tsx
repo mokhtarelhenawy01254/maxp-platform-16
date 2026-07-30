@@ -1,17 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import {
-  AlertTriangle,
-  BarChart3,
-  Bell,
-  Building2,
-  MessageSquareText,
-  MessageSquare,
-  RefreshCw,
-  Settings2,
-  Smartphone,
-} from "lucide-react";
+import { AlertTriangle, BarChart, Bell, Building, MessageSquareText, MessageSquare, RefreshCw, Settings2, Phone } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

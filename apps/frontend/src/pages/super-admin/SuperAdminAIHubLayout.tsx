@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { Bot, Building2, AlertCircle } from "lucide-react";
+import { Bot, Building, AlertTriangle } from 'lucide-react';
 import { apiClient } from "../../services/apiClient";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 

@@ -1,12 +1,7 @@
+import { Truck as TruckIcon, Circle as DocumentArrowDownIcon, X as XMarkIcon, RefreshCw as ArrowPathIcon, Plus as PlusIcon, Circle as ArrowUturnLeftIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React from "react";
-import {
-  TruckIcon,
-  DocumentArrowDownIcon,
-  XMarkIcon,
-  ArrowPathIcon,
-  PlusIcon,
-  ArrowUturnLeftIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { getTurboStatusDisplay } from "../../../utils/statusRegistry";
 import { useCurrency } from "../../../hooks/useCurrency";

@@ -1,15 +1,7 @@
+import { ArrowLeft as ArrowLeftIcon, DollarSign as BanknotesIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as CubeIcon, Circle as PaperAirplaneIcon, ShoppingBag as ShoppingBagIcon, Truck as TruckIcon, User as UserIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  BanknotesIcon,
-  ChatBubbleLeftRightIcon,
-  CubeIcon,
-  PaperAirplaneIcon,
-  ShoppingBagIcon,
-  TruckIcon,
-  UserIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";

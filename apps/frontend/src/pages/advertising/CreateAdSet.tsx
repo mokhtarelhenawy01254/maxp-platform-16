@@ -1,3 +1,4 @@
+import { ArrowLeft as ArrowLeftIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, X as XMarkIcon, Circle as UserGroupIcon, Pin as MapPinIcon, Heart as HeartIcon, Phone as DevicePhoneMobileIcon, Globe as GlobeAltIcon, Star as SparklesIcon, Activity as ChartBarIcon } from 'lucide-react';
 /**
  * Create AdSet Page - Enhanced with Full Targeting Options
  *
@@ -19,19 +20,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  UserGroupIcon,
-  MapPinIcon,
-  HeartIcon,
-  DevicePhoneMobileIcon,
-  GlobeAltIcon,
-  SparklesIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import {
   facebookAdsService,

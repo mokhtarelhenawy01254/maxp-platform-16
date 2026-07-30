@@ -1,18 +1,8 @@
+import { Activity as ChartBarIcon, ShoppingBag as ShoppingCartIcon, DollarSign as CurrencyDollarIcon, Check as CheckCircleIcon, X as XCircleIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, Clock as ClockIcon, Truck as TruckIcon, Users as UsersIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import {
-  ChartBarIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ClockIcon,
-  TruckIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+;
 import {
   AreaChart,
   Area,

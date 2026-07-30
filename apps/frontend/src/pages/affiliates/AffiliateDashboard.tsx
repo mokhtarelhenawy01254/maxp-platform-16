@@ -1,3 +1,4 @@
+import { Activity as ChartBarIcon, DollarSign as CurrencyDollarIcon, ShoppingBag as ShoppingBagIcon, Circle as UserGroupIcon, Link as LinkIcon, Circle as ClipboardDocumentListIcon, Circle as ArrowTrendingUpIcon, Edit as PencilSquareIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
@@ -12,16 +13,7 @@ import {
   type AffiliateStoreCompany,
 } from "./affiliateStoreLinks";
 import { copyAffiliateText } from "./affiliateClipboard";
-import {
-  ChartBarIcon,
-  CurrencyDollarIcon,
-  ShoppingBagIcon,
-  UserGroupIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
-  ArrowTrendingUpIcon,
-  PencilSquareIcon,
-} from "@heroicons/react/24/outline";
+;
 
 interface AffiliateStats {
   totalEarnings: number;

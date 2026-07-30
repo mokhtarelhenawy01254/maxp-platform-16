@@ -1,20 +1,6 @@
+import { Check as CheckCircleIcon, X as XMarkIcon, Clipboard as ClipboardDocumentIcon, Clock as ClockIcon, User as UserIcon, Phone as PhoneIcon, Pin as MapPinIcon, ShoppingBag as ShoppingBagIcon, Truck as TruckIcon, Grid as QrCodeIcon, Mail as EnvelopeIcon, Printer as PrinterIcon, RefreshCw as ArrowPathIcon, Heart as HeartIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import {
-    CheckCircleIcon,
-    XMarkIcon,
-    ClipboardDocumentIcon,
-    ClockIcon,
-    UserIcon,
-    PhoneIcon,
-    MapPinIcon,
-    ShoppingBagIcon,
-    TruckIcon,
-    QrCodeIcon,
-    EnvelopeIcon,
-    PrinterIcon,
-    ArrowPathIcon,
-    HeartIcon
-} from '@heroicons/react/24/outline';
+;
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 

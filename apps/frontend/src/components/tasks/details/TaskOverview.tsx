@@ -1,13 +1,6 @@
+import { Circle as DocumentDuplicateIcon, Circle as LightBulbIcon, Circle as CheckBadgeIcon, Image as PhotoIcon, Check as CheckCircleIcon, Link as LinkIcon, Plus as PlusIcon } from 'lucide-react';
 import React, { useState, useEffect } from "react";
-import {
-  DocumentDuplicateIcon,
-  LightBulbIcon,
-  CheckBadgeIcon,
-  PhotoIcon,
-  CheckCircleIcon,
-  LinkIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { Task } from "../../../types/tasks";
 import tokenManager from "../../../utils/tokenManager";
 

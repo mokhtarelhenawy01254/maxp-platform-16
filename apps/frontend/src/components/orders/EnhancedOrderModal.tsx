@@ -1,15 +1,8 @@
+import { X as XMarkIcon, MessageSquare as ChatBubbleLeftRightIcon, Star as StarIcon, AlertTriangle as ExclamationTriangleIcon, Info as InformationCircleIcon, Printer as PrinterIcon, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from "react";
-import {
-  XMarkIcon,
-  ChatBubbleLeftRightIcon,
-  StarIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  PrinterIcon,
-  ShoppingBagIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useCurrency } from "../../hooks/useCurrency";
-import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import { Link } from "react-router-dom";

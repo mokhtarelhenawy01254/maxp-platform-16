@@ -1,9 +1,7 @@
+import { Circle as BuildingOffice2Icon, Circle as UserGroupIcon, Circle as WrenchScrewdriverIcon, Circle as CalendarDaysIcon, Circle as ChartBarSquareIcon } from 'lucide-react';
 import { buildApiUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
-import {
-  BuildingOffice2Icon, UserGroupIcon, WrenchScrewdriverIcon,
-  CalendarDaysIcon, ChartBarSquareIcon,
-} from "@heroicons/react/24/outline";
+;
 
 export const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }

@@ -1,23 +1,12 @@
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useEffect, useMemo } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import {
-  ComputerDesktopIcon,
-  ClipboardDocumentListIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  CubeIcon,
-  CalendarIcon,
-  TagIcon,
-  ClockIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Monitor as ComputerDesktopIcon, Circle as ClipboardDocumentListIcon, Search as MagnifyingGlassIcon, Filter as FunnelIcon, Check as CheckCircleIcon, AlertTriangle as ExclamationTriangleIcon, Circle as CubeIcon, Calendar as CalendarIcon, Tag as TagIcon, Clock as ClockIcon, X as XCircleIcon } from 'lucide-react';
 import { motion } from "framer-motion";
 
 const MyCustody: React.FC = () => {

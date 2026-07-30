@@ -1,19 +1,8 @@
+import { Activity as ChartBarIcon, Check as CheckCircleIcon, X as XCircleIcon, RefreshCw as ArrowPathIcon, AlertTriangle as ExclamationTriangleIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as UserGroupIcon, Circle as ArrowTrendingUpIcon, Circle as ArrowTrendingDownIcon, Minus as MinusIcon, Clock as ClockIcon, Circle as CalendarDaysIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuthSimple';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  ChartBarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowPathIcon,
-  ExclamationTriangleIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  MinusIcon,
-  ClockIcon,
-  CalendarDaysIcon,
-} from "@heroicons/react/24/outline";
+;
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 

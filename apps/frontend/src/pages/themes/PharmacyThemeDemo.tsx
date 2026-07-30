@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 import React, { useState } from 'react';
 import { useProducts } from '../../storefront/hooks/useProducts';
 import { useCartStore } from '../../storefront/store/useCartStore';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { Save, ArrowRight, User, Shield, DollarSign } from "lucide-react";
+import { Save, ArrowRight, User, Shield, DollarSign } from 'lucide-react';
 import api from "../../services/api";
 
 import { Button } from "../../components/ui/button";

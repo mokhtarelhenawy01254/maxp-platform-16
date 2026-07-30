@@ -1,19 +1,7 @@
+import { User as UserIcon, Pin as MapPinIcon, DollarSign as BanknotesIcon, Check as CheckCircleIcon, Search as MagnifyingGlassIcon, Truck as TruckIcon, Circle as TicketIcon, X as XMarkIcon, AlertTriangle as ExclamationTriangleIcon, ShoppingBag as ShoppingCartIcon, Printer as PrinterIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  UserIcon,
-  MapPinIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  TruckIcon,
-  TicketIcon,
-  XMarkIcon,
-  ExclamationTriangleIcon,
-  ShoppingCartIcon,
-  PrinterIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
+;
 import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
 import { customerService } from "../../../../services/customerService";
 import { apiClient } from "../../../../services/apiClient";

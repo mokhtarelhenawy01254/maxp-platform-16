@@ -1,11 +1,6 @@
+import { Globe as GlobeAltIcon, Circle as HashtagIcon, Link as LinkIcon, Circle as MegaphoneIcon, Clock as ClockIcon } from 'lucide-react';
 import React from "react";
-import {
-  GlobeAltIcon,
-  HashtagIcon,
-  LinkIcon,
-  MegaphoneIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+;
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderAttributionData, OrderDetailsType } from "../types";
 

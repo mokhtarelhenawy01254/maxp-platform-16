@@ -1,10 +1,9 @@
+import { Image as PhotoIcon, X as XMarkIcon } from 'lucide-react';
+import { formatDate } from '@/utils/formatters';
 import React, { useState, useRef } from "react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
-import {
-  PhotoIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+;
 import { toast } from "sonner";
 import { getImageUrl } from "../../utils/imageUrl";
 

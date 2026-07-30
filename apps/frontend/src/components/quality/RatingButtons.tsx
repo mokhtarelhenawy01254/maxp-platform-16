@@ -1,12 +1,8 @@
+import { ThumbsUp as HandThumbUpIcon, ThumbsDown as HandThumbDownIcon, Circle as HandThumbUpSolidIcon, Circle as HandThumbDownSolidIcon } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import React, { useState } from "react";
-import {
-  HandThumbUpIcon,
-  HandThumbDownIcon,
-} from "@heroicons/react/24/outline";
-import {
-  HandThumbUpIcon as HandThumbUpSolidIcon,
-  HandThumbDownIcon as HandThumbDownSolidIcon,
-} from "@heroicons/react/24/solid";
+;
+;
 import { getApiUrl } from "../../config/environment"; // Import environment config
 
 interface RatingButtonsProps {

@@ -1,5 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 
 interface StatusBadgeProps {

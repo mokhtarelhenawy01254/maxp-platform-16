@@ -1,9 +1,7 @@
+import { Circle as ClipboardDocumentListIcon, Plus as PlusIcon } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ClipboardDocumentListIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+;
 import { Task } from "../../../types/tasks";
 import { TASK_STATUSES } from "../../../constants/taskConstants";
 

@@ -7,19 +7,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Eye,
-  Smartphone,
-  Monitor,
-  RefreshCw,
-  Loader2,
-  ArrowLeft,
-  Facebook,
-  Instagram,
-  MessageCircle,
-  Layout,
-  Image,
-} from "lucide-react";
+import { Eye, Phone, Monitor, RefreshCw, Loader2, ArrowLeft, Facebook, Instagram, MessageCircle, Layout, Image } from 'lucide-react';
 import { facebookAdsService } from "../../services/facebookAdsService";
 
 type PreviewFormat =

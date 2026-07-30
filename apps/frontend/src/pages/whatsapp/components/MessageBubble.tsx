@@ -1,18 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
-import {
-  AlertTriangle,
-  Bot,
-  Check,
-  CheckCheck,
-  Clock3,
-  Download,
-  FileText,
-  MapPin,
-  Pencil,
-  Radio,
-} from "lucide-react";
+import { AlertTriangle, Bot, Check, CheckCheck, Clock3, Download, File, Pin, Pencil, Radio } from 'lucide-react';
 import { toast } from "sonner";
 import api from "../../../services/api";
 

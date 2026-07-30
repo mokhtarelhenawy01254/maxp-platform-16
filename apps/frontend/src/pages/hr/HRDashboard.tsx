@@ -1,19 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  Users,
-  Building2,
-  Clock,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  UserCheck,
-  UserX,
-  AlertCircle,
-  ChevronRight,
-  BarChart3,
-  PieChart,
-} from "lucide-react";
+import { Users, Building, Clock, Calendar, DollarSign, TrendingUp, UserCheck, UserX, AlertTriangle, ChevronRight, BarChart, PieChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

@@ -1,6 +1,7 @@
+import { toast } from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { MessageCircle, X, Plus, ArrowLeft, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Plus, ArrowLeft, Navigation, Loader2 } from 'lucide-react';
 import LinkifiedText from "../common/LinkifiedText";
 import { apiClient } from "../../services/apiClient";
 import supportService, { Ticket } from "../../services/supportService";

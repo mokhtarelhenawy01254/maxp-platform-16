@@ -1,26 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import {
-    Wallet,
-    Plus,
-    History,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    AlertCircle,
-    Info,
-    Loader2,
-    Banknote,
-    Calendar,
-    ArrowRight,
-    TrendingDown,
-    User,
-    ShieldCheck,
-    X,
-    CreditCard,
-    BarChart3,
-} from "lucide-react";
+import { CreditCard, Plus, History, Clock, CheckCircle2, X, AlertTriangle, Info, Loader2, DollarSign, Calendar, ArrowRight, TrendingDown, User, ShieldCheck, BarChart } from 'lucide-react';
 import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Button } from "../../components/ui/button";

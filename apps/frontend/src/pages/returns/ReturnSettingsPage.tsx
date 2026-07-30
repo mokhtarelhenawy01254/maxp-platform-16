@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import {
   returnService,
@@ -8,24 +8,7 @@ import {
   ReturnSettingsData,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  FolderPlus,
-  Tag,
-  Shield,
-  CheckCircle,
-  XCircle,
-  Sparkles,
-  Eye,
-  EyeOff,
-  Save,
-  Settings2,
-  Filter,
-  Package,
-  Calendar,
-} from "lucide-react";
+import { Plus, Edit2, Trash2, Folder, Tag, Shield, Check, X, Star, Eye, EyeOff, Save, Settings2, Filter, Package, Calendar } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 
 const getOrderStatusFields = (t: any): {

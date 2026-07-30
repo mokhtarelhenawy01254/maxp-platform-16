@@ -1,9 +1,10 @@
+import { ArrowLeft as ArrowLeftIcon, Pencil as PencilIcon } from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { toast } from "sonner";
-import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
+;
 
 interface MerchantProduct {
   id: string;

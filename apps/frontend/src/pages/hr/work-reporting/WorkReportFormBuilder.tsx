@@ -1,17 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  CopyPlus,
-  Eye,
-  GripVertical,
-  Plus,
-  Save,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, CopyPlus, Eye, GripVertical, Plus, Save, Star, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import {

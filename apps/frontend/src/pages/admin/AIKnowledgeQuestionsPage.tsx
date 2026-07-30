@@ -1,20 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  HelpCircle,
-  MessageSquare,
-  Send,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  RefreshCw,
-  Facebook,
-  MessageCircle,
-} from "lucide-react";
+import { Info, MessageSquare, Navigation, CheckCircle2, Clock, Loader2, RefreshCw, Facebook, MessageCircle } from 'lucide-react';
 import aiKnowledgeQuestionService, {
   KnowledgeQuestion,
 } from "../../services/aiKnowledgeQuestionService";

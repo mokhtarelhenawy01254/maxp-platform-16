@@ -1,24 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-    MegaphoneIcon,
-    PaperAirplaneIcon,
-    PhotoIcon,
-    UserGroupIcon,
-    ShoppingBagIcon,
-    ArrowPathIcon,
-    CheckCircleIcon as CheckCircleOutline,
-    ExclamationCircleIcon,
-    BoltIcon,
-    ClockIcon,
-    ChartBarIcon,
-    XMarkIcon,
-    InformationCircleIcon,
-    SparklesIcon,
-    CalendarDaysIcon,
-} from '@heroicons/react/24/outline';
-import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
-import { apiClient } from '../../services/apiClient';
+import { Circle as MegaphoneIcon, Circle as PaperAirplaneIcon, Image as PhotoIcon, Circle as UserGroupIcon, ShoppingBag as ShoppingBagIcon, RefreshCw as ArrowPathIcon, Circle as CheckCircleOutline, AlertTriangle as ExclamationCircleIcon, Zap as BoltIcon, Clock as ClockIcon, Activity as ChartBarIcon, X as XMarkIcon, Info as InformationCircleIcon, Star as SparklesIcon, Circle as CalendarDaysIcon, Circle as CheckCircleSolid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+;
+;
+import { apiClient } from '../../services/apiClient';
 import { formatCurrency } from '../../utils/currency';
 
 

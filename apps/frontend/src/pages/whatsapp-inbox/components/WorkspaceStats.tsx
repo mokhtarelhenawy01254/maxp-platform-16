@@ -1,5 +1,5 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
+import React from 'react';
 import type { WorkspaceStats as WorkspaceStatsType } from '../types';
 
 interface WorkspaceStatsProps {
