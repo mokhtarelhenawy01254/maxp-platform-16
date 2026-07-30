@@ -1,4 +1,4 @@
-import { AlignLeft as Bars3Icon, X as XMarkIcon, Circle as UserCircleIcon, Circle as ArrowRightOnRectangleIcon, Settings as Cog6ToothIcon, Search as MagnifyingGlassIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as PlayIcon, Circle as PauseIcon, Circle as StopIcon } from 'lucide-react';
+import { AlignLeft as Bars3Icon, X as XMarkIcon, Circle as UserCircleIcon, Circle as ArrowRightOnRectangleIcon, Settings as Cog6ToothIcon, Search as MagnifyingGlassIcon, MessageSquare as ChatBubbleLeftRightIcon, Circle as PlayIcon, Circle as PauseIcon, Circle as StopIcon, Smartphone as DevicePhoneMobileIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,6 +9,8 @@ import OrderNotificationBell from "./notifications/OrderNotificationBell";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import { envConfig } from "../config/environment";
 import { CompanyLogo } from "./ui/CompanyLogo";
+import AppDownloadModal from "./modals/AppDownloadModal";
+import SmartAppBanner from "./common/SmartAppBanner";
 ;
 
 import { useTimer } from "../contexts/TimerContext";
@@ -172,6 +174,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Parse company settings if they are a string, otherwise use directly
@@ -274,6 +277,16 @@ const Header: React.FC = () => {
 
             {/* Language Switcher */}
             <LanguageSwitcher />
+
+            {/* Mobile App Download Button */}
+            <button
+              onClick={() => setIsAppModalOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all duration-200 shadow-xs"
+              title="تحميل تطبيق الموبايل"
+            >
+              <DevicePhoneMobileIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span>تطبيق الموبايل</span>
+            </button>
 
             {/* New Orders Bell */}
             <OrderNotificationBell />
@@ -425,6 +438,16 @@ const Header: React.FC = () => {
                   {t("header.settings")}
                 </Link>
 
+                <a
+                  href="/downloads/maxp-app.apk"
+                  download="maxp-app.apk"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm"
+                >
+                  <DevicePhoneMobileIcon className="h-4 w-4" />
+                  <span>تحميل تطبيق الموبايل (APK)</span>
+                </a>
+
                 <button
                   onClick={handleLogout}
                   className="block w-full text-right px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -447,6 +470,13 @@ const Header: React.FC = () => {
           }}
         />
       )}
+
+      {/* App Download Modal & Smart Mobile Banner */}
+      <AppDownloadModal
+        isOpen={isAppModalOpen}
+        onClose={() => setIsAppModalOpen(false)}
+      />
+      <SmartAppBanner onOpenModal={() => setIsAppModalOpen(true)} />
     </header>
   );
 };
