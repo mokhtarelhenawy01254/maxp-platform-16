@@ -68,6 +68,8 @@ async function main() {
   for (const uc of customRoleMemberships) {
     const sourceKey = uc.roleRef?.key;
     const targetKey = LEGACY_ROLE_MAP[sourceKey];
+    // Identity mapping (e.g. an existing "AGENT" role) — nothing to change.
+    if (!sourceKey || sourceKey === targetKey) continue;
     const targetRoleId = roleIdByKey.get(targetKey);
     if (!targetRoleId) {
       console.log(`  ⏭️  target built-in role "${targetKey}" missing — skipping userCompany ${uc.id}`);
@@ -94,6 +96,7 @@ async function main() {
   console.log(`\n👤 ${legacyUsers.length} user(s) carry a legacy name in User.role`);
   for (const u of legacyUsers) {
     const targetKey = LEGACY_ROLE_MAP[u.role];
+    if (u.role === targetKey) continue; // identity mapping — no-op
     console.log(`  • user=${u.id} ${u.email} role="${u.role}" -> "${targetKey}"`);
     if (apply) {
       await prisma.user.update({
