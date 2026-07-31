@@ -163,7 +163,7 @@ const copyByLanguage = {
       fullName: "الاسم بالكامل",
       companyName: "اسم الشركة",
       email: "البريد الإلكتروني",
-      phone: "رقم الهاتف (اختياري)",
+      phone: "رقم الهاتف",
       password: "كلمة المرور",
       businessType: "نوع النشاط التجاري",
     },
@@ -179,6 +179,7 @@ const copyByLanguage = {
       companyName: "اسم الشركة مطلوب",
       email: "البريد الإلكتروني مطلوب",
       password: "كلمة المرور مطلوبة",
+      phoneRequired: "رقم الهاتف مطلوب",
       phone: "رقم الهاتف غير صحيح (01xxxxxxxxx)",
       register: "فشل في إنشاء الحساب",
     },
@@ -195,7 +196,7 @@ const copyByLanguage = {
       fullName: "Full name",
       companyName: "Company name",
       email: "Email",
-      phone: "Phone (optional)",
+      phone: "Phone",
       password: "Password",
       businessType: "Business type",
     },
@@ -211,6 +212,7 @@ const copyByLanguage = {
       companyName: "Company name is required",
       email: "Email is required",
       password: "Password is required",
+      phoneRequired: "Phone number is required",
       phone: "Invalid Egyptian phone number (01xxxxxxxxx)",
       register: "Failed to create account",
     },
@@ -284,7 +286,9 @@ const Register: React.FC = () => {
     if (!formData.companyName.trim()) errors.companyName = copy.errors.companyName;
     if (!formData.email.trim()) errors.email = copy.errors.email;
     if (!formData.password) errors.password = copy.errors.password;
-    if (formData.phone) {
+    if (!formData.phone.trim()) {
+      errors.phone = copy.errors.phoneRequired;
+    } else {
       const phoneClean = formData.phone.replace(/\s+/g, "");
       const egyptPhoneRegex = /^(\+20|0020|0)?1[0125][0-9]{8}$/;
       if (!egyptPhoneRegex.test(phoneClean)) errors.phone = copy.errors.phone;
@@ -446,7 +450,7 @@ const Register: React.FC = () => {
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.phone}</label>
           <div className="elite-input-wrapper">
-            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} className={`elite-input ${fieldErrors.phone ? "elite-input-error" : ""}`} placeholder={copy.placeholders.phone} disabled={isLoading} />
+            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={`elite-input ${fieldErrors.phone ? "elite-input-error" : ""}`} placeholder={copy.placeholders.phone} disabled={isLoading} />
             <Phone className="elite-input-icon" />
           </div>
           {fieldErrors.phone && <p className="elite-field-error">{fieldErrors.phone}</p>}

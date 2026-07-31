@@ -65,9 +65,12 @@ describe("Register", () => {
     fireEvent.change(container.querySelector('input[name="password"]')!, {
       target: { value: "StrongPass#123" },
     });
+    fireEvent.change(container.querySelector('input[name="phone"]')!, {
+      target: { value: "01012345678" },
+    });
 
     fireEvent.click(
-      screen.getByRole("button", { name: /ابدأ تجربتك المجانية/ }),
+      screen.getByRole("button", { name: /إنشاء حساب/ }),
     );
 
     await waitFor(() => {

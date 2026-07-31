@@ -122,7 +122,7 @@ const register = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const platformSignupCouponService = require('../services/platformSignupCouponService');
 
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName || !phone) {
       return res.status(400).json({
         success: false,
         message: 'جميع الحقول مطلوبة'
