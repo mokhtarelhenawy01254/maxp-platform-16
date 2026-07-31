@@ -894,13 +894,20 @@ async function publishTemplateToMeta(req, res) {
       message: 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
     });
   } catch (error) {
-    console.error('❌ Error publishing template to Meta:', error?.response?.data || error.message);
+    console.error('❌ Error publishing template to Meta:', JSON.stringify(error?.response?.data, null, 2) || error.message);
     const metaError = error?.response?.data?.error;
-    res.status(500).json({
-      error: metaError
-        ? `${metaError.message || 'Meta API error'}${metaError.error_user_msg ? ': ' + metaError.error_user_msg : ''}`
-        : error.message
-    });
+    if (metaError) {
+      const details = [
+        metaError.message,
+        metaError.error_user_title,
+        metaError.error_user_msg,
+        metaError.code ? `(code: ${metaError.code})` : '',
+        metaError.error_subcode ? `(subcode: ${metaError.error_subcode})` : '',
+        metaError.fbtrace_id ? `(fbtrace: ${metaError.fbtrace_id})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details });
+    }
+    res.status(500).json({ error: error.message });
   }
 }
 
