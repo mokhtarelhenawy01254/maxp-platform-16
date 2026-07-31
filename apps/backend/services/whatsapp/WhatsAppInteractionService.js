@@ -67,6 +67,14 @@ const WhatsAppInteractionService = {
             });
         }
 
+        // 0. معالجة تغيير حالة مخصصة: set_status_{STATUS_CODE}_{orderId}
+        const setStatusMatch = String(id).match(/^set_status_(.+)_(.+)$/);
+        if (setStatusMatch) {
+            const statusCode = setStatusMatch[1];
+            const orderId = setStatusMatch[2];
+            return await this.updateOrderStatus(orderId, companyId, statusCode, `تم تغيير حالة الطلب إلى ${statusCode} عبر الواتساب ✅`);
+        }
+
         // 1. معالجة تأكيد الطلب
         if (id.startsWith('CONFIRM_ORDER_') || id.startsWith('confirm_order_')) {
             const orderId = id.replace('CONFIRM_ORDER_', '').replace('confirm_order_', '');

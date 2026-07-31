@@ -922,6 +922,29 @@ function replaceVariables(template, variables) {
 }
 
 /**
+ * بناء ID وظيفي لزر تغيير حالة الطلب من إعدادات الزر
+ * @param {object} btn - { id, text, action }
+ * @param {object} variables - متغيرات الإرسال (يجب أن تحتوي orderId)
+ */
+function buildOrderStatusButtonId(btn, variables) {
+  const orderId = variables.orderId || '';
+
+  // التوافق القديم: أزرار تحتوي بالفعل على ID وظيفي جاهز (مثل confirm_order_{orderId})
+  if (btn.id && !btn.action) {
+    return replaceVariables(btn.id, variables);
+  }
+
+  const action = String(btn.action || 'CONFIRMED').toUpperCase();
+
+  if (action === 'CONFIRMED') return `confirm_order_${orderId}`;
+  if (action === 'PROCESSING') return `delay_order_${orderId}`;
+  if (action === 'CANCELLED') return `cancel_order_${orderId}`;
+
+  // حالة مخصصة: set_status_{STATUS_CODE}_{orderId}
+  return `set_status_${action}_${orderId}`;
+}
+
+/**
  * التحقق من ساعات الهدوء
  */
 function isQuietHours(settings) {
@@ -1851,7 +1874,8 @@ async function sendNotification(options) {
     cartId,
     priority = 5,
     scheduleAt = null,
-    buttons = null
+    buttons = null,
+    fallbackEventType = null
   } = options;
 
   const prisma = getSharedPrismaClient();
@@ -2001,6 +2025,19 @@ async function sendNotification(options) {
         orderBy: { isDefault: 'desc' }
       }));
 
+      // محاولة العثور على القالب برمز الحالة مباشرة
+      // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
+      if (!template && fallbackEventType && fallbackEventType !== eventType) {
+        template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: {
+            companyId,
+            eventType: fallbackEventType,
+            isActive: true
+          },
+          orderBy: { isDefault: 'desc' }
+        }));
+      }
+
       // استخدام القالب الافتراضي إذا لم يوجد
       if (!template && DEFAULT_TEMPLATES[eventType]) {
         const defaultTemplate = DEFAULT_TEMPLATES[eventType];
@@ -2134,6 +2171,8 @@ async function sendNotification(options) {
         }
       }
 
+      const isOrderNotification = category === 'ORDER' || category === 'ORDERS' || eventType.startsWith('ORDER_');
+
       let finalButtons = buttons;
 
       if (templateButtons && templateButtons.length > 0) {
@@ -2147,6 +2186,12 @@ async function sendNotification(options) {
               text: tplBtn && tplBtn.text ? replaceVariables(tplBtn.text, variables) : replaceVariables(btn.text, variables)
             };
           });
+        } else if (isOrderNotification) {
+          // أزرار القالب لحالات الطلبات: نبني ID وظيفي من حقل action
+          finalButtons = templateButtons.map(btn => ({
+            id: buildOrderStatusButtonId(btn, variables),
+            text: replaceVariables(btn.text || btn.id, variables)
+          }));
         } else {
           // إذا لم يتم تمرير أزرار من الكود، نستخدم أزرار القالب مباشرة
           finalButtons = templateButtons.map(btn => ({
@@ -2163,7 +2208,7 @@ async function sendNotification(options) {
       }
 
       // 🔥 ضمان وجود أزرار لإشعارات الطلبات إذا لم يتم توفيرها (Default Fallback)
-      if ((!finalButtons || finalButtons.length === 0) && (category === 'ORDER' || category === 'ORDERS' || eventType.startsWith('ORDER_'))) {
+      if ((!finalButtons || finalButtons.length === 0) && isOrderNotification) {
         console.log(`[WHATSAPP-DEBUG] Injecting default buttons for order notification: ${eventType}`);
         finalButtons = [
           { id: replaceVariables("confirm_order_{orderId}", variables), text: "تأكيد الأوردر" },
@@ -2639,6 +2684,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       recipientType: 'CUSTOMER',
       category: 'ORDER',
       eventType: statusConfig.event,
+      fallbackEventType: newStatus,
       variables: {
         customerName: order.customerName || order.customer?.firstName || 'عميلنا العزيز',
         customerPhone: phone,

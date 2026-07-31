@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -40,10 +40,18 @@ interface StatusWithTemplate {
   hasTemplate: boolean;
 }
 
+interface TemplateButton {
+  id: string;
+  text: string;
+  action: string;
+}
+
 interface TemplateFormState {
   name: string;
   content: string;
   isActive: boolean;
+  hasButtons: boolean;
+  buttons: TemplateButton[];
 }
 
 interface SettingsForm {
@@ -61,6 +69,11 @@ const emptyTemplateForm = (): TemplateFormState => ({
   name: "",
   content: "",
   isActive: true,
+  hasButtons: true,
+  buttons: [
+    { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
+    { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
+  ],
 });
 
 const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
@@ -94,6 +107,39 @@ const TABS = [
   { key: "preparation", label: "التجهيز" },
   { key: "shipping", label: "الشحن" },
 ];
+
+const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
+  { value: "CONFIRMED", label: "تأكيد الطلب" },
+  { value: "PROCESSING", label: "تأجيل التسليم" },
+  { value: "CANCELLED", label: "إلغاء الطلب" },
+];
+
+function inferButtonAction(id?: string): string {
+  const nid = String(id || "").toLowerCase();
+  const setMatch = nid.match(/^set_status_(.+)_(.+)$/);
+  if (setMatch) return setMatch[1].toUpperCase();
+  if (nid.includes("confirm")) return "CONFIRMED";
+  if (nid.includes("cancel")) return "CANCELLED";
+  if (nid.includes("delay") || nid.includes("postpone")) return "PROCESSING";
+  return "CONFIRMED";
+}
+
+function parseTemplateButtons(raw?: string): TemplateButton[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((b: any) => ({
+        id: String(b?.id || ""),
+        text: String(b?.text || ""),
+        action: b?.action ? String(b.action).toUpperCase() : inferButtonAction(b?.id),
+      }))
+      .filter((b) => b.id || b.text);
+  } catch {
+    return [];
+  }
+}
 
 export default function OrderStatusTemplatesPage() {
   const { t, i18n } = useTranslation();
@@ -159,6 +205,11 @@ export default function OrderStatusTemplatesPage() {
       name: `قالب ${status.name}`,
       content: DEFAULT_TEMPLATE_CONTENT,
       isActive: true,
+      hasButtons: true,
+      buttons: [
+        { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
+        { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
+      ],
     });
     setDialogOpen(true);
   };
@@ -169,6 +220,8 @@ export default function OrderStatusTemplatesPage() {
       name: status.template?.name || `قالب ${status.name}`,
       content: status.template?.content || DEFAULT_TEMPLATE_CONTENT,
       isActive: status.template?.isActive ?? true,
+      hasButtons: status.template?.hasButtons ?? true,
+      buttons: parseTemplateButtons(status.template?.buttons),
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -180,6 +233,11 @@ export default function OrderStatusTemplatesPage() {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return;
     }
+    const saveButtons = templateForm.hasButtons
+      ? templateForm.buttons
+          .filter((b) => b.text.trim())
+          .map((b) => ({ id: b.id, text: b.text.trim(), action: b.action.toUpperCase() }))
+      : [];
     setSaving(true);
     try {
       const isEdit = !!selectedStatus.template?.id;
@@ -189,6 +247,8 @@ export default function OrderStatusTemplatesPage() {
         name: templateForm.name,
         content: templateForm.content,
         isActive: templateForm.isActive,
+        hasButtons: saveButtons.length > 0,
+        buttons: saveButtons,
       };
       if (isEdit) {
         await apiClient.put(`/whatsapp/notifications/templates/${selectedStatus.template!.id}`, payload);
@@ -268,6 +328,36 @@ export default function OrderStatusTemplatesPage() {
     } finally {
       setSettingsSaving(false);
     }
+  };
+
+  const statusOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of DEFAULT_BUTTON_ACTIONS) map.set(a.value, a.label);
+    for (const s of statuses) {
+      if (s.code && !map.has(s.code)) map.set(s.code, s.name);
+    }
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [statuses]);
+
+  const updateButton = (idx: number, patch: Partial<TemplateButton>) => {
+    setTemplateForm((p) => ({
+      ...p,
+      buttons: p.buttons.map((b, i) => (i === idx ? { ...b, ...patch } : b)),
+    }));
+  };
+
+  const removeButton = (idx: number) => {
+    setTemplateForm((p) => ({ ...p, buttons: p.buttons.filter((_, i) => i !== idx) }));
+  };
+
+  const addButton = () => {
+    setTemplateForm((p) => {
+      if (p.buttons.length >= 3) return p;
+      return {
+        ...p,
+        buttons: [...p.buttons, { id: `btn_${Date.now()}`, text: "", action: "CONFIRMED" }],
+      };
+    });
   };
 
   const filteredStatuses = activeTab === "all"
@@ -623,6 +713,18 @@ export default function OrderStatusTemplatesPage() {
                         <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300 line-clamp-2">
                           {status.template.content}
                         </p>
+                        {status.template?.hasButtons && (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {parseTemplateButtons(status.template?.buttons).map((b, i) => (
+                              <span
+                                key={i}
+                                className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-400"
+                              >
+                                {b.text || b.id}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -706,6 +808,82 @@ export default function OrderStatusTemplatesPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    الأزرار التفاعلية
+                  </label>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={templateForm.hasButtons}
+                      onChange={(e) => setTemplateForm((p) => ({ ...p, hasButtons: e.target.checked }))}
+                      className="peer sr-only"
+                    />
+                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                  </label>
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
+                </p>
+
+                {templateForm.hasButtons && (
+                  <div className="mt-3 space-y-2">
+                    {templateForm.buttons.map((btn, idx) => (
+                      <div
+                        key={btn.id || idx}
+                        className="flex items-end gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2 dark:border-slate-700 dark:bg-slate-800/40"
+                      >
+                        <div className="flex-1">
+                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">نص الزر</label>
+                          <input
+                            type="text"
+                            value={btn.text}
+                            onChange={(e) => updateButton(idx, { text: e.target.value })}
+                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            placeholder="مثال: تأكيد الأوردر"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="mb-0.5 block text-[10px] font-medium text-slate-400 dark:text-slate-500">عند الضغط</label>
+                          <select
+                            value={btn.action}
+                            onChange={(e) => updateButton(idx, { action: e.target.value })}
+                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          >
+                            {statusOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeButton(idx)}
+                          title="حذف الزر"
+                          className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        >
+                          <XCircleIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {templateForm.buttons.length < 3 && (
+                      <button
+                        type="button"
+                        onClick={addButton}
+                        className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+                      >
+                        <PlusIcon className="h-3.5 w-3.5" />
+                        إضافة زر
+                      </button>
+                    )}
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">الحد الأقصى 3 أزرار لكل رسالة</p>
                   </div>
                 )}
               </div>
