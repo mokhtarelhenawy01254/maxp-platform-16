@@ -1373,7 +1373,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
 });
 
 // تحويل طلب غير مكتمل إلى طلب حقيقي
-router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
@@ -2470,7 +2470,7 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // تحديث حالة الطلب البسيط
-router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { status, notes } = req.body;
@@ -2750,7 +2750,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, requir
 });
 
 // تسجيل محاولة اتصال
-router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { notes, result } = req.body;
@@ -3052,7 +3052,7 @@ router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req
 });
 
 // تحديث حالة الدفع للطلب البسيط
-router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { paymentStatus, notes } = req.body;
@@ -3295,7 +3295,7 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // إضافة ملاحظة للطلب
-router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { content } = req.body;
@@ -3381,7 +3381,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, require
 });
 
 // تعديل ملاحظة طلب
-router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
     const { content } = req.body;
@@ -3441,7 +3441,7 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, requireDbPe
 });
 
 // حذف ملاحظة طلب
-router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
     const companyId = req.user?.companyId;
@@ -4222,7 +4222,7 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // تحديث حالة الطلب
-router.patch('/:orderNumber/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   console.log(`🔍 [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
   console.log(`   - Order Number: ${req.params.orderNumber}`);
   console.log(`   - New Status: ${req.body.status}`);
@@ -4314,7 +4314,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, requireDbPer
 });
 
 // تأكيد الطلب
-router.post('/:orderNumber/confirm', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { shippingAddress } = req.body;
@@ -4350,7 +4350,7 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, requireDbPer
 });
 
 // إلغاء الطلب
-router.post('/:orderNumber/cancel', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { reason } = req.body;
@@ -4440,7 +4440,7 @@ router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, r
 });
 
 // إنشاء طلب بسيط من المحادثة (باستخدام EnhancedOrderService)
-router.post('/simple', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
+router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const EnhancedOrderService = require('../services/enhancedOrderService');
     const enhancedOrderService = new EnhancedOrderService();
@@ -4626,7 +4626,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
 });
 
 // إنشاء طلب بسيط (للاختبار)
-router.post('/create-simple', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
+router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4688,7 +4688,7 @@ router.post('/create-simple', verifyToken.authenticateToken, requireDbPermission
 });
 
 // إنشاء طلب يدوي (للاختبار)
-router.post('/create', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
+router.post('/create', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4751,7 +4751,7 @@ router.post('/create', verifyToken.authenticateToken, requireDbPermission('order
 });
 
 // Bulk Status Update
-router.post('/bulk/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderIds, status, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
@@ -4820,7 +4820,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, requireDbPermission('
 });
 
 // Bulk Status Update by Filters (apply to all matching filters)
-router.post('/bulk/status/by-filters', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
+router.post('/bulk/status/by-filters', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { status, notes, filters } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
@@ -5072,7 +5072,7 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/simple/:orderNumber', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { shippingAddress, notes, customerName, customerPhone, alternativePhone, city, governorate, metadataPatch } = req.body;
@@ -5192,7 +5192,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, requireDbPermi
 });
 
 // Update Order Items
-router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { items, total, subtotal, tax, shipping } = req.body;
@@ -5363,7 +5363,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, requireD
 });
 
 // Schedule/Postpone an existing order
-router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, requireDbPermission('orders.edit'), async (req, res) => {
+router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { scheduledDeliveryDate, scheduledNotes, autoTransitionEnabled, changeStatusToScheduled } = req.body;
