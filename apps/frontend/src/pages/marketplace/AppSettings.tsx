@@ -445,15 +445,15 @@ const buildUsageFeatureMap = (
   };
 }
 
+  return featureMap;
+};
+
 interface ReviewListResponseData {
   pagination?: {
     total?: number | string | null;
   };
   reviews?: ReviewModerationItem[];
 }
-
-  return featureMap;
-};
 
 const getFeatureActionCount = (
   featureMap: Record<string, UsageFeatureTotals>,

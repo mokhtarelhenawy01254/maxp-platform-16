@@ -2,16 +2,12 @@ import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ThemeProvider } from "../components/theme-provider";
 import AppRoot from "../AppRoot";
-
-const LazyToaster = React.lazy(() =>
-  import("sonner").then((module) => ({ default: module.Toaster })),
-);
 
 const SwUpdateToast: React.FC = () => {
   React.useEffect(() => {
@@ -56,7 +52,7 @@ const AdminAppBootstrap: React.FC = () => (
           <AppRoot />
         </RouteAwareErrorBoundary>
         <SwUpdateToast />
-        <LazyToaster position="top-right" richColors />
+        <Toaster position="top-right" richColors />
       </BrowserRouter>
     </ThemeProvider>
   </React.Suspense>

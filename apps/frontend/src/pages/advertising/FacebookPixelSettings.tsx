@@ -478,7 +478,7 @@ const FacebookPixelSettings: React.FC = () => {
         tToast.success("facebookPixel.msg_931c");
         await loadSettings(true); // Reload to get updated status
       } else {
-        toast.error(i18n.t("facebookPixel.msg_vcygkc", { message: message }));
+        toast.error(i18n.t("facebookPixel.msg_vcygkc", { message: response?.message || "" }));
       }
     } catch (error: unknown) {
       toast.error(`❌ خطأ: ${getErrorMessage(error, i18n.t("facebookPixel.msg_dbf2"))}`);
@@ -839,7 +839,7 @@ const FacebookPixelSettings: React.FC = () => {
         selectedBusinessId,
       );
       if (response.success) {
-        toast.success(i18n.t("facebookPixel.msg_1l2s94", { pixelId: pixelId }));
+        toast.success(i18n.t("facebookPixel.msg_1l2s94", { pixelId: (response?.data as any)?.pixelId || "" }));
         setShowCreatePixelModal(false);
         setNewPixelName("");
         await loadMultiplePixels();

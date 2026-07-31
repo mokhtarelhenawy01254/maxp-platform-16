@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import i18n from "../../i18n";
 import { useTranslation } from "react-i18next";
 import {
   FileText,

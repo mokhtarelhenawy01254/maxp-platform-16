@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -243,7 +244,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
             <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
               <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{i18n.t("common.all")} ({tools.length})</button>
               {allGroups.map((g) => (
-                <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{groupLabel(g)} ({tools.filter((t) => t.group === g).length})</button>
+                <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{getGroupLabel(g, t)} ({tools.filter((t) => t.group === g).length})</button>
               ))}
             </div>
           </aside>

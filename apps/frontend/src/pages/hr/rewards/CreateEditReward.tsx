@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import i18n from "../../../i18n";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../../services/apiClient";
@@ -78,6 +79,7 @@ interface FormData {
 }
 
 const CreateEditReward: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = !!id;

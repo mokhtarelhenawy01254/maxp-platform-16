@@ -3201,6 +3201,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   // Embedded quick-order sections can still depend on the buybox surface as the
   // primary decision area, especially for merged-buybox PDP variants.
   const shouldRenderPrimaryBuyBox = !externalOnlyProduct;
+  const showStickyMobileAddToCart =
+    isElessiCareBuybox &&
+    shouldRenderPrimaryBuyBox &&
+    !externalOnlyProduct &&
+    !isGalleryZoomOpen &&
+    !isInlineQuickOrderVisible &&
+    !isCartOpen;
   const shouldRenderStandaloneBuyBox =
     shouldRenderPrimaryBuyBox && !isPrimaryQuantityOffersDecision;
   const primaryActionTargetId = hasEmbeddedPdpCheckout

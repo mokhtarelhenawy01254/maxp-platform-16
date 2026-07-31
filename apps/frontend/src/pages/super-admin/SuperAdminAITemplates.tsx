@@ -190,7 +190,7 @@ const SuperAdminAITemplates: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Bot className="size-16 opacity-15" />
             <p className="text-sm text-muted-foreground">لا توجد قوالب تطابق بحثك</p>
-            <Button variant="outline" size="sm" onClick={() => { setSearch(""); setRoleFilter(""); setIndustryFilter(""); }}>مسح الفلتر</Button>
+            <Button variant="outline" size="sm" onClick={() => { setFilter("search", ""); setFilter("role", ""); setFilter("industry", ""); }}>مسح الفلتر</Button>
           </div>
         ) : (
           <div className="rounded-xl border bg-card overflow-hidden">

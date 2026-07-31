@@ -31,10 +31,8 @@ import {
   getPrimaryProductImage,
 } from "./utils/productImages";
 import { getStorefrontScope } from "../utils/storefrontApi";
+import { Toaster } from "sonner";
 
-const LazyToaster = React.lazy(() =>
-  import("sonner").then((module) => ({ default: module.Toaster })),
-);
 const StorefrontShell = React.lazy(() => import("./StorefrontShell"));
 const STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000;
 const STOREFRONT_TOASTER_INTENT_EVENTS = [
@@ -405,7 +403,7 @@ const DeferredStorefrontToaster: React.FC = () => {
 
   return (
     <React.Suspense fallback={null}>
-      <LazyToaster toastOptions={toastOptions} />
+      <Toaster toastOptions={toastOptions} />
     </React.Suspense>
   );
 };

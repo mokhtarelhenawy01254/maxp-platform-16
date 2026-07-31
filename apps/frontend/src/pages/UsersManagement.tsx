@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "../i18n";
 import { toast } from "sonner";
 import { tToast } from "../utils/i18n-toast";
 import { useTranslation } from "react-i18next";

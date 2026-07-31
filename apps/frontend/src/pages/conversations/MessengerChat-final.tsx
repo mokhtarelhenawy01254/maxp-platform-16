@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import SavedReplies from "../../components/conversations/SavedReplies";
+import CustomerProfile from "../../components/conversations/CustomerProfile";
 import {
   PaperAirplaneIcon,
   PaperClipIcon,
@@ -685,7 +687,7 @@ const MessengerChat: React.FC = () => {
                       {message.type === "image" && message.fileUrl && (
                         <div className="mb-2">
                           <img
-                            src={getImageUrl(message)}
+                            src={message.fileUrl}
                             alt={message.fileName}
                             className="rounded-lg max-h-48 object-cover"
                           />

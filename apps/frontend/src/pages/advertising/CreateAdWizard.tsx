@@ -744,6 +744,7 @@ const CreateAdWizard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const launchPrefillId = searchParams.get("launchPrefillId") || "";
   const storedLaunchPrefill = getProductLaunchPrefillPayload(launchPrefillId);
+  const isAiDraftPrefill = !!storedLaunchPrefill;
   const prefillProductUrl =
     storedLaunchPrefill?.productUrl || searchParams.get("productUrl") || "";
   const prefillProductId =

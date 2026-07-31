@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import i18n from "../../i18n";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useDateFormat } from "../../hooks/useDateFormat";
