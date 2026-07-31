@@ -27,10 +27,6 @@ const Login: React.FC = () => {
       if (userData) {
         const systemRoles = [
           "SUPER_ADMIN",
-          "Project Manager",
-          "Team Lead",
-          "Developer",
-          "Tester",
         ];
         const isSystemRole = systemRoles.includes(userData.role);
 

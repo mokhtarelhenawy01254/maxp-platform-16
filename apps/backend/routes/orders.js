@@ -109,6 +109,15 @@ router.use((req, res, next) => {
   return requireOrderCoreAccess(req, res, next);
 });
 
+// Granular RBAC: every order route requires at least orders.view.
+// Merchants keep their dedicated simple-order surface. Mutating endpoints
+// below additionally require their specific permission.
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
+router.use((req, res, next) => {
+  if (isMerchantUser(req.user)) return next();
+  return requireDbPermission('orders.view')(req, res, next);
+});
+
 
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
@@ -2461,7 +2470,7 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // تحديث حالة الطلب البسيط
-router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
+router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { status, notes } = req.body;
@@ -4213,7 +4222,7 @@ router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // تحديث حالة الطلب
-router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
+router.patch('/:orderNumber/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   console.log(`🔍 [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
   console.log(`   - Order Number: ${req.params.orderNumber}`);
   console.log(`   - New Status: ${req.body.status}`);
@@ -4305,7 +4314,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
 });
 
 // تأكيد الطلب
-router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:orderNumber/confirm', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { shippingAddress } = req.body;
@@ -4341,7 +4350,7 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
 });
 
 // إلغاء الطلب
-router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:orderNumber/cancel', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { reason } = req.body;
@@ -4431,7 +4440,7 @@ router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, r
 });
 
 // إنشاء طلب بسيط من المحادثة (باستخدام EnhancedOrderService)
-router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
+router.post('/simple', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
   try {
     const EnhancedOrderService = require('../services/enhancedOrderService');
     const enhancedOrderService = new EnhancedOrderService();
@@ -4617,7 +4626,7 @@ const { VALID_ORDER_STATUSES } = require('../utils/constants');
 });
 
 // إنشاء طلب بسيط (للاختبار)
-router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
+router.post('/create-simple', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4679,7 +4688,7 @@ router.post('/create-simple', verifyToken.authenticateToken, async (req, res) =>
 });
 
 // إنشاء طلب يدوي (للاختبار)
-router.post('/create', verifyToken.authenticateToken, async (req, res) => {
+router.post('/create', verifyToken.authenticateToken, requireDbPermission('orders.create'), async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4742,7 +4751,7 @@ router.post('/create', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // Bulk Status Update
-router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
+router.post('/bulk/status', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   try {
     const { orderIds, status, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
@@ -4811,7 +4820,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // Bulk Status Update by Filters (apply to all matching filters)
-router.post('/bulk/status/by-filters', verifyToken.authenticateToken, async (req, res) => {
+router.post('/bulk/status/by-filters', verifyToken.authenticateToken, requireDbPermission('orders.status.change'), async (req, res) => {
   try {
     const { status, notes, filters } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;

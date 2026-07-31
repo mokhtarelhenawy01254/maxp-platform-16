@@ -52,55 +52,55 @@ const upload = multer({
 
 // Specific routes must come before parameterized routes
 router.get('/', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getAllProducts);
-router.post('/', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.createProduct);
-router.delete('/bulk/delete', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteAllProducts);
-router.patch('/bulk/visibility', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.bulkUpdateVisibility);
-router.patch('/bulk/affiliate-visibility', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.bulkUpdateAffiliateVisibility);
+router.post('/', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.createProduct);
+router.delete('/bulk/delete', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteAllProducts);
+router.patch('/bulk/visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateVisibility);
+router.patch('/bulk/affiliate-visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateAffiliateVisibility);
 router.get('/categories', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getCategory);
-router.post('/categories', verifyToken.authenticateToken, upload.single('image'), productController.createNewCategory);
-router.put('/categories/:id', verifyToken.authenticateToken, upload.single('image'), productController.updateCategory);
-router.delete('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteCategory);
-router.post('/visual-search', verifyToken.authenticateToken, upload.single('image'), productController.visualSearchProduct);
-router.post('/:id/duplicate', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.duplicateProduct);
-router.get('/:id/volume-discounts', verifyToken.authenticateToken, volumeDiscountController.getVolumeDiscounts);
-router.post('/:id/volume-discounts', verifyToken.authenticateToken, volumeDiscountController.createVolumeDiscount);
-router.put('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, volumeDiscountController.updateVolumeDiscount);
-router.delete('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, volumeDiscountController.deleteVolumeDiscount);
+router.post('/categories', verifyToken.authenticateToken, requireDbPermission('products.create'), upload.single('image'), productController.createNewCategory);
+router.put('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.single('image'), productController.updateCategory);
+router.delete('/categories/:id', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteCategory);
+router.post('/visual-search', verifyToken.authenticateToken, requireDbPermission('products.view'), upload.single('image'), productController.visualSearchProduct);
+router.post('/:id/duplicate', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.duplicateProduct);
+router.get('/:id/volume-discounts', verifyToken.authenticateToken, requireDbPermission('products.view'), volumeDiscountController.getVolumeDiscounts);
+router.post('/:id/volume-discounts', verifyToken.authenticateToken, requireDbPermission('products.edit'), volumeDiscountController.createVolumeDiscount);
+router.put('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, requireDbPermission('products.edit'), volumeDiscountController.updateVolumeDiscount);
+router.delete('/:id/volume-discounts/:discountId', verifyToken.authenticateToken, requireDbPermission('products.delete'), volumeDiscountController.deleteVolumeDiscount);
 
 // Parameterized routes must come after specific routes
-router.post('/:id/workflow', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.updateProductWorkflow);
+router.post('/:id/workflow', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.updateProductWorkflow);
 router.get('/:id', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getSingleProduct);
-router.patch('/:id', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.updateSingleProduct);
-router.delete('/:id', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteSingleProduct);
+router.patch('/:id', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.updateSingleProduct);
+router.delete('/:id', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteSingleProduct);
 
 // سلة المحذوفات - Trash routes
 router.get('/trash/all', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getDeletedProducts);
-router.post('/:id/restore', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.restoreProduct);
-router.delete('/:id/permanent', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.permanentDeleteProduct);
+router.post('/:id/restore', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.restoreProduct);
+router.delete('/:id/permanent', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.permanentDeleteProduct);
 
 // Product images routes
-router.post('/:id/images', verifyToken.authenticateToken, upload.any(), productController.uploadProductImages);
-router.post('/:id/images/url', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.addImageToProduct);
-router.delete('/:id/images', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteImageFromOneProduct);
+router.post('/:id/images', verifyToken.authenticateToken, requireDbPermission('products.edit'), upload.any(), productController.uploadProductImages);
+router.post('/:id/images/url', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.addImageToProduct);
+router.delete('/:id/images', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteImageFromOneProduct);
 
 // Product variants routes
-router.post('/:id/variants', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.createProductVariant);
+router.post('/:id/variants', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.createProductVariant);
 router.get('/:id/variants', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getProductVariants);
-router.put('/:id/variants/:variantId', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.updateProductVariant);
-router.delete('/:id/variants/:variantId', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteProductVariant);
+router.put('/:id/variants/:variantId', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.updateProductVariant);
+router.delete('/:id/variants/:variantId', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteProductVariant);
 
 // Variant images routes (variantId in URL)
-router.post('/:id/variants/:variantId/images', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.addImageToVariant);
-router.delete('/:id/variants/:variantId/images', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.deleteImageFromVariant);
+router.post('/:id/variants/:variantId/images', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.addImageToVariant);
+router.delete('/:id/variants/:variantId/images', verifyToken.authenticateToken, requireDbPermission('products.delete'), productController.deleteImageFromVariant);
 
 // Variant images routes (variantId in body) - receives imageUrl in JSON
-router.post('/:id/variant-images', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.addImageToVariantFromBody);
+router.post('/:id/variant-images', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.addImageToVariantFromBody);
 
 // Product presentation routes
-router.post('/:id/presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.createPresentation);
+router.post('/:id/presentations', verifyToken.authenticateToken, requireDbPermission('products.create'), presentationController.createPresentation);
 router.get('/:id/presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.getPresentations);
 router.get('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.getSinglePresentation);
-router.put('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.updatePresentation);
-router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.deletePresentation);
+router.put('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.edit'), presentationController.updatePresentation);
+router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.delete'), presentationController.deletePresentation);
 
 module.exports = router;
