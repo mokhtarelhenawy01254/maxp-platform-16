@@ -894,20 +894,22 @@ async function publishTemplateToMeta(req, res) {
       message: 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
     });
   } catch (error) {
-    console.error('❌ Error publishing template to Meta:', JSON.stringify(error?.response?.data, null, 2) || error.message);
-    const metaError = error?.response?.data?.error;
-    if (metaError) {
+    const requestDebug = { name: metaName, language: 'ar', category: metaCategory, components };
+    const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
+    console.error('❌ Error publishing template to Meta:', JSON.stringify(rawMeta || { error: error.message, code: error.code }, null, 2));
+    const rawMetaError = rawMeta?.error;
+    if (rawMetaError) {
       const details = [
-        metaError.message,
-        metaError.error_user_title,
-        metaError.error_user_msg,
-        metaError.code ? `(code: ${metaError.code})` : '',
-        metaError.error_subcode ? `(subcode: ${metaError.error_subcode})` : '',
-        metaError.fbtrace_id ? `(fbtrace: ${metaError.fbtrace_id})` : ''
+        rawMetaError.message,
+        rawMetaError.error_user_title,
+        rawMetaError.error_user_msg,
+        rawMetaError.code ? `(code: ${rawMetaError.code})` : '',
+        rawMetaError.error_subcode ? `(subcode: ${rawMetaError.error_subcode})` : '',
+        rawMetaError.fbtrace_id ? `(fbtrace: ${rawMetaError.fbtrace_id})` : ''
       ].filter(Boolean).join(' — ');
-      return res.status(500).json({ error: details });
+      return res.status(500).json({ error: details, request: requestDebug });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: `${error.message || 'Meta API error'}${error.code ? ` (code: ${error.code})` : ''}`, request: requestDebug });
   }
 }
 
