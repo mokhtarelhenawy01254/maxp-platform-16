@@ -800,15 +800,25 @@ async function publishTemplateToMeta(req, res) {
     }
 
     // 3. تحويل القالب المحلي لصيغة ميتا
-    const metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
+    let metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
       .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 512);
 
     const metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
       : localTemplate.category === 'AUTHENTICATION' ? 'AUTHENTICATION'
       : 'UTILITY';
 
-    const bodyText = localTemplate.content
-      .replace(/\{(\w+)\}/g, (_, name) => `{{${name}}}`);
+    // تحويل متغيرات القالب لصيغة ميتا الموضعية {{1}}, {{2}}, {{3}} ...
+    // ميتا تقبل فقط أرقاماً متسلسلة داخل قوسين مجعدين، وترفض الأسماء ({{customerName}})
+    // والأقواس الثلاثية الناتجة عن عدم تطبيع الأقواس.
+    const variableIndex = {};
+    const bodyText = (localTemplate.content || '')
+      // توحيد الأقواس المفردة {var} إلى صيغة {{var}} دون كسر الأقواس المزدوجة الموجودة
+      .replace(/(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g, '{{$1}}')
+      // تحويل المتغيرات المسماة إلى أرقام موضعية حسب ترتيب الظهور
+      .replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (match, name) => {
+        if (!(name in variableIndex)) variableIndex[name] = Object.keys(variableIndex).length + 1;
+        return `{{${variableIndex[name]}}}`;
+      });
 
     const components = [{ type: 'BODY', text: bodyText }];
 
@@ -828,12 +838,39 @@ async function publishTemplateToMeta(req, res) {
 
     // 4. إنشاء القالب في ميتا
     const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
-    const result = await MetaCloudProvider.createTemplate(sessionId, {
-      name: metaName,
-      language: 'ar',
-      category: metaCategory,
-      components
-    });
+
+    let result;
+    try {
+      result = await MetaCloudProvider.createTemplate(sessionId, {
+        name: metaName,
+        language: 'ar',
+        category: metaCategory,
+        components
+      });
+    } catch (createError) {
+      // اسم القالب محجوز في ميتا (حتى لو كان مرفوضاً) → نعيد المحاولة باسم فريد
+      const errorText = String(createError?.response?.data?.error?.code || createError?.response?.data?.error?.message || createError?.message || '');
+      const isNameConflict = /131047|already\s*(?:in\s*use|exist)|name.*use|duplicate/i.test(errorText);
+      if (!isNameConflict) throw createError;
+
+      metaName = `${metaName}_${Date.now().toString(36)}`.slice(0, 512);
+      console.warn(`☁️ [PUBLISH-TO-META] Name conflict, retrying with "${metaName}"`);
+      result = await MetaCloudProvider.createTemplate(sessionId, {
+        name: metaName,
+        language: 'ar',
+        category: metaCategory,
+        components
+      });
+    }
+
+    // حفظ ترتيب المتغيرات ({{1}} = اسم المتغير) لاستخدامها عند الإرسال عبر ميتا لاحقاً
+    const variableOrder = Object.keys(variableIndex).length > 0
+      ? JSON.stringify(
+          Object.entries(variableIndex)
+            .sort((a, b) => a[1] - b[1])
+            .map(([name, position]) => ({ position, name }))
+        )
+      : null;
 
     // 5. تحديث القالب المحلي ببيانات ميتا
     await getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -842,6 +879,7 @@ async function publishTemplateToMeta(req, res) {
         metaTemplateName: metaName,
         metaTemplateLanguage: 'ar',
         metaTemplateStatus: 'PENDING',
+        variables: variableOrder || localTemplate.variables,
         updatedAt: new Date()
       }
     });
