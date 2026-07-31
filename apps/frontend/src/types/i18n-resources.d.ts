@@ -13314,6 +13314,7 @@ declare module 'react-i18next' {
         bookingBranches: string;
         bookingDoctors: string;
         bookingServices: string;
+        bookingPatients: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;

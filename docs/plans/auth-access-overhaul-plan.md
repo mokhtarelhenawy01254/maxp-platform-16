@@ -14,9 +14,10 @@
 - ✅ **Sprint 6**: السايدبار `fail-closed` عند غياب الصلاحيات، `DefaultPageRedirect` يستخدم `resolvePostAuthDestination`.
 
 ### ملاحظات / مؤجلة
-- **مؤجل**: التدقيق النقطي الكامل لمسارات تعديل/حذف الطلبات (`orders.edit/delete`) ترك تحت `orders.view` لتجنب كسر عمل MODERATOR اليومي — يحتاج قرار عمل قبل التفعيل.
+- ✅ **سكربت ترحيل الأدوار**: `apps/backend/scripts/migrateLegacyPlatformRoles.js` + أمر `npm run migrate:legacy-roles` (dry-run افتراضياً، `--apply` للتطبيق). شُغّل dry-run على DB المحلية: صفر عضويات بدور مخصص قديم + 3 مستخدمين بـ "AGENT" (no-op).
+- ✅ **`seed:permissions`**: شُغّل محلياً — 161 صلاحية، OWNER=161، COMPANY_ADMIN=157، MANAGER=64، AGENT=23، AFFILIATE=5. **لازم يُعاد على برودكشن قبل النشر** (الأدوار المخصصة تُراجع بـ `grant_full_permissions_to_role.js`).
+- ✅ **تدقيق مسارات تعديل الطلبات**: `orders.edit` طُبّق على endpoints التعديل (PUT simple order/items, payment-status, notes, schedule, call-attempt, convert). ملاحظة: **الموظف AGENT حسب السيد مالهوش `orders.edit`** — دي تغيير سلوكي مقصود؛ لو الشركات محتاجة تعديل للطلبات من الموظفين، تُمنح الصلاحية من شاشة الأدوار.
 - **مؤجل**: مسارات الإعدادات/الواتساب خارج النطاق (قرار المستخدم).
-- **متبقٍ حسب الخطة**: سكربت ترحيل بيانات مستخدمي "Team Lead" (Task 5.4) + إعادة تشغيل `seed:permissions`.
 - **ملاحظة بيئة**: بعض التعديلات تُلتقط تلقائياً في commits بواسطة بيئة العمل.
 
 ## Overview

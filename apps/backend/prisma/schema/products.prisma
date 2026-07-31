@@ -46,6 +46,7 @@ model Customer {
     wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]
      formSubmissions                 FormSubmission[]
+     patients                        Patient[]
  
      @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])

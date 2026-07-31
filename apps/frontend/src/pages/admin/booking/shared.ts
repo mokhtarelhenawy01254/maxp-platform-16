@@ -1,10 +1,9 @@
+import { Circle as BuildingOffice2Icon, Circle as UserGroupIcon, Circle as WrenchScrewdriverIcon, Circle as CalendarDaysIcon, Circle as ChartBarSquareIcon, Type, X } from 'lucide-react';
 import { buildApiUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
-import {
-  BuildingOffice2Icon, UserGroupIcon, WrenchScrewdriverIcon,
-  CalendarDaysIcon, ChartBarSquareIcon,
-} from "@heroicons/react/24/outline";
+;
 
+import { BarChart4, Building2, CalendarDays, Users, Wrench } from 'lucide-react'
 export const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
 };
@@ -95,15 +94,28 @@ export interface BookingAppointment {
   createdById?: string; createdByType?: string; createdByName?: string;
 }
 
-export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar";
+export interface BookingPatient {
+  id: string; firstName: string; lastName?: string;
+  phone?: string; email?: string; gender?: string;
+  birthDate?: string; bloodType?: string;
+  allergies?: string[] | string;
+  chronicDiseases?: string[] | string;
+  medications?: string[] | string;
+  notes?: string; isActive: boolean; createdAt: string;
+  visitCount?: number;
+  customer?: { id: string; firstName: string; lastName: string; phone?: string };
+}
 
-export const TABS: { id: TabId; label: string; icon: typeof ChartBarSquareIcon }[] = [
-  { id: "dashboard", label: "لوحة التحكم", icon: ChartBarSquareIcon },
-  { id: "appointments", label: "المواعيد", icon: CalendarDaysIcon },
-  { id: "calendar", label: "التقويم", icon: CalendarDaysIcon },
-  { id: "branches", label: "الفروع", icon: BuildingOffice2Icon },
-  { id: "doctors", label: "الأطباء", icon: UserGroupIcon },
-  { id: "services", label: "الخدمات", icon: WrenchScrewdriverIcon },
+export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar" | "patients";
+
+export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
+  { id: "dashboard", label: "لوحة التحكم", icon: BarChart4 },
+  { id: "appointments", label: "المواعيد", icon: CalendarDays },
+  { id: "calendar", label: "التقويم", icon: CalendarDays },
+  { id: "branches", label: "الفروع", icon: Building2 },
+  { id: "doctors", label: "الأطباء", icon: Users },
+  { id: "services", label: "الخدمات", icon: Wrench },
+  { id: "patients", label: "المرضى", icon: Users },
 ];
 
 export const STATUS_MAP: Record<string, { label: string; color: string }> = {

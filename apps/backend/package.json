@@ -56,6 +56,7 @@
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
     "seed:link-roles": "node prisma/seeds/linkUserRoles.js",
+    "migrate:legacy-roles": "node scripts/migrateLegacyPlatformRoles.js",
     "postinstall": "patch-package && node -e \"try{require('../../patch-telegram-updates.js')}catch(e){console.log('⚠️  patch-telegram-updates skipped:',e.code||e.message)}\""
   },
   "dependencies": {

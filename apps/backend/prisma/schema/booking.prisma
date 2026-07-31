@@ -106,3 +106,32 @@ model BookingDraft {
   @@index([expiresAt])
   @@map("booking_drafts")
 }
+
+/// Booking module - Patient medical file (may link to a CRM Customer booker)
+model Patient {
+  id              String    @id @default(cuid())
+  companyId       String
+  customerId      String?   /// Optional link to CRM Customer (booker/contact person)
+  firstName       String
+  lastName        String?
+  phone           String?
+  email           String?
+  gender          Gender?
+  birthDate       DateTime? @db.Date
+  bloodType       String?
+  allergies       Json?     /// List: ["penicillin","dust"]
+  chronicDiseases Json?     /// List: ["diabetes","hypertension"]
+  medications     Json?     /// List: ["aspirin 81mg daily"]
+  notes           String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  appointments    Appointment[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([phone])
+  @@map("patients")
+}

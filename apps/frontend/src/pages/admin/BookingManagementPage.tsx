@@ -6,7 +6,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
 } from "@/components/ui/alert-dialog";
 import {
-  BookingBranch, BookingDoctor, BookingAppointment, BookingService,
+  BookingBranch, BookingDoctor, BookingAppointment, BookingService, BookingPatient,
   BranchFormData, ServiceFormData,
   TabId, fetchJson, api, getAuthHeaders, normalizeBranch, MODAL_INPUT_CLS
 } from "./booking/shared";
@@ -16,18 +16,20 @@ import DoctorsTab from "./booking/DoctorsTab";
 import ServicesTab from "./booking/ServicesTab";
 import AppointmentsTab from "./booking/AppointmentsTab";
 import CalendarTab from "./booking/CalendarTab";
+import PatientsTab from "./booking/PatientsTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients"].includes(urlTab) ? urlTab : "dashboard") as TabId;
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
   const [services, setServices] = useState<BookingService[]>([]);
   const [appointments, setAppointments] = useState<BookingAppointment[]>([]);
+  const [patients, setPatients] = useState<BookingPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,7 @@ export default function BookingManagementPage() {
   const [serviceModal, setServiceModal] = useState<Partial<BookingService> | null | undefined>(undefined);
   const [serviceDetail, setServiceDetail] = useState<BookingService | null>(null);
   const [appointmentModal, setAppointmentModal] = useState<Partial<BookingAppointment> | null | undefined>(undefined);
+  const [patientModal, setPatientModal] = useState<Partial<BookingPatient> | null | undefined>(undefined);
 
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [calDate, setCalDate] = useState(new Date());
@@ -57,6 +60,7 @@ export default function BookingManagementPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [searchPatient, setSearchPatient] = useState("");
   const [serviceFilterStatus, setServiceFilterStatus] = useState<"all" | "active" | "inactive">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -99,7 +103,7 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true); setError(null);
-    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
+    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments(), fetchPatients()]);
     const rejected = results.filter(r => r.status === 'rejected');
     if (rejected.length > 0) setError(`فشل تحميل بعض البيانات (${rejected.length}/${results.length})`);
     setLoading(false);
@@ -114,6 +118,9 @@ export default function BookingManagementPage() {
   };
   const fetchServices = async (branchId?: string) => {
     try { setServices(await fetchJson<BookingService[]>(api(`services${branchId ? `?branchId=${branchId}` : ""}`)) || []); } catch (e: unknown) { console.error("fetchServices", e); throw e; }
+  };
+  const fetchPatients = async () => {
+    try { setPatients(await fetchJson<BookingPatient[]>(api("patients?includeInactive=true")) || []); } catch (e: unknown) { console.error("fetchPatients", e); throw e; }
   };
   const fetchAppointments = async () => {
     const params = new URLSearchParams();
@@ -210,6 +217,12 @@ export default function BookingManagementPage() {
     if (data !== false) { setAppointmentModal(undefined); setLoading(true); fetchAppointments().finally(() => setLoading(false)); }
   };
 
+  const savePatient = async (d: Partial<BookingPatient>) => {
+    const isEdit = !!d.id;
+    const data = await apiCall(api(`patients${isEdit ? `/${d.id}` : ""}`), isEdit ? "PUT" : "POST", d);
+    if (data !== false) { setPatientModal(undefined); fetchPatients(); }
+  };
+
   const updateAppointmentStatus = async (id: string, status: string) => {
     const data = await apiCall(api(`appointments/${id}/status`), "PUT", { status });
     if (data !== false) { setLoading(true); fetchAppointments().finally(() => setLoading(false)); }
@@ -252,6 +265,7 @@ export default function BookingManagementPage() {
     if (data !== false) {
       if (type === "branches") fetchBranches();
       else if (type === "doctors") fetchDoctors();
+      else if (type === "patients") fetchPatients();
       else fetchServices();
     }
   };
@@ -264,6 +278,7 @@ export default function BookingManagementPage() {
         if (data !== false) {
           if (type === "branches") fetchBranches();
           else if (type === "doctors") fetchDoctors();
+          else if (type === "patients") fetchPatients();
           else fetchServices();
         }
       }
@@ -382,6 +397,20 @@ export default function BookingManagementPage() {
                 appointments={appointments}
                 calDate={calDate} onCalDateChange={setCalDate}
                 selectedDay={selectedDay} onSelectedDayChange={setSelectedDay}
+              />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "patients" && (
+            <TabErrorBoundary tabLabel="المرضى">
+              <PatientsTab
+                patients={patients}
+                search={searchPatient} onSearchChange={setSearchPatient}
+                onEdit={p => setPatientModal(p)}
+                onToggleActive={(id, cur) => toggleActive("patients", id, cur)}
+                onDelete={id => deleteItem("patients", id)}
+                modalPatient={patientModal}
+                onModalClose={() => setPatientModal(undefined)}
+                onSave={savePatient}
               />
             </TabErrorBoundary>
           )}
