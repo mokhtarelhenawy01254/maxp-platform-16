@@ -94,6 +94,7 @@ async function main() {
   });
 
   console.log(`\n👤 ${legacyUsers.length} user(s) carry a legacy name in User.role`);
+  let updatedUsers = 0;
   for (const u of legacyUsers) {
     const targetKey = LEGACY_ROLE_MAP[u.role];
     if (u.role === targetKey) continue; // identity mapping — no-op
@@ -103,13 +104,14 @@ async function main() {
         where: { id: u.id },
         data: { role: targetKey },
       });
+      updatedUsers += 1;
     }
   }
 
   console.log(
     apply
-      ? `\n✅ Done — ${updatedMemberships} membership(s) + ${legacyUsers.length} user(s) updated`
-      : `\n✅ Dry-run complete — ${customRoleMemberships.length} membership(s) + ${legacyUsers.length} user(s) would change. Re-run with --apply to commit.`,
+      ? `\n✅ Done — ${updatedMemberships} membership(s) + ${updatedUsers} user(s) updated`
+      : `\n✅ Dry-run complete — ${updatedMemberships} membership(s) + ${updatedUsers} user(s) would change. Re-run with --apply to commit.`,
   );
   await prisma.$disconnect();
 }
