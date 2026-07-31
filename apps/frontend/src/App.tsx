@@ -7,6 +7,7 @@ import {
   shouldRedirectAffiliateToDashboard,
   shouldRedirectMerchantToPortal,
 } from "./utils/merchantAccess";
+import { saveLastPath } from "./utils/postAuthRouting";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
@@ -1487,6 +1488,13 @@ const AppContent = () => {
       .catch(() => setActiveLpSlugs(null));
   }, []);
 
+  // Remember the last app page per user+company so they can resume it after login.
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      saveLastPath(user, pathname);
+    }
+  }, [isAuthenticated, pathname, user]);
+
   // Subdomain Detection Logic
   const hostname = window.location.hostname;
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
@@ -2535,7 +2543,7 @@ const AppContent = () => {
                   path="/company-dashboard"
                   element={
                     <Layout>
-                      <RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']}>
+                      <RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}>
                         <MainDashboardPage />
                       </RoleProtectedRoute>
                     </Layout>

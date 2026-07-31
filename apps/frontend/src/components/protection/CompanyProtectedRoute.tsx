@@ -2,6 +2,7 @@ import React, { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
+import AccessDenied from "./AccessDenied";
 
 interface CompanyProtectedRouteProps {
   children: ReactNode;
@@ -52,30 +53,7 @@ const CompanyProtectedRoute: React.FC<CompanyProtectedRouteProps> = ({
   if (requiredCompanyId && !canAccessCompany(requiredCompanyId)) {
     return (
       fallback || (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-              <h3 className="text-red-800 font-semibold mb-2">
-                🚫 ممنوع الوصول
-              </h3>
-              <p className="text-red-700 mb-4">
-                ليس لديك صلاحية للوصول لبيانات هذه الشركة
-              </p>
-              <button
-                onClick={() => window.history.back()}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 mr-2"
-              >
-                العودة
-              </button>
-              <button
-                onClick={() => (window.location.href = "/company-dashboard")}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                الصفحة الرئيسية
-              </button>
-            </div>
-          </div>
-        </div>
+        <AccessDenied message="ليس لديك صلاحية للوصول لبيانات هذه الشركة" />
       )
     );
   }
@@ -154,25 +132,7 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   }
 
   if (!allowedRoles.includes(user.role)) {
-    return (
-      fallback || (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-              <h3 className="text-red-800 font-semibold mb-2">
-                🚫 ممنوع الوصول
-              </h3>
-              <p className="text-red-700 mb-4">
-                ليس لديك الصلاحية المطلوبة للوصول لهذه الصفحة
-              </p>
-              <p className="text-sm text-red-600">
-                الأدوار المطلوبة: {allowedRoles.join(", ")}
-              </p>
-            </div>
-          </div>
-        </div>
-      )
-    );
+    return fallback || <AccessDenied />;
   }
 
   return <>{children}</>;
@@ -210,29 +170,15 @@ export const PermissionProtectedRoute: React.FC<PermissionProtectedRouteProps> =
   }
 
   const userPerms = user.permissions || [];
-  const hasAccess = requiredPermissions.length === 0 || requiredPermissions.some(p => userPerms.includes(p));
+  const hasAccess =
+    requiredPermissions.length === 0 ||
+    requiredPermissions.every((p) => userPerms.includes(p));
 
   if (!hasAccess) {
     if (fallbackRedirect) {
       return <Navigate to={fallbackRedirect} replace />;
     }
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <h3 className="text-red-800 font-semibold mb-2">
-              غير مصرح لك
-            </h3>
-            <p className="text-red-700 mb-4">
-              ليس لديك الصلاحيات اللازمة للوصول إلى هذه الصفحة
-            </p>
-            <button type="button" onClick={() => window.history.back()} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
-              العودة
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <AccessDenied />;
   }
 
   return <>{children}</>;

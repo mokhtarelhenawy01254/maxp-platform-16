@@ -6,7 +6,6 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
-import { getPostAuthDestination } from "../../utils/authRouting";
 import { getApiUrl } from "../../config/environment";
 
 interface BusinessSpecialty {
@@ -322,7 +321,14 @@ const Register: React.FC = () => {
       const redirectParam = urlParams.get("redirect");
       const source = urlParams.get("source");
       const action = urlParams.get("action");
-      const postAuthDest = getPostAuthDestination(userData);
+      const postAuthDest =
+        userData?.role === "MERCHANT"
+          ? "/merchant-portal"
+          : userData?.role === "AFFILIATE"
+            ? "/affiliates/dashboard"
+            : userData?.role === "SUPER_ADMIN"
+              ? "/super-admin/dev-dashboard"
+              : NEW_ACCOUNT_DESTINATION;
 
       const SOURCE_TO_BUNDLE: Record<string, string> = {
         messaging: "messaging-bundle",

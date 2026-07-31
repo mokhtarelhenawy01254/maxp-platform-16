@@ -537,6 +537,7 @@ const login = async (req, res) => {
           isActive: true,
           timezone: true,
           lastLoginAt: true,
+          settings: true,
           company: {
             select: {
               id: true,
