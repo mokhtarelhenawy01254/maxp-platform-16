@@ -34,6 +34,11 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             apps/backend/scripts/seed_demo_company_h.js \
             "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/seed_demo_company_h.js"
+          scp -i "$HOME/.ssh/maxp_deploy_key" \
+            -P "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            apps/backend/scripts/verify_demo_company_h.js \
+            "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/verify_demo_company_h.js"
 
       - name: Run seed on server
         uses: appleboy/ssh-action@v1.0.3
@@ -49,3 +54,5 @@ jobs:
             export NODE_ENV=production
             cd /var/www/backend2
             node scripts/seed_demo_company_h.js
+            echo "=== VERIFY ==="
+            node scripts/verify_demo_company_h.js
