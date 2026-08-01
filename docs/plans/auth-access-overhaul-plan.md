@@ -14,9 +14,11 @@
 - ✅ **Sprint 6**: السايدبار `fail-closed` عند غياب الصلاحيات، `DefaultPageRedirect` يستخدم `resolvePostAuthDestination`.
 
 ### ملاحظات / مؤجلة
-- ✅ **سكربت ترحيل الأدوار**: `apps/backend/scripts/migrateLegacyPlatformRoles.js` + أمر `npm run migrate:legacy-roles` (dry-run افتراضياً، `--apply` للتطبيق). شُغّل dry-run على DB المحلية: صفر عضويات بدور مخصص قديم + 3 مستخدمين بـ "AGENT" (no-op).
-- ✅ **`seed:permissions`**: شُغّل محلياً — 161 صلاحية، OWNER=161، COMPANY_ADMIN=157، MANAGER=64، AGENT=23، AFFILIATE=5. **لازم يُعاد على برودكشن قبل النشر** (الأدوار المخصصة تُراجع بـ `grant_full_permissions_to_role.js`).
-- ✅ **تدقيق مسارات تعديل الطلبات**: `orders.edit` طُبّق على endpoints التعديل (PUT simple order/items, payment-status, notes, schedule, call-attempt, convert). ملاحظة: **الموظف AGENT حسب السيد مالهوش `orders.edit`** — دي تغيير سلوكي مقصود؛ لو الشركات محتاجة تعديل للطلبات من الموظفين، تُمنح الصلاحية من شاشة الأدوار.
+- ✅ **سكربت ترحيل الأدوار**: `apps/backend/scripts/migrateLegacyPlatformRoles.js` + أمر `npm run migrate:legacy-roles` (dry-run افتراضياً، `--apply` للتطبيق). **طُبّق على البرودكشن**: `mayar@maxp.com` "Project Manager"→`MANAGER`، صفر أدوار قديمة متبقية.
+- ✅ **`seed:permissions`**: شُغّل محلياً و**على البرودكشن** — 161 صلاحية (OWNER=161، COMPANY_ADMIN=157، MANAGER=64، AGENT=23، AFFILIATE=5).
+- ✅ **إصلاح إنتاجي**: الأغلفة التفصيلية للطلبات (`orders.create/edit/status.change`) سببت 403 لدور مخصص "تجهيز" (بيشتغل تحضير طلبات عبر `/orders-new`/`/orders-v2` نفس الراوتر). **رُجّع** إلى حارس `orders.view` فقط على مستوى الراوتر + hotfix مباشر على السيرفر.
+- ✅ **تدقيق أدوار البرودكشن**: كل الأدوار المخصصة فُحصت (المدمجة سليمة؛ "تجهيز" اتصلحت). **قرار المستخدم**: الصلاحيات تتبع إعدادات الأدوار (شاشة الأدوار هي المصدر) — فلا seed تعديل على AGENT.
+- ✅ **مزامنة الفرونت مع الباك**: `/customers/new`→`customers.create`، `/customers/:id/edit`→`customers.edit`، `/products/new`→`products.create`، `/products/:id/edit`→`products.edit` — منع فتح نماذج لا يستطيع المستخدم حفظها.
 - **مؤجل**: مسارات الإعدادات/الواتساب خارج النطاق (قرار المستخدم).
 - **ملاحظة بيئة**: بعض التعديلات تُلتقط تلقائياً في commits بواسطة بيئة العمل.
 
