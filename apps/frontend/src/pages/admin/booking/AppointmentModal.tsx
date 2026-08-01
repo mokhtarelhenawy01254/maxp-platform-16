@@ -98,6 +98,10 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
               </div>
             )}
             {appointment.notes && <InfoBlock label="ملاحظات" value={appointment.notes} fullWidth />}
+            {appointment.diagnosis && <InfoBlock label="التشخيص" value={appointment.diagnosis} fullWidth />}
+            {appointment.treatmentPlan && <InfoBlock label="خطة العلاج" value={appointment.treatmentPlan} fullWidth />}
+            {appointment.prescription && <InfoBlock label="الوصفة" value={appointment.prescription} fullWidth />}
+            {appointment.followUpDate && <InfoBlock label="موعد المتابعة" value={(String(appointment.followUpDate).split("T")[0] ?? "")} fullWidth />}
             <InfoBlock label="تاريخ الإنشاء" value={appointment.createdAt ? new Date(appointment.createdAt).toLocaleString("ar-EG") : "—"} fullWidth />
           </div>
           <div className="flex justify-end gap-3 mt-6">
@@ -182,6 +186,16 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
               </div>
             )}
           </div>
+
+          {isEditMode && (
+            <div className="space-y-4 border-t dark:border-gray-700 pt-4">
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">السجل الطبي</h4>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">التشخيص</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.diagnosis || ""} onChange={e => setForm({ ...form, diagnosis: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">خطة العلاج</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.treatmentPlan || ""} onChange={e => setForm({ ...form, treatmentPlan: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصفة</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.prescription || ""} onChange={e => setForm({ ...form, prescription: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">موعد المتابعة</label><input type="date" className={MODAL_INPUT_CLS} value={form.followUpDate ? String(form.followUpDate).split("T")[0] : ""} onChange={e => setForm({ ...form, followUpDate: e.target.value })} /></div>
+            </div>
+          )}
 
         </div>
         <div className="flex justify-end gap-3 mt-6">

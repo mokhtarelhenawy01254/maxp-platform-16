@@ -180,6 +180,7 @@
   "bookingDoctors": "Doctors",
   "bookingServices": "Services",
   "bookingPatients": "Patients",
+  "bookingInvoices": "Payments",
   "marketplace": "Marketplace",
   "marketplaceManagement": "Marketplace Management",
   "merchantCommissions": "My Commissions",

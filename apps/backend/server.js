@@ -196,6 +196,9 @@ const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
 const bookingReportsRoutes = require("./routes/bookingReportsRoutes");
 const bookingPatientsRoutes = require("./routes/bookingPatientsRoutes");
+const bookingInvoicesRoutes = require("./routes/bookingInvoicesRoutes");
+const bookingDoctorAvailabilityRoutes = require("./routes/bookingDoctorAvailabilityRoutes");
+const bookingDoctorPortalRoutes = require("./routes/bookingDoctorPortalRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -757,6 +760,9 @@ app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/booking/patients", bookingPatientsRoutes);
+app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
+app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
+app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -954,6 +960,18 @@ try {
 } catch (error) {
   console.error(
     "❌ [ATTENDANCE-CRON] Failed to start Attendance Auto Checkout Service:",
+    error,
+  );
+}
+
+// Start Booking Reminder Cron Service (WhatsApp appointment reminders)
+try {
+  const bookingReminderCron = require("./cron/bookingReminderCron");
+  bookingReminderCron.startBookingReminderCron();
+  console.log("✅ [BOOKING-REMINDER-CRON] Booking reminder service started");
+} catch (error) {
+  console.error(
+    "❌ [BOOKING-REMINDER-CRON] Failed to start Booking reminder service:",
     error,
   );
 }

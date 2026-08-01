@@ -25,24 +25,51 @@ model BookingBranch {
 
 /// Booking module - Doctors
 model BookingDoctor {
-  id         String   @id @default(cuid())
-  companyId  String
-  branchId   String
-  title      String   /// e.g. "دكتور", "أخصائي"
-  name       String?  /// Doctor's full name
-  specialty  String?  /// Specialty: "علاج طبيعي", "عظام", etc.
-  phone      String?
-  gender     Gender?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch      BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  id              String     @id @default(cuid())
+  companyId       String
+  branchId        String
+  title           String     /// e.g. "دكتور", "أخصائي"
+  name            String?    /// Doctor's full name
+  specialty       String?    /// Specialty: "علاج طبيعي", "عظام", etc.
+  phone           String?
+  gender          Gender?
+  email           String?
+  password        String?    /// Hashed password for doctor portal login
+  employeeId      String?    /// Optional link to HR Employee
+  consultationFee Float?
+  commissionRate  Float?
+  bio             String?
+  avatarUrl       String?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch          BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+  availability    DoctorAvailability[]
 
   @@index([companyId])
   @@index([branchId])
   @@map("booking_doctors")
+}
+
+/// Booking module - Doctor working availability (per weekday)
+model DoctorAvailability {
+  id          String    @id @default(cuid())
+  companyId   String
+  doctorId    String
+  dayOfWeek   Int       /// 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String    /// HH:mm
+  endTime     String    /// HH:mm
+  isAvailable Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doctor      BookingDoctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([doctorId])
+  @@map("doctor_availability")
 }
 
 /// Booking module - Service template (shared across branches)
@@ -116,6 +143,7 @@ model Patient {
   lastName        String?
   phone           String?
   email           String?
+  password        String?   /// Hashed password for patient portal login
   gender          Gender?
   birthDate       DateTime? @db.Date
   bloodType       String?
@@ -129,9 +157,57 @@ model Patient {
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   appointments    Appointment[]
+  invoices        MedicalInvoice[]
 
   @@index([companyId])
   @@index([customerId])
   @@index([phone])
   @@map("patients")
+}
+
+/// Booking module - Invoice for a patient/appointment
+model MedicalInvoice {
+  id            String          @id @default(cuid())
+  companyId     String
+  invoiceNumber String
+  patientId     String
+  appointmentId String?
+  total         Float
+  discount      Float           @default(0)
+  amountPaid    Float           @default(0)
+  status        String          @default("UNPAID") /// UNPAID | PARTIAL | PAID | REFUNDED
+  dueDate       DateTime?       @db.Date
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient       Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  payments      MedicalPayment[]
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([status])
+  @@map("medical_invoices")
+}
+
+/// Booking module - Payment records against an invoice
+model MedicalPayment {
+  id          String          @id @default(cuid())
+  companyId   String
+  invoiceId   String
+  amount      Float
+  method      String          @default("CASH") /// CASH | CARD | WALLET | ONLINE
+  paidAt      DateTime        @default(now())
+  notes       String?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice     MedicalInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@map("medical_payments")
 }

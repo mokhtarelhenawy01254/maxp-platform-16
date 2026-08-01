@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { findOrCreatePatient } = require('../services/bookingPatientService');
 const { v4: uuidv4 } = require('uuid');
 
 const resolveCompany = async (slug) => {
@@ -232,6 +233,16 @@ const createAppointment = async (req, res) => {
       if (service) serviceName = service.name;
     }
 
+    // Find-or-create the patient's medical file and link the appointment
+    const { id: patientId } = await findOrCreatePatient({
+      companyId: company.id,
+      customerName,
+      customerPhone,
+      customerGender,
+      customerEmail,
+      customerId: req.body.customerId || undefined,
+    });
+
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const endMin = startMinute + 30;
     const endTime = `${(startHour + Math.floor(endMin / 60)).toString().padStart(2, '0')}:${(endMin % 60).toString().padStart(2, '0')}`;
@@ -241,6 +252,7 @@ const createAppointment = async (req, res) => {
         id: uuidv4(), companyId: company.id,
         customerName: customerName.trim(),
         customerPhone, customerEmail, customerGender,
+        patientId,
         staffId: branchId, staffName: 'حجز عام',
         branchId, serviceId, serviceName,
         title: serviceName || 'موعد جديد',

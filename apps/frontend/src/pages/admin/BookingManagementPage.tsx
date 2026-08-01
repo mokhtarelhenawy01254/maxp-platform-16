@@ -6,7 +6,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
 } from "@/components/ui/alert-dialog";
 import {
-  BookingBranch, BookingDoctor, BookingAppointment, BookingService, BookingPatient,
+  BookingBranch, BookingDoctor, BookingAppointment, BookingService, BookingPatient, BookingInvoice,
   BranchFormData, ServiceFormData,
   TabId, fetchJson, api, getAuthHeaders, normalizeBranch, MODAL_INPUT_CLS
 } from "./booking/shared";
@@ -17,19 +17,22 @@ import ServicesTab from "./booking/ServicesTab";
 import AppointmentsTab from "./booking/AppointmentsTab";
 import CalendarTab from "./booking/CalendarTab";
 import PatientsTab from "./booking/PatientsTab";
+import PatientDetailModal from "./booking/PatientDetailModal";
+import InvoicesTab from "./booking/InvoicesTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices"].includes(urlTab) ? urlTab : "dashboard") as TabId;
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
   const [services, setServices] = useState<BookingService[]>([]);
   const [appointments, setAppointments] = useState<BookingAppointment[]>([]);
   const [patients, setPatients] = useState<BookingPatient[]>([]);
+  const [invoices, setInvoices] = useState<BookingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +42,9 @@ export default function BookingManagementPage() {
   const [serviceDetail, setServiceDetail] = useState<BookingService | null>(null);
   const [appointmentModal, setAppointmentModal] = useState<Partial<BookingAppointment> | null | undefined>(undefined);
   const [patientModal, setPatientModal] = useState<Partial<BookingPatient> | null | undefined>(undefined);
+  const [patientDetailId, setPatientDetailId] = useState<string | null>(null);
+  const [invoiceModal, setInvoiceModal] = useState<Partial<BookingInvoice> | null | undefined>(undefined);
+  const [paymentInvoice, setPaymentInvoice] = useState<BookingInvoice | null>(null);
 
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [calDate, setCalDate] = useState(new Date());
@@ -61,6 +67,8 @@ export default function BookingManagementPage() {
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
   const [searchPatient, setSearchPatient] = useState("");
+  const [searchInvoice, setSearchInvoice] = useState("");
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("");
   const [serviceFilterStatus, setServiceFilterStatus] = useState<"all" | "active" | "inactive">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -103,7 +111,7 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true); setError(null);
-    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments(), fetchPatients()]);
+    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments(), fetchPatients(), fetchInvoices()]);
     const rejected = results.filter(r => r.status === 'rejected');
     if (rejected.length > 0) setError(`فشل تحميل بعض البيانات (${rejected.length}/${results.length})`);
     setLoading(false);
@@ -121,6 +129,9 @@ export default function BookingManagementPage() {
   };
   const fetchPatients = async () => {
     try { setPatients(await fetchJson<BookingPatient[]>(api("patients?includeInactive=true")) || []); } catch (e: unknown) { console.error("fetchPatients", e); throw e; }
+  };
+  const fetchInvoices = async () => {
+    try { setInvoices(await fetchJson<BookingInvoice[]>(api("invoices")) || []); } catch (e: unknown) { console.error("fetchInvoices", e); throw e; }
   };
   const fetchAppointments = async () => {
     const params = new URLSearchParams();
@@ -223,6 +234,22 @@ export default function BookingManagementPage() {
     if (data !== false) { setPatientModal(undefined); fetchPatients(); }
   };
 
+  const saveInvoice = async (d: Partial<BookingInvoice> & { initialPayment?: number; method?: string }) => {
+    const isEdit = !!d.id;
+    const body = { ...d };
+    delete body.initialPayment;
+    delete body.method;
+    const payload: Record<string, unknown> = { ...body, initialPayment: d.initialPayment, method: d.method };
+    const data = await apiCall(api(`invoices${isEdit ? `/${d.id}` : ""}`), isEdit ? "PUT" : "POST", payload);
+    if (data !== false) { setInvoiceModal(undefined); fetchInvoices(); fetchAppointments(); }
+  };
+
+  const payInvoice = async (d: { amount: number; method: string; notes?: string }) => {
+    if (!paymentInvoice) return;
+    const data = await apiCall(api(`invoices/${paymentInvoice.id}/payments`), "POST", d);
+    if (data !== false) { setPaymentInvoice(null); fetchInvoices(); fetchAppointments(); }
+  };
+
   const updateAppointmentStatus = async (id: string, status: string) => {
     const data = await apiCall(api(`appointments/${id}/status`), "PUT", { status });
     if (data !== false) { setLoading(true); fetchAppointments().finally(() => setLoading(false)); }
@@ -279,6 +306,7 @@ export default function BookingManagementPage() {
           if (type === "branches") fetchBranches();
           else if (type === "doctors") fetchDoctors();
           else if (type === "patients") fetchPatients();
+          else if (type === "invoices") fetchInvoices();
           else fetchServices();
         }
       }
@@ -405,12 +433,32 @@ export default function BookingManagementPage() {
               <PatientsTab
                 patients={patients}
                 search={searchPatient} onSearchChange={setSearchPatient}
+                onView={setPatientDetailId}
                 onEdit={p => setPatientModal(p)}
                 onToggleActive={(id, cur) => toggleActive("patients", id, cur)}
                 onDelete={id => deleteItem("patients", id)}
                 modalPatient={patientModal}
                 onModalClose={() => setPatientModal(undefined)}
                 onSave={savePatient}
+              />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "invoices" && (
+            <TabErrorBoundary tabLabel="المدفوعات">
+              <InvoicesTab
+                invoices={invoices} patients={patients}
+                search={searchInvoice} onSearchChange={setSearchInvoice}
+                statusFilter={invoiceStatusFilter} onStatusFilterChange={setInvoiceStatusFilter}
+                onNew={() => setInvoiceModal({})}
+                onEdit={inv => setInvoiceModal(inv)}
+                onPay={setPaymentInvoice}
+                onDelete={id => deleteItem("invoices", id)}
+                invoiceModal={invoiceModal}
+                onInvoiceModalClose={() => setInvoiceModal(undefined)}
+                onInvoiceSave={saveInvoice}
+                paymentInvoice={paymentInvoice}
+                onPaymentClose={() => setPaymentInvoice(null)}
+                onPaymentSave={payInvoice}
               />
             </TabErrorBoundary>
           )}
@@ -446,6 +494,7 @@ export default function BookingManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {patientDetailId && <PatientDetailModal patientId={patientDetailId} onClose={() => setPatientDetailId(null)} />}
     </div>
   );
 }

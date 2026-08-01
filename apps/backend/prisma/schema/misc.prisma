@@ -288,6 +288,12 @@ model Appointment {
   source          String?   /// whatsapp/facebook/chat/dashboard
   paymentRequired Boolean   @default(false)
   paymentStatus   String?
+  /// Medical fields
+  diagnosis       String?
+  treatmentPlan   String?
+  prescription    String?
+  vitals          Json?     /// {"pressure":"120/80","weight":75,"temp":37}
+  followUpDate    DateTime? @db.Date
   createdById     String?
   createdByType   String?   /// ai_service / user (human dashboard user)
   createdByName   String?
@@ -300,6 +306,7 @@ model Appointment {
   branch          BookingBranch? @relation(fields: [branchId], references: [id])
   doctor          BookingDoctor? @relation(fields: [doctorId], references: [id])
   service         BookingService? @relation(fields: [serviceId], references: [id])
+  invoices        MedicalInvoice[]
 
   @@index([companyId])
   @@index([customerId])

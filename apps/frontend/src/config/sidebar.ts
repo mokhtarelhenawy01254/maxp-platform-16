@@ -942,6 +942,7 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/doctors', icon: Users, label: t('sidebar.bookingDoctors') },
                 { to: '/admin/booking/services', icon: Wrench, label: t('sidebar.bookingServices') },
                 { to: '/admin/booking/patients', icon: Users, label: t('sidebar.bookingPatients') },
+                { to: '/admin/booking/invoices', icon: BarChart3, label: t('sidebar.bookingInvoices') },
             ]
         },
 

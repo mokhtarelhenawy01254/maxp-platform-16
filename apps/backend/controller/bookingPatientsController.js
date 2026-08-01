@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const bcrypt = require('bcryptjs');
 
 const normalizeGender = (g) => {
   if (!g) return null;
@@ -7,7 +8,7 @@ const normalizeGender = (g) => {
 };
 
 const formatPatient = (p) => {
-  const { _count, ...rest } = p;
+  const { _count, password, ...rest } = p;
   return {
     ...rest,
     gender: p.gender ? String(p.gender).toLowerCase() : undefined,
@@ -92,7 +93,7 @@ const createPatient = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId } = req.body;
+    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     // Auto-link to an existing CRM Customer by phone when no customerId is provided
@@ -113,6 +114,7 @@ const createPatient = async (req, res) => {
         lastName: lastName || null,
         phone: phone || null,
         email: email || null,
+        password: password ? await bcrypt.hash(password, 10) : null,
         gender: normalizeGender(gender),
         birthDate: birthDate ? new Date(birthDate) : null,
         bloodType: bloodType || null,
@@ -122,7 +124,7 @@ const createPatient = async (req, res) => {
         notes: notes || null,
       },
     });
-    res.json({ success: true, data: patient });
+    res.json({ success: true, data: formatPatient(patient) });
   } catch (error) {
     console.error('Error creating patient:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء المريض' });
