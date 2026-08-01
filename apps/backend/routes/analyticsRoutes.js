@@ -3,6 +3,7 @@ const router = express.Router();
 const analyticsController = require('../controller/analyticsController');
 const { authenticateToken } = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 // ==================== Protected Routes (تحتاج تسجيل دخول) ====================
 
@@ -79,7 +80,7 @@ router.get('/funnel', authenticateToken, analyticsController.getFunnelAnalytics)
 router.get('/stock-forecast', authenticateToken, analyticsController.getStockForecastAnalytics);
 
 // تحليل الحملات وربط الطلبات بالمصادر
-router.get('/campaign-attribution', authenticateToken, cacheMiddleware(60000), analyticsController.getCampaignAttributionAnalytics);
+router.get('/campaign-attribution', authenticateToken, checkAppAccess('campaign-attribution'), cacheMiddleware(60000), analyticsController.getCampaignAttributionAnalytics);
 
 // حالات الطلب المتاحة للتقرير
 router.get('/statuses', authenticateToken, analyticsController.getAvailableStatuses);
