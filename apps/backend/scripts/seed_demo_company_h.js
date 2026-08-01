@@ -225,51 +225,52 @@ async function main() {
   ];
 
   for (const emp of employees) {
-    const existing = await prisma.employee.findFirst({
-      where: { companyId: company.id, employeeNumber: emp.num },
-    });
-    if (!existing) {
-      // Ensure a linked user exists
-      let user = await prisma.user.findFirst({ where: { email: emp.email } });
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email: emp.email,
-            password: await bcrypt.hash('123456', 10),
-            firstName: emp.firstName,
-            lastName: emp.lastName,
-            role: 'AGENT',
-            isActive: true,
-            companyId: company.id,
-          },
-        });
-      }
-      // Ensure UserCompany link exists
-      const link = await prisma.userCompany.findFirst({
-        where: { userId: user.id, companyId: company.id },
-      });
-      if (!link) {
-        await prisma.userCompany.create({
-          data: { userId: user.id, companyId: company.id, role: 'AGENT', isActive: true },
-        });
-      }
-      await prisma.employee.create({
+    // Ensure a linked user exists
+    let user = await prisma.user.findFirst({ where: { email: emp.email } });
+    if (!user) {
+      user = await prisma.user.create({
         data: {
-          companyId: company.id,
-          userId: user.id,
-          employeeNumber: emp.num,
+          email: emp.email,
+          password: await bcrypt.hash('123456', 10),
           firstName: emp.firstName,
           lastName: emp.lastName,
-          email: emp.email,
-          hireDate: new Date(),
-          departmentId: deptIds[emp.dept],
-          status: 'ACTIVE',
+          role: 'AGENT',
+          isActive: true,
+          companyId: company.id,
         },
       });
-      console.log('  ✅ Created employee:', emp.firstName, emp.lastName);
-    } else {
-      console.log('  ⏭️ Employee exists:', emp.num);
     }
+    // Ensure UserCompany link exists
+    const link = await prisma.userCompany.findFirst({
+      where: { userId: user.id, companyId: company.id },
+    });
+    if (!link) {
+      await prisma.userCompany.create({
+        data: { userId: user.id, companyId: company.id, role: 'AGENT', isActive: true },
+      });
+    }
+    // Create or reuse an Employee record for this user (userId is unique)
+    const existing = await prisma.employee.findFirst({
+      where: { userId: user.id },
+    });
+    if (existing) {
+      console.log('  ⏭️ Employee already exists for', emp.email, '| num:', existing.employeeNumber);
+      continue;
+    }
+    await prisma.employee.create({
+      data: {
+        companyId: company.id,
+        userId: user.id,
+        employeeNumber: emp.num,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        email: emp.email,
+        hireDate: new Date(),
+        departmentId: deptIds[emp.dept],
+        status: 'ACTIVE',
+      },
+    });
+    console.log('  ✅ Created employee:', emp.firstName, emp.lastName);
   }
 
   console.log('\n🎉 Done! Company:', company.id, '| Email:', COMPANY_EMAIL);
