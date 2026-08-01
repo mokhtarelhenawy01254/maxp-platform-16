@@ -208,6 +208,25 @@
   padding: 1.5rem;
 }
 
+/* Full-height scrollable apps (WhatsApp, etc.): make the intermediate
+   layout wrapper fill the app-shell so inner scroll containers work. */
+.app-shell-content:has(> .motion-safe\:animate-fade-in > .whatsapp-workspace-root) {
+  overflow: hidden;
+  padding: 0;
+}
+
+.app-shell-content > .motion-safe\:animate-fade-in:has(> .whatsapp-workspace-root) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell-content > .motion-safe\:animate-fade-in > .whatsapp-workspace-root {
+  min-height: 0;
+}
+
 @media (max-width: 1024px) {
   .app-shell-sidebar {
     position: fixed;
