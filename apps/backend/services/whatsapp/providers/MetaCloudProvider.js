@@ -386,12 +386,12 @@ async function createTemplate(sessionId, templateData) {
   const wabaId = session?.metaWabaId;
   if (!wabaId) throw new Error('Missing Meta WABA ID for session');
 
-  const { name, language, category, components: rawComponents, allowCategoryChange } = templateData;
+  const { name, language, category, components: rawComponents, allowCategoryChange, generateExample = true } = templateData;
   if (!name || !language || !category) {
     throw new Error('Missing required fields: name, language, category');
   }
 
-  const components = generateComponentExamples(rawComponents);
+  const components = generateExample ? generateComponentExamples(rawComponents) : rawComponents;
 
   const payload = {
     name,

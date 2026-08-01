@@ -820,8 +820,8 @@ async function publishTemplateToMeta(req, res) {
         return `{{${variableIndex[name]}}}`;
       });
 
-    const components = [{ type: 'BODY', text: bodyText }];
-
+    // 4. تجهيز الأزرار (إن وجدت)
+    let buttonsComponent = null;
     if (localTemplate.hasButtons && localTemplate.buttons) {
       try {
         const btns = typeof localTemplate.buttons === 'string'
@@ -831,37 +831,65 @@ async function publishTemplateToMeta(req, res) {
           text: b.text
         }));
         if (quickReplies.length > 0) {
-          components.push({ type: 'BUTTONS', buttons: quickReplies });
+          buttonsComponent = { type: 'BUTTONS', buttons: quickReplies };
         }
       } catch (e) { /* skip invalid buttons */ }
     }
 
-    // 4. إنشاء القالب في ميتا
+    // 5. إنشاء القالب في ميتا مع محاولات بديلة لتجاوز قيود الصيغة
+    // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
     const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 
-    let result;
-    try {
-      result = await MetaCloudProvider.createTemplate(sessionId, {
-        name: metaName,
-        language: 'ar',
-        category: metaCategory,
-        components
-      });
-    } catch (createError) {
-      // اسم القالب محجوز في ميتا (حتى لو كان مرفوضاً) → نعيد المحاولة باسم فريد
-      const errorText = String(createError?.response?.data?.error?.code || createError?.response?.data?.error?.message || createError?.message || '');
-      const isNameConflict = /131047|already\s*(?:in\s*use|exist)|name.*use|duplicate/i.test(errorText);
-      if (!isNameConflict) throw createError;
+    const variableCount = Object.keys(variableIndex).length;
+    const bodyWithExample = {
+      type: 'BODY',
+      text: bodyText,
+      example: { body_text: [Array.from({ length: variableCount }, (_, i) => `قيمة ${i + 1}`)] }
+    };
+    const bodyPlain = { type: 'BODY', text: bodyText };
 
-      metaName = `${metaName}_${Date.now().toString(36)}`.slice(0, 512);
-      console.warn(`☁️ [PUBLISH-TO-META] Name conflict, retrying with "${metaName}"`);
-      result = await MetaCloudProvider.createTemplate(sessionId, {
-        name: metaName,
-        language: 'ar',
-        category: metaCategory,
-        components
-      });
+    const variants = [];
+    if (buttonsComponent) {
+      variants.push({ label: 'buttons+example', components: [bodyWithExample, buttonsComponent] });
+      variants.push({ label: 'buttons', components: [bodyPlain, buttonsComponent] });
     }
+    variants.push({ label: 'body+example', components: [bodyWithExample] });
+    variants.push({ label: 'body', components: [bodyPlain] });
+
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Meta API timeout after ${ms}ms`)), ms))
+    ]);
+
+    let result = null;
+    let lastError = null;
+    let createdName = metaName;
+
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      const suffix = i === 0 ? '' : `v${i + 1}`;
+      const candidateName = `${metaName}${suffix}${Date.now().toString(36)}`.replace(/__+/g, '_').slice(0, 512);
+      try {
+        result = await withTimeout(MetaCloudProvider.createTemplate(sessionId, {
+          name: candidateName,
+          language: 'ar',
+          category: metaCategory,
+          components: variant.components,
+          generateExample: false
+        }), 25000);
+        createdName = candidateName;
+        console.log(`☁️ [PUBLISH-TO-META] Variant "${variant.label}" succeeded → "${candidateName}"`);
+        break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`☁️ [PUBLISH-TO-META] Variant "${variant.label}" failed: ${err?.message || err}`);
+      }
+    }
+
+    if (!result) {
+      throw lastError || new Error('فشل إنشاء القالب في ميتا');
+    }
+    metaName = createdName;
 
     // حفظ ترتيب المتغيرات ({{1}} = اسم المتغير) لاستخدامها عند الإرسال عبر ميتا لاحقاً
     const variableOrder = Object.keys(variableIndex).length > 0
@@ -894,7 +922,14 @@ async function publishTemplateToMeta(req, res) {
       message: 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
     });
   } catch (error) {
-    const requestDebug = { name: metaName, language: 'ar', category: metaCategory, components };
+    const requestDebug = {
+      name: metaName,
+      language: 'ar',
+      category: metaCategory,
+      bodyText,
+      buttons: buttonsComponent?.buttons || null,
+      lastError: error?.message
+    };
     const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
     console.error('❌ Error publishing template to Meta:', JSON.stringify(rawMeta || { error: error.message, code: error.code }, null, 2));
     const rawMetaError = rawMeta?.error;
