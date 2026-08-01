@@ -442,7 +442,7 @@ export default function OrderStatusTemplatesPage() {
                     onChange={(e) => setSettings((p) => p ? { ...p, isEnabled: e.target.checked } : p)}
                     className="peer sr-only"
                   />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
                 </label>
               </div>
 
@@ -461,7 +461,7 @@ export default function OrderStatusTemplatesPage() {
                     onChange={(e) => setSettings((p) => p ? { ...p, orderNotificationsEnabled: e.target.checked } : p)}
                     className="peer sr-only"
                   />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
                 </label>
               </div>
 
@@ -500,7 +500,7 @@ export default function OrderStatusTemplatesPage() {
                     onChange={(e) => setSettings((p) => p ? { ...p, stickySessionEnabled: e.target.checked } : p)}
                     className="peer sr-only"
                   />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
                 </label>
               </div>
 
@@ -523,7 +523,7 @@ export default function OrderStatusTemplatesPage() {
                       onChange={(e) => setSettings((p) => p ? { ...p, quietHoursEnabled: e.target.checked } : p)}
                       className="peer sr-only"
                     />
-                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
                   </label>
                 </div>
                 {settings.quietHoursEnabled && (
@@ -824,7 +824,7 @@ export default function OrderStatusTemplatesPage() {
                       onChange={(e) => setTemplateForm((p) => ({ ...p, hasButtons: e.target.checked }))}
                       className="peer sr-only"
                     />
-                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700" />
+                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
                   </label>
                 </div>
                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">

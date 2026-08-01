@@ -1124,6 +1124,8 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const status = (req.query.status || 'all').toString().toLowerCase();
     const search = (req.query.search || '').toString().trim();
+    const sortBy = (req.query.sortBy || '').toString();
+    const sortDir = (req.query.sortDir || 'desc').toString().toLowerCase() === 'asc' ? 'asc' : 'desc';
     const now = new Date();
 
     let lostAfterHours = 24;
@@ -1139,34 +1141,10 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
 
     const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
 
-    const whereClause = {
-      companyId,
-    };
-
-    const andClauses = [];
-
-    if (status === 'active' || status === 'incomplete') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { gte: lostThreshold } },
-          { checkoutStartedAt: { gte: lostThreshold } },
-          { updatedAt: { gte: lostThreshold } }
-        ]
-      });
-    } else if (status === 'expired' || status === 'lost') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { lt: lostThreshold } },
-          { checkoutStartedAt: { lt: lostThreshold } },
-          { updatedAt: { lt: lostThreshold } }
-        ]
-      });
-    }
-
-    const hasPhone = req.query.hasPhone === 'true';
+    const filterClauses = [];
 
     if (search) {
-      andClauses.push({
+      filterClauses.push({
         OR: [
           { cartId: { contains: search } },
           { checkoutData: { contains: search } }
@@ -1174,8 +1152,10 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    const hasPhone = req.query.hasPhone === 'true';
+
     if (hasPhone) {
-      andClauses.push({
+      filterClauses.push({
         OR: [
           { checkoutData: { contains: '"guestPhone"' } },
           { checkoutData: { contains: '"customerPhone"' } },
@@ -1187,21 +1167,72 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    if (andClauses.length) {
-      whereClause.AND = andClauses;
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { checkoutStartedAt: { gte: lostThreshold } },
+        { updatedAt: { gte: lostThreshold } }
+      ]
+    };
+
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { checkoutStartedAt: { lt: lostThreshold } },
+        { updatedAt: { lt: lostThreshold } }
+      ]
+    };
+
+    const statusClause =
+      status === 'active' || status === 'incomplete' ? activeClause
+        : (status === 'expired' || status === 'lost') ? lostClause
+          : null;
+
+    if (statusClause) {
+      filterClauses.push(statusClause);
     }
 
-    const [totalCount, carts] = await Promise.all([
-      getSharedPrismaClient().guestCart.count({ where: whereClause }),
-      getSharedPrismaClient().guestCart.findMany({
-        where: whereClause,
-        orderBy: [
+    const buildWhere = (extra = []) => {
+      const and = [...filterClauses, ...extra];
+      return { companyId, ...(and.length ? { AND: and } : {}) };
+    };
+
+    const allowedSorts = {
+      total: 'total',
+      checkoutUpdatedAt: 'checkoutUpdatedAt',
+      checkoutStartedAt: 'checkoutStartedAt',
+    };
+    const sortField = allowedSorts[sortBy];
+    const orderBy = sortField
+      ? [{ [sortField]: sortDir }]
+      : [
           { checkoutUpdatedAt: 'desc' },
           { checkoutStartedAt: 'desc' },
           { updatedAt: 'desc' }
-        ],
+        ];
+
+    const [totalCount, carts, totalAgg, activeAgg, lostAgg] = await Promise.all([
+      getSharedPrismaClient().guestCart.count({ where: buildWhere() }),
+      getSharedPrismaClient().guestCart.findMany({
+        where: buildWhere(),
+        orderBy,
         skip: (page - 1) * limit,
         take: limit
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere(),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([activeClause]),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([lostClause]),
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1253,6 +1284,14 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         page,
         limit,
         pages: Math.ceil(totalCount / limit)
+      },
+      stats: {
+        total: totalCount,
+        active: activeAgg._count._all,
+        lost: lostAgg._count._all,
+        totalValue: Number(totalAgg._sum.total || 0),
+        activeValue: Number(activeAgg._sum.total || 0),
+        lostValue: Number(lostAgg._sum.total || 0)
       }
     });
   } catch (error) {

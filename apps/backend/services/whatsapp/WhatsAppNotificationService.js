@@ -1951,35 +1951,57 @@ async function sendNotification(options) {
       return { success: false, reason: 'no_session' };
     }
 
+    // 🆕 تحديد نوع الجلسة (META_CLOUD vs BAILEYS) من قاعدة البيانات.
+    // جلسات META_CLOUD لا تُحمّل في ذاكرة Baileys (activeSessions)، لذلك يجب
+    // معاملتها كجلسة "connected" بناءً على حالة DB فقط.
+    let sessionProvider = 'BAILEYS';
+    const dbSessionForSend = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findUnique({
+      where: { id: sessionId },
+      select: { provider: true, status: true }
+    }));
+    if (dbSessionForSend?.provider) sessionProvider = dbSessionForSend.provider;
+
     let session = WhatsAppManager.getSession(sessionId);
-    console.log(`[WHATSAPP-DEBUG] Session status from manager memory:`, session ? session.status : 'null');
+    console.log(`[WHATSAPP-DEBUG] Session status from manager memory:`, session ? session.status : 'null', `| provider: ${sessionProvider}`);
 
-    // 🆕 JIT Initialization: إذا لم تكن الجلسة في الذاكرة ولكنها متصلة في DB، قم بتنشيطها
-    if (!session || session.status !== 'connected') {
+    // 🆕 جلسات Meta Cloud API تُعتبر متصلة إذا كانت CONNECTED في DB (لا socket في الذاكرة)
+    if (sessionProvider === 'META_CLOUD' && dbSessionForSend?.status === 'CONNECTED') {
+      session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+      console.log(`☁️ [WHATSAPP-DEBUG] META_CLOUD session ${sessionId} treated as connected (DB status=CONNECTED)`);
+    } else if (!session || session.status !== 'connected') {
+      // 🆕 JIT Initialization: إذا لم تكن الجلسة في الذاكرة ولكنها متصلة في DB، قم بتنشيطها
       session = await ensureRuntimeSessionConnected(sessionId, deliveryCompanyId);
-    }
 
-    if (!session || session.status !== 'connected') {
-      console.log(`⚠️ [WHATSAPP-DEBUG] Session not connected: ${sessionId}`);
+      if (!session || session.status !== 'connected') {
+        console.log(`⚠️ [WHATSAPP-DEBUG] Session not connected: ${sessionId}`);
 
-      // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
-      const connected = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findFirst({
-        where: {
-          companyId: deliveryCompanyId,
-          status: 'CONNECTED',
-          id: { not: sessionId }
-        },
-        select: { id: true },
-        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
-      }));
+        // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
+        const connected = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findFirst({
+          where: {
+            companyId: deliveryCompanyId,
+            status: 'CONNECTED',
+            id: { not: sessionId }
+          },
+          select: { id: true, provider: true },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
+        }));
 
-      if (connected?.id) {
-        const fallbackId = connected.id;
-        const fallbackSession = WhatsAppManager.getSession(fallbackId);
-        if (fallbackSession && fallbackSession.status === 'connected') {
-          sessionId = fallbackId;
-          session = fallbackSession;
-          console.log(`ℹ️ Using fallback runtime-connected session for company ${deliveryCompanyId}: ${sessionId}`);
+        if (connected?.id) {
+          const fallbackId = connected.id;
+          if (connected.provider === 'META_CLOUD') {
+            sessionId = fallbackId;
+            sessionProvider = 'META_CLOUD';
+            session = { status: 'connected', provider: 'META_CLOUD', sessionId };
+            console.log(`☁️ Using fallback META_CLOUD session for company ${deliveryCompanyId}: ${sessionId}`);
+          } else {
+            const fallbackSession = WhatsAppManager.getSession(fallbackId);
+            if (fallbackSession && fallbackSession.status === 'connected') {
+              sessionId = fallbackId;
+              sessionProvider = 'BAILEYS';
+              session = fallbackSession;
+              console.log(`ℹ️ Using fallback runtime-connected session for company ${deliveryCompanyId}: ${sessionId}`);
+            }
+          }
         }
       }
     }
@@ -2160,6 +2182,70 @@ async function sendNotification(options) {
       const jid = `${formattedPhone}@s.whatsapp.net`;
 
       let result;
+
+      // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
+      // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
+      // القالب المعتمد (metaTemplateName مع APPROVED) عندما تكون الجلسة META_CLOUD.
+      const metaTemplateName = safeTemplate?.metaTemplateName || null;
+      const metaTemplateStatus = safeTemplate?.metaTemplateStatus || null;
+      const canSendViaMetaTemplate =
+        sessionProvider === 'META_CLOUD' &&
+        metaTemplateName &&
+        String(metaTemplateStatus).toUpperCase() === 'APPROVED';
+
+      if (canSendViaMetaTemplate) {
+        try {
+          console.log(`☁️ [META-CLOUD] Sending via approved Meta template "${metaTemplateName}" (status=${metaTemplateStatus}) for event ${eventType}`);
+
+          // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name})
+          const bodyParams = [];
+          const variablesOrder = safeTemplate?.variables ? (() => {
+            try { const parsed = JSON.parse(safeTemplate.variables); return Array.isArray(parsed) ? parsed : null; } catch { return null; }
+          })() : null;
+
+          if (Array.isArray(variablesOrder) && variablesOrder.length > 0) {
+            variablesOrder
+              .sort((a, b) => (a.position || 0) - (b.position || 0))
+              .forEach((v) => {
+                const value = variables[v.name] !== undefined && variables[v.name] !== null
+                  ? String(variables[v.name])
+                  : '';
+                bodyParams.push({ type: 'text', text: value });
+              });
+          } else {
+            // Fallback: استخراج المتغيرات حسب ترتيب ظهورها في نص القالب
+            const bodyVarNames = (safeTemplate.content || '').match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || [];
+            const seen = new Set();
+            for (const m of bodyVarNames) {
+              const name = m.replace(/\{\{|\}\}/g, '').trim();
+              if (seen.has(name)) continue;
+              seen.add(name);
+              const value = variables[name] !== undefined && variables[name] !== null ? String(variables[name]) : '';
+              bodyParams.push({ type: 'text', text: value });
+            }
+          }
+
+          const components = [{ type: 'BODY', parameters: bodyParams }];
+
+          result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
+            name: metaTemplateName,
+            language: safeTemplate?.metaTemplateLanguage || 'ar',
+            components
+          }, {
+            templateBody: content,
+            senderId: null
+          });
+
+          console.log(`☁️ [META-CLOUD] Template message result:`, result);
+        } catch (metaError) {
+          // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ ونكمل للمسار البديل
+          console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+          console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
+          result = null;
+        }
+        // إذا نجح الإرسال (result موجود) نتخطى مسار الإرسال العادي بالأسفل (شرط !result)
+      }
+
       // 📋 معالجة الأزرار التفاعلية
       // الأولوية للأزرار من القالب إذا كانت موجودة، مع الحفاظ على الأيدي (IDs) الوظيفية إذا تم تمريرها من الكود
       let templateButtons = null;
@@ -2217,7 +2303,7 @@ async function sendNotification(options) {
         ];
       }
 
-      if (finalButtons && finalButtons.length > 0) {
+      if (!result && finalButtons && finalButtons.length > 0) {
         try {
           // Get footer from default template if not in DB template (DB model lacks footer field currently)
           const footerStr =
@@ -2235,7 +2321,7 @@ async function sendNotification(options) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
           result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
         }
-      } else if (safeTemplate.hasList && safeTemplate.listData) {
+      } else if (!result && safeTemplate.hasList && safeTemplate.listData) {
         try {
           const listData = typeof safeTemplate.listData === 'string' ? JSON.parse(safeTemplate.listData) : safeTemplate.listData;
           console.log(`[WHATSAPP-DEBUG] Sending list message`);
@@ -2244,7 +2330,7 @@ async function sendNotification(options) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to parse listData, falling back to text:`, parseError);
           result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
         }
-      } else {
+      } else if (!result) {
         console.log(`[WHATSAPP-DEBUG] Sending text message:`, content?.substring(0, 50));
         result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
       }

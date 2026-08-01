@@ -209,6 +209,7 @@ model Company {
   returnReasons                   ReturnReason[]
   returnRequests                  ReturnRequest[]
   returnSettings                  ReturnSettings?
+  returnTypes                     ReturnType[]
   sentMessageStats                SentMessageStat[]
   shippingZones                   ShippingZone[]
   storePages                      StorePage[]

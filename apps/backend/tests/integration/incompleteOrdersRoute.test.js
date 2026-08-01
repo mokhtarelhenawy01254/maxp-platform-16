@@ -19,6 +19,7 @@ jest.mock('../../utils/verifyToken', () => ({
     };
     next();
   },
+  requireRole: () => (req, res, next) => next(),
   requireCompanyAccess: (req, res, next) => next(),
 }));
 
@@ -115,5 +116,31 @@ describe('Incomplete orders route', () => {
         }),
       ]),
     );
+  });
+
+  test('GET /api/v1/orders-new/incomplete returns server-side stats scoped to the company', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete');
+
+    expect(response.status).toBe(200);
+    expect(response.body.stats).toEqual(
+      expect.objectContaining({
+        total: 1,
+        active: 1,
+        lost: 0,
+        totalValue: 990,
+        activeValue: 990,
+        lostValue: 0,
+      }),
+    );
+  });
+
+  test('GET /api/v1/orders-new/incomplete supports sorting by total', async () => {
+    const response = await request(app).get(
+      '/api/v1/orders-new/incomplete?sortBy=total&sortDir=asc',
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(Array.isArray(response.body.data)).toBe(true);
   });
 });

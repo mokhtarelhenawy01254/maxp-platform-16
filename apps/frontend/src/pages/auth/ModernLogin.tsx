@@ -1,11 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteLogin } from "../../utils/platformSiteMetaPixel";
-import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
+import { getPostAuthDestination } from "../../utils/authRouting";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 interface LoginFormData {

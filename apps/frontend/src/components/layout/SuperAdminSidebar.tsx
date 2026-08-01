@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
-  History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
-  Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell, Image,
-} from "lucide-react";
+import { LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Brain, History, Globe, Headphones, Tag, ChevronUp, ChevronDown, Activity, Sliders, Facebook, Award, GitBranch, Users, Clock, HardDrive, MessageSquare, Key, Play, Download, Code2, Zap, Brush, Server, Grid, Bell, Image, Briefcase, Wallet, Ticket, Palette, Database, Wrench, Layers, Trophy, Rocket } from 'lucide-react';
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -123,9 +118,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ mobileOpen, setMo
   const content = (
     <nav className="flex h-full flex-col overflow-x-hidden transition-all duration-300 bg-card text-foreground" role="navigation" aria-label={i18n.t("superAdmin.sidebar.brandName")} dir={i18n.dir()}>
       <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="flex size-10 items-center justify-center rounded-full bg-primary shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-          <Shield className="size-5 text-primary-foreground" />
-        </div>
+        <img src="/logo.png" alt="MAX-P" className="size-10 object-contain rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)]" />
         {!isCollapsed && (
           <div>
             <p className="text-sm font-black leading-tight tracking-tight">{i18n.t("superAdmin.sidebar.brandName")}</p>

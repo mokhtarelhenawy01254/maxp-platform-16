@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import {
   MagnifyingGlassIcon,
   ClipboardDocumentIcon,
   ArrowTopRightOnSquareIcon,
+  ArrowDownTrayIcon,
   ArrowPathIcon,
   ShoppingCartIcon,
   CurrencyDollarIcon,
@@ -13,97 +14,92 @@ import {
   FunnelIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PhoneIcon,
+  ChatBubbleLeftRightIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";
-import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import {
+  IncompleteConvertResponse,
+  IncompleteListResponse,
+  IncompleteOrder,
+  IncompleteStats,
+  formatDateTimeCompact,
+  getCustomerContact,
+  getCustomerName,
+  getExpiryStatus,
+  getGovernorate,
+  getLastUpdated,
+  getRelativeTime,
+  getStatusLabel,
+  getValueColor,
+  getValueLabel,
+  getValueTier,
+} from "./incompleteUtils";
 
-interface IncompleteOrder {
-  cartId: string;
-  itemsCount: number;
-  total: number;
-  checkoutData?: Record<string, any>;
-  checkoutStartedAt?: string;
-  checkoutUpdatedAt?: string;
-  updatedAt?: string;
-  expiresAt?: string;
-  status?: "lost" | "incomplete";
+type SortValue = "recent" | "value_desc" | "value_asc";
+
+interface IncompleteListParams {
+  page: number;
+  limit: number;
+  hasPhone: boolean;
+  search?: string;
+  status?: string;
+  sortBy?: string;
+  sortDir?: string;
 }
 
-const getValueTier = (total: number) => {
-  if (total >= 1000) return "high";
-  if (total >= 300) return "medium";
-  return "low";
-};
+const SKELETON_WIDTHS = [72, 55, 30, 45, 60, 35, 50];
 
-const getValueColor = (tier: string) => {
-  switch (tier) {
-    case "high": return "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800";
-    case "medium": return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800";
-    default: return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
-  }
-};
-
-const getValueLabel = (tier: string, t: any) => {
-  switch (tier) {
-    case "high": return t("orders.valueHigh");
-    case "medium": return t("orders.valueMedium");
-    default: return t("orders.valueLow");
-  }
+const escapeCsv = (value: unknown) => {
+  const str = value == null ? "" : String(value);
+  return `"${str.replace(/"/g, '""')}"`;
 };
 
 const IncompleteOrders: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
-  const { formatDate } = useDateFormat();
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState<IncompleteOrder[]>([]);
+  const [serverStats, setServerStats] = useState<IncompleteStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit, setLimit] = useState(20);
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortValue, setSortValue] = useState<SortValue>("recent");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [confirmConvertCartId, setConfirmConvertCartId] = useState<string | null>(null);
+  const [convertingCartId, setConvertingCartId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  const getGovernorate = (order: IncompleteOrder) => {
-    const data = order.checkoutData || {};
-    return data.governorate || data.city || data.gov || "";
-  };
+  const isRTL = getDirection() === "rtl";
+  const lang = i18n.language;
 
-  const getExpiresIn = (order: IncompleteOrder) => {
-    if (!order.expiresAt) return null;
-    const now = new Date();
-    const expires = new Date(order.expiresAt);
-    const diffMs = expires.getTime() - now.getTime();
-    if (diffMs <= 0) return null;
-    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-    if (diffHours >= 24) return `${Math.round(diffHours / 24)}d`;
-    return `${diffHours}h`;
-  };
+  const fallbackStats = useMemo(() => {
+    const active = orders.filter((o) => o.status !== "lost");
+    const lost = orders.filter((o) => o.status === "lost");
+    return {
+      total: totalOrders,
+      active: active.length,
+      lost: lost.length,
+      totalValue: active.reduce((s, o) => s + (o.total || 0), 0) + lost.reduce((s, o) => s + (o.total || 0), 0),
+      activeValue: active.reduce((s, o) => s + (o.total || 0), 0),
+      lostValue: lost.reduce((s, o) => s + (o.total || 0), 0),
+    };
+  }, [orders, totalOrders]);
 
-  const lostValue = useMemo(() => {
-    return orders
-      .filter((o) => o.status === "lost")
-      .reduce((sum, o) => sum + (o.total || 0), 0);
-  }, [orders]);
-
-  const stats = useMemo(() => {
-    const active = orders.filter((o) => o.status !== "lost").length;
-    const lost = orders.filter((o) => o.status === "lost").length;
-    const activeValue = orders
-      .filter((o) => o.status !== "lost")
-      .reduce((s, o) => s + (o.total || 0), 0);
-    const lostV = orders
-      .filter((o) => o.status === "lost")
-      .reduce((s, o) => s + (o.total || 0), 0);
-    return { active, lost, activeValue, lostValue: lostV };
-  }, [orders]);
+  const stats = serverStats || fallbackStats;
+  const statsAreServer = !!serverStats;
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -113,106 +109,65 @@ const IncompleteOrders: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [searchInput]);
 
+  const buildParams = useCallback(
+    (pageIndex: number, pageSize: number): IncompleteListParams => {
+      const params: IncompleteListParams = {
+        page: pageIndex,
+        limit: pageSize,
+        hasPhone: true,
+      };
+      if (search) params.search = search;
+      if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+      if (sortValue === "recent") {
+        params.sortBy = "checkoutUpdatedAt";
+        params.sortDir = "desc";
+      } else if (sortValue === "value_desc") {
+        params.sortBy = "total";
+        params.sortDir = "desc";
+      } else if (sortValue === "value_asc") {
+        params.sortBy = "total";
+        params.sortDir = "asc";
+      }
+      return params;
+    },
+    [search, statusFilter, sortValue],
+  );
+
   useEffect(() => {
     const fetchIncompleteOrders = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const params: Record<string, string | number> = { page, limit };
-        if (search) params.search = search;
-        if (statusFilter && statusFilter !== "all") params.status = statusFilter;
-        params.hasPhone = true;
-
-        const response = await apiClient.get("/orders-new/incomplete", { params });
+        const response = await apiClient.get<IncompleteListResponse>("/orders-new/incomplete", {
+          params: buildParams(page, limit),
+        });
         const data = response.data;
 
         if (data?.success) {
           setOrders(Array.isArray(data.data) ? data.data : []);
           setTotalOrders(data.pagination?.total || 0);
           setTotalPages(data.pagination?.pages || 1);
+          setServerStats(data.stats || null);
         } else {
           setOrders([]);
           setTotalOrders(0);
           setTotalPages(1);
+          setServerStats(null);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || t("orders.loadingOrders"));
+      } catch (err) {
+        const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+        setError(apiError.response?.data?.message || t("orders.loadingOrders"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchIncompleteOrders();
-  }, [page, limit, search, statusFilter, t, refreshKey]);
+  }, [page, limit, buildParams, t, refreshKey]);
 
-  const getCustomerName = (order: IncompleteOrder) => {
-    const data = order.checkoutData || {};
-    return (
-      data.guestName ||
-      data.fullName ||
-      data.customerName ||
-      data.customerFullName ||
-      data.name ||
-      null
-    );
-  };
-
-  const getCustomerContact = (order: IncompleteOrder) => {
-    const data = order.checkoutData || {};
-    const phone =
-      data.guestPhone ||
-      data.customerPhone ||
-      data.phoneNumber ||
-      data.mobileNumber ||
-      data.phone ||
-      data.mobile ||
-      "";
-    const email =
-      data.guestEmail ||
-      data.customerEmail ||
-      data.emailAddress ||
-      data.email ||
-      "";
-    return { phone, email };
-  };
-
-  const getLastUpdated = (order: IncompleteOrder) => {
-    return order.checkoutUpdatedAt || order.updatedAt || order.checkoutStartedAt || "";
-  };
-
-  const getRelativeTime = (dateStr: string) => {
-    if (!dateStr) return "";
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime();
-    if (diffMs < 0) return "";
-    const seconds = Math.floor(diffMs / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return t("orders.justNow");
-    if (minutes < 60) return t("orders.minutesAgo", { count: minutes });
-    if (hours < 24) return t("orders.hoursAgo", { count: hours });
-    if (days < 7) return t("orders.daysAgo", { count: days });
-    return formatDate(dateStr);
-  };
-
-  const formatDateTime = (dateStr: string) => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      const d = date.toLocaleDateString("en-CA");
-      const t = date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-      return `${d} ${t}`;
-    } catch {
-      return dateStr;
-    }
+  const handleRetry = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
   const handleCopyCartId = async (cartId: string) => {
@@ -234,38 +189,142 @@ const IncompleteOrders: React.FC = () => {
     }
   };
 
-  const handleRetry = () => {
-    setRefreshKey((prev) => prev + 1);
+  const handleConvert = async (cartId: string) => {
+    if (!cartId) return;
+    setConvertingCartId(cartId);
+    try {
+      const response = await apiClient.post<IncompleteConvertResponse>(
+        `/orders-new/incomplete/${encodeURIComponent(cartId)}/convert`,
+      );
+      const data = response.data;
+      if (data?.success) {
+        toast.success(t("orders.incompleteConvertSuccess"));
+        setConfirmConvertCartId(null);
+        handleRetry();
+      } else {
+        toast.error(data?.message || t("orders.incompleteConvertFailed"));
+      }
+    } catch (err) {
+      const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(apiError.response?.data?.message || apiError.message || t("orders.incompleteConvertFailed"));
+    } finally {
+      setConvertingCartId(null);
+    }
+  };
+
+  const buildWhatsAppUrl = (phone: string, name: string | null, total: number) => {
+    const digits = phone.replace(/\D/g, "");
+    if (!digits) return null;
+    const msg = t("orders.incompleteWhatsAppMessage", {
+      name: name || t("orders.notSpecified"),
+      total: formatPrice(total),
+    });
+    return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const all: IncompleteOrder[] = [];
+      const pageSize = 100;
+      let pageIndex = 1;
+      let total = 1;
+      while ((pageIndex - 1) * pageSize < total) {
+        const response = await apiClient.get<IncompleteListResponse>("/orders-new/incomplete", {
+          params: buildParams(pageIndex, pageSize),
+        });
+        const data = response.data;
+        if (!data?.success) break;
+        all.push(...(Array.isArray(data.data) ? data.data : []));
+        total = data.pagination?.total || 0;
+        pageIndex += 1;
+      }
+
+      if (!all.length) {
+        toast.error(t("orders.incompleteExportFailed"));
+        return;
+      }
+
+      const headers = [
+        t("orders.cartId"),
+        t("orders.customerName"),
+        t("orders.phone"),
+        t("orders.incompleteContactEmail"),
+        t("orders.governorate"),
+        t("orders.itemsCount"),
+        t("orders.total"),
+        t("orders.status"),
+        t("orders.lastUpdated"),
+      ];
+      const rows = all.map((o) => {
+        const contact = getCustomerContact(o.checkoutData);
+        const name = getCustomerName(o.checkoutData);
+        return [
+          o.cartId,
+          name || "",
+          contact.phone,
+          contact.email,
+          getGovernorate(o.checkoutData),
+          o.itemsCount || 0,
+          o.total || 0,
+          getStatusLabel(o.status, t),
+          getLastUpdated(o),
+        ];
+      });
+      const csv = "\uFEFF" + [headers, ...rows]
+        .map((row) => row.map(escapeCsv).join(","))
+        .join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `incomplete-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(apiError.response?.data?.message || apiError.message || t("orders.incompleteExportFailed"));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const statCards = [
     {
       label: t("orders.total"),
-      value: totalOrders,
+      value: stats.total,
       icon: ShoppingCartIcon,
       color: "text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30",
+      sub: statsAreServer ? undefined : t("orders.incompletePageStats"),
     },
     {
       label: t("orders.incompleteStatusActive"),
       value: stats.active,
-      sub: formatPrice(stats.activeValue),
       icon: ClockIcon,
       color: "text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30",
+      sub: statsAreServer
+        ? formatPrice(stats.activeValue)
+        : `${formatPrice(stats.activeValue)} · ${t("orders.incompletePageStats")}`,
     },
     {
       label: t("orders.incompleteStatusLost"),
       value: stats.lost,
-      sub: formatPrice(stats.lostValue),
       icon: ExclamationTriangleIcon,
       color: "text-red-600 bg-red-50 dark:text-red-300 dark:bg-red-900/30",
+      sub: statsAreServer
+        ? formatPrice(stats.lostValue)
+        : `${formatPrice(stats.lostValue)} · ${t("orders.incompletePageStats")}`,
     },
     {
       label: t("orders.totalValue"),
-      value: formatPrice(lostValue + stats.activeValue),
+      value: formatPrice(stats.totalValue),
       icon: CurrencyDollarIcon,
       color: "text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30",
     },
   ];
+
+  const PrevIcon = isRTL ? ChevronRightIcon : ChevronLeftIcon;
+  const NextIcon = isRTL ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
     <div className="space-y-6" dir={getDirection()}>
@@ -278,6 +337,19 @@ const IncompleteOrders: React.FC = () => {
             {t("orders.incompleteSubtitle")}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting || loading}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {exporting ? (
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowDownTrayIcon className="h-4 w-4" />
+          )}
+          {exporting ? t("orders.incompleteExporting") : t("orders.incompleteExport")}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -312,17 +384,17 @@ const IncompleteOrders: React.FC = () => {
             <label htmlFor="incomplete-orders-search" className="sr-only">
               {t("orders.incompleteSearchLabel")}
             </label>
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="incomplete-orders-search"
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t("orders.incompleteSearchPlaceholder")}
-              className="w-full pr-10 pl-10 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm placeholder-gray-400 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              className="w-full ps-10 pe-10 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm placeholder-gray-400 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
             />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <FunnelIcon className="h-4 w-4 text-gray-400" />
             <label htmlFor="incomplete-orders-status" className="sr-only">
               {t("orders.incompleteStatusLabel")}
@@ -340,11 +412,45 @@ const IncompleteOrders: React.FC = () => {
               <option value="active">{t("orders.incompleteStatusActive")}</option>
               <option value="lost">{t("orders.incompleteStatusLost")}</option>
             </select>
+            <label htmlFor="incomplete-orders-sort" className="sr-only">
+              {t("orders.incompleteSort")}
+            </label>
+            <select
+              id="incomplete-orders-sort"
+              value={sortValue}
+              onChange={(e) => {
+                setSortValue(e.target.value as SortValue);
+                setPage(1);
+              }}
+              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+            >
+              <option value="recent">{t("orders.incompleteSortLastUpdated")}</option>
+              <option value="value_desc">{t("orders.incompleteSortValueDesc")}</option>
+              <option value="value_asc">{t("orders.incompleteSortValueAsc")}</option>
+            </select>
+            <label htmlFor="incomplete-orders-per-page" className="sr-only">
+              {t("orders.incompletePerPage")}
+            </label>
+            <select
+              id="incomplete-orders-per-page"
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
             <button
               type="button"
               onClick={handleRetry}
               className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               title={t("orders.incompleteRetry")}
+              aria-label={t("orders.incompleteRetry")}
             >
               <ArrowPathIcon className="h-4 w-4" />
             </button>
@@ -354,7 +460,7 @@ const IncompleteOrders: React.FC = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-right min-w-[1020px]">
+          <table className="w-full text-start min-w-[1100px]">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -384,11 +490,11 @@ const IncompleteOrders: React.FC = () => {
               {loading ? (
                 Array.from({ length: 6 }).map((_, idx) => (
                   <tr key={`skeleton-${idx}`} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                    {Array.from({ length: 7 }).map((__, cellIdx) => (
+                    {SKELETON_WIDTHS.map((width, cellIdx) => (
                       <td key={`skeleton-${idx}-${cellIdx}`} className="px-5 py-4">
                         <div
                           className="h-4 rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse"
-                          style={{ width: `${60 + Math.random() * 30}%` }}
+                          style={{ width: `${width}%` }}
                         />
                       </td>
                     ))}
@@ -431,17 +537,20 @@ const IncompleteOrders: React.FC = () => {
                 </tr>
               ) : (
                 orders.map((order, idx) => {
-                  const contact = getCustomerContact(order);
+                  const contact = getCustomerContact(order.checkoutData);
                   const lastUpdated = getLastUpdated(order);
-                  const name = getCustomerName(order);
+                  const name = getCustomerName(order.checkoutData);
                   const valueTier = getValueTier(order.total || 0);
-                  const governorate = getGovernorate(order);
-                  const expiresIn = getExpiresIn(order);
+                  const governorate = getGovernorate(order.checkoutData);
+                  const expiry = getExpiryStatus(order, t);
+                  const whatsappUrl = buildWhatsAppUrl(contact.phone, name, order.total || 0);
+                  const isConverting = convertingCartId === order.cartId;
 
                   return (
                     <tr
                       key={order.cartId}
-                      className={`group border-b border-gray-50 dark:border-gray-700/50 last:border-0 transition-all hover:bg-blue-50/40 dark:hover:bg-blue-900/10 ${
+                      onClick={() => navigate(`/orders/incomplete/${encodeURIComponent(order.cartId)}`)}
+                      className={`group border-b border-gray-50 dark:border-gray-700/50 last:border-0 transition-all cursor-pointer hover:bg-blue-50/40 dark:hover:bg-blue-900/10 ${
                         idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/30 dark:bg-gray-800/50"
                       }`}
                     >
@@ -493,52 +602,134 @@ const IncompleteOrders: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm font-medium transition-colors group-hover:shadow-sm ${getValueColor(valueTier)}">
+                        <div
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm font-medium transition-colors group-hover:shadow-sm ${getValueColor(valueTier)}`}
+                          title={getValueLabel(valueTier, t)}
+                        >
                           <span>{formatPrice(order.total || 0)}</span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTime(lastUpdated) : ""}>
-                          {lastUpdated ? getRelativeTime(lastUpdated) : "-"}
+                        <div className="text-sm text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTimeCompact(lastUpdated, lang) : ""}>
+                          {lastUpdated ? getRelativeTime(lastUpdated, t) || formatDateTimeCompact(lastUpdated, lang) : "-"}
                         </div>
                         {lastUpdated && (
                           <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                            {formatDateTime(lastUpdated)}
+                            {formatDateTimeCompact(lastUpdated, lang)}
                           </div>
                         )}
                       </td>
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                            order.status === "lost"
-                              ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
-                              : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800"
-                          }`}
-                        >
+                        <div className="flex flex-col gap-1.5">
                           <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              order.status === "lost" ? "bg-red-500" : "bg-amber-500"
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border w-fit ${
+                              order.status === "lost"
+                                ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
+                                : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800"
                             }`}
-                          />
-                          {order.status === "lost"
-                            ? t("orders.incompleteStatusLost")
-                            : t("orders.incompleteStatusActive")}
-                        </span>
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                order.status === "lost" ? "bg-red-500" : "bg-amber-500"
+                              }`}
+                            />
+                            {getStatusLabel(order.status, t)}
+                          </span>
+                          {expiry && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+                                expiry.urgent
+                                  ? "text-red-500 dark:text-red-400"
+                                  : "text-gray-400 dark:text-gray-500"
+                              }`}
+                            >
+                              <ClockIcon className="h-3 w-3" />
+                              {expiry.label}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1.5">
+                          {contact.phone ? (
+                            <a
+                              href={`tel:${contact.phone.replace(/\D/g, "")}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800 transition-all"
+                              title={t("orders.incompleteCall")}
+                              aria-label={t("orders.incompleteCall")}
+                            >
+                              <PhoneIcon className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            <span
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                              title={t("orders.incompleteNoPhoneToContact")}
+                              aria-label={t("orders.incompleteNoPhoneToContact")}
+                            >
+                              <PhoneIcon className="h-4 w-4" />
+                            </span>
+                          )}
+                          {whatsappUrl ? (
+                            <a
+                              href={whatsappUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-green-50 hover:text-green-600 hover:border-green-200 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-800 transition-all"
+                              title={t("orders.incompleteWhatsApp")}
+                              aria-label={t("orders.incompleteWhatsApp")}
+                            >
+                              <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            <span
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                              title={t("orders.incompleteNoPhoneToContact")}
+                              aria-label={t("orders.incompleteNoPhoneToContact")}
+                            >
+                              <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (contact.phone) {
+                                setConfirmConvertCartId(order.cartId);
+                              } else {
+                                toast.error(t("orders.incompleteConvertNoPhone"));
+                              }
+                            }}
+                            disabled={isConverting}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            title={t("orders.incompleteQuickConvert")}
+                            aria-label={t("orders.incompleteQuickConvert")}
+                          >
+                            {isConverting ? (
+                              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ShoppingBagIcon className="h-4 w-4" />
+                            )}
+                          </button>
                           <Link
                             to={`/orders/incomplete/${encodeURIComponent(order.cartId)}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 dark:hover:border-blue-800 transition-all"
                             title={t("orders.incompleteViewDetails")}
+                            aria-label={t("orders.incompleteViewDetails")}
                           >
                             <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                           </Link>
                           <button
                             type="button"
-                            onClick={() => handleCopyCartId(order.cartId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyCartId(order.cartId);
+                            }}
                             className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-all"
                             title={t("orders.incompleteCopyId")}
+                            aria-label={t("orders.incompleteCopyId")}
                           >
                             <ClipboardDocumentIcon className="h-4 w-4" />
                           </button>
@@ -576,7 +767,7 @@ const IncompleteOrders: React.FC = () => {
               disabled={page === 1}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRightIcon className="h-4 w-4" />
+              <PrevIcon className="h-4 w-4" />
               {t("orders.previous")}
             </button>
             <div className="flex items-center gap-1">
@@ -605,11 +796,22 @@ const IncompleteOrders: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t("orders.next")}
-              <ChevronLeftIcon className="h-4 w-4" />
+              <NextIcon className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmConvertCartId}
+        title={t("orders.incompleteConfirmTitle")}
+        content={t("orders.incompleteConfirmContent")}
+        confirmLabel={t("orders.incompleteQuickConvert")}
+        cancelLabel={t("orders.incompleteCancel")}
+        confirmColor="success"
+        onConfirm={() => confirmConvertCartId && handleConvert(confirmConvertCartId)}
+        onCancel={() => setConfirmConvertCartId(null)}
+      />
     </div>
   );
 };

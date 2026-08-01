@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import {
   returnService,
@@ -6,26 +6,38 @@ import {
   ReturnReasonCategory,
   ReviewDisplayConfig,
   ReturnSettingsData,
+  ReturnType,
+  ReturnTypeCode,
+  ReturnTypeCostModel,
+  ReturnShippingCompany,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import {
-  Edit2,
-  Trash2,
-  FolderPlus,
-  Tag,
-  Shield,
-  CheckCircle,
-  XCircle,
-  Sparkles,
-  Eye,
-  EyeOff,
-  Save,
-  Settings2,
-  Filter,
-  Package,
-  Calendar,
-} from "lucide-react";
+import { Plus, Edit2, Trash2, Truck, Tag, Shield, Eye, EyeOff, Save, Settings2, Package, Calendar, CheckCircle, XCircle, Sparkles, FolderPlus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+
+const typeCodeKey = (code: string): string => {
+  switch (code) {
+    case "SENDER_PAYS":
+      return "241";
+    case "RECIPIENT_PAYS":
+      return "242";
+    case "CANCELLED":
+      return "243";
+    default:
+      return "244";
+  }
+};
+
+const costModelKey = (model: string): string => {
+  switch (model) {
+    case "FULL":
+      return "245";
+    case "NONE":
+      return "246";
+    default:
+      return "247";
+  }
+};
 
 const getOrderStatusFields = (t: any): {
   code: string;
@@ -190,7 +202,9 @@ const ReturnSettingsPage: React.FC = () => {
     showDateColumn: true,
     showActionsColumn: true,
   }), [ORDER_STATUS_FIELDS]);
-  const [activeTab, setActiveTab] = useState<"display" | "reasons">("display");
+  const [activeTab, setActiveTab] = useState<"display" | "reasons" | "types">(
+    "display",
+  );
 
   // Display settings state
   const [displayConfig, setDisplayConfig] = useState<ReviewDisplayConfig>(
@@ -219,6 +233,21 @@ const ReturnSettingsPage: React.FC = () => {
   const [reasonText, setReasonText] = useState("");
   const [reasonDesc, setReasonDesc] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+
+  // Return Types (أنواع المرتجع حسب شركة الشحن)
+  const [shippingCompanies, setShippingCompanies] = useState<
+    ReturnShippingCompany[]
+  >([]);
+  const [typesLoading, setTypesLoading] = useState(false);
+  const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+  const [editingType, setEditingType] = useState<ReturnType | null>(null);
+  const [typeName, setTypeName] = useState("");
+  const [typeShippingCompanyId, setTypeShippingCompanyId] = useState("");
+  const [typeCode, setTypeCode] = useState<ReturnTypeCode>("SENDER_PAYS");
+  const [typeCostModel, setTypeCostModel] =
+    useState<ReturnTypeCostModel>("FULL");
+  const [typeFixedAmount, setTypeFixedAmount] = useState("");
+  const [savingType, setSavingType] = useState(false);
 
   // Load display settings
   const fetchSettings = async () => {
@@ -255,10 +284,28 @@ const ReturnSettingsPage: React.FC = () => {
     }
   };
 
+  const fetchTypes = async () => {
+    setTypesLoading(true);
+    try {
+      const res = await returnService.getReturnShippingCompanies();
+      setShippingCompanies(res.data.data);
+    } catch (error) {
+      console.error("Failed to load return types:", error);
+    } finally {
+      setTypesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
     fetchReasonsData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "types") {
+      fetchTypes();
+    }
+  }, [activeTab]);
 
   const handleSaveDisplayConfig = async () => {
     setSaving(true);
@@ -382,6 +429,75 @@ const ReturnSettingsPage: React.FC = () => {
     }
   };
 
+  const openTypeModal = (type?: ReturnType, presetCompanyId?: string) => {
+    setEditingType(type || null);
+    setTypeName(type?.name || "");
+    setTypeShippingCompanyId(type?.shippingCompanyId || presetCompanyId || "");
+    setTypeCode(type?.code || "SENDER_PAYS");
+    setTypeCostModel(type?.costModel || "FULL");
+    setTypeFixedAmount(
+      type?.fixedAmount != null ? String(type.fixedAmount) : "",
+    );
+    setIsTypeModalOpen(true);
+  };
+
+  const handleSaveType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!typeShippingCompanyId) {
+      toast.error(t('returns.k_257'));
+      return;
+    }
+    setSavingType(true);
+    try {
+      const fixedAmount =
+        typeCostModel === "FIXED" && typeFixedAmount !== ""
+          ? parseFloat(typeFixedAmount)
+          : null;
+      if (editingType) {
+        await returnService.updateReturnType(editingType.id, {
+          name: typeName,
+          code: typeCode,
+          costModel: typeCostModel,
+          shippingCompanyId: typeShippingCompanyId,
+          fixedAmount,
+        });
+      } else {
+        await returnService.createReturnType({
+          name: typeName,
+          code: typeCode,
+          costModel: typeCostModel,
+          shippingCompanyId: typeShippingCompanyId,
+          fixedAmount: fixedAmount ?? undefined,
+        });
+      }
+      toast.success(t('returns.k_248'));
+      setIsTypeModalOpen(false);
+      fetchTypes();
+    } catch (error) {
+      const serverMsg = (
+        error as { response?: { data?: { error?: string } } }
+      )?.response?.data?.error;
+      if (serverMsg) {
+        toast.error(serverMsg);
+      } else {
+        toast.error(t('returns.k_249'));
+      }
+    } finally {
+      setSavingType(false);
+    }
+  };
+
+  const deleteType = async (id: string) => {
+    if (!confirm(t('returns.k_252'))) return;
+    try {
+      await returnService.deleteReturnType(id);
+      toast.success(t('returns.k_250'));
+      fetchTypes();
+    } catch (error) {
+      toast.error(t('returns.k_251'));
+    }
+  };
+
   return (
     <div
       className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-white"
@@ -419,6 +535,16 @@ const ReturnSettingsPage: React.FC = () => {
           }`}
         >
           <Tag size={16} /> {t('returns.k_163')}
+        </button>
+        <button
+          onClick={() => setActiveTab("types")}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "types"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+        >
+          <Truck size={16} /> {t('returns.k_230')}
         </button>
       </div>
 
@@ -977,6 +1103,255 @@ const ReturnSettingsPage: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Tab: Return Types (أنواع المرتجع حسب شركة الشحن) */}
+      {activeTab === "types" && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400">
+                <Truck size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+                  {t('returns.k_230')}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('returns.k_231')}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => openTypeModal()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={18} /> {t('returns.k_234')}
+            </button>
+          </div>
+
+          {typesLoading ? (
+            <div className="text-center py-8 text-gray-400">
+              {t('returns.k_144')}
+            </div>
+          ) : shippingCompanies.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500">
+              {t('returns.k_233')}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {shippingCompanies.map((company) => (
+                <div
+                  key={company.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
+                >
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                        <Truck size={18} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">
+                          {company.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {company.returnTypes?.length || 0}{" "}
+                          {t('returns.k_255')}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openTypeModal(undefined, company.id)}
+                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium flex items-center gap-1"
+                    >
+                      <Plus size={14} /> {t('returns.k_234')}
+                    </button>
+                  </div>
+
+                  {!company.returnTypes || company.returnTypes.length === 0 ? (
+                    <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
+                      {t('returns.k_240')}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {company.returnTypes.map((type) => (
+                        <div
+                          key={type.id}
+                          className="px-6 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 group transition-colors"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {type.name}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  type.isActive
+                                    ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                }`}
+                              >
+                                {type.isActive
+                                  ? t('returns.k_259')
+                                  : t('returns.k_260')}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono">
+                                {type.code}
+                              </span>
+                              <span>{t(`returns.k_${typeCodeKey(type.code)}`)}</span>
+                              <span>•</span>
+                              <span>{t(`returns.k_${costModelKey(type.costModel)}`)}</span>
+                              {type.costModel === "FIXED" &&
+                                type.fixedAmount != null && (
+                                  <span className="font-medium">
+                                    {type.fixedAmount}{" "}
+                                    {t('returns.k_22')}
+                                  </span>
+                                )}
+                            </div>
+                          </div>
+                          <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => openTypeModal(type)}
+                              className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
+                              title={t('returns.k_235')}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteType(type.id)}
+                              className="text-red-400 hover:text-red-600"
+                              title={t('returns.k_250')}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Type Modal */}
+          {isTypeModalOpen && (
+            <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
+                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
+                  {editingType ? t('returns.k_235') : t('returns.k_234')}
+                </h3>
+                <form onSubmit={handleSaveType}>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('returns.k_236')} *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={typeName}
+                        onChange={(e) => setTypeName(e.target.value)}
+                        className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('returns.k_254')} *
+                      </label>
+                      <select
+                        required
+                        value={typeShippingCompanyId}
+                        onChange={(e) => setTypeShippingCompanyId(e.target.value)}
+                        className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="">{t('returns.k_115')}</option>
+                        {shippingCompanies.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('returns.k_237')} *
+                      </label>
+                      <select
+                        required
+                        value={typeCode}
+                        onChange={(e) =>
+                          setTypeCode(e.target.value as ReturnTypeCode)
+                        }
+                        className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="SENDER_PAYS">{t('returns.k_241')}</option>
+                        <option value="RECIPIENT_PAYS">{t('returns.k_242')}</option>
+                        <option value="CANCELLED">{t('returns.k_243')}</option>
+                        <option value="CUSTOM">{t('returns.k_244')}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('returns.k_238')} *
+                      </label>
+                      <select
+                        required
+                        value={typeCostModel}
+                        onChange={(e) =>
+                          setTypeCostModel(
+                            e.target.value as ReturnTypeCostModel,
+                          )
+                        }
+                        className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="FULL">{t('returns.k_245')}</option>
+                        <option value="NONE">{t('returns.k_246')}</option>
+                        <option value="FIXED">{t('returns.k_247')}</option>
+                      </select>
+                    </div>
+                    {typeCostModel === "FIXED" && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('returns.k_239')} *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          value={typeFixedAmount}
+                          onChange={(e) => setTypeFixedAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setIsTypeModalOpen(false)}
+                      className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    >
+                      {t('returns.k_158')}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingType}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {savingType ? t('returns.k_105') : t('returns.k_186')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

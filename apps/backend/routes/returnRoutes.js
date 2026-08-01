@@ -24,6 +24,13 @@ router.put('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order
 router.get('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnSettings);
 router.put('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnSettings);
 
+// Return Types (أنواع المرتجع حسب شركة الشحن)
+router.get('/return-types', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnTypes);
+router.post('/return-types', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createReturnType);
+router.put('/return-types/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnType);
+router.delete('/return-types/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.deleteReturnType);
+router.get('/return-shipping-companies', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnShippingCompanies);
+
 // Return Operations (Contact & History)
 router.post('/requests/:id/contact', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.addContactAttempt);
 router.get('/requests/:id/contacts', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getContactHistory);
