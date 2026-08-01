@@ -140,16 +140,18 @@ const updatePatient = async (req, res) => {
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId'];
+    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password'];
     const data = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) data[field] = req.body[field];
     }
     if (data.gender !== undefined) data.gender = normalizeGender(data.gender);
     if (data.birthDate) data.birthDate = new Date(data.birthDate);
+    if (data.password) data.password = await bcrypt.hash(data.password, 10);
+    else delete data.password;
 
     const patient = await getSharedPrismaClient().patient.update({ where: { id }, data });
-    res.json({ success: true, data: patient });
+    res.json({ success: true, data: formatPatient(patient) });
   } catch (error) {
     console.error('Error updating patient:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المريض' });
