@@ -13199,6 +13199,7 @@ declare module 'react-i18next' {
         upsellPlanner: string;
         refundRateCalculator: string;
         campaigns: string;
+        campaignAttribution: string;
         cashbackSettings: string;
         categories: string;
         categoryAnalytics: string;
