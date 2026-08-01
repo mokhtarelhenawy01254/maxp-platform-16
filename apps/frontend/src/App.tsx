@@ -991,6 +991,24 @@ const DoctorAvailabilityPage = React.lazy(
 const DoctorPaymentsPage = React.lazy(
   () => import("./pages/doctor/DoctorPaymentsPage"),
 );
+const PatientLayout = React.lazy(
+  () => import("./components/layout/PatientLayout"),
+);
+const PatientLoginPage = React.lazy(
+  () => import("./pages/auth/PatientLoginPage"),
+);
+const PatientDashboardPage = React.lazy(
+  () => import("./pages/patient/PatientDashboardPage"),
+);
+const PatientAppointmentsPage = React.lazy(
+  () => import("./pages/patient/PatientAppointmentsPage"),
+);
+const PatientHistoryPage = React.lazy(
+  () => import("./pages/patient/PatientHistoryPage"),
+);
+const PatientInvoicesPage = React.lazy(
+  () => import("./pages/patient/PatientInvoicesPage"),
+);
 const ParentLoginPage = React.lazy(
   () => import("./pages/auth/ParentLoginPage"),
 );
@@ -1761,6 +1779,15 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <DoctorLoginPage />
+                </AuthLayout>
+              }
+            />
+            {/* Patient Portal Login */}
+            <Route
+              path="/patient/login"
+              element={
+                <AuthLayout>
+                  <PatientLoginPage />
                 </AuthLayout>
               }
             />
@@ -6813,6 +6840,10 @@ const AppContent = () => {
                 <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
                 <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
                 <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
+                <Route path="/patient/dashboard" element={<PatientLayout><PatientDashboardPage /></PatientLayout>} />
+                <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
+                <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
+                <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={

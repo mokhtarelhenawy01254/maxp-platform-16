@@ -31,7 +31,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     firstName: string; lastName: string; phone: string; email: string;
     gender: string; birthDate: string; bloodType: string;
     allergies: string; chronicDiseases: string; medications: string;
-    notes: string; isActive: boolean;
+    notes: string; isActive: boolean; password: string;
   }>({
     firstName: patient?.firstName || "",
     lastName: patient?.lastName || "",
@@ -45,6 +45,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     medications: toList(patient?.medications),
     notes: patient?.notes || "",
     isActive: patient?.isActive ?? true,
+    password: "",
   });
 
   const valid = form.firstName.trim() !== "";
@@ -64,6 +65,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
       medications: fromList(form.medications),
       notes: form.notes.trim() || undefined,
       isActive: form.isActive,
+      password: form.password || undefined,
     });
   };
 
@@ -103,6 +105,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أمراض مزمنة (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.chronicDiseases} onChange={e => setForm({ ...form, chronicDiseases: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أدوية حالية (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.medications} onChange={e => setForm({ ...form, medications: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{patient?.id ? "كلمة مرور بوابة المريض (اتركها فارغة للاحتفاظ)" : "كلمة مرور بوابة المريض (اختياري)"}</label><input type="password" className={MODAL_INPUT_CLS} dir="ltr" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
           {patient?.id && (
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} />

@@ -108,6 +108,7 @@ export interface BookingPatient {
   medications?: string[] | string;
   notes?: string; isActive: boolean; createdAt: string;
   visitCount?: number;
+  password?: string;
   customer?: { id: string; firstName: string; lastName: string; phone?: string };
 }
 
