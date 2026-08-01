@@ -35,6 +35,7 @@ const EXACT_ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/products/new": ["products.create"],
   "/products/import-easy-orders": ["products.create"],
   "/products/import-woocommerce": ["products.create"],
+  "/customers/new": ["customers.create"],
 };
 
 /** Prefix -> permissions (ALL required to view the section). */

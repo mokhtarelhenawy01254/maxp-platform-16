@@ -970,6 +970,27 @@ const TeacherPaymentsPage = React.lazy(
 const TeacherAvailabilityPage = React.lazy(
   () => import("./pages/teacher/TeacherAvailabilityPage"),
 );
+const DoctorLayout = React.lazy(
+  () => import("./components/layout/DoctorLayout"),
+);
+const DoctorLoginPage = React.lazy(
+  () => import("./pages/auth/DoctorLoginPage"),
+);
+const DoctorDashboardPage = React.lazy(
+  () => import("./pages/doctor/DoctorDashboardPage"),
+);
+const DoctorSchedulePage = React.lazy(
+  () => import("./pages/doctor/DoctorSchedulePage"),
+);
+const DoctorPatientsPage = React.lazy(
+  () => import("./pages/doctor/DoctorPatientsPage"),
+);
+const DoctorAvailabilityPage = React.lazy(
+  () => import("./pages/doctor/DoctorAvailabilityPage"),
+);
+const DoctorPaymentsPage = React.lazy(
+  () => import("./pages/doctor/DoctorPaymentsPage"),
+);
 const ParentLoginPage = React.lazy(
   () => import("./pages/auth/ParentLoginPage"),
 );
@@ -1731,6 +1752,15 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <TeacherLoginPage />
+                </AuthLayout>
+              }
+            />
+            {/* Doctor Portal Login */}
+            <Route
+              path="/doctor/login"
+              element={
+                <AuthLayout>
+                  <DoctorLoginPage />
                 </AuthLayout>
               }
             />
@@ -2673,7 +2703,7 @@ const AppContent = () => {
                 <Route
                   path="/customers/new"
                   element={
-                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                    <PermissionProtectedRoute requiredPermissions={['customers.create']}>
                       <Layout>
                         <CustomerCreate />
                       </Layout>
@@ -2731,7 +2761,7 @@ const AppContent = () => {
                 <Route
                   path="/customers/:id/edit"
                   element={
-                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                    <PermissionProtectedRoute requiredPermissions={['customers.edit']}>
                       <Layout>
                         <CustomerEdit />
                       </Layout>
@@ -3629,7 +3659,7 @@ const AppContent = () => {
                 <Route
                   path="/products/new"
                   element={
-                    <PermissionProtectedRoute requiredPermissions={['products.create', 'products.view']}>
+                    <PermissionProtectedRoute requiredPermissions={['products.create']}>
                       <Layout>
                         <ProductNewFinal />
                       </Layout>
@@ -3639,7 +3669,7 @@ const AppContent = () => {
                 <Route
                   path="/products/reviews"
                   element={
-                    <PermissionProtectedRoute requiredPermissions={['orders.product-reviews.view', 'products.view']}>
+                    <PermissionProtectedRoute requiredPermissions={['orders.product-reviews.view']}>
                       <Layout>
                         <ProductReviewsSimple />
                       </Layout>
@@ -3679,7 +3709,7 @@ const AppContent = () => {
                 <Route
                   path="/products/:id/edit"
                   element={
-                    <PermissionProtectedRoute requiredPermissions={['products.edit', 'products.view']}>
+                    <PermissionProtectedRoute requiredPermissions={['products.edit']}>
                       <Layout>
                         <ProductNewFinal />
                       </Layout>
@@ -6778,6 +6808,11 @@ const AppContent = () => {
                 <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
                 <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
                 <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
+                <Route path="/doctor/dashboard" element={<DoctorLayout><DoctorDashboardPage /></DoctorLayout>} />
+                <Route path="/doctor/schedule" element={<DoctorLayout><DoctorSchedulePage /></DoctorLayout>} />
+                <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
+                <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
+                <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={
