@@ -37,9 +37,9 @@ const updateAvailability = async (req, res) => {
     const doctor = await prisma.bookingDoctor.findFirst({ where: { id: doctorId, companyId } });
     if (!doctor) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
 
-    await prisma.$transaction([
-      prisma.doctorAvailability.deleteMany({ where: { doctorId, companyId } }),
-      prisma.doctorAvailability.createMany({
+    await prisma.$transaction(async (tx) => {
+      await tx.doctorAvailability.deleteMany({ where: { doctorId, companyId } });
+      await tx.doctorAvailability.createMany({
         data: slots
           .filter(s => s.isAvailable && s.startTime && s.endTime)
           .map(s => ({
@@ -50,8 +50,8 @@ const updateAvailability = async (req, res) => {
             endTime: s.endTime,
             isAvailable: true,
           })),
-      }),
-    ]);
+      });
+    });
 
     const data = await prisma.doctorAvailability.findMany({
       where: { doctorId, companyId },

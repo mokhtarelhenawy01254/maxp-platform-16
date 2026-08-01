@@ -147,7 +147,7 @@ const getAvailableSlots = async (req, res) => {
 
     if (gender && branch.genderDays) {
       const allowedDays = gender === 'male' ? branch.genderDays.male : branch.genderDays.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.json({ success: true, data: [], message: 'اليوم غير متاح لهذا الجنس' });
       }
     }
@@ -211,7 +211,7 @@ const createAppointment = async (req, res) => {
     if (customerGender && branch.genderDays) {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];
       const allowedDays = customerGender === 'male' ? branch.genderDays.male : branch.genderDays.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.status(400).json({ success: false, error: 'اليوم غير متاح لهذا الجنس' });
       }
     }

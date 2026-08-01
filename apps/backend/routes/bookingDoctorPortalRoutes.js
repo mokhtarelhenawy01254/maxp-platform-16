@@ -31,9 +31,9 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const doctorId = req.doctor.id;
-    await prisma.$transaction([
-      prisma.doctorAvailability.deleteMany({ where: { doctorId } }),
-      prisma.doctorAvailability.createMany({
+    await prisma.$transaction(async (tx) => {
+      await tx.doctorAvailability.deleteMany({ where: { doctorId } });
+      await tx.doctorAvailability.createMany({
         data: slots
           .filter(s => s.isAvailable && s.startTime && s.endTime)
           .map(s => ({
@@ -44,8 +44,8 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
             endTime: s.endTime,
             isAvailable: true,
           })),
-      }),
-    ]);
+      });
+    });
 
     const data = await prisma.doctorAvailability.findMany({ where: { doctorId }, orderBy: { dayOfWeek: 'asc' } });
     res.json({ success: true, data });
