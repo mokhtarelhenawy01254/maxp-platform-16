@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
-import { Search, Package, Loader2, Crown, Layers3, Star, CheckCircle2, X, Zap, Store, Users, MessageSquare, BarChart, TrendingUp, DollarSign, Grid3X3, Heart, Bot, Camera, Volume2, ShoppingBag, PackageOpen, Clipboard, Route, Mail, Bell, Calendar, Truck, File, Percent, Clock, CreditCard, Monitor, Image, Server, HeartHandshake, Gift, GitBranch, Webhook, Activity, FileSpreadsheet, Award, Gamepad2 } from 'lucide-react';
+import { Search, Package, Loader2, Crown, Layers3, Star, CheckCircle2, X, Zap, Store, Users, MessageSquare, BarChart, TrendingUp, DollarSign, Grid3X3, Heart, Bot, Camera, Volume2, ShoppingBag, PackageOpen, Clipboard, Route, Mail, Bell, Calendar, Truck, File, Percent, Clock, CreditCard, Monitor, Image, Server, HeartHandshake, Gift, GitBranch, Webhook, Activity, FileSpreadsheet, Award, Gamepad2, Smartphone, Download, QrCode } from 'lucide-react';
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import AppDownloadModal from "../../components/modals/AppDownloadModal";
 import {
   Dialog,
   DialogContent,
@@ -332,7 +333,7 @@ export default function MarketplaceV2() {
     () => (!selectedCategory && !showInstalled ? filteredApps.filter(a => a.isFeatured) : []),
     [filteredApps, selectedCategory, showInstalled],
   );
-
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -514,6 +515,55 @@ export default function MarketplaceV2() {
       </div>
 
       <div className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 sm:px-6 lg:px-8">
+        {/* Featured MAX-P Mobile App Download Banner */}
+        <div className="mb-6 rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-6 text-white shadow-xl border border-purple-500/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-0 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 shrink-0">
+                <img src="/logo.png" alt="MAX-P" className="w-12 h-12 object-contain rounded-xl" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="bg-purple-500/30 text-purple-200 border-purple-400/30 text-xs font-bold px-2.5 py-0.5">
+                    📱 تطبيق الموبايل الرسمي (Android APK)
+                  </Badge>
+                  <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={13} /> جاهز للتحميل المباشر
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white">
+                  تحميل تطبيق MAX-P لإدارة أعمالك من الهاتف 🚀
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+                  تابع مبيعاتك، استلم التنبيهات الفورية، وأدر جميع العمليات مباشرة من هاتف الأندرويد بسرعة فائقة وتصميم متجاوب.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+              <a
+                href="/downloads/maxp-app.apk"
+                download="maxp-app.apk"
+                className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-sm rounded-2xl shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2 transition-all active:scale-95"
+              >
+                <Download size={18} />
+                <span>تحميل ملف APK</span>
+              </a>
+
+              <Button
+                variant="outline"
+                onClick={() => setIsDownloadModalOpen(true)}
+                className="w-full sm:w-auto px-5 py-3.5 bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 backdrop-blur-md transition-all"
+              >
+                <QrCode size={18} />
+                <span>مسح كود QR</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Compact header info line */}
         <div className="flex items-center gap-3 py-3.5 text-sm text-muted-foreground flex-wrap border-b border-border/20 mb-4">
           <span className="flex items-center gap-1.5 font-bold text-foreground/80">
@@ -799,6 +849,11 @@ export default function MarketplaceV2() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AppDownloadModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+      />
     </div>
   );
 }
