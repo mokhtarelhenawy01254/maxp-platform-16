@@ -286,8 +286,68 @@ async function reverseCashbackForReturn({ returnRequestId, companyId, changedBy 
   }
 }
 
+/**
+ * Reverses cashback when a delivered order is cancelled outright (no return request).
+ */
+async function reverseCashbackForOrder({ orderId, companyId, changedBy }) {
+  const prisma = getSharedPrismaClient();
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, companyId },
+    select: {
+      id: true,
+      companyId: true,
+      customerId: true,
+      total: true,
+      metadata: true,
+      orderNumber: true
+    }
+  });
+
+  if (!order || !order.customerId) return { reversed: false, reason: 'order_not_found' };
+
+  const meta = parseJsonMaybe(order.metadata, {});
+  if (!meta.cashback || !meta.cashback.applied) return { reversed: false, reason: 'no_cashback_on_order' };
+
+  if (meta.cashback.cancelledReversed) return { reversed: false, reason: 'already_reversed' };
+
+  const cashbackAmount = Number(meta.cashback.amount || 0);
+  if (cashbackAmount <= 0) return { reversed: false, reason: 'cashback_zero' };
+
+  try {
+    await WalletService.deductFromWallet(
+      order.customerId,
+      cashbackAmount,
+      `إلغاء كاش باك الطلب #${order.orderNumber}`
+    );
+  } catch (error) {
+    console.error(`❌ Failed to reverse cashback for cancelled order ${order.orderNumber}:`, error.message);
+    return { reversed: false, error: error.message };
+  }
+
+  const nextMeta = { ...meta };
+  nextMeta.cashback = {
+    ...meta.cashback,
+    cancelledReversed: true,
+    cancelledReversal: {
+      amount: cashbackAmount,
+      date: new Date().toISOString()
+    }
+  };
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { metadata: JSON.stringify(nextMeta) }
+  });
+
+  console.log(`✅ Reversed ${cashbackAmount} EGP cashback for cancelled order #${order.orderNumber}`);
+
+  return { reversed: true, amount: cashbackAmount };
+}
+
 module.exports = {
   applyCashbackForPaidOrder,
   reverseCashbackForReturn,
+  reverseCashbackForOrder,
   ensureCashbackProgram
 };

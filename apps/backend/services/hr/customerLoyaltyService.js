@@ -1042,6 +1042,73 @@ class CustomerLoyaltyService {
   }
 
   /**
+   * إرجاع نقاط الولاء عند إلغاء طلب تم توصيله (بدون مرتجع)
+   */
+  async reverseLoyaltyPointsForOrder({ orderId, companyId, changedBy, reason }) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const order = await prisma.order.findFirst({
+        where: { id: orderId, companyId },
+        select: { id: true, companyId: true, customerId: true, total: true, metadata: true, orderNumber: true }
+      });
+
+      if (!order || !order.customerId) return { reversed: false, reason: 'order_not_found' };
+
+      const meta = parseJsonMaybe(order.metadata, {});
+      const lp = meta.loyaltyPoints;
+      if (!lp || !lp.applied) return { reversed: false, reason: 'no_points_on_order' };
+
+      if (lp.cancelledReversed) return { reversed: false, reason: 'already_reversed' };
+
+      let totalReversed = 0;
+      const reversedPrograms = [];
+
+      for (const award of (lp.programs || [])) {
+        const points = Number(award.points || 0);
+        if (points <= 0) continue;
+
+        const result = await this.subtractPoints(
+          order.companyId,
+          order.customerId,
+          award.programId,
+          points,
+          reason || `إلغاء الطلب #${order.orderNumber}`
+        );
+
+        if (result.deducted) {
+          totalReversed += result.amount;
+          reversedPrograms.push({ programId: award.programId, points: result.amount });
+        }
+      }
+
+      if (totalReversed <= 0) return { reversed: false, reason: 'reverse_points_zero' };
+
+      const nextMeta = { ...meta };
+      nextMeta.loyaltyPoints = {
+        ...lp,
+        cancelledReversed: true,
+        cancelledReversal: {
+          points: totalReversed,
+          programs: reversedPrograms,
+          date: new Date().toISOString()
+        }
+      };
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { metadata: JSON.stringify(nextMeta) }
+      });
+
+      console.log(`✅ Reversed ${totalReversed} loyalty points for cancelled order #${order.orderNumber}`);
+
+      return { reversed: true, points: totalReversed, programs: reversedPrograms };
+    } catch (error) {
+      console.error('❌ Error reversing loyalty points for cancelled order:', error);
+      throw error;
+    }
+  }
+
+  /**
    * تعديل النقاط يدوياً (من قبل الأدمن)
    */
   async adjustPoints(companyId, customerId, programId, points, reason, adjustedBy) {

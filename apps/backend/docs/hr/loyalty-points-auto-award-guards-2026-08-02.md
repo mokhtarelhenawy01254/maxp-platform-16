@@ -42,6 +42,19 @@ Three gaps existed in the loyalty points flow:
 - Wired `reverseLoyaltyPointsForReturn` next to `reverseCashbackForReturn` in
   both the manual review (`updateReturnRequest`) and the auto-approve paths.
 
+`apps/backend/services/orderService.js`:
+
+- On status `CANCELLED`, the background block now calls
+  `reverseCashbackForOrder` and `reverseLoyaltyPointsForOrder` so points and
+  cashback awarded at `DELIVERED` are clawed back when a delivered order is
+  cancelled outright.
+
+`apps/backend/services/cashbackService.js`:
+
+- New `reverseCashbackForOrder({ orderId, companyId, changedBy })` — deducts the
+  awarded cashback from the customer wallet on order cancel and guards against
+  double reversal via `metadata.cashback.cancelledReversed`.
+
 ## Tests
 
 `apps/backend/tests/services/customerLoyaltyService.autoAward.test.js`:

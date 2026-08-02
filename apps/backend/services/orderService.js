@@ -1116,6 +1116,19 @@ class OrderService {
             });
           }
 
+          // 💸 عند إلغاء طلب اتسلم — رجّع النقاط والكاش باك اللي اتحسبوا
+          if (status === 'CANCELLED') {
+            const cashbackService = require('./cashbackService');
+            const loyaltyService = require('./hr/customerLoyaltyService');
+            const cancelReason = notes || `إلغاء الطلب ${orderNumber}`;
+            await cashbackService.reverseCashbackForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
+              console.error(`❌ [CASHBACK-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+            await loyaltyService.reverseLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId, reason: cancelReason }).catch(error => {
+              console.error(`❌ [LOYALTY-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+          }
+
           if (status === 'CONFIRMED' || status === 'DELIVERED') {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();

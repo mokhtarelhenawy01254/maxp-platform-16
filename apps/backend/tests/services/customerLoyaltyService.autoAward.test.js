@@ -148,4 +148,64 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
       expect(second.reason).toBe('already_reversed');
     });
   });
+
+  describe('reverseLoyaltyPointsForOrder (cancel)', () => {
+    it('reverses all awarded points on cancel and prevents double reversal', async () => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: orderId,
+        companyId,
+        customerId,
+        total: 1000,
+        orderNumber: 'ORD-4',
+        metadata: JSON.stringify({
+          loyaltyPoints: {
+            applied: true,
+            programs: [{ programId, points: 10 }],
+          },
+        }),
+      });
+      prisma.customerLoyaltyRecord.findUnique.mockResolvedValue({
+        id: 'record-1',
+        companyId,
+        customerId,
+        programId,
+        currentPoints: '10',
+        totalEarned: '10',
+        status: 'ACTIVE',
+        metadata: null,
+      });
+      prisma.customerLoyaltyRecord.update.mockImplementation(async ({ data }) => ({
+        currentPoints: data.currentPoints.decrement,
+        totalEarned: data.totalEarned.decrement,
+        ...data,
+      }));
+      prisma.order.update.mockResolvedValue({});
+
+      const first = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: 'إلغاء' });
+      expect(first.reversed).toBe(true);
+      expect(first.points).toBe(10);
+      expect(prisma.customerLoyaltyRecord.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            totalEarned: { decrement: 10 },
+          }),
+        }),
+      );
+
+      // second cancel attempt blocked
+      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][1].data.metadata);
+      expect(metaUpdate.loyaltyPoints.cancelledReversed).toBe(true);
+      prisma.order.findFirst.mockResolvedValue({
+        id: orderId,
+        companyId,
+        customerId,
+        total: 1000,
+        orderNumber: 'ORD-4',
+        metadata: JSON.stringify(metaUpdate),
+      });
+      const second = await loyaltyService.reverseLoyaltyPointsForOrder({ orderId, companyId, reason: 'إلغاء' });
+      expect(second.reversed).toBe(false);
+      expect(second.reason).toBe('already_reversed');
+    });
+  });
 });
