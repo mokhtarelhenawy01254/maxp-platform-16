@@ -50,6 +50,25 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
     setShowPatientResults(false);
   };
 
+  // Auto-lookup: when the user types a phone number in the phone field, find a matching existing patient and offer autofill
+  const [phoneLookup, setPhoneLookup] = useState<BookingPatient | null>(null);
+  const [phoneLookupChecked, setPhoneLookupChecked] = useState(false);
+  const [phoneLookupIgnored, setPhoneLookupIgnored] = useState(false);
+
+  useEffect(() => {
+    const phone = (form.customerPhone || "").trim().replace(/[\s()-]/g, "");
+    if (phone.length < 6) { setPhoneLookup(null); setPhoneLookupChecked(false); setPhoneLookupIgnored(false); return; }
+    const found = patients.find(p => (p.phone || "").replace(/[\s()-]/g, "") === phone) || null;
+    setPhoneLookup(found);
+    setPhoneLookupChecked(true);
+    setPhoneLookupIgnored(false);
+  }, [form.customerPhone, patients]);
+
+  const applyPhoneLookup = (p: BookingPatient) => {
+    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail }));
+    setPhoneLookupIgnored(true);
+  };
+
   useEffect(() => {
     if (form.branchId && form.appointmentDate && form.serviceId) {
       fetchSlots();
@@ -177,8 +196,20 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم العميل</label><input className={MODAL_INPUT_CLS} value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></div>
           </div>
+          {phoneLookup && phoneLookupChecked && !phoneLookupIgnored && (
+            <div className="flex items-center justify-between gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+              <div className="text-sm">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">تم العثور على عميل: {phoneLookup.firstName} {phoneLookup.lastName}</span>
+                <div className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">استخدام بياناته المسجلة تلقائياً؟</div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button type="button" onClick={() => applyPhoneLookup(phoneLookup)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">استخدام</button>
+                <button type="button" onClick={() => setPhoneLookupIgnored(true)} className="px-3 py-1.5 border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-300 text-xs rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30">إلغاء</button>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.customerEmail || ""} onChange={e => setForm({ ...form, customerEmail: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الجنس</label>
