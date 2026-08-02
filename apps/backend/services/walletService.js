@@ -47,12 +47,17 @@ class WalletService {
   static async addToWallet(customerId, amount, type, description, metadata = {}) {
     try {
       const prisma = getPrisma();
-      const wallet = await prisma.customerWallet.findFirst({
+      let wallet = await prisma.customerWallet.findFirst({
         where: { customerId, isActive: true }
       });
 
       if (!wallet) {
-        throw new Error('Wallet not found');
+        const customer = await prisma.customer.findUnique({
+          where: { id: customerId },
+          select: { companyId: true }
+        });
+        if (!customer) throw new Error('Customer not found');
+        wallet = await this.createWallet(customerId, customer.companyId);
       }
 
       const balanceBefore = wallet.balance;
