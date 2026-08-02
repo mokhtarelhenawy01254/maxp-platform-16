@@ -75,6 +75,29 @@ describe("AppShell mobile navigation", () => {
     expect(drawer).toHaveAttribute("id", "app-shell-mobile-drawer");
   });
 
+  it("renders the sidebar inside the mobile drawer with a fixed width so it is visible when open", () => {
+    render(
+      <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
+        <Routes>
+          <Route
+            path="/apps/:appId/*"
+            element={
+              <AppShell allSections={[whatsappSection]}>
+                <div>App content</div>
+              </AppShell>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const drawer = screen.getByRole("dialog");
+    const className = drawer.getAttribute("className") ?? "";
+    expect(className).toContain("w-72");
+    expect(className).toContain("max-w-[85vw]");
+    expect(className).toContain("translate-x-0");
+  });
+
   it("closes the drawer on Escape and restores focus to the toggle", async () => {
     render(
       <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>

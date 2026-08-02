@@ -239,7 +239,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
           aria-modal="true"
           aria-label={String(t('appDashboard.appNavigation', { appName }))}
           className={`
-            fixed inset-y-0 z-50 lg:hidden
+            fixed inset-y-0 z-50 lg:hidden w-72 max-w-[85vw]
             transform transition-transform duration-200 ease-in-out
             ${isRtl ? 'right-0' : 'left-0'}
             ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}
