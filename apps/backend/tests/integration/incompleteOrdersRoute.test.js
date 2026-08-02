@@ -221,6 +221,9 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
       await prisma.cartConversionLog.deleteMany({
         where: { companyId: company?.id },
       });
+      await prisma.cartContactLog.deleteMany({
+        where: { companyId: company?.id },
+      });
       await prisma.guestCart.deleteMany({
         where: { companyId: company?.id },
       });
@@ -288,6 +291,17 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
       },
     });
 
+    await prisma.cartContactLog.create({
+      data: {
+        cartId: withPhoneCartId,
+        employeeId: 'emp-seeded',
+        employeeName: 'Seeded Employee',
+        companyId: company.id,
+        method: 'call',
+        result: 'answered',
+      },
+    });
+
     const response = await request(app).get('/api/v1/orders-new/incomplete/reports?days=30');
 
     expect(response.status).toBe(200);
@@ -302,9 +316,31 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     );
     expect(response.body.data.recovery.converted).toBeGreaterThanOrEqual(1);
     expect(response.body.data.recovery.convertedValue).toBeGreaterThanOrEqual(500);
+    expect(response.body.data.recovery.byTeam).toBeGreaterThanOrEqual(1);
     expect(response.body.data.team.length).toBeGreaterThanOrEqual(1);
+    const seeded = response.body.data.team.find((e) => e.employeeId === 'emp-seeded');
+    expect(seeded).toBeTruthy();
+    expect(seeded.contacts).toBe(1);
+    expect(seeded.responses).toBe(1);
+    expect(seeded.responseRate).toBe(100);
     expect(response.body.data.trend.length).toBeGreaterThanOrEqual(1);
     expect(response.body.data.recent).toEqual(expect.any(Array));
+  });
+
+  test('POST /incomplete/:cartId/contact records a CartContactLog with the employee', async () => {
+    const response = await request(app)
+      .post(`/api/v1/orders-new/incomplete/${withPhoneCartId}/contact`)
+      .send({ method: 'whatsapp', result: 'no_reply', note: 'تذكير بالطلب' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const log = await prisma.cartContactLog.findFirst({
+      where: { cartId: withPhoneCartId, method: 'whatsapp' },
+    });
+    expect(log).toBeTruthy();
+    expect(log.employeeId).toBe('test-admin-user');
+    expect(log.result).toBe('no_reply');
   });
 });
 

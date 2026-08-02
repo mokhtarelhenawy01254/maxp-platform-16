@@ -18,6 +18,8 @@ import {
   ShoppingBagIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  DocumentTextIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,7 +44,7 @@ import {
   getValueTier,
 } from "./incompleteUtils";
 
-type SortValue = "recent" | "value_desc" | "value_asc";
+type SortValue = "recent" | "value_desc" | "value_asc" | "priority";
 
 type PhoneFilter = "all" | "with_phone" | "no_phone";
 
@@ -80,11 +82,16 @@ const IncompleteOrders: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
   const [phoneFilter, setPhoneFilter] = useState<PhoneFilter>("with_phone");
-  const [sortValue, setSortValue] = useState<SortValue>("recent");
+  const [sortValue, setSortValue] = useState<SortValue>("priority");
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmConvertCartId, setConfirmConvertCartId] = useState<string | null>(null);
   const [convertingCartId, setConvertingCartId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [contactCartId, setContactCartId] = useState<string | null>(null);
+  const [contactMethod, setContactMethod] = useState("call");
+  const [contactResult, setContactResult] = useState("");
+  const [contactNote, setContactNote] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
 
   const isRTL = getDirection() === "rtl";
   const lang = i18n.language;
@@ -123,7 +130,9 @@ const IncompleteOrders: React.FC = () => {
       else if (phoneFilter === "no_phone") params.hasPhone = false;
       if (search) params.search = search;
       if (statusFilter && statusFilter !== "all") params.status = statusFilter;
-      if (sortValue === "recent") {
+      if (sortValue === "priority") {
+        params.sortBy = "priority";
+      } else if (sortValue === "recent") {
         params.sortBy = "checkoutUpdatedAt";
         params.sortDir = "desc";
       } else if (sortValue === "value_desc") {
@@ -214,6 +223,39 @@ const IncompleteOrders: React.FC = () => {
       toast.error(apiError.response?.data?.message || apiError.message || t("orders.incompleteConvertFailed"));
     } finally {
       setConvertingCartId(null);
+    }
+  };
+
+  const openContactModal = (cartId: string) => {
+    setContactCartId(cartId);
+    setContactMethod("call");
+    setContactResult("");
+    setContactNote("");
+  };
+
+  const handleSaveContact = async () => {
+    if (!contactCartId) return;
+    setSavingContact(true);
+    try {
+      const response = await apiClient.post<{ success: boolean; message?: string }>(
+        `/orders-new/incomplete/${encodeURIComponent(contactCartId)}/contact`,
+        {
+          method: contactMethod,
+          result: contactResult,
+          note: contactNote,
+        },
+      );
+      if (response.data?.success) {
+        toast.success(t("orders.incompleteContactLogged"));
+        setContactCartId(null);
+      } else {
+        toast.error(response.data?.message || t("orders.incompleteContactFailed"));
+      }
+    } catch (err) {
+      const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(apiError.response?.data?.message || apiError.message || t("orders.incompleteContactFailed"));
+    } finally {
+      setSavingContact(false);
     }
   };
 
@@ -494,6 +536,7 @@ const IncompleteOrders: React.FC = () => {
               }}
               className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
             >
+              <option value="priority">{t("orders.incompleteSortPriority")}</option>
               <option value="recent">{t("orders.incompleteSortLastUpdated")}</option>
               <option value="value_desc">{t("orders.incompleteSortValueDesc")}</option>
               <option value="value_asc">{t("orders.incompleteSortValueAsc")}</option>
@@ -782,6 +825,18 @@ const IncompleteOrders: React.FC = () => {
                               <ShoppingBagIcon className="h-4 w-4" />
                             )}
                           </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openContactModal(order.cartId);
+                            }}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 dark:hover:border-indigo-800 transition-all"
+                            title={t("orders.incompleteLogContact") as string}
+                            aria-label={t("orders.incompleteLogContact") as string}
+                          >
+                            <DocumentTextIcon className="h-4 w-4" />
+                          </button>
                           <Link
                             to={`/orders/incomplete/${encodeURIComponent(order.cartId)}`}
                             onClick={(e) => e.stopPropagation()}
@@ -882,6 +937,104 @@ const IncompleteOrders: React.FC = () => {
         onConfirm={() => confirmConvertCartId && handleConvert(confirmConvertCartId)}
         onCancel={() => setConfirmConvertCartId(null)}
       />
+
+      {contactCartId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          onClick={() => setContactCartId(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                {t("orders.incompleteLogContact")}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setContactCartId(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label={t("orders.incompleteCancel") as string}
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="contact-method" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {t("orders.incompleteContactMethod")}
+                </label>
+                <select
+                  id="contact-method"
+                  value={contactMethod}
+                  onChange={(e) => setContactMethod(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+                >
+                  <option value="call">{t("orders.incompleteCall")}</option>
+                  <option value="whatsapp">{t("orders.incompleteWhatsApp")}</option>
+                  <option value="email">{t("orders.incompleteContactEmail")}</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="contact-result" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {t("orders.incompleteContactResult")}
+                </label>
+                <select
+                  id="contact-result"
+                  value={contactResult}
+                  onChange={(e) => setContactResult(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+                >
+                  <option value="">{t("orders.notSpecified")}</option>
+                  <option value="answered">{t("orders.incompleteContactResultAnswered")}</option>
+                  <option value="no_reply">{t("orders.incompleteContactResultNoReply")}</option>
+                  <option value="busy">{t("orders.incompleteContactResultBusy")}</option>
+                  <option value="wrong_number">{t("orders.incompleteContactResultWrongNumber")}</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="contact-note" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {t("orders.incompleteContactNote")}
+                </label>
+                <textarea
+                  id="contact-note"
+                  value={contactNote}
+                  onChange={(e) => setContactNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setContactCartId(null)}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                {t("orders.incompleteCancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveContact}
+                disabled={savingContact}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingContact ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <DocumentTextIcon className="h-4 w-4" />
+                )}
+                {savingContact ? t("orders.incompleteContactSaving") : t("orders.incompleteContactSave")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

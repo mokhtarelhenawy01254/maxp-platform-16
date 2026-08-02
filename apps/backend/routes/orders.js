@@ -1207,13 +1207,19 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       checkoutStartedAt: 'checkoutStartedAt',
     };
     const sortField = allowedSorts[sortBy];
-    const orderBy = sortField
-      ? [{ [sortField]: sortDir }]
-      : [
-          { checkoutUpdatedAt: 'desc' },
-          { checkoutStartedAt: 'desc' },
-          { updatedAt: 'desc' }
-        ];
+    let orderBy;
+    if (sortBy === 'priority') {
+      // الأولوية: الأعلى قيمة أولًا، وبين نفس القيمة الأقدم نشاطًا أولًا (الأقرب للضياع)
+      orderBy = [{ total: 'desc' }, { checkoutUpdatedAt: 'asc' }];
+    } else if (sortField) {
+      orderBy = [{ [sortField]: sortDir }];
+    } else {
+      orderBy = [
+        { checkoutUpdatedAt: 'desc' },
+        { checkoutStartedAt: 'desc' },
+        { updatedAt: 'desc' }
+      ];
+    }
 
     const statusWhere = statusClause ? [statusClause] : [];
 
@@ -1364,7 +1370,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
     const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-    const [totalAgg, activeAgg, lostAgg, convWindow] = await Promise.all([
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
       prisma.guestCart.aggregate({
         where: { companyId },
         _count: { _all: true },
@@ -1391,7 +1397,20 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           employeeName: true,
           cartValue: true,
           governorate: true,
-          convertedAt: true
+          convertedAt: true,
+          channel: true
+        }
+      }),
+      prisma.cartContactLog.findMany({
+        where: { companyId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          cartId: true,
+          employeeId: true,
+          employeeName: true,
+          method: true,
+          result: true,
+          createdAt: true
         }
       })
     ]);
@@ -1399,6 +1418,8 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const total = totalAgg._count._all || 0;
     const converted = convWindow.length;
     const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
+    const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
+    const byTeamConverted = converted - naturalConverted;
 
     // trend by day (JS aggregation over the window rows)
     const dayMap = new Map();
@@ -1411,22 +1432,52 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     });
     const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
 
-    // team performance by employee
+    // team performance by employee (skips natural conversions - no employee)
     const teamMap = new Map();
     convWindow.forEach((c) => {
-      const key = c.employeeId || `__${c.employeeName || 'unknown'}`;
+      if (!c.employeeId) return;
+      const key = c.employeeId;
       const entry = teamMap.get(key) || {
         employeeId: c.employeeId,
         employeeName: c.employeeName || 'غير معروف',
         conversions: 0,
         value: 0,
+        contacts: 0,
+        responses: 0,
       };
       entry.conversions += 1;
       entry.value += Number(c.cartValue || 0);
       teamMap.set(key, entry);
     });
+
+    // add contact/response stats per employee
+    contactWindow.forEach((ct) => {
+      if (!ct.employeeId) return;
+      const key = ct.employeeId;
+      let entry = teamMap.get(key);
+      if (!entry) {
+        entry = {
+          employeeId: ct.employeeId,
+          employeeName: ct.employeeName || 'غير معروف',
+          conversions: 0,
+          value: 0,
+          contacts: 0,
+          responses: 0,
+        };
+        teamMap.set(key, entry);
+      }
+      entry.contacts += 1;
+      if ((ct.result || '').toString().toLowerCase() === 'answered') {
+        entry.responses += 1;
+      }
+    });
+
     const team = Array.from(teamMap.values())
-      .map((e) => ({ ...e, avgValue: e.conversions ? e.value / e.conversions : 0 }))
+      .map((e) => ({
+        ...e,
+        avgValue: e.conversions ? e.value / e.conversions : 0,
+        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
+      }))
       .sort((a, b) => b.value - a.value);
 
     res.json({
@@ -1446,6 +1497,8 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           convertedValue,
           avgConvertedValue: converted ? convertedValue / converted : 0,
           recoveryRate: total ? (converted / total) * 100 : 0,
+          byTeam: byTeamConverted,
+          natural: naturalConverted,
         },
         team,
         trend,
@@ -1701,6 +1754,56 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       success: false,
       message: detail || 'خطأ في تحويل الطلب غير المكتمل',
     });
+  }
+});
+
+// تسجيل محاولة تواصل (اتصال/واتساب/إيميل) على سلة غير مكتملة
+router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    const allowedMethods = ['call', 'whatsapp', 'email'];
+    const method = (req.body?.method || 'call').toString().toLowerCase();
+    if (!allowedMethods.includes(method)) {
+      return res.status(400).json({ success: false, message: 'طريقة التواصل غير صالحة' });
+    }
+
+    const result = (req.body?.result || '').toString().trim().slice(0, 80) || null;
+    const note = (req.body?.note || '').toString().trim().slice(0, 500) || null;
+    const employee = req.user || {};
+
+    const log = await getSharedPrismaClient().cartContactLog.create({
+      data: {
+        cartId,
+        companyId,
+        employeeId: employee.id || null,
+        employeeName: employee.name || employee.username || employee.email || null,
+        method,
+        result,
+        note,
+      },
+      select: { id: true, cartId: true, method: true, result: true, createdAt: true },
+    });
+
+    return res.json({ success: true, message: 'تم تسجيل محاولة التواصل', data: log });
+  } catch (error) {
+    console.error('❌ Error logging incomplete cart contact:', error.message);
+    return res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة التواصل' });
   }
 });
 

@@ -123,6 +123,7 @@ model Company {
   faqs                            Faq[]
   footerSettings                  FooterSettings?
   cartConversionLogs              CartConversionLog[]
+  cartContactLogs                 CartContactLog[]
   guestCarts                      GuestCart[]
   guestOrders                     GuestOrder[]
   homepageTemplates               HomepageTemplate[]

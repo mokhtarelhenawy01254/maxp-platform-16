@@ -32,6 +32,8 @@ interface ReportData {
     convertedValue: number;
     avgConvertedValue: number;
     recoveryRate: number;
+    byTeam: number;
+    natural: number;
   };
   team: Array<{
     employeeId: string | null;
@@ -39,6 +41,9 @@ interface ReportData {
     conversions: number;
     value: number;
     avgValue: number;
+    contacts: number;
+    responses: number;
+    responseRate: number;
   }>;
   trend: Array<{ date: string; conversions: number; value: number }>;
   recent: Array<{
@@ -254,6 +259,16 @@ const IncompleteReports: React.FC = () => {
                 </div>
               ))}
             </div>
+            <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                {t("orders.incompleteRecoveryByTeam")}: {data.recovery.byTeam.toLocaleString()}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                {t("orders.incompleteRecoveryNatural")}: {data.recovery.natural.toLocaleString()}
+              </span>
+            </div>
           </section>
 
           <section>
@@ -358,11 +373,20 @@ const IncompleteReports: React.FC = () => {
             </h2>
             {data.team.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-start min-w-[500px]">
+                <table className="w-full text-start min-w-[700px]">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
                       <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         {t("orders.incompleteTeamEmployee")}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamContacts")}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamResponses")}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamResponseRate")}
                       </th>
                       <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         {t("orders.incompleteTeamConversions")}
@@ -383,6 +407,15 @@ const IncompleteReports: React.FC = () => {
                       >
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                           {member.employeeName}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                          {member.contacts.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                          {member.responses.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                          {member.responseRate.toFixed(0)}%
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
                           {member.conversions.toLocaleString()}

@@ -150,3 +150,39 @@ checkout-draft save always sets `checkoutUpdatedAt = now`
   - `status=active` returns a cart updated recently even when it started long ago.
   - `status=lost` returns only carts with no recent activity.
   - stats do not double-count (`active + lost === total`).
+
+## Natural conversions, contact tracking & priority list
+
+### 1. Natural checkout conversions are now logged
+
+Previously only admin `convert` actions were logged in `CartConversionLog`. When a
+customer completed checkout on their own, the cart was deleted but never recorded,
+understating recovery. Now `publicOrdersRoutes.js` logs a `CartConversionLog` with
+`channel: 'natural'` (no employee) when a cart is deleted through the normal checkout
+flow. Requests carrying `x-admin-convert` are skipped (already logged by the convert
+endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.natural`.
+
+### 2. Contact tracking (team outreach)
+
+- New model `CartContactLog` (`cart_contact_logs`): `cartId`, `companyId`,
+  `employeeId`, `employeeName`, `method` (call/whatsapp/email), `result`
+  (answered/no_reply/busy/wrong_number), `note`, `createdAt`.
+- New endpoint `POST /orders-new/incomplete/:cartId/contact` — records an outreach
+  attempt (captures `req.user`).
+- Reports `team` section now includes per-employee `contacts`, `responses`
+  (result = answered) and `responseRate` (responses / contacts), in addition to
+  conversions and recovered value. Natural conversions are excluded from team stats.
+
+### 3. Priority recovery list
+
+- `GET /orders-new/incomplete` supports `sortBy=priority` which orders by
+  `total DESC, checkoutUpdatedAt ASC` — highest-value carts first, and among equal
+  value the most stale (closest to being lost) first.
+- The incomplete orders page adds a "Priority" sort option (default) and a
+  **Log contact** action per row that opens a small modal (method / result / note).
+
+### Frontend
+
+- `src/pages/orders/IncompleteOrders.tsx` — "Log contact" button + modal.
+- `src/pages/orders/IncompleteReports.tsx` — byTeam/natural breakdown chips and team
+  contacts/responses/response-rate columns.

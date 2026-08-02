@@ -81,6 +81,26 @@ model CartConversionLog {
   @@map("cart_conversion_logs")
 }
 
+// تسجيل محاولات التواصل (اتصال/واتساب) على السلال غير المكتملة
+// يستخدم لقياس نشاط الفريق ونسبة الاستجابة في تقرير الأداء
+model CartContactLog {
+  id           String   @id @default(cuid())
+  cartId       String
+  companyId    String
+  employeeId   String?
+  employeeName String?
+  method       String   @default("call")
+  result       String?
+  note         String?
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, employeeId])
+  @@index([companyId, cartId])
+  @@map("cart_contact_logs")
+}
+
 model GuestOrder {
   id                  String               @id @default(cuid())
   orderNumber         String

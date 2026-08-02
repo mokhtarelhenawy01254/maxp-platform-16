@@ -1766,10 +1766,45 @@ router.post('/', async (req, res) => {
         });
 
         if (existingCart) {
+          // نلتقط بيانات السلة قبل حذفها لتسجيل التحويل الطبيعي
+          let convCheckoutData = {};
+          try {
+            convCheckoutData = existingCart.checkoutData
+              ? (typeof existingCart.checkoutData === 'string' ? JSON.parse(existingCart.checkoutData) : existingCart.checkoutData)
+              : {};
+          } catch (e) {
+            convCheckoutData = {};
+          }
+          const convValue = typeof existingCart.total === 'string'
+            ? parseFloat(existingCart.total) || 0
+            : Number(existingCart.total || 0);
+
           await prisma.guestCart.delete({
             where: { cartId }
           });
           console.log('✅ [CREATE-ORDER] Cart deleted successfully:', cartId);
+
+          // سجل التحويل الطبيعي (العميل كمل الشيك آوت لوحده).
+          // بيتجاهل طلبات admin-convert لأن نقطة التحويل دي بتسجل بالفعل في routes/orders.js
+          if (!req.headers['x-admin-convert']) {
+            try {
+              await prisma.cartConversionLog.create({
+                data: {
+                  cartId,
+                  orderId: newOrder?.id || null,
+                  orderNumber: newOrder?.orderNumber || null,
+                  employeeId: null,
+                  employeeName: null,
+                  companyId: company.id,
+                  cartValue: convValue,
+                  governorate: convCheckoutData?.governorate || convCheckoutData?.city || null,
+                  channel: 'natural',
+                },
+              });
+            } catch (logError) {
+              console.error('⚠️ [CREATE-ORDER] Failed to record natural cart conversion log:', logError.message);
+            }
+          }
         } else {
           console.log('⚠️ [CREATE-ORDER] Cart not found, skipping delete:', cartId);
         }
