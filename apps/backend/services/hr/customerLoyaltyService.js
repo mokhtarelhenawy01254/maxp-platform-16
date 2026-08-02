@@ -6,6 +6,16 @@
 const { getSharedPrismaClient } = require('../sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues - use getSharedPrismaClient() inside functions
 
+function parseJsonMaybe(value, fallback) {
+  if (!value) return fallback;
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 class CustomerLoyaltyService {
   /**
    * جلب جميع برامج الولاء للشركة
@@ -814,6 +824,12 @@ class CustomerLoyaltyService {
 
       if (!order || !order.customerId) return { applied: false, reason: 'order_not_found' };
 
+      // منع التكرار: لو النقاط اتضافت للطلب ده قبل كده، نتخطى
+      const orderMeta = parseJsonMaybe(order.metadata, {});
+      if (orderMeta.loyaltyPoints && orderMeta.loyaltyPoints.applied) {
+        return { applied: false, reason: 'already_awarded' };
+      }
+
       // جلب جميع برامج الولاء من نوع POINTS النشطة
       const programs = await prisma.customerLoyaltyProgram.findMany({
         where: {
@@ -826,6 +842,7 @@ class CustomerLoyaltyService {
       if (programs.length === 0) return { applied: false, reason: 'no_active_programs' };
 
       let totalPointsAwarded = 0;
+      const awardedPrograms = [];
 
       for (const program of programs) {
         // التحقق من التسجيل التلقائي
@@ -852,15 +869,174 @@ class CustomerLoyaltyService {
           points = parseFloat(program.pointsPerPurchase || 0);
         }
 
+        // تطبيق سقف النقاط للطلب الواحد إن كان محدد
+        const maxPerTx = program.maxPointsPerTransaction ? parseFloat(program.maxPointsPerTransaction) : 0;
+        if (maxPerTx > 0 && points > maxPerTx) {
+          points = maxPerTx;
+        }
+
         if (points > 0) {
           await this.addPoints(companyId, order.customerId, program.id, points, `طلب #${order.orderNumber}`);
           totalPointsAwarded += points;
+          awardedPrograms.push({ programId: program.id, points });
         }
       }
 
-      return { applied: true, totalPointsAwarded };
+      if (totalPointsAwarded > 0) {
+        const nextMeta = {
+          ...orderMeta,
+          loyaltyPoints: {
+            applied: true,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            totalPointsAwarded,
+            programs: awardedPrograms,
+            appliedAt: new Date().toISOString()
+          }
+        };
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { metadata: JSON.stringify(nextMeta) }
+        });
+      }
+
+      return { applied: true, totalPointsAwarded, programs: awardedPrograms };
     } catch (error) {
       console.error('❌ Error applying loyalty points for order:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * خصم نقاط من العميل (مستخدم عند إرجاع نقاط المرتجعات)
+   */
+  async subtractPoints(companyId, customerId, programId, points, reason = null) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const record = await prisma.customerLoyaltyRecord.findUnique({
+        where: {
+          customerId_programId: {
+            customerId,
+            programId
+          }
+        }
+      });
+
+      if (!record || record.companyId !== companyId) {
+        return { deducted: false, reason: 'record_not_found' };
+      }
+
+      if (record.status !== 'ACTIVE') {
+        return { deducted: false, reason: 'record_inactive' };
+      }
+
+      const toDeduct = Math.min(Math.abs(points), parseFloat(record.currentPoints || 0));
+      if (toDeduct <= 0) return { deducted: false, reason: 'no_points' };
+
+      // استرجاع النقاط: يخصم من الرصيد الحالي ومن إجمالي المكتسب (مش من المستبدل)
+      const prevMeta = parseJsonMaybe(record.metadata, {});
+      const updatedRecord = await prisma.customerLoyaltyRecord.update({
+        where: { id: record.id },
+        data: {
+          currentPoints: { decrement: toDeduct },
+          totalEarned: { decrement: toDeduct },
+          lastActivity: new Date(),
+          metadata: reason ? JSON.stringify({ ...prevMeta, lastReason: reason }) : record.metadata
+        }
+      });
+
+      return { deducted: true, amount: toDeduct, record: updatedRecord };
+    } catch (error) {
+      console.error('❌ Error subtracting points:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * إرجاع نقاط الولاء عند إرجاع/استرداد طلب تم توصيله
+   */
+  async reverseLoyaltyPointsForReturn({ returnRequestId, companyId, changedBy }) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const rr = await prisma.returnRequest.findFirst({
+        where: { id: returnRequestId, companyId },
+        include: {
+          order: {
+            select: {
+              id: true,
+              companyId: true,
+              customerId: true,
+              total: true,
+              metadata: true,
+              orderNumber: true
+            }
+          }
+        }
+      });
+
+      if (!rr || !rr.order) return { reversed: false, reason: 'request_not_found' };
+
+      const meta = parseJsonMaybe(rr.order.metadata, {});
+      const lp = meta.loyaltyPoints;
+      if (!lp || !lp.applied) return { reversed: false, reason: 'no_points_on_order' };
+
+      const recordedReversals = lp.reversals || {};
+      if (recordedReversals[returnRequestId]) {
+        return { reversed: false, reason: 'already_reversed' };
+      }
+
+      const orderTotal = Math.max(0.01, Number(rr.order.total || 0));
+      const refundAmount = Number(rr.refundAmount || 0);
+      const ratio = Math.max(0, Math.min(1, refundAmount / orderTotal));
+
+      const reversedPrograms = [];
+      let totalReversed = 0;
+
+      for (const award of (lp.programs || [])) {
+        // floor لمنع الإفراط في الخصم على الكسور
+        const reversePoints = Math.floor((Number(award.points || 0)) * ratio);
+        if (reversePoints <= 0) continue;
+
+        const result = await this.subtractPoints(
+          rr.order.companyId,
+          rr.order.customerId,
+          award.programId,
+          reversePoints,
+          `إرجاع نقاط الطلب #${rr.order.orderNumber} بمرتجع #${rr.id}`
+        );
+
+        if (result.deducted) {
+          totalReversed += result.amount;
+          reversedPrograms.push({ programId: award.programId, points: result.amount });
+        }
+      }
+
+      if (totalReversed <= 0) return { reversed: false, reason: 'reverse_points_zero' };
+
+      const nextMeta = { ...meta };
+      nextMeta.loyaltyPoints = {
+        ...lp,
+        reversals: {
+          ...recordedReversals,
+          [returnRequestId]: {
+            points: totalReversed,
+            programs: reversedPrograms,
+            ratio: ratio.toFixed(2),
+            date: new Date().toISOString()
+          }
+        }
+      };
+
+      await prisma.order.update({
+        where: { id: rr.order.id },
+        data: { metadata: JSON.stringify(nextMeta) }
+      });
+
+      console.log(`✅ Reversed ${totalReversed} loyalty points for return on order #${rr.order.orderNumber}`);
+
+      return { reversed: true, points: totalReversed, programs: reversedPrograms };
+    } catch (error) {
+      console.error('❌ Error reversing loyalty points for return:', error);
       throw error;
     }
   }

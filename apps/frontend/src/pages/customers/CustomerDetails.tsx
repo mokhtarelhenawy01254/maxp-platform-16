@@ -21,6 +21,8 @@ import {
   CalendarIcon,
   NoSymbolIcon,
   CheckCircleIcon,
+  StarIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -96,6 +98,22 @@ interface CustomerDetailsData {
     isBlocked: boolean;
     rule?: CustomerBlockRule | null;
   };
+  loyalty?: Array<{
+    programId: string;
+    programName?: string | null;
+    programType?: string;
+    points: number;
+    totalEarned: number;
+    tierName?: string | null;
+    status?: string;
+  }>;
+  wallet?: {
+    balance: number;
+    totalEarned: number;
+    totalSpent: number;
+    currency: string;
+  } | null;
+  cashbackTotal?: number;
 }
 
 const CustomerDetails: React.FC = () => {
@@ -468,6 +486,11 @@ const CustomerDetails: React.FC = () => {
   const activities = data.activities || [];
   const activeBlockRule = data.customerBlock?.rule || null;
   const isCustomerBlocked = Boolean(data.customerBlock?.isBlocked && activeBlockRule);
+  const loyaltyPoints = (data.loyalty || []).reduce((sum, r) => sum + r.points, 0);
+  const cashbackAmount = data.cashbackTotal || 0;
+  const walletBalance = data.wallet?.balance || 0;
+  const loyalty = data.loyalty || [];
+  const wallet = data.wallet;
 
   return (
     <div className="space-y-6">
@@ -621,6 +644,31 @@ const CustomerDetails: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="flex items-center gap-3">
+            <StarIcon className="h-8 w-8 text-amber-500" />
+            <div>
+              <p className="text-sm text-gray-500">نقاط الولاء</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loyaltyPoints}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+          <div className="flex items-center gap-3">
+            <BanknotesIcon className="h-8 w-8 text-emerald-500" />
+            <div>
+              <p className="text-sm text-gray-500">الكاش باك (رصيد المحفظة)</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {formatCurrency(cashbackAmount)}
+              </p>
+              <p className="text-xs text-gray-400">
+                رصيد المحفظة: {formatCurrency(walletBalance)}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -656,6 +704,7 @@ const CustomerDetails: React.FC = () => {
         <div className="p-6">
           {/* Info Tab */}
           {activeTab === "info" && (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -775,6 +824,65 @@ const CustomerDetails: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Loyalty & Wallet */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  الولاء والنقاط
+                </h3>
+                {loyalty.length > 0 ? (
+                  <div className="space-y-3">
+                    {loyalty.map((r) => (
+                      <div
+                        key={r.programId}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {r.programName || "برنامج الولاء"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {r.tierName || "بدون مستوى"}
+                          </p>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-lg font-bold text-amber-600">
+                            {r.points} نقطة
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">لا توجد نقاط ولاء</p>
+                )}
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  المحفظة والكاش باك
+                </h3>
+                {wallet ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="text-sm text-gray-500">رصيد المحفظة</span>
+                      <span className="text-lg font-bold text-emerald-600">
+                        {formatCurrency(wallet.balance)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="text-sm text-gray-500">إجمالي الكاش باك</span>
+                      <span className="text-lg font-bold text-emerald-600">
+                        {formatCurrency(cashbackAmount)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">لا توجد محفظة مسجلة</p>
+                )}
+              </div>
+            </div>
+            </>
           )}
 
           {/* Orders Tab */}

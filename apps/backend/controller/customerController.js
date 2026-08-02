@@ -1256,6 +1256,29 @@ const getCustomerDetails = async (req, res) => {
       }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
 
+    // جلب بيانات الولاء (النقاط)
+    const loyaltyRecords = await getSharedPrismaClient().customerLoyaltyRecord.findMany({
+      where: { customerId, companyId },
+      include: {
+        customerLoyaltyProgram: { select: { id: true, name: true, nameAr: true, type: true } },
+        customerLoyaltyTier: { select: { id: true, name: true, nameAr: true } }
+      }
+    });
+
+    // جلب المحفظة والكاش باك
+    const wallet = await getSharedPrismaClient().customerWallet.findFirst({
+      where: { customerId, isActive: true }
+    });
+
+    let cashbackTotal = 0;
+    if (wallet) {
+      const cbAgg = await getSharedPrismaClient().walletTransaction.aggregate({
+        where: { walletId: wallet.id, type: 'CASHBACK' },
+        _sum: { amount: true }
+      });
+      cashbackTotal = parseFloat(cbAgg._sum?.amount || 0);
+    }
+
     // الرد بكل البيانات
     res.json({
       success: true,
@@ -1276,7 +1299,23 @@ const getCustomerDetails = async (req, res) => {
         customerBlock: {
           isBlocked: Boolean(activeBlockRule),
           rule: activeBlockRule || null
-        }
+        },
+        loyalty: loyaltyRecords.map(r => ({
+          programId: r.programId,
+          programName: r.customerLoyaltyProgram?.nameAr || r.customerLoyaltyProgram?.name,
+          programType: r.customerLoyaltyProgram?.type,
+          points: parseFloat(r.currentPoints || 0),
+          totalEarned: parseFloat(r.totalEarned || 0),
+          tierName: r.customerLoyaltyTier?.nameAr || r.customerLoyaltyTier?.name,
+          status: r.status
+        })),
+        wallet: wallet ? {
+          balance: parseFloat(wallet.balance || 0),
+          totalEarned: parseFloat(wallet.totalEarned || 0),
+          totalSpent: parseFloat(wallet.totalSpent || 0),
+          currency: wallet.currency
+        } : null,
+        cashbackTotal
       }
     });
   } catch (error) {
