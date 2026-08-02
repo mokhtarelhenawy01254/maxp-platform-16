@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   XMarkIcon,
   MagnifyingGlassIcon,
@@ -531,6 +537,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productPage, setProductPage] = useState(1);
+  const [hasMoreProducts, setHasMoreProducts] = useState(false);
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+  const productListRef = useRef<HTMLDivElement>(null);
+  const skipNextSearchRef = useRef(false);
 
   // Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -584,81 +595,120 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   }, [isOpen, city]);
 
   // Fetch products
-  const fetchProducts = useCallback(async (query: string = "") => {
-    try {
-      setLoadingProducts(true);
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      };
+  const fetchProducts = useCallback(
+    async (query: string = "", targetPage: number = 1, append = false) => {
+      try {
+        if (append) setLoadingMoreProducts(true);
+        else setLoadingProducts(true);
+        const token = authService.getAccessToken();
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        };
 
-      const params = new URLSearchParams({
-        page: "1",
-        limit: "30",
-      });
-
-      const response = await fetch(
-        `${config.apiUrl}/products?${params.toString()}`,
-        { headers },
-      );
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const mappedProducts: Product[] = data.data.map((p: any) => {
-          return {
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            stock: p.stock,
-            sku: p.sku,
-            trackInventory: p.trackInventory,
-            image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
-            variants: (p.variants || p.productVariants || []).map((v: any) => ({
-              ...v,
-              image: getPrimaryImageUrl(v.image, v.images),
-              trackInventory: v.trackInventory,
-            })),
-          };
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          limit: "30",
         });
+        if (query.trim()) {
+          params.set("search", query.trim());
+        }
 
-        const filtered = query
-          ? mappedProducts.filter(
-              (p) =>
-                String(p.name || "")
-                  .toLowerCase()
-                  .includes(query.toLowerCase()) ||
-                String(p.sku || "")
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-            )
-          : mappedProducts;
+        const response = await fetch(
+          `${config.apiUrl}/products?${params.toString()}`,
+          { headers },
+        );
+        const data = await response.json();
 
-        setProducts(filtered);
+        if (data.success && data.data) {
+          const mappedProducts: Product[] = data.data.map((p: any) => {
+            return {
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              stock: p.stock,
+              sku: p.sku,
+              trackInventory: p.trackInventory,
+              image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
+              variants: (p.variants || p.productVariants || []).map((v: any) => ({
+                ...v,
+                image: getPrimaryImageUrl(v.image, v.images),
+                trackInventory: v.trackInventory,
+              })),
+            };
+          });
+
+          setProducts((prev) =>
+            append ? [...prev, ...mappedProducts] : mappedProducts,
+          );
+
+          const total = data.pagination?.total ?? mappedProducts.length;
+          const totalPages =
+            data.pagination?.totalPages ??
+            Math.max(1, Math.ceil(total / 30));
+          setHasMoreProducts(
+            targetPage < totalPages && mappedProducts.length > 0,
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        tToast.error("QuickOrderModal.failed_fetch_fdd8");
+      } finally {
+        setLoadingProducts(false);
+        setLoadingMoreProducts(false);
       }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      tToast.error("QuickOrderModal.failed_fetch_fdd8");
-    } finally {
-      setLoadingProducts(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isOpen) {
-      fetchProducts();
+      skipNextSearchRef.current = true;
+      setSearchQuery("");
+      setProductPage(1);
+      setHasMoreProducts(false);
+      fetchProducts("", 1);
     }
   }, [isOpen, fetchProducts]);
 
   // Search with debounce
   useEffect(() => {
+    if (!isOpen) return;
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
     const timeoutId = setTimeout(() => {
-      if (searchQuery) {
-        fetchProducts(searchQuery);
+      setProductPage(1);
+      if (productListRef.current) {
+        productListRef.current.scrollTop = 0;
       }
+      fetchProducts(searchQuery, 1);
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, fetchProducts]);
+  }, [searchQuery, fetchProducts, isOpen]);
+
+  const loadMoreProducts = useCallback(() => {
+    if (loadingProducts || loadingMoreProducts || !hasMoreProducts) return;
+    const nextPage = productPage + 1;
+    setProductPage(nextPage);
+    fetchProducts(searchQuery, nextPage, true);
+  }, [
+    loadingProducts,
+    loadingMoreProducts,
+    hasMoreProducts,
+    productPage,
+    searchQuery,
+    fetchProducts,
+  ]);
+
+  const handleProductListScroll = useCallback(() => {
+    const el = productListRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 150) {
+      loadMoreProducts();
+    }
+  }, [loadMoreProducts]);
 
   // Fetch shipping cost when city changes
   useEffect(() => {
@@ -971,7 +1021,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                 </div>
 
                 {/* Products List */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div
+                  ref={productListRef}
+                  onScroll={handleProductListScroll}
+                  className="flex-1 overflow-y-auto p-4"
+                >
                   {loadingProducts ? (
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                       {[...Array(6)].map((_, i) => (
@@ -994,60 +1048,77 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       <p>لا توجد منتجات</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                      {products.map((product) => (
-                        <div
-                          key={product.id}
-                          onClick={() => handleProductClick(product)}
-                          className="business-product-card group cursor-pointer"
-                        >
-                          <div className="business-product-card-media relative aspect-square">
-                            {product.image ? (
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div
-                                className="flex h-full w-full items-center justify-center"
-                                style={mutedStyle}
+                    <>
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                        {products.map((product) => (
+                          <div
+                            key={product.id}
+                            onClick={() => handleProductClick(product)}
+                            className="business-product-card group cursor-pointer"
+                          >
+                            <div className="business-product-card-media relative aspect-square">
+                              {product.image ? (
+                                <img
+                                  src={product.image}
+                                  alt={product.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div
+                                  className="flex h-full w-full items-center justify-center"
+                                  style={mutedStyle}
+                                >
+                                  <ArchiveBoxIcon className="h-10 w-10" />
+                                </div>
+                              )}
+                              {product.variants.length > 0 && (
+                                <div className="business-product-card-pill absolute bottom-2 right-2">
+                                  خيارات
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2.5">
+                              <h3
+                                className="line-clamp-1 text-sm font-medium"
+                                style={headingStyle}
                               >
-                                <ArchiveBoxIcon className="h-10 w-10" />
+                                {product.name}
+                              </h3>
+                              <div className="mt-1 flex items-center justify-between">
+                                <span
+                                  className="text-sm font-bold"
+                                  style={primaryStyle}
+                                >
+                                  {product.price} ج.م
+                                </span>
+                                <button
+                                  type="button"
+                                  className="business-icon-button business-icon-button--sm"
+                                  data-tone="primary"
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                </button>
                               </div>
-                            )}
-                            {product.variants.length > 0 && (
-                              <div className="business-product-card-pill absolute bottom-2 right-2">
-                                خيارات
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2.5">
-                            <h3
-                              className="line-clamp-1 text-sm font-medium"
-                              style={headingStyle}
-                            >
-                              {product.name}
-                            </h3>
-                            <div className="mt-1 flex items-center justify-between">
-                              <span
-                                className="text-sm font-bold"
-                                style={primaryStyle}
-                              >
-                                {product.price} ج.م
-                              </span>
-                              <button
-                                type="button"
-                                className="business-icon-button business-icon-button--sm"
-                                data-tone="primary"
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                              </button>
                             </div>
                           </div>
+                        ))}
+                      </div>
+
+                      {loadingMoreProducts && (
+                        <div className="flex justify-center py-6">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-transparent border-t-current opacity-60" />
                         </div>
-                      ))}
-                    </div>
+                      )}
+                      {!loadingMoreProducts && hasMoreProducts && (
+                        <button
+                          type="button"
+                          onClick={loadMoreProducts}
+                          className="mt-4 w-full rounded-2xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-500 dark:border-gray-700 dark:text-gray-400"
+                        >
+                          عرض المزيد من المنتجات
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
