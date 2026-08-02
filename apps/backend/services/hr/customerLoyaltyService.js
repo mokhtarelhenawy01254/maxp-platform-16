@@ -385,7 +385,7 @@ class CustomerLoyaltyService {
       // التحقق من عدم وجود سجل سابق
       const existingRecord = await prisma.customerLoyaltyRecord.findUnique({
         where: {
-          customer_program_unique: {
+          customerId_programId: {
             customerId,
             programId
           }
@@ -435,7 +435,7 @@ class CustomerLoyaltyService {
     try {
       const record = await prisma.customerLoyaltyRecord.findUnique({
         where: {
-          customer_program_unique: {
+          customerId_programId: {
             customerId,
             programId
           }
@@ -507,7 +507,7 @@ class CustomerLoyaltyService {
     try {
       const record = await prisma.customerLoyaltyRecord.findUnique({
         where: {
-          customer_program_unique: {
+          customerId_programId: {
             customerId,
             programId
           }
@@ -592,7 +592,7 @@ class CustomerLoyaltyService {
     try {
       const record = await prisma.customerLoyaltyRecord.findUnique({
         where: {
-          customer_program_unique: {
+          customerId_programId: {
             customerId,
             programId
           }
@@ -831,7 +831,7 @@ class CustomerLoyaltyService {
         // التحقق من التسجيل التلقائي
         let record = await prisma.customerLoyaltyRecord.findUnique({
           where: {
-            customer_program_unique: {
+            customerId_programId: {
               customerId: order.customerId,
               programId: program.id
             }
@@ -873,7 +873,7 @@ class CustomerLoyaltyService {
     try {
       const record = await prisma.customerLoyaltyRecord.findUnique({
         where: {
-          customer_program_unique: {
+          customerId_programId: {
             customerId,
             programId
           }

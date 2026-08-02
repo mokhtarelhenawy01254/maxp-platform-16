@@ -107,7 +107,7 @@ async function applyCashbackForPaidOrder({ orderId, companyId, changedBy }) {
   // 3a. Tier Overrides
   const customerRecord = await prisma.customerLoyaltyRecord.findUnique({
     where: {
-      customer_program_unique: {
+      customerId_programId: {
         customerId: order.customerId,
         programId: program.id
       }
