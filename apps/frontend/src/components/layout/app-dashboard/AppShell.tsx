@@ -11,9 +11,11 @@ import type { SidebarItem, SidebarSection } from '../../../types/layout';
 interface AppShellProps {
   children: React.ReactNode;
   allSections: SidebarSection[];
+  /** Set to false when an outer header already provides mobile navigation (e.g. classic layouts wrapping /apps/:appId). */
+  showMobileHeader?: boolean;
 }
 
-const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
+const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHeader = true }) => {
   const { i18n, t } = useTranslation();
   const { appId } = useParams<{ appId: string }>();
   const navigate = useNavigate();
@@ -22,6 +24,8 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
   const isRtl = i18n.language?.startsWith('ar') ?? false;
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
 
   const app = useMemo(() => {
     const sectionById = allSections.find((section) => section.id === appId && sectionHasVisibleItems(section));
@@ -52,7 +56,13 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
   }, [appLandingPath, firstVisibleItemPath, location.pathname, navigate]);
 
   useEffect(() => {
-    if (!isSidebarOpen) return undefined;
+    if (!isSidebarOpen) {
+      // Restore focus to the toggle when the drawer closes.
+      if (mobileMenuToggleRef.current) {
+        mobileMenuToggleRef.current.focus();
+      }
+      return undefined;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -62,6 +72,13 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
 
     document.body.classList.add('app-shell-mobile-open');
     document.addEventListener('keydown', handleKeyDown);
+
+    // Move focus into the drawer so keyboard/screen-reader users land in the menu.
+    const drawer = mobileDrawerRef.current;
+    const firstFocusable = drawer?.querySelector<HTMLElement>(
+      'button, [href], input, [tabindex]:not([tabindex="-1"])',
+    );
+    firstFocusable?.focus();
 
     return () => {
       document.body.classList.remove('app-shell-mobile-open');
@@ -170,48 +187,80 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
         {t('appDashboard.skipToContent')}
       </a>
 
-      <div className="hidden lg:block h-full">
-        <AppSidebar
-          appName={appName}
-          appIcon={app.icon}
-          appColor={app.color}
-          sections={appSections}
-          onBack={handleBack}
-        />
-      </div>
-
-      {isSidebarOpen && (
-        <button
-          type="button"
-          aria-label={String(t('appDashboard.closeAppMenu'))}
-          className="app-shell-mobile-backdrop app-shell-mobile-backdrop--visible lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+      {showMobileHeader && (
+        <header className="app-shell-mobile-header lg:hidden">
+          <button
+            ref={mobileMenuToggleRef}
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label={String(t('appDashboard.openAppMenu'))}
+            aria-expanded={isSidebarOpen}
+            aria-controls="app-shell-mobile-drawer"
+            className="app-shell-mobile-header-button"
+          >
+            <Bars3Icon aria-hidden="true" className="h-5 w-5" />
+          </button>
+          <div className="app-shell-mobile-header-title">{appName}</div>
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label={String(t('appDashboard.backToApps'))}
+            className="app-shell-mobile-header-button"
+          >
+            <ArrowUturnLeftIcon aria-hidden="true" className={`h-5 w-5 ${isRtl ? 'rotate-180' : ''}`} />
+          </button>
+        </header>
       )}
 
-      <div
-        className={`
-          fixed inset-y-0 z-50 lg:hidden
-          transform transition-transform duration-200 ease-in-out
-          ${isRtl ? 'right-0' : 'left-0'}
-          ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}
-        `}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <AppSidebar
-          appName={appName}
-          appIcon={app.icon}
-          appColor={app.color}
-          sections={appSections}
-          onBack={handleBack}
-          onNavigate={() => setIsSidebarOpen(false)}
-        />
-      </div>
+      <div className="app-shell-body">
+        <div className="hidden lg:block h-full">
+          <AppSidebar
+            appName={appName}
+            appIcon={app.icon}
+            appColor={app.color}
+            sections={appSections}
+            onBack={handleBack}
+          />
+        </div>
 
-      <div id="app-shell-main-content" className="app-shell-main">
-        <div className="app-shell-content">
-          {children}
+        {isSidebarOpen && (
+          <button
+            type="button"
+            aria-label={String(t('appDashboard.closeAppMenu'))}
+            className="app-shell-mobile-backdrop app-shell-mobile-backdrop--visible lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        <div
+          id="app-shell-mobile-drawer"
+          ref={mobileDrawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={String(t('appDashboard.appNavigation', { appName }))}
+          className={`
+            fixed inset-y-0 z-50 lg:hidden
+            transform transition-transform duration-200 ease-in-out
+            ${isRtl ? 'right-0' : 'left-0'}
+            ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}
+          `}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <AppSidebar
+            appName={appName}
+            appIcon={app.icon}
+            appColor={app.color}
+            sections={appSections}
+            onBack={handleBack}
+            onNavigate={() => setIsSidebarOpen(false)}
+          />
+        </div>
+
+        <div id="app-shell-main-content" className="app-shell-main">
+          <div className="app-shell-content">
+            {children}
+          </div>
         </div>
       </div>
     </div>

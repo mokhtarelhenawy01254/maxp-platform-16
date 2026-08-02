@@ -8040,6 +8040,8 @@
     "appNotFound": "App not found",
     "skipToContent": "Skip to content",
     "noResults": "No matching results",
+    "noAppsTitle": "No apps available",
+    "noAppsDescription": "You don't have access to any apps yet. Check your role permissions or contact your company administrator.",
     "clearFilters": "Clear filters and show all",
     "shortcuts": "Keyboard shortcuts",
     "shortcutFocusSearch": "Focus search",
