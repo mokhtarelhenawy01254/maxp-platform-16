@@ -9604,6 +9604,7 @@ declare module 'react-i18next' {
         incompletePhoneWith: string;
         incompletePhoneWithout: string;
         incompleteReports: string;
+        incompleteSettings: string;
         incompleteRecoveryPipeline: string;
         incompleteRecovered: string;
         incompleteRecoveredValue: string;
