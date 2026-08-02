@@ -68,7 +68,15 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
               <div className="text-sm space-y-1">
                 {patient.phone && <p dir="ltr">📞 {patient.phone}</p>}
                 {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {patient.email}</p>}
+                {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">🪪 الرقم القومي: {patient.nationalId}</p>}
+                {patient.address && <p>📍 {patient.address}</p>}
                 {patient.birthDate && <p>🎂 {String(patient.birthDate).split("T")[0]}</p>}
+                {patient.nationalIdImage && (
+                  <div className="pt-1">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">صورة البطاقة</p>
+                    <img src={patient.nationalIdImage} alt="بطاقة الرقم القومي" className="w-32 h-24 object-cover rounded-lg border dark:border-gray-600" />
+                  </div>
+                )}
               </div>
               {allergies && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحساسية</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
               {diseases && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أمراض مزمنة</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
