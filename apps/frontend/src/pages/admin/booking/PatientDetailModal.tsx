@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 ;
 import { BookingPatient, BookingAppointment, MODAL_CONTENT_CLS, STATUS_MAP, api, getAuthHeaders, tryParseJSON } from "./shared";
 
-import { X } from 'lucide-react'
+import { X, ExternalLink } from 'lucide-react'
 interface Props {
   patientId: string;
   onClose: () => void;
@@ -26,6 +27,7 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
   const [patient, setPatient] = useState<PatientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +126,7 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
         ) : null}
 
         <div className="flex justify-end gap-3 mt-6">
+          <button onClick={() => { navigate(`/admin/booking/patients/${patientId}`); }} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"><ExternalLink className="w-4 h-4" />فتح في صفحة مستقلة</button>
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إغلاق</button>
         </div>
       </div>

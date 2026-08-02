@@ -18,6 +18,7 @@ import AppointmentsTab from "./booking/AppointmentsTab";
 import CalendarTab from "./booking/CalendarTab";
 import PatientsTab from "./booking/PatientsTab";
 import PatientDetailModal from "./booking/PatientDetailModal";
+import PatientDetailPage from "./booking/PatientDetailPage";
 import InvoicesTab from "./booking/InvoicesTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
@@ -26,6 +27,7 @@ export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
   const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const patientUrlId = urlTab === "patients" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
@@ -347,6 +349,10 @@ export default function BookingManagementPage() {
   };
 
   // branchAppointments is not used as filtering is now reactive through the global branch selector
+
+  if (patientUrlId) {
+    return <PatientDetailPage />;
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto">
