@@ -52,6 +52,21 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
 
   const doctors = branchDoctors.filter(d => d.branchId === form.branchId && d.isActive);
 
+  const branchServices = form.branchId
+    ? services.filter(s => s.isActive && s.branchServices.some(bs => bs.branchId === form.branchId && bs.isActive))
+    : [];
+
+  const selectedService = services.find(s => s.id === form.serviceId);
+  const serviceDoctorIds = selectedService?.doctorServices?.map(ds => ds.doctorId) || [];
+  let serviceDoctors = serviceDoctorIds.length > 0
+    ? doctors.filter(d => serviceDoctorIds.includes(d.id))
+    : doctors;
+  // Always include the currently-assigned doctor when editing (legacy appointments may have an unlinked doctor)
+  if (form.doctorId && !serviceDoctors.some(d => d.id === form.doctorId)) {
+    const current = branchDoctors.find(d => d.id === form.doctorId);
+    if (current) serviceDoctors = [current, ...serviceDoctors];
+  }
+
   const branchName = appointment?.branchName || branches.find(b => b.id === (appointment?.branchId || form.branchId))?.name || "";
   const serviceName = appointment?.serviceName || services.find(s => s.id === (appointment?.serviceId || form.serviceId))?.name || "";
   const doctorName = appointment?.doctorName || branchDoctors.find(d => d.id === (appointment?.doctorId || form.doctorId))?.name || "";
@@ -134,22 +149,22 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
             </select>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
-            <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value, doctorId: "" })}>
+            <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value, doctorId: "", serviceId: "" })}>
               <option value="">اختر الفرع</option>
               {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الخدمة</label>
-              <select className={MODAL_INPUT_CLS} value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value })}>
+              <select className={MODAL_INPUT_CLS} value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value, doctorId: "" })}>
                 <option value="">اختر الخدمة</option>
-                {services.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {branchServices.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الطبيب</label>
               <select className={MODAL_INPUT_CLS} value={form.doctorId || ""} onChange={e => setForm({ ...form, doctorId: e.target.value })}>
                 <option value="">أي طبيب</option>
-                {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {serviceDoctors.map(d => <option key={d.id} value={d.id}>{d.title} {d.name}</option>)}
               </select>
             </div>
           </div>

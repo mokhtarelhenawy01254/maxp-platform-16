@@ -429,7 +429,6 @@ const ReturnSettingsPage: React.FC = () => {
     }
   };
 
-<<<<<<< Updated upstream
   const openTypeModal = (type?: ReturnType, presetCompanyId?: string) => {
     setEditingType(type || null);
     setTypeName(type?.name || "");
@@ -496,16 +495,17 @@ const ReturnSettingsPage: React.FC = () => {
       fetchTypes();
     } catch (error) {
       toast.error(t('returns.k_251'));
-=======
+    }
+  };
+
   const deleteCategory = async (id: string) => {
-    if (!confirm(t('returns.k_221'))) return;
+    if (!confirm(t('returns.k_261'))) return;
     try {
       await returnService.deleteCategory(id);
-      toast.success(t('returns.k_222'));
+      toast.success(t('returns.k_262'));
       fetchReasonsData();
     } catch (error) {
-      toast.error(t('returns.k_223'));
->>>>>>> Stashed changes
+      toast.error(t('returns.k_263'));
     }
   };
 

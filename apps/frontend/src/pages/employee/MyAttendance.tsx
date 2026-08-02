@@ -3,27 +3,29 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-<<<<<<< Updated upstream
 import {
   Clock,
   LogIn,
   LogOut,
+  ArrowRight,
   Calendar,
   TrendingUp,
   Target,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
+  AlertTriangle,
+  Check,
+  X,
   Timer,
-  MapPin,
+  Pin,
   Home,
   ChevronLeft,
   ChevronRight,
+  Building,
   Building2,
+  CheckCircle,
+  MapPin,
+  AlertCircle,
+  XCircle,
 } from "lucide-react";
-=======
-import { Clock, LogIn, ArrowRight, Calendar, TrendingUp, Target, AlertTriangle, Check, X, Timer, Pin, Home, ChevronLeft, ChevronRight, Building, CheckCircle, MapPin, AlertCircle, LogOut, Building2, XCircle } from 'lucide-react';
->>>>>>> Stashed changes
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";

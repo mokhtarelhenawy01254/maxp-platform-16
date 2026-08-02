@@ -48,6 +48,7 @@ model BookingDoctor {
   branch          BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   appointments    Appointment[]
   availability    DoctorAvailability[]
+  doctorServices  BookingDoctorService[]
 
   @@index([companyId])
   @@index([branchId])
@@ -80,11 +81,17 @@ model BookingService {
   name                 String
   description          String?
   requiresConsultation Boolean  @default(true) /// Needs doctor assessment first
+  durationMinutes      Int      @default(30) /// Default appointment duration in minutes
+  basePrice            Float?   /// Default price for the service (EGP)
+  imageUrl             String?  /// Service image
+  categoryId           String?  /// Optional service category/department
   isActive             Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category             BookingServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   branchServices       BookingBranchService[]
+  doctorServices       BookingDoctorService[]
   appointments         Appointment[]
 
   @@index([companyId])
@@ -108,6 +115,43 @@ model BookingBranchService {
   @@unique([serviceId, branchId])
   @@index([branchId])
   @@map("booking_branch_services")
+}
+
+/// Booking module - Service categories/departments (e.g. Urology, Dental)
+model BookingServiceCategory {
+  id        String    @id @default(cuid())
+  companyId String
+  name      String
+  color     String?   /// Hex color for badges
+  icon      String?   /// Icon name/emoji
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  services  BookingService[]
+
+  @@index([companyId])
+  @@map("booking_service_categories")
+}
+
+/// Booking module - Doctor-to-service link (which doctors provide which services)
+model BookingDoctorService {
+  id        String    @id @default(cuid())
+  companyId String
+  doctorId  String
+  serviceId String
+  fee       Float?    /// Doctor-specific price override for this service
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doctor    BookingDoctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  service   BookingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, serviceId])
+  @@index([serviceId])
+  @@map("booking_doctor_services")
 }
 
 /// Multi-turn booking drafts - agent collects fields one at a time

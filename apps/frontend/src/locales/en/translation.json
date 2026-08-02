@@ -6108,6 +6108,8 @@
       "openInMap": "Click to open location in map",
       "checkinFailed": "❌ Check-in failed",
       "dataErrorDesc": "Please check the entered data",
+      "locationRequired": "📍 Location access required",
+      "locationRequiredDesc": "To check in from the office, you must allow access to your location. Enable location services and try again.",
       "checkinTime": "Check-in time:",
       "hoursElapsed": "{{hours}}h elapsed",
       "minute": "min"
@@ -10796,7 +10798,10 @@
     "k_257": "Select the shipping company first",
     "k_258": "Type status",
     "k_259": "Active",
-    "k_260": "Inactive"
+    "k_260": "Inactive",
+    "k_261": "Are you sure you want to delete this category? All reasons inside it will also be deleted.",
+    "k_262": "Category deleted successfully",
+    "k_263": "Failed to delete category"
   },
   "returnsAnalytics": {
     "title": "Returns Analytics",

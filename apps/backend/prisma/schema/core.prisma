@@ -287,6 +287,8 @@ model Company {
    bookingBranches                  BookingBranch[]
    bookingDoctors                   BookingDoctor[]
    bookingServices                  BookingService[]
+   bookingServiceCategories         BookingServiceCategory[]
+   bookingDoctorServices            BookingDoctorService[]
    doctorAvailabilities             DoctorAvailability[]
    patients                         Patient[]
    medicalInvoices                  MedicalInvoice[]

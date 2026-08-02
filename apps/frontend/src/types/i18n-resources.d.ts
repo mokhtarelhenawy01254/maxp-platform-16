@@ -6101,6 +6101,8 @@ declare module 'react-i18next' {
           openInMap: string;
           checkinFailed: string;
           dataErrorDesc: string;
+          locationRequired: string;
+          locationRequiredDesc: string;
           checkinTime: string;
           hoursElapsed: string;
           minute: string;
@@ -10790,6 +10792,9 @@ declare module 'react-i18next' {
         k_258: string;
         k_259: string;
         k_260: string;
+        k_261: string;
+        k_262: string;
+        k_263: string;
       };
       returnsAnalytics: {
         title: string;

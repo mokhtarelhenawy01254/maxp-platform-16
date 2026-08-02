@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { BookingService, BookingBranch, ServiceFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
+import { BookingService, BookingBranch, BookingDoctor, ServiceFormData, ServiceCategory, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface Props {
   service?: Partial<BookingService> | null;
   branches: BookingBranch[];
+  doctors: BookingDoctor[];
+  categories: ServiceCategory[];
   onClose: () => void;
   onSave: (d: ServiceFormData) => Promise<void>;
 }
@@ -13,7 +15,7 @@ interface BranchPkg { count: number; price: number }
 
 
 
-export default function ServiceModal({ service, branches, onClose, onSave }: Props) {
+export default function ServiceModal({ service, branches, doctors, categories, onClose, onSave }: Props) {
   const initBranchAssignments = () => {
     if (!service?.branchServices) return {} as Record<string, BranchPkg[]>;
     const acc: Record<string, BranchPkg[]> = {};
@@ -24,7 +26,16 @@ export default function ServiceModal({ service, branches, onClose, onSave }: Pro
   };
   const [name, setName] = useState(service?.name || "");
   const [desc, setDesc] = useState(service?.description || "");
+  const [requiresConsultation, setRequiresConsultation] = useState(service?.requiresConsultation ?? true);
+  const [durationMinutes, setDurationMinutes] = useState(service?.durationMinutes || 30);
+  const [basePrice, setBasePrice] = useState(service?.basePrice?.toString() || "");
+  const [categoryId, setCategoryId] = useState(service?.categoryId || "");
+  const [doctorIds, setDoctorIds] = useState<string[]>(service?.doctorServices?.map(ds => ds.doctorId) || []);
   const [branchPkgs, setBranchPkgs] = useState<Record<string, BranchPkg[]>>(initBranchAssignments);
+
+  const toggleDoctor = (doctorId: string) => {
+    setDoctorIds(prev => prev.includes(doctorId) ? prev.filter(id => id !== doctorId) : [...prev, doctorId]);
+  };
 
   const toggleBranch = (branchId: string) => {
     const next = { ...branchPkgs };
@@ -52,6 +63,11 @@ export default function ServiceModal({ service, branches, onClose, onSave }: Pro
   const handleSave = () => {
     onSave({
       name, description: desc,
+      requiresConsultation,
+      durationMinutes,
+      basePrice: basePrice !== "" ? Number(basePrice) : undefined,
+      categoryId: categoryId || undefined,
+      doctorIds,
       assignedBranchIds: Object.keys(branchPkgs),
       branches: Object.entries(branchPkgs).map(([branchId, pkgs]) => ({
         branchId,
@@ -70,6 +86,46 @@ export default function ServiceModal({ service, branches, onClose, onSave }: Pro
         <div className="space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={name} onChange={e => setName(e.target.value)} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={MODAL_INPUT_CLS} rows={2} value={desc} onChange={e => setDesc(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القسم (التخصص)</label>
+              <select className={MODAL_INPUT_CLS} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                <option value="">بدون قسم</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.icon && `${c.icon} `}{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المدة (دقيقة)</label>
+              <input type="number" min={5} step={5} className={MODAL_INPUT_CLS} value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value) || 30)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">السعر الأساسي (ج.م)</label>
+              <input type="number" min={0} className={MODAL_INPUT_CLS} placeholder="0" value={basePrice} onChange={e => setBasePrice(e.target.value)} />
+            </div>
+            <div className="flex items-end pb-1">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={requiresConsultation} onChange={e => setRequiresConsultation(e.target.checked)} className="rounded border-gray-300 dark:border-gray-600" />
+                يتطلب استشارة طبية أولاً
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الأطباء المقدمون للخدمة</label>
+            {doctors.filter(d => d.isActive).length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">لا يوجد أطباء مضافة بعد</p>}
+            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto border dark:border-gray-600 rounded-lg p-2">
+              {doctors.filter(d => d.isActive).map(d => {
+                const checked = doctorIds.includes(d.id);
+                return (
+                  <button key={d.id} type="button" onClick={() => toggleDoctor(d.id)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border ${checked ? "bg-purple-50 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`}>
+                    {checked && <span className="text-purple-500">✓</span>}
+                    {d.title} {d.name}{d.specialty ? ` (${d.specialty})` : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الفروع المقدمة فيها الخدمة</label>
             {!hasBranches && <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">اختر فرعاً واحداً على الأقل</p>}

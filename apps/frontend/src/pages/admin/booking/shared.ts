@@ -69,6 +69,23 @@ export interface ServiceFormData {
   id?: string; name: string; description: string;
   assignedBranchIds?: string[];
   branches: ServiceBranchAssignment[];
+  durationMinutes?: number;
+  basePrice?: number;
+  imageUrl?: string;
+  categoryId?: string;
+  requiresConsultation?: boolean;
+  doctorIds?: string[];
+}
+
+export interface ServiceCategory {
+  id: string; name: string; color?: string; icon?: string;
+  sortOrder: number; isActive: boolean;
+}
+
+export interface DoctorServiceLink {
+  id: string; doctorId: string; serviceId: string;
+  fee?: number; isActive: boolean;
+  doctor?: { id: string; name: string; title: string; specialty?: string };
 }
 
 export const normalizeBranch = (b: BookingBranch): BookingBranch => ({
@@ -81,6 +98,8 @@ export interface BookingDoctor {
   id: string; title: string; name: string; branchId: string; branchName?: string;
   specialty: string; phone: string; isActive: boolean; createdAt: string;
   email?: string; password?: string; consultationFee?: number; commissionRate?: number; bio?: string; avatarUrl?: string;
+  serviceIds?: string[];
+  doctorServices?: DoctorServiceLink[];
 }
 
 export interface BookingBranchServiceInfo {
@@ -92,6 +111,13 @@ export interface BookingBranchServiceInfo {
 
 export interface BookingService {
   id: string; name: string; description: string;
+  requiresConsultation?: boolean;
+  durationMinutes?: number;
+  basePrice?: number;
+  imageUrl?: string;
+  categoryId?: string;
+  category?: { id: string; name: string; color?: string; icon?: string };
+  doctorServices?: DoctorServiceLink[];
   isActive: boolean; createdAt: string;
   branchServices: BookingBranchServiceInfo[];
 }

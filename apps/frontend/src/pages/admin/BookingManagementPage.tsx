@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookingBranch, BookingDoctor, BookingAppointment, BookingService, BookingPatient, BookingInvoice,
-  BranchFormData, ServiceFormData,
+  BranchFormData, ServiceFormData, ServiceCategory,
   TabId, fetchJson, api, getAuthHeaders, normalizeBranch, MODAL_INPUT_CLS
 } from "./booking/shared";
 import BranchesTab from "./booking/BranchesTab";
@@ -30,6 +30,7 @@ export default function BookingManagementPage() {
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
   const [services, setServices] = useState<BookingService[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [appointments, setAppointments] = useState<BookingAppointment[]>([]);
   const [patients, setPatients] = useState<BookingPatient[]>([]);
   const [invoices, setInvoices] = useState<BookingInvoice[]>([]);
@@ -111,7 +112,7 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true); setError(null);
-    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments(), fetchPatients(), fetchInvoices()]);
+    const results = await Promise.allSettled([fetchBranches(), fetchDoctors(), fetchServices(), fetchServiceCategories(), fetchAppointments(), fetchPatients(), fetchInvoices()]);
     const rejected = results.filter(r => r.status === 'rejected');
     if (rejected.length > 0) setError(`فشل تحميل بعض البيانات (${rejected.length}/${results.length})`);
     setLoading(false);
@@ -126,6 +127,9 @@ export default function BookingManagementPage() {
   };
   const fetchServices = async (branchId?: string) => {
     try { setServices(await fetchJson<BookingService[]>(api(`services${branchId ? `?branchId=${branchId}` : ""}`)) || []); } catch (e: unknown) { console.error("fetchServices", e); throw e; }
+  };
+  const fetchServiceCategories = async () => {
+    try { setServiceCategories(await fetchJson<ServiceCategory[]>(api("services/categories")) || []); } catch (e: unknown) { console.error("fetchServiceCategories", e); throw e; }
   };
   const fetchPatients = async () => {
     try { setPatients(await fetchJson<BookingPatient[]>(api("patients?includeInactive=true")) || []); } catch (e: unknown) { console.error("fetchPatients", e); throw e; }
@@ -194,8 +198,18 @@ export default function BookingManagementPage() {
 
   const saveService = async (d: ServiceFormData) => {
     const isEdit = !!d.id;
+    const common: Record<string, unknown> = {
+      name: d.name, description: d.description,
+      requiresConsultation: d.requiresConsultation ?? true,
+      durationMinutes: d.durationMinutes || 30,
+    };
+    if (d.basePrice !== undefined && d.basePrice !== null) common["basePrice"] = d.basePrice;
+    if (d.imageUrl !== undefined) common["imageUrl"] = d.imageUrl;
+    if (d.categoryId !== undefined) common["categoryId"] = d.categoryId;
+    if (d.doctorIds !== undefined) common["doctorIds"] = d.doctorIds;
+
     if (isEdit) {
-      const data = await apiCall(api(`services/${d.id}`), "PUT", { name: d.name, description: d.description });
+      const data = await apiCall(api(`services/${d.id}`), "PUT", common);
       if (data === false) return;
       if (d.branches) {
         const oldService = services.find(s => s.id === d.id);
@@ -212,12 +226,28 @@ export default function BookingManagementPage() {
         }
       }
     } else {
-      const payload: Record<string, unknown> = { name: d.name, description: d.description };
+      const payload: Record<string, unknown> = { ...common };
       if (d.branches?.length) payload["branches"] = d.branches.map(b => ({ branchId: b.branchId, packages: b.packages?.filter(p => p.count > 0) || null }));
       const data = await apiCall(api("services"), "POST", payload);
       if (data === false) return;
     }
     setServiceModal(undefined); fetchServices();
+  };
+
+  const saveServiceCategory = async (d: Partial<ServiceCategory>) => {
+    const isEdit = !!d.id;
+    const data = await apiCall(api(`services/categories${isEdit ? `/${d.id}` : ""}`), isEdit ? "PUT" : "POST", d);
+    if (data !== false) fetchServiceCategories();
+  };
+
+  const deleteServiceCategory = async (id: string) => {
+    setConfirmDialog({
+      message: "تأكيد حذف القسم؟ الخدمات المرتبطة به لن تُحذف.",
+      onConfirm: async () => {
+        const data = await apiCall(api(`services/categories/${id}`), "DELETE");
+        if (data !== false) fetchServiceCategories();
+      }
+    });
   };
 
   const cloneService = async (s: BookingService) => {
@@ -369,7 +399,7 @@ export default function BookingManagementPage() {
           {activeTab === "doctors" && (
             <TabErrorBoundary tabLabel="الأطباء">
               <DoctorsTab
-                doctors={doctors} branches={branches}
+                doctors={doctors} branches={branches} services={services}
                 search={searchDoctor} onSearchChange={setSearchDoctor}
                 onEdit={d => setDoctorModal(d)}
                 onToggleActive={(id, cur) => toggleActive("doctors", id, cur)}
@@ -383,7 +413,8 @@ export default function BookingManagementPage() {
           {activeTab === "services" && (
             <TabErrorBoundary tabLabel="الخدمات">
               <ServicesTab
-                services={services} branches={branches}
+                services={services} branches={branches} doctors={doctors}
+                categories={serviceCategories}
                 search={searchService} onSearchChange={setSearchService}
                 filterStatus={serviceFilterStatus} onFilterStatusChange={setServiceFilterStatus}
                 onEdit={s => setServiceModal(s)}
@@ -393,6 +424,8 @@ export default function BookingManagementPage() {
                 modalService={serviceModal}
                 onModalClose={() => setServiceModal(undefined)}
                 onSave={saveService}
+                onCategorySave={saveServiceCategory}
+                onCategoryDelete={deleteServiceCategory}
                 detailService={serviceDetail}
                 onDetailClose={() => setServiceDetail(null)}
               />

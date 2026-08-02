@@ -92,7 +92,14 @@ const getServices = async (req, res) => {
           id: true,
           hasPackages: true,
           packages: true,
-          service: { select: { id: true, name: true, description: true, requiresConsultation: true } }
+          service: {
+            select: {
+              id: true, name: true, description: true, requiresConsultation: true,
+              durationMinutes: true, basePrice: true, categoryId: true,
+              category: { select: { id: true, name: true, color: true, icon: true } },
+              doctorServices: { select: { doctorId: true, fee: true, doctor: { select: { id: true, name: true, title: true, specialty: true } } } }
+            }
+          }
         },
         orderBy: { service: { name: 'asc' } }
       });
@@ -101,6 +108,10 @@ const getServices = async (req, res) => {
         name: bs.service.name,
         description: bs.service.description,
         requiresConsultation: bs.service.requiresConsultation,
+        durationMinutes: bs.service.durationMinutes,
+        basePrice: bs.service.basePrice,
+        category: bs.service.category,
+        doctors: (bs.service.doctorServices || []).map(ds => ({ id: ds.doctor.id, name: ds.doctor.name, title: ds.doctor.title, specialty: ds.doctor.specialty, fee: ds.fee })),
         branchServiceId: bs.id,
         branchId,
         hasPackages: bs.hasPackages,
@@ -111,11 +122,21 @@ const getServices = async (req, res) => {
 
     let services = await getSharedPrismaClient().bookingService.findMany({
       where: { companyId: company.id, isActive: true },
-      select: { id: true, name: true, description: true, requiresConsultation: true },
+      select: {
+        id: true, name: true, description: true, requiresConsultation: true,
+        durationMinutes: true, basePrice: true, categoryId: true,
+        category: { select: { id: true, name: true, color: true, icon: true } },
+        doctorServices: { select: { doctor: { select: { id: true, name: true, title: true, specialty: true } } } }
+      },
       orderBy: { name: 'asc' }
     });
+    const data2 = services.map(s => ({
+      ...s,
+      doctors: (s.doctorServices || []).map(ds => ds.doctor)
+    }));
+    delete data2.doctorServices;
 
-    res.json({ success: true, data: services });
+    res.json({ success: true, data: data2 });
   } catch (error) {
     console.error('Error in getServices:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ' });
@@ -159,6 +180,17 @@ const getAvailableSlots = async (req, res) => {
       if (e) endHour = parseInt(e.split(':')[0]);
     }
 
+    // Service duration (default 30)
+    const { serviceId } = req.query;
+    let serviceDuration = 30;
+    if (serviceId) {
+      const service = await getSharedPrismaClient().bookingService.findFirst({
+        where: { id: serviceId, companyId: company.id },
+        select: { durationMinutes: true }
+      });
+      if (service) serviceDuration = service.durationMinutes || 30;
+    }
+
     const existingAppointments = await getSharedPrismaClient().appointment.findMany({
       where: {
         companyId: company.id, branchId,
@@ -168,18 +200,35 @@ const getAvailableSlots = async (req, res) => {
       select: { startTime: true, endTime: true }
     });
 
-    const occupiedSlots = new Set(existingAppointments.map(a => a.startTime));
-    const slots = [];
-
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let min = 0; min < 60; min += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
-        if (timeString >= '20:00') continue;
-        slots.push({
-          startTime: timeString,
-          available: !occupiedSlots.has(timeString)
-        });
+    const overlapsAny = (startTimeStr, durationMin) => {
+      const [sh, sm] = startTimeStr.split(':').map(Number);
+      const startMinTotal = sh * 60 + sm;
+      const endMinTotal = startMinTotal + durationMin;
+      for (const apt of existingAppointments) {
+        const [ah, am] = apt.startTime.split(':').map(Number);
+        const aptStart = ah * 60 + am;
+        let aptEnd = aptStart + 30;
+        if (apt.endTime) {
+          const [eh, em] = apt.endTime.split(':').map(Number);
+          aptEnd = eh * 60 + em;
+        }
+        if (startMinTotal < aptEnd && endMinTotal > aptStart) return true;
       }
+      return false;
+    };
+
+    const slots = [];
+    const endMinTotal = endHour * 60;
+    for (let minTotal = startHour * 60; minTotal + serviceDuration <= endMinTotal; minTotal += 30) {
+      const h = Math.floor(minTotal / 60);
+      const m = minTotal % 60;
+      const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      if (timeString >= '20:00') continue;
+      slots.push({
+        startTime: timeString,
+        duration: serviceDuration,
+        available: !overlapsAny(timeString, serviceDuration)
+      });
     }
 
     res.json({ success: true, data: slots });
@@ -216,22 +265,51 @@ const createAppointment = async (req, res) => {
       }
     }
 
-    const existing = await getSharedPrismaClient().appointment.findFirst({
-      where: {
-        companyId: company.id, branchId,
-        appointmentDate: new Date(appointmentDate),
-        startTime, status: { notIn: ['cancelled', 'no_show'] }
-      }
-    });
-    if (existing) return res.status(400).json({ success: false, error: 'هذا الوقت محجوز بالفعل' });
-
+    // Resolve service + duration + default doctor
     let serviceName = null;
+    let serviceDuration = 30;
+    let serviceDoctorIds = [];
     if (serviceId) {
       const service = await getSharedPrismaClient().bookingService.findFirst({
-        where: { id: serviceId, companyId: company.id }
+        where: { id: serviceId, companyId: company.id },
+        select: { id: true, name: true, durationMinutes: true, doctorServices: { select: { doctorId: true } } }
       });
-      if (service) serviceName = service.name;
+      if (service) {
+        serviceName = service.name;
+        serviceDuration = service.durationMinutes || 30;
+        serviceDoctorIds = (service.doctorServices || []).map(ds => ds.doctorId);
+      }
     }
+
+    // Verify selected doctor provides this service (if a doctor was chosen)
+    const chosenDoctorId = req.body.doctorId;
+    if (chosenDoctorId && serviceDoctorIds.length > 0 && !serviceDoctorIds.includes(chosenDoctorId)) {
+      return res.status(400).json({ success: false, error: 'هذا الطبيب لا يقدم هذه الخدمة' });
+    }
+
+    const existing = await getSharedPrismaClient().appointment.findMany({
+      where: {
+        companyId: company.id, branchId,
+        ...(chosenDoctorId ? { doctorId: chosenDoctorId } : {}),
+        appointmentDate: new Date(appointmentDate),
+        status: { notIn: ['cancelled', 'no_show'] }
+      },
+      select: { startTime: true, endTime: true }
+    });
+    const [rSH, rSM] = startTime.split(':').map(Number);
+    const reqStartMin = rSH * 60 + rSM;
+    const reqEndMin = reqStartMin + serviceDuration;
+    const hasOverlap = existing.some(apt => {
+      const [ah, am] = apt.startTime.split(':').map(Number);
+      const aptStart = ah * 60 + am;
+      let aptEnd = aptStart + 30;
+      if (apt.endTime) {
+        const [eh, em] = apt.endTime.split(':').map(Number);
+        aptEnd = eh * 60 + em;
+      }
+      return reqStartMin < aptEnd && reqEndMin > aptStart;
+    });
+    if (hasOverlap) return res.status(400).json({ success: false, error: 'هذا الوقت محجوز بالفعل' });
 
     // Find-or-create the patient's medical file and link the appointment
     const { id: patientId } = await findOrCreatePatient({
@@ -244,7 +322,7 @@ const createAppointment = async (req, res) => {
     });
 
     const [startHour, startMinute] = startTime.split(':').map(Number);
-    const endMin = startMinute + 30;
+    const endMin = startMinute + serviceDuration;
     const endTime = `${(startHour + Math.floor(endMin / 60)).toString().padStart(2, '0')}:${(endMin % 60).toString().padStart(2, '0')}`;
 
     const appointment = await getSharedPrismaClient().appointment.create({
@@ -253,11 +331,11 @@ const createAppointment = async (req, res) => {
         customerName: customerName.trim(),
         customerPhone, customerEmail, customerGender,
         patientId,
-        staffId: branchId, staffName: 'حجز عام',
-        branchId, serviceId, serviceName,
+        staffId: chosenDoctorId || branchId, staffName: serviceName || 'حجز عام',
+        branchId, doctorId: chosenDoctorId || undefined, serviceId, serviceName,
         title: serviceName || 'موعد جديد',
         appointmentDate: new Date(appointmentDate),
-        startTime, endTime, duration: 30,
+        startTime, endTime, duration: serviceDuration,
         status: 'pending', type: 'consultation',
         location: branch.name,
         source: 'public-booking',
@@ -285,4 +363,25 @@ const createAppointment = async (req, res) => {
   }
 };
 
-module.exports = { getInfo, getBranches, getDoctors, getServices, getAvailableSlots, createAppointment };
+const getServiceCategories = async (req, res) => {
+  try {
+    const { slug } = req.query;
+    if (!slug) return res.status(400).json({ success: false, error: 'معرف الشركة مطلوب' });
+
+    const company = await resolveCompany(slug);
+    if (!company) return res.status(404).json({ success: false, error: 'الشركة غير موجودة' });
+
+    const categories = await getSharedPrismaClient().bookingServiceCategory.findMany({
+      where: { companyId: company.id, isActive: true },
+      select: { id: true, name: true, color: true, icon: true, sortOrder: true, _count: { select: { services: { where: { isActive: true } } } } },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }]
+    });
+    const data = categories.map(c => ({ id: c.id, name: c.name, color: c.color, icon: c.icon, sortOrder: c.sortOrder, serviceCount: c._count.services }));
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error in getServiceCategories:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ' });
+  }
+};
+
+module.exports = { getInfo, getBranches, getDoctors, getServices, getServiceCategories, getAvailableSlots, createAppointment };

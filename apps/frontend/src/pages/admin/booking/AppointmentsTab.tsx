@@ -6,7 +6,7 @@ import {
 } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService,
-  STATUS_MAP, MODAL_INPUT_CLS
+  STATUS_MAP, MODAL_INPUT_CLS, api, getAuthHeaders
 } from "./shared";
 import AppointmentModal from "./AppointmentModal";
 
@@ -76,12 +76,26 @@ export default function AppointmentsTab({
         label: "تراجع",
         onClick: () => {
           onUpdateStatus(id, oldStatus);
-        }
-      }
+        }      }
     });
   }, [appointments, onUpdateStatus]);
 
   const totalPages = Math.ceil(total / limit);
+
+  const createInvoiceFor = useCallback(async (a: BookingAppointment) => {
+    if (!a.patientId) {
+      toast.error("الموعد غير مرتبط بمريض");
+      return;
+    }
+    try {
+      const res = await fetch(api(`invoices/from-appointment/${a.id}`), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!data.success) { toast.error(data.error || "فشل إنشاء الفاتورة"); return; }
+      toast.success(`تم إنشاء الفاتورة ${data.data.invoiceNumber} بمبلغ ${data.data.total} ج.م`);
+    } catch (e) {
+      toast.error("فشل إنشاء الفاتورة");
+    }
+  }, []);
 
   const SORT_FIELDS: Record<string, string> = {
     "العميل": "customerName", "التاريخ": "appointmentDate", "الوقت": "startTime", "الحالة": "status"
@@ -260,6 +274,9 @@ export default function AppointmentsTab({
                 <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50">{updatingId === a.id ? 'جاري...' : <><CheckIcon className="w-3 h-3 inline ml-1" />إتمام</>}</button>
               )}
               <button onClick={() => onEdit(a)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3 h-3 inline ml-1" />عرض</button>
+              {a.patientId && !a.paymentStatus && (
+                <button onClick={() => createInvoiceFor(a)} className="text-xs px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50"><PlusIcon className="w-3 h-3 inline ml-1" />فاتورة</button>
+              )}
             </div>
           </div>
         ))}
@@ -317,6 +334,9 @@ export default function AppointmentsTab({
                       <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded disabled:opacity-50" title="إتمام"><CheckIcon className="w-4 h-4" /></button>
                     )}
                     <button onClick={() => onEdit(a)} className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded" title="عرض"><EyeIcon className="w-4 h-4" /></button>
+                    {a.patientId && !a.paymentStatus && (
+                      <button onClick={() => createInvoiceFor(a)} className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded" title="إنشاء فاتورة"><PlusIcon className="w-4 h-4" /></button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -18,10 +18,17 @@ const getAllDoctors = async (req, res) => {
 
     const doctors = await getSharedPrismaClient().bookingDoctor.findMany({
       where,
-      include: { branch: { select: { id: true, name: true } } },
+      include: {
+        branch: { select: { id: true, name: true } },
+        doctorServices: { select: { id: true, serviceId: true, doctorId: true, fee: true, isActive: true } }
+      },
       orderBy: { title: 'asc' }
     });
-    res.json({ success: true, data: doctors.map(stripPassword) });
+    const data = doctors.map(d => {
+      const { password, ...rest } = d;
+      return { ...rest, serviceIds: (d.doctorServices || []).filter(ds => ds.isActive).map(ds => ds.serviceId) };
+    });
+    res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching doctors:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأطباء' });
@@ -33,7 +40,7 @@ const createDoctor = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { branchId, title, name, specialty, phone, gender, email, password, employeeId, consultationFee, commissionRate, bio, avatarUrl } = req.body;
+    let { branchId, title, name, specialty, phone, gender, email, password, employeeId, consultationFee, commissionRate, bio, avatarUrl, serviceIds } = req.body;
     if (!branchId) return res.status(400).json({ success: false, error: 'الفرع مطلوب' });
     if (!title || !title.trim()) return res.status(400).json({ success: false, error: 'اللقب مطلوب' });
 
@@ -47,9 +54,14 @@ const createDoctor = async (req, res) => {
         commissionRate: commissionRate !== undefined ? Number(commissionRate) : null,
         bio, avatarUrl,
         password: password ? await bcrypt.hash(password, 10) : null,
-      }
+        doctorServices: Array.isArray(serviceIds) && serviceIds.length > 0 ? {
+          create: serviceIds.map(serviceId => ({ companyId, serviceId, isActive: true }))
+        } : undefined
+      },
+      include: { doctorServices: { select: { id: true, serviceId: true, doctorId: true, fee: true, isActive: true } } }
     });
-    res.json({ success: true, data: stripPassword(doctor) });
+    const { password: _pw, ...rest } = doctor;
+    res.json({ success: true, data: { ...rest, serviceIds: (doctor.doctorServices || []).filter(ds => ds.isActive).map(ds => ds.serviceId) } });
   } catch (error) {
     console.error('Error creating doctor:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الدكتور' });
@@ -62,7 +74,7 @@ const updateDoctor = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { branchId, title, name, specialty, phone, gender, email, password, employeeId, consultationFee, commissionRate, bio, avatarUrl, isActive } = req.body;
+    const { branchId, title, name, specialty, phone, gender, email, password, employeeId, consultationFee, commissionRate, bio, avatarUrl, isActive, serviceIds } = req.body;
 
     const existing = await getSharedPrismaClient().bookingDoctor.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الدكتور غير موجود' });
@@ -84,7 +96,19 @@ const updateDoctor = async (req, res) => {
     if (password) data.password = await bcrypt.hash(password, 10);
 
     const doctor = await getSharedPrismaClient().bookingDoctor.update({ where: { id }, data });
-    res.json({ success: true, data: stripPassword(doctor) });
+
+    // Replace doctor-service links when serviceIds is provided
+    if (Array.isArray(serviceIds)) {
+      await getSharedPrismaClient().bookingDoctorService.deleteMany({ where: { doctorId: id, companyId } });
+      if (serviceIds.length > 0) {
+        await getSharedPrismaClient().bookingDoctorService.createMany({
+          data: serviceIds.map(serviceId => ({ companyId, doctorId: id, serviceId, isActive: true }))
+        });
+      }
+    }
+
+    const { password: _pw, ...rest } = doctor;
+    res.json({ success: true, data: rest });
   } catch (error) {
     console.error('Error updating doctor:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الدكتور' });
