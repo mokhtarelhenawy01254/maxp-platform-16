@@ -5,7 +5,7 @@ import {
   ChevronUpIcon, ChevronDownIcon, FunnelIcon
 } from "@heroicons/react/24/outline";
 import {
-  BookingAppointment, BookingBranch, BookingDoctor, BookingService,
+  BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient,
   STATUS_MAP, MODAL_INPUT_CLS, api, getAuthHeaders
 } from "./shared";
 import AppointmentModal from "./AppointmentModal";
@@ -23,6 +23,7 @@ interface Props {
   branches: BookingBranch[];
   doctors: BookingDoctor[];
   services: BookingService[];
+  patients: BookingPatient[];
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
   selectedIds: Set<string>;
@@ -44,7 +45,7 @@ interface Props {
 
 export default function AppointmentsTab({
   loading, appointments, total = 0, page = 1, limit = 50,
-  branches, doctors, services,
+  branches, doctors, services, patients,
   filters, onFiltersChange,
   selectedIds, onToggleSelect, onToggleSelectAll,
   onBulkUpdateStatus, onBulkDelete, onClearSelection,
@@ -363,7 +364,7 @@ export default function AppointmentsTab({
           </div>
         </div>
       )}
-      {modalAppointment !== undefined && <AppointmentModal appointment={modalAppointment} branches={branches} branchDoctors={doctors} services={services} onClose={onModalClose} onSave={onSave} />}
+      {modalAppointment !== undefined && <AppointmentModal appointment={modalAppointment} branches={branches} branchDoctors={doctors} services={services} patients={patients} onClose={onModalClose} onSave={onSave} />}
     </div>
   );
 }

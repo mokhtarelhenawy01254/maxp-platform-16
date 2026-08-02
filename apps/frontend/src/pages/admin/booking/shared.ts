@@ -124,6 +124,7 @@ export interface BookingService {
 
 export interface BookingAppointment {
   id: string; customerName: string; customerPhone: string;
+  customerEmail?: string;
   customerGender?: string;
   branchId: string; branchName?: string;
   doctorId?: string; doctorName?: string;

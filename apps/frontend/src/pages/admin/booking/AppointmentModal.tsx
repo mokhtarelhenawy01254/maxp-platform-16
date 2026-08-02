@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { XMarkIcon, EyeIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useMemo } from "react";
+import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import {
-  BookingAppointment, BookingBranch, BookingDoctor, BookingService,
+  BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient,
   STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fetchJson, api
 } from "./shared";
 
@@ -10,6 +10,7 @@ interface Props {
   branches: BookingBranch[];
   branchDoctors: BookingDoctor[];
   services: BookingService[];
+  patients: BookingPatient[];
   onClose: () => void;
   onSave: (d: Partial<BookingAppointment>) => Promise<void>;
 }
@@ -21,7 +22,7 @@ const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: str
   </div>
 );
 
-export default function AppointmentModal({ appointment, branches, branchDoctors, services, onClose, onSave }: Props) {
+export default function AppointmentModal({ appointment, branches, branchDoctors, services, patients, onClose, onSave }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<BookingAppointment>>({
     customerName: "", customerPhone: "", customerGender: "male",
@@ -31,6 +32,23 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
   });
   const [slots, setSlots] = useState<{ startTime: string; endTime: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [showPatientResults, setShowPatientResults] = useState(false);
+
+  const patientResults = useMemo(() => {
+    const q = patientSearch.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    return patients.filter(p =>
+      (p.firstName + " " + (p.lastName || "")).toLowerCase().includes(q) ||
+      (p.phone || "").includes(q)
+    ).slice(0, 6);
+  }, [patientSearch, patients]);
+
+  const selectPatient = (p: BookingPatient) => {
+    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerPhone: p.phone || f.customerPhone, customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail }));
+    setPatientSearch("");
+    setShowPatientResults(false);
+  };
 
   useEffect(() => {
     if (form.branchId && form.appointmentDate && form.serviceId) {
@@ -40,9 +58,11 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
 
   const fetchSlots = async () => {
     setLoadingSlots(true);
+    const sel = services.find(s => s.id === form.serviceId);
+    const duration = sel?.durationMinutes || 30;
     const params = new URLSearchParams({
       branchId: form.branchId!, date: form.appointmentDate!,
-      serviceId: form.serviceId!, duration: "30",
+      serviceId: form.serviceId!, duration: String(duration),
     });
     try {
       const data = await fetchJson<{ startTime: string; endTime: string; available: boolean }[]>(api(`appointments/available-slots?${params}`));
@@ -138,15 +158,35 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البحث عن مريض (اختياري)</label>
+            <div className="relative">
+              <MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+              <input className={`${MODAL_INPUT_CLS} pr-9`} placeholder="ابحث بالاسم أو رقم الهاتف..." value={patientSearch} onChange={e => { setPatientSearch(e.target.value); setShowPatientResults(true); }} onFocus={() => setShowPatientResults(true)} />
+            </div>
+            {showPatientResults && patientResults.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+                {patientResults.map(p => (
+                  <button key={p.id} type="button" onClick={() => selectPatient(p)} className="w-full text-right px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between">
+                    <span className="text-sm">{p.firstName} {p.lastName}</span>
+                    <span className="text-xs text-gray-400" dir="ltr">{p.phone}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم العميل</label><input className={MODAL_INPUT_CLS} value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الجنس</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.customerEmail || ""} onChange={e => setForm({ ...form, customerEmail: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الجنس</label>
             <select className={MODAL_INPUT_CLS} value={form.customerGender} onChange={e => setForm({ ...form, customerGender: e.target.value })}>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
             </select>
+            </div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
             <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value, doctorId: "", serviceId: "" })}>
@@ -170,6 +210,12 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">التاريخ</label><input type="date" className={MODAL_INPUT_CLS} value={form.appointmentDate} onChange={e => setForm({ ...form, appointmentDate: e.target.value })} /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مدة الموعد</label>
+              <div className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                {(() => { const sel = services.find(s => s.id === form.serviceId); return sel?.durationMinutes ? `${sel.durationMinutes} دقيقة` : "—"; })()}
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوقت المتاح</label>
@@ -211,6 +257,11 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
               <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">موعد المتابعة</label><input type="date" className={MODAL_INPUT_CLS} value={form.followUpDate ? String(form.followUpDate).split("T")[0] : ""} onChange={e => setForm({ ...form, followUpDate: e.target.value })} /></div>
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label>
+            <textarea className={MODAL_INPUT_CLS} rows={2} placeholder="ملاحظات إضافية عن المريض أو الموعد..." value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
+          </div>
 
         </div>
         <div className="flex justify-end gap-3 mt-6">

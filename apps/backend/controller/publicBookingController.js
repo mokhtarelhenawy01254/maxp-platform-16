@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { findOrCreatePatient } = require('../services/bookingPatientService');
+const { sendBookingNotification, BOOKING_NOTIFICATION_EVENTS } = require('../services/bookingNotificationService');
 const { v4: uuidv4 } = require('uuid');
 
 const resolveCompany = async (slug) => {
@@ -325,13 +326,23 @@ const createAppointment = async (req, res) => {
     const endMin = startMinute + serviceDuration;
     const endTime = `${(startHour + Math.floor(endMin / 60)).toString().padStart(2, '0')}:${(endMin % 60).toString().padStart(2, '0')}`;
 
+    // Resolve doctor name for the response
+    let doctorName = null;
+    if (chosenDoctorId) {
+      const doctor = await getSharedPrismaClient().bookingDoctor.findFirst({
+        where: { id: chosenDoctorId, companyId: company.id },
+        select: { name: true, title: true }
+      });
+      if (doctor) doctorName = `${doctor.title ? doctor.title + ' ' : ''}${doctor.name}`.trim();
+    }
+
     const appointment = await getSharedPrismaClient().appointment.create({
       data: {
         id: uuidv4(), companyId: company.id,
         customerName: customerName.trim(),
         customerPhone, customerEmail, customerGender,
         patientId,
-        staffId: chosenDoctorId || branchId, staffName: serviceName || 'حجز عام',
+        staffId: chosenDoctorId || branchId, staffName: doctorName || serviceName || 'حجز عام',
         branchId, doctorId: chosenDoctorId || undefined, serviceId, serviceName,
         title: serviceName || 'موعد جديد',
         appointmentDate: new Date(appointmentDate),
@@ -351,12 +362,22 @@ const createAppointment = async (req, res) => {
         customerPhone: appointment.customerPhone,
         branchName: branch.name,
         serviceName,
+        doctorName,
         appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
         startTime: appointment.startTime,
         endTime: appointment.endTime,
         status: appointment.status
       }
     });
+
+    // Fire-and-forget: notify the patient that their booking was received
+    const appointmentForNotification = { ...appointment, doctorName };
+    sendBookingNotification({
+      companyId: company.id,
+      eventType: BOOKING_NOTIFICATION_EVENTS.APPOINTMENT_BOOKED,
+      appointment: appointmentForNotification,
+      recipientPhone: customerPhone,
+    }).catch(err => console.error('[PublicBooking] Notification error:', err.message));
   } catch (error) {
     console.error('Error in createAppointment:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في حجز الموعد' });

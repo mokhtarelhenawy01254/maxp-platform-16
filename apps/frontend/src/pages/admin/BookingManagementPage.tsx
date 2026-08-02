@@ -436,7 +436,7 @@ export default function BookingManagementPage() {
               <AppointmentsTab
                 loading={loading}
                 appointments={appointments} total={total} page={page} limit={limit}
-                branches={branches} doctors={doctors} services={services}
+                branches={branches} doctors={doctors} services={services} patients={patients}
                 filters={filters} onFiltersChange={f => { setFilters(f); setPage(1); }}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
