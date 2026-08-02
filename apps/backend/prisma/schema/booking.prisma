@@ -10,6 +10,7 @@ model BookingBranch {
   genderDays  Json?    /// Gender day mapping: {"male":["sat","mon","wed"],"female":["sun","tue","thu"]}
   location      String?  /// Location description or coordinates
   landmarkImage String?  /// Landmark image (base64)
+  facilityType  String   @default("clinic") /// clinic | medical_center | hospital | polyclinic | dental | cosmetic
   maxBookingsPerSlot Int      @default(1) /// Max appointments allowed per time slot
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

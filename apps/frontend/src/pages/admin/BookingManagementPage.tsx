@@ -165,12 +165,15 @@ export default function BookingManagementPage() {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
     const phones = d.phones.map(p => String(p).trim()).filter(Boolean);
-    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: phones[0] || d.phone || "", phones, isActive: d.isActive };
+    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: phones[0] || d.phone || "", phones, isActive: d.isActive, facilityType: d.facilityType || "clinic" };
     if (d.workingDays) {
       const days = d.workingDays.split(",").filter(Boolean);
       if (days.length > 0) {
         const wd: Record<string, string> = {};
-        days.forEach(day => { wd[day] = `${d.workStart || "09:00"}-${d.workEnd || "22:00"}`; });
+        days.forEach(day => {
+          const h = d.dayHours?.[day] || { start: d.workStart, end: d.workEnd };
+          wd[day] = `${h.start || "09:00"}-${h.end || "22:00"}`;
+        });
         body["workingDays"] = wd;
       }
     }

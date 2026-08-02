@@ -34,16 +34,30 @@ export interface BookingBranch {
   isActive: boolean; createdAt: string;
   maxBookingsPerSlot?: number;
   location?: string; landmarkImage?: string;
+  facilityType?: string;
   genderDays?: GenderDaysMap | string;
 }
+
+export const FACILITY_TYPES = [
+  { value: "clinic", label: "عيادة" },
+  { value: "medical_center", label: "مركز طبي" },
+  { value: "hospital", label: "مستشفى" },
+  { value: "polyclinic", label: "مستوصف" },
+  { value: "dental", label: "عيادة أسنان" },
+  { value: "cosmetic", label: "مركز تجميل" },
+];
+
+export const FACILITY_TYPE_LABEL: Record<string, string> = Object.fromEntries(FACILITY_TYPES.map(f => [f.value, f.label]));
 
 export interface BranchFormData {
   id?: string; name: string; address: string; phone?: string;
   phones: string[]; workingDays: string;
   workStart: string; workEnd: string;
+  dayHours: Record<string, { start: string; end: string }>;
   maleDays: string[]; femaleDays: string[];
   isActive: boolean; maxBookingsPerSlot: number;
   location?: string; landmarkImage?: string;
+  facilityType: string;
 }
 
 export interface ServiceBranchAssignment {

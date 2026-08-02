@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const VALID_DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
 const PHONE_RE = /^01\d{9}$/;
+const FACILITY_TYPES = ['clinic', 'medical_center', 'hospital', 'polyclinic', 'dental', 'cosmetic'];
 
 const saveBase64AsFile = (dataUri) => {
   const matches = dataUri.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -54,6 +55,12 @@ const validateGenderDays = (gd) => {
   return null;
 };
 
+const validateFacilityType = (ft) => {
+  if (!ft) return null;
+  if (!FACILITY_TYPES.includes(ft)) return `نوع المنشأة غير صالح (القيم المتاحة: ${FACILITY_TYPES.join(', ')})`;
+  return null;
+};
+
 const sanitizeBranchData = (raw) => {
   const data = {};
   if (raw.name) data.name = sanitizeString(raw.name);
@@ -72,6 +79,7 @@ const sanitizeBranchData = (raw) => {
   }
   if (raw.workingDays) data.workingDays = raw.workingDays;
   if (raw.genderDays) data.genderDays = raw.genderDays;
+  if (raw.facilityType) data.facilityType = sanitizeString(raw.facilityType);
   return data;
 };
 
@@ -116,7 +124,7 @@ const createBranch = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const rawBody = tryParseMultipartFields(req);
-    let { name, address, phone, phones, workingDays, genderDays, maxBookingsPerSlot, location, landmarkImage } = rawBody;
+    let { name, address, phone, phones, workingDays, genderDays, facilityType, maxBookingsPerSlot, location, landmarkImage } = rawBody;
 
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الفرع مطلوب' });
     if (!address || !address.trim()) return res.status(400).json({ success: false, error: 'العنوان مطلوب' });
@@ -134,9 +142,12 @@ const createBranch = async (req, res) => {
     const gdErr = validateGenderDays(genderDays);
     if (gdErr) return res.status(400).json({ success: false, error: gdErr });
 
+    const ftErr = validateFacilityType(facilityType);
+    if (ftErr) return res.status(400).json({ success: false, error: ftErr });
+
     if (req.file) landmarkImage = `/uploads/booking-branches/${req.file.filename}`;
 
-    const data = sanitizeBranchData({ name, address, phone, phones, workingDays, genderDays, maxBookingsPerSlot, location, landmarkImage });
+    const data = sanitizeBranchData({ name, address, phone, phones, workingDays, genderDays, facilityType, maxBookingsPerSlot, location, landmarkImage });
     data.companyId = companyId;
 
     const branch = await getSharedPrismaClient().bookingBranch.create({ data });
@@ -157,7 +168,7 @@ const updateBranch = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
 
     const rawBody = tryParseMultipartFields(req);
-    let { name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot, location, landmarkImage } = rawBody;
+    let { name, address, phone, phones, workingDays, genderDays, facilityType, isActive, maxBookingsPerSlot, location, landmarkImage } = rawBody;
 
     if (name !== undefined && !name.trim()) return res.status(400).json({ success: false, error: 'اسم الفرع مطلوب' });
 
@@ -180,9 +191,14 @@ const updateBranch = async (req, res) => {
       if (gdErr) return res.status(400).json({ success: false, error: gdErr });
     }
 
+    if (facilityType !== undefined) {
+      const ftErr = validateFacilityType(facilityType);
+      if (ftErr) return res.status(400).json({ success: false, error: ftErr });
+    }
+
     if (req.file) landmarkImage = `/uploads/booking-branches/${req.file.filename}`;
 
-    const data = sanitizeBranchData({ name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot, location, landmarkImage });
+    const data = sanitizeBranchData({ name, address, phone, phones, workingDays, genderDays, facilityType, isActive, maxBookingsPerSlot, location, landmarkImage });
 
     const branch = await getSharedPrismaClient().bookingBranch.update({ where: { id }, data });
     res.json({ success: true, data: branch });

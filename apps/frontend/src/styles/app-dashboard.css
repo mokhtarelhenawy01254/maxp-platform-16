@@ -45,11 +45,66 @@
 }
 .app-shell-root {
   display: flex;
+  flex-direction: column;
   flex: 1;
   height: 100%;
   min-height: 0;
   width: 100%;
   overflow: hidden;
+}
+
+.app-shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-shell-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-card);
+}
+
+.app-shell-mobile-header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.app-shell-mobile-header-button:hover,
+.app-shell-mobile-header-button:focus-visible {
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+.app-shell-mobile-header-button:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.app-shell-mobile-header-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-shell-sidebar {
@@ -274,6 +329,7 @@ body.app-shell-mobile-open {
   .app-shell-sidebar,
   .app-shell-back-button,
   .app-shell-sidebar-item,
+  .app-shell-mobile-header-button,
   .app-shell-mobile-backdrop,
   .app-card-enter-active {
     transition: none;

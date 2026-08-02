@@ -8033,6 +8033,8 @@ declare module 'react-i18next' {
         appNotFound: string;
         skipToContent: string;
         noResults: string;
+        noAppsTitle: string;
+        noAppsDescription: string;
         clearFilters: string;
         shortcuts: string;
         shortcutFocusSearch: string;

@@ -9,11 +9,13 @@ import { sectionHasVisibleItems } from './helpers';
 import { APP_CATEGORIES, APP_REGISTRY, AppCategory } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarSection } from '../../../types/layout';
+import { apiClient } from '../../../services/apiClient';
 
 interface AppDashboardPageProps {
   userId?: string | null;
   companyId?: string | null;
   allSections?: SidebarSection[];
+  isLoading?: boolean;
 }
 
 type AppFilterCategory = AppCategory | 'all' | 'favorites';
@@ -44,6 +46,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
   userId,
   companyId,
   allSections = [],
+  isLoading = false,
 }) => {
   const { i18n, t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,6 +57,10 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
     () => `${FAVORITES_STORAGE_PREFIX}:${companyId || 'no-company'}:${userId || 'anonymous'}`,
     [companyId, userId],
   );
+  const favoritesScopeKey = useMemo(
+    () => String(companyId || 'no-company'),
+    [companyId],
+  );
   const [favorites, setFavorites] = useState<string[]>(() => {
     return readStoredFavorites(favoriteStorageKey);
   });
@@ -61,14 +68,95 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
   const isRtl = i18n.language?.startsWith('ar') ?? false;
 
   const visibleApps = useMemo(() => {
+    const seen = new Set<string>();
     return allSections
       .filter(sectionHasVisibleItems)
+      .filter((section) => {
+        if (seen.has(section.id)) return false;
+        seen.add(section.id);
+        return true;
+      })
       .map((section, index) => buildAppFromSection(section, index, t));
   }, [allSections, t]);
 
   useEffect(() => {
     setFavorites(readStoredFavorites(favoriteStorageKey));
   }, [favoriteStorageKey]);
+
+  // Sync favorites with the server (per user) so they carry across devices.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient
+      .get<{ success: boolean; data: { appDashboardFavorites?: Record<string, string[]> } }>(
+        '/user/settings',
+        { _skipErrorToast: true } as Record<string, unknown>,
+      )
+      .then((res) => {
+        if (cancelled) return;
+        const serverFavorites = res.data?.data?.appDashboardFavorites;
+        const serverList = serverFavorites?.[favoritesScopeKey];
+        if (Array.isArray(serverList)) {
+          setFavorites(serverList);
+          try {
+            window.localStorage.setItem(favoriteStorageKey, JSON.stringify(serverList));
+          } catch {
+            // Ignore storage failures; server data still applies in-memory.
+          }
+        }
+      })
+      .catch(() => {
+        // Server unavailable → keep the localStorage value as-is.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [favoriteStorageKey, favoritesScopeKey]);
+
+  const favoritesPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestFavoritesRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      if (favoritesPersistTimer.current) {
+        clearTimeout(favoritesPersistTimer.current);
+      }
+    };
+  }, []);
+
+  const persistFavorites = useCallback(
+    (next: string[]) => {
+      latestFavoritesRef.current = next;
+      try {
+        window.localStorage.setItem(favoriteStorageKey, JSON.stringify(next));
+      } catch {
+        // Favorites are a convenience; keep the UI responsive if storage is unavailable.
+      }
+
+      if (favoritesPersistTimer.current) {
+        clearTimeout(favoritesPersistTimer.current);
+      }
+      favoritesPersistTimer.current = setTimeout(() => {
+        apiClient
+          .put('/user/settings', {
+            settings: { appDashboardFavorites: { [favoritesScopeKey]: latestFavoritesRef.current } },
+          })
+          .catch(() => {
+            // Favorites sync is best-effort; local state still works offline.
+          });
+      }, 400);
+    },
+    [favoriteStorageKey, favoritesScopeKey],
+  );
+
+  const toggleFavorite = useCallback((appId: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId];
+      persistFavorites(next);
+      return next;
+    });
+  }, [persistFavorites]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,18 +194,6 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
     },
     [searchParams, setSearchParams],
   );
-
-  const toggleFavorite = useCallback((appId: string) => {
-    setFavorites((prev) => {
-      const next = prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId];
-      try {
-        window.localStorage.setItem(favoriteStorageKey, JSON.stringify(next));
-      } catch {
-        // Favorites are a convenience; keep the UI responsive if storage is unavailable.
-      }
-      return next;
-    });
-  }, [favoriteStorageKey]);
 
   const filteredApps = useMemo(() => {
     let apps = visibleApps;
@@ -289,11 +365,28 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           }
         </div>
 
-        {visibleApps.length === 0 ? (
+        {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {Array.from({ length: 10 }).map((_, i) => (
               <AppCardSkeleton key={i} />
             ))}
+          </div>
+        ) : visibleApps.length === 0 ? (
+          <div className="text-center py-16">
+            <ChartBarIcon aria-hidden="true" className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+            <p className="mt-4 text-base font-medium text-gray-700 dark:text-gray-200">
+              {t('appDashboard.noAppsTitle')}
+            </p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('appDashboard.noAppsDescription')}
+            </p>
+            <button
+              type="button"
+              onClick={() => updateDashboardParams({ q: '', category: 'all' })}
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              {t('appDashboard.clearFilters')}
+            </button>
           </div>
         ) : filteredApps.length === 0 ? (
           <div className="text-center py-16">
