@@ -17,6 +17,7 @@ import {
   PhoneIcon,
   ChatBubbleLeftRightIcon,
   ShoppingBagIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -43,10 +44,12 @@ import {
 
 type SortValue = "recent" | "value_desc" | "value_asc";
 
+type PhoneFilter = "all" | "with_phone" | "no_phone";
+
 interface IncompleteListParams {
   page: number;
   limit: number;
-  hasPhone: boolean;
+  hasPhone?: boolean;
   search?: string;
   status?: string;
   sortBy?: string;
@@ -76,6 +79,7 @@ const IncompleteOrders: React.FC = () => {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [phoneFilter, setPhoneFilter] = useState<PhoneFilter>("with_phone");
   const [sortValue, setSortValue] = useState<SortValue>("recent");
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmConvertCartId, setConfirmConvertCartId] = useState<string | null>(null);
@@ -114,8 +118,9 @@ const IncompleteOrders: React.FC = () => {
       const params: IncompleteListParams = {
         page: pageIndex,
         limit: pageSize,
-        hasPhone: true,
       };
+      if (phoneFilter === "with_phone") params.hasPhone = true;
+      else if (phoneFilter === "no_phone") params.hasPhone = false;
       if (search) params.search = search;
       if (statusFilter && statusFilter !== "all") params.status = statusFilter;
       if (sortValue === "recent") {
@@ -130,7 +135,7 @@ const IncompleteOrders: React.FC = () => {
       }
       return params;
     },
-    [search, statusFilter, sortValue],
+    [search, statusFilter, sortValue, phoneFilter],
   );
 
   useEffect(() => {
@@ -337,19 +342,28 @@ const IncompleteOrders: React.FC = () => {
             {t("orders.incompleteSubtitle")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={exporting || loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {exporting ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowDownTrayIcon className="h-4 w-4" />
-          )}
-          {exporting ? t("orders.incompleteExporting") : t("orders.incompleteExport")}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/orders/incomplete/reports"
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+          >
+            <ChartBarIcon className="h-4 w-4" />
+            {t("orders.incompleteReports")}
+          </Link>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting || loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {exporting ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowDownTrayIcon className="h-4 w-4" />
+            )}
+            {exporting ? t("orders.incompleteExporting") : t("orders.incompleteExport")}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -411,6 +425,22 @@ const IncompleteOrders: React.FC = () => {
               <option value="all">{t("orders.incompleteStatusAll")}</option>
               <option value="active">{t("orders.incompleteStatusActive")}</option>
               <option value="lost">{t("orders.incompleteStatusLost")}</option>
+            </select>
+            <label htmlFor="incomplete-orders-phone" className="sr-only">
+              {t("orders.incompletePhoneLabel")}
+            </label>
+            <select
+              id="incomplete-orders-phone"
+              value={phoneFilter}
+              onChange={(e) => {
+                setPhoneFilter(e.target.value as PhoneFilter);
+                setPage(1);
+              }}
+              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+            >
+              <option value="with_phone">{t("orders.incompletePhoneWith")}</option>
+              <option value="no_phone">{t("orders.incompletePhoneWithout")}</option>
+              <option value="all">{t("orders.incompletePhoneAll")}</option>
             </select>
             <label htmlFor="incomplete-orders-sort" className="sr-only">
               {t("orders.incompleteSort")}

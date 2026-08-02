@@ -122,6 +122,7 @@ model Company {
   facebookProductCatalogs         FacebookProductCatalog[]
   faqs                            Faq[]
   footerSettings                  FooterSettings?
+  cartConversionLogs              CartConversionLog[]
   guestCarts                      GuestCart[]
   guestOrders                     GuestOrder[]
   homepageTemplates               HomepageTemplate[]

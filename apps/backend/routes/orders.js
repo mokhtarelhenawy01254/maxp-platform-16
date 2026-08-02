@@ -1152,19 +1152,21 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    const hasPhone = req.query.hasPhone === 'true';
+    const hasPhoneParam = (req.query.hasPhone || '').toString();
+    const hasPhone = hasPhoneParam === 'true';
+    const hasNoPhone = hasPhoneParam === 'false';
+
+    // phone keys written by the storefront checkout draft (and legacy variants)
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
 
     if (hasPhone) {
-      filterClauses.push({
-        OR: [
-          { checkoutData: { contains: '"guestPhone"' } },
-          { checkoutData: { contains: '"customerPhone"' } },
-          { checkoutData: { contains: '"phoneNumber"' } },
-          { checkoutData: { contains: '"mobileNumber"' } },
-          { checkoutData: { contains: '"phone"' } },
-          { checkoutData: { contains: '"mobile"' } }
-        ]
-      });
+      // only carts that actually carry a non-empty phone value
+      filterClauses.push({ AND: [phoneKeyClause, { NOT: emptyPhoneClause }] });
+    } else if (hasNoPhone) {
+      // carts that carry no phone key at all, or only empty phone values
+      filterClauses.push({ OR: [{ NOT: phoneKeyClause }, emptyPhoneClause] });
     }
 
     const activeClause = {
@@ -1299,6 +1301,165 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب الطلبات غير المكتملة',
+      error: error.message
+    });
+  }
+});
+
+// تقارير استرداد الطلبات غير المكتملة (Recovery Pipeline + أداء الفريق)
+router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'غير مصرح - يجب تسجيل الدخول'
+      });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح - معرف الشركة مطلوب'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] reports: failed to load incomplete settings:', settingsError.message);
+    }
+
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { checkoutStartedAt: { gte: lostThreshold } },
+        { updatedAt: { gte: lostThreshold } }
+      ]
+    };
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { checkoutStartedAt: { lt: lostThreshold } },
+        { updatedAt: { lt: lostThreshold } }
+      ]
+    };
+
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    const [totalAgg, activeAgg, lostAgg, convWindow] = await Promise.all([
+      prisma.guestCart.aggregate({
+        where: { companyId },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...activeClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...lostClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.cartConversionLog.findMany({
+        where: { companyId, convertedAt: { gte: since } },
+        orderBy: { convertedAt: 'desc' },
+        select: {
+          cartId: true,
+          orderId: true,
+          orderNumber: true,
+          employeeId: true,
+          employeeName: true,
+          cartValue: true,
+          governorate: true,
+          convertedAt: true
+        }
+      })
+    ]);
+
+    const total = totalAgg._count._all || 0;
+    const converted = convWindow.length;
+    const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
+
+    // trend by day (JS aggregation over the window rows)
+    const dayMap = new Map();
+    convWindow.forEach((c) => {
+      const day = c.convertedAt ? new Date(c.convertedAt).toISOString().slice(0, 10) : 'unknown';
+      const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      dayMap.set(day, entry);
+    });
+    const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    // team performance by employee
+    const teamMap = new Map();
+    convWindow.forEach((c) => {
+      const key = c.employeeId || `__${c.employeeName || 'unknown'}`;
+      const entry = teamMap.get(key) || {
+        employeeId: c.employeeId,
+        employeeName: c.employeeName || 'غير معروف',
+        conversions: 0,
+        value: 0,
+      };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      teamMap.set(key, entry);
+    });
+    const team = Array.from(teamMap.values())
+      .map((e) => ({ ...e, avgValue: e.conversions ? e.value / e.conversions : 0 }))
+      .sort((a, b) => b.value - a.value);
+
+    res.json({
+      success: true,
+      data: {
+        periodDays: days,
+        pipeline: {
+          total,
+          active: activeAgg._count._all || 0,
+          lost: lostAgg._count._all || 0,
+          totalValue: Number(totalAgg._sum.total || 0),
+          activeValue: Number(activeAgg._sum.total || 0),
+          lostValue: Number(lostAgg._sum.total || 0),
+        },
+        recovery: {
+          converted,
+          convertedValue,
+          avgConvertedValue: converted ? convertedValue / converted : 0,
+          recoveryRate: total ? (converted / total) * 100 : 0,
+        },
+        team,
+        trend,
+        recent: convWindow.slice(0, 20).map((c) => ({
+          cartId: c.cartId,
+          orderNumber: c.orderNumber,
+          employeeName: c.employeeName,
+          value: Number(c.cartValue || 0),
+          governorate: c.governorate,
+          convertedAt: c.convertedAt,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching incomplete orders reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب تقارير الطلبات غير المكتملة',
       error: error.message
     });
   }
@@ -1501,6 +1662,26 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
+      // سجل أثر التحويل قبل حذف الـ GuestCart (بيتم الحذف جوه الـ internal API)
+      try {
+        const employee = req.user || {};
+        await getSharedPrismaClient().cartConversionLog.create({
+          data: {
+            cartId,
+            orderId: result.data?.id || null,
+            orderNumber: result.data?.orderNumber || null,
+            employeeId: employee.id || null,
+            employeeName: employee.name || employee.username || employee.email || null,
+            companyId,
+            cartValue: total,
+            governorate: governorate || null,
+            channel: 'admin-convert',
+          },
+        });
+      } catch (logError) {
+        console.error('⚠️ [ORDERS] Failed to record cart conversion log:', logError.message);
+      }
+
       return res.json({
         success: true,
         message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',

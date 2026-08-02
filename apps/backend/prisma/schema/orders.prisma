@@ -59,6 +59,28 @@ model GuestCart {
   @@map("guest_carts")
 }
 
+// تسجيل تحويل سلة غير مكتملة إلى طلب حقيقي
+// يُكتب قبل حذف الـ GuestCart حتى يبقى أثر التحويل للتقارير (Recovery Pipeline + أداء الفريق)
+model CartConversionLog {
+  id             String   @id @default(cuid())
+  cartId         String
+  orderId        String?
+  orderNumber    String?
+  employeeId     String?
+  employeeName   String?
+  companyId      String
+  cartValue      Decimal  @default(0.00) @db.Decimal(10, 2)
+  governorate    String?
+  channel        String   @default("admin-convert")
+  convertedAt    DateTime @default(now())
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, convertedAt])
+  @@index([companyId, employeeId])
+  @@map("cart_conversion_logs")
+}
+
 model GuestOrder {
   id                  String               @id @default(cuid())
   orderNumber         String
