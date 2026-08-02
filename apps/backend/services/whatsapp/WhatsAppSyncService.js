@@ -29,13 +29,19 @@ const WhatsAppSyncService = {
   async findOrCreateCustomer(companyId, phoneNumber, pushName, profilePicUrl) {
     const prisma = getSharedPrismaClient();
     const cleanPhone = String(phoneNumber || '').replace(/\D/g, '');
+    const canonicalPhone = require('../../utils/phoneNormalization').toCanonicalE164(cleanPhone);
+    const { splitCustomerName } = require('../../utils/customerName');
+
+    const nameParts = splitCustomerName(pushName);
 
     let customer = await prisma.customer.findFirst({
       where: {
         companyId,
         OR: [
           { phone: cleanPhone },
-          { whatsappId: cleanPhone }
+          { whatsappId: cleanPhone },
+          { phoneNormalized: canonicalPhone },
+          ...(cleanPhone ? [{ phone: { in: require('../../utils/phoneNormalization').getPhoneVariants(cleanPhone) } }] : [])
         ]
       }
     });
@@ -44,19 +50,29 @@ const WhatsAppSyncService = {
       customer = await prisma.customer.create({
         data: {
           companyId,
-          firstName: pushName || 'WhatsApp User',
-          lastName: '',
+          firstName: nameParts.firstName,
+          lastName: nameParts.lastName,
           phone: cleanPhone,
+          phoneNormalized: canonicalPhone,
           whatsappId: cleanPhone,
           avatar: profilePicUrl,
           status: 'LEAD'
         }
       });
-    } else if (profilePicUrl && !customer.avatar) {
-      customer = await prisma.customer.update({
-        where: { id: customer.id },
-        data: { avatar: profilePicUrl }
-      });
+    } else {
+      const updateData = {};
+      if (!customer.phoneNormalized && cleanPhone) {
+        updateData.phoneNormalized = canonicalPhone;
+      }
+      if (profilePicUrl && !customer.avatar) {
+        updateData.avatar = profilePicUrl;
+      }
+      if (Object.keys(updateData).length > 0) {
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: updateData
+        });
+      }
     }
 
     return customer;

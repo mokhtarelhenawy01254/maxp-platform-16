@@ -4,6 +4,8 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
 const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
 
 const PRODUCT_HEADER_ALIASES = {
   name: ['name', 'product name', 'اسم المنتج', 'الاسم', 'المنتج'],
@@ -674,9 +676,7 @@ const importOrdersFromSheet = async (req, res) => {
       try {
         let customer = null;
         if (order.customerPhone) {
-          customer = await prisma.customer.findFirst({
-            where: { companyId, phone: order.customerPhone }
-          });
+          customer = await findCustomerByPhone(prisma, order.customerPhone, companyId);
         }
         if (!customer && order.customerEmail) {
           customer = await prisma.customer.findFirst({
@@ -691,6 +691,7 @@ const importOrdersFromSheet = async (req, res) => {
               firstName: nameParts.firstName,
               lastName: nameParts.lastName,
               phone: order.customerPhone || null,
+              phoneNormalized: toCanonicalE164(order.customerPhone),
               email: order.customerEmail || null,
               status: 'ACTIVE',
               companyId,

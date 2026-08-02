@@ -6,6 +6,9 @@ const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const customerBlocklistService = require('./customerBlocklistService');
 const { resolveVariantAttributes } = require('../utils/productNormalizationUtils');
 const { normalizeOrderPaymentMethod } = require('../utils/paymentMethodNormalization');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
+const { splitCustomerName } = require('../utils/customerName');
 
 class EnhancedOrderService {
   constructor() {
@@ -407,19 +410,12 @@ class EnhancedOrderService {
       // البحث برقم الهاتف
       if (!customer && data.customerPhone) {
         customer = await this.safeQuery(() =>
-          this.getPrisma().customer.findFirst({
-            where: {
-              phone: data.customerPhone,
-              companyId: data.companyId
-            }
-          })
+          findCustomerByPhone(this.getPrisma(), data.customerPhone, data.companyId)
         );
       }
 
       // إنشاء عميل جديد إذا لم نجده
       if (!customer) {
-        //console.log('👤 [ENHANCED-ORDER] إنشاء عميل جديد...');
-
         const customerName = this.parseCustomerName(data.customerName);
 
         customer = await this.safeQuery(() =>
@@ -428,6 +424,7 @@ class EnhancedOrderService {
               firstName: customerName.firstName,
               lastName: customerName.lastName,
               phone: data.customerPhone || null,
+              phoneNormalized: data.customerPhone ? toCanonicalE164(data.customerPhone) : null,
               email: data.customerEmail || null,
               facebookId: data.customerId && data.customerId.match(/^\d+$/) ? data.customerId : null,
               status: 'LEAD',
@@ -442,10 +439,27 @@ class EnhancedOrderService {
             }
           })
         );
-
-        //console.log('✅ [ENHANCED-ORDER] تم إنشاء عميل جديد:', customer.id);
       } else {
-        //console.log('👤 [ENHANCED-ORDER] تم العثور على العميل:', customer.id);
+        const updateData = {};
+        if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
+        if (!customer.phone && data.customerPhone) {
+          updateData.phone = data.customerPhone;
+          updateData.phoneNormalized = toCanonicalE164(data.customerPhone);
+        } else if (!customer.phoneNormalized && customer.phone) {
+          updateData.phoneNormalized = toCanonicalE164(customer.phone);
+        }
+        if (Object.keys(updateData).length > 0) {
+          try {
+            customer = await this.safeQuery(() =>
+              this.getPrisma().customer.update({
+                where: { id: customer.id },
+                data: updateData
+              })
+            );
+          } catch (updateErr) {
+            console.error('⚠️ [ENHANCED-ORDER] فشل تحديث حالة العميل:', updateErr.message);
+          }
+        }
       }
 
       return customer;
@@ -460,19 +474,7 @@ class EnhancedOrderService {
    * تحليل اسم العميل
    */
   parseCustomerName(fullName) {
-    if (!fullName || typeof fullName !== 'string') {
-      return {
-        firstName: 'عميل',
-        lastName: 'جديد'
-      };
-    }
-
-    const nameParts = fullName.trim().split(' ');
-
-    return {
-      firstName: nameParts[0] || 'عميل',
-      lastName: nameParts.slice(1).join(' ') || 'جديد'
-    };
+    return splitCustomerName(fullName);
   }
 
   /**

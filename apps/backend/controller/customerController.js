@@ -1380,6 +1380,7 @@ const importCustomersFromCSV = async (req, res) => {
         lastName: c.lastName || c.last_name || c.name?.split(' ').slice(1).join(' ') || '',
         email: c.email || null,
         phone: c.phone || c.mobile || null,
+        phoneNormalized: (c.phone || c.mobile) ? require('../utils/phoneNormalization').toCanonicalE164(c.phone || c.mobile) : null,
         status: c.status || 'LEAD',
         tags: c.tags ? JSON.stringify(c.tags) : '[]',
         notes: c.notes || null,
@@ -1660,13 +1661,20 @@ const updateCustomer = async (req, res) => {
     }
 
     // تحديث بيانات العميل
+    const phoneFields = {};
+    if (phone !== undefined) {
+      const { toCanonicalE164 } = require('../utils/phoneNormalization');
+      phoneFields.phone = phone || null;
+      phoneFields.phoneNormalized = toCanonicalE164(phone) || null;
+    }
+
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
         firstName,
         lastName,
         email: email || null,
-        phone: phone || null,
+        ...phoneFields,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
@@ -1736,6 +1744,7 @@ const createCustomer = async (req, res) => {
         lastName: lastName || '',
         email: email || null,
         phone: phone || null,
+        phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
