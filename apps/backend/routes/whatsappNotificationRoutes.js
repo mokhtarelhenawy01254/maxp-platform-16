@@ -25,6 +25,12 @@ router.put('/settings', verifyToken.authenticateToken, whatsappNotificationContr
 // جلب جميع القوالب
 router.get('/templates', verifyToken.authenticateToken, whatsappNotificationController.getTemplates);
 
+// جلب قوالب ميتا المعتمدة المتاحة للربط (قبل /templates/:id)
+router.get('/templates/meta-available', verifyToken.authenticateToken, whatsappNotificationController.listAvailableMetaTemplates);
+
+// ربط قالب محلي بقالب ميتا معتمد موجود
+router.post('/templates/:id/bind-meta', verifyToken.authenticateToken, whatsappNotificationController.bindMetaTemplate);
+
 // جلب قالب واحد
 router.get('/templates/:id', verifyToken.authenticateToken, whatsappNotificationController.getTemplate);
 
@@ -77,11 +83,5 @@ router.post('/templates/:id/publish', verifyToken.authenticateToken, whatsappNot
 
 // مزامنة حالة القوالب مع ميتا
 router.post('/templates/sync-status', verifyToken.authenticateToken, whatsappNotificationController.syncTemplateStatuses);
-
-// جلب قوالب ميتا المعتمدة المتاحة للربط
-router.get('/templates/meta-available', verifyToken.authenticateToken, whatsappNotificationController.listAvailableMetaTemplates);
-
-// ربط قالب محلي بقالب ميتا معتمد موجود
-router.post('/templates/:id/bind-meta', verifyToken.authenticateToken, whatsappNotificationController.bindMetaTemplate);
 
 module.exports = router;

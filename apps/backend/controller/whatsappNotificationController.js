@@ -51,7 +51,7 @@ async function getNotificationSettings(req, res) {
 
     const sessions = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findMany({
       where: { companyId },
-      select: { id: true, name: true, phoneNumber: true, status: true }
+      select: { id: true, name: true, phoneNumber: true, status: true, provider: true }
     }));
 
     res.json({
