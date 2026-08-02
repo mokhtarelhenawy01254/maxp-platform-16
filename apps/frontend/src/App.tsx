@@ -1807,6 +1807,20 @@ const AppContent = () => {
                 </AuthLayout>
               }
             />
+            {/* Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
+            <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
+            <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
+            <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
+            <Route path="/doctor/dashboard" element={<DoctorLayout><DoctorDashboardPage /></DoctorLayout>} />
+            <Route path="/doctor/schedule" element={<DoctorLayout><DoctorSchedulePage /></DoctorLayout>} />
+            <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
+            <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
+            <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
+            <Route path="/patient/dashboard" element={<PatientLayout><PatientDashboardPage /></PatientLayout>} />
+            <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
+            <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
+            <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
@@ -6831,19 +6845,6 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
-                <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
-                <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
-                <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
-                <Route path="/doctor/dashboard" element={<DoctorLayout><DoctorDashboardPage /></DoctorLayout>} />
-                <Route path="/doctor/schedule" element={<DoctorLayout><DoctorSchedulePage /></DoctorLayout>} />
-                <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
-                <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
-                <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
-                <Route path="/patient/dashboard" element={<PatientLayout><PatientDashboardPage /></PatientLayout>} />
-                <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
-                <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
-                <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={
