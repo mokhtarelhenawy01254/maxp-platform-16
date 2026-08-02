@@ -2662,6 +2662,25 @@ async function sendOrderCreatedNotification(order) {
 
   console.log(`[WHATSAPP-DEBUG] Calling sendNotification...`);
   const { trackedOrderId } = getOrderNotificationTracking(order);
+
+  // 🛡️ Duplicate guard: منع إرسال رسالة "طلب جديد" مرتين لنفس الطلب
+  // خلال نافذة قصيرة (يحدث أحياناً عندما يُستدعى الإرسال من أكثر من مسار
+  // عند إنشاء الطلب، مثل enhancedOrderService + route).
+  if (trackedOrderId) {
+    const existingRecent = await prisma.whatsAppNotificationLog.findFirst({
+      where: {
+        orderId: trackedOrderId,
+        eventType: 'ORDER_CREATED',
+        createdAt: { gte: new Date(Date.now() - 10000) }
+      },
+      select: { id: true }
+    });
+    if (existingRecent) {
+      console.log(`⚠️ [WHATSAPP] Duplicate ORDER_CREATED blocked for order ${order.orderNumber}`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+  }
+
   return sendNotification({
     companyId: order.companyId,
     recipientPhone: phone,
