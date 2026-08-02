@@ -48,6 +48,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
 
   const firstVisibleItemPath = useMemo(() => getFirstVisibleItemPath(appSections), [appSections]);
   const appLandingPath = app ? `/apps/${app.id}` : null;
+  const isOnLandingPath = Boolean(appLandingPath) && location.pathname === appLandingPath;
 
   useEffect(() => {
     if (appLandingPath && location.pathname === appLandingPath && firstVisibleItemPath) {
@@ -259,7 +260,27 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
 
         <div id="app-shell-main-content" className="app-shell-main">
           <div className="app-shell-content">
-            {children}
+            {isOnLandingPath && firstVisibleItemPath ? (
+              <div className="flex min-h-[60vh] items-center justify-center" role="status">
+                <div
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"
+                  aria-hidden="true"
+                />
+              </div>
+            ) : isOnLandingPath ? (
+              <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 p-8 text-center">
+                <p className="text-sm text-muted-foreground">{t('appDashboard.appNotFound')}</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/apps')}
+                  className="text-indigo-600 hover:text-indigo-500 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                  {t('appDashboard.backToApps')}
+                </button>
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </div>
       </div>

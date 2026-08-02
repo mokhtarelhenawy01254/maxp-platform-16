@@ -427,7 +427,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/company-dashboard', icon: BarChart3, label: t('sidebar.dashboard') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
+            hidden: user?.role === 'AFFILIATE'
         },
         
         // 1.5 الإنبوكس الموحد
@@ -841,7 +841,7 @@ export const getSidebarConfig = (
             title: t('sidebar.myAccountSection'),
             icon: CircleUser,
             items: [
-                { to: '/my-dashboard', icon: BarChart3, label: t('sidebar.myDashboard') },
+                { to: '/my-dashboard', icon: BarChart3, label: t('sidebar.myDashboard'), hidden: !isAnyAppActive(['hr-basic', 'hr-attendance-pro']) },
                 { to: '/my-attendance', icon: Clock, label: t('sidebar.attendance'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },
                 { to: '/my-leaves', icon: Calendar, label: t('sidebar.myLeaves'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },
                 { to: '/my-permissions', icon: Clock, label: t('sidebar.myPermissions'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },
