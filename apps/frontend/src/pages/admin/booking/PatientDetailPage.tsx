@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { BookingPatient, BookingAppointment, STATUS_MAP, api, getAuthHeaders, tryParseJSON } from "./shared";
 
@@ -17,8 +17,8 @@ const renderList = (v: unknown): string[] | null => {
   return arr && arr.length > 0 ? arr : null;
 };
 
-export default function PatientDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function PatientDetailPage({ patientId }: { patientId?: string }) {
+  const id = patientId;
   const navigate = useNavigate();
   const [patient, setPatient] = useState<PatientDetail | null>(null);
   const [loading, setLoading] = useState(true);

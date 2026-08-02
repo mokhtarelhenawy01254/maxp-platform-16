@@ -351,7 +351,7 @@ export default function BookingManagementPage() {
   // branchAppointments is not used as filtering is now reactive through the global branch selector
 
   if (patientUrlId) {
-    return <PatientDetailPage />;
+    return <PatientDetailPage patientId={patientUrlId} />;
   }
 
   return (
