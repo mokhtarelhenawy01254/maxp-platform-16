@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, PlusIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { BookingDoctor, BookingBranch, BookingService } from "./shared";
 import DoctorModal from "./DoctorModal";
 
@@ -22,6 +23,7 @@ export default function DoctorsTab({
   onEdit, onToggleActive, onDelete,
   modalDoctor, onModalClose, onSave
 }: Props) {
+  const navigate = useNavigate();
   const filtered = useMemo(() => doctors.filter(d => !search || (d.name || '').includes(search) || (d.specialty || '').includes(search)), [doctors, search]);
   return (
     <div>
@@ -44,6 +46,7 @@ export default function DoctorsTab({
               <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{branch?.name || "—"}</p>
               {(d.serviceIds && d.serviceIds.length > 0) && <div className="text-xs text-purple-600 dark:text-purple-300 mb-3">{d.serviceIds.length} خدمات</div>}
               <div className="flex gap-2">
+                <button onClick={() => navigate(`/admin/booking/doctors/${d.id}`)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />صفحة</button>
                 <button onClick={() => onEdit(d)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                 <button onClick={() => onToggleActive(d.id, d.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${d.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{d.isActive ? "تعطيل" : "تفعيل"}</button>
                 <button onClick={() => onDelete(d.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>

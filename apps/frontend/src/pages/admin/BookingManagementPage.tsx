@@ -19,6 +19,7 @@ import CalendarTab from "./booking/CalendarTab";
 import PatientsTab from "./booking/PatientsTab";
 import PatientDetailModal from "./booking/PatientDetailModal";
 import PatientDetailPage from "./booking/PatientDetailPage";
+import DoctorDetailPage from "./booking/DoctorDetailPage";
 import InvoicesTab from "./booking/InvoicesTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
@@ -28,6 +29,7 @@ export default function BookingManagementPage() {
   const urlTab = (path || "").split("/")[0] || "";
   const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices"].includes(urlTab) ? urlTab : "dashboard") as TabId;
   const patientUrlId = urlTab === "patients" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
+  const doctorUrlId = urlTab === "doctors" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
@@ -352,6 +354,10 @@ export default function BookingManagementPage() {
 
   if (patientUrlId) {
     return <PatientDetailPage patientId={patientUrlId} />;
+  }
+
+  if (doctorUrlId) {
+    return <DoctorDetailPage doctorId={doctorUrlId} />;
   }
 
   return (

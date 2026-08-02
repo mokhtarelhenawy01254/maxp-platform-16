@@ -132,4 +132,108 @@ const deleteDoctor = async (req, res) => {
   }
 };
 
-module.exports = { getAllDoctors, createDoctor, updateDoctor, deleteDoctor };
+const getDoctorById = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const doctor = await prisma.bookingDoctor.findFirst({
+      where: { id, companyId },
+      include: {
+        branch: { select: { id: true, name: true } },
+        doctorServices: {
+          include: { service: { select: { id: true, name: true, basePrice: true, durationMinutes: true } } },
+        },
+        availability: true,
+        appointments: {
+          orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
+          take: 50,
+          include: {
+            branch: { select: { id: true, name: true } },
+            service: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+    if (!doctor) return res.status(404).json({ success: false, error: 'الدكتور غير موجود' });
+
+    const { password, ...rest } = doctor;
+
+    // Build per-service fee map from booking_doctor_services
+    const services = (doctor.doctorServices || [])
+      .filter(ds => ds.isActive)
+      .map(ds => ({
+        id: ds.serviceId,
+        name: ds.service?.name || '',
+        basePrice: ds.service?.basePrice ?? null,
+        durationMinutes: ds.service?.durationMinutes ?? null,
+        fee: ds.fee ?? null,
+      }));
+
+    // Availability grouped by weekday
+    const availability = (doctor.availability || []).map(a => ({
+      dayOfWeek: a.dayOfWeek,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      isAvailable: a.isAvailable,
+    }));
+
+    // Appointment stats
+    const appointments = (doctor.appointments || []).map(a => ({
+      id: a.id,
+      customerName: a.customerName,
+      customerPhone: a.customerPhone,
+      appointmentDate: a.appointmentDate.toISOString().split('T')[0],
+      startTime: a.startTime,
+      endTime: a.endTime || '',
+      status: a.status,
+      branchName: a.branch?.name || '',
+      serviceName: a.serviceName || a.service?.name || '',
+      diagnosis: a.diagnosis || '',
+      treatmentPlan: a.treatmentPlan || '',
+      prescription: a.prescription || '',
+      paymentStatus: a.paymentStatus || null,
+      source: a.source || '',
+    }));
+
+    const total = await prisma.appointment.count({ where: { companyId, doctorId: id } });
+    const upcoming = await prisma.appointment.count({
+      where: { companyId, doctorId: id, appointmentDate: { gte: new Date() }, status: { notIn: ['cancelled', 'no_show'] } },
+    });
+    const completed = await prisma.appointment.count({ where: { companyId, doctorId: id, status: 'completed' } });
+
+    // Revenue from invoices on the doctor's appointments
+    const withInvoices = await prisma.appointment.findMany({
+      where: { companyId, doctorId: id },
+      select: { id: true },
+    });
+    const appointmentIds = withInvoices.map(a => a.id);
+    let revenue = 0;
+    if (appointmentIds.length > 0) {
+      const invoices = await prisma.medicalInvoice.findMany({
+        where: { companyId, appointmentId: { in: appointmentIds }, status: { not: 'REFUNDED' } },
+        select: { total: true, amountPaid: true },
+      });
+      revenue = invoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...rest,
+        branchName: doctor.branch?.name || '',
+        services,
+        availability,
+        appointments,
+        stats: { total, upcoming, completed, revenue: +revenue.toFixed(2) },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching doctor details:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الدكتور' });
+  }
+};
+
+module.exports = { getAllDoctors, createDoctor, updateDoctor, deleteDoctor, getDoctorById };

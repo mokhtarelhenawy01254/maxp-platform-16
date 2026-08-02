@@ -102,6 +102,26 @@ export interface BookingDoctor {
   doctorServices?: DoctorServiceLink[];
 }
 
+export interface DoctorAvailability {
+  id: string; doctorId: string; dayOfWeek: number;
+  startTime: string; endTime: string; isAvailable: boolean;
+}
+
+export interface BookingDoctorDetail extends BookingDoctor {
+  branchName?: string;
+  gender?: string;
+  services?: { id: string; name: string; basePrice?: number | null; durationMinutes?: number | null; fee?: number | null }[];
+  availability?: DoctorAvailability[];
+  appointments?: {
+    id: string; customerName: string; customerPhone?: string;
+    appointmentDate: string; startTime: string; endTime?: string;
+    status: string; branchName?: string; serviceName?: string;
+    diagnosis?: string; treatmentPlan?: string; prescription?: string;
+    paymentStatus?: string; source?: string;
+  }[];
+  stats?: { total: number; upcoming: number; completed: number; revenue: number };
+}
+
 export interface BookingBranchServiceInfo {
   id: string; serviceId: string; branchId: string;
   branch: { id: string; name: string };
