@@ -32,7 +32,7 @@ Three gaps existed in the loyalty points flow:
   - Records `metadata.loyaltyPoints` (applied, appliedAt, per-program points)
     so dedup and proportional reversal are possible.
 - New `subtractPoints(companyId, customerId, programId, points, reason)` —
-  decrements `currentPoints` and increments `totalRedeemed`.
+  decrements `currentPoints` and `totalEarned` (not `totalRedeemed`).
 - New `reverseLoyaltyPointsForReturn({ returnRequestId, companyId, changedBy })`
   — reverses points proportional to the refund ratio, guards against double
   reversal, and records the reversal in `order.metadata.loyaltyPoints.reversals`.
