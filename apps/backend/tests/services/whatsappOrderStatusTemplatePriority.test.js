@@ -142,4 +142,28 @@ describe('whatsapp order status template priority', () => {
     );
     expect(result).toBeDefined();
   });
+
+  it('returns no_template when no DB template exists for an order event (no code fallback)', async () => {
+    // No DB templates at all for this order event.
+    mockSettings.whatsAppNotificationTemplate.findFirst.mockResolvedValue(null);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+
+    const order = {
+      id: 'order-3',
+      orderNumber: 'ORD-3',
+      companyId: 'company-1',
+      customerPhone: '+201000000000',
+      customer: { firstName: 'Ali', phone: '+201000000000' },
+      items: [],
+      total: '100',
+      currency: 'EGP',
+    };
+
+    const result = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    // No message should be sent: order events must NOT fall back to the
+    // hard-coded DEFAULT_TEMPLATES or free-text in the code.
+    expect(result).toEqual(expect.objectContaining({ success: false, reason: 'no_template' }));
+  });
 });

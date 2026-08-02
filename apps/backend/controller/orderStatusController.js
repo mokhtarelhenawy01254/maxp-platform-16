@@ -916,12 +916,88 @@ const getStatusStats = async (req, res) => {
  * GET /api/v1/order-status/with-templates
  * جلب جميع حالات الطلبات مع القوالب المرتبطة بكل حالة
  */
+/**
+ * تأكد أن كل حالة طلب نشطة لها قالب واتساب افتراضي في الداتابيز.
+ * مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates، لذا ننشئ
+ * القوالب الافتراضية كصفوف DB قابلة للتعديل من الصفحة (وليس في الكود).
+ */
+const DEFAULT_ORDER_TEMPLATE_CONTENT = (statusName) => (
+  `أهلًا بحضرتك 👋\nتم تغيير حالة طلبك إلى: ${statusName}\nشكرًا لتعاملك معنا 🙏`
+);
+
+const seedDefaultOrderTemplates = async (companyId, prisma) => {
+  try {
+    const statuses = await prisma.orderStatusConfig.findMany({
+      where: { companyId, isActive: true, statusType: { in: ['order', 'preparation', 'shipping', 'payment'] } },
+      select: { id: true, code: true, name: true }
+    });
+
+    // أحداث الطلبات الإضافية غير المرتبطة بحالة محددة (تُدار من صفحة
+    // قوالب الطلبات ككود حالة أو أسماء أحداث قياسية). نحتاجها حتى لا تتوقف
+    // رسائل الطلبات الجديدة والإلغاء عند غياب قالب.
+    const extraOrderEvents = [
+      { code: 'ORDER_CREATED', name: 'طلب جديد' },
+      { code: 'ORDER_CANCELLED', name: 'إلغاء الطلب' },
+      { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' }
+    ];
+
+    const allEvents = [
+      ...statuses.map(s => ({ code: s.code, name: s.name })),
+      ...extraOrderEvents
+    ];
+
+    const existingTemplates = await prisma.whatsAppNotificationTemplate.findMany({
+      where: { companyId, eventType: { in: allEvents.map(e => e.code) } },
+      select: { eventType: true }
+    });
+    const existingEventTypes = new Set(existingTemplates.map(t => t.eventType));
+
+    let created = 0;
+    for (const event of allEvents) {
+      if (existingEventTypes.has(event.code)) continue;
+      await prisma.whatsAppNotificationTemplate.create({
+        data: {
+          companyId,
+          eventType: event.code,
+          name: `قالب ${event.name}`,
+          category: 'ORDERS',
+          content: DEFAULT_ORDER_TEMPLATE_CONTENT(event.name),
+          variables: JSON.stringify([
+            { position: 1, name: 'customerName' },
+            { position: 2, name: 'orderNumber' }
+          ]),
+          hasButtons: false,
+          isActive: true
+        }
+      });
+      created++;
+    }
+
+    if (created > 0) {
+      console.log(`🌱 [ORDER-TEMPLATES] Created ${created} default order template(s) for company ${companyId}`);
+    }
+    return created;
+  } catch (error) {
+    console.error('❌ [ORDER-TEMPLATES] Seed failed:', error.message);
+    return 0;
+  }
+};
+
 const getStatusesWithTemplates = async (req, res) => {
   try {
     const companyId = getRequestCompanyId(req);
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
+
+    // Seed default order templates into DB (editable from this page)
+    await seedDefaultOrderTemplates(companyId, getSharedPrismaClient());
+
+    const EXTRA_ORDER_EVENTS = [
+      { code: 'ORDER_CREATED', name: 'طلب جديد' },
+      { code: 'ORDER_CANCELLED', name: 'إلغاء الطلب' },
+      { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' }
+    ];
 
     const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
       where: {
@@ -932,10 +1008,15 @@ const getStatusesWithTemplates = async (req, res) => {
       orderBy: [{ statusType: 'asc' }, { sortOrder: 'asc' }]
     });
 
+    const allEventCodes = [
+      ...statuses.map(s => s.code),
+      ...EXTRA_ORDER_EVENTS.map(e => e.code)
+    ];
+
     const templates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: {
         companyId,
-        eventType: { in: statuses.map(s => s.code) },
+        eventType: { in: allEventCodes },
         isActive: true
       }
     });
@@ -945,11 +1026,27 @@ const getStatusesWithTemplates = async (req, res) => {
       templateMap[t.eventType] = t;
     }
 
-    const result = statuses.map(s => ({
-      ...s,
-      template: templateMap[s.code] || null,
-      hasTemplate: !!templateMap[s.code]
-    }));
+    const result = [
+      ...statuses.map(s => ({
+        ...s,
+        template: templateMap[s.code] || null,
+        hasTemplate: !!templateMap[s.code]
+      })),
+      // أحداث الطلبات العامة (غير مرتبطة بحالة orderStatusConfig) تظهر هنا
+      // حتى يمكن إدارتها من صفحة قوالب الطلبات بدلاً من القوالب المثبتة في الكود.
+      ...EXTRA_ORDER_EVENTS.map(e => ({
+        id: `extra-${e.code}`,
+        code: e.code,
+        name: e.name,
+        color: '#6B7280',
+        sortOrder: 999,
+        statusType: 'order',
+        notifyCustomer: true,
+        isSystemStatus: true,
+        template: templateMap[e.code] || null,
+        hasTemplate: !!templateMap[e.code]
+      }))
+    ];
 
     res.json({ success: true, data: result });
 

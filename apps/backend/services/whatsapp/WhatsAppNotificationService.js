@@ -1020,6 +1020,23 @@ const PERSISTED_EVENT_TYPE_FALLBACKS = {
   TASK_STATUS_CHANGED: 'ANNOUNCEMENT',
   TASK_DEADLINE_REMINDER: 'ANNOUNCEMENT'
 };
+
+/**
+ * هل هذا الحدث خاص بالطلبات؟
+ * القوالب المرتبطة بالطلبات تُدار من صفحة /orders/status-templates فقط،
+ * ولا يجوز أن نقع على القوالب المثبتة في الكود أو النص الحر عند غيابها.
+ */
+function isOrderCategory(category, eventType) {
+  const cat = String(category || '').toUpperCase();
+  const evt = String(eventType || '').toUpperCase();
+  return (
+    cat === 'ORDER' ||
+    cat === 'ORDERS' ||
+    evt.startsWith('ORDER_') ||
+    evt === 'PAYMENT_REMINDER' ||
+    evt.startsWith('PAYMENT_')
+  );
+}
 const PERSISTED_CATEGORY_FALLBACKS = {
   TASKS: 'HR'
 };
@@ -2063,7 +2080,10 @@ async function sendNotification(options) {
       }
 
       // استخدام القالب الافتراضي إذا لم يوجد
-      if (!template && DEFAULT_TEMPLATES[eventType]) {
+      // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
+      // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
+      const isOrderEvent = isOrderCategory(category, eventType);
+      if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
         const defaultTemplate = DEFAULT_TEMPLATES[eventType];
         template = {
           id: null,
@@ -2075,21 +2095,17 @@ async function sendNotification(options) {
       }
 
       if (!template) {
-        // Fallback for order status updates
-        if (category === 'ORDERS' || eventType.startsWith('ORDER_') || eventType.match(/^[A-Z_]+$/)) {
-          template = {
-            content: `مرحباً {{customerName}} 👋\n\nنود إعلامك أن حالة طلبك رقم {{orderNumber}} قد تغيرت إلى حالياً: *{{status}}* \n\n{{orderItems}}\nشكراً لتعاملك معنا! ✨`,
-            hasButtons: true,
-            buttons: [
-              { id: "confirm_order_{orderId}", text: "تأكيد الأوردر" },
-              { id: "delay_order_{orderId}", text: "تأجيل التسليم" },
-              { id: "cancel_order_{orderId}", text: "إلغاء الأوردر" }
-            ],
-            hasList: false
-          };
-        } else {
+        if (isOrderEvent) {
+          // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
+          // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
+          console.error(
+            `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
+            `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
+            `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
+          );
           return { success: false, reason: 'no_template' };
         }
+        return { success: false, reason: 'no_template' };
       }
       templateId = template.id || null;
     }
@@ -2310,7 +2326,7 @@ async function sendNotification(options) {
           // Get footer from default template if not in DB template (DB model lacks footer field currently)
           const footerStr =
             safeTemplate.footer ||
-            (DEFAULT_TEMPLATES[eventType]?.footer
+            (!isOrderCategory(category, eventType) && DEFAULT_TEMPLATES[eventType]?.footer
               ? replaceVariables(DEFAULT_TEMPLATES[eventType].footer, variables)
               : "Mokhtar Elhenawy Store");
 
@@ -2509,11 +2525,17 @@ async function scheduleNotification(options) {
       where: { companyId, eventType, isActive: true }
     });
 
-    if (!template && DEFAULT_TEMPLATES[eventType]) {
+    const isOrderEvent = isOrderCategory(category, eventType);
+    if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
       template = { content: DEFAULT_TEMPLATES[eventType].content };
     }
 
     if (!template && !contentOverride) {
+      if (isOrderEvent) {
+        console.error(
+          `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" (مجدوَل). لم يتم الإرسال.`
+        );
+      }
       return { success: false, reason: 'no_template' };
     }
 
