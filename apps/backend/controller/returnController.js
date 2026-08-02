@@ -3,6 +3,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const getPrisma = () => getSharedPrismaClient();
 const { calculateCustomerScore } = require('../services/customerRatingService');
 const cashbackService = require('../services/cashbackService');
+const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
 
 // Return Reason Categories
 exports.getCategories = async (req, res) => {
@@ -543,6 +544,19 @@ exports.updateReturnRequest = async (req, res) => {
                     error: e?.message
                 });
             }
+            try {
+                await customerLoyaltyService.reverseLoyaltyPointsForReturn({
+                    returnRequestId: updatedRequest.id,
+                    companyId: req.user.effectiveCompanyId || req.user.companyId,
+                    changedBy: req.user.id
+                });
+            } catch (e) {
+                console.error('❌ [LOYALTY] Failed to reverse loyalty points for return:', {
+                    returnRequestId: updatedRequest.id,
+                    companyId: req.user.effectiveCompanyId || req.user.companyId,
+                    error: e?.message
+                });
+            }
         }
 
         res.json(updatedRequest);
@@ -716,6 +730,17 @@ async function tryAutoApprove(prismaClient, returnRequest, companyId) {
                 });
             } catch (e) {
                 console.error('❌ [CASHBACK] Failed to reverse cashback for auto-approved return:', e.message);
+            }
+
+            // Reverse loyalty points for auto-approved return
+            try {
+                await customerLoyaltyService.reverseLoyaltyPointsForReturn({
+                    returnRequestId: updated.id,
+                    companyId,
+                    changedBy: null
+                });
+            } catch (e) {
+                console.error('❌ [LOYALTY] Failed to reverse loyalty points for auto-approved return:', e.message);
             }
 
             return updated;
