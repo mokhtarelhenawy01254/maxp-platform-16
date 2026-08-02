@@ -1209,6 +1209,9 @@ const Bundles = React.lazy(() => import("./pages/marketplace/Bundles"));
 const BundleDetails = React.lazy(
   () => import("./pages/marketplace/BundleDetails"),
 );
+const CompareApps = React.lazy(
+  () => import("./pages/marketplace/CompareApps"),
+);
 
 const AppPricingSheet = React.lazy(
   () => import("./pages/subscription/AppPricingSheet"),
@@ -2685,6 +2688,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <BundleDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/compare"
+                  element={
+                    <Layout>
+                      <CompareApps />
                     </Layout>
                   }
                 />

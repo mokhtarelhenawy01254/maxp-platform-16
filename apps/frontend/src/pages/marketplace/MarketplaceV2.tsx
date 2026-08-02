@@ -7,15 +7,11 @@ import {
   Search, Package, Loader2, Crown,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart,
-  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
-  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Calendar, Truck, FileText, Percent,
-  Clock, CreditCard, Monitor, UserPlus, Image, Database,
-  HeartHandshake, Gift, GitBranch, ShoppingBag, Webhook,
-  Activity, FileSpreadsheet, Wallet, Award, Gamepad2,
+  DollarSign, Grid3X3, Star, Heart, ArrowRight,
+  ShoppingBag, Flame, Rocket, Brain, BadgeCheck,
+  Clock, Shield, Award, GraduationCap, LayoutGrid,
+  ListFilter, Eye, SlidersHorizontal,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
 import { getApiUrl } from "../../config/environment";
@@ -24,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -42,57 +39,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  AppCard,
+  SearchBar,
+  SectionRow,
+  HeroBanner,
+  FilterSidebar,
+  AppCardSkeleton,
+  HeroBannerSkeleton,
+  SectionSkeleton,
+} from "@/components/marketplace";
+import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters, SortOption, ToolCollectionId } from "@/types/marketplace";
+import {
+  appIconsBySlug, categoryIcons, categoryCssClass, appIcons,
+  shouldUseTextIcon, isAddOnApp, normalizeRequiredApps,
+  getPrice, formatInstallCount, getAllCategories,
+  starterBundles,
+} from "@/utils/marketplace";
 import { getMarketplaceFeatureItems } from "./featureCatalog";
-import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon, MessengerIcon } from "../../components/icons/brands";
-
-interface MarketplaceApp {
-  id: string;
-  slug: string;
-  name: string;
-  nameEn?: string;
-  category: string;
-  description: string;
-  icon?: string;
-  coverImage?: string;
-  pricingModel: string;
-  unitPrice?: number;
-  unitName?: string;
-  monthlyPrice?: number;
-  yearlyPrice?: number;
-  trialDays: number;
-  features: Record<string, unknown> | unknown[];
-  positioning?: Record<string, unknown> | null;
-  isActive: boolean;
-  isInstalled?: boolean;
-  activePricingModel?: string;
-  isFeatured: boolean;
-  isPopular: boolean;
-  installCount: number;
-  rating?: number;
-  reviewCount: number;
-  requiredApps?: string[] | string | null;
-  _count?: { installations: number; reviews: number };
-}
-
-interface Category {
-  category: string;
-  name: string;
-  nameEn: string;
-  icon: string;
-  count: number;
-}
-
-interface MarketplaceSpecialty {
-  id: string;
-  slug: string;
-  nameAr: string;
-  nameEn: string;
-  icon?: string | null;
-}
+import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "../../components/icons/brands";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -112,132 +76,32 @@ interface MarketplaceApiError {
   };
 }
 
-// ponytail: UNLIMITED_SUBSCRIPTION_PRICE removed — unlimited plan system deleted
 const MARKETPLACE_APPS_FETCH_LIMIT = 200;
+const DISPLAY_INCREMENT = 20;
 
-const categoryIcons: Record<string, LucideIcon> = {
-  ECOMMERCE: Store,
-  HR: Users,
-  COMMUNICATION: MessageSquare,
-  CRM: BarChart3,
-  ANALYTICS: TrendingUp,
-  INTEGRATION: Zap,
-  PRODUCTIVITY: Package,
-  FINANCE: DollarSign,
-  MARKETING: Sparkles,
-  MEDICAL: Heart,
-};
+const collections = [
+  { id: "ALL" as ToolCollectionId, labelKey: "marketplace.allTools", icon: Grid3X3 },
+  { id: "CORE" as ToolCollectionId, labelKey: "marketplace.coreTools", icon: Zap },
+  { id: "ADD_ONS" as ToolCollectionId, labelKey: "marketplace.addOns", icon: Sparkles },
+  { id: "FREE" as ToolCollectionId, labelKey: "marketplace.free", icon: CheckCircle2 },
+  { id: "PAID" as ToolCollectionId, labelKey: "marketplace.paid", icon: Crown },
+];
 
-const appIcons: Record<string, LucideIcon> = {
-  megaphone: Megaphone,
-  "chart-bar": BarChart3,
-  bot: Bot,
-  store: Store,
-  users: Users,
-  sparkles: Sparkles,
-  "shopping-cart": ShoppingCart,
-  camera: Camera,
-  "package-open": PackageOpen,
-  "clipboard-list": ClipboardList,
-  route: Route,
-  "clipboard-check": ClipboardCheck,
-  inbox: Inbox,
-  bell: Bell,
-  calendar: Calendar,
-  heart: Heart,
-  package: Package,
-  truck: Truck,
-  "file-text": FileText,
-  percent: Percent,
-};
+const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
+  { value: "featured", labelKey: "marketplace.sortFeatured" },
+  { value: "popular", labelKey: "marketplace.sortPopular" },
+  { value: "newest", labelKey: "marketplace.sortNewest" },
+  { value: "price_low", labelKey: "marketplace.sortPriceLow" },
+  { value: "price_high", labelKey: "marketplace.sortPriceHigh" },
+  { value: "rating", labelKey: "marketplace.sortRating" },
+  { value: "installs", labelKey: "marketplace.sortInstalls" },
+  { value: "updated", labelKey: "marketplace.sortUpdated" },
+];
 
-const appIconsBySlug: Record<string, React.ElementType> = {
-  // ECOMMERCE
-  "store-basic": Store,
-  "store-pro": Store,
-  "inventory-pro": Package,
-  "woocommerce-sync": ShoppingBag,
-  "order-core": ShoppingCart,
-  "order-shipping-turbo": Truck,
-  "order-shipping-reports": FileText,
-  "order-invoicing": FileSpreadsheet,
-
-  // HR
-  "hr-core": Users,
-  "hr-attendance-pro": Clock,
-  "hr-payroll": CreditCard,
-  "hr-assets": Monitor,
-  "hr-recruitment": UserPlus,
-  "kudos-recognition": Award,
-  "gamification-pro": Gamepad2,
-
-  // AI
-  "ai-chat-basic": Bot,
-  "ai-chat-pro": Bot,
-  "ai-image-studio": Image,
-  "ai-rag-knowledge": Database,
-  "ai-inbox-bundle": Inbox,
-
-  // COMMUNICATION
-  "whatsapp-business": WhatsAppIcon,
-  "telegram-business": TelegramIcon,
-  "broadcast-pro": Megaphone,
-  "messaging-bundle": Inbox,
-
-  // CRM
-  "crm-basic": HeartHandshake,
-  "crm-loyalty": Gift,
-  "opportunities-pipeline": GitBranch,
-
-  // ANALYTICS
-  "analytics-basic": BarChart3,
-  "turbo-analytics": TrendingUp,
-
-  // INTEGRATION / SCHEDULING
-  "appointments-pro": Calendar,
-  "smart-scheduler": Clock,
-  "webhooks-pro": Webhook,
-
-  // FACEBOOK
-  "facebook-pages-connect": FacebookIcon,
-  "facebook-pixel-capi": Activity,
-  "facebook-ads-pro": FacebookIcon,
-  "facebook-catalog-shop": ShoppingBag,
-
-  // FINANCE
-  "invoicing-pro": FileSpreadsheet,
-  "wallet-system": Wallet,
-};
-
-/** CSS class that sets --cat-h/--cat-s/--cat-l/--cat-gradient for each category */
-const categoryCssClass: Record<string, string> = {
-  ECOMMERCE: "mp-cat-ecommerce",
-  HR: "mp-cat-hr",
-  COMMUNICATION: "mp-cat-communication",
-  CRM: "mp-cat-crm",
-  ANALYTICS: "mp-cat-analytics",
-  INTEGRATION: "mp-cat-integration",
-  PRODUCTIVITY: "mp-cat-productivity",
-  FINANCE: "mp-cat-finance",
-  MARKETING: "mp-cat-marketing",
-  MEDICAL: "mp-cat-medical",
-};
-
-type ToolCollectionId = "ALL" | "CORE" | "ADD_ONS" | "FREE" | "PAID";
-
-function shouldUseTextIcon(icon?: string) {
-  const n = icon?.trim();
-  if (!n) return false;
-  return Array.from(n).length <= 3 && !/^[a-z0-9_\-\s]+$/i.test(n);
-}
-
-function isAddOnApp(app: MarketplaceApp) {
-  const r = app.requiredApps;
-  if (Array.isArray(r)) return r.filter(Boolean).length > 0;
-  if (typeof r === "string") {
-    try { return JSON.parse(r).filter(Boolean).length > 0; } catch { return r.split(",").filter(Boolean).length > 0; }
-  }
-  return false;
+function getDefaultPricingModel(app: MarketplaceApp) {
+  if (app.pricingModel === "FREE") return "FREE";
+  if (app.pricingModel === "PAY_PER_USE") return "PAY_PER_USE";
+  return "SUBSCRIPTION";
 }
 
 function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
@@ -249,12 +113,33 @@ function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
   return true;
 }
 
-function normalizeRequiredApps(requiredApps: MarketplaceApp["requiredApps"]) {
-  if (Array.isArray(requiredApps)) return requiredApps.map(a => String(a || "").trim()).filter(Boolean);
-  if (typeof requiredApps === "string") {
-    try { return JSON.parse(requiredApps).filter(Boolean); } catch { return requiredApps.split(",").map(a => a.trim()).filter(Boolean); }
+function matchesFilters(app: MarketplaceApp, filters: MarketplaceFilters) {
+  if (filters.priceModel && filters.priceModel !== "ALL") {
+    if (filters.priceModel === "FREE" && app.pricingModel !== "FREE") return false;
+    if (filters.priceModel === "PAID" && app.pricingModel === "FREE") return false;
   }
-  return [];
+  if (filters.minRating && (app.rating ?? 0) < filters.minRating) return false;
+  if (filters.isAiPowered && !app.isAiPowered) return false;
+  if (filters.isOfficial && !app.isOfficial) return false;
+  if (filters.isNew && !app.isNew) return false;
+  if (filters.isRecentlyUpdated && !app.isRecentlyUpdated) return false;
+  return true;
+}
+
+function getCategoryDisplayCategories(categories: Category[], t: (key: string) => string) {
+  const categoryIconsMap: Record<string, typeof Package> = {
+    AI: Brain, MARKETING: Sparkles, SALES: ShoppingBag, CRM: BarChart3,
+    ACCOUNTING: DollarSign, FINANCE: DollarSign, ANALYTICS: TrendingUp,
+    HR: Users, WAREHOUSE: Package, SHIPPING: Truck,
+    SUPPORT: MessageSquare, WHATSAPP: MessageSquare,
+    SEO: TrendingUp, INTEGRATION: Zap, THEMES: LayoutGrid,
+    ECOMMERCE: Store, MEDICAL: Heart,
+  };
+  return categories.map(c => ({
+    id: c.category,
+    name: c.name,
+    icon: categoryIconsMap[c.category] || Package,
+  }));
 }
 
 function sortAppsByDependencies(apps: MarketplaceApp[]) {
@@ -272,38 +157,16 @@ function sortAppsByDependencies(apps: MarketplaceApp[]) {
   return ordered.filter((a, i, c) => c.findIndex(x => x.slug === a.slug) === i);
 }
 
-function getDefaultPricingModel(app: MarketplaceApp) {
-  if (app.pricingModel === "FREE") return "FREE";
-  if (app.pricingModel === "PAY_PER_USE") return "PAY_PER_USE";
-  return "SUBSCRIPTION";
-}
-
-const collections = [
-  { id: "ALL" as ToolCollectionId, labelKey: "marketplace.allTools", icon: Grid3X3 },
-  { id: "CORE" as ToolCollectionId, labelKey: "marketplace.coreTools", icon: Zap },
-  { id: "ADD_ONS" as ToolCollectionId, labelKey: "marketplace.addOns", icon: Sparkles },
-  { id: "FREE" as ToolCollectionId, labelKey: "marketplace.free", icon: CheckCircle2 },
-  { id: "PAID" as ToolCollectionId, labelKey: "marketplace.paid", icon: Crown },
-];
-
-function getPrice(a: MarketplaceApp, t: (key: string) => string) {
-  if (a.pricingModel === "FREE") return t('marketplace.freePrice');
-  if (a.pricingModel === "PAY_PER_USE") return a.unitPrice ? `${a.unitPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perUnit')}` : t('marketplace.payPerUse');
-  if (a.monthlyPrice) return `${a.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`;
-  return t('marketplace.contactUs');
-}
-
 export default function MarketplaceV2() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("featured");
+  const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [collection, setCollection] = useState<ToolCollectionId>("ALL");
   const [installingApp, setInstallingApp] = useState<string | null>(null);
   const [uninstallingApp, setUninstallingApp] = useState<string | null>(null);
@@ -314,17 +177,16 @@ export default function MarketplaceV2() {
   const [showInstalled, setShowInstalled] = useState(false);
   const [isInstallingAll, setIsInstallingAll] = useState(false);
   const [confirmBulkInstall, setConfirmBulkInstall] = useState(false);
-
-  const DISPLAY_INCREMENT = 16;
+  const [filters, setFilters] = useState<MarketplaceFilters>({});
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+  const [compareList, setCompareList] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const q = searchParams.get("q"); const c = searchParams.get("category"); const s = searchParams.get("sort");
-    if (q) setSearchQuery(q); if (c) setSelectedCategory(c); if (s) setSortBy(s);
+    if (q) setSearchQuery(q); if (c) setSelectedCategory(c); if (s) setSortBy(s as SortOption);
   }, []);
 
   useEffect(() => {
@@ -335,41 +197,10 @@ export default function MarketplaceV2() {
     setSearchParams(p, { replace: true });
   }, [selectedCategory, searchQuery, sortBy, setSearchParams]);
 
-  const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
-  const filteredApps = showInstalled ? collectionFiltered.filter(a => a.isInstalled) : collectionFiltered;
-  const displayedApps = filteredApps.slice(0, displayCount);
-  const installedCount = apps.filter(a => a.isInstalled).length;
-  const featuredApps = useMemo(
-    () => (!selectedCategory && !showInstalled ? filteredApps.filter(a => a.isFeatured) : []),
-    [filteredApps, selectedCategory, showInstalled],
-  );
-
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "/" && !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  const hasMoreApps = useMemo(() => filteredApps.length > displayCount, [filteredApps.length, displayCount]);
-  useEffect(() => {
-    if (!hasMoreApps) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setDisplayCount(p => p + DISPLAY_INCREMENT); }, { rootMargin: "400px" });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMoreApps]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -397,6 +228,33 @@ export default function MarketplaceV2() {
   }, [debouncedSearch, selectedCategory, sortBy, t]);
 
   useEffect(() => { fetchData(); setDisplayCount(DISPLAY_INCREMENT); }, [fetchData]);
+
+  const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
+  const filterFiltered = collectionFiltered.filter(a => matchesFilters(a, filters));
+  const filteredApps = showInstalled ? filterFiltered.filter(a => a.isInstalled) : filterFiltered;
+  const displayedApps = filteredApps.slice(0, displayCount);
+  const installedCount = apps.filter(a => a.isInstalled).length;
+
+  const featuredApps = useMemo(() => apps.filter(a => a.isFeatured && a.isActive), [apps]);
+  const popularApps = useMemo(() => [...apps].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).filter(a => (a.installCount || 0) > 0).slice(0, 10), [apps]);
+  const trendingApps = useMemo(() => [...apps].filter(a => a.isTrending || (a.isFeatured && a.isPopular)).slice(0, 10), [apps]);
+  const newApps = useMemo(() => [...apps].filter(a => a.isNew).slice(0, 10), [apps]);
+  const topRatedApps = useMemo(() => [...apps].filter(a => a.rating && a.rating >= 4).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 10), [apps]);
+  const freeApps = useMemo(() => apps.filter(a => a.pricingModel === "FREE").slice(0, 10), [apps]);
+  const premiumApps = useMemo(() => apps.filter(a => a.pricingModel !== "FREE" && a.rating && a.rating >= 4).slice(0, 10), [apps]);
+  const recentlyUpdatedApps = useMemo(() => [...apps].filter(a => a.isRecentlyUpdated).slice(0, 10), [apps]);
+
+  const hasMoreApps = filteredApps.length > displayCount;
+  useEffect(() => {
+    if (!hasMoreApps) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setDisplayCount(p => p + DISPLAY_INCREMENT);
+    }, { rootMargin: "400px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMoreApps]);
 
   const markInstalled = (slugs: string[]) => {
     if (!slugs.length) return;
@@ -444,9 +302,6 @@ export default function MarketplaceV2() {
     }
   };
 
-  const getRequiredAppNames = (app: MarketplaceApp) =>
-    normalizeRequiredApps(app.requiredApps).map(slug => apps.find(a => a.slug === slug)?.name || slug);
-
   const handleInstallAll = async () => {
     const uninstalled = sortAppsByDependencies(collectionFiltered).filter(a => !a.isInstalled);
     if (!uninstalled.length) { toast.success(t('marketplace.allActivated')); setConfirmBulkInstall(false); return; }
@@ -468,251 +323,418 @@ export default function MarketplaceV2() {
     setConfirmBulkInstall(false);
   };
 
-// ponytail: handleSubscribeUnlimited removed — unlimited plan system deleted
+  const toggleWishlist = (app: MarketplaceApp) => {
+    setWishlist(prev => {
+      const next = new Set(prev);
+      if (next.has(app.slug)) next.delete(app.slug);
+      else next.add(app.slug);
+      return next;
+    });
+  };
+
+  const toggleCompare = (app: MarketplaceApp) => {
+    setCompareList(prev => {
+      const next = new Set(prev);
+      if (next.has(app.slug)) next.delete(app.slug);
+      else if (next.size >= 4) { toast.error(t('marketplace.maxCompareReached')); return prev; }
+      else next.add(app.slug);
+      return next;
+    });
+  };
+
+  const categoryDisplay = getCategoryDisplayCategories(categories, t);
+  const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.labelKey || "marketplace.sortFeatured";
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky filter bar — glassmorphism header */}
-      <div className="sticky top-0 z-50 border-b border-border/20 bg-background/75 backdrop-blur-2xl">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-2.5 py-3">
-            {/* Search row */}
-            <div className="flex items-center gap-2.5">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60" size={16} />
-                <Input
-                  ref={searchRef}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={t('marketplace.searchPlaceholder')}
-                  className="h-11 w-full rounded-2xl border-border/30 bg-muted/30 pl-4 pr-10 text-sm shadow-sm focus:border-primary/40 focus:bg-background focus:shadow-md transition-all duration-200"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-bold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    aria-label={t('marketplace.clearSearch')}
+      {loading ? (
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+          <HeroBannerSkeleton />
+          <div className="mt-8">
+            <SectionSkeleton count={4} />
+            <SectionSkeleton count={4} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <HeroBanner featuredApps={featuredApps} className="mb-6 mt-4 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8" />
+
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16">
+            <div className="mp-stats-bar">
+              <div className="mp-stat-item">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                  <Package size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.totalApps')}</p>
+                  <p className="text-lg font-extrabold text-foreground">{apps.length}</p>
+                </div>
+              </div>
+              <div className="mp-stat-item">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-success/10 text-success shrink-0">
+                  <CheckCircle2 size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.installedApps')}</p>
+                  <p className="text-lg font-extrabold text-foreground">{installedCount}</p>
+                </div>
+              </div>
+              <div className="mp-stat-item">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
+                  <Star size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.averageRating')}</p>
+                  <p className="text-lg font-extrabold text-foreground">
+                    {apps.filter(a => a.rating).length > 0
+                      ? (apps.reduce((s, a) => s + (a.rating || 0), 0) / apps.filter(a => a.rating).length).toFixed(1)
+                      : '--'}
+                  </p>
+                </div>
+              </div>
+              <div className="mp-stat-item">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 shrink-0">
+                  <TrendingUp size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.trending')}</p>
+                  <p className="text-lg font-extrabold text-foreground">{trendingApps.length}</p>
+                </div>
+              </div>
+              {activeSpecialty && (
+                <div className="mp-stat-item">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-fuchsia-500/10 text-fuchsia-600 shrink-0">
+                    <Layers3 size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.specialtyLabel')}</p>
+                    <p className="text-sm font-extrabold text-foreground truncate">{activeSpecialty.nameAr}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10 mb-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder={t('marketplace.searchPlaceholder')}
+                    trendingSearches={popularApps.slice(0, 5).map(a => a.name)}
+                    popularApps={popularApps.slice(0, 5).map(a => ({ slug: a.slug, name: a.name }))}
+                  />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as SortOption)}
+                    className="h-9 rounded-xl border border-border/30 bg-muted/30 px-3 text-xs font-bold text-foreground focus:outline-none focus:border-primary/40 cursor-pointer"
                   >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-              <div className="flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-border/30 bg-muted/30 px-3 text-sm shadow-sm">
-                <span className="text-xs text-muted-foreground/70 shrink-0">{t('marketplace.sortLabel')}</span>
-                <select
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-                >
-                  <option value="featured">{t('marketplace.sortFeatured')}</option>
-                  <option value="popular">{t('marketplace.sortPopular')}</option>
-                  <option value="newest">{t('marketplace.sortNewest')}</option>
-                  <option value="price_low">{t('marketplace.sortPriceLow')}</option>
-                </select>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => setConfirmBulkInstall(true)}
-                disabled={isInstallingAll || !collectionFiltered.some(a => !a.isInstalled)}
-                className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold shrink-0 shadow-sm"
-              >
-                {isInstallingAll ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-                {t('marketplace.activateAll')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-        {/* Compact header info line */}
-        <div className="flex items-center gap-3 py-3.5 text-sm text-muted-foreground flex-wrap border-b border-border/20 mb-4">
-          <span className="flex items-center gap-1.5 font-bold text-foreground/80">
-            <Package size={13} className="text-primary" />
-            {t('marketplace.appCount', { count: apps.length })}
-          </span>
-          <span className="text-border/50">•</span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 size={13} className="text-success" />
-            {t('marketplace.installedCount', { count: installedCount })}
-          </span>
-          {activeSpecialty && (
-            <>
-              <span className="text-border/50">•</span>
-              <Badge variant="outline" className="gap-1 border px-2 py-0.5 font-bold text-xs">
-                <Layers3 size={11} />
-                {activeSpecialty.nameAr}
-              </Badge>
-            </>
-          )}
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-2xl border border-border/15 bg-card/40 p-3.5 backdrop-blur-sm">
-                <Skeleton className="size-10 shrink-0 rounded-xl" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4 rounded-md" />
-                  <div className="flex items-center justify-between gap-2">
-                    <Skeleton className="h-3.5 w-14 rounded-md" />
-                    <Skeleton className="h-7 w-14 shrink-0 rounded-lg" />
-                  </div>
+                    {sortOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+                    ))}
+                  </select>
+                  <Button
+                    variant={showInstalled ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowInstalled(!showInstalled)}
+                    className="h-9 gap-1.5 rounded-xl text-xs font-bold"
+                  >
+                    <CheckCircle2 size={13} />
+                    {t('marketplace.installed')}
+                  </Button>
+                  <FilterSidebar
+                    isMobile
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : displayedApps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-muted">
-              <Package size={40} className="text-muted-foreground" />
+              <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
+                {collections.map(c => {
+                  const ColIcon = c.icon;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => { setCollection(c.id); setDisplayCount(DISPLAY_INCREMENT); }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap transition-all duration-200 shrink-0",
+                        collection === c.id
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <ColIcon size={12} />
+                      {t(c.labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <p className="text-lg font-bold text-foreground">
-              {searchQuery ? t('marketplace.noSearchResults', { query: searchQuery }) : t('marketplace.noTools')}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">{t('marketplace.emptyHint')}</p>
-            {(searchQuery || selectedCategory || collection !== "ALL" || showInstalled) && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 gap-1.5 rounded-xl"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("");
-                  setCollection("ALL");
-                  setShowInstalled(false);
-                  setDisplayCount(DISPLAY_INCREMENT);
-                }}
-              >
-                <X size={14} />
-                {t('marketplace.clearFilters')}
-              </Button>
+
+            {selectedCategory && (
+              <div className="mt-3 overflow-x-auto scrollbar-none pb-1">
+                <div className="flex gap-2">
+                  {categoryDisplay.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id === selectedCategory ? "" : cat.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold whitespace-nowrap transition-all duration-200 shrink-0",
+                        cat.id === selectedCategory
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <cat.icon size={14} />
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        ) : (
-          <>
-            {/* Featured Section — horizontal snap scroll carousel */}
-            {featuredApps.length >= 2 && (
-              <div className="mp-featured-section">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={15} className="text-primary animate-pulse" />
-                    <h2 className="text-sm font-extrabold text-foreground">
-                      {t('marketplace.featured')}
-                    </h2>
-                    <span className="mp-section-count bg-primary/10 text-primary">
-                      {featuredApps.length}
-                    </span>
+
+            <div className="mt-4 space-y-1">
+              {displayedApps.length === 0 ? (
+                <div className="mp-empty-state">
+                  <div className="mp-empty-ilustration">
+                    <Package size={36} className="text-muted-foreground/40" />
                   </div>
+                  <h3 className="text-lg font-extrabold text-foreground mb-1">
+                    {searchQuery ? t('marketplace.noSearchResults', { query: searchQuery }) : t('marketplace.emptySearchTitle')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4 max-w-md">
+                    {t('marketplace.emptyHint')}
+                  </p>
+                  {trendingApps.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-xs font-bold text-muted-foreground mb-3">{t('marketplace.trending')}</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {trendingApps.slice(0, 6).map(app => (
+                          <Link
+                            key={app.id}
+                            to={`/marketplace/${app.slug}`}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold hover:border-primary/30 transition-colors"
+                          >
+                            <TrendingUp size={11} className="text-amber-500" />
+                            {app.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(searchQuery || selectedCategory || filters) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 rounded-xl"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSelectedCategory("");
+                        setCollection("ALL");
+                        setShowInstalled(false);
+                        setFilters({});
+                        setDisplayCount(DISPLAY_INCREMENT);
+                      }}
+                    >
+                      <X size={14} />
+                      {t('marketplace.clearAllFilters')}
+                    </Button>
+                  )}
                 </div>
-                <div className="mp-featured-scroll">
-                  {featuredApps.map((app, i) => {
-                    const catCls = categoryCssClass[app.category] || "";
-                    const PricingBrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
-                    const appIconKey = app.icon?.trim().toLowerCase();
-                    const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
-                    const Icon = AppIcon || categoryIcons[app.category] || Package;
-                    const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-                    return (
-                      <Link
-                        key={app.id}
-                        to={`/marketplace/${app.slug}`}
-                        className={`mp-featured-card ${catCls} mp-stagger`}
-                        style={{ animationDelay: `${(i % 10) * 60}ms`, animationFillMode: "backwards" }}
+              ) : (
+                <>
+                  {!selectedCategory && !debouncedSearch && (
+                    <>
+                      <SectionRow
+                        type="FEATURED"
+                        title={t('marketplace.featured')}
+                        apps={featuredApps}
+                        installingApp={installingApp}
+                        uninstallingApp={uninstallingApp}
+                        onQuickInstall={handleQuickInstall}
+                        onUninstall={(app) => setConfirmUninstallApp(app)}
+                      />
+                      {popularApps.length >= 4 && (
+                        <SectionRow
+                          type="POPULAR"
+                          title={t('marketplace.popular')}
+                          apps={popularApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+                      {trendingApps.length >= 3 && (
+                        <SectionRow
+                          type="TRENDING"
+                          title={t('marketplace.trending')}
+                          apps={trendingApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+                      {newApps.length >= 3 && (
+                        <SectionRow
+                          type="NEW"
+                          title={t('marketplace.newApps')}
+                          apps={newApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+                      {topRatedApps.length >= 4 && (
+                        <SectionRow
+                          type="BEST_RATED"
+                          title={t('marketplace.bestRated')}
+                          apps={topRatedApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+                      {freeApps.length >= 3 && (
+                        <SectionRow
+                          type="FREE"
+                          title={t('marketplace.freeApps')}
+                          apps={freeApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+                      {recentlyUpdatedApps.length >= 3 && (
+                        <SectionRow
+                          type="RECENTLY_UPDATED"
+                          title={t('marketplace.recentlyUpdated')}
+                          apps={recentlyUpdatedApps}
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(app) => setConfirmUninstallApp(app)}
+                        />
+                      )}
+
+                      {starterBundles.length > 0 && (
+                        <section className="mp-section-row">
+                          <div className="mp-section-header-v2">
+                            <div className="flex items-center gap-2">
+                              <GraduationCap size={17} className="text-primary" />
+                              <h2 className="text-base font-extrabold text-foreground tracking-tight">
+                                {t('marketplace.startHere')}
+                              </h2>
+                            </div>
+                            <Link
+                              to="/marketplace/bundles"
+                              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              {t('marketplace.viewAll')}
+                              <ArrowRight size={12} />
+                            </Link>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-3 -mt-1">{t('marketplace.starterBundleDesc')}</p>
+                          <div className="mp-section-scroll">
+                            {starterBundles.map((bundle) => {
+                              const BundleIcon = bundle.icon;
+                              return (
+                                <Link
+                                  key={bundle.id}
+                                  to={`/marketplace/bundles`}
+                                  className="mp-starter-bundle-card flex flex-col items-center text-center p-5"
+                                >
+                                  <div className={cn("flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white mb-3 shadow-lg", bundle.gradient)}>
+                                    <BundleIcon size={22} />
+                                  </div>
+                                  <h4 className="text-sm font-extrabold text-foreground">{t(`marketplace.${bundle.businessType}`)}</h4>
+                                  <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+                                    {bundle.apps.length} {t('marketplace.features').toLowerCase()}
+                                  </p>
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[10px] font-bold">
+                                    <Zap size={10} />
+                                    {t('marketplace.oneClickSetup')}
+                                  </span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      )}
+                    </>
+                  )}
+
+                  <div className="mp-section-header-v2 mt-2">
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid size={17} className="text-primary" />
+                      <h2 className="text-base font-extrabold text-foreground tracking-tight">
+                        {selectedCategory
+                          ? categories.find(c => c.category === selectedCategory)?.name
+                          : debouncedSearch
+                            ? t('marketplace.noSearchResults', { query: debouncedSearch })
+                            : t('marketplace.allTools')}
+                      </h2>
+                      <span className="mp-section-count-v2">{filteredApps.length}</span>
+                    </div>
+                    {compareList.size > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 rounded-lg text-xs font-bold"
+                        onClick={() => navigate(`/marketplace/compare?apps=${[...compareList].join(',')}`)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="mp-icon-box">
-                            {PricingBrandIcon ? <PricingBrandIcon className="size-[22px]" /> : textIcon ? <span className="text-base font-bold">{textIcon}</span> : <Icon size={22} />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3
-                              dir="auto"
-                              className="text-sm font-extrabold text-foreground truncate group-hover:text-primary transition-colors"
-                              style={{ unicodeBidi: 'plaintext' }}
-                              title={app.name}
-                            >
-                              {app.name}
-                            </h3>
-                            <span className="text-xs font-bold text-muted-foreground/80 block mt-0.5">
-                              {categories.find(c => c.category === app.category)?.name}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed h-8">
-                          {app.description}
-                        </p>
-                        <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-border/10">
-                          <span className="mp-price-tag">{getPrice(app, t)}</span>
-                          {app.isInstalled ? (
-                            <span className="text-xs font-bold text-success flex items-center gap-1">
-                              <CheckCircle2 size={12} />
-                              {t('marketplace.installed')}
-                            </span>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="h-7 shrink-0 gap-1 rounded-lg px-2.5 text-xs font-bold"
-                              onClick={(e) => handleQuickInstall(e, app)}
-                              disabled={installingApp === app.slug}
-                            >
-                              {installingApp === app.slug ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-                              {t('marketplace.activate')}
-                            </Button>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* All Apps Grid */}
-            <div className="mp-section-header">
-              <h2>
-                {selectedCategory
-                  ? categories.find(c => c.category === selectedCategory)?.name
-                  : t(collections.find(c => c.id === collection)?.labelKey || "marketplace.allTools")}
-              </h2>
-              <span className="mp-section-count">
-                {filteredApps.length}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
-              {displayedApps.map((app, i) => {
-                const isHighlighted = !!(app.isPopular || app.isFeatured) && i < 6;
-                return (
-                  <div
-                    key={app.id}
-                    className={cn("mp-stagger", isHighlighted && "sm:col-span-2")}
-                    style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
-                  >
-                    <AppCardV2
-                      app={app}
-                      installingApp={installingApp}
-                      uninstallingApp={uninstallingApp}
-                      onQuickInstall={handleQuickInstall}
-                      onUninstall={(a) => setConfirmUninstallApp(a)}
-                      isHighlighted={isHighlighted}
-                    />
+                        <BarChart3 size={12} />
+                        {t('marketplace.compareApps')} ({compareList.size})
+                      </Button>
+                    )}
                   </div>
-                );
-              })}
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    {displayedApps.map((app, i) => (
+                      <div
+                        key={app.id}
+                        className="mp-stagger"
+                        style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
+                      >
+                        <AppCard
+                          app={app}
+                          variant="default"
+                          installingApp={installingApp}
+                          uninstallingApp={uninstallingApp}
+                          onQuickInstall={handleQuickInstall}
+                          onUninstall={(a) => setConfirmUninstallApp(a)}
+                          onAddToWishlist={toggleWishlist}
+                          onCompare={toggleCompare}
+                          isInWishlist={wishlist.has(app.slug)}
+                          isInCompare={compareList.has(app.slug)}
+                          showBadges
+                          showRating
+                          showInstalls
+                          showDescription
+                          showTags
+                          animationDelay={i * 40}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div ref={sentinelRef} className={hasMoreApps ? "h-4" : "hidden"} />
+                  {!hasMoreApps && displayedApps.length > 0 && (
+                    <p className="mt-8 text-center text-xs text-muted-foreground">{t('marketplace.allLoaded')}</p>
+                  )}
+                </>
+              )}
             </div>
+          </div>
+        </>
+      )}
 
-            {/* Infinite scroll sentinel */}
-            <div ref={sentinelRef} className={hasMoreApps ? "h-4" : "hidden"} />
-
-            {!hasMoreApps && displayedApps.length > 0 && (
-              <div className="mt-8 text-center text-xs text-muted-foreground">{t('marketplace.allLoaded')}</div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Pricing Dialog */}
       <Dialog open={!!showPricingDialog} onOpenChange={(o) => !o && setShowPricingDialog(null)}>
         {showPricingDialog && (() => {
           const PricingBrandIcon = showPricingDialog.slug ? appIconsBySlug[showPricingDialog.slug] : undefined;
@@ -759,7 +781,6 @@ export default function MarketplaceV2() {
         })()}
       </Dialog>
 
-      {/* Uninstall Confirmation */}
       <AlertDialog open={!!confirmUninstallApp} onOpenChange={(o) => !o && setConfirmUninstallApp(null)}>
         {confirmUninstallApp && (
           <AlertDialogContent className="rounded-2xl">
@@ -782,7 +803,6 @@ export default function MarketplaceV2() {
         )}
       </AlertDialog>
 
-      {/* Bulk Install Confirmation */}
       <AlertDialog open={confirmBulkInstall} onOpenChange={setConfirmBulkInstall}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
@@ -811,280 +831,5 @@ export default function MarketplaceV2() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-/* ─── App Card (compact) ─── */
-function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall, isHighlighted = false }: {
-  app: MarketplaceApp;
-  installingApp: string | null;
-  uninstallingApp: string | null;
-  onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
-  onUninstall: (app: MarketplaceApp) => void;
-  isHighlighted?: boolean;
-}) {
-  const { t } = useTranslation();
-  const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
-  const appIconKey = app.icon?.trim().toLowerCase();
-  const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
-  const Icon = AppIcon || categoryIcons[app.category] || Package;
-  const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const hoverTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const features = useMemo(() => getMarketplaceFeatureItems(app), [app]);
-  const requiredApps = useMemo(() => normalizeRequiredApps(app.requiredApps), [app.requiredApps]);
-
-  const showPreview = useCallback(() => {
-    clearTimeout(hoverTimer.current);
-    hoverTimer.current = setTimeout(() => setPreviewOpen(true), 350);
-  }, []);
-  const hidePreview = useCallback(() => {
-    clearTimeout(hoverTimer.current);
-    hoverTimer.current = setTimeout(() => setPreviewOpen(false), 150);
-  }, []);
-
-  const catCls = categoryCssClass[app.category] || "";
-
-  const iconEl = BrandIcon
-    ? <BrandIcon className={isHighlighted ? "size-[24px]" : "size-[20px]"} />
-    : textIcon
-      ? <span className="text-base font-bold">{textIcon}</span>
-      : <Icon size={isHighlighted ? 24 : 20} />;
-
-  return (
-    <Popover open={previewOpen} onOpenChange={setPreviewOpen}>
-      <div onMouseEnter={showPreview} onMouseLeave={hidePreview} onFocus={showPreview} onBlur={hidePreview} className="h-full">
-        <PopoverTrigger asChild>
-          <Link
-            to={`/marketplace/${app.slug}`}
-            aria-haspopup="dialog"
-            aria-expanded={previewOpen}
-            className={cn(
-              "mp-app-card mp-depth",
-              catCls,
-              app.isInstalled && "mp-installed",
-              isHighlighted && "mp-card-highlighted",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            )}
-          >
-            <div className="mp-icon-box">
-              {iconEl}
-            </div>
-
-            {isHighlighted ? (
-              /* ── Highlighted / Popular layout ── */
-              <div className="mp-card-body">
-                <div className="flex items-center gap-2">
-                  <h3
-                    dir="auto"
-                    className="text-sm font-extrabold text-foreground truncate"
-                    style={{ unicodeBidi: 'plaintext' }}
-                    title={app.name}
-                  >
-                    {app.name}
-                  </h3>
-                  {app.rating ? (
-                    <span className="mp-rating-inline">
-                      <Star size={10} className="fill-current" />{app.rating}
-                    </span>
-                  ) : null}
-                </div>
-                <p
-                  dir="auto"
-                  className="text-xs text-muted-foreground line-clamp-1 mt-0.5"
-                  style={{ unicodeBidi: 'plaintext' }}
-                >
-                  {app.description}
-                </p>
-                {features.length > 0 && (
-                  <div className="mp-card-features">
-                    {features.slice(0, 4).map(f => (
-                      <span key={f.key} className="mp-feature-chip">
-                        <CheckCircle2 size={9} />
-                        {f.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-auto pt-2 flex items-center justify-between gap-1">
-                  <span className="mp-price-tag">{getPrice(app, t)}</span>
-                  {app.isInstalled ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                      onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-                      disabled={uninstallingApp === app.slug}
-                    >
-                      {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="h-7 shrink-0 gap-1 rounded-lg px-2.5 text-xs font-bold"
-                      onClick={(e) => onQuickInstall(e, app)}
-                      disabled={installingApp === app.slug}
-                    >
-                      {installingApp === app.slug ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
-                      {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* ── Standard compact layout ── */
-              <div className="min-w-0 flex-1 flex flex-col justify-between h-full min-h-[44px]">
-                <div className="flex items-center gap-1.5">
-                  <h3
-                    dir="auto"
-                    className="text-xs font-extrabold text-foreground truncate"
-                    style={{ unicodeBidi: 'plaintext' }}
-                    title={app.name}
-                  >
-                    {app.name}
-                  </h3>
-                  {app.rating ? (
-                    <span className="mp-rating-inline">
-                      <Star size={9} className="fill-current" />{app.rating}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-1.5 flex items-center justify-between gap-1">
-                  <span className="mp-price-tag">{getPrice(app, t)}</span>
-                  {app.isInstalled ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                      onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-                      disabled={uninstallingApp === app.slug}
-                    >
-                      {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="h-7 shrink-0 gap-1 rounded-lg px-2 text-xs font-bold"
-                      onClick={(e) => onQuickInstall(e, app)}
-                      disabled={installingApp === app.slug}
-                    >
-                      {installingApp === app.slug ? (
-                        <Loader2 size={11} className="animate-spin" />
-                      ) : (
-                        <Zap size={11} />
-                      )}
-                      {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </Link>
-        </PopoverTrigger>
-
-        <PopoverContent
-          side="right"
-          align="start"
-          sideOffset={12}
-          className="w-80 overflow-hidden rounded-xl border border-border bg-card p-0 shadow-xl"
-          onMouseEnter={showPreview}
-          onMouseLeave={hidePreview}
-        >
-          <div className="border-b border-border/40 p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                {BrandIcon ? <BrandIcon className="size-5" /> : textIcon || <Icon size={20} />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h4
-                    dir="auto"
-                    className="text-sm font-bold"
-                    style={{ unicodeBidi: 'plaintext' }}
-                    title={app.name}
-                  >
-                    {app.name}
-                  </h4>
-                  {app.rating ? (
-                    <span className="flex shrink-0 items-center gap-0.5 text-xs text-amber-500">
-                      <Star size={11} className="fill-current" />{app.rating}
-                    </span>
-                  ) : null}
-                </div>
-                <p
-                  dir="auto"
-                  className="mt-0.5 line-clamp-2 text-xs text-muted-foreground"
-                  style={{ unicodeBidi: 'plaintext' }}
-                  title={app.description}
-                >
-                  {app.description}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {features.length > 0 && (
-            <div className="border-b border-border/40 px-4 py-3">
-              <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('marketplace.features')}</h5>
-              <div className="space-y-1.5">
-                {features.slice(0, 6).map(f => (
-                  <div key={f.key} className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-primary" />
-                    <span>{f.name}</span>
-                  </div>
-                ))}
-                {features.length > 6 && (
-                  <p className="pt-1 text-xs text-muted-foreground">{t('marketplace.moreFeatures', { count: features.length - 6 })}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {requiredApps.length > 0 && (
-            <div className="border-b border-border/40 px-4 py-2.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{t('marketplace.requires')}:</span>
-                {requiredApps.map(slug => (
-                  <Badge key={slug} variant="outline" className="px-1.5 py-0.5 text-xs">
-                    {slug}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between p-4 pt-3">
-            <div>
-              <span className="text-sm font-bold text-primary">{getPrice(app, t)}</span>
-              {app.trialDays > 0 && (
-                <span className="mr-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('marketplace.trialDays', { count: app.trialDays })}</span>
-              )}
-            </div>
-            {app.isInstalled ? (
-              <Badge variant="secondary" className="gap-1 text-xs">
-                <CheckCircle2 size={10} />
-                {t('marketplace.installed')}
-              </Badge>
-            ) : (
-              <Button
-                size="sm"
-                className="h-8 gap-1 rounded-lg text-xs font-bold"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickInstall(e, app); }}
-                disabled={installingApp === app.slug}
-              >
-                {installingApp === app.slug ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <Zap size={11} />
-                )}
-                {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-              </Button>
-            )}
-          </div>
-        </PopoverContent>
-      </div>
-    </Popover>
   );
 }

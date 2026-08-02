@@ -1,49 +1,26 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import {
-  AlertCircle,
-  AlertTriangle,
-  BarChart3,
-  Calendar,
-  Check,
-  ChevronRight,
-  DollarSign,
-  Download,
-  Loader2,
-  MessageSquare,
-  Package,
-  Shield,
-  ShoppingBag,
-  Sparkles,
-  Star,
-  Store,
-  Users,
-  X,
-  Zap,
+  AlertCircle, AlertTriangle, BarChart3, Calendar,
+  Check, CheckCircle2, ChevronRight, Download, Loader2, MessageSquare,
+  Package, Shield, ShoppingBag, Sparkles, Star,
+  Store, Users, X, Zap, ChevronLeft, ChevronRight,
+  Play, ExternalLink, FileText, Clock, Globe,
+  ThumbsUp, MessageCircle, HelpCircle, Headphones,
   Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
   ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Truck, FileText, Percent, Heart, TrendingUp,
+  Truck, Percent, Heart, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { FacebookIcon } from "../../components/icons/brands";
-import type { ElementType } from "react";
-
-const brandIconsBySlug: Record<string, ElementType> = {
-  "facebook-ads-pro": FacebookIcon,
-};
-import {
-  getFeatureAccessKind,
-  getFeatureAccessLabel,
-  getMarketplaceFeatureItems,
-} from "./featureCatalog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -61,155 +38,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface MarketplaceApp {
-  id: string;
-  slug: string;
-  name: string;
-  nameEn?: string;
-  category: string;
-  description: string;
-  descriptionEn?: string;
-  icon?: string;
-  coverImage?: string;
-  screenshots?: any;
-  pricingModel: string;
-  monthlyPrice?: number;
-  yearlyPrice?: number;
-  setupFee?: number;
-  trialDays: number;
-  features: any;
-  limitations?: any;
-  requiredApps?: any;
-  isActive: boolean;
-  isFeatured: boolean;
-  isPopular: boolean;
-  installCount: number;
-  unitPrice?: number;
-  unitName?: string;
-  isInstalled?: boolean;
-  activePricingModel?: string;
-  rating?: number;
-  reviewCount: number;
-  reviews?: any[];
-  pricingRules?: any[];
-  _count?: {
-    installations: number;
-    reviews: number;
-  };
-}
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { MarketplaceApp as MPA } from "@/types/marketplace";
+import { getMarketplaceFeatureItems, getFeatureAccessKind, getFeatureAccessLabel } from "./featureCatalog";
+import { appIconsBySlug, categoryIcons, appIcons, categoryCssClass, shouldUseTextIcon, getPrice, formatInstallCount } from "@/utils/marketplace";
 
 const numberFormatter = new Intl.NumberFormat("ar-EG");
-
-const DETAIL_CATEGORY_ICONS: Record<string, any> = {
-  ECOMMERCE: Store,
-  HR: Users,
-  COMMUNICATION: MessageSquare,
-  CRM: Users,
-  ANALYTICS: BarChart3,
-  MARKETING: Sparkles,
-  FINANCE: DollarSign,
-  STORE: ShoppingBag,
-};
-
-const DETAIL_ICON_ALIASES: Record<string, any> = {
-  megaphone: Megaphone,
-  "chart-bar": BarChart3,
-  chart: BarChart3,
-  analytics: BarChart3,
-  bot: Bot,
-  store: Store,
-  shop: Store,
-  cart: ShoppingBag,
-  "shopping-cart": ShoppingCart,
-  users: Users,
-  sparkles: Sparkles,
-  camera: Camera,
-  "package-open": PackageOpen,
-  "clipboard-list": ClipboardList,
-  route: Route,
-  "clipboard-check": ClipboardCheck,
-  inbox: Inbox,
-  bell: Bell,
-  calendar: Calendar,
-  heart: Heart,
-  package: Package,
-  truck: Truck,
-  "file-text": FileText,
-  percent: Percent,
-};
-
-function shouldUseTextIcon(icon?: string) {
-  const normalizedIcon = icon?.trim();
-  if (!normalizedIcon) return false;
-
-  return Array.from(normalizedIcon).length <= 3 && !/^[a-z0-9_\-\s]+$/i.test(normalizedIcon);
-}
-
-function safeParseJson(value: any) {
-  if (!value) return null;
-  if (typeof value !== "string") return value;
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
 
 function formatNumber(value?: number | null) {
   return numberFormatter.format(value ?? 0);
 }
 
 function formatMoney(value?: number | null) {
-  return `${formatNumber(value)} ج`;
+  return `${formatNumber(value)} ${"ج"}`;
 }
 
-function getRequirementName(requiredApp: any) {
-  if (typeof requiredApp === "string") return requiredApp;
-  return requiredApp?.name || requiredApp?.slug || "أداة مطلوبة";
+function safeParseJson(value: unknown) {
+  if (!value) return null;
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value); } catch { return null; }
 }
 
-function getPricingSummary(app: MarketplaceApp, isEnterprise: boolean) {
-  if (app.pricingModel === "FREE") {
-    return {
-      title: "مجاني",
-      price: "بدون تكلفة",
-      helper: "يمكن تفعيلها مباشرة من غير اشتراك.",
-    };
-  }
-
-  if (isEnterprise && app.pricingModel !== "FREE") {
-    return {
-      title: "مشمول في الوصول الشامل",
-      price: "مفعل ضمن الباقة",
-      helper: app.pricingModel === "PAY_PER_USE"
-        ? "الاستخدام محسوب ضمن إعدادات الباقة الحالية."
-        : "لا تحتاج لاشتراك منفصل لهذه الأداة.",
-    };
-  }
-
-  if (app.pricingModel === "PAY_PER_USE") {
-    return {
-      title: "حسب الاستخدام",
-      price: `${formatMoney(app.unitPrice)} / ${app.unitName || "وحدة"}`,
-      helper: "ادفع فقط مقابل الاستهلاك الفعلي.",
-    };
-  }
-
-  return {
-    title: "اشتراك شهري",
-    price: `${formatMoney(app.monthlyPrice)} / شهر`,
-    helper: "وصول كامل لجميع مميزات الأداة.",
-  };
+function getPricingSummary(app: MPA) {
+  if (app.pricingModel === "FREE") return { title: "مجاني", price: "بدون تكلفة", helper: "يمكن تفعيلها مباشرة من غير اشتراك." };
+  if (app.pricingModel === "PAY_PER_USE") return { title: "حسب الاستخدام", price: `${formatMoney(app.unitPrice)} / ${app.unitName || "وحدة"}`, helper: "ادفع فقط مقابل الاستهلاك الفعلي." };
+  return { title: "اشتراك شهري", price: `${formatMoney(app.monthlyPrice)} / شهر`, helper: "وصول كامل لجميع مميزات الأداة." };
 }
 
 function getEmbedUrl(url: string | undefined | null): string | null {
   if (!url) return null;
   const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-  if (ytMatch) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  }
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
   return null;
 }
 
@@ -217,27 +82,28 @@ export default function AppDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [app, setApp] = useState<MarketplaceApp | null>(null);
+  const { t } = useTranslation();
+  const [app, setApp] = useState<MPA | null>(null);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [uninstalling, setUninstalling] = useState(false);
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [confirmUninstall, setConfirmUninstall] = useState(false);
+  const [screenshotIndex, setScreenshotIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState("features");
+  const [userRating, setUserRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    if (slug) {
-      fetchAppDetails();
-    }
-  }, [slug]);
+  useEffect(() => { if (slug) fetchAppDetails(); }, [slug]);
 
   const fetchAppDetails = async () => {
     try {
       setLoading(true);
       const response = await apiClient.get(`/marketplace/apps/${slug}`);
       setApp(response.data.data);
-    } catch (error) {
-      console.error("Error fetching app details:", error);
-      tToast.error("AppDetails.error_fetch_5849");
+    } catch {
+      toast.error("Error loading app details");
     } finally {
       setLoading(false);
     }
@@ -245,12 +111,10 @@ export default function AppDetails() {
 
   const handleInstall = async () => {
     if (!app) return;
-
     if (app.isInstalled && app.activePricingModel !== "PAY_PER_USE") {
-      tToast.error("AppDetails.msg_2949");
+      toast.error("Already installed");
       return;
     }
-
     if (app.pricingModel === "FREE") {
       executeInstall("FREE");
     } else {
@@ -262,464 +126,545 @@ export default function AppDetails() {
     if (!app) return;
     try {
       setInstalling(true);
-
-      const response = await apiClient.post(`/marketplace/apps/${app.slug}/install`, {
-        pricingModel: model,
-      });
-      const autoInstalledRequiredApps =
-        response.data?.data?.autoInstalledRequiredApps ?? [];
-      const autoInstalledNames = autoInstalledRequiredApps.map(
-        (requiredApp: { name?: string; slug: string }) =>
-          requiredApp.name || requiredApp.slug,
-      );
-
-      toast.success(
-        autoInstalledNames.length > 0
-          ? `تم تفعيل ${app.name} مع المتطلبات: ${autoInstalledNames.join("، ")}`
-          : `تم تفعيل ${app.name} بنجاح`,
-      );
+      const response = await apiClient.post(`/marketplace/apps/${app.slug}/install`, { pricingModel: model });
+      const autoInstalled = response.data?.data?.autoInstalledRequiredApps ?? [];
+      const names = autoInstalled.map((a: { name?: string; slug: string }) => a.name || a.slug);
+      toast.success(names.length > 0 ? `Activated ${app.name} with requirements: ${names.join(", ")}` : `Activated ${app.name} successfully`);
       await fetchAppDetails();
       navigate("/marketplace");
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        tToast.error("AppDetails.please_login_login_ac18");
-        navigate("/auth/login");
-        return;
-      }
-
-      const errorMsg = error.response?.data?.message || "خطأ في تفعيل الأداة";
-      toast.error(errorMsg);
-
-      if (error.response?.data?.requiredApps) {
-        toast.error(
-          `يتطلب تفعيل: ${error.response.data.requiredApps.map((requiredApp: any) => requiredApp.name).join("، ")}`,
-        );
-      }
-    } finally {
-      setInstalling(false);
-      setShowPricingDialog(false);
-    }
+    } catch (error: unknown) {
+      const e = error as { response?: { status?: number; data?: { message?: string } } };
+      if (e.response?.status === 401) { toast.error("Please log in first"); navigate("/auth/login"); return; }
+      toast.error(e.response?.data?.message || "Error activating app");
+    } finally { setInstalling(false); setShowPricingDialog(false); }
   };
 
   const handleUninstall = async () => {
     if (!app) return;
     try {
       setUninstalling(true);
-
       const response = await apiClient.post(`/marketplace/apps/${app.slug}/uninstall`);
-
-      toast.success(response.data.message || `تم إلغاء تفعيل ${app.name}`);
-
+      toast.success(response.data.message || `Deactivated ${app.name}`);
       await fetchAppDetails();
       setConfirmUninstall(false);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        tToast.error("AppDetails.please_login_login_ac18");
-        return;
-      }
+    } catch { toast.error("Error deactivating app"); }
+    finally { setUninstalling(false); }
+  };
 
-      const errorMsg = error.response?.data?.message || "خطأ في إلغاء تفعيل الأداة";
-      toast.error(errorMsg);
-    } finally {
-      setUninstalling(false);
-    }
+  const handleSubmitReview = async () => {
+    if (!app || userRating === 0) return;
+    try {
+      setSubmittingReview(true);
+      await apiClient.post(`/marketplace/apps/${app.id}/review`, {
+        rating: userRating,
+        comment: reviewText,
+      });
+      toast.success("Review submitted successfully!");
+      setUserRating(0);
+      setReviewText("");
+      await fetchAppDetails();
+    } catch { toast.error("Error submitting review"); }
+    finally { setSubmittingReview(false); }
   };
 
   if (loading) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center overflow-x-hidden">
-        <div className="rounded-2xl border bg-card rounded-2xl px-10 py-8 text-center">
-          <div className="mx-auto h-11 w-11 animate-spin rounded-full border-b-2 border-[var(--color-primary)]" />
-          <p className="text-muted-foreground mt-4 text-sm font-bold">
-            جاري التحميل…
-          </p>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-primary" />
       </div>
     );
   }
 
   if (!app) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center overflow-x-hidden">
-        <div className="rounded-2xl border bg-card rounded-2xl px-10 py-8 text-center">
-          <AlertCircle size={44} className="text-muted-foreground mx-auto mb-4" aria-hidden="true" />
-          <p className="text-muted-foreground">الأداة غير موجودة</p>
-          <Link
-            to="/marketplace"
-            className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[var(--color-primary)] transition-colors duration-200 hover:text-[color-mix(in_srgb,var(--color-primary)_80%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-          >
-            العودة إلى التطبيقات
-            <ChevronRight size={16} aria-hidden="true" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 text-center max-w-sm">
+          <AlertCircle size={44} className="text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">App not found</p>
+          <Link to="/marketplace" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary">
+            Back to Marketplace <ChevronRight size={16} />
           </Link>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  const isEnterprise = false; // ponytail: enterprise plan system removed
   const featureItems = getMarketplaceFeatureItems(app);
   const limitations = safeParseJson(app.limitations);
   const requiredApps = safeParseJson(app.requiredApps);
   const normalizedRequiredApps = Array.isArray(requiredApps) ? requiredApps : [];
-  const pricingSummary = getPricingSummary(app, isEnterprise);
+  const pricingSummary = getPricingSummary(app);
   const accessKind = getFeatureAccessKind(app.pricingModel);
-  const BrandIcon = app.slug ? brandIconsBySlug[app.slug] : undefined;
-  const DetailIcon =
-    DETAIL_ICON_ALIASES[String(app.icon || "").trim()] ||
-    DETAIL_CATEGORY_ICONS[String(app.category || "").trim().toUpperCase()] ||
-    Package;
+  const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
+  const IconComp = appIcons[app.icon?.trim().toLowerCase() || ""] || categoryIcons[app.category] || Package;
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
+  const screenshots = Array.isArray(app.screenshots) ? app.screenshots : [];
+  const faq = Array.isArray(app.faq) ? app.faq : [];
+  const changelog = Array.isArray(app.changelog) ? app.changelog : [];
+  const reviews = Array.isArray(app.reviews) ? app.reviews : [];
 
   return (
-    <div className="bg-background min-h-screen overflow-x-hidden">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
         <button
           onClick={() => navigate('/marketplace')}
-          className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-black text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronRight size={18} aria-hidden="true" />
-          العودة إلى التطبيقات
+          <ChevronRight size={18} />
+          الرجوع إلى التطبيقات
         </button>
 
-        <section className="rounded-[1.75rem] bg-card mt-4 overflow-hidden rounded-[1.75rem]">
+        <section className="rounded-[1.75rem] bg-card mt-4 overflow-hidden border border-border/30">
           <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
             <div className="min-w-0 text-right">
               <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-                <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground rounded-full px-3 py-1 text-xs font-black">
+                <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-bold text-muted-foreground">
                   {getFeatureAccessLabel(accessKind)}
                 </span>
                 {app.isFeatured && (
-                  <span className="bg-warning/10 text-warning inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black">
-                    <Sparkles size={13} aria-hidden="true" />
-                    مميز
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 border px-3 py-1 text-xs font-bold">
+                    <Sparkles size={13} />مميز
                   </span>
                 )}
-                {isEnterprise && app.pricingModel !== "FREE" && (
-                  <span className="bg-success/10 text-success rounded-full border px-3 py-1 text-xs font-black">
-                    ضمن الوصول الشامل
+                {app.trialDays > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 border px-3 py-1 text-xs font-bold">
+                    <Clock size={13} />تجربة {app.trialDays} يوم
                   </span>
                 )}
               </div>
 
               <div className="flex flex-col items-end gap-4 sm:flex-row-reverse sm:items-start">
-                <div className="bg-primary/10 text-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl">
-                  {BrandIcon ? <BrandIcon className="size-8" /> : textIcon || <DetailIcon size={30} aria-hidden="true" />}
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary border text-3xl">
+                  {BrandIcon ? <BrandIcon className="size-8" /> : textIcon || <IconComp size={30} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-foreground text-3xl font-black leading-tight text-pretty sm:text-4xl">
-                    {app.name}
-                  </h1>
-                  <p className="text-muted-foreground mt-3 max-w-3xl text-sm font-semibold leading-7 sm:text-base">
-                    {app.description}
-                  </p>
-
+                  <h1 className="text-3xl font-extrabold text-foreground leading-tight sm:text-4xl">{app.name}</h1>
+                  <p className="text-muted-foreground mt-3 max-w-3xl text-sm font-semibold leading-7 sm:text-base">{app.description}</p>
                   <div className="mt-4 flex flex-wrap items-center justify-end gap-2 text-xs font-bold">
                     {app.rating && (
-                      <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
-                        <Star size={14} className="fill-amber-400 text-amber-400" aria-hidden="true" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-3 py-1 text-xs font-bold">
+                        <Star size={14} className="fill-amber-400 text-amber-400" />
                         {app.rating.toFixed(1)}
-                        <span className="text-muted-foreground">
-                          ({formatNumber(app.reviewCount)} تقييم)
-                        </span>
+                        <span className="text-muted-foreground">({formatNumber(app.reviewCount)} {t('marketplace.reviews')})</span>
                       </span>
                     )}
-                    <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
-                      <Download size={14} aria-hidden="true" />
-                      {formatNumber(app.installCount)} تثبيت
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-3 py-1 text-xs font-bold">
+                      <Download size={14} />
+                      {formatInstallCount(app.installCount)} {t('marketplace.installs')}
                     </span>
-                    {app.trialDays > 0 && (
-                      <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
-                        <Calendar size={14} aria-hidden="true" />
-                        تجربة {formatNumber(app.trialDays)} يوم
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            <aside className="rounded-2xl border bg-card rounded-2xl p-4 text-right lg:sticky lg:top-5 lg:self-start">
-              <div className="rounded-xl border bg-background rounded-2xl p-4">
+            <aside className="rounded-2xl border bg-card p-4 text-right lg:sticky lg:top-5 lg:self-start">
+              <div className="rounded-xl border bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-foreground text-sm font-black">
-                      {pricingSummary.title}
-                    </div>
-                    <p className="text-muted-foreground mt-1 text-xs leading-5">
-                      {pricingSummary.helper}
-                    </p>
+                    <div className="text-foreground text-sm font-bold">{pricingSummary.title}</div>
+                    <p className="text-muted-foreground mt-1 text-xs leading-5">{pricingSummary.helper}</p>
                   </div>
                   <div className="text-left">
-                    <div className="text-lg font-black text-[var(--color-primary)]">
-                      {pricingSummary.price}
-                    </div>
-                    {!isEnterprise && app.pricingModel !== "FREE" && app.monthlyPrice ? (
-                      <div className="text-muted-foreground mt-1 text-[11px]">
-                        شهريًا
-                      </div>
-                    ) : null}
+                    <div className="text-lg font-extrabold text-primary">{pricingSummary.price}</div>
                   </div>
                 </div>
               </div>
-
               {app.isInstalled ? (
                 <div className="mt-4 flex flex-col gap-2">
-                  <Button onClick={handleInstall} disabled={installing} className="h-12 w-full gap-2 text-sm font-black">
-                    {installing ? <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" /> : <Zap size={18} className="fill-current" />}
-                    تحديث الاشتراك
+                  <Button onClick={handleInstall} disabled={installing} className="h-12 w-full gap-2 text-sm font-bold" variant="outline">
+                    <Zap size={18} />تحديث الاشتراك
                   </Button>
-                  <Button variant="destructive" onClick={() => setConfirmUninstall(true)} disabled={uninstalling} className="h-12 w-full gap-2 text-sm font-black">
-                    <X size={18} strokeWidth={2.5} />
-                    إلغاء التفعيل
+                  <Button variant="destructive" onClick={() => setConfirmUninstall(true)} disabled={uninstalling} className="h-12 w-full gap-2 text-sm font-bold">
+                    <X size={18} />إلغاء التفعيل
                   </Button>
                 </div>
               ) : (
-                <Button onClick={handleInstall} disabled={installing} className="mt-4 h-12 w-full gap-2 text-sm font-black">
-                  {installing ? <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" /> : <Zap size={18} className="fill-current" />}
-                  تفعيل الأداة الآن
+                <Button onClick={handleInstall} disabled={installing} className="mt-4 h-12 w-full gap-2 text-sm font-bold">
+                  <Zap size={18} />تفعيل الأداة الآن
                 </Button>
-              )}
-
-              {app.setupFee && app.setupFee > 0 && (
-                <p className="text-muted-foreground mt-3 text-center text-xs">
-                  + رسوم إعداد لمرة واحدة: {formatMoney(app.setupFee)}
-                </p>
               )}
             </aside>
           </div>
         </section>
 
-        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <main className="min-w-0 space-y-5">
-            {app.coverImage && (
-              <section className="rounded-2xl border bg-card overflow-hidden rounded-2xl">
-                {getEmbedUrl(app.coverImage) ? (
-                  <iframe
-                    className="aspect-video w-full"
-                    src={getEmbedUrl(app.coverImage) as string}
-                    title={`${app.name} video`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : app.coverImage.match(/\.(mp4|webm|ogg)$/i) ? (
-                  <video
-                    className="aspect-video w-full bg-black object-contain"
-                    controls
-                    autoPlay
-                    muted
-                    loop
-                  >
-                    <source src={app.coverImage} />
-                    {"المتصفح الخاص بك لا يدعم تشغيل الفيديو."} {/* // no-arabic-check */}
-                  </video>
-                ) : (
-                  <img
-                    src={app.coverImage}
-                    alt={`${app.name} cover`}
-                    className="aspect-[2/1] w-full object-cover sm:aspect-[21/9]"
-                  />
-                )}
-              </section>
-            )}
+        <div className="mt-5 space-y-5">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="w-full justify-start gap-0 rounded-xl border bg-card p-1 overflow-x-auto">
+              <TabsTrigger value="features" className="rounded-lg text-xs font-bold">الميزات</TabsTrigger>
+              {screenshots.length > 0 && <TabsTrigger value="screenshots" className="rounded-lg text-xs font-bold">لقطات الشاشة</TabsTrigger>}
+              {faq.length > 0 && <TabsTrigger value="faq" className="rounded-lg text-xs font-bold">الأسئلة الشائعة</TabsTrigger>}
+              {reviews.length > 0 && <TabsTrigger value="reviews" className="rounded-lg text-xs font-bold">التقييمات</TabsTrigger>}
+              {changelog.length > 0 && <TabsTrigger value="changelog" className="rounded-lg text-xs font-bold">سجل التحديثات</TabsTrigger>}
+            </TabsList>
 
-            <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
-              <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-foreground flex items-center justify-end gap-3 text-xl font-black">
-                    المزايا الظاهرة قبل التفعيل
-                    <span className="bg-success/10 text-success flex h-9 w-9 items-center justify-center rounded-xl border">
-                      <Check size={20} aria-hidden="true" />
-                    </span>
-                  </h2>
-                  <p className="text-muted-foreground mt-2 text-sm leading-6">
-                    كل ميزة موضحة بوسم واضح: مجاني أو مدفوع أو حسب الاستخدام.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {featureItems.length > 0 ? (
-                  featureItems.map((feature) => (
-                    <article
-                      key={feature.key}
-                      className="rounded-xl border bg-background group rounded-2xl p-4 text-right transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5"
-                    >
+            <TabsContent value="features" className="mt-4">
+              <div className="rounded-2xl border bg-card p-5 text-right">
+                <h2 className="text-xl font-extrabold text-foreground mb-4">الميزات</h2>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {featureItems.length > 0 ? featureItems.map((feature) => (
+                    <article key={feature.key} className="rounded-xl border bg-background p-4 text-right group hover:border-primary/30 transition-colors">
                       <div className="flex items-start justify-between gap-3">
-                        <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black">
+                        <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-bold text-muted-foreground shrink-0">
                           {getFeatureAccessLabel(feature.access)}
                         </span>
                         <div className="min-w-0">
-                          <h3 className="text-foreground text-base font-black">
-                            {feature.name}
-                          </h3>
-                          <p className="text-muted-foreground mt-1 text-sm font-semibold leading-6">
-                            {feature.description}
-                          </p>
+                          <h3 className="text-foreground text-base font-bold">{feature.name}</h3>
+                          <p className="text-muted-foreground mt-1 text-sm leading-6">{feature.description}</p>
                         </div>
-                        <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105">
-                          <Sparkles size={17} aria-hidden="true" />
-                        </span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border"><Sparkles size={17} /></span>
                       </div>
                     </article>
-                  ))
-                ) : (
-                  <div className="col-span-full rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-                    <Sparkles size={36} className="mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
-                    سيتم إضافة تفاصيل الميزات قريباً
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {app.pricingRules && app.pricingRules.length > 0 && (
-              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
-                <h2 className="text-foreground text-xl font-black">
-                  تفاصيل التسعير
-                </h2>
-                <div className="mt-4 space-y-3">
-                  {app.pricingRules.map((rule: any) => (
-                    <div
-                      key={rule.id}
-                      className="rounded-xl border bg-background flex items-center justify-between gap-4 rounded-xl p-3"
-                    >
-                      <div className="text-left text-lg font-black text-[var(--color-primary)]">
-                        {formatMoney(rule.price)}
-                      </div>
-                      <div className="min-w-0 text-right">
-                        <div className="text-foreground font-black">
-                          {rule.name}
-                        </div>
-                        {rule.description && (
-                          <div className="text-muted-foreground mt-1 text-sm">
-                            {rule.description}
-                          </div>
-                        )}
-                      </div>
+                  )) : (
+                    <div className="col-span-full rounded-2xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+                      <Sparkles size={36} className="mx-auto mb-3 text-muted-foreground/40" />
+                      ميزات قادمة قريباً
                     </div>
-                  ))}
+                  )}
                 </div>
-              </section>
-            )}
+              </div>
+            </TabsContent>
 
-            {app.reviews && app.reviews.length > 0 && (
-              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
-                <h2 className="text-foreground text-xl font-black">
-                  التقييمات
-                </h2>
-                <div className="mt-4 space-y-4">
-                  {app.reviews.map((review: any) => (
-                    <article
-                      key={review.id}
-                      className="rounded-xl border bg-background rounded-xl p-4"
-                    >
-                      <div className="mb-2 flex items-center justify-end gap-2">
-                        {review.isVerified && (
-                          <span className="bg-success/10 text-success rounded-full border px-2 py-0.5 text-xs font-bold">
-                            موثق
-                          </span>
-                        )}
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
+            {screenshots.length > 0 && (
+              <TabsContent value="screenshots" className="mt-4">
+                <div className="rounded-2xl border bg-card p-5">
+                  <h2 className="text-xl font-extrabold text-foreground mb-4 text-right">{t('marketplace.screenshots')}</h2>
+                  <div className="relative">
+                    <div className="rounded-xl overflow-hidden bg-muted/30">
+                      <img
+                        src={screenshots[screenshotIndex]}
+                        alt={`Screenshot ${screenshotIndex + 1}`}
+                        className="w-full object-cover max-h-[500px]"
+                      />
+                    </div>
+                    {screenshots.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setScreenshotIndex(i => (i - 1 + screenshots.length) % screenshots.length)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center rounded-full bg-background/80 backdrop-blur border shadow-sm"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          onClick={() => setScreenshotIndex(i => (i + 1) % screenshots.length)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center rounded-full bg-background/80 backdrop-blur border shadow-sm"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                        <div className="flex justify-center gap-1.5 mt-4">
+                          {screenshots.map((_, i) => (
+                            <button
                               key={i}
-                              size={16}
-                              className={
-                                i < review.rating
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-[var(--color-muted-foreground)]"
-                              }
-                              aria-hidden="true"
+                              onClick={() => setScreenshotIndex(i)}
+                              className={cn(
+                                "w-2 h-2 rounded-full transition-all",
+                                i === screenshotIndex ? "bg-primary w-5" : "bg-muted-foreground/30"
+                              )}
                             />
                           ))}
                         </div>
-                      </div>
-                      {review.title && (
-                        <h3 className="text-foreground mb-1 font-black">
-                          {review.title}
-                        </h3>
-                      )}
-                      {review.comment && (
-                        <p className="text-muted-foreground text-sm leading-6">
-                          {review.comment}
-                        </p>
-                      )}
-                    </article>
-                  ))}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </section>
+              </TabsContent>
             )}
-          </main>
 
-          <aside className="space-y-4">
-            {normalizedRequiredApps.length > 0 && (
-              <section className="bg-warning/10 text-warning rounded-2xl border p-5 text-right">
-                <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
-                  متطلبات التشغيل
-                  <AlertCircle size={19} aria-hidden="true" />
-                </h3>
-                <p className="text-sm font-semibold leading-6">
-                  هذه الأداة تتطلب تفعيل الأدوات التالية أولاً:
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {normalizedRequiredApps.map((reqApp: any, idx: number) => (
-                    <li
-                      key={`${getRequirementName(reqApp)}-${idx}`}
-                      className="flex items-center justify-end gap-2 text-sm font-bold"
+            {faq.length > 0 && (
+              <TabsContent value="faq" className="mt-4">
+                <div className="rounded-2xl border bg-card p-5 text-right">
+                  <h2 className="text-xl font-extrabold text-foreground mb-4">{t('marketplace.faq')}</h2>
+                  <Accordion type="single" collapsible className="space-y-2">
+                    {faq.map((item, i) => (
+                      <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl border bg-background px-4">
+                        <AccordionTrigger className="text-sm font-bold text-right hover:no-underline">
+                          <HelpCircle size={14} className="ml-2 text-primary shrink-0" />
+                          {item.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                          {item.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </TabsContent>
+            )}
+
+            {reviews.length > 0 && (
+              <TabsContent value="reviews" className="mt-4">
+                <div className="rounded-2xl border bg-card p-5 text-right">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-extrabold text-foreground">{t('marketplace.ratings')}</h2>
+                    <div className="flex items-center gap-3">
+                      <div className="text-center">
+                        <div className="text-3xl font-extrabold text-foreground">{app.rating?.toFixed(1)}</div>
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                          {[1,2,3,4,5].map(i => (
+                            <Star key={i} size={14} className={i <= (app.rating || 0) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"} />
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{app.reviewCount} {t('marketplace.totalReviews', { count: app.reviewCount })}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[5,4,3,2,1].map(rating => {
+                      const count = reviews.filter((r: { rating: number }) => r.rating === rating).length;
+                      const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                      return (
+                        <div key={rating} className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-muted-foreground w-5">{rating}</span>
+                          <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
+                          <Progress value={pct} className="h-2 flex-1" />
+                          <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="space-y-4">
+                    {reviews.map((review: { id: string; rating: number; title?: string; comment?: string; isVerified: boolean; createdAt: string; user?: { name: string } }) => (
+                      <article key={review.id} className="rounded-xl border bg-background p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                              {review.user?.name?.[0] || "?"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-foreground">{review.user?.name || "مستخدم"}</p>
+                              <p className="text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleDateString("ar-EG")}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex gap-1 mb-1 justify-end">
+                              {[1,2,3,4,5].map(i => (
+                                <Star key={i} size={13} className={i <= review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"} />
+                              ))}
+                            </div>
+                            {review.isVerified && (
+                              <Badge variant="outline" className="text-[10px] gap-0.5">
+                                <Check size={10} className="text-success" />
+                                {t('marketplace.verifiedPurchase')}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {review.title && <h4 className="mt-2 text-sm font-bold text-foreground">{review.title}</h4>}
+                        {review.comment && <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{review.comment}</p>}
+                      </article>
+                    ))}
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="rounded-xl border bg-background p-4">
+                    <h3 className="text-sm font-bold text-foreground mb-3">{t('marketplace.writeReview')}</h3>
+                    <div className="flex items-center gap-1 mb-3 justify-end">
+                      {[1,2,3,4,5].map(i => (
+                        <button key={i} onClick={() => setUserRating(i)}>
+                          <Star size={20} className={i <= userRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={reviewText}
+                      onChange={e => setReviewText(e.target.value)}
+                      placeholder="شارك تجربتك مع هذه الأداة..."
+                      className="w-full rounded-xl border border-border bg-background p-3 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                      rows={3}
+                    />
+                    <Button
+                      onClick={handleSubmitReview}
+                      disabled={userRating === 0 || submittingReview}
+                      className="mt-3 w-full gap-2"
+                      size="sm"
                     >
-                      {getRequirementName(reqApp)}
-                      <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+                      {submittingReview ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
+                      إرسال التقييم
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
             )}
 
-            {limitations && Object.keys(limitations).length > 0 && (
-              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
-                <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
-                  القيود
-                  <Shield size={19} aria-hidden="true" />
-                </h3>
-                <ul className="space-y-2">
-                  {Object.entries(limitations).map(([key, value]) => (
-                    <li
-                      key={key}
-                      className="text-muted-foreground text-sm leading-6"
-                    >
-                      <span className="text-foreground font-bold">{key}:</span>{" "}
-                      {String(value)}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+            {changelog.length > 0 && (
+              <TabsContent value="changelog" className="mt-4">
+                <div className="rounded-2xl border bg-card p-5 text-right">
+                  <h2 className="text-xl font-extrabold text-foreground mb-4">{t('marketplace.changelog')}</h2>
+                  <div className="space-y-4">
+                    {changelog.map((entry: { version: string; date: string; changes: string[] }, i: number) => (
+                      <div key={i} className="rounded-xl border bg-background p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="secondary" className="gap-1">
+                            <Clock size={11} />
+                            {entry.version}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{entry.date}</span>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {entry.changes.map((change, j) => (
+                            <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-success" />
+                              {change}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
             )}
+          </Tabs>
 
-            <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
-              <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
-                الدعم
-                <Users size={19} className="text-[var(--color-primary)]" aria-hidden="true" />
+          {app.pricingRules && app.pricingRules.length > 0 && (
+            <section className="rounded-2xl border bg-card p-5 text-right">
+              <h2 className="text-xl font-extrabold text-foreground">{t('marketplace.pricing')}</h2>
+              <div className="mt-4 space-y-3">
+                {app.pricingRules.map((rule: { id: string; name: string; description?: string; price: number }) => (
+                  <div key={rule.id} className="flex items-center justify-between gap-4 rounded-xl border bg-background p-3">
+                    <div className="text-left text-lg font-extrabold text-primary">{formatMoney(rule.price)}</div>
+                    <div className="min-w-0 text-right">
+                      <div className="text-foreground font-bold">{rule.name}</div>
+                      {rule.description && <div className="text-muted-foreground mt-1 text-sm">{rule.description}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {(normalizedRequiredApps.length > 0 || limitations) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {normalizedRequiredApps.length > 0 && (
+                <section className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 text-right">
+                  <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-bold">
+                    متطلبات التشغيل
+                    <AlertCircle size={19} />
+                  </h3>
+                  <ul className="space-y-2">
+                    {normalizedRequiredApps.map((req: { slug?: string; name?: string } | string, idx: number) => (
+                      <li key={idx} className="flex items-center justify-end gap-2 text-sm font-bold">
+                        {typeof req === "string" ? req : req.name || req.slug || ""}
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {limitations && Object.keys(limitations).length > 0 && (
+                <section className="rounded-2xl border bg-card p-5 text-right">
+                  <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-bold">
+                    القيود
+                    <Shield size={19} />
+                  </h3>
+                  <ul className="space-y-2">
+                    {Object.entries(limitations).map(([key, value]) => (
+                      <li key={key} className="text-sm text-muted-foreground">
+                        <span className="text-foreground font-bold">{key}:</span> {String(value)}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
+          )}
+
+          <section className="rounded-2xl border bg-card p-5 text-right">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-foreground flex items-center justify-end gap-2 font-bold">
+                {t('marketplace.support')}
+                <MessageSquare size={19} className="text-primary" />
               </h3>
-              <p className="text-muted-foreground mb-4 text-sm leading-6">
-                هل تحتاج مساعدة؟ فريق الدعم جاهز لمساعدتك.
-              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link
                 to="/support"
-                className="rounded-xl border bg-background w-full rounded-xl px-4 py-2 text-sm font-black block text-center transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                className="flex items-center gap-3 rounded-xl border bg-background p-3 hover:border-primary/30 transition-colors"
               >
-                تواصل مع الدعم
+                <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Headphones size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">الدعم الفني</p>
+                  <p className="text-xs text-muted-foreground">تواصل مع فريق الدعم</p>
+                </div>
               </Link>
+              {app.docsUrl && (
+                <Link
+                  to={app.docsUrl}
+                  target="_blank"
+                  className="flex items-center gap-3 rounded-xl border bg-background p-3 hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{t('marketplace.documentation')}</p>
+                    <p className="text-xs text-muted-foreground">دليل الاستخدام الكامل</p>
+                  </div>
+                </Link>
+              )}
+              {app.privacyPolicy && (
+                <Link
+                  to={app.privacyPolicy}
+                  target="_blank"
+                  className="flex items-center gap-3 rounded-xl border bg-background p-3 hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{t('marketplace.privacyPolicy')}</p>
+                    <p className="text-xs text-muted-foreground">سياسة الخصوصية</p>
+                  </div>
+                </Link>
+              )}
+            </div>
+          </section>
+
+          {app.developer && (
+            <section className="rounded-2xl border bg-card p-5 text-right">
+              <h3 className="text-foreground mb-4 flex items-center justify-end gap-2 font-bold">
+                {t('marketplace.developerInfo')}
+                <Users size={19} className="text-primary" />
+              </h3>
+              <div className="flex items-start gap-4">
+                {app.developer.logo && (
+                  <img src={app.developer.logo} alt="" className="size-12 rounded-xl object-cover" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-extrabold text-foreground">{app.developer.name}</h4>
+                  {app.developer.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{app.developer.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-3 text-xs text-muted-foreground">
+                    {app.developer.totalApps && <span>{app.developer.totalApps} تطبيق</span>}
+                    {app.developer.totalDownloads && <span>{formatInstallCount(app.developer.totalDownloads)} تحميل</span>}
+                    {app.developer.averageRating && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <Star size={10} className="fill-amber-400 text-amber-400" />
+                        {app.developer.averageRating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </section>
-          </aside>
+          )}
         </div>
       </div>
 
-      <Dialog open={showPricingDialog && !!app} onOpenChange={(open) => !open && setShowPricingDialog(false)}>
+      <Dialog open={showPricingDialog && !!app} onOpenChange={(o) => !o && setShowPricingDialog(false)}>
         {app && (
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md rounded-2xl">
             <DialogHeader>
               <div className="flex items-center gap-4">
-                <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-xl border text-2xl">
-                  {textIcon || <DetailIcon size={24} aria-hidden="true" />}
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary text-2xl border">
+                  {textIcon || <IconComp size={24} />}
                 </div>
                 <div>
                   <DialogTitle>{app.name}</DialogTitle>
@@ -727,7 +672,6 @@ export default function AppDetails() {
                 </div>
               </div>
             </DialogHeader>
-
             <div className="space-y-4">
               <Button
                 variant="outline"
@@ -735,13 +679,9 @@ export default function AppDetails() {
                 onClick={() => executeInstall("SUBSCRIPTION")}
                 disabled={app.isInstalled && app.activePricingModel === "SUBSCRIPTION"}
               >
-                {app.isInstalled && app.activePricingModel === "SUBSCRIPTION" && (
-                  <span className="bg-primary text-primary-foreground absolute top-0 left-0 rounded-br-lg px-2 py-0.5 text-[10px] font-bold">نشط حالياً</span>
-                )}
                 <span className="font-bold text-primary">{(app.monthlyPrice ?? 0) > 0 ? `${formatMoney(app.monthlyPrice)} / شهر` : "مجاني"}</span>
-                <span className="text-foreground font-black">{app.activePricingModel === "PAY_PER_USE" ? "ترقية لاشتراك شهري" : "اشتراك شهري كامل"}</span>
+                <span className="text-foreground font-bold">اشتراك شهري كامل</span>
               </Button>
-
               {app.pricingModel === "PAY_PER_USE" && (
                 <Button
                   variant="outline"
@@ -749,14 +689,8 @@ export default function AppDetails() {
                   onClick={() => executeInstall("PAY_PER_USE")}
                   disabled={app.isInstalled && app.activePricingModel === "PAY_PER_USE"}
                 >
-                  {app.isInstalled && app.activePricingModel === "PAY_PER_USE" && (
-                    <span className="absolute top-0 left-0 rounded-br-lg bg-warning px-2 py-0.5 text-[10px] font-bold text-warning-foreground">نشط حالياً</span>
-                  )}
                   <span className="font-bold text-warning">{formatMoney(app.unitPrice)} / {app.unitName || "وحدة"}</span>
-                  <span className="text-foreground flex items-center gap-1 font-black">
-                    حسب الاستخدام
-                    <Zap size={14} className="fill-current text-warning" aria-hidden="true" />
-                  </span>
+                  <span className="text-foreground flex items-center gap-1 font-bold">حسب الاستخدام <Zap size={14} className="fill-current text-warning" /></span>
                 </Button>
               )}
             </div>
@@ -764,29 +698,23 @@ export default function AppDetails() {
         )}
       </Dialog>
 
-      <AlertDialog open={confirmUninstall && !!app} onOpenChange={(open) => !open && setConfirmUninstall(false)}>
+      <AlertDialog open={confirmUninstall && !!app} onOpenChange={(o) => !o && setConfirmUninstall(false)}>
         {app && (
-          <AlertDialogContent>
+          <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
-              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangle size={28} className="text-red-600" />
+              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle size={28} className="text-destructive" />
               </div>
               <AlertDialogTitle className="text-center">إلغاء تفعيل {app.name}</AlertDialogTitle>
               <AlertDialogDescription className="text-center">
                 هل أنت متأكد من إلغاء تفعيل هذه الأداة؟
-                <br />
-                سيتم إلغاء الخدمة وقد تفقد بعض الإعدادات المرتبطة بها.
+                <br />سيتم إلغاء الخدمة وقد تفقد بعض الإعدادات المرتبطة بها.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-3">
-              <AlertDialogCancel disabled={uninstalling}>تراجع</AlertDialogCancel>
-              <AlertDialogAction onClick={handleUninstall} disabled={uninstalling} className="bg-red-600 hover:bg-red-700">
-                {uninstalling ? (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    جاري الإلغاء...
-                  </span>
-                ) : "تأكيد الإلغاء"}
+              <AlertDialogCancel disabled={uninstalling} className="rounded-xl">تراجع</AlertDialogCancel>
+              <AlertDialogAction onClick={handleUninstall} disabled={uninstalling} className="rounded-xl bg-destructive hover:bg-destructive/90">
+                {uninstalling ? <Loader2 size={16} className="animate-spin" /> : "تأكيد الإلغاء"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
