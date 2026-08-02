@@ -1089,12 +1089,37 @@ async function bindMetaTemplate(req, res) {
       return res.status(400).json({ error: 'قالب ميتا غير معتمد بعد (مطلوب APPROVED)' });
     }
 
+    // بناء ترتيب المتغيرات من قالب ميتا ({{1}}, {{2}}, ...) باستخدام أسماء
+    // المتغيرات القياسية لحالات الطلبات بالترتيب القياسي. ميتا لا تكشف أسماء
+    // المتغيرات بل الأرقام فقط، لذلك نعتمد على ترتيب الظهور.
+    const META_VARIABLE_ORDER = [
+      'customerName', 'customerPhone', 'orderNumber', 'orderDate',
+      'orderItems', 'status', 'total', 'currency', 'shipping',
+      'trackingNumber', 'trackingLink', 'estimatedDays', 'reason', 'subtotal'
+    ];
+
+    let metaVariableCount = 0;
+    try {
+      const bodyComponent = (meta.components || []).find(c => c.type === 'BODY');
+      const bodyText = bodyComponent?.text || '';
+      const placeholders = bodyText.match(/\{\{\s*\d+\s*\}\}/g) || [];
+      metaVariableCount = placeholders.length;
+    } catch { metaVariableCount = 0; }
+
+    let variables = null;
+    if (metaVariableCount > 0) {
+      variables = JSON.stringify(
+        META_VARIABLE_ORDER.slice(0, metaVariableCount).map((name, idx) => ({ position: idx + 1, name }))
+      );
+    }
+
     const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.update({
       where: { id },
       data: {
         metaTemplateName,
         metaTemplateLanguage,
         metaTemplateStatus: 'APPROVED',
+        variables,
         updatedAt: new Date()
       }
     });
