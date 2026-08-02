@@ -4,6 +4,7 @@ model Customer {
   lastName                       String
   email                          String?
   phone                          String?
+  phoneNormalized                String?
   password                      String?  /// Hashed password for parent portal login
   avatar                         String?
   facebookId                     String?
@@ -56,6 +57,7 @@ model Customer {
   @@index([companyId, status])
   @@index([facebookId])
   @@index([instagramId])
+  @@index([phoneNormalized])
   @@index([status])
   @@map("customers")
 }

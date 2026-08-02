@@ -9304,6 +9304,7 @@ model Customer {
   lastName                       String
   email                          String?
   phone                          String?
+  phoneNormalized                String?
   avatar                         String?
   facebookId                     String?
   whatsappId                     String?
