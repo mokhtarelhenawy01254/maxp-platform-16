@@ -704,6 +704,7 @@ const CustomerDetails: React.FC = () => {
         <div className="p-6">
           {/* Info Tab */}
           {activeTab === "info" && (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -881,6 +882,7 @@ const CustomerDetails: React.FC = () => {
                 )}
               </div>
             </div>
+            </>
           )}
 
           {/* Orders Tab */}
