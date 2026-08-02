@@ -356,7 +356,7 @@ exports.getReturnRequests = async (req, res) => {
                         select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
                     },
                     order: {
-                        select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, shippingCost: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
+                        select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, shipping: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
                     },
                     returnReason: {
                         include: {

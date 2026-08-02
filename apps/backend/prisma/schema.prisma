@@ -2098,6 +2098,7 @@ model Company {
   returnReasons                   ReturnReason[]
   returnRequests                  ReturnRequest[]
   returnSettings                  ReturnSettings?
+  returnTypes                     ReturnType[]
   sentMessageStats                SentMessageStat[]
   shippingZones                   ShippingZone[]
   storePages                      StorePage[]
@@ -4316,6 +4317,35 @@ enum ReturnRequestsResponsibleParty {
   OTHER
 
   @@map("return_requests_responsibleParty")
+}
+
+enum ReturnReceivedStatus {
+  PENDING_RECEIVE
+  IN_TRANSIT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  LOST_IN_TRANSIT
+  DAMAGED_IN_TRANSIT
+
+  @@map("return_requests_receivedStatus")
+}
+
+enum ReturnTypeCode {
+  EXCHANGE
+  REFUND
+  STORE_CREDIT
+  REPAIR
+  PARTIAL_REFUND
+
+  @@map("return_types_code")
+}
+
+enum ReturnTypeCostModel {
+  FREE
+  FIXED
+  PERCENTAGE
+
+  @@map("return_types_costModel")
 }
 
 // Redundant StorePagesPageType removed
@@ -10164,7 +10194,15 @@ model ReturnRequest {
   isReviewed            Boolean                        @default(false)
   orderItemId           String?
   rejectionReason       String?
+  trackingNumber        String?
+  receivedStatus        ReturnReceivedStatus            @default(PENDING_RECEIVE)
+  receivedAt            DateTime?
+  productCondition      String?
+  shippingReturnCost    Decimal?                       @db.Decimal(10, 2)
+  settlementAmount      Decimal?                       @db.Decimal(10, 2)
   responsibleParty      ReturnRequestsResponsibleParty @default(OTHER)
+  returnTypeId          String?
+  shippingCompanyId     String?
   reviewedAt            DateTime?
   reviewedBy            String?
   returnActivityLogs    ReturnActivityLog[]
@@ -10174,13 +10212,19 @@ model ReturnRequest {
   customer              Customer                       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   order                 Order                          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   returnReason          ReturnReason                   @relation(fields: [reasonId], references: [id])
+  returnType            ReturnType?                    @relation(fields: [returnTypeId], references: [id], onDelete: SetNull)
+  shippingCompany       ShippingCompany?               @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
 
+  @@unique([companyId, orderId])
   @@index([assignedTo])
   @@index([companyId])
   @@index([customerId])
   @@index([orderId])
   @@index([reasonId])
   @@index([status])
+  @@index([trackingNumber])
+  @@index([returnTypeId])
+  @@index([shippingCompanyId])
   @@map("return_requests")
 }
 
@@ -10980,10 +11024,12 @@ model ShippingCompany {
   settings        String?
   isActive        Boolean    @default(true)
   companyId       String
-  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   shipments       Shipment[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  returnRequests  ReturnRequest[]
+  returnTypes     ReturnType[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@unique([companyId, slug])
   @@index([companyId])
@@ -10992,6 +11038,30 @@ model ShippingCompany {
   @@index([providerKey])
   @@index([integrationMode])
   @@map("shipping_companies")
+}
+
+// --- From: returns.prisma ---
+model ReturnType {
+  id                String             @id @default(cuid())
+  companyId         String
+  shippingCompanyId String?
+  name              String
+  code              ReturnTypeCode
+  costModel         ReturnTypeCostModel
+  fixedAmount       Decimal?           @db.Decimal(10, 2)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shippingCompany   ShippingCompany?   @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
+  returnRequests    ReturnRequest[]
+
+  @@index([companyId])
+  @@index([shippingCompanyId])
+  @@index([code])
+  @@index([isActive])
+  @@unique([companyId, shippingCompanyId, code])
+  @@map("return_types")
 }
 
 // --- From: skills.prisma ---
