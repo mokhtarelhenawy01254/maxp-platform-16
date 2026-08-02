@@ -93,7 +93,7 @@ const createPatient = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password } = req.body;
+    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     // Auto-link to an existing CRM Customer by phone when no customerId is provided
@@ -118,6 +118,9 @@ const createPatient = async (req, res) => {
         gender: normalizeGender(gender),
         birthDate: birthDate ? new Date(birthDate) : null,
         bloodType: bloodType || null,
+        nationalId: nationalId || null,
+        nationalIdImage: nationalIdImage || null,
+        address: address || null,
         allergies: allergies ?? null,
         chronicDiseases: chronicDiseases ?? null,
         medications: medications ?? null,
@@ -140,7 +143,7 @@ const updatePatient = async (req, res) => {
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password'];
+    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address'];
     const data = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) data[field] = req.body[field];

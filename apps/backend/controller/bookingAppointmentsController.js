@@ -230,6 +230,9 @@ const createAppointment = async (req, res) => {
       customerGender,
       customerEmail,
       customerId: body.customerId || undefined,
+      nationalId: body.nationalId || undefined,
+      nationalIdImage: body.nationalIdImage || undefined,
+      address: body.address || undefined,
     });
 
     const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;

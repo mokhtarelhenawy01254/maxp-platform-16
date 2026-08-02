@@ -190,6 +190,9 @@ model Patient {
   email           String?
   password        String?   /// Hashed password for patient portal login
   gender          Gender?
+  nationalId      String?   /// National ID (الرقم القومي)
+  nationalIdImage String?   /// National ID card image (base64 or URL)
+  address         String?   /// Patient address
   birthDate       DateTime? @db.Date
   bloodType       String?
   allergies       Json?     /// List: ["penicillin","dust"]

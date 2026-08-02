@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon,
-  ChevronUpIcon, ChevronDownIcon, FunnelIcon
+  ChevronUpIcon, ChevronDownIcon, FunnelIcon, ArrowRightIcon
 } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient,
@@ -41,6 +41,7 @@ interface Props {
   modalAppointment: Partial<BookingAppointment> | null | undefined;
   onModalClose: () => void;
   onSave: (d: Partial<BookingAppointment>) => Promise<void>;
+  onViewPatient?: (patientId: string) => void;
 }
 
 export default function AppointmentsTab({
@@ -51,7 +52,8 @@ export default function AppointmentsTab({
   onBulkUpdateStatus, onBulkDelete, onClearSelection,
   onUpdateStatus, onEdit, onPageChange,
   sortBy, sortOrder, onSortChange,
-  modalAppointment, onModalClose, onSave
+  modalAppointment, onModalClose, onSave,
+  onViewPatient
 }: Props) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
@@ -153,6 +155,21 @@ export default function AppointmentsTab({
               </button>
             )}
           </div>
+          {(() => {
+            const q = (filters.search || "").trim().toLowerCase();
+            if (!q || q.length < 2 || !onViewPatient) return null;
+            const exact = patients.find(p =>
+              (p.phone || "").replace(/[\s()-]/g, "") === q.replace(/[\s()-]/g, "") ||
+              `${p.firstName} ${p.lastName || ""}`.trim().toLowerCase() === q
+            );
+            if (!exact) return null;
+            return (
+              <button onClick={() => onViewPatient(exact.id)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50">
+                <ArrowRightIcon className="w-4 h-4" />
+                فتح ملف {exact.firstName} {exact.lastName}
+              </button>
+            );
+          })()}
           <select 
             className="border dark:border-gray-600 rounded-lg px-2.5 py-2 text-sm dark:bg-gray-800 dark:text-gray-100 w-32 sm:w-40 cursor-pointer focus:ring-2 focus:ring-blue-500" 
             value={filters.branchId} 
@@ -275,6 +292,9 @@ export default function AppointmentsTab({
                 <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50">{updatingId === a.id ? 'جاري...' : <><CheckIcon className="w-3 h-3 inline ml-1" />إتمام</>}</button>
               )}
               <button onClick={() => onEdit(a)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3 h-3 inline ml-1" />عرض</button>
+              {a.patientId && onViewPatient && (
+                <button onClick={() => onViewPatient(a.patientId!)} className="text-xs px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50"><ArrowRightIcon className="w-3 h-3 inline ml-1" />الملف</button>
+              )}
               {a.patientId && !a.paymentStatus && (
                 <button onClick={() => createInvoiceFor(a)} className="text-xs px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50"><PlusIcon className="w-3 h-3 inline ml-1" />فاتورة</button>
               )}
@@ -335,6 +355,9 @@ export default function AppointmentsTab({
                       <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded disabled:opacity-50" title="إتمام"><CheckIcon className="w-4 h-4" /></button>
                     )}
                     <button onClick={() => onEdit(a)} className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded" title="عرض"><EyeIcon className="w-4 h-4" /></button>
+                    {a.patientId && onViewPatient && (
+                      <button onClick={() => onViewPatient(a.patientId!)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="فتح ملف المريض"><ArrowRightIcon className="w-4 h-4" /></button>
+                    )}
                     {a.patientId && !a.paymentStatus && (
                       <button onClick={() => createInvoiceFor(a)} className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded" title="إنشاء فاتورة"><PlusIcon className="w-4 h-4" /></button>
                     )}
@@ -364,7 +387,7 @@ export default function AppointmentsTab({
           </div>
         </div>
       )}
-      {modalAppointment !== undefined && <AppointmentModal appointment={modalAppointment} branches={branches} branchDoctors={doctors} services={services} patients={patients} onClose={onModalClose} onSave={onSave} />}
+      {modalAppointment !== undefined && <AppointmentModal appointment={modalAppointment} branches={branches} branchDoctors={doctors} services={services} patients={patients} onClose={onModalClose} onSave={onSave} onViewPatient={onViewPatient} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, MagnifyingGlassIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient,
   STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fetchJson, api
@@ -13,6 +13,7 @@ interface Props {
   patients: BookingPatient[];
   onClose: () => void;
   onSave: (d: Partial<BookingAppointment>) => Promise<void>;
+  onViewPatient?: (patientId: string) => void;
 }
 
 const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: string; dir?: string; fullWidth?: boolean }) => (
@@ -22,7 +23,7 @@ const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: str
   </div>
 );
 
-export default function AppointmentModal({ appointment, branches, branchDoctors, services, patients, onClose, onSave }: Props) {
+export default function AppointmentModal({ appointment, branches, branchDoctors, services, patients, onClose, onSave, onViewPatient }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<BookingAppointment>>({
     customerName: "", customerPhone: "", customerGender: "male",
@@ -45,7 +46,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
   }, [patientSearch, patients]);
 
   const selectPatient = (p: BookingPatient) => {
-    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerPhone: p.phone || f.customerPhone, customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail }));
+    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerPhone: p.phone || f.customerPhone, customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail, nationalId: p.nationalId, address: p.address }));
     setPatientSearch("");
     setShowPatientResults(false);
   };
@@ -65,7 +66,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
   }, [form.customerPhone, patients]);
 
   const applyPhoneLookup = (p: BookingPatient) => {
-    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail }));
+    setForm(f => ({ ...f, patientId: p.id, customerName: `${p.firstName} ${p.lastName || ""}`.trim(), customerGender: (p.gender as any) || f.customerGender, customerEmail: p.email || f.customerEmail, nationalId: p.nationalId, address: p.address }));
     setPhoneLookupIgnored(true);
   };
 
@@ -74,6 +75,15 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
       fetchSlots();
     }
   }, [form.branchId, form.appointmentDate, form.serviceId]);
+
+  // Auto-select the branch when only one active branch exists
+  useEffect(() => {
+    const active = branches.filter((b): b is BookingBranch => b.isActive);
+    if (active.length === 1 && !form.branchId) {
+      const single = active[0];
+      if (single) setForm(f => ({ ...f, branchId: single.id }));
+    }
+  }, [branches, form.branchId]);
 
   const fetchSlots = async () => {
     setLoadingSlots(true);
@@ -205,6 +215,9 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
                 <div className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">استخدام بياناته المسجلة تلقائياً؟</div>
               </div>
               <div className="flex gap-2 shrink-0">
+                {onViewPatient && (
+                  <button type="button" onClick={() => { onViewPatient(phoneLookup.id); }} className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50"><ArrowRightIcon className="w-3 h-3 inline ml-1" />فتح ملفه</button>
+                )}
                 <button type="button" onClick={() => applyPhoneLookup(phoneLookup)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">استخدام</button>
                 <button type="button" onClick={() => setPhoneLookupIgnored(true)} className="px-3 py-1.5 border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-300 text-xs rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30">إلغاء</button>
               </div>
@@ -219,12 +232,18 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
             </select>
             </div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
-            <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value, doctorId: "", serviceId: "" })}>
-              <option value="">اختر الفرع</option>
-              {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرقم القومي (اختياري)</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.nationalId || ""} onChange={e => setForm({ ...form, nationalId: e.target.value })} placeholder="14 رقماً" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><input className={MODAL_INPUT_CLS} value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="العنوان الكامل" /></div>
           </div>
+          {branches.filter(b => b.isActive).length > 1 && (
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
+              <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value, doctorId: "", serviceId: "" })}>
+                <option value="">اختر الفرع</option>
+                {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الخدمة</label>
               <select className={MODAL_INPUT_CLS} value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value, doctorId: "" })}>

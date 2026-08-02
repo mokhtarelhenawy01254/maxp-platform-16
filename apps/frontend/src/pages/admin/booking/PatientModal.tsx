@@ -30,6 +30,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
   const [form, setForm] = useState<{
     firstName: string; lastName: string; phone: string; email: string;
     gender: string; birthDate: string; bloodType: string;
+    nationalId: string; nationalIdImage: string; address: string;
     allergies: string; chronicDiseases: string; medications: string;
     notes: string; isActive: boolean; password: string;
   }>({
@@ -40,6 +41,9 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     gender: patient?.gender || "",
     birthDate: toDateInput(patient?.birthDate),
     bloodType: patient?.bloodType || "",
+    nationalId: patient?.nationalId || "",
+    nationalIdImage: patient?.nationalIdImage || "",
+    address: patient?.address || "",
     allergies: toList(patient?.allergies),
     chronicDiseases: toList(patient?.chronicDiseases),
     medications: toList(patient?.medications),
@@ -49,6 +53,12 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
   });
 
   const valid = form.firstName.trim() !== "";
+
+  const handleNationalIdImage = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => setForm({ ...form, nationalIdImage: String(reader.result) });
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = () => {
     onSave({
@@ -60,6 +70,9 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
       gender: form.gender || undefined,
       birthDate: form.birthDate || undefined,
       bloodType: form.bloodType || undefined,
+      nationalId: form.nationalId.trim() || undefined,
+      nationalIdImage: form.nationalIdImage || undefined,
+      address: form.address.trim() || undefined,
       allergies: fromList(form.allergies),
       chronicDiseases: fromList(form.chronicDiseases),
       medications: fromList(form.medications),
@@ -84,6 +97,25 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرقم القومي (اختياري)</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.nationalId} onChange={e => setForm({ ...form, nationalId: e.target.value })} placeholder="14 رقماً" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><input className={MODAL_INPUT_CLS} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="العنوان الكامل" /></div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">صورة البطاقة (اختياري)</label>
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer border dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                {form.nationalIdImage ? "تغيير الصورة" : "📸 اختر صورة البطاقة"}
+                <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleNationalIdImage(f); }} />
+              </label>
+              {form.nationalIdImage && (
+                <div className="relative shrink-0">
+                  <img src={form.nationalIdImage} alt="بطاقة" className="w-16 h-12 object-cover rounded-lg border dark:border-gray-600" />
+                  <button type="button" onClick={() => setForm({ ...form, nationalIdImage: "" })} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] leading-4">×</button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الجنس</label>

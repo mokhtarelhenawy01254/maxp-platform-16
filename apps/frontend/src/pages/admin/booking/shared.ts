@@ -135,6 +135,8 @@ export interface BookingAppointment {
   notes: string; confirmedAt?: string; createdAt: string;
   createdById?: string; createdByType?: string; createdByName?: string;
   patientId?: string;
+  nationalId?: string;
+  address?: string;
   diagnosis?: string; treatmentPlan?: string; prescription?: string;
   vitals?: string[] | Record<string, unknown> | string;
   followUpDate?: string;
@@ -143,6 +145,7 @@ export interface BookingAppointment {
 export interface BookingPatient {
   id: string; firstName: string; lastName?: string;
   phone?: string; email?: string; gender?: string;
+  nationalId?: string; nationalIdImage?: string; address?: string;
   birthDate?: string; bloodType?: string;
   allergies?: string[] | string;
   chronicDiseases?: string[] | string;

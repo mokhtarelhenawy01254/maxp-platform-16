@@ -452,6 +452,7 @@ export default function BookingManagementPage() {
                 modalAppointment={appointmentModal}
                 onModalClose={() => setAppointmentModal(undefined)}
                 onSave={saveAppointment}
+                onViewPatient={setPatientDetailId}
               />
             </TabErrorBoundary>
           )}
