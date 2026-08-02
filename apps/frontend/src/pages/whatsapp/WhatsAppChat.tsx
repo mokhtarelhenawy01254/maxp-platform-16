@@ -1951,9 +1951,15 @@ const WhatsAppChatContent: React.FC = () => {
 
 
   const getParticipantName = (participantJid: string) => {
+    if (!participantJid) return '';
     // Normalize JID for lookup
     const normalizedJid = participantJid.includes('@') ? participantJid : `${participantJid}@s.whatsapp.net`;
-    const contact = conversations.find(c => c.jid === normalizedJid || c.jid === normalizedJid.split('@')[0] + '@s.whatsapp.net');
+    const bareDigits = normalizeContactJid(participantJid);
+    const contact = conversations.find(c =>
+      c.jid === normalizedJid ||
+      c.jid === normalizedJid.split('@')[0] + '@s.whatsapp.net' ||
+      (bareDigits && normalizeContactJid(c.jid) === bareDigits)
+    );
     if (contact) {
       return getContactName(contact);
     }

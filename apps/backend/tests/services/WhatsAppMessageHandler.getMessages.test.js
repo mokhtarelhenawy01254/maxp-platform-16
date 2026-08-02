@@ -61,7 +61,8 @@ describe('WhatsAppMessageHandler.getMessages', () => {
             take: 50
         });
         expect(prisma.whatsAppMessage.count).toHaveBeenCalledWith({ where: expectedWhere });
-        expect(result.messages).toEqual([message]);
+        // getMessages يعزّز كل رسالة بحقول senderName / participantName (اسم مرسل الرسالة).
+        expect(result.messages).toEqual([{ ...message, senderName: null, participantName: null }]);
         expect(result.pagination.total).toBe(1);
     });
 

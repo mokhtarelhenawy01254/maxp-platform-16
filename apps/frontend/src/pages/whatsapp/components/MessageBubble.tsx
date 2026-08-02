@@ -327,9 +327,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         )}
             onContextMenu={(event) => onContextMenu(event, message)}
           >
-            {isGroup && !message.fromMe && message.participant ? (
+            {isGroup && !message.fromMe && (message.participant || message.participantName) ? (
               <p className="mb-1 text-xs font-semibold text-[color:var(--color-secondary)]">
-                {getParticipantName(message.participant)}
+                {message.participantName || getParticipantName(message.participant!)}
               </p>
             ) : null}
 

@@ -30,12 +30,14 @@ const MetaCloudProvider = require('./providers/MetaCloudProvider');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET;
+let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
     DisconnectReason = baileys.DisconnectReason;
-    fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
+    // نسخة الواتساب المدمجة مع نسخة المكتبة المثبتة.
+    // ملاحظة: fetchLatestBaileysVersion تجلب النسخة من master برانش (v7) — مش متوافقة مع إصدار مثبت ثابت.
+    baileysDefaultVersion = baileys.DEFAULT_CONNECTION_CONFIG?.version || [2, 3000, 1043857760];
     downloadMediaMessage = baileys.downloadMediaMessage;
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
@@ -1273,15 +1275,9 @@ async function createSession(sessionId, companyId, options = {}) {
         // تحميل حالة المصادقة من قاعدة البيانات
         const { state, saveCreds } = await useDatabaseAuthState(sessionId);
 
-        // الحصول على أحدث إصدار من Baileys مع fallback للنسخة المخزنة
-        let version;
-        try {
-            const fetched = await fetchLatestBaileysVersion();
-            version = fetched.version;
-        } catch {
-            version = [6, 7, 23];
-            WA_LOG.warn(sessionId, `Failed to fetch latest Baileys version, using fallback ${version.join('.')}`);
-        }
+        // استخدام نسخة الواتساب المدمجة مع نسخة المكتبة المثبتة (متوافقة دائماً مع الكود الفعلي).
+        // fetchLatestBaileysVersion تجلب من master برانش — تتسبب في mismatch مع إصدار مثبت ثابت.
+        const version = baileysDefaultVersion || [2, 3000, 1043857760];
         console.log(`📦 Using Baileys version: ${version.join('.')}`);
 
         // إعدادات Socket
@@ -1303,9 +1299,24 @@ async function createSession(sessionId, companyId, options = {}) {
                     const prisma = getSharedPrismaClient();
                     const msg = await prisma.whatsAppMessage.findUnique({
                         where: { messageId: key.id },
-                        select: { metadata: true }
+                        select: { metadata: true, content: true, messageType: true, remoteJid: true, fromMe: true }
                     });
-                    if (msg?.metadata) return JSON.parse(msg.metadata);
+                    if (msg?.metadata) {
+                        try {
+                            const parsed = JSON.parse(msg.metadata);
+                            if (parsed && (parsed.key || parsed.message)) return parsed;
+                        } catch { /* malformed metadata — fall through to fallback */ }
+                    }
+                    // Fallback: بناء رسالة صغرى من الحقول المحفوظة حتى يتمكن بايليز
+                    // من إعادة الإرسال/الإصلاح (retry) للرسائل الخارجة التي لا تتوفر
+                    // لها الـ WAMessage الكاملة في metadata.
+                    if (msg?.content && (!msg.messageType || msg.messageType === 'TEXT')) {
+                        return {
+                            key: { remoteJid: msg.remoteJid || key.remoteJid, fromMe: true, id: key.id },
+                            message: { conversation: msg.content },
+                            messageTimestamp: Math.floor(Date.now() / 1000)
+                        };
+                    }
                 } catch { /* return undefined */ }
                 return undefined;
             },
@@ -2054,6 +2065,27 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         }
     }
 
+    // تخزين جهات اتصال الـ history كلها (بالأسماء) حتى يمكن عرض اسم الراسل
+    // داخل رسائل الجروبات (المرسل يصل بصيغة LID أو رقم تلفون).
+    let importedContacts = 0;
+    const contactImportQueue = [];
+    for (const c of contacts) {
+        const contactJid = c.id || c.lid;
+        if (!contactJid || contactJid === 'status@broadcast' || isJidNewsletter?.(contactJid)) continue;
+        contactImportQueue.push(() => upsertHistoryContact(sessionId, contactJid, {
+            name: c.name || c.notify || c.verifiedName
+        }));
+    }
+    for (let i = 0; i < contactImportQueue.length; i += HISTORY_BATCH_SIZE) {
+        const chunk = contactImportQueue.slice(i, i + HISTORY_BATCH_SIZE);
+        const results = await Promise.allSettled(chunk.map(run => run()));
+        importedContacts += results.filter(r => r.status === 'fulfilled').length;
+        await historyYield();
+    }
+    if (importedContacts > 0) {
+        console.log(`📜 [WHATSAPP-HISTORY] Imported ${importedContacts} contact names for session ${sessionId}`);
+    }
+
     // ====== Sprint 3: Batch processing with bounded chunks ======
     const totalMessages = messages.length;
     let batchStart = 0;
@@ -2177,6 +2209,9 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             let remoteJid = msg.key.remoteJid;
             const fromMe = Boolean(msg.key.fromMe);
             const messageId = msg.key.id;
+            // في إصدارات Baileys الحديثة قد يكون راسل رسالة الجروب في msg.participant (المستوى الأعلى)
+            // بدلاً من msg.key.participant — نقرأ من الاتنين لنضمن تخزين الراسل دائماً.
+            const messageParticipant = msg?.key?.participant || msg?.participant || null;
 
             // Move messageId check BEFORE the upsert-type gate so we can feed it to the filter.
             if (!messageId) {
@@ -2332,7 +2367,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     quotedMessageId: messageContent.quotedId,
                     quotedContent: messageContent.quotedText,
                     metadata: JSON.stringify(msg),
-                    participant: msg.key.participant, // تحديث المشارك
+                    participant: messageParticipant, // تحديث المشارك
                     updatedAt: new Date()
                 },
                 create: {
@@ -2340,7 +2375,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     remoteJid,
                     messageId,
                     fromMe,
-                    participant: msg.key.participant, // حفظ المشارك
+                    participant: messageParticipant, // حفظ المشارك
                     messageType: messageContent.type,
                     content: messageContent.text,
                     mediaUrl: messageContent.mediaUrl,
@@ -2405,14 +2440,19 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             });
 
             // إذا كانت رسالة مجموعة، نحفظ المرسل كجهة اتصال أيضاً
-            if (!importHistory && remoteJid.endsWith('@g.us') && msg.key.participant) {
-                await updateOrCreateContact(sessionId, msg.key.participant, msg, sock, {
-                    isOutgoing: false,
-                    isGroupParticipant: true,
-                    // Group participants might need their own customer entry? 
-                    // For now, we skip syncing group participants to CRM customers implicitly 
-                    // unless they send a direct message.
-                });
+            // (بدون جلب صورة البروفايل في كل رسالة — الأداء أولاً)
+            if (remoteJid.endsWith('@g.us') && messageParticipant && !fromMe) {
+                try {
+                    await updateOrCreateContact(sessionId, messageParticipant, msg, sock, {
+                        isOutgoing: false,
+                        isGroupParticipant: true,
+                        incrementCounters: false, // ألا يظهر عضو الجروب في قائمة المحادثات
+                        skipProfilePic: true, // لا نجلب صور البروفايل لكل عضو في كل رسالة
+                        // نحفظ المرسل حتى أثناء استيراد التاريخ ليظهر اسمه في رسائل الجروبات
+                    });
+                } catch (e) {
+                    console.warn(`⚠️ Failed to upsert group participant contact ${messageParticipant}:`, e.message);
+                }
             }
 
             if (!options.skipRealtimeEvents && isNewMessage) {

@@ -1022,9 +1022,13 @@ async function getMessages(sessionId, remoteJid, options = {}) {
             : [];
         const senderMap = Object.fromEntries(senders.map(u => [u.id, [u.firstName, u.lastName].filter(Boolean).join(' ')]));
 
+        // حل أسماء المرسلين داخل رسائل الجروبات: المشارك قد يكون LID أو رقم تلفون.
+        const participantNameMap = await resolveGroupParticipantNames(sessionId, messages);
+
         const enriched = messages.map(m => ({
             ...m,
-            senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null
+            senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null,
+            participantName: (!m.fromMe && m.participant) ? (participantNameMap[m.participant] || null) : null
         }));
 
         return {
@@ -1056,6 +1060,61 @@ function getRemoteJidLookupValues(remoteJid) {
     }
 
     return Array.from(values);
+}
+
+/**
+ * حل أسماء المرسلين داخل رسائل الجروبات.
+ * المشارك قد يكون LID (@lid) أو رقم تلفون (@s.whatsapp.net) — نرجعه لرقم التلفون
+ * عبر whatsAppLidMapping ثم نبحث عن اسم جهة الاتصال.
+ * @param {string} sessionId
+ * @param {Array<object>} messages
+ * @returns {Promise<Record<string, string|null>>} map من JID المشارك إلى اسمه
+ */
+async function resolveGroupParticipantNames(sessionId, messages) {
+    const participantJids = [...new Set(
+        messages.filter(m => !m.fromMe && m.participant).map(m => m.participant)
+    )];
+    if (participantJids.length === 0) return {};
+
+    const prisma = getSharedPrismaClient();
+    const lidMap = {};
+    const lidJids = participantJids.filter(j => String(j).includes('@lid'));
+
+    try {
+        if (lidJids.length > 0 && prisma.whatsAppLidMapping) {
+            const lidRows = await prisma.whatsAppLidMapping.findMany({
+                where: { sessionId, lidJid: { in: lidJids } },
+                select: { lidJid: true, phoneJid: true }
+            });
+            for (const r of lidRows) lidMap[r.lidJid] = r.phoneJid;
+        }
+    } catch (e) {
+        console.warn('⚠️ Failed to resolve group participant LIDs:', e.message);
+    }
+
+    const candidateJids = new Set(participantJids);
+    for (const p of participantJids) {
+        if (lidMap[p]) candidateJids.add(lidMap[p]);
+    }
+
+    let contacts = [];
+    try {
+        contacts = await prisma.whatsAppContact.findMany({
+            where: { sessionId, jid: { in: [...candidateJids] } },
+            select: { jid: true, name: true, pushName: true }
+        });
+    } catch (e) {
+        console.warn('⚠️ Failed to load contacts for group participants:', e.message);
+    }
+
+    const nameByJid = {};
+    for (const c of contacts) nameByJid[c.jid] = c.name || c.pushName || null;
+
+    const result = {};
+    for (const p of participantJids) {
+        result[p] = nameByJid[p] || (lidMap[p] ? nameByJid[lidMap[p]] : null) || null;
+    }
+    return result;
 }
 
 /**
