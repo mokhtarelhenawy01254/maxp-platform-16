@@ -5,7 +5,7 @@ import {
   ClipboardList, Truck, HeartHandshake,
   ShoppingBag, FileSpreadsheet,
   Brain, Shield, Globe, Palette, Headphones, Star, Clock,
-  GraduationCap, Building2, BadgeCheck, Flame,
+  GraduationCap, Building2, BadgeCheck, Flame, Award,
   Rocket, LayoutGrid, CreditCard, Monitor, UserPlus,
   Image, Database,
 } from "lucide-react";
