@@ -71,6 +71,12 @@
   background-color: var(--color-card);
 }
 
+@media (min-width: 1024px) {
+  .app-shell-mobile-header {
+    display: none;
+  }
+}
+
 .app-shell-mobile-header-button {
   display: inline-flex;
   align-items: center;

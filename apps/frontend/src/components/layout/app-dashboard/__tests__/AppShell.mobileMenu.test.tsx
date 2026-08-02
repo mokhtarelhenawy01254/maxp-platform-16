@@ -75,7 +75,7 @@ describe("AppShell mobile navigation", () => {
     expect(drawer).toHaveAttribute("id", "app-shell-mobile-drawer");
   });
 
-  it("renders the sidebar inside the mobile drawer with a fixed width so it is visible when open", () => {
+  it("renders the sidebar inside the mobile drawer with a fixed width so it is visible when open", async () => {
     render(
       <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
         <Routes>
@@ -91,8 +91,16 @@ describe("AppShell mobile navigation", () => {
       </MemoryRouter>,
     );
 
+    const openButton = screen.getByRole("button", { name: /openAppMenu/ });
+    await act(async () => {
+      fireEvent.click(openButton);
+    });
+    await waitFor(() => {
+      expect(openButton).toHaveAttribute("aria-expanded", "true");
+    });
+
     const drawer = screen.getByRole("dialog");
-    const className = drawer.getAttribute("className") ?? "";
+    const className = drawer.className ?? "";
     expect(className).toContain("w-72");
     expect(className).toContain("max-w-[85vw]");
     expect(className).toContain("translate-x-0");
