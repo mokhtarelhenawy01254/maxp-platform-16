@@ -12,6 +12,9 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
 
@@ -46,6 +49,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 }) => {
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -317,6 +321,21 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           `/orders/invoices/print-multiple?ids=${invoice.id}`,
           "_blank",
         );
+      } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
+        const guestOrder = response.data.data.guestOrders[0].order as OrderDetailsType;
+        const invoiceSettingsResponse = await apiClient
+          .get("/order-invoice-settings")
+          .catch(() => null);
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          await printOrderInvoice({
+            order: guestOrder,
+            companyName: user?.company?.name,
+            companyLogoUrl: user?.company?.logo || null,
+            printWindow,
+            invoiceSettings: invoiceSettingsResponse?.data?.data,
+          });
+        }
       } else {
         setError(
           t("orders.invoiceGenerationFailed") || "Failed to generate invoice",

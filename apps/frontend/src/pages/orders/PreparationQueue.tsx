@@ -14,6 +14,8 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
+import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import type { OrderDetailsType } from "./types";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
@@ -1242,14 +1244,42 @@ const PreparationQueue: React.FC = () => {
       });
 
       if (response.data?.success) {
-        const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
-        if (invoices.length === 0) {
+        const data = response.data.data || {};
+        const invoices: Array<{ id: string }> = data.invoices || [];
+        const guestOrders: Array<{ orderId: string; order: OrderDetailsType }> = data.guestOrders || [];
+
+        if (invoices.length === 0 && guestOrders.length === 0) {
           toast.error(t('preparation.page.invoiceNotFound'));
           return;
         }
 
-        const invoiceIds = invoices.map((inv) => inv.id).join(",");
-        navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
+        if (guestOrders.length > 0) {
+          const invoiceSettingsResponse = await apiClient
+            .get("/order-invoice-settings")
+            .catch(() => null);
+          for (const entry of guestOrders) {
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) continue;
+            try {
+              await printOrderInvoice({
+                order: entry.order,
+                companyName: user?.company?.name,
+                companyLogoUrl: user?.company?.logo || null,
+                printWindow,
+                invoiceSettings: invoiceSettingsResponse?.data?.data,
+              });
+            } catch (printError: unknown) {
+              console.error("Failed printing guest order invoice:", printError);
+            }
+          }
+        }
+
+        if (invoices.length > 0) {
+          const invoiceIds = invoices.map((inv) => inv.id).join(",");
+          navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
+        } else if (guestOrders.length > 0) {
+          toast.success(t('preparation.page.guestInvoiceOpened'));
+        }
       } else {
         toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
       }
@@ -1259,7 +1289,7 @@ const PreparationQueue: React.FC = () => {
     } finally {
       setPrintingInvoices(false);
     }
-  }, [navigate, selectedOrders]);
+  }, [navigate, selectedOrders, user]);
 
   const handleMarkAsShortageHold = useCallback(
     async (orderNumber: string) => {

@@ -22,6 +22,8 @@ import {
 } from "../../utils/companyApps";
 import EnhancedOrderModal from "../../components/orders/EnhancedOrderModal";
 import InvoiceModal from "../../components/orders/InvoiceModal";
+import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import type { OrderDetailsType } from "./types";
 
 import {
   ShoppingBagIcon,
@@ -1828,7 +1830,7 @@ const Orders: React.FC = () => {
         });
 
         if (response.data.success) {
-          const { success, existing, failed, invoices } = response.data.data;
+          const { success, existing, failed, invoices, guestOrders } = response.data.data;
 
           if (invoices && invoices.length > 0) {
             const invoiceIds = (invoices as GeneratedInvoice[]).map(
@@ -1836,6 +1838,29 @@ const Orders: React.FC = () => {
             );
             const printUrl = `/orders/invoices/print-multiple?ids=${invoiceIds.join(",")}`;
             window.open(printUrl, "_blank");
+          }
+
+          if (guestOrders && guestOrders.length > 0) {
+            void (async () => {
+              const invoiceSettingsResponse = await apiClient
+                .get("/order-invoice-settings")
+                .catch(() => null);
+              for (const entry of guestOrders as Array<{ orderId: string; order: OrderDetailsType }>) {
+                const printWindow = window.open("", "_blank");
+                if (!printWindow) continue;
+                try {
+                  await printOrderInvoice({
+                    order: entry.order,
+                    companyName: user?.company?.name,
+                    companyLogoUrl: user?.company?.logo || null,
+                    printWindow,
+                    invoiceSettings: invoiceSettingsResponse?.data?.data,
+                  });
+                } catch (printError: unknown) {
+                  console.error("Failed printing guest order invoice:", printError);
+                }
+              }
+            })();
           }
 
           alert(
@@ -1858,12 +1883,32 @@ const Orders: React.FC = () => {
         });
 
         if (response.data.success) {
-          const { invoices } = response.data.data as {
+          const data = response.data.data as {
             invoices?: GeneratedInvoice[];
+            guestOrders?: Array<{ orderId: string; order: OrderDetailsType }>;
           };
+          const { invoices, guestOrders } = data;
 
           if (invoices && invoices.length > 0) {
             setSelectedInvoice(invoices[0]);
+          } else if (guestOrders && guestOrders.length > 0) {
+            const invoiceSettingsResponse = await apiClient
+              .get("/order-invoice-settings")
+              .catch(() => null);
+            const printWindow = window.open("", "_blank");
+            if (printWindow) {
+              try {
+                await printOrderInvoice({
+                  order: guestOrders[0].order,
+                  companyName: user?.company?.name,
+                  companyLogoUrl: user?.company?.logo || null,
+                  printWindow,
+                  invoiceSettings: invoiceSettingsResponse?.data?.data,
+                });
+              } catch (printError: unknown) {
+                console.error("Failed printing guest order invoice:", printError);
+              }
+            }
           }
         }
       } catch (error: unknown) {

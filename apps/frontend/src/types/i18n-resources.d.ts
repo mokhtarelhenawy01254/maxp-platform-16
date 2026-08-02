@@ -10171,6 +10171,7 @@ declare module 'react-i18next' {
           invoicePrintFailed: string;
           invoiceNotFound: string;
           invoicePrintError: string;
+          guestInvoiceOpened: string;
           orderNotFound: string;
           stageUpdated: string;
           stageUpdateFailed: string;
