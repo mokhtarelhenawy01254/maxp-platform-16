@@ -219,7 +219,6 @@
   "k_218": "He rose",
   "k_219": "With this procedure.",
   "k_220": "closing",
-<<<<<<< Updated upstream
   "k_221": "Shipment code (shipping company)",
   "k_222": "Return request creation date",
   "k_223": "Shipment code at the shipping company (same as the returning parcel code)",
@@ -259,10 +258,8 @@
   "k_257": "Select the shipping company first",
   "k_258": "Type status",
   "k_259": "Active",
-  "k_260": "Inactive"
-=======
-  "k_221": "Are you sure you want to delete this category? All reasons inside it will also be deleted.",
-  "k_222": "Category deleted successfully",
-  "k_223": "Failed to delete category"
->>>>>>> Stashed changes
+  "k_260": "Inactive",
+  "k_261": "Are you sure you want to delete this category? All reasons inside it will also be deleted.",
+  "k_262": "Category deleted successfully",
+  "k_263": "Failed to delete category"
 }
