@@ -4602,9 +4602,8 @@ async function labelChat(sessionId, jid, labelId) {
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
     if (!session) {
-        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
-        if (dbSession?.provider === 'META_CLOUD') return [];
-        throw new Error('Session not found');
+        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
+        return [];
     }
 
     try {
@@ -4651,9 +4650,8 @@ async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
 async function syncLabels(sessionId) {
     const session = getSession(sessionId);
     if (!session) {
-        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
-        if (dbSession?.provider === 'META_CLOUD') return [];
-        throw new Error('Session not found');
+        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
+        return [];
     }
 
     try {
