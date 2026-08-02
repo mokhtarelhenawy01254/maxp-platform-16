@@ -1021,6 +1021,91 @@ async function syncTemplateStatuses(req, res) {
   }
 }
 
+/**
+ * جلب قوالب ميتا المتاحة للربط (APPROVED) من رقم واتساب كلاود
+ * GET /templates/meta-available?sessionId=...
+ */
+async function listAvailableMetaTemplates(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.query;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId مطلوب' });
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+
+    const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where: { companyId },
+      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true }
+    });
+
+    const available = (metaTemplates || [])
+      .filter(t => String(t.status).toUpperCase() === 'APPROVED')
+      .map(t => {
+        const bound = localTemplates.find(l => l.metaTemplateName === t.name);
+        return {
+          name: t.name,
+          status: t.status,
+          language: t.language || 'ar',
+          category: t.category || 'UTILITY',
+          components: t.components || null,
+          boundToLocalTemplateId: bound ? bound.id : null,
+          boundToEventType: bound ? bound.eventType : null
+        };
+      });
+
+    res.json({ success: true, templates: available });
+  } catch (error) {
+    console.error('❌ Error listing available Meta templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * ربط قالب محلي بقالب ميتا موجود (approved) - اللي هيتبعت فعلياً
+ * POST /templates/:id/bind-meta  { sessionId, metaTemplateName, metaTemplateLanguage }
+ */
+async function bindMetaTemplate(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { sessionId, metaTemplateName, metaTemplateLanguage = 'ar' } = req.body;
+
+    if (!sessionId || !metaTemplateName) {
+      return res.status(400).json({ error: 'sessionId و metaTemplateName مطلوبان' });
+    }
+
+    const local = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id, companyId }
+    });
+    if (!local) return res.status(404).json({ error: 'القالب غير موجود' });
+
+    // التحقق أن القالب موجود ومعتمد في ميتا
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+    const meta = (metaTemplates || []).find(t => t.name === metaTemplateName);
+    if (!meta) return res.status(400).json({ error: 'قالب ميتا غير موجود' });
+    if (String(meta.status).toUpperCase() !== 'APPROVED') {
+      return res.status(400).json({ error: 'قالب ميتا غير معتمد بعد (مطلوب APPROVED)' });
+    }
+
+    const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id },
+      data: {
+        metaTemplateName,
+        metaTemplateLanguage,
+        metaTemplateStatus: 'APPROVED',
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({ success: true, template: updated });
+  } catch (error) {
+    console.error('❌ Error binding Meta template:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1040,5 +1125,7 @@ module.exports = {
   getCustomerPreferences,
   updateCustomerPreferences,
   publishTemplateToMeta,
-  syncTemplateStatuses
+  syncTemplateStatuses,
+  listAvailableMetaTemplates,
+  bindMetaTemplate
 };
