@@ -73,11 +73,15 @@ const createService = async (req, res) => {
           }))
         } : undefined,
         doctorServices: Array.isArray(doctorIds) && doctorIds.length > 0 ? {
-          create: doctorIds.map((d) => ({
-            doctorId: typeof d === 'string' ? d : d.doctorId,
-            fee: typeof d === 'object' && d.fee ? Number(d.fee) : undefined,
-            isActive: true
-          }))
+          create: doctorIds.map((d) => {
+            const did = typeof d === 'string' ? d : d.doctorId;
+            const fee = typeof d === 'object' && d.fee ? Number(d.fee) : undefined;
+            return {
+              doctorId: did,
+              ...(fee !== undefined ? { fee } : {}),
+              isActive: true
+            };
+          })
         } : undefined
       },
       include: {
@@ -138,13 +142,17 @@ const updateService = async (req, res) => {
       await getSharedPrismaClient().bookingDoctorService.deleteMany({ where: { serviceId: id, companyId } });
       if (doctorIds.length > 0) {
         await getSharedPrismaClient().bookingDoctorService.createMany({
-          data: doctorIds.map((d) => ({
-            companyId,
-            serviceId: id,
-            doctorId: typeof d === 'string' ? d : d.doctorId,
-            fee: typeof d === 'object' && d.fee ? Number(d.fee) : undefined,
-            isActive: true
-          }))
+          data: doctorIds.map((d) => {
+            const did = typeof d === 'string' ? d : d.doctorId;
+            const fee = typeof d === 'object' && d.fee ? Number(d.fee) : undefined;
+            return {
+              companyId,
+              serviceId: id,
+              doctorId: did,
+              ...(fee !== undefined ? { fee } : {}),
+              isActive: true
+            };
+          })
         });
       }
     }

@@ -62,6 +62,7 @@ export default function ServiceModal({ service, branches, doctors, categories, o
 
   const handleSave = () => {
     onSave({
+      id: service?.id,
       name, description: desc,
       requiresConsultation,
       durationMinutes,
