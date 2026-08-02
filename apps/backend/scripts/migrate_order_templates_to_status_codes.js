@@ -17,6 +17,10 @@
  *   ORDER_RETURNED         -> RETURNED
  *   ORDER_REFUNDED         -> REFUNDED
  *
+ * NOTE: ORDER_CREATED is intentionally NOT migrated. The new-order notification
+ * is always sent with eventType 'ORDER_CREATED' (no fallback to a status code),
+ * so those templates must keep the ORDER_CREATED event type.
+ *
  * If a raw-code template already exists for the company/status, the legacy
  * ORDER_* template is deactivated (isActive=false) instead of overwriting.
  *
@@ -32,7 +36,6 @@ const prisma = new PrismaClient({ datasources: { db: { url: process.env.POSTGRES
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const LEGACY_TO_RAW = {
-  ORDER_CREATED: 'CREATED',
   ORDER_CONFIRMED: 'CONFIRMED',
   ORDER_PROCESSING: 'PROCESSING',
   ORDER_SHIPPED: 'SHIPPED',
