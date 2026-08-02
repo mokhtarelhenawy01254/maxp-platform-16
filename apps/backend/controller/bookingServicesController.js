@@ -77,6 +77,7 @@ const createService = async (req, res) => {
             const did = typeof d === 'string' ? d : d.doctorId;
             const fee = typeof d === 'object' && d.fee ? Number(d.fee) : undefined;
             return {
+              companyId,
               doctorId: did,
               ...(fee !== undefined ? { fee } : {}),
               isActive: true
