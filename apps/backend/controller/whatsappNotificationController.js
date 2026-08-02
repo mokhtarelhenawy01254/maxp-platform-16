@@ -774,6 +774,13 @@ function getErrorMessage(reason, retryable = false) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function publishTemplateToMeta(req, res) {
+  // متغيرات مشتركة بين try و catch (ميتا ترفض المتغيرات في بداية/نهاية النص)
+  let metaName = null;
+  let metaCategory = null;
+  let bodyText = null;
+  let buttonsComponent = null;
+  let metaPadding = null;
+
   try {
     const { companyId } = req.user;
     const templateId = req.params.id || req.body.templateId;
@@ -800,10 +807,10 @@ async function publishTemplateToMeta(req, res) {
     }
 
     // 3. تحويل القالب المحلي لصيغة ميتا
-    let metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
+    metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
       .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 512);
 
-    const metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
+    metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
       : localTemplate.category === 'AUTHENTICATION' ? 'AUTHENTICATION'
       : 'UTILITY';
 
@@ -811,7 +818,7 @@ async function publishTemplateToMeta(req, res) {
     // ميتا تقبل فقط أرقاماً متسلسلة داخل قوسين مجعدين، وترفض الأسماء ({{customerName}})
     // والأقواس الثلاثية الناتجة عن عدم تطبيع الأقواس.
     const variableIndex = {};
-    const bodyText = (localTemplate.content || '')
+    bodyText = (localTemplate.content || '')
       // توحيد الأقواس المفردة {var} إلى صيغة {{var}} دون كسر الأقواس المزدوجة الموجودة
       .replace(/(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g, '{{$1}}')
       // تحويل المتغيرات المسماة إلى أرقام موضعية حسب ترتيب الظهور
@@ -820,8 +827,25 @@ async function publishTemplateToMeta(req, res) {
         return `{{${variableIndex[name]}}}`;
       });
 
+    // ميتا ترفض أن يبدأ القالب أو ينتهي بمتغير (subcode 2388299)
+    // نضيف نصاً ثابتاً قبل/بعد المتغير تلقائياً مع إشعار المستخدم
+    const metaPaddingNotes = [];
+    const paddedBodyText = bodyText
+      // إذا بدأ النص بمتغير نضيف كلمة ترحيب ثابتة قبلها
+      .replace(/^(\s*)(\{\{\s*\d+\s*\}\})/, (m, ws, varToken) => {
+        metaPaddingNotes.push('تمت إضافة "أهلاً " قبل المتغير في بداية النص');
+        return `${ws}أهلاً ${varToken}`;
+      })
+      // إذا انتهى النص بمتغير نضيف فاصلة عربية بعدها
+      .replace(/(\{\{\s*\d+\s*\}\})(\s*)$/, (m, varToken, ws) => {
+        metaPaddingNotes.push('تمت إضافة "،" بعد المتغير في نهاية النص');
+        return `${varToken}،${ws}`;
+      });
+    bodyText = paddedBodyText;
+    metaPadding = metaPaddingNotes.length > 0 ? metaPaddingNotes.join('، ') : null;
+
     // 4. تجهيز الأزرار (إن وجدت)
-    let buttonsComponent = null;
+    buttonsComponent = null;
     if (localTemplate.hasButtons && localTemplate.buttons) {
       try {
         const btns = typeof localTemplate.buttons === 'string'
@@ -919,7 +943,10 @@ async function publishTemplateToMeta(req, res) {
       metaTemplateName: metaName,
       metaCategory,
       metaResult: result,
-      message: 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
+      metaPadding,
+      message: metaPadding
+        ? `تم إرسال القالب لميتا للمراجعة. ${metaPadding}`
+        : 'تم إرسال القالب لميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
     });
   } catch (error) {
     const requestDebug = {
