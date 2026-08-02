@@ -106,7 +106,7 @@ const createEmptyTemplateForm = (
   superAdminMode = false,
 ): TemplateFormState => ({
   name: "",
-  category: superAdminMode ? "CUSTOMER" : "ORDERS",
+  category: superAdminMode ? "CUSTOMER" : "PRODUCTS",
   eventType: superAdminMode ? "NEW_SIGNUP_WELCOME" : "",
   content: "",
   isActive: true,
@@ -160,7 +160,6 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
             : "System";
 
       return {
-        ORDERS: t("whatsappNotifications.tabs.orders"),
         PRODUCTS: t("whatsappNotifications.tabs.products"),
         CUSTOMER: i18n.language === "ar" ? "العملاء" : "Customers",
         MARKETING: t("whatsappNotifications.tabs.marketing"),
@@ -174,14 +173,6 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
   const EVENT_LABELS = useMemo(
     () => ({
-      ORDER_CREATED: t("whatsappNotifications.orders.orderCreated"),
-      ORDER_CONFIRMED: t("whatsappNotifications.orders.orderConfirmed"),
-      ORDER_PROCESSING: t("whatsappNotifications.orders.orderProcessing"),
-      ORDER_SHIPPED: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_OUT_FOR_DELIVERY: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_DELIVERED: t("whatsappNotifications.orders.orderDelivered"),
-      ORDER_CANCELLED: t("whatsappNotifications.orders.orderCancelled"),
-      PAYMENT_REMINDER: t("whatsappNotifications.orders.paymentReminder"),
       BACK_IN_STOCK: t("whatsappNotifications.products.backInStock"),
       PRICE_DROP: t("whatsappNotifications.products.priceDrop"),
       NEW_PRODUCT: t("whatsappNotifications.products.newProduct"),
@@ -240,7 +231,11 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     [EVENT_LABELS, superAdminMode],
   );
 
-  const defaultCategory = searchParams.get("category") || "ALL";
+  const defaultCategory = (() => {
+    const param = searchParams.get("category");
+    if (param && param !== "ORDERS") return param;
+    return "ALL";
+  })();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -382,7 +377,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   // Sync category state with searchParams
   useEffect(() => {
     const categoryParam = searchParams.get("category");
-    if (categoryParam && categoryParam !== templateCategory) {
+    if (categoryParam && categoryParam !== "ORDERS" && categoryParam !== templateCategory) {
       setTemplateCategory(categoryParam);
     }
   }, [searchParams]);
@@ -400,7 +395,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     if (editingTemplate) {
       setTemplateForm({
         name: editingTemplate.name || "",
-        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "ORDERS"),
+        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "PRODUCTS"),
         eventType: editingTemplate.eventType || "",
         content: editingTemplate.content || "",
         isActive: editingTemplate.isActive ?? true,
@@ -477,6 +472,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => {
+      if (template.category === "ORDERS") return false;
+
       const matchSearch =
         templateSearch.trim() === "" ||
         (template.name &&

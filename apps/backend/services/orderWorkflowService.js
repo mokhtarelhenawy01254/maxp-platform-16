@@ -615,6 +615,7 @@ class OrderWorkflowService {
                   recipientType: 'CUSTOMER',
                   category: 'ORDERS',
                   eventType,
+                  fallbackEventType: statusCode.toUpperCase(),
                   variables,
                   orderId: order.id
               });

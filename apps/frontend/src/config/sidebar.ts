@@ -569,7 +569,6 @@ export const getSidebarConfig = (
                 { to: '/settings/order-workflow', icon: ArrowLeftRight, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
                 { to: '/settings/cod-deposit', icon: Banknote, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates', 'قوالب الواتساب للحالات'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
-                { to: '/whatsapp/templates?category=ORDERS', icon: Bell, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('store')

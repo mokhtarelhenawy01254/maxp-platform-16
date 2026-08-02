@@ -2038,22 +2038,24 @@ async function sendNotification(options) {
     if (options.contentOverride) {
       console.log(`[WHATSAPP-NOTIFY] Using contentOverride for journey notification`);
     } else {
-      template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-        where: {
-          companyId,
-          eventType,
-          isActive: true
-        },
-        orderBy: { isDefault: 'desc' }
-      }));
-
-      // محاولة العثور على القالب برمز الحالة مباشرة
+      // محاولة العثور على القالب برمز الحالة مباشرة أولاً
       // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
-      if (!template && fallbackEventType && fallbackEventType !== eventType) {
+      if (fallbackEventType && fallbackEventType !== eventType) {
         template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
           where: {
             companyId,
             eventType: fallbackEventType,
+            isActive: true
+          },
+          orderBy: { isDefault: 'desc' }
+        }));
+      }
+
+      if (!template) {
+        template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+          where: {
+            companyId,
+            eventType,
             isActive: true
           },
           orderBy: { isDefault: 'desc' }

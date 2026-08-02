@@ -78,7 +78,4 @@ router.post('/templates/:id/publish', verifyToken.authenticateToken, whatsappNot
 // مزامنة حالة القوالب مع ميتا
 router.post('/templates/sync-status', verifyToken.authenticateToken, whatsappNotificationController.syncTemplateStatuses);
 
-// إرسال تأكيد طلب عبر قالب ميتا
-router.post('/send-order-confirmation', verifyToken.authenticateToken, whatsappNotificationController.sendOrderConfirmationMeta);
-
 module.exports = router;

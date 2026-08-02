@@ -10,7 +10,6 @@ import {
   Edit,
   FileText,
   Megaphone,
-  Package,
   Plus,
   RefreshCw,
   Save,
@@ -170,7 +169,6 @@ type TemplateFormState = {
 
 type TabId =
   | "general"
-  | "orders"
   | "products"
   | "abandoned-cart"
   | "marketing"
@@ -229,7 +227,7 @@ const createEmptyTemplateForm = (
   superAdminMode = false,
 ): TemplateFormState => ({
   name: "",
-  category: superAdminMode ? "CUSTOMER" : "ORDERS",
+  category: superAdminMode ? "CUSTOMER" : "PRODUCTS",
   eventType: superAdminMode ? "NEW_SIGNUP_WELCOME" : "",
   content: "",
   isActive: true,
@@ -405,7 +403,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
       return [
         { id: "general", label: t("whatsappNotifications.tabs.general"), icon: Settings },
-        { id: "orders", label: t("whatsappNotifications.tabs.orders"), icon: Package },
         { id: "products", label: t("whatsappNotifications.tabs.products"), icon: ShoppingCart },
         { id: "abandoned-cart", label: t("whatsappNotifications.tabs.abandonedCart"), icon: ShoppingCart },
         { id: "marketing", label: t("whatsappNotifications.tabs.marketing"), icon: Megaphone },
@@ -452,7 +449,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             : "System";
 
       return {
-        ORDERS: t("whatsappNotifications.tabs.orders"),
         PRODUCTS: t("whatsappNotifications.tabs.products"),
         CUSTOMER: i18n.language === "ar" ? "العملاء" : "Customers",
         MARKETING: t("whatsappNotifications.tabs.marketing"),
@@ -467,14 +463,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
   const EVENT_LABELS = useMemo(
     () => ({
-      ORDER_CREATED: t("whatsappNotifications.orders.orderCreated"),
-      ORDER_CONFIRMED: t("whatsappNotifications.orders.orderConfirmed"),
-      ORDER_PROCESSING: t("whatsappNotifications.orders.orderProcessing"),
-      ORDER_SHIPPED: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_OUT_FOR_DELIVERY: t("whatsappNotifications.orders.orderShipped"),
-      ORDER_DELIVERED: t("whatsappNotifications.orders.orderDelivered"),
-      ORDER_CANCELLED: t("whatsappNotifications.orders.orderCancelled"),
-      PAYMENT_REMINDER: t("whatsappNotifications.orders.paymentReminder"),
       BACK_IN_STOCK: t("whatsappNotifications.products.backInStock"),
       PRICE_DROP: t("whatsappNotifications.products.priceDrop"),
       NEW_PRODUCT: t("whatsappNotifications.products.newProduct"),
@@ -560,7 +548,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [testPhone, setTestPhone] = useState("");
   const [testEventType, setTestEventType] = useState(
-    superAdminMode ? "NEW_SIGNUP_WELCOME" : "ORDER_CREATED",
+    superAdminMode ? "NEW_SIGNUP_WELCOME" : "BACK_IN_STOCK",
   );
   const [sendingTest, setSendingTest] = useState(false);
 
@@ -660,7 +648,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
     if (editingTemplate) {
       setTemplateForm({
         name: editingTemplate.name || "",
-        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "ORDERS"),
+        category: editingTemplate.category || (superAdminMode ? "CUSTOMER" : "PRODUCTS"),
         eventType: editingTemplate.eventType || "",
         content: editingTemplate.content || "",
         isActive: editingTemplate.isActive ?? true,
@@ -672,7 +660,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   }, [editingTemplate, superAdminMode, templateDialogOpen]);
 
   useEffect(() => {
-    const defaultEventType = superAdminMode ? "NEW_SIGNUP_WELCOME" : "ORDER_CREATED";
+    const defaultEventType = superAdminMode ? "NEW_SIGNUP_WELCOME" : "BACK_IN_STOCK";
     const allowedEvents = new Set(availableEventEntries.map(([key]) => key));
 
     if (!allowedEvents.has(testEventType)) {
@@ -832,6 +820,8 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
     const allowedEvents = new Set(availableEventEntries.map(([key]) => key));
 
     return templates.filter((template) => {
+      if (template.category === "ORDERS") return false;
+
       if (superAdminMode && !allowedEvents.has(template.eventType)) {
         return false;
       }
@@ -873,36 +863,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
   ).length;
   const currentSession = sessions.find(
     (session) => session.id === settings?.defaultSessionId,
-  );
-
-  const orderOptions = useMemo(
-    () => [
-      {
-        key: "orderCreatedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderCreated"),
-      },
-      {
-        key: "orderConfirmedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderConfirmed"),
-      },
-      {
-        key: "orderProcessingEnabled" as const,
-        label: t("whatsappNotifications.orders.orderProcessing"),
-      },
-      {
-        key: "orderShippedEnabled" as const,
-        label: t("whatsappNotifications.orders.orderShipped"),
-      },
-      {
-        key: "orderDeliveredEnabled" as const,
-        label: t("whatsappNotifications.orders.orderDelivered"),
-      },
-      {
-        key: "orderCancelledEnabled" as const,
-        label: t("whatsappNotifications.orders.orderCancelled"),
-      },
-    ],
-    [t],
   );
 
   const productOptions = useMemo(
@@ -1596,83 +1556,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               </WhatsAppSurfaceCard>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-4">
-          <WhatsAppSurfaceCard
-            title={ts("whatsappNotifications.orders.title")}
-            description={
-              i18n.language === "ar"
-                ? "شغّل أو أوقف رسائل الطلبات حسب كل مرحلة تشغيل."
-                : "Enable or pause order-related WhatsApp messages for each fulfillment milestone."
-            }
-          >
-            <div className="space-y-4">
-              <SectionHeader
-                icon={Package}
-                title={ts("whatsappNotifications.orders.title")}
-                description={pageDescription}
-                checked={settings.orderNotificationsEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("orderNotificationsEnabled", checked)
-                }
-                toneClass="bg-blue-500/10 text-blue-700"
-              />
-
-              {settings.orderNotificationsEnabled ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {orderOptions.map((item) => (
-                    <FeatureToggle
-                      key={item.key}
-                      label={item.label}
-                      checked={Boolean(settings[item.key])}
-                      onCheckedChange={(checked) =>
-                        updateSetting(item.key, checked)
-                      }
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
-
-          <WhatsAppSurfaceCard
-            title={ts("whatsappNotifications.orders.paymentReminder")}
-            description={ts("whatsappNotifications.orders.paymentReminderDesc")}
-          >
-            <div className="space-y-4">
-              <FeatureToggle
-                label={t("whatsappNotifications.orders.paymentReminder")}
-                description={ts("whatsappNotifications.orders.paymentReminderDesc")}
-                checked={settings.paymentReminderEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("paymentReminderEnabled", checked)
-                }
-              />
-
-              {settings.paymentReminderEnabled ? (
-                <div className="space-y-2">
-                  <Label htmlFor="payment-reminder-hours">
-                    {t("whatsappNotifications.orders.reminderAfterHours")}
-                  </Label>
-                  <Input
-                    id="payment-reminder-hours"
-                    type="number"
-                    min={1}
-                    max={168}
-                    value={settings.paymentReminderHours || 24}
-                    onChange={(event) =>
-                      updateSetting(
-                        "paymentReminderHours",
-                        parseInteger(event.target.value, 24),
-                      )
-                    }
-                    className="h-11 bg-[color:var(--color-card)]"
-                  />
-                </div>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
         </TabsContent>
 
         <TabsContent value="products" className="space-y-4">

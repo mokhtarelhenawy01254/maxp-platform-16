@@ -107,7 +107,10 @@ async function getTemplates(req, res) {
     if (eventType) where.eventType = eventType;
 
     const templates = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
-      where,
+      where: {
+        ...where,
+        ...(category ? {} : { category: { not: 'ORDERS' } })
+      },
       orderBy: [{ category: 'asc' }, { eventType: 'asc' }]
     }));
 
@@ -117,18 +120,20 @@ async function getTemplates(req, res) {
     const allTemplates = [...templates];
 
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
-      if (!existingEvents.includes(evtType)) {
-        allTemplates.push({
-          id: null,
-          eventType: evtType,
-          name: template.name,
-          content: template.content,
-          variables: JSON.stringify(template.variables),
-          isDefault: true,
-          isActive: true,
-          category: getCategoryForEvent(evtType)
-        });
-      }
+      if (existingEvents.includes(evtType)) continue;
+      const templateCategory = getCategoryForEvent(evtType);
+      if (!category && templateCategory === 'ORDERS') continue;
+      if (category && templateCategory !== category) continue;
+      allTemplates.push({
+        id: null,
+        eventType: evtType,
+        name: template.name,
+        content: template.content,
+        variables: JSON.stringify(template.variables),
+        isDefault: true,
+        isActive: true,
+        category: getCategoryForEvent(evtType)
+      });
     }
 
     res.json({
@@ -1016,54 +1021,6 @@ async function syncTemplateStatuses(req, res) {
   }
 }
 
-async function sendOrderConfirmationMeta(req, res) {
-  try {
-    const { companyId, id: userId } = req.user;
-    const { sessionId, to, orderNumber, customerName, total, currency, orderId } = req.body;
-
-    if (!sessionId || !to || !orderNumber) {
-      return res.status(400).json({ error: 'sessionId, to, orderNumber مطلوبون' });
-    }
-
-    // 1. جلب القالب المحلي من نوع ORDER_CONFIRMED
-    const template = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-      where: { companyId, eventType: 'ORDER_CONFIRMED', metaTemplateName: { not: null } },
-      orderBy: { updatedAt: 'desc' }
-    });
-
-    if (!template) {
-      return res.status(400).json({ error: 'لا يوجد قالب ORDER_CONFIRMED منشور على ميتا. انشر القالب أولاً.' });
-    }
-
-    // 2. تجهيز الـ components
-    const components = [{
-      type: 'BODY',
-      parameters: [
-        { type: 'text', text: customerName || 'عميلنا العزيز' },
-        { type: 'text', text: String(orderNumber) },
-        { type: 'text', text: String(total || '') },
-        { type: 'text', text: currency || 'ج.م' }
-      ]
-    }];
-
-    // 3. إرسال عبر WhatsAppMessageHandler
-    const { WhatsAppMessageHandler } = require('../services/whatsapp');
-    const result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, to, template.metaTemplateName, {
-      name: template.metaTemplateName,
-      language: template.metaTemplateLanguage || 'ar',
-      components
-    }, {
-      templateBody: template.content,
-      senderId: userId
-    });
-
-    res.json({ success: true, message: result });
-  } catch (error) {
-    console.error('❌ Error sending order confirmation:', error?.response?.data || error.message);
-    res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال تأكيد الطلب' });
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1083,6 +1040,5 @@ module.exports = {
   getCustomerPreferences,
   updateCustomerPreferences,
   publishTemplateToMeta,
-  syncTemplateStatuses,
-  sendOrderConfirmationMeta
+  syncTemplateStatuses
 };
