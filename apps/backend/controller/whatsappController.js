@@ -2109,7 +2109,11 @@ async function archiveChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2146,7 +2150,11 @@ async function pinChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2183,7 +2191,11 @@ async function muteChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2220,7 +2232,11 @@ async function markChatUnread(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only (the unread badge reads unreadCount)
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        }
 
         // Update local DB if needed (optional, as unread count comes from messages usually)
         if (unread) {

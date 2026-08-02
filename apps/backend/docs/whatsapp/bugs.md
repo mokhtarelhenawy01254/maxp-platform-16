@@ -2,6 +2,21 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] Mark Chat as Unread (and Mute/Archive/Pin) Returned 500 "Session not connected" for META_CLOUD Sessions
+
+- **Date**: 2026-08-02
+- **Description**: Clicking "mark as unread" in the WhatsApp inbox failed with `POST /api/v1/whatsapp/chats/unread → 500` and a raw English error `Session not connected` in the frontend toast. The same failure affected mute/archive/pin for cloud sessions.
+- **Root Cause**: The company's connected WhatsApp was a **META_CLOUD** (official WhatsApp Cloud API) session. `resolveActiveSessionId` treats META_CLOUD as available based on DB status (`CONNECTED` + `metaAccessToken`), but `WhatsAppManager.markChatUnread/muteChat/archiveChat/pinChat` all require an in-memory Baileys socket (`activeSessions.get(sessionId)` with `status === 'connected'`). META_CLOUD sessions never have a Baileys socket, so every call threw `Error: Session not connected` and the local DB update (which actually drives the inbox badge) never ran. The Meta Cloud API has no chat-modify endpoint (unread/mute/archive/pin), so local-only persistence is the only correct behavior for cloud sessions.
+- **Resolution**:
+    1. In `apps/backend/controller/whatsappController.js`, `markChatUnread`, `muteChat`, `archiveChat`, and `pinChat` now skip the `WhatsAppManager.*` socket call when `session.provider === 'META_CLOUD'` and persist the local `whatsAppContact` state directly (`unreadCount` increment, `isMuted`, `isArchived`, `isPinned`).
+    2. BAILEYS path is unchanged; its disconnection is already guarded by `resolveActiveSessionId`'s `WA_SESSION_NOT_READY` Arabic error.
+- **Verification**:
+    - Live server logs confirmed the error at `WhatsAppManager.js:3769` for company `cmleybpf70028juo2wwpmp8rt` (META_CLOUD `cms1o1o9u…` CONNECTED, Baileys `cmpbap1ue…` QR_PENDING).
+    - `node --check` on `whatsappController.js` passes; `whatsappController.sessionLifecycle` jest test passes (`getConversations` failure is pre-existing).
+- **Files Modified**:
+    - `apps/backend/controller/whatsappController.js`
+    - `apps/backend/docs/whatsapp/bugs.md`
+
 ### [FIX] WhatsApp Dead Socket Recovery & Pre-Send Connection Validation
 
 - **Date**: 2026-07-13
