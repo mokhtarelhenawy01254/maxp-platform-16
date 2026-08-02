@@ -186,3 +186,16 @@ endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.na
 - `src/pages/orders/IncompleteOrders.tsx` — "Log contact" button + modal.
 - `src/pages/orders/IncompleteReports.tsx` — byTeam/natural breakdown chips and team
   contacts/responses/response-rate columns.
+
+## Report period range (presets + custom)
+
+`GET /orders-new/incomplete/reports` now supports either:
+
+- `days=N` — last N days (default 30), or
+- `from=YYYY-MM-DD&to=YYYY-MM-DD` — a custom inclusive date range (`to` covers the
+  whole day up to 23:59:59.999). When `from` is provided it takes precedence over
+  `days`.
+
+The response includes `from` / `to` (resolved timestamps) and `periodDays` (null for
+a custom range). The reports page offers presets (7/14/30/90/365 days) plus a
+"custom period" option with from/to date pickers.

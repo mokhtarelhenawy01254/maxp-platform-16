@@ -56,7 +56,7 @@ interface ReportData {
   }>;
 }
 
-const PERIODS = ["7", "30", "90"];
+const PERIODS = ["7", "14", "30", "90", "365", "custom"];
 
 interface StatCard {
   label: string;
@@ -72,6 +72,8 @@ const IncompleteReports: React.FC = () => {
   const isRTL = getDirection() === "rtl";
 
   const [period, setPeriod] = useState("30");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +83,16 @@ const IncompleteReports: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      const params: Record<string, string> = {};
+      if (period === "custom") {
+        if (customFrom) params["from"] = customFrom;
+        if (customTo) params["to"] = customTo;
+      } else {
+        params["days"] = period;
+      }
       const response = await apiClient.get<{ success: boolean; data?: ReportData }>(
         "/orders-new/incomplete/reports",
-        { params: { days: period } },
+        { params },
       );
       if (response.data?.success && response.data?.data) {
         setData(response.data.data);
@@ -96,7 +105,7 @@ const IncompleteReports: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period, t]);
+  }, [period, customFrom, customTo, t]);
 
   useEffect(() => {
     fetchReports();
@@ -189,14 +198,42 @@ const IncompleteReports: React.FC = () => {
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
-            aria-label={t("orders.incompleteDays", { count: Number(period) }) as string}
+            aria-label={t("orders.incompletePeriodLabel") as string}
           >
             {PERIODS.map((p) => (
               <option key={p} value={p}>
-                {t("orders.incompleteDays", { count: Number(p) })}
+                {p === "custom"
+                  ? t("orders.incompleteCustomPeriod")
+                  : t("orders.incompleteDays", { count: Number(p) })}
               </option>
             ))}
           </select>
+          {period === "custom" && (
+            <>
+              <label htmlFor="incomplete-report-from" className="sr-only">
+                {t("orders.incompleteFrom")}
+              </label>
+              <input
+                id="incomplete-report-from"
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              />
+              <label htmlFor="incomplete-report-to" className="sr-only">
+                {t("orders.incompleteTo")}
+              </label>
+              <input
+                id="incomplete-report-to"
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              />
+            </>
+          )}
           <button
             type="button"
             onClick={() => setRefreshKey((prev) => prev + 1)}

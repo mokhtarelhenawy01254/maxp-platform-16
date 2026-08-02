@@ -1367,8 +1367,28 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       ]
     };
 
-    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
-    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    // فترة زمنية: إما days (آخر N يوم) أو from/to مخصص
+    const fromRaw = (req.query.from || '').toString();
+    const toRaw = (req.query.to || '').toString();
+    let since;
+    let toDate = null;
+    if (fromRaw) {
+      since = new Date(fromRaw);
+      if (Number.isNaN(since.getTime())) {
+        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+    } else {
+      const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+      since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+    if (toRaw) {
+      const parsedTo = new Date(toRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        // يشمل اليوم كاملاً حتى آخر لحظة
+        toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      }
+    }
+    const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
 
     const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
       prisma.guestCart.aggregate({
@@ -1387,7 +1407,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         _sum: { total: true }
       }),
       prisma.cartConversionLog.findMany({
-        where: { companyId, convertedAt: { gte: since } },
+        where: { companyId, convertedAt: timeRange },
         orderBy: { convertedAt: 'desc' },
         select: {
           cartId: true,
@@ -1402,7 +1422,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         }
       }),
       prisma.cartContactLog.findMany({
-        where: { companyId, createdAt: { gte: since } },
+        where: { companyId, createdAt: timeRange },
         orderBy: { createdAt: 'desc' },
         select: {
           cartId: true,
@@ -1483,7 +1503,9 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     res.json({
       success: true,
       data: {
-        periodDays: days,
+        periodDays: fromRaw ? null : (parseInt(req.query.days, 10) || 30),
+        from: since ? since.toISOString() : null,
+        to: toDate ? toDate.toISOString() : null,
         pipeline: {
           total,
           active: activeAgg._count._all || 0,

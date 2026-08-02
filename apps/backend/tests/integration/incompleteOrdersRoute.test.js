@@ -342,6 +342,21 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     expect(log.employeeId).toBe('test-admin-user');
     expect(log.result).toBe('no_reply');
   });
+
+  test('GET /incomplete/reports accepts a custom from/to range', async () => {
+    const from = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = new Date().toISOString().slice(0, 10);
+
+    const response = await request(app).get(
+      `/api/v1/orders-new/incomplete/reports?from=${from}&to=${to}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.from).toBeTruthy();
+    expect(response.body.data.to).toBeTruthy();
+    expect(Array.isArray(response.body.data.trend)).toBe(true);
+  });
 });
 
 describe('Incomplete orders status tabs (active vs lost)', () => {
