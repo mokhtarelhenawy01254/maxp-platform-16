@@ -349,55 +349,57 @@ class AttendanceService {
       // تجهيز بيانات الموقع للتخزين
       // Already normalized above
 
-      // التحقق من النطاق الجغرافي إذا كان مفعلاً
-      if (hrSettings && hrSettings.geofenceEnabled) {
+      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل)
+      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME") {
         if (!data.location) {
-          throw new AttendanceError("يجب السماح بالوصول للموقع لتسجيل الحضور");
+          const error = new AttendanceError(
+            "يجب السماح بالوصول للموقع لتسجيل الحضور من المكتب",
+          );
+          error.statusCode = 403;
+          error.geofenceData = { requiresLocation: true };
+          throw error;
         }
 
-        // نقوم بفحص النطاق فقط إذا لم يكن العمل من المنزل
-        if (data.workMode !== "HOME") {
-          let userLocation;
-          try {
-            userLocation =
-              typeof data.location === "string"
-                ? JSON.parse(data.location)
-                : data.location;
-          } catch (e) {
-            throw new AttendanceError("بيانات الموقع غير صحيحة");
-          }
+        let userLocation;
+        try {
+          userLocation =
+            typeof data.location === "string"
+              ? JSON.parse(data.location)
+              : data.location;
+        } catch (e) {
+          throw new AttendanceError("بيانات الموقع غير صحيحة");
+        }
 
-          if (!hrSettings.officeLatitude || !hrSettings.officeLongitude) {
-            throw new AttendanceError(
-              "لم يتم تحديد موقع المكتب. يرجى التواصل مع الإدارة.",
-            );
-          }
-
-          const geofenceCheck = isWithinGeofence(
-            userLocation.latitude,
-            userLocation.longitude,
-            Number(hrSettings.officeLatitude),
-            Number(hrSettings.officeLongitude),
-            hrSettings.geofenceRadius || 200,
-            userLocation.accuracy,
+        if (!hrSettings.officeLatitude || !hrSettings.officeLongitude) {
+          throw new AttendanceError(
+            "لم يتم تحديد موقع المكتب. يرجى التواصل مع الإدارة.",
           );
+        }
 
-          if (!geofenceCheck.isWithin) {
-            const error = new AttendanceError(
-              formatGeofenceError(
-                geofenceCheck.effectiveDistance,
-                geofenceCheck.allowedRadius,
-                geofenceCheck.accuracy,
-              ),
-            );
-            error.statusCode = 403;
-            error.geofenceData = {
-              distance: geofenceCheck.effectiveDistance,
-              allowedRadius: geofenceCheck.allowedRadius,
-              isWithin: false,
-            };
-            throw error;
-          }
+        const geofenceCheck = isWithinGeofence(
+          userLocation.latitude,
+          userLocation.longitude,
+          Number(hrSettings.officeLatitude),
+          Number(hrSettings.officeLongitude),
+          hrSettings.geofenceRadius || 200,
+          userLocation.accuracy,
+        );
+
+        if (!geofenceCheck.isWithin) {
+          const error = new AttendanceError(
+            formatGeofenceError(
+              geofenceCheck.effectiveDistance,
+              geofenceCheck.allowedRadius,
+              geofenceCheck.accuracy,
+            ),
+          );
+          error.statusCode = 403;
+          error.geofenceData = {
+            distance: geofenceCheck.effectiveDistance,
+            allowedRadius: geofenceCheck.allowedRadius,
+            isWithin: false,
+          };
+          throw error;
         }
       }
 
@@ -654,57 +656,57 @@ class AttendanceService {
       // تجهيز بيانات الموقع للتخزين
       // Already normalized above
 
-      // التحقق من النطاق الجغرافي إذا كان مفعلاً
-      if (hrSettings && hrSettings.geofenceEnabled) {
+      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل)
+      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME") {
         if (!data.location) {
+          const error = new AttendanceError(
+            "يجب السماح بالوصول للموقع لتسجيل الانصراف من المكتب",
+          );
+          error.statusCode = 403;
+          error.geofenceData = { requiresLocation: true };
+          throw error;
+        }
+
+        let userLocation;
+        try {
+          userLocation =
+            typeof data.location === "string"
+              ? JSON.parse(data.location)
+              : data.location;
+        } catch (e) {
+          throw new AttendanceError("بيانات الموقع غير صحيحة");
+        }
+
+        if (!hrSettings.officeLatitude || !hrSettings.officeLongitude) {
           throw new AttendanceError(
-            "يجب السماح بالوصول للموقع لتسجيل الانصراف",
+            "لم يتم تحديد موقع المكتب. يرجى التواصل مع الإدارة.",
           );
         }
 
-        // نقوم بفحص النطاق فقط إذا لم يكن العمل من المنزل
-        if (data.workMode !== "HOME") {
-          let userLocation;
-          try {
-            userLocation =
-              typeof data.location === "string"
-                ? JSON.parse(data.location)
-                : data.location;
-          } catch (e) {
-            throw new AttendanceError("بيانات الموقع غير صحيحة");
-          }
+        const geofenceCheck = isWithinGeofence(
+          userLocation.latitude,
+          userLocation.longitude,
+          Number(hrSettings.officeLatitude),
+          Number(hrSettings.officeLongitude),
+          hrSettings.geofenceRadius || 200,
+          userLocation.accuracy,
+        );
 
-          if (!hrSettings.officeLatitude || !hrSettings.officeLongitude) {
-            throw new AttendanceError(
-              "لم يتم تحديد موقع المكتب. يرجى التواصل مع الإدارة.",
-            );
-          }
-
-          const geofenceCheck = isWithinGeofence(
-            userLocation.latitude,
-            userLocation.longitude,
-            Number(hrSettings.officeLatitude),
-            Number(hrSettings.officeLongitude),
-            hrSettings.geofenceRadius || 200,
-            userLocation.accuracy,
+        if (!geofenceCheck.isWithin) {
+          const error = new AttendanceError(
+            formatGeofenceError(
+              geofenceCheck.effectiveDistance,
+              geofenceCheck.allowedRadius,
+              geofenceCheck.accuracy,
+            ),
           );
-
-          if (!geofenceCheck.isWithin) {
-            const error = new AttendanceError(
-              formatGeofenceError(
-                geofenceCheck.effectiveDistance,
-                geofenceCheck.allowedRadius,
-                geofenceCheck.accuracy,
-              ),
-            );
-            error.statusCode = 403;
-            error.geofenceData = {
-              distance: geofenceCheck.effectiveDistance,
-              allowedRadius: geofenceCheck.allowedRadius,
-              isWithin: false,
-            };
-            throw error;
-          }
+          error.statusCode = 403;
+          error.geofenceData = {
+            distance: geofenceCheck.effectiveDistance,
+            allowedRadius: geofenceCheck.allowedRadius,
+            isWithin: false,
+          };
+          throw error;
         }
       }
 

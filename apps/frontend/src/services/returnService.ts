@@ -133,6 +133,7 @@ export const returnService = {
     apiClient.post("/returns/categories", data),
   updateCategory: (id: string, data: any) =>
     apiClient.put(`/returns/categories/${id}`, data),
+  deleteCategory: (id: string) => apiClient.delete(`/returns/categories/${id}`),
 
   // Reasons (Updated with categoryId)
   getReasons: () => apiClient.get<ReturnReason[]>("/returns/reasons"),

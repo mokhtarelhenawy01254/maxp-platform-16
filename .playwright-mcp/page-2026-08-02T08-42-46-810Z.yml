@@ -1,0 +1,222 @@
+- generic [ref=f22e7]:
+  - generic [ref=f22e10]:
+    - generic [ref=f22e12]:
+      - generic [ref=f22e13]:
+        - link [ref=f22e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - img "MAX-P" [ref=f22e16]
+        - generic [ref=f22e17]:
+          - button "sidebar.myAccountSection" [ref=f22e18] [cursor=pointer]
+          - button "sidebar.companyManagementSection" [ref=f22e25] [cursor=pointer]
+          - button "sidebar.marketplace" [ref=f22e31] [cursor=pointer]
+          - button "sidebar.settingsSection" [ref=f22e37] [cursor=pointer]
+      - generic [ref=f22e43]:
+        - generic [ref=f22e44]:
+          - link [ref=f22e46] [cursor=pointer]:
+            - /url: /company-dashboard
+            - img "MAX-P" [ref=f22e47]
+            - generic [ref=f22e48]:
+              - heading "m22" [level=2] [ref=f22e49]
+              - paragraph [ref=f22e50]: sidebar.myAccountSection
+          - button "sidebar.collapse" [ref=f22e51] [cursor=pointer]
+        - generic [ref=f22e54]:
+          - generic [ref=f22e55]: sidebar.searchInMenu
+          - textbox "sidebar.searchInMenu" [ref=f22e56]:
+            - /placeholder: sidebar.search
+        - generic [ref=f22e57]:
+          - link "sidebar.myDashboard" [ref=f22e59] [cursor=pointer]:
+            - /url: /my-dashboard
+          - link "sidebar.myProfile" [ref=f22e65] [cursor=pointer]:
+            - /url: /profile
+          - link "sidebar.myActivity" [ref=f22e73] [cursor=pointer]:
+            - /url: /my-activity
+    - generic [ref=f22e79]:
+      - banner [ref=f22e80]:
+        - generic [ref=f22e82]:
+          - generic [ref=f22e83]:
+            - button "تبديل للوضع الليلي" [ref=f22e84] [cursor=pointer]
+            - button "Change language" [ref=f22e86] [cursor=pointer]:
+              - generic [ref=f22e87]: ar
+            - button "الإشعارات" [ref=f22e89] [cursor=pointer]
+            - link "header.whatsapp" [ref=f22e93] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "sidebar.profile CS" [ref=f22e98]:
+            - generic [ref=f22e99]: CS
+            - generic [ref=f22e100]:
+              - generic [ref=f22e101]: Codex
+              - generic [ref=f22e102]: OWNER
+      - main [ref=f22e105]:
+        - generic [ref=f22e106]:
+          - generic [ref=f22e108]:
+            - heading "returns.k_160" [level=1] [ref=f22e109]
+            - paragraph [ref=f22e110]: returns.k_161
+          - generic [ref=f22e111]:
+            - button "returns.k_162" [ref=f22e112]
+            - button "returns.k_163" [ref=f22e116]
+          - generic [ref=f22e119]:
+            - generic [ref=f22e120]:
+              - generic [ref=f22e126]:
+                - heading "returns.k_164" [level=2] [ref=f22e127]
+                - paragraph [ref=f22e128]: returns.k_165
+              - generic [ref=f22e129]:
+                - generic [ref=f22e130]:
+                  - generic [ref=f22e136]:
+                    - generic [ref=f22e137]: returns.k_47
+                    - generic [ref=f22e138]: returns.k_48
+                  - switch [checked] [ref=f22e139]
+                  - checkbox [checked] [ref=f22e140]
+                - generic [ref=f22e141]:
+                  - generic [ref=f22e147]:
+                    - generic [ref=f22e148]: returns.k_49
+                    - generic [ref=f22e149]: returns.k_50
+                  - switch [checked] [ref=f22e150]
+                  - checkbox [checked] [ref=f22e151]
+                - generic [ref=f22e152]:
+                  - generic [ref=f22e158]:
+                    - generic [ref=f22e159]: returns.k_51
+                    - generic [ref=f22e160]: returns.k_52
+                  - switch [checked] [ref=f22e161]
+                  - checkbox [checked] [ref=f22e162]
+                - generic [ref=f22e163]:
+                  - generic [ref=f22e169]:
+                    - generic [ref=f22e170]: returns.k_53
+                    - generic [ref=f22e171]: returns.k_54
+                  - switch [checked] [ref=f22e172]
+                  - checkbox [checked] [ref=f22e173]
+                - generic [ref=f22e174]:
+                  - generic [ref=f22e180]:
+                    - generic [ref=f22e181]: returns.k_55
+                    - generic [ref=f22e182]: returns.k_56
+                  - switch [checked] [ref=f22e183]
+                  - checkbox [checked] [ref=f22e184]
+                - generic [ref=f22e185]:
+                  - generic [ref=f22e191]:
+                    - generic [ref=f22e192]: returns.k_57
+                    - generic [ref=f22e193]: returns.k_58
+                  - switch [checked] [ref=f22e194]
+                  - checkbox [checked] [ref=f22e195]
+                - generic [ref=f22e196]:
+                  - generic [ref=f22e202]:
+                    - generic [ref=f22e203]: returns.k_59
+                    - generic [ref=f22e204]: returns.k_60
+                  - switch [checked] [ref=f22e205]
+                  - checkbox [checked] [ref=f22e206]
+                - generic [ref=f22e207]:
+                  - generic [ref=f22e213]:
+                    - generic [ref=f22e214]: returns.k_63
+                    - generic [ref=f22e215]: returns.k_64
+                  - switch [checked] [ref=f22e216]
+                  - checkbox [checked] [ref=f22e217]
+                - generic [ref=f22e218]:
+                  - generic [ref=f22e224]:
+                    - generic [ref=f22e225]: returns.k_65
+                    - generic [ref=f22e226]: returns.k_66
+                  - switch [checked] [ref=f22e227]
+                  - checkbox [checked] [ref=f22e228]
+                - generic [ref=f22e229]:
+                  - generic [ref=f22e235]:
+                    - generic [ref=f22e236]: returns.k_67
+                    - generic [ref=f22e237]: returns.k_68
+                  - switch [checked] [ref=f22e238]
+                  - checkbox [checked] [ref=f22e239]
+            - generic [ref=f22e240]:
+              - generic [ref=f22e246]:
+                - heading "returns.k_166" [level=2] [ref=f22e247]
+                - paragraph [ref=f22e248]: returns.k_167
+              - generic [ref=f22e249]:
+                - generic [ref=f22e250]:
+                  - generic [ref=f22e258]:
+                    - generic [ref=f22e259]: returns.k_69
+                    - generic [ref=f22e260]: returns.k_70
+                  - switch [ref=f22e261]
+                  - checkbox [ref=f22e262]
+                - generic [ref=f22e263]:
+                  - generic [ref=f22e271]:
+                    - generic [ref=f22e272]: returns.k_71
+                    - generic [ref=f22e273]: returns.k_72
+                  - switch [ref=f22e274]
+                  - checkbox [ref=f22e275]
+            - generic [ref=f22e276]:
+              - generic [ref=f22e283]:
+                - heading "returns.k_170" [level=3] [ref=f22e284]
+                - paragraph [ref=f22e285]: returns.k_171
+              - generic [ref=f22e286]:
+                - generic [ref=f22e287]:
+                  - generic [ref=f22e293]:
+                    - generic [ref=f22e294]: returns.k_1
+                    - generic [ref=f22e295]: PENDING
+                  - switch [checked] [ref=f22e296]
+                  - checkbox [checked] [ref=f22e297]
+                - generic [ref=f22e298]:
+                  - generic [ref=f22e304]:
+                    - generic [ref=f22e305]: returns.k_2
+                    - generic [ref=f22e306]: CONFIRMED
+                  - switch [checked] [ref=f22e307]
+                  - checkbox [checked] [ref=f22e308]
+                - generic [ref=f22e309]:
+                  - generic [ref=f22e315]:
+                    - generic [ref=f22e316]: returns.k_3
+                    - generic [ref=f22e317]: SCHEDULED
+                  - switch [checked] [ref=f22e318]
+                  - checkbox [checked] [ref=f22e319]
+                - generic [ref=f22e320]:
+                  - generic [ref=f22e326]:
+                    - generic [ref=f22e327]: returns.k_4
+                    - generic [ref=f22e328]: PROCESSING
+                  - switch [checked] [ref=f22e329]
+                  - checkbox [checked] [ref=f22e330]
+                - generic [ref=f22e331]:
+                  - generic [ref=f22e337]:
+                    - generic [ref=f22e338]: returns.k_5
+                    - generic [ref=f22e339]: SHIPPED
+                  - switch [checked] [ref=f22e340]
+                  - checkbox [checked] [ref=f22e341]
+                - generic [ref=f22e342]:
+                  - generic [ref=f22e348]:
+                    - generic [ref=f22e349]: returns.k_6
+                    - generic [ref=f22e350]: DELIVERED
+                  - switch [checked] [ref=f22e351]
+                  - checkbox [checked] [ref=f22e352]
+                - generic [ref=f22e353]:
+                  - generic [ref=f22e359]:
+                    - generic [ref=f22e360]: returns.k_7
+                    - generic [ref=f22e361]: CANCELLED
+                  - switch [checked] [ref=f22e362]
+                  - checkbox [checked] [ref=f22e363]
+                - generic [ref=f22e364]:
+                  - generic [ref=f22e370]:
+                    - generic [ref=f22e371]: returns.k_8
+                    - generic [ref=f22e372]: RETURNED
+                  - switch [checked] [ref=f22e373]
+                  - checkbox [checked] [ref=f22e374]
+                - generic [ref=f22e375]:
+                  - generic [ref=f22e381]:
+                    - generic [ref=f22e382]: returns.k_9
+                    - generic [ref=f22e383]: REFUNDED
+                  - switch [checked] [ref=f22e384]
+                  - checkbox [checked] [ref=f22e385]
+                - generic [ref=f22e386]:
+                  - generic [ref=f22e392]:
+                    - generic [ref=f22e393]: returns.k_10
+                    - generic [ref=f22e394]: DUPLICATE_ORDER
+                  - switch [checked] [ref=f22e395]
+                  - checkbox [checked] [ref=f22e396]
+                - generic [ref=f22e397]:
+                  - generic [ref=f22e403]:
+                    - generic [ref=f22e404]: returns.k_11
+                    - generic [ref=f22e405]: ON_HOLD
+                  - switch [checked] [ref=f22e406]
+                  - checkbox [checked] [ref=f22e407]
+                - generic [ref=f22e408]:
+                  - generic [ref=f22e414]:
+                    - generic [ref=f22e415]: returns.k_12
+                    - generic [ref=f22e416]: PARTIALLY_DELIVERED
+                  - switch [checked] [ref=f22e417]
+                  - checkbox [checked] [ref=f22e418]
+            - generic [ref=f22e419]:
+              - generic [ref=f22e424]:
+                - heading "تاريخ بدء ظهور الطلبات والمرتجعات" [level=2] [ref=f22e425]
+                - paragraph [ref=f22e426]: تحديد تاريخ بداية الشغل على النظام بحيث تظهر فقط الطلبات والمرتجعات المنشأة من هذا التاريخ وما بعده
+              - textbox [ref=f22e428]
+            - button "returns.k_106" [ref=f22e430]
+  - region "Notifications alt+T"

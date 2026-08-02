@@ -1,0 +1,86 @@
+- generic [ref=f3e7]:
+  - generic [ref=f3e10]:
+    - link "تخطي إلى المحتوى" [ref=f3e11] [cursor=pointer]:
+      - /url: "#app-shell-main-content"
+    - complementary "تنقل تطبيق حسابي" [ref=f3e13]:
+      - button "الرجوع للتطبيقات" [ref=f3e14] [cursor=pointer]
+      - heading "حسابي" [level=2] [ref=f3e26]
+      - navigation [ref=f3e27]:
+        - generic [ref=f3e28]:
+          - heading "حسابي" [level=3] [ref=f3e30]
+          - link "لوحة التحكم" [ref=f3e32] [cursor=pointer]:
+            - /url: /my-dashboard
+          - link "الحضور والانصراف" [ref=f3e37] [cursor=pointer]:
+            - /url: /my-attendance
+          - link "إجازاتي" [ref=f3e43] [cursor=pointer]:
+            - /url: /my-leaves
+          - link "صلاحياتي" [ref=f3e48] [cursor=pointer]:
+            - /url: /my-permissions
+          - link "رواتبي" [ref=f3e54] [cursor=pointer]:
+            - /url: /my-payroll
+          - link "خصوماتي" [ref=f3e60] [cursor=pointer]:
+            - /url: /my-deductions
+          - link "الإنذارات" [ref=f3e66] [cursor=pointer]:
+            - /url: /my-warnings
+          - link "ترقياتي" [ref=f3e71] [cursor=pointer]:
+            - /url: /my-promotions
+          - link "مكافآتي" [ref=f3e77] [cursor=pointer]:
+            - /url: /my-rewards
+          - link "تدريباتي" [ref=f3e86] [cursor=pointer]:
+            - /url: /my-training
+          - link "عهدتي" [ref=f3e92] [cursor=pointer]:
+            - /url: /my-custody
+          - link "اقتراحاتي" [ref=f3e97] [cursor=pointer]:
+            - /url: /my-feedback
+          - link "طلبات الاستقالة" [ref=f3e103] [cursor=pointer]:
+            - /url: /my-resignation
+          - link "السلف والعهد" [ref=f3e109] [cursor=pointer]:
+            - /url: /my-advances
+          - link "الملف الشخصي" [ref=f3e115] [cursor=pointer]:
+            - /url: /profile
+          - link "نشاطاتي" [ref=f3e122] [cursor=pointer]:
+            - /url: /my-activity
+    - generic [ref=f3e130]:
+      - generic [ref=f3e131]:
+        - generic [ref=f3e132]:
+          - heading "حضوري وانصرافي" [level=1] [ref=f3e133]
+          - paragraph [ref=f3e134]: إدارة أوقات الحضور والانصراف
+          - paragraph [ref=f3e135]: "الموظف: Swan Company"
+        - paragraph [ref=f3e136]: الأحد، ٢ أغسطس ٢٠٢٦
+      - generic [ref=f3e139]:
+        - generic [ref=f3e144]:
+          - generic [ref=f3e145]: ١٠:٣٨:٠٣ ص
+          - paragraph [ref=f3e146]: الوقت الحالي
+        - generic [ref=f3e148]:
+          - button "من الشركة" [ref=f3e149]
+          - button "من المنزل" [ref=f3e154]
+        - generic [ref=f3e159]:
+          - button "جاري التسجيل..." [disabled]
+        - generic [ref=f3e161]: سيتم تسجيل موقعك تلقائياً
+      - generic [ref=f3e166]:
+        - generic [ref=f3e167]:
+          - generic [ref=f3e168]: نسبة الحضور
+          - generic [ref=f3e173]:
+            - generic [ref=f3e174]: 0.0%
+            - progressbar [ref=f3e175]: x
+        - generic [ref=f3e177]:
+          - generic [ref=f3e178]: أيام الحضور
+          - generic [ref=f3e183]:
+            - generic [ref=f3e184]: "0"
+            - paragraph [ref=f3e185]: من 0 يوم
+        - generic [ref=f3e186]:
+          - generic [ref=f3e187]: أيام التأخير
+          - generic [ref=f3e191]:
+            - generic [ref=f3e192]: "0"
+            - paragraph [ref=f3e193]: 0.0% من الأيام
+        - generic [ref=f3e194]:
+          - generic [ref=f3e195]: ساعات العمل
+          - generic [ref=f3e200]:
+            - generic [ref=f3e201]: "0.0"
+            - paragraph [ref=f3e202]: "إضافي: 0.0 ساعة"
+      - generic [ref=f3e203]:
+        - generic [ref=f3e204]:
+          - generic [ref=f3e205]: سجل الحضور
+          - textbox [ref=f3e207]: 2026-08
+        - generic [ref=f3e208]: لا يوجد سجل حضور حتى الآن
+  - region "Notifications alt+T"

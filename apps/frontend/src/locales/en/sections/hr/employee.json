@@ -171,6 +171,8 @@
     "openInMap": "Click to open location in map",
     "checkinFailed": "❌ Check-in failed",
     "dataErrorDesc": "Please check the entered data",
+    "locationRequired": "📍 Location access required",
+    "locationRequiredDesc": "To check in from the office, you must allow access to your location. Enable location services and try again.",
     "checkinTime": "Check-in time:",
     "hoursElapsed": "{{hours}}h elapsed",
     "minute": "min"

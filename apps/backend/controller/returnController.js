@@ -9,7 +9,7 @@ exports.getCategories = async (req, res) => {
     try {
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const categories = await getPrisma().returnReasonCategory.findMany({
-            where: { companyId: effectiveCompanyId },
+            where: { companyId: effectiveCompanyId, isActive: true },
             include: { returnReasons: true },
             orderBy: { createdAt: 'desc' }
         });
@@ -57,6 +57,38 @@ exports.updateCategory = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update category' });
+    }
+};
+
+exports.deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Security check: category must belong to the company
+        const category = await getPrisma().returnReasonCategory.findFirst({
+            where: { id, companyId: req.user.effectiveCompanyId || req.user.companyId }
+        });
+
+        if (!category) {
+            return res.status(404).json({ error: 'Return reason category not found' });
+        }
+
+        // Soft-delete the category and all its reasons (reasons may be referenced
+        // by historical return requests, so they cannot be hard-deleted)
+        await getPrisma().$transaction(async (tx) => {
+            await tx.returnReason.updateMany({
+                where: { categoryId: id },
+                data: { isActive: false }
+            });
+            await tx.returnReasonCategory.update({
+                where: { id },
+                data: { isActive: false }
+            });
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete return reason category' });
     }
 };
 
@@ -280,58 +312,34 @@ exports.getReturnRequests = async (req, res) => {
                 where.createdAt = { ...(where.createdAt || {}), lte: to };
             }
         }
+        const andConditions = [];
+
         if (ordersStartDate) {
             const startDate = new Date(ordersStartDate);
             if (!isNaN(startDate.getTime())) {
-                const ordersFromDate = await getPrisma().order.findMany({
-                    where: { companyId: effectiveCompanyId, createdAt: { gte: startDate } },
-                    select: { id: true }
+                andConditions.push({
+                    OR: [
+                        { createdAt: { gte: startDate } },
+                        { order: { createdAt: { gte: startDate } } }
+                    ]
                 });
-                const orderIdsFromDate = ordersFromDate.map(o => o.id);
-                if (!where.OR) where.OR = [];
-                where.OR.push(
-                    { createdAt: { gte: startDate } },
-                    ...(orderIdsFromDate.length ? [{ orderId: { in: orderIdsFromDate } }] : [])
-                );
             }
         }
 
         if (search) {
-            const orderIds = (await getPrisma().order.findMany({
-                where: {
-                    companyId: effectiveCompanyId,
-                    OR: [
-                        { orderNumber: { contains: search } },
-                        { turboTrackingNumber: { contains: search } },
-                    ]
-                },
-                select: { id: true }
-            })).map(o => o.id);
+            andConditions.push({
+                OR: [
+                    { order: { orderNumber: { contains: search } } },
+                    { order: { turboTrackingNumber: { contains: search } } },
+                    { customer: { firstName: { contains: search } } },
+                    { customer: { lastName: { contains: search } } },
+                    { customer: { phone: { contains: search } } }
+                ]
+            });
+        }
 
-            const customerIds = (await getPrisma().customer.findMany({
-                where: {
-                    companyId: effectiveCompanyId,
-                    OR: [
-                        { firstName: { contains: search } },
-                        { lastName: { contains: search } },
-                        { phone: { contains: search } },
-                    ]
-                },
-                select: { id: true }
-            })).map(c => c.id);
-
-            if (!orderIds.length && !customerIds.length) {
-                return res.json({ data: [], total: 0, page: 1, limit: 20, totalPages: 0 });
-            }
-
-            const searchFilters = [];
-            if (orderIds.length) searchFilters.push({ orderId: { in: orderIds } });
-            if (customerIds.length) searchFilters.push({ customerId: { in: customerIds } });
-            if (searchFilters.length === 1) {
-                Object.assign(where, searchFilters[0]);
-            } else if (searchFilters.length > 1) {
-                where.OR = [...(where.OR || []), ...searchFilters];
-            }
+        if (andConditions.length > 0) {
+            where.AND = andConditions;
         }
 
         const page = Math.max(1, parseInt(pageStr) || 1);

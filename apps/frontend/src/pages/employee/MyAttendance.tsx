@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+<<<<<<< Updated upstream
 import {
   Clock,
   LogIn,
@@ -20,6 +21,9 @@ import {
   ChevronRight,
   Building2,
 } from "lucide-react";
+=======
+import { Clock, LogIn, ArrowRight, Calendar, TrendingUp, Target, AlertTriangle, Check, X, Timer, Pin, Home, ChevronLeft, ChevronRight, Building, CheckCircle, MapPin, AlertCircle, LogOut, Building2, XCircle } from 'lucide-react';
+>>>>>>> Stashed changes
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -179,6 +183,7 @@ const MyAttendance: React.FC = () => {
           geofenceData?: {
             distance: number;
             allowedRadius: number;
+            requiresLocation?: boolean;
           };
         };
       };
@@ -450,6 +455,13 @@ const MyAttendance: React.FC = () => {
         apiError.response?.status === 403 &&
         apiError.response?.data?.geofenceData
       ) {
+        if (apiError.response.data.geofenceData.requiresLocation) {
+          toast.error(t("employee.attendance.locationRequired"), {
+            description: t("employee.attendance.locationRequiredDesc"),
+            duration: 8000,
+          });
+          return;
+        }
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
         toast.error(t("employee.attendance.geofenceError"), {
@@ -543,6 +555,13 @@ const MyAttendance: React.FC = () => {
         apiError.response?.status === 403 &&
         apiError.response?.data?.geofenceData
       ) {
+        if (apiError.response.data.geofenceData.requiresLocation) {
+          toast.error(t("employee.attendance.locationRequired"), {
+            description: t("employee.attendance.locationRequiredDesc"),
+            duration: 8000,
+          });
+          return;
+        }
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
 

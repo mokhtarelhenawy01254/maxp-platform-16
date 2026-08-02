@@ -429,6 +429,7 @@ const ReturnSettingsPage: React.FC = () => {
     }
   };
 
+<<<<<<< Updated upstream
   const openTypeModal = (type?: ReturnType, presetCompanyId?: string) => {
     setEditingType(type || null);
     setTypeName(type?.name || "");
@@ -495,6 +496,16 @@ const ReturnSettingsPage: React.FC = () => {
       fetchTypes();
     } catch (error) {
       toast.error(t('returns.k_251'));
+=======
+  const deleteCategory = async (id: string) => {
+    if (!confirm(t('returns.k_221'))) return;
+    try {
+      await returnService.deleteCategory(id);
+      toast.success(t('returns.k_222'));
+      fetchReasonsData();
+    } catch (error) {
+      toast.error(t('returns.k_223'));
+>>>>>>> Stashed changes
     }
   };
 
@@ -835,17 +846,25 @@ const ReturnSettingsPage: React.FC = () => {
                           {cat.defaultRole}
                         </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          setEditingCategory(cat);
-                          setCategoryName(cat.name);
-                          setDefaultRole(cat.defaultRole);
-                          setIsCategoryModalOpen(true);
-                        }}
-                        className="text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Edit2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingCategory(cat);
+                            setCategoryName(cat.name);
+                            setDefaultRole(cat.defaultRole);
+                            setIsCategoryModalOpen(true);
+                          }}
+                          className="text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => deleteCategory(cat.id)}
+                          className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}

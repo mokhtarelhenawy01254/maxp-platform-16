@@ -8,6 +8,7 @@ const { checkAppAccess } = require('../middleware/checkAppAccess');
 router.get('/categories', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getCategories);
 router.post('/categories', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createCategory);
 router.put('/categories/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateCategory);
+router.delete('/categories/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.deleteCategory);
 
 // Return Reasons
 router.get('/reasons', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnReasons);

@@ -419,6 +419,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
