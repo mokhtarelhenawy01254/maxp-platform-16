@@ -252,5 +252,6 @@
     "tags": "الوسوم",
     "apply": "تطبيق الفلاتر",
     "reset": "إعادة تعيين"
-  }
+  },
+  "unlimitedConfirm": "[AR] Are you sure you want to upgrade to \"Unlimited Access\"? {{price}} EGP will be deducted from your wallet."
 }

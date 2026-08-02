@@ -2,18 +2,17 @@ import {
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Package, Sparkles, Heart, Zap, Bot,
   Camera, Megaphone, ShoppingCart, PackageOpen,
-  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
-  Calendar, Truck, FileText, Percent, HeartHandshake,
-  Gift, GitBranch, ShoppingBag, Webhook, Activity,
-  FileSpreadsheet, Wallet, Award, Gamepad2, Brain,
-  Shield, Globe, Palette, Headphones, Star, Clock,
+  ClipboardList, Truck, HeartHandshake,
+  ShoppingBag, FileSpreadsheet,
+  Brain, Shield, Globe, Palette, Headphones, Star, Clock,
   GraduationCap, Building2, BadgeCheck, Flame,
   Rocket, LayoutGrid, CreditCard, Monitor, UserPlus,
   Image, Database,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "../components/icons/brands";
 import type { MarketplaceApp } from "@/types/marketplace";
+
+export { appIcons, appIconsBySlug } from "./marketplaceIcons";
 
 export const categoryIcons: Record<string, LucideIcon> = {
   ECOMMERCE: Store,
@@ -36,70 +35,6 @@ export const categoryIcons: Record<string, LucideIcon> = {
   SEO: Globe,
   THEMES: Palette,
   DESIGN: Palette,
-};
-
-export const appIcons: Record<string, LucideIcon> = {
-  megaphone: Megaphone,
-  "chart-bar": BarChart3,
-  bot: Bot,
-  store: Store,
-  users: Users,
-  sparkles: Sparkles,
-  "shopping-cart": ShoppingCart,
-  camera: Camera,
-  "package-open": PackageOpen,
-  "clipboard-list": ClipboardList,
-  route: Route,
-  "clipboard-check": ClipboardCheck,
-  inbox: Inbox,
-  bell: Bell,
-  calendar: Calendar,
-  heart: Heart,
-  package: Package,
-  truck: Truck,
-  "file-text": FileText,
-  percent: Percent,
-};
-
-export const appIconsBySlug: Record<string, React.ElementType> = {
-  "store-basic": Store,
-  "store-pro": Store,
-  "inventory-pro": Package,
-  "woocommerce-sync": ShoppingBag,
-  "order-core": ShoppingCart,
-  "order-shipping-turbo": Truck,
-  "order-shipping-reports": FileText,
-  "order-invoicing": FileSpreadsheet,
-  "hr-core": Users,
-  "hr-attendance-pro": Clock,
-  "hr-payroll": CreditCard,
-  "hr-assets": Monitor,
-  "hr-recruitment": UserPlus,
-  "kudos-recognition": Award,
-  "gamification-pro": Gamepad2,
-  "ai-chat-basic": Bot,
-  "ai-chat-pro": Bot,
-  "ai-image-studio": Image,
-  "ai-rag-knowledge": Database,
-  "ai-inbox-bundle": Inbox,
-  "whatsapp-business": WhatsAppIcon,
-  "telegram-business": TelegramIcon,
-  "broadcast-pro": Megaphone,
-  "messaging-bundle": Inbox,
-  "crm-basic": HeartHandshake,
-  "crm-loyalty": Gift,
-  "opportunities-pipeline": GitBranch,
-  "analytics-basic": BarChart3,
-  "turbo-analytics": TrendingUp,
-  "appointments-pro": Calendar,
-  "smart-scheduler": Clock,
-  "webhooks-pro": Webhook,
-  "facebook-pages-connect": FacebookIcon,
-  "facebook-pixel-capi": Activity,
-  "facebook-ads-pro": FacebookIcon,
-  "facebook-catalog-shop": ShoppingBag,
-  "invoicing-pro": FileSpreadsheet,
-  "wallet-system": Wallet,
 };
 
 export const categoryCssClass: Record<string, string> = {

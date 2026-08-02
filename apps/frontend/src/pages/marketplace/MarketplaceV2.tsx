@@ -10,7 +10,7 @@ import {
   DollarSign, Grid3X3, Star, Heart, ArrowRight,
   ShoppingBag, Flame, Rocket, Brain, BadgeCheck,
   Clock, Shield, Award, GraduationCap, LayoutGrid,
-  ListFilter, Eye, SlidersHorizontal,
+  ListFilter, Eye, SlidersHorizontal, Truck,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
