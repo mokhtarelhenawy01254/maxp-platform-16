@@ -77,11 +77,28 @@ const getPatientById = async (req, res) => {
             service: { select: { id: true, name: true } },
           },
         },
+        invoices: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            payments: { select: { id: true, amount: true, method: true, paidAt: true } },
+          },
+        },
       },
     });
     if (!patient) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    res.json({ success: true, data: formatPatient(patient) });
+    const data = formatPatient(patient);
+    // Compute financial summary
+    const activeInvoices = (data.invoices || []).filter(i => i.status !== 'REFUNDED');
+    data.financialSummary = {
+      invoiceCount: data.invoices?.length || 0,
+      totalBilled: +activeInvoices.reduce((s, i) => s + (Number(i.total) || 0), 0).toFixed(2),
+      totalPaid: +activeInvoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0).toFixed(2),
+      outstanding: +activeInvoices.reduce((s, i) => s + (Math.max(0, Number(i.total) - Number(i.discount) - Number(i.amountPaid))), 0).toFixed(2),
+      unpaidInvoices: activeInvoices.filter(i => i.status === 'UNPAID' || i.status === 'PARTIAL').length,
+    };
+
+    res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching patient:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب المريض' });

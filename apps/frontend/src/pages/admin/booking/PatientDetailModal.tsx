@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 ;
-import { BookingPatient, BookingAppointment, MODAL_CONTENT_CLS, STATUS_MAP, api, getAuthHeaders, tryParseJSON } from "./shared";
+import { BookingPatient, BookingAppointment, MODAL_CONTENT_CLS, STATUS_MAP, INVOICE_STATUS_MAP, api, getAuthHeaders, tryParseJSON } from "./shared";
 
 import { X, ExternalLink } from 'lucide-react'
 interface Props {
@@ -9,14 +9,36 @@ interface Props {
   onClose: () => void;
 }
 
+interface PatientInvoice {
+  id: string; invoiceNumber: string; appointmentId?: string;
+  total: number; discount: number; amountPaid: number; net: number; remaining: number;
+  status: string; createdAt: string;
+  payments?: { id: string; amount: number; method: string; paidAt: string }[];
+}
+
 interface PatientDetail extends BookingPatient {
   appointments: (BookingAppointment & {
     branch?: { id: string; name: string };
     doctor?: { id: string; title: string; name: string };
   })[];
+  invoices?: PatientInvoice[];
+  financialSummary?: {
+    invoiceCount: number; totalBilled: number; totalPaid: number;
+    outstanding: number; unpaidInvoices: number;
+  };
 }
 
 const GENDER_LABEL: Record<string, string> = { male: "ذكر", female: "أنثى" };
+const fmtMoney = (n?: number) => (n != null ? `${Number(n).toFixed(2)} ج.م` : "—");
+
+const renderVitals = (v: unknown): string => {
+  const parsed = tryParseJSON<Record<string, unknown>>(v);
+  if (!parsed || Object.keys(parsed).length === 0) return "";
+  return Object.entries(parsed).map(([k, val]) => {
+    const labels: Record<string, string> = { pressure: "الضغط", weight: "الوزن", temp: "الحرارة", pulse: "النبض", sugar: "السكر" };
+    return `${labels[k] || k}: ${String(val)}`;
+  }).join(" · ");
+};
 
 const renderList = (v: unknown): string[] | null => {
   const arr = tryParseJSON<string[]>(v) || (Array.isArray(v) ? v : null);
@@ -87,6 +109,22 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
               {patient.customer && <div className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">عميل مرتبط: {patient.customer.firstName} {patient.customer.lastName || ""}</div>}
             </div>
 
+            {/* Summary strip */}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                <p className="text-lg font-bold">{patient.appointments?.length || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">زيارات</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                <p className="text-lg font-bold text-green-600 dark:text-green-400">{fmtMoney(patient.financialSummary?.totalPaid)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">مسدد</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                <p className="text-lg font-bold text-red-600 dark:text-red-400">{fmtMoney(patient.financialSummary?.outstanding)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">متبقي</p>
+              </div>
+            </div>
+
             {/* Visit history */}
             <div>
               <h4 className="font-bold mb-3">تاريخ الزيارات ({patient.appointments?.length || 0})</h4>
@@ -95,7 +133,7 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["التاريخ", "الوقت", "الفرع", "الطبيب", "الخدمة", "التشخيص", "الحالة"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["التاريخ", "الوقت", "الفرع", "الطبيب", "الخدمة", "الحيوية", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
                     <tbody>{patient.appointments.map(a => (
                       <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="py-2.5 px-3 whitespace-nowrap">{String(a.appointmentDate).split("T")[0]}</td>
@@ -103,6 +141,7 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
                         <td className="py-2.5 px-3">{a.branch?.name || "—"}</td>
                         <td className="py-2.5 px-3">{(a.doctor ? `${a.doctor.title || ""} ${a.doctor.name || ""}` : a.doctorName || "—").trim()}</td>
                         <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
+                        <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">{renderVitals(a.vitals) || "—"}</td>
                         <td className="py-2.5 px-3 max-w-[220px]">
                           {a.diagnosis ? (
                             <div>
@@ -116,6 +155,37 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
                           ) : "—"}
                         </td>
                         <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
+                        <td className="py-2.5 px-3 text-xs">
+                          {a.paymentRequired || a.paymentStatus ? (
+                            <span className={`px-2 py-0.5 rounded-full ${a.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : a.paymentStatus === "partial" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
+                              {a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع"}
+                            </span>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Invoices */}
+            <div>
+              <h4 className="font-bold mb-3">الفواتير ({patient.invoices?.length || 0})</h4>
+              {(!patient.invoices || patient.invoices.length === 0) ? (
+                <p className="text-center py-6 text-gray-400 dark:text-gray-500">لا توجد فواتير</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["رقم الفاتورة", "التاريخ", "الإجمالي", "المسدد", "المتبقي", "الحالة"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                    <tbody>{patient.invoices.map(inv => (
+                      <tr key={inv.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="py-2.5 px-3 font-medium">{inv.invoiceNumber}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">{String(inv.createdAt).split("T")[0]}</td>
+                        <td className="py-2.5 px-3">{fmtMoney(inv.total)}</td>
+                        <td className="py-2.5 px-3 text-green-600 dark:text-green-400">{fmtMoney(inv.amountPaid)}</td>
+                        <td className="py-2.5 px-3 text-red-600 dark:text-red-400">{fmtMoney(inv.remaining)}</td>
+                        <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${INVOICE_STATUS_MAP[inv.status]?.color || ""}`}>{INVOICE_STATUS_MAP[inv.status]?.label || inv.status}</span></td>
                       </tr>
                     ))}</tbody>
                   </table>
