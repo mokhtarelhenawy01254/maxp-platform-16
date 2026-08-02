@@ -95,3 +95,58 @@ migration is required.
 - Reverting the `hasPhone` behavior: restore the old key-presence-only filter.
 - Reverting tracking: the `CartConversionLog` writes are non-fatal; removing the
   model requires dropping the `cart_conversion_logs` table.
+
+## Status tabs (incomplete vs lost) + accurate status logic
+
+### Problem
+
+The `active`/`lost` classification was computed with `OR` clauses that could
+classify the same cart as **both** active and lost. For example a cart that
+`checkoutStartedAt` 3 days ago but `checkoutUpdatedAt` 1 hour ago (customer came
+back) matched the old `lostClause` (because `checkoutStartedAt < threshold`) even
+though it had recent activity. This made tab counts double-count and misclassify
+returning customers as lost.
+
+Also, the server-side `stats` were scoped to the active status filter, so switching
+tabs would change the counts, making stable tab badges impossible.
+
+### Changes
+
+- `routes/orders.js` — `GET /orders-new/incomplete` and `/incomplete/reports`:
+  - `activeClause` / `lostClause` now follow the per-row `lastActivity` rule
+    (`COALESCE(checkoutUpdatedAt, checkoutStartedAt, updatedAt)`):
+    - active = recent checkoutUpdatedAt, OR (null checkoutUpdatedAt AND recent
+      checkoutStartedAt), OR (both null AND recent updatedAt).
+    - lost = the exact negation (old timestamps), so active + lost are mutually
+      exclusive and exhaustive.
+  - The list query still applies the selected `status` filter, but the `stats`
+    aggregates are computed from the base filters **without** the status filter,
+    so `active`/`lost` tab counts stay stable while switching tabs.
+
+### How returning customers behave
+
+Cart status is **not stored** — it is derived at query time from the last-activity
+timestamp versus `incompleteOrderLostAfterHours` (default 24h). The storefront
+checkout-draft save always sets `checkoutUpdatedAt = now`
+(`publicOrdersRoutes.js`), so:
+
+- A customer returns and updates checkout → `checkoutUpdatedAt` refreshes → the
+  cart is classified **active** again automatically (moves from "lost" to
+  "incomplete"). This is observable in the "آخر نشاط" column.
+- A customer never returns → the cart stays **lost**.
+- A customer places the order → the cart is converted to a real order and removed
+  (the GuestCart row is deleted by the internal create-order flow).
+
+### Frontend
+
+- `src/pages/orders/IncompleteOrders.tsx`: the status filter dropdown was replaced
+  with two tabs **غير مكتمل / مفقود**, each with a live count badge fed by the
+  global `stats.active` / `stats.lost`. Default tab is **غير مكتمل** (active).
+
+### Tests
+
+- `apps/backend/tests/integration/incompleteOrdersRoute.test.js` — new describe
+  "Incomplete orders status tabs (active vs lost)":
+  - `status=active` returns a cart updated recently even when it started long ago.
+  - `status=lost` returns only carts with no recent activity.
+  - stats do not double-count (`active + lost === total`).

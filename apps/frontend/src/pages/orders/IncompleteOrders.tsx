@@ -11,7 +11,6 @@ import {
   CurrencyDollarIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-  FunnelIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   PhoneIcon,
@@ -79,7 +78,7 @@ const IncompleteOrders: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [phoneFilter, setPhoneFilter] = useState<PhoneFilter>("with_phone");
   const [sortValue, setSortValue] = useState<SortValue>("recent");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -417,23 +416,56 @@ const IncompleteOrders: React.FC = () => {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <FunnelIcon className="h-4 w-4 text-gray-400" />
-            <label htmlFor="incomplete-orders-status" className="sr-only">
-              {t("orders.incompleteStatusLabel")}
-            </label>
-            <select
-              id="incomplete-orders-status"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
-            >
-              <option value="all">{t("orders.incompleteStatusAll")}</option>
-              <option value="active">{t("orders.incompleteStatusActive")}</option>
-              <option value="lost">{t("orders.incompleteStatusLost")}</option>
-            </select>
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("active");
+                  setPage(1);
+                }}
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                  statusFilter === "active"
+                    ? "bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 shadow-sm"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                }`}
+                aria-pressed={statusFilter === "active"}
+              >
+                {t("orders.incompleteStatusActive")}
+                <span
+                  className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold ${
+                    statusFilter === "active"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                      : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  {stats.active}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("lost");
+                  setPage(1);
+                }}
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                  statusFilter === "lost"
+                    ? "bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 shadow-sm"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                }`}
+                aria-pressed={statusFilter === "lost"}
+              >
+                {t("orders.incompleteStatusLost")}
+                <span
+                  className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold ${
+                    statusFilter === "lost"
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  {stats.lost}
+                </span>
+              </button>
+            </div>
             <label htmlFor="incomplete-orders-phone" className="sr-only">
               {t("orders.incompletePhoneLabel")}
             </label>

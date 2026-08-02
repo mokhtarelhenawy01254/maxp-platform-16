@@ -307,3 +307,113 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     expect(response.body.data.recent).toEqual(expect.any(Array));
   });
 });
+
+describe('Incomplete orders status tabs (active vs lost)', () => {
+  let app;
+  let prisma;
+  let company;
+  let returnedCartId;
+  let lostCartId;
+
+  beforeAll(async () => {
+    prisma = await getSharedPrismaClientAsync();
+
+    app = express();
+    app.use(express.json());
+    app.use('/api/v1/orders-new', ordersRoutes);
+
+    const unique = `${Date.now()}-${Math.round(Math.random() * 10000)}`;
+
+    company = await prisma.company.create({
+      data: {
+        name: 'Incomplete Orders Status Tabs Test',
+        email: `incomplete-status-${unique}@test.local`,
+        slug: `incomplete-status-${unique}`,
+        currency: 'EGP',
+        settings: JSON.stringify({ description: 'Incomplete orders status tab test company' }),
+        sidebarLayout: 'three-tier',
+        timezone: 'Africa/Cairo',
+      },
+    });
+
+    mockCompanyId = company.id;
+    returnedCartId = `returned-cart-${unique}`;
+    lostCartId = `lost-cart-${unique}`;
+
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    // عميل عاد وحدّث الشيك آوت: بدأ من 3 أيام لكن آخر نشاط قبل ساعة → يعتبر نشط
+    await prisma.guestCart.create({
+      data: {
+        cartId: returnedCartId,
+        companyId: company.id,
+        items: JSON.stringify([{ productId: 'p-r', name: 'Returned', quantity: 1, price: 400 }]),
+        total: 400,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        checkoutStartedAt: threeDaysAgo,
+        checkoutUpdatedAt: oneHourAgo,
+        checkoutData: JSON.stringify({ customerName: 'Returned User', phone: '01011112222' }),
+      },
+    });
+
+    // سلة مهجورة فعلاً: آخر نشاط من 3 أيام → مفقودة
+    await prisma.guestCart.create({
+      data: {
+        cartId: lostCartId,
+        companyId: company.id,
+        items: JSON.stringify([{ productId: 'p-l', name: 'Lost', quantity: 1, price: 300 }]),
+        total: 300,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        checkoutStartedAt: threeDaysAgo,
+        checkoutUpdatedAt: threeDaysAgo,
+        checkoutData: JSON.stringify({ customerName: 'Lost User', phone: '01033334444' }),
+      },
+    });
+  });
+
+  afterAll(async () => {
+    if (!prisma) return;
+
+    try {
+      await prisma.guestCart.deleteMany({
+        where: { companyId: company?.id },
+      });
+      await prisma.company.deleteMany({
+        where: { id: company?.id },
+      });
+    } finally {
+      mockCompanyId = null;
+      await closeSharedDatabase();
+    }
+  });
+
+  test('status=active returns a cart whose checkoutUpdatedAt is recent even when it started long ago', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete?status=active');
+
+    expect(response.status).toBe(200);
+    const ids = (response.body.data || []).map((c) => c.cartId);
+    expect(ids).toContain(returnedCartId);
+    expect(ids).not.toContain(lostCartId);
+  });
+
+  test('status=lost returns only carts with no recent activity', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete?status=lost');
+
+    expect(response.status).toBe(200);
+    const ids = (response.body.data || []).map((c) => c.cartId);
+    expect(ids).toContain(lostCartId);
+    expect(ids).not.toContain(returnedCartId);
+  });
+
+  test('stats do not double-count a returned cart (active + lost = total, scoped to base filters)', async () => {
+    const response = await request(app).get('/api/v1/orders-new/incomplete');
+
+    expect(response.status).toBe(200);
+    const stats = response.body.stats;
+    expect(stats.total).toBe(2);
+    expect(stats.active).toBe(1);
+    expect(stats.lost).toBe(1);
+    expect(stats.active + stats.lost).toBe(stats.total);
+  });
+});

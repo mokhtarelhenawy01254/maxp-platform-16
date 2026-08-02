@@ -1169,19 +1169,21 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       filterClauses.push({ OR: [{ NOT: phoneKeyClause }, emptyPhoneClause] });
     }
 
+    // last activity = most recent of checkoutUpdatedAt / checkoutStartedAt / updatedAt
+    // (matches the per-row isLost computation in the data mapping below)
     const activeClause = {
       OR: [
         { checkoutUpdatedAt: { gte: lostThreshold } },
-        { checkoutStartedAt: { gte: lostThreshold } },
-        { updatedAt: { gte: lostThreshold } }
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
       ]
     };
 
     const lostClause = {
       OR: [
         { checkoutUpdatedAt: { lt: lostThreshold } },
-        { checkoutStartedAt: { lt: lostThreshold } },
-        { updatedAt: { lt: lostThreshold } }
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
       ]
     };
 
@@ -1190,10 +1192,10 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         : (status === 'expired' || status === 'lost') ? lostClause
           : null;
 
-    if (statusClause) {
-      filterClauses.push(statusClause);
-    }
-
+    // القاعدة الأساسية بدون فلتر الحالة — عشان إحصائيات التبويبات تفضل ثابتة
+    const buildBaseWhere = () => {
+      return { companyId, ...(filterClauses.length ? { AND: filterClauses } : {}) };
+    };
     const buildWhere = (extra = []) => {
       const and = [...filterClauses, ...extra];
       return { companyId, ...(and.length ? { AND: and } : {}) };
@@ -1213,16 +1215,18 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
           { updatedAt: 'desc' }
         ];
 
+    const statusWhere = statusClause ? [statusClause] : [];
+
     const [totalCount, carts, totalAgg, activeAgg, lostAgg] = await Promise.all([
-      getSharedPrismaClient().guestCart.count({ where: buildWhere() }),
+      getSharedPrismaClient().guestCart.count({ where: buildWhere(statusWhere) }),
       getSharedPrismaClient().guestCart.findMany({
-        where: buildWhere(),
+        where: buildWhere(statusWhere),
         orderBy,
         skip: (page - 1) * limit,
         take: limit
       }),
       getSharedPrismaClient().guestCart.aggregate({
-        where: buildWhere(),
+        where: buildBaseWhere(),
         _count: { _all: true },
         _sum: { total: true }
       }),
@@ -1345,15 +1349,15 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const activeClause = {
       OR: [
         { checkoutUpdatedAt: { gte: lostThreshold } },
-        { checkoutStartedAt: { gte: lostThreshold } },
-        { updatedAt: { gte: lostThreshold } }
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
       ]
     };
     const lostClause = {
       OR: [
         { checkoutUpdatedAt: { lt: lostThreshold } },
-        { checkoutStartedAt: { lt: lostThreshold } },
-        { updatedAt: { lt: lostThreshold } }
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
       ]
     };
 
