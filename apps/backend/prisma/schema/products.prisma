@@ -53,9 +53,6 @@ model Customer {
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
-  // يمنع تكرار العملاء لنفس الرقم في نفس الشركة (rac-free create).
-  // يتطلب تنظيف الـ duplicates الأول (scripts/add_customer_phone_unique.js)
-  @@unique([companyId, phone])
   @@index([companyId])
   @@index([companyId, status])
   @@index([facebookId])

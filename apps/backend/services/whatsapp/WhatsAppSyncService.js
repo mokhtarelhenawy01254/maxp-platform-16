@@ -99,8 +99,8 @@ const WhatsAppSyncService = {
           }
         } else if (!cleanPhone) {
           // مفيش رقم (مجموعة/LID غير محلول) — create عادي بـ phone null.
-          // الـ unique constraint (companyId, phone) مش بيطبق على null في Postgres،
-          // فمفيش تعارض بين العملاء من غير رقم.
+          // مفيش unique constraint على (companyId, phone) لسه مطبق في الـ DB،
+          // والـ unique على whatsappId/phone بيقبل null متعدد.
           customer = await prisma.customer.create({
             data: {
               companyId,
@@ -114,7 +114,6 @@ const WhatsAppSyncService = {
             }
           });
         } else {
-          // upsert atomic على الـ unique key (companyId, phone) — بيمنع السباق و P2002
           const createData = {
             companyId,
             firstName: nameParts.firstName,
@@ -125,34 +124,18 @@ const WhatsAppSyncService = {
             avatar: profilePicUrl,
             status: 'LEAD'
           };
-          const updateData = {
-            phoneNormalized: canonicalPhone,
-            whatsappId: cleanPhone,
-            ...(profilePicUrl ? { avatar: profilePicUrl } : {})
-          };
 
           try {
-            customer = await prisma.customer.upsert({
-              where: { companyId_phone: { companyId, phone: cleanPhone } },
-              create: createData,
-              update: updateData
-            });
-          } catch (upsertErr) {
-            // الـ upsert بـ ON CONFLICT بيحتاج الـ unique index متطبّق في الـ DB.
-            // لو لسه مش متطبّق (أو حصل خطأ تاني) → fallback: findFirst → create مع معالجة P2002
-            customer = await prisma.customer.findFirst({ where });
-            if (!customer) {
-              try {
-                customer = await prisma.customer.create({ data: createData });
-              } catch (createErr) {
-                if (createErr?.code === 'P2002') {
-                  // unique violation → صف موجود بنفس الرقم (صيغة مختلفة) → نرجعه
-                  customer = await prisma.customer.findFirst({ where });
-                  if (!customer) throw createErr;
-                } else {
-                  throw createErr; // خطأ حقيقي → executeWithRetry يعيد المحاولة
-                }
-              }
+            customer = await prisma.customer.create({ data: createData });
+          } catch (err) {
+            // P2002 (unique violation على whatsappId/companyId أو (companyId, phone) لما
+            // الـ index يتطبق لاحقاً): نفس الرقم وصل بصيغة مختلفة واتعمل من مصدر تاني
+            // في نفس اللحظة → نرجّع الصف الموجود بدل ما نفشل (وإلا الرسالة تضيع من الـ CRM)
+            if (err?.code === 'P2002') {
+              customer = await prisma.customer.findFirst({ where });
+              if (!customer) throw err;
+            } else {
+              throw err; // خطأ حقيقي → executeWithRetry يعيد المحاولة
             }
           }
         }

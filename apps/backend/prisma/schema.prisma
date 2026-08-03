@@ -9343,7 +9343,6 @@ model Customer {
   @@unique([facebookId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
-  @@unique([companyId, phone])
   @@index([companyId])
   @@index([companyId, status])
   @@index([facebookId])
