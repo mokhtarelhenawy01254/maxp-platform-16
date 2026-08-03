@@ -755,6 +755,7 @@ app.use("/api/v1/bosta", bostaRoutes);
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
 app.use("/api/v1/booking/branches", bookingBranchesRoutes);
+app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
 app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
 app.use("/api/v1/booking/services", bookingServicesRoutes);
 app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
@@ -762,7 +763,6 @@ app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/booking/patients", bookingPatientsRoutes);
 app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
-app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
 app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
 app.use("/api/v1/booking/patient-portal", bookingPatientPortalRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
