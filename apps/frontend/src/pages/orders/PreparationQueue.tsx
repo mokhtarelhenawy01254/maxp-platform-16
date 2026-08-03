@@ -955,6 +955,7 @@ const PreparationQueue: React.FC = () => {
       preparationSettings.handoffStatus,
       statusLabelMap,
       updateLocalStatuses,
+      user,
       validateTransition,
     ],
   );

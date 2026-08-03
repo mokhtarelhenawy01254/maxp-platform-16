@@ -2525,7 +2525,6 @@ const Orders: React.FC = () => {
         onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
       />
-        </div>
 
       {renderMerchantSettlementPanel()}
 
