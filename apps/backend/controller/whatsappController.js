@@ -129,14 +129,17 @@ const mapSessionForResponse = (session, includeQrData = false) => {
             }
         }
     } else {
-        // No in-memory session - check if there's valid auth state
-        const hasAuth = hasRegisteredAuthState(session);
-        if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
-            // Has valid auth but no in-memory session - session manager will create it
-            // Show as 'reconnecting' to indicate it should reconnect automatically
-            liveStatus = 'reconnecting';
-        } else {
+        // META_CLOUD sessions are API-only (no in-memory socket needed).
+        // Absence of activeSession is normal — trust DB status directly.
+        if (provider === 'META_CLOUD') {
             liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+        } else {
+            const hasAuth = hasRegisteredAuthState(session);
+            if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
+                liveStatus = 'reconnecting';
+            } else {
+                liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+            }
         }
     }
 
