@@ -8,6 +8,9 @@ const mockPrisma = {
 
 jest.mock("../../services/sharedDatabase", () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
+  // 🚨 fix: findOrCreateCustomer wraps its DB work in executeWithRetry — without it
+  // the call throws `executeWithRetry is not a function`.
+  executeWithRetry: jest.fn((op) => op()),
   getNormalizedSettings: jest.fn(async () => ({})),
 }));
 
@@ -39,10 +42,10 @@ describe("WhatsAppSyncService findOrCreateCustomer", () => {
     );
 
     expect(mockPrisma.customer.findFirst).toHaveBeenCalled();
-    // legacy customer gets phoneNormalized backfilled + avatar
+    // legacy customer gets phoneNormalized + whatsappId backfilled + avatar
     expect(mockPrisma.customer.update).toHaveBeenCalledWith({
       where: { id: "legacy-customer" },
-      data: { phoneNormalized: "+201019046551", avatar: "http://avatar" },
+      data: { phoneNormalized: "+201019046551", avatar: "http://avatar", whatsappId: "201019046551" },
     });
     expect(result.phoneNormalized).toBe("+201019046551");
   });

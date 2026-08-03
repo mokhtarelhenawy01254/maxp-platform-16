@@ -20,23 +20,28 @@ const escapeMetadataValue = (value) =>
 // آمن لأن الـ backend بيشتغل كعملية واحدة (PM2 single instance).
 const keyLocks = new Map();
 
+// 🚨 FIX (deadlock): النسخة السابقة كانت `gate = prev.then(() => current)` —
+// ده كان بيجعل `await gate` للمُتصل الأول ينتظر `current` (اللي بيتحل بس في
+// release بعد fn) → deadlock: أول استدعاء لأي مفتاح كان بيعلّق للأبد.
+// الصحيح: gate = وعد إطلاق المُتصل السابق (أو Promise.resolve() لأول مُتصل)،
+// و`current` (وعد إطلاق المُتصل الحالي) يبقى هو prev للمُتصل التالي.
 function acquireKeyLock(key) {
   const prev = keyLocks.get(key) || Promise.resolve();
   let release;
   const current = new Promise((r) => (release = r));
-  const gate = prev.then(() => current);
-  keyLocks.set(key, gate);
-  return { gate, release };
+  keyLocks.set(key, current);
+  return { gate: prev, release, current };
 }
 
 async function withKeyLock(key, fn) {
-  const { gate, release } = acquireKeyLock(key);
+  const { gate, release, current } = acquireKeyLock(key);
   await gate;
   try {
     return await fn();
   } finally {
     release();
-    if (keyLocks.get(key) === gate) {
+    // لو مفيش مُتصل تاني سجّل (حطّ current جديد) نحذف المفتاح من الخريطة
+    if (keyLocks.get(key) === current) {
       keyLocks.delete(key);
     }
   }

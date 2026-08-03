@@ -866,6 +866,7 @@ psql -d maxp -c "SELECT status, COUNT(*),
 | **اختبارات Jest (task 1)** | agent | 2026-08-03 | ✅ منفّذ | 4 ملفات جديدة: `tests/services/whatsapp/notificationTypes.test.js` (25)، `tests/services/whatsapp/isDuplicateNotification.test.js` (7)، `tests/utils/companyBranding.test.js` (7)، `tests/services/syncPreparationMetadata.test.js` (7) — **52/52 أخضر** |
 | **توحيد الوثيقة (task 2)** | agent | 2026-08-03 | ✅ منفّذ | §1.2 كود مطابق للفعل (بلا createMany + تنبيه الـ nested history)؛ §3.1 أُضيف "القرار النهائي" (رفض الـ DB unique)؛ §5.1 وثّق المنفّذ/المؤجّل بدقة |
 | **تحقق سلوكي (task 3)** | agent | 2026-08-03 | ✅ منفّذ | scheduleNotification لا يرجع no_session ✓؛ re-entrancy guard ✓؛ ملاحظة: processNotificationQueue يرسل مباشرة عبر WhatsAppMessageHandler (يروّت META_CLOUD) وليس sendNotification — مقبول وظيفياً، يُوثّق في التقرير |
+| **إصلاح اختبارات مسبقة الفشل** | agent | 2026-08-03 | ✅ منفّذ | `orderService.limit.test.js` (mock ناقص product.findUnique) + `WhatsAppSyncService.test.js` — **🔴 اكتُشف وصُحّح deadlock حقيقي في `withKeyLock`** (WhatsAppSyncService.js:23-43): `gate = prev.then(() => current)` كان يجعل أول استدعاء لأي مفتاح ينتظر `current` الذي لا يُحلّ إلا بعد fn → **أول رسالة WhatsApp تنشئ عميلاً كانت ستتجمّد للأبد في الإنتاج**. الإصلاح: `gate = prev` (وعد إطلاق المُتصل السابق) + تخزين `current` كمفتاح التالي. تحقّق: تسلسل صحيح (maxConcurrent=1) + تنظيف الخريطة. + mock `executeWithRetry` في الاختبار + توقّع `whatsappId` في الـ backfill. المجموعة: **8/8 سويتات / 59/59 أخضر (مستقر عبر 3 تشغيلات)** |
 
 ---
 
