@@ -437,6 +437,33 @@ async function getNotificationStats(req, res) {
   }
 }
 
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3):
+// إحصائيات طابور الإشعارات (WhatsAppNotificationQueue) — يعرض العالقين حسب الحالة
+// والعمر، ومؤشر healthy. لمراقبة الطابور بعد تفعيله (§1.1).
+async function getNotificationQueueStats(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const [pending, processing, sent, failed, cancelled, overdue] = await Promise.all([
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PENDING' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'PROCESSING' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'SENT' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'FAILED' } }),
+      prisma.whatsAppNotificationQueue.count({ where: { companyId, status: 'CANCELLED' } }),
+      // overdue = PENDING مستحقة لم تُعالج منذ > 2 دقيقة (مؤشر صحة الطابور)
+      prisma.whatsAppNotificationQueue.count({
+        where: { companyId, status: 'PENDING', scheduledAt: { lte: new Date(Date.now() - 120000) } },
+      }),
+    ]);
+
+    res.json({ success: true, stats: { pending, processing, sent, failed, cancelled, overdue, healthy: overdue === 0 } });
+  } catch (error) {
+    console.error('❌ Error getting notification queue stats:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب إحصائيات الطابور' });
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 الإرسال اليدوي
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -586,7 +613,7 @@ async function sendTestNotification(req, res) {
       month: 'يناير',
       netSalary: '5000',
       startTime: '09:00',
-      trackingLink: 'https://store.mokhtarelhenawy.online/track/12345'
+      trackingLink: 'https://store.example.com/track/12345'
     };
 
     if (eventType === 'OTP') {
@@ -1145,6 +1172,7 @@ module.exports = {
   deleteTemplate,
   getNotificationLogs,
   getNotificationStats,
+  getNotificationQueueStats,
   sendManualNotification,
   sendTestNotification,
   getCustomerPreferences,

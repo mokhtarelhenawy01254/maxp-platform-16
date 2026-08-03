@@ -919,6 +919,7 @@ const PreparationQueue: React.FC = () => {
 
       try {
         setRowUpdatingId(orderNumber);
+        const canOverride = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(user?.role || "");
         await apiClient.post(
           `/orders-new/simple/${encodeURIComponent(orderNumber)}/status`,
           {
@@ -930,7 +931,7 @@ const PreparationQueue: React.FC = () => {
               )
                 ? "QC completed from preparation queue"
                 : "Updated from preparation queue",
-            isOverride: true,
+            isOverride: canOverride,
           },
         );
 

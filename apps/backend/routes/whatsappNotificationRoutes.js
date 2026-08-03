@@ -53,6 +53,9 @@ router.get('/logs', verifyToken.authenticateToken, whatsappNotificationControlle
 // جلب إحصائيات الإشعارات
 router.get('/stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationStats);
 
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3): إحصائيات طابور الإشعارات
+router.get('/queue-stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationQueueStats);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 الإرسال
 // ═══════════════════════════════════════════════════════════════════════════════

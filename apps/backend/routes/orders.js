@@ -876,11 +876,48 @@ const updateAnyOrderStatus = async ({
           { id: orderIdentifier, companyId },
           { orderNumber: orderIdentifier, companyId }
         ]
-      }
+      },
+      include: { company: { include: { orderWorkflowConfig: true } } }
     });
 
     if (order) {
       const currentMetadata = parseOrderMetadata(order.metadata);
+
+      // ⚙️ Respect the advanced workflow when enabled and transitions exist for
+      // the current stage (fall back to allowing otherwise).
+      if (!skipTransitionValidation) {
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await prisma.orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await prisma.orderWorkflowTransition.count({
+            where: {
+              companyId,
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              normalizedStatus,
+              notes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return { orderType: 'regular', workflowStatus: 'pending', requestId: wfResult.requestId };
+            }
+          }
+        }
+      }
+
       const previousPreparationStatus =
         typeof currentMetadata.preparationStatus === 'string'
           ? currentMetadata.preparationStatus
@@ -2974,6 +3011,65 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           typeof currentMetadata.preparationStatus === 'string'
             ? currentMetadata.preparationStatus
             : order.status;
+
+        // ⚙️ Respect the advanced workflow when enabled (transition rules +
+        // approvals). We only enforce it here when the company has actually
+        // configured transitions for the current stage — otherwise we fall back
+        // to allowing the move so an empty workflow config never locks the queue.
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await getSharedPrismaClient().orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await getSharedPrismaClient().orderWorkflowTransition.count({
+            where: {
+              companyId,
+              OR: [
+                ...(currentStatusDef ? [{ fromStatusId: currentStatusDef.id }] : []),
+                ...(currentStatusDef ? [{ fromStatusId: null }] : [{ fromStatusId: null }]),
+              ],
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              statusUpper,
+              statusNotes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return res.json({
+                success: true,
+                message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
+                data: {
+                  orderType: 'regular',
+                  orderNumber,
+                  workflowStatus: 'pending',
+                  requestId: wfResult.requestId,
+                },
+              });
+            }
+          }
+        }
+
+        // 🔒 Enforce the "requireStockBeforePreparing" rule server-side so it
+        // cannot be bypassed with a direct API call.
+        const companySettings = parseOrderMetadata(order.company?.settings);
+        const prepSettings = companySettings.orderPreparation || {};
+        await preparationQueueService.assertPreparationStockRule({
+          orderId: order.id,
+          companyId,
+          targetStatus: statusUpper,
+          prepSettings,
+        });
+
         const mappedStatus = getMappedRegularOrderStatus(statusUpper);
         const nextMetadata = {
           ...currentMetadata,

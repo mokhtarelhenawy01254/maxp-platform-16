@@ -5,6 +5,14 @@ const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const companyFilter = args.find(a => a.startsWith('--companyId='))?.split('=')[1] || null;
 
+function hasModel(prisma, name) {
+  try {
+    return Object.getOwnPropertyNames(Object.getPrototypeOf(prisma)).includes(name);
+  } catch (e) {
+    return false;
+  }
+}
+
 function canonicalScore(customer) {
   let score = 0;
   if (customer.firstName && customer.lastName) score += 3;
@@ -83,8 +91,10 @@ function canonicalScore(customer) {
           whatsappContacts: (await prisma.whatsAppContact.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count,
           returnRequests: (await prisma.returnRequest.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count,
           formSubmissions: (await prisma.formSubmission.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count,
-          whatsappNotificationLogs: (await prisma.whatsappNotificationLog.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count,
         };
+        if (hasModel(prisma, 'whatsappNotificationLog')) {
+          moved.whatsappNotificationLogs = (await prisma.whatsappNotificationLog.updateMany({ where: { customerId: dup.id }, data: { customerId: canonical.id } })).count;
+        }
         totalOrders += moved.orders;
         console.log(`      → moved from ${dup.id}: ${JSON.stringify(moved)}`);
       }

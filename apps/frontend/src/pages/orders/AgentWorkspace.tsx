@@ -19,7 +19,10 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
-import EnhancedOrderModal from '../../components/orders/EnhancedOrderModal';
+
+const EnhancedOrderModal = React.lazy(
+  () => import('../../components/orders/EnhancedOrderModal'),
+);
 
 type OrderType = 'GUEST' | 'REGULAR';
 const WORKSPACE_TAB_KEYS = ['all', 'pending', 'confirmed', 'cancelled', 'followup', 'confirmation'] as const;
@@ -880,12 +883,20 @@ const AgentWorkspace: React.FC = () => {
       )}
 
       {selectedOrder && (
-        <EnhancedOrderModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          order={selectedOrder}
-          onOrderUpdate={() => void fetchOrders(true)}
-        />
+        <React.Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            </div>
+          }
+        >
+          <EnhancedOrderModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            order={selectedOrder}
+            onOrderUpdate={() => void fetchOrders(true)}
+          />
+        </React.Suspense>
       )}
         </>
       )}

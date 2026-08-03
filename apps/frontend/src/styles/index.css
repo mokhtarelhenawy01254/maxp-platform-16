@@ -6453,3 +6453,43 @@ select {
 .viewport-mobile [id*="hero"] .expert-container {
   min-height: auto !important;
 }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(148, 163, 184, 0.18);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+  }
+}
+
+/* Orders table density */
+[data-orders-density="compact"] thead th,
+[data-orders-density="compact"] tbody td {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}

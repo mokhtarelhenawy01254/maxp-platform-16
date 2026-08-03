@@ -353,6 +353,16 @@ class OrderWorkflowService {
                 data: { status: nextStatusDef.code }
             });
 
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
+            // هذا المسار يتجاوز updateOrderStatus → يزامن metadata.preparationStatus يدوياً
+            // حتى تظهر التغييرات على طابور التحضير (preparationQueueService يقرأ metadata).
+            try {
+                const orderService = require('./orderService');
+                await orderService.syncPreparationMetadata(order.id, nextStatusDef.code, this.prisma);
+            } catch (prepErr) {
+                console.warn(`[WORKFLOW] metadata sync failed for ${order.id}:`, prepErr.message);
+            }
+
             if (auditLog) {
                 await this.logAudit(companyId, order.id, auditLog.fromStatusId, auditLog.toStatusId, auditLog.changedBy, auditLog.changeType, auditLog.reason);
             }
@@ -473,6 +483,16 @@ class OrderWorkflowService {
                 data: { status: request.toStatus.code }
             });
 
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
+            // هذا المسار يتجاوز updateOrderStatus → يزامن metadata.preparationStatus يدوياً
+            // حتى تظهر التغييرات على طابور التحضير.
+            try {
+                const orderService = require('./orderService');
+                await orderService.syncPreparationMetadata(request.orderId, request.toStatus.code, this.prisma);
+            } catch (prepErr) {
+                console.warn(`[WORKFLOW] metadata sync failed for ${request.orderId}:`, prepErr.message);
+            }
+
             // 2. Log Audit
             await this.logAudit(
                 companyId,
@@ -590,6 +610,10 @@ class OrderWorkflowService {
             }
 
             // Prepare dynamic variables
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): نطاق التتبع من
+            // getCompanyBranding (DB) بدل هاردكود شركة محددة.
+            const { getCompanyBranding } = require('../utils/companyBranding');
+            const branding = await getCompanyBranding(companyId);
             const variables = {
                 customerName: name,
                 orderNumber: order.orderNumber,
@@ -601,21 +625,16 @@ class OrderWorkflowService {
                 statusCode: statusCode,
                 trackingNumber: order.turboTrackingNumber || 'غير متوفر حالياً',
                 estimatedDays: '2-3',
-                trackingLink: order.turboTrackingNumber
-                    ? `https://${process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online'}/track/${order.orderNumber}`
-                    : `https://${process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online'}/track/${order.orderNumber}`,
+                trackingLink: `https://${branding.domain}/track/${order.orderNumber}`,
                 orderId: order.id
             };
 
-            // ✅ Check for duplicate notification in last 10 seconds
-            const { getSharedPrismaClient } = require('./sharedDatabase');
-            const prisma = getSharedPrismaClient();
-            const recentNotification = await prisma.whatsAppNotificationLog.findFirst({
-              where: {
+            // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1 —
+            // تطابق تام على eventType المُحوّل، لا contains لتفادي STATUS_1/STATUS_10)
+            const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
+                companyId,
                 orderId: order.id,
-                eventType: { contains: statusCode.toUpperCase() },
-                createdAt: { gte: new Date(Date.now() - 10000) } // Last 10 seconds
-              }
+                eventType,
             });
 
             if (recentNotification) {

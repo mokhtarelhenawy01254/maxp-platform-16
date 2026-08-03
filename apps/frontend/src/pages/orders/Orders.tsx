@@ -20,36 +20,39 @@ import {
   hasAnyCompanyAppSlug,
   normalizeCompanyAppSlug,
 } from "../../utils/companyApps";
-import EnhancedOrderModal from "../../components/orders/EnhancedOrderModal";
-import InvoiceModal from "../../components/orders/InvoiceModal";
+import { OrdersSkeleton } from "./components/OrdersSkeleton";
+import { OrdersEmptyState } from "./components/OrdersEmptyState";
+import { OrdersPagination } from "./components/OrdersPagination";
+import { OrdersMobileList } from "./components/OrdersMobileList";
+import { OrdersToolbar } from "./components/OrdersToolbar";
 import { printOrderInvoice } from "../../utils/printOrderInvoice";
 import type { OrderDetailsType } from "./types";
+
+const EnhancedOrderModal = React.lazy(
+  () => import("../../components/orders/EnhancedOrderModal"),
+);
+const InvoiceModal = React.lazy(
+  () => import("../../components/orders/InvoiceModal"),
+);
 
 import {
   ShoppingBagIcon,
   EyeIcon,
   CheckCircleIcon,
-  MagnifyingGlassIcon,
   PrinterIcon,
-  FunnelIcon,
   InformationCircleIcon,
   StarIcon,
   ExclamationTriangleIcon,
   RocketLaunchIcon,
   ChatBubbleLeftRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  AdjustmentsHorizontalIcon,
   BanknotesIcon,
   CubeIcon,
   TruckIcon,
   ClockIcon,
-  BriefcaseIcon,
-  BoltIcon,
 } from "@heroicons/react/24/outline";
 
 
-interface Order {
+export interface Order {
   id: string;
   orderNumber: string;
   customerName: string;
@@ -228,14 +231,14 @@ const normalizePaymentStatus = (
   }
 };
 
-interface OrderStatusDefinition {
+export interface OrderStatusDefinition {
   code: string;
   name: string;
   nameEn?: string;
   color?: string;
 }
 
-interface OrdersFilters {
+export interface OrdersFilters {
   status: string;
   paymentStatus: string;
   sourceType: string;
@@ -259,14 +262,14 @@ interface OrdersListViewState {
   filters: OrdersFilters;
 }
 
-interface MerchantFilterOption {
+export interface MerchantFilterOption {
   id: string;
   name: string;
   email?: string;
   fulfillmentMode?: string;
 }
 
-interface AffiliateFilterOption {
+export interface AffiliateFilterOption {
   id: string;
   affiliateCode?: string;
   status?: string;
@@ -908,6 +911,51 @@ const Orders: React.FC = () => {
 
   const isTrashView = filters.status.toLowerCase() === "trash";
 
+  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
+    try {
+      return localStorage.getItem("orders:table-density") === "compact"
+        ? "compact"
+        : "comfortable";
+    } catch {
+      return "comfortable";
+    }
+  });
+  const changeTableDensity = (density: "comfortable" | "compact") => {
+    setTableDensity(density);
+    try {
+      localStorage.setItem("orders:table-density", density);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const mobileListHelpers = useMemo(
+    () => ({
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    }),
+    [
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    ],
+  );
+
   useEffect(() => {
     const normalized = normalizeOrderTableColumns(
       company?.settings?.ordersTableColumns,
@@ -1531,7 +1579,7 @@ const Orders: React.FC = () => {
   };
 
   const getConfidenceColor = (confidence?: number) => {
-    if (!confidence) return "bg-gray-100 text-gray-800";
+    if (!confidence) return "bg-slate-100 text-slate-800";
     if (confidence >= 0.8) return "bg-green-100 text-green-800";
     if (confidence >= 0.6) return "bg-yellow-100 text-yellow-800";
     return "bg-red-100 text-red-800";
@@ -1654,6 +1702,12 @@ const Orders: React.FC = () => {
     value: OrdersFilters[K],
   ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    setPage(1);
+  };
+
+  const clearAllFilters = () => {
+    clearAdvancedFilters();
+    setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false }));
     setPage(1);
   };
 
@@ -2124,8 +2178,8 @@ const Orders: React.FC = () => {
 
     if (merchantSettlementLoading) {
       return (
-        <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/88 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72">
-          <div className="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+        <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
+          <div className="skeleton-shimmer h-24 rounded-2xl" />
         </section>
       );
     }
@@ -2223,7 +2277,7 @@ const Orders: React.FC = () => {
     ];
 
     return (
-      <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72">
+      <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -2284,7 +2338,7 @@ const Orders: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {metricCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -2440,402 +2494,37 @@ const Orders: React.FC = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
-        <div className="mb-3 space-y-2.5">
-          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-                  <ShoppingBagIcon className="h-4 w-4" />
-                  {isMerchant ? t("orders.myOrders") : t("orders.title")}
-                </span>
-                {!loading && (
-                  <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300">
-                    {t("orders.totalOrdersCount", { count: totalOrders })}
-                  </span>
-                )}
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200/70 bg-fuchsia-50/80 px-3 py-1 text-xs font-medium text-fuchsia-700 dark:border-fuchsia-500/20 dark:bg-fuchsia-500/10 dark:text-fuchsia-200">
-                    <FunnelIcon className="h-3.5 w-3.5" />
-                    {t("orders.activeFiltersCount", { count: activeFilterCount })}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <div className="flex w-full gap-1.5 sm:w-auto sm:gap-2">
-              <button
-                onClick={() => handleFilterChange("status", "")}
-                className={`relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
-                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
-                  : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
-                  }`}
-              >
-                {t("orders.allOrders")}
-              </button>
-              {hasAgentWorkspace && (
-                <button
-                  onClick={() => navigate("/orders/workspace")}
-                  title={t('orders.workspaceSubtitle')}
-                  className="relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-2 sm:px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
-                >
-                  <BriefcaseIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
-                  <span className="sm:hidden">{t('orders.myWorkspace')}</span>
-                </button>
-              )}
-
-              {!loading && (
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
-                  <span>{t("orders.showing")}</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {orders.length > 0
-                      ? `${(page - 1) * limit + 1}-${Math.min(page * limit, totalOrders)}`
-                      : "0"}
-                  </span>
-                  <span>{t("orders.of")} {totalOrders}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Compact Filters Section */}
-          <div className="rounded-[22px] border border-slate-200/70 bg-white/88 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
-            <div className="flex flex-col gap-3">
-              {ordersLoadError && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-red-200/80 bg-red-50/80 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{ordersLoadError}</span>
-                  </div>
-                  <button
-                    onClick={() => fetchOrders()}
-                    className="rounded-xl border border-red-200/80 px-2.5 py-1 font-semibold transition hover:bg-red-100/80 dark:border-red-500/30 dark:hover:bg-red-500/10"
-                  >
-                    {t("orders.incompleteRetry")}
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-                <div className="relative min-w-[200px] flex-1 lg:min-w-0">
-                  <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="text"
-                    aria-label={String(t("orders.searchPlaceholder"))}
-                    placeholder={t("orders.searchPlaceholder")}
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange("search", e.target.value)}
-                    className={`${fieldClassName} pr-10`}
-                  />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvancedFilters((prev) => !prev)}
-                    className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${showAdvancedFilters
-                      ? "border-fuchsia-300/80 bg-fuchsia-50/90 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
-                      : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                      }`}
-                  >
-                    <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                    <span className="whitespace-nowrap">
-                      {showAdvancedFilters ? t("orders.hideFilters") : t("orders.filters")}
-                    </span>
-                    {advancedFilterCount > 0 && (
-                      <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[11px] font-bold text-fuchsia-700 dark:bg-slate-900/80 dark:text-fuchsia-200">
-                        {advancedFilterCount}
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleFilterChange("onlyUnseen", !filters.onlyUnseen)
-                    }
-                    className={`flex min-h-[44px] min-w-[118px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${filters.onlyUnseen
-                      ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                      : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                      }`}
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    <span className="whitespace-nowrap">
-                      {filters.onlyUnseen
-                        ? t("orders.showAll")
-                        : t("orders.unseen")}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {!showAdvancedFilters && advancedFilterCount > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/55 dark:text-slate-300">
-                  <span>{t("orders.activeFiltersApplied", { count: advancedFilterCount })}</span>
-                  <button
-                    type="button"
-                    onClick={clearAdvancedFilters}
-                    className="rounded-xl px-2.5 py-1 font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                  >
-                    {t("orders.clearFilters")}
-                  </button>
-                </div>
-              )}
-
-              {showAdvancedFilters && (
-                <div className="animate-in slide-in-from-top-2 flex flex-col gap-2.5 border-t border-slate-200/70 pt-2.5 duration-200 dark:border-slate-700/70">
-                  <div className="grid gap-2.5 lg:grid-cols-4">
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <FunnelIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                      <select
-                        aria-label={String(t("orders.allDates"))}
-                        value={filters.timeRange}
-                        onChange={(e) => setQuickDate(e.target.value)}
-                        className={`${fieldClassName} appearance-none pr-8 pl-2 text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allDates")}</option>
-                        <option value="today">{t("orders.today")}</option>
-                        <option value="yesterday">{t("orders.yesterday")}</option>
-                        <option value="last7">{t("orders.last7Days")}</option>
-                        <option value="thisMonth">{t("orders.thisMonth")}</option>
-                        <option value="custom">{t("orders.customPeriod")}</option>
-                      </select>
-                    </div>
-
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allStatuses"))}
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange("status", e.target.value)}
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allStatuses")}</option>
-                        {filterableOrderStatuses.map((status) => (
-                          <option
-                            key={status.code}
-                            value={status.code.toLowerCase()}
-                          >
-                            {status.name}
-                          </option>
-                        ))}
-                        <option value="trash">{t("orders.trash")}</option>
-                      </select>
-                    </div>
-
-                    <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allPaymentStatuses"))}
-                        value={filters.paymentStatus}
-                        onChange={(e) =>
-                          handleFilterChange("paymentStatus", e.target.value)
-                        }
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allPaymentStatuses")}</option>
-                        {filterablePaymentStatuses.map((status) => (
-                          <option
-                            key={status.code}
-                            value={status.code.toLowerCase()}
-                          >
-                            {status.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {showOrderSourceFilter && (
-                      <div className="relative min-w-[140px] sm:flex-1 lg:min-w-0">
-                        <select
-                          aria-label={String(t("orders.allSources"))}
-                          value={filters.sourceType}
-                          onChange={(e) =>
-                            handleFilterChange("sourceType", e.target.value)
-                          }
-                          className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                        >
-                          <option value="">{t("orders.allSources")}</option>
-                          <option value="ai_conversation">
-                            {t("orders.sourceAutoConversation")}
-                          </option>
-                          <option value="manual">{t("orders.sourceManual")}</option>
-                          <option value="storefront">
-                            {t("orders.sourceStorefront")}
-                          </option>
-                          <option value="woocommerce">
-                            {t("orders.sourceWooCommerce")}
-                          </option>
-                          <option value="pos">{t("orders.sourcePOS")}</option>
-                          <option value="api">{t("orders.sourceAPI")}</option>
-                          <option value="import">{t("orders.sourceImport")}</option>
-                          <option value="unknown">{t("orders.sourceUnknown")}</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  {showUnifiedOperationFilters && (
-                    <div className="grid gap-2.5 lg:grid-cols-5">
-                      {showMerchantOperationFilters && (
-                        <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                          <select
-                            aria-label={String(t("orders.allMerchants"))}
-                            value={filters.merchantId}
-                            onChange={(e) =>
-                              handleFilterChange("merchantId", e.target.value)
-                            }
-                            className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                          >
-                            <option value="">{t("orders.allMerchants")}</option>
-                            {merchantOptions.map((merchantOption) => (
-                              <option key={merchantOption.id} value={merchantOption.id}>
-                                {merchantOption.name || merchantOption.email || merchantOption.id}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {showAffiliateOperationFilter && (
-                        <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                          <select
-                            aria-label={String(t("orders.allAffiliates"))}
-                            value={filters.affiliateId}
-                            onChange={(e) =>
-                              handleFilterChange("affiliateId", e.target.value)
-                            }
-                            className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                          >
-                            <option value="">{t("orders.allAffiliates")}</option>
-                            {affiliateOptions.map((affiliateOption) => (
-                              <option key={affiliateOption.id} value={affiliateOption.id}>
-                                {getAffiliateDisplayName(affiliateOption)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {showMerchantOperationFilters && (
-                        <>
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.fulfillmentSource"))}
-                              value={filters.fulfillmentSource}
-                              onChange={(e) =>
-                                handleFilterChange("fulfillmentSource", e.target.value)
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allFulfillmentSources")}</option>
-                              <option value="MERCHANT">{t("orders.fromMerchant")}</option>
-                              <option value="COMPANY_WAREHOUSE">{t("orders.fromCompanyWarehouse")}</option>
-                            </select>
-                          </div>
-
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.merchantOperationStatus"))}
-                              value={filters.merchantOperationStatus}
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  "merchantOperationStatus",
-                                  e.target.value,
-                                )
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allMerchantOperationStatuses")}</option>
-                              <option value="PREPARATION">{t("orders.preparation")}</option>
-                              <option value="IN_SHIPPING">{t("orders.inShipping")}</option>
-                              <option value="DELIVERED">{t("orders.delivered")}</option>
-                              <option value="NOT_DELIVERED">{t("orders.returnedOrNotDelivered")}</option>
-                            </select>
-                          </div>
-
-                          <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                            <select
-                              aria-label={String(t("orders.merchantSettlements"))}
-                              value={filters.merchantSettlementStatus}
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  "merchantSettlementStatus",
-                                  e.target.value,
-                                )
-                              }
-                              className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                            >
-                              <option value="">{t("orders.allSettlements")}</option>
-                              <option value="PAYABLE">{t("orders.settlementPayable")}</option>
-                              <option value="PAID">{t("orders.settlementPaid")}</option>
-                              <option value="NOT_PAYABLE">{t("orders.settlementNotPayable")}</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {hasCustomDateFilters && (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
-                          <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.fromDate")}
-                          </span>
-                          <input
-                            type="date"
-                            aria-label={String(t("orders.startDate"))}
-                            value={filters.startDate}
-                            onChange={(e) => {
-                              handleFilterChange("startDate", e.target.value);
-                              if (filters.timeRange !== "custom")
-                                handleFilterChange("timeRange", "custom");
-                            }}
-                            className="theme-native-control rounded-xl border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0 dark:text-slate-100"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
-                          <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.toDate")}
-                          </span>
-                          <input
-                            type="date"
-                            aria-label={String(t("orders.endDate"))}
-                            value={filters.endDate}
-                            onChange={(e) => {
-                              handleFilterChange("endDate", e.target.value);
-                              if (filters.timeRange !== "custom")
-                                handleFilterChange("timeRange", "custom");
-                            }}
-                            className="theme-native-control rounded-xl border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0 dark:text-slate-100"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={clearAdvancedFilters}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                      >
-                        {t("orders.clearAdvancedFilters")}
-                      </button>
-                    </div>
-                  )}
-
-                  {!hasCustomDateFilters && advancedFilterCount > 0 && (
-                    <div className="flex justify-end">
-                      <button
-                        onClick={clearAdvancedFilters}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                      >
-                        {t("orders.clearAdvancedFilters")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <OrdersToolbar
+        filters={filters}
+        loading={loading}
+        totalOrders={totalOrders}
+        activeFilterCount={activeFilterCount}
+        advancedFilterCount={advancedFilterCount}
+        isMerchant={isMerchant}
+        hasAgentWorkspace={hasAgentWorkspace}
+        ordersCount={orders.length}
+        page={page}
+        limit={limit}
+        ordersLoadError={ordersLoadError}
+        showAdvancedFilters={showAdvancedFilters}
+        fieldClassName={fieldClassName}
+        filterableOrderStatuses={filterableOrderStatuses}
+        filterablePaymentStatuses={filterablePaymentStatuses}
+        merchantOptions={merchantOptions}
+        affiliateOptions={affiliateOptions}
+        showOrderSourceFilter={showOrderSourceFilter}
+        showUnifiedOperationFilters={showUnifiedOperationFilters}
+        showMerchantOperationFilters={showMerchantOperationFilters}
+        showAffiliateOperationFilter={showAffiliateOperationFilter}
+        hasCustomDateFilters={hasCustomDateFilters}
+        getAffiliateDisplayName={getAffiliateDisplayName}
+        onFilterChange={handleFilterChange}
+        onClearAdvancedFilters={clearAdvancedFilters}
+        onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
+        onSetQuickDate={setQuickDate}
+        onOpenWorkspace={() => navigate("/orders/workspace")}
+        onRetry={fetchOrders}
+      />
         </div>
 
       {renderMerchantSettlementPanel()}
@@ -2859,7 +2548,7 @@ const Orders: React.FC = () => {
                   e.target.value = ""; // Reset
                 }
               }}
-              className="theme-native-control px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg text-sm focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              className="theme-native-control px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100"
               disabled={bulkProcessing}
             >
               <option value="">{t("orders.updateStatus")}</option>
@@ -2905,208 +2594,37 @@ const Orders: React.FC = () => {
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 lg:hidden">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`mobile-skeleton-${index}`}
-              className="animate-pulse rounded-[26px] border border-slate-200/70 bg-white/85 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70"
-            >
-              <div className="mb-4 flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="h-4 w-28 rounded-full bg-slate-200 dark:bg-slate-700" />
-                  <div className="h-5 w-40 rounded-full bg-slate-300/80 dark:bg-slate-600" />
-                </div>
-                <div className="h-6 w-6 rounded-md bg-slate-200 dark:bg-slate-700" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-                <div className="h-16 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-              </div>
-            </div>
-          ))
-        ) : orders.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-slate-300/80 bg-white/80 px-6 py-12 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-            <ShoppingBagIcon className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
-            <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
-                      </p>
-          </div>
-        ) : (
-          orders.map((order, idx) => {
-            const orderItemsSummary = summarizeOrderDocumentItems(order.items);
-            const isSelected = selectedOrders.includes(order.orderNumber);
-
-            return (
-              <article
-                key={`mobile-${order.id || idx}`}
-                className={`rounded-[28px] border p-4 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.5)] transition ${isSelected
-                  ? "border-blue-400/70 bg-blue-50/90 dark:border-blue-500/60 dark:bg-blue-500/10"
-                  : "border-slate-200/70 bg-white/88 dark:border-slate-700/70 dark:bg-slate-900/72"
-                  }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        #{order.orderNumber}
-                      </span>
-                      {!order.isViewed && (
-                        <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                          {t("orders.newLabel")}
-                        </span>
-                      )}
-                      {order.metadata?.isGuestOrder && (
-                        <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          {t("orders.guest")}
-                        </span>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
-                        {getCustomerDisplayName(order)}
-                      </h3>
-                      {order.customerPhone && (
-                        <p
-                          className="mt-1 text-sm text-slate-500 dark:text-slate-400"
-                          dir="ltr"
-                        >
-                          {order.customerPhone}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {canSelectOrders && (
-                    <input
-                      type="checkbox"
-                      aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
-                      className="mt-1 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
-                      checked={isSelected}
-                      onChange={() => toggleOrderSelection(order.orderNumber)}
-                    />
-                  )}
-                </div>
-
-                {orderItemsSummary.hasQuantityOffers ? (
-                  <div className="mt-4 rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                    <div className="font-semibold">
-                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                    </div>
-                    <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                      {orderItemsSummary.secondaryLabel}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.amount")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                      {formatPrice(getOrderAmount(order))}
-                    </p>
-                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      {getOrderSourceText(order)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.time")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                      {getRelativeTime(order.createdAt || new Date().toISOString())}
-                    </p>
-                    <p
-                      className="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
-                      title={formatDate(order.createdAt || new Date().toISOString())}
-                    >
-                      {formatDate(order.createdAt || new Date().toISOString())}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getPaymentStatusBadgeStyle(
-                      order.paymentStatus || "pending",
-                    )
-                      ? ""
-                      : getPaymentStatusColor(
-                          (order.paymentStatus || "pending").toLowerCase(),
-                        )}`}
-                    style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
-                  >
-                    {getPaymentStatusText(
-                      (order.paymentStatus || "pending").toLowerCase(),
-                    )}
-                  </span>
-                  {(() => {
-                    const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                    return (
-                      <span className={unifiedStatus.className} style={unifiedStatus.style} aria-label={unifiedStatus.labelKey}>
-                        {unifiedStatus.text}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleOpenOrder(order)}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    {t("orders.quickView")}
-                  </button>
-
-                  <Link
-                    to={`/orders/${order.orderNumber}`}
-                    onClick={() => {
-                      if (!order.isViewed) {
-                        handleMarkAsViewed(order.orderNumber);
-                      }
-                    }}
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    <ShoppingBagIcon className="h-4 w-4" />
-                    {t("orders.viewDetails")}
-                  </Link>
-
-                  {order.conversationId && (
-                    <Link
-                      to={`/whatsapp?conversationId=${order.conversationId}`}
-                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
-                    >
-                      <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      {t("orders.conversation")}
-                    </Link>
-                  )}
-                </div>
-              </article>
-            );
-          })
-        )}
-      </div>
+            <OrdersMobileList
+        orders={orders}
+        loading={loading}
+        ordersLoadError={ordersLoadError}
+        selectedOrders={selectedOrders}
+        canSelectOrders={canSelectOrders}
+        isMerchant={isMerchant}
+        activeFilterCount={activeFilterCount}
+        search={filters.search}
+        helpers={mobileListHelpers}
+        onOpenOrder={handleOpenOrder}
+        onToggleSelection={toggleOrderSelection}
+        onMarkAsViewed={handleMarkAsViewed}
+        onClearFilters={clearAllFilters}
+      />
 
       {/* Orders Table */}
-      <div className="hidden overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/88 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.5)] dark:border-slate-700/70 dark:bg-slate-900/72 lg:block">
+      <div
+        data-orders-density={tableDensity}
+        className="hidden overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.5)] dark:border-slate-700/70 dark:bg-slate-900/70 lg:block"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-right">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
               <tr>
                 {canSelectOrders && (
                   <th className="w-10 px-3 py-2.5 lg:px-4">
                     <input
                       type="checkbox"
                       aria-label={String(t("orders.selectAllOrders"))}
-                      className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
+                      className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
                       onChange={toggleAllSelection}
                       checked={
                         orders.length > 0 &&
@@ -3118,105 +2636,63 @@ const Orders: React.FC = () => {
                   </th>
                 )}
                 {columnsToRender.includes("orderNumber") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.orderNumber")}
                   </th>
                 )}
                 {columnsToRender.includes("customer") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.customer")}
                   </th>
                 )}
                 {columnsToRender.includes("amount") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.amount")}
                   </th>
                 )}
                 {columnsToRender.includes("status") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.status")}
                   </th>
                 )}
                 {columnsToRender.includes("payment") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.payment")}
                   </th>
                 )}
                 {columnsToRender.includes("date") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="hidden px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4 xl:table-cell">
                     {t("orders.date")}
                   </th>
                 )}
                 {columnsToRender.includes("actions") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 lg:px-4">
+                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                     {t("orders.actions")}
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={`skeleton-${i}`} className="animate-pulse">
-                    {canSelectOrders && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("orderNumber") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                        <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("customer") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                        <div className="h-3 w-40 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("amount") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("status") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("payment") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("date") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </td>
-                    )}
-                    {columnsToRender.includes("actions") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded"></div>
-                      </td>
-                    )}
-                  </tr>
-                ))
+                <OrdersSkeleton
+                  variant="table"
+                  rowCount={5}
+                  columns={columnsToRender}
+                  showSelect={canSelectOrders}
+                />
               ) : orders.length === 0 ? (
                 <tr>
                   <td
                     colSpan={tableColumnCount}
-                    className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
+                    className="px-6 py-10 text-center text-slate-500 dark:text-slate-400"
                   >
-                    <div className="flex flex-col items-center justify-center">
-                      <ShoppingBagIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-                      <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
-                      </p>
-                    </div>
+                    <OrdersEmptyState
+                      variant="table"
+                      error={ordersLoadError}
+                      isMerchant={isMerchant}
+                      hasActiveFilters={activeFilterCount > 0 || Boolean(filters.search)}
+                      onClearFilters={clearAllFilters}
+                    />
                   </td>
                 </tr>
               ) : (
@@ -3228,7 +2704,15 @@ const Orders: React.FC = () => {
                       onClick={() => {
                         handleOpenOrder(order);
                       }}
-                      className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-all duration-200 group ${selectedOrders.includes(order.orderNumber)
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleOpenOrder(order);
+                        }
+                      }}
+                      tabIndex={0}
+                      aria-label={`${t("orders.viewDetails")} ${order.orderNumber}`}
+                      className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
                         ? "bg-blue-50/60 dark:bg-blue-900/30"
                         : !order.isViewed
                           ? "bg-blue-50 dark:bg-blue-900/20"
@@ -3243,7 +2727,7 @@ const Orders: React.FC = () => {
                           <input
                             type="checkbox"
                             aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
-                            className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
+                            className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
                             checked={selectedOrders.includes(order.orderNumber)}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => {
@@ -3257,11 +2741,11 @@ const Orders: React.FC = () => {
                         <td className="px-3 py-2.5 lg:px-4">
                           <div className="flex flex-col gap-1.5">
                             <div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">
                                 #{order.orderNumber}
                               </span>
                               {order.metadata?.isGuestOrder && (
-                                <span className="mr-2 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
+                                <span className="mr-2 px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
                                   {t("orders.guest")}
                                 </span>
                               )}
@@ -3287,19 +2771,19 @@ const Orders: React.FC = () => {
                       {columnsToRender.includes("customer") && (
                         <td className="px-3 py-2.5 lg:px-4">
                           <div className="flex flex-col">
-                            <span className="text-gray-900 dark:text-gray-100 font-medium">
+                            <span className="text-slate-900 dark:text-slate-100 font-medium">
                               {getCustomerDisplayName(order)}
                             </span>
                             {order.customerPhone && (
                               <span
-                                className="text-gray-500 dark:text-gray-400 text-sm"
+                                className="text-slate-500 dark:text-slate-400 text-sm"
                                 dir="ltr"
                               >
                                 {order.customerPhone}
                               </span>
                             )}
                             {order.extractionMethod && (
-                              <span className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                              <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">
                                 {order.extractionMethod === "ai_enhanced"
                                   ? t("orders.enhancedExtraction")
                                   : order.extractionMethod === "ai_basic"
@@ -3313,7 +2797,7 @@ const Orders: React.FC = () => {
                         </td>
                       )}
                       {columnsToRender.includes("amount") && (
-                        <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100 lg:px-4">
+                        <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100 lg:px-4">
                           {(() => {
                             try {
                               // PRIORITIZE: subtotal + shipping + tax for consistency with OrderDetails
@@ -3355,7 +2839,7 @@ const Orders: React.FC = () => {
                             {order.isScheduled &&
                               order.scheduledDeliveryDate && (
                                 <span
-                                  className="text-xs text-gray-600 dark:text-gray-400"
+                                  className="text-xs text-slate-600 dark:text-slate-400"
                                   dir="ltr"
                                 >
                                   📅{" "}
@@ -3400,7 +2884,7 @@ const Orders: React.FC = () => {
                       )}
                       {columnsToRender.includes("date") && (
                         <td
-                          className="px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 lg:px-4"
+                          className="hidden px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400 lg:px-4 xl:table-cell"
                           title={formatDate(
                             order.createdAt || new Date().toISOString(),
                           )}
@@ -3418,14 +2902,14 @@ const Orders: React.FC = () => {
                       )}
                       {columnsToRender.includes("actions") && (
                         <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex items-center gap-0.5 lg:gap-1.5">
+                          <div className="flex items-center gap-1.5 lg:gap-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenOrder(order);
                               }}
                               aria-label={`${t("orders.quickView")} ${order.orderNumber}`}
-                              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                               title={t("orders.quickView")}
                             >
                               <EyeIcon className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -3439,7 +2923,7 @@ const Orders: React.FC = () => {
                                 }
                               }}
                               aria-label={`${t("orders.viewFullDetails")} ${order.orderNumber}`}
-                              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                               title={t("orders.viewFullDetails")}
                             >
                               <ShoppingBagIcon className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -3449,7 +2933,7 @@ const Orders: React.FC = () => {
                                 to={`/whatsapp?conversationId=${order.conversationId}`}
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                                className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                                 title={t("orders.conversation")}
                               >
                                 <ChatBubbleLeftRightIcon className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -3468,155 +2952,78 @@ const Orders: React.FC = () => {
 
         {/* Pagination Controls */}
         {!loading && orders.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-900 px-3 py-2.5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {t("orders.showing")} {(page - 1) * limit + 1} {t("orders.to")}{" "}
-                {Math.min(page * limit, totalOrders)} {t("orders.of")}{" "}
-                {totalOrders} {t("orders.orders2")}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.show")}
-                </label>
-                <select
-                  aria-label={String(t("orders.ordersPerPage"))}
-                  value={limit}
-                  onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-                  className="theme-native-control px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm transition-colors"
-                >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let p = i + 1;
-                  if (totalPages > 5 && page > 3) {
-                    p = page - 2 + i;
-                  }
-                  if (p > totalPages) return null;
-
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => handlePageChange(p)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${page === p
-                        ? "bg-blue-600 dark:bg-blue-500 text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        }`}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <OrdersPagination
+            variant="desktop"
+            page={page}
+            totalPages={totalPages}
+            totalOrders={totalOrders}
+            limit={limit}
+            density={tableDensity}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            onDensityChange={changeTableDensity}
+          />
         )}
       </div>
 
       {!loading && orders.length > 0 && (
-        <div className="rounded-[26px] border border-slate-200/70 bg-white/88 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72 lg:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.currentPage")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {page} / {Math.max(totalPages, 1)}
-              </p>
-            </div>
-            <div className="text-left">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.currentlyShown")}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {Math.min(page * limit, totalOrders)} / {totalOrders}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-               {t("orders.previous")}
-            </button>
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === totalPages}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-               {t("orders.next")}
-            </button>
-            <select
-              aria-label={String(t("orders.ordersPerPage"))}
-              value={limit}
-              onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-              className={`${fieldClassName} w-auto min-w-[88px] px-3`}
-            >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="200">200</option>
-            </select>
-          </div>
-        </div>
+        <OrdersPagination
+          variant="mobile"
+          page={page}
+          totalPages={totalPages}
+          totalOrders={totalOrders}
+          limit={limit}
+          density={tableDensity}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+          onDensityChange={changeTableDensity}
+        />
       )}
       </div>
 
       {/* Enhanced Order Modal */}
       {selectedOrder && (
-        <EnhancedOrderModal
-          order={selectedOrder}
-          isOpen={showOrderModal}
-          canManagePaymentStatus={!isMerchant}
-          orderStatuses={orderStatuses}
-          onClose={() => {
-            setShowOrderModal(false);
-            setSelectedOrder(null);
-          }}
-          onOrderUpdate={(updatedOrder) => {
-            setSelectedOrder(updatedOrder);
-            setOrders(
-              orders.map((o) =>
-                o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
-              ),
-            );
-          }}
-        />
+        <React.Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            </div>
+          }
+        >
+          <EnhancedOrderModal
+            order={selectedOrder}
+            isOpen={showOrderModal}
+            canManagePaymentStatus={!isMerchant}
+            orderStatuses={orderStatuses}
+            onClose={() => {
+              setShowOrderModal(false);
+              setSelectedOrder(null);
+            }}
+            onOrderUpdate={(updatedOrder) => {
+              setSelectedOrder(updatedOrder);
+              setOrders(
+                orders.map((o) =>
+                  o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
+                ),
+              );
+            }}
+          />
+        </React.Suspense>
       )}
 
       {selectedInvoice && (
-        <InvoiceModal
-          invoice={selectedInvoice}
-          onClose={() => setSelectedInvoice(null)}
-        />
+        <React.Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            </div>
+          }
+        >
+          <InvoiceModal
+            invoice={selectedInvoice}
+            onClose={() => setSelectedInvoice(null)}
+          />
+        </React.Suspense>
       )}
 
 

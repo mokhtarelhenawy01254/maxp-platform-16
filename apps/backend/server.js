@@ -1116,6 +1116,16 @@ try {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
 }
 
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
+// (BullMQ إن توفر Redis، وإلا fallback polling كل 60 ثانية)
+try {
+  const { startNotificationQueueWorker } = require("./services/whatsapp/notificationQueueWorker");
+  startNotificationQueueWorker();
+  console.log("✅ [NOTIF-QUEUE] WhatsApp notification queue worker registered");
+} catch (error) {
+  console.error("❌ [NOTIF-QUEUE] Failed to start notification queue worker:", error);
+}
+
 
 // AI Provider Health Check — delegated to Python ai-service
 try {

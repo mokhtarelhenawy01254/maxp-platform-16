@@ -1,6 +1,8 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const axios = require('axios');
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): البذر مستخرج إلى خدمة مشتركة
+const { seedDefaultOrderTemplates } = require('../services/orderTemplateSeeding');
 
 // ═══════════════════════════════════════════════════════════════
 // 🎨 Default System Statuses
@@ -920,68 +922,8 @@ const getStatusStats = async (req, res) => {
  * تأكد أن كل حالة طلب نشطة لها قالب واتساب افتراضي في الداتابيز.
  * مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates، لذا ننشئ
  * القوالب الافتراضية كصفوف DB قابلة للتعديل من الصفحة (وليس في الكود).
+ * 🚨 PRODUCTION-FIX (§2.3): seedDefaultOrderTemplates مستوردة من services/orderTemplateSeeding.
  */
-const DEFAULT_ORDER_TEMPLATE_CONTENT = (statusName) => (
-  `أهلًا بحضرتك 👋\nتم تغيير حالة طلبك إلى: ${statusName}\nشكرًا لتعاملك معنا 🙏`
-);
-
-const seedDefaultOrderTemplates = async (companyId, prisma) => {
-  try {
-    const statuses = await prisma.orderStatusConfig.findMany({
-      where: { companyId, isActive: true, statusType: { in: ['order', 'preparation', 'shipping', 'payment'] } },
-      select: { id: true, code: true, name: true }
-    });
-
-    // أحداث الطلبات الإضافية غير المرتبطة بحالة محددة (تُدار من صفحة
-    // قوالب الطلبات ككود حالة أو أسماء أحداث قياسية). نحتاجها حتى لا تتوقف
-    // رسائل الطلبات الجديدة والإلغاء عند غياب قالب.
-    const extraOrderEvents = [
-      { code: 'ORDER_CREATED', name: 'طلب جديد' },
-      { code: 'ORDER_CANCELLED', name: 'إلغاء الطلب' },
-      { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' }
-    ];
-
-    const allEvents = [
-      ...statuses.map(s => ({ code: s.code, name: s.name })),
-      ...extraOrderEvents
-    ];
-
-    const existingTemplates = await prisma.whatsAppNotificationTemplate.findMany({
-      where: { companyId, eventType: { in: allEvents.map(e => e.code) } },
-      select: { eventType: true }
-    });
-    const existingEventTypes = new Set(existingTemplates.map(t => t.eventType));
-
-    let created = 0;
-    for (const event of allEvents) {
-      if (existingEventTypes.has(event.code)) continue;
-      await prisma.whatsAppNotificationTemplate.create({
-        data: {
-          companyId,
-          eventType: event.code,
-          name: `قالب ${event.name}`,
-          category: 'ORDERS',
-          content: DEFAULT_ORDER_TEMPLATE_CONTENT(event.name),
-          variables: JSON.stringify([
-            { position: 1, name: 'customerName' },
-            { position: 2, name: 'orderNumber' }
-          ]),
-          hasButtons: false,
-          isActive: true
-        }
-      });
-      created++;
-    }
-
-    if (created > 0) {
-      console.log(`🌱 [ORDER-TEMPLATES] Created ${created} default order template(s) for company ${companyId}`);
-    }
-    return created;
-  } catch (error) {
-    console.error('❌ [ORDER-TEMPLATES] Seed failed:', error.message);
-    return 0;
-  }
-};
 
 const getStatusesWithTemplates = async (req, res) => {
   try {

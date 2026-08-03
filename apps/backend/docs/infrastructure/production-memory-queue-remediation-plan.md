@@ -1,9 +1,23 @@
 # خطة الإصلاح الشامل — مشاكل الذاكرة وطابور المزامنة
 
-**تاريخ الإنشاء**: 2026-07-27  
-**آخر تحديث**: 2026-07-27  
-**المؤلف**: AI Audit  
-**الحالة**: مسودة — تنتظر المراجعة والاعتماد  
+**تاريخ الإنشاء**: 2026-07-27
+**آخر تحديث**: 2026-08-03 (إضافة بيان التمييز + ربط بخطة الإشعارات)
+**المؤلف**: AI Audit
+**الحالة**: مسودة — تنتظر المراجعة والاعتماد
+
+> ## 🔎 بيان تمييز مهم (اقرأ قبل البدء) — أُضيف 2026-08-03
+>
+> **هذه الخطة تعالج طابوراً مختلفاً تماماً** عن طابور إشعارات واتساب. لا تخلط بينهما:
+>
+> | | هذه الوثيقة (الذاكرة/المزامنة) | خطة الإشعارات (منفصلة) |
+> |---|---|---|
+> | **الطابور** | `OrderSyncQueue` (`syncQueueService`) — مزامنة الطلبات بين الشركات الأم/التابعة | `WhatsAppNotificationQueue` — إرسال إشعارات واتساب للعملاء |
+> | **المشكلة** | تسريب ذاكرة Baileys + تعليق المزامنة بين الشركات | طابور ميت + كرون يتجاوز الخدمة + قوالب/هاردكود |
+> | **الجذر** | `services/syncQueueService.js` + جلسات Baileys | `services/whatsapp/WhatsAppNotificationService.js` + `orderService.js` |
+>
+> **الوثيقة الأخرى**: `docs/notifications/whatsapp-order-notifications-fix-plan-2026-08-03.md` — راجعها لو مشكلتك هي إشعارات العملاء عن الطلبات.
+>
+> ملاحظة: `bullmq` و `ioredis` **مثبتان بالفعل** في المشروع (`bullmq@^5.66.2`، `ioredis@^5.8.2`) ومستخدمان في `services/queueService.js` و `queues/webhookQueue.js` — لذا افتراض §2.1 باستخدام BullMQ صحيح ومباشر.
 
 ---
 
@@ -986,6 +1000,7 @@ pm2 restart maxp-backend
 
 ### 11.2 الوثائق ذات الصلة
 
+- `docs/notifications/whatsapp-order-notifications-fix-plan-2026-08-03.md` — **طابور مختلف**: إشعارات واتساب للطلبات (`WhatsAppNotificationQueue`). لا يخلط مع هذه الخطة.
 - `docs/infrastructure/production-memory-restart-2026-05-09.md` — تاريخي لمشاكل الذاكرة السابقة
 - `docs/infrastructure/bugs.md` — سجل الأخطاء
 - `docs/whatsapp/whatsapp-session-connection-overhaul-2026-06-01.md` — إعادة هيكلة جلسات واتساب السابقة
