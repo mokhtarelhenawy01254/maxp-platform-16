@@ -17,20 +17,84 @@ const normalizeQuickActionStatus = (value) => {
 const isCancellationStatus = (value) => normalizeQuickActionStatus(value) === 'CANCELLED';
 const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلوب عند اختيار حالة ملغي';
 
-const shouldIncludeWorkspaceOrder = (order, requestedStatus = '', followUpOnly = false) => {
-  if (!order) return false;
+const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
-  const normalizedStatus = normalizeWorkspaceStatus(order.status);
-
-  if (followUpOnly && !order.followUpDate) {
-    return false;
-  }
+const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false } = {}) => {
+  const where = { companyId, assignedTo: userId, isActive: true };
 
   if (requestedStatus) {
-    return normalizedStatus === requestedStatus;
+    where.OR = [
+      { order: { status: requestedStatus } },
+      { guestOrder: { status: requestedStatus } }
+    ];
+  } else if (followUpOnly) {
+    where.OR = [
+      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
+      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+    ];
+  } else {
+    where.OR = [
+      { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
+      { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
+    ];
   }
 
-  return !WORKSPACE_EXCLUDED_STATUSES.has(normalizedStatus);
+  return where;
+};
+
+const getWorkspaceStats = async (prisma, companyId, userId) => {
+  const base = { companyId, assignedTo: userId, isActive: true };
+
+  const statusWhere = (status) => ({
+    ...base,
+    OR: [
+      { order: { status } },
+      { guestOrder: { status } }
+    ]
+  });
+
+  const excludedWhere = {
+    ...base,
+    OR: [
+      { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
+      { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
+    ]
+  };
+
+  const followupWhere = {
+    ...base,
+    OR: [
+      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
+      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+    ]
+  };
+
+  const [total, pending, confirmed, cancelled, followup] = await Promise.all([
+    prisma.orderAssignment.count({ where: excludedWhere }),
+    prisma.orderAssignment.count({ where: statusWhere('PENDING') }),
+    prisma.orderAssignment.count({ where: statusWhere('CONFIRMED') }),
+    prisma.orderAssignment.count({ where: statusWhere('CANCELLED') }),
+    prisma.orderAssignment.count({ where: followupWhere })
+  ]);
+
+  return { total, pending, confirmed, cancelled, followup };
+};
+
+const assertWorkspaceOrderOwnership = async (prisma, companyId, userId, id) => {
+  const assignment = await prisma.orderAssignment.findFirst({
+    where: {
+      companyId,
+      assignedTo: userId,
+      isActive: true,
+      OR: [{ orderId: id }, { guestOrderId: id }]
+    }
+  });
+  if (!assignment) {
+    const err = new Error('لا تملك صلاحية التعامل مع هذا الطلب');
+    err.statusCode = 403;
+    throw err;
+  }
+  return { type: assignment.guestOrderId ? 'GUEST' : 'REGULAR', assignment };
 };
 
 const getMyOrders = async (req, res) => {
@@ -42,40 +106,57 @@ const getMyOrders = async (req, res) => {
       return res.status(403).json({ success: false, error: 'معرف الشركة أو المستخدم مطلوب' });
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
     const requestedStatus = normalizeWorkspaceStatus(req.query.status);
-    const followUpOnly =
-      req.query.followUpOnly === true ||
-      req.query.followUpOnly === 'true' ||
-      req.query.followUpOnly === '1';
+    const followUpOnly = parseBooleanParam(req.query.followUpOnly);
+    const withStats = parseBooleanParam(req.query.withStats);
+    const sortParam = String(req.query.sort || '').toLowerCase();
+    const sort = ['recent', 'oldest', 'attempts'].includes(sortParam) ? sortParam : 'recent';
 
     const prisma = getSharedPrismaClient();
 
-    // Load active assignments first, then filter by the live order status so
-    // the pending/confirmed tabs never depend on stale client-side paging.
-    const assignments = await prisma.orderAssignment.findMany({
-      where: {
-        companyId,
-        assignedTo: userId,
-        isActive: true
-      },
-      include: {
-        order: {
-          include: {
-            customer: true,
-            orderItems: { include: { product: true } }
+    // Filtering happens server-side in the DB so pagination never depends on
+    // stale client-side slices of the full assignment list.
+    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly });
+
+    let orderBy = [{ assignedAt: 'desc' }];
+    if (sort === 'oldest') {
+      orderBy = [{ assignedAt: 'asc' }];
+    } else if (sort === 'attempts') {
+      orderBy = [
+        { order: { callAttempts: 'desc' } },
+        { guestOrder: { callAttempts: 'desc' } },
+        { order: { createdAt: 'asc' } },
+        { guestOrder: { createdAt: 'asc' } }
+      ];
+      // Fallback if Prisma rejects ordering by optional relations at runtime:
+      // orderBy = [{ assignedAt: 'asc' }];
+    }
+
+    const [assignments, total] = await Promise.all([
+      prisma.orderAssignment.findMany({
+        where,
+        include: {
+          order: {
+            include: {
+              customer: true,
+              orderItems: { include: { product: true } }
+            }
+          },
+          guestOrder: {
+            include: {
+              orderNotes: true
+            }
           }
         },
-        guestOrder: {
-          include: {
-            orderNotes: true
-          }
-        }
-      },
-      orderBy: { assignedAt: 'desc' }
-    });
+        orderBy,
+        skip,
+        take: limit
+      }),
+      prisma.orderAssignment.count({ where })
+    ]);
 
     const formattedOrders = assignments.map(a => {
       const order = a.order || a.guestOrder;
@@ -137,16 +218,16 @@ const getMyOrders = async (req, res) => {
       };
     });
 
-    const filteredOrders = formattedOrders.filter((order) =>
-      shouldIncludeWorkspaceOrder(order, requestedStatus, followUpOnly)
-    );
-    const paginatedOrders = filteredOrders.slice(skip, skip + limit);
-    const total = filteredOrders.length;
+    let stats = null;
+    if (withStats) {
+      stats = await getWorkspaceStats(prisma, companyId, userId);
+    }
 
     res.json({
       success: true,
-      data: paginatedOrders,
-      pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+      data: formattedOrders,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      stats
     });
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in getMyOrders:', error);
@@ -157,12 +238,14 @@ const getMyOrders = async (req, res) => {
 const logCallAttempt = async (req, res) => {
   try {
     const { id } = req.params; // Order ID or GuestOrder ID
-    const { result, notes, type } = req.body; // type: 'REGULAR' or 'GUEST'
+    const { result, notes } = req.body; // type is resolved from the ownership check
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
 
     const prisma = getSharedPrismaClient();
     const now = new Date();
+
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
 
     if (type === 'GUEST') {
       await prisma.$transaction(async (tx) => {
@@ -207,18 +290,21 @@ const logCallAttempt = async (req, res) => {
     res.json({ success: true, message: 'تم تسجيل محاولة الاتصال بنجاح' });
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in logCallAttempt:', error);
-    res.status(500).json({ success: false, error: 'خطأ في تسجيل المكالمة' });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في تسجيل المكالمة' });
   }
 };
 
 const scheduleFollowUp = async (req, res) => {
   try {
     const { id } = req.params;
-    const { followUpDate, type } = req.body;
+    const { followUpDate } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const userId = req.user?.id;
 
     const prisma = getSharedPrismaClient();
     const date = new Date(followUpDate);
+
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
 
     if (type === 'GUEST') {
       await prisma.guestOrder.update({
@@ -235,14 +321,14 @@ const scheduleFollowUp = async (req, res) => {
     res.json({ success: true, message: 'تم جدولة المتابعة بنجاح' });
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in scheduleFollowUp:', error);
-    res.status(500).json({ success: false, error: 'خطأ في جدولة المتابعة' });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في جدولة المتابعة' });
   }
 };
 
 const quickAction = async (req, res) => {
   try {
     const { id } = req.params;
-    let { status, action, notes, type } = req.body;
+    let { status, action, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
 
     // Mapping action to status if status is missing (support frontend's action parameter)
@@ -269,6 +355,9 @@ const quickAction = async (req, res) => {
     const userName = (req.user?.firstName || req.user?.lastName) 
       ? `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() 
       : (req.user?.email || 'System Agent');
+
+    const prisma = getSharedPrismaClient();
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
 
     if (type === 'GUEST') {
       const updatedGuestOrder = await orderService.updateGuestOrderStatus(

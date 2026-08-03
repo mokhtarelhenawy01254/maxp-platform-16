@@ -710,6 +710,7 @@ model OrderAssignment {
   @@index([companyId, assignedAt])
   @@index([companyId, strategy, assignedAt])
   @@index([assignedTo])
+  @@index([companyId, assignedTo, isActive, assignedAt])
   @@map("order_assignments")
 }
 
