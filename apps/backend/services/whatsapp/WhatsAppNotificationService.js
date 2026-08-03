@@ -1714,6 +1714,14 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     return { success: false, reason: 'disabled' };
   }
 
+  // 🛡️ حالات داخلية مش لازم تبعت notification للعميل (TRASH/DRAFT/DUPLICATE...) —
+  // بيمنع Prisma enum error على eventType وبيوقف spam للعملاء.
+  const NON_NOTIFIABLE_STATUSES = ["TRASH", "TRASH_ORDER", "DRAFT", "DUPLICATE_ORDER", "DELETED"];
+  if (NON_NOTIFIABLE_STATUSES.includes(String(newStatus || "").toUpperCase())) {
+    console.log(`[WHATSAPP-STATUS] ⏭️ Skipping notification for internal status: ${newStatus}`);
+    return { success: false, reason: "status_not_notifiable" };
+  }
+
   // 🆕 تحديد نوع الإشعار بناءً على الحالة (دعم للحالات الديناميكية)
   let statusConfig = null;
   const statusEventMap = {
