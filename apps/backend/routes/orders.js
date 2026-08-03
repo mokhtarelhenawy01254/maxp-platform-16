@@ -3027,10 +3027,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           const hasConfiguredTransitions = await getSharedPrismaClient().orderWorkflowTransition.count({
             where: {
               companyId,
-              OR: [
-                ...(currentStatusDef ? [{ fromStatusId: currentStatusDef.id }] : []),
-                ...(currentStatusDef ? [{ fromStatusId: null }] : [{ fromStatusId: null }]),
-              ],
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
             },
           });
           if (hasConfiguredTransitions > 0) {
