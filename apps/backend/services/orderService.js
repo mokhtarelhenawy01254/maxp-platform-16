@@ -45,6 +45,37 @@ const getWhatsAppOrderEventType = (status) => {
 
 const FAILURE_STATUSES_REQUIRING_CALLS = new Set(['DELIVERY_FAILED', 'NO_ANSWER']);
 
+// Statuses that live in the preparation pipeline. The preparation queue reads
+// metadata.preparationStatus as its source of truth (with order.status as a
+// fallback), so any external status change to one of these MUST also sync the
+// metadata field — otherwise the change never appears on the preparation page.
+const PREPARATION_PIPELINE_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'PROCESSING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
+]);
+
+const parsePreparationMetadata = (rawValue) => {
+  if (!rawValue) return {};
+  if (typeof rawValue === 'object' && !Array.isArray(rawValue)) return rawValue;
+  if (typeof rawValue === 'string') {
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    } catch (_error) { /* fall through */ }
+  }
+  return {};
+};
+
 const normalizeOrderStatusCode = (status) => String(status || '').trim().toUpperCase();
 
 const createOrderStatusError = (message, statusCode = 400) => {
@@ -989,6 +1020,19 @@ class OrderService {
       } : {};
 
       // 🔄 [ORDER-SERVICE-UPDATE] Update the order
+      // Sync metadata.preparationStatus so external status changes (quick-status,
+      // orders page) are reflected on the preparation queue too.
+      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      let nextMetadata = null;
+      if (isPrepPipelineStatus) {
+        const currentMetadata = parsePreparationMetadata(order.metadata);
+        nextMetadata = JSON.stringify({
+          ...currentMetadata,
+          preparationStatus: status,
+          preparationStatusUpdatedAt: new Date().toISOString()
+        });
+      }
+
       const updatedOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.update({
@@ -996,6 +1040,7 @@ class OrderService {
           data: {
             status: status,
             notes: notes || undefined,
+            ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
             ...resetConfirmationData,
             updatedAt: new Date(),
@@ -1291,6 +1336,17 @@ class OrderService {
         skipValidation: skipTransitionValidation
       });
 
+      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      let nextGuestMetadata = null;
+      if (isPrepPipelineStatus) {
+        const currentMetadata = parsePreparationMetadata(guestOrder.metadata);
+        nextGuestMetadata = JSON.stringify({
+          ...currentMetadata,
+          preparationStatus: status,
+          preparationStatusUpdatedAt: new Date().toISOString()
+        });
+      }
+
       const updatedGuestOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.guestOrder.update({
@@ -1298,6 +1354,7 @@ class OrderService {
           data: {
             status,
             notes: notes || undefined,
+            ...(nextGuestMetadata ? { metadata: nextGuestMetadata } : {}),
             OrderStatusHistory: {
               create: {
                 status,

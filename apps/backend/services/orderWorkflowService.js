@@ -123,6 +123,7 @@ class OrderWorkflowService {
             { code: 'PACKAGED', name: 'تم التعبئة', color: '#14B8A6', sortOrder: 45 },
             { code: 'READY', name: 'جاهز', color: '#22C55E', sortOrder: 47 },
             { code: 'ON_HOLD_PREP', name: 'تجهيز معلق', color: '#EAB308', sortOrder: 48 },
+            { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', color: '#EF4444', sortOrder: 49 },
             { code: 'READY_TO_SHIP', name: 'جاهز للشحن', color: '#22C55E', sortOrder: 50 },
             { code: 'SHIPPED', name: 'تم الشحن', color: '#A855F7', sortOrder: 60, notifyCustomer: true },
             { code: 'NOT_SHIPPED', name: 'لم يتم الشحن', color: '#6B7280', sortOrder: 65 },
@@ -221,16 +222,17 @@ class OrderWorkflowService {
                 where: { companyId, code: order.status }
             });
 
-            // Try finding by ID first, then by Code
-            let nextStatusDef = await this.prisma.orderStatusDefinition.findUnique({
-                where: { id: statusOrId }
+            // Try finding by ID first (scoped to this company so a status id
+            // from another company can never be resolved), then by Code
+            let nextStatusDef = await this.prisma.orderStatusDefinition.findFirst({
+                where: { id: statusOrId, companyId }
             }).catch(() => null);
 
             // ⚡ FIX: Since statusOrId might have been uppercased by upstream handlers,
             // also try finding it as a lowercased ID (CUIDs are lowercase)
             if (!nextStatusDef && statusOrId) {
-                nextStatusDef = await this.prisma.orderStatusDefinition.findUnique({
-                    where: { id: statusOrId.toLowerCase() }
+                nextStatusDef = await this.prisma.orderStatusDefinition.findFirst({
+                    where: { id: statusOrId.toLowerCase(), companyId }
                 }).catch(() => null);
             }
 
@@ -451,7 +453,16 @@ class OrderWorkflowService {
         const reviewer = await this.prisma.userCompany.findUnique({
             where: { userId_companyId: { userId, companyId } }
         });
-        if (!['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(reviewer.role)) {
+
+        // Fall back to the user's global role (e.g. SUPER_ADMIN operating via
+        // effectiveCompanyId, or a user removed from the company) so we return
+        // a clear permission error instead of a TypeError on a null record.
+        let reviewerRole = reviewer?.role;
+        if (!reviewerRole) {
+            const globalUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+            reviewerRole = globalUser?.role || null;
+        }
+        if (!reviewerRole || !['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(reviewerRole)) {
             throw new Error('لا تملك صلاحية مراجعة طلبات تغيير الحالة');
         }
 
@@ -523,6 +534,8 @@ class OrderWorkflowService {
             const eventMap = {
                 'CREATED': 'ORDER_CREATED',
                 'CONFIRMED': 'ORDER_CONFIRMED',
+                'PENDING_PREPARATION': 'ORDER_PROCESSING',
+                'PREPARING': 'ORDER_PROCESSING',
                 'PROCESSING': 'ORDER_PROCESSING',
                 'SHIPPED': 'ORDER_SHIPPED',
                 'OUT_FOR_DELIVERY': 'ORDER_OUT_FOR_DELIVERY',
