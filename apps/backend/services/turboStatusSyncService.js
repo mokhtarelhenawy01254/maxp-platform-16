@@ -47,9 +47,13 @@ async function syncTurboStatusToOrder({
   companyId = null,
   rawStatus,
   payload = {},
-  isGuestOrder = false
+  isGuestOrder = false,
+  isReturnOrderSync = false
 }) {
   const prisma = getSharedPrismaClient();
+
+  const turboCode = payload?.code || payload?.order_number || '';
+  const isPartialReturn = /R$/i.test(turboCode) && !isReturnOrderSync;
 
   const locationText = payload?.currentLocation || payload?.statusText || payload?.status_name || payload?.statusName || '';
   const rawStatusInput = (locationText && (locationText.includes('انتظار') || locationText.includes('بانتظار') || locationText.includes('التسليم لتربو') || locationText.includes('تأجيل') || locationText.includes('مؤجل') || locationText.includes('مرتجع')))
@@ -189,18 +193,6 @@ async function syncTurboStatusToOrder({
       }
     }
 
-  // 🚫 For partial returns (R code), don't update the original DELIVERED order
-  if (isPartialReturn && existingOrder.status === 'DELIVERED') {
-    console.log(`🔁 [TURBO-SYNC] Skipping original order update for partial return ${turboCode}`);
-    return {
-      success: true,
-      isGuestOrder: false,
-      turboStatus: 'delivered',
-      orderStatus: 'DELIVERED',
-      paymentStatus: existingOrder.paymentStatus
-    };
-  }
-
   const updateData = {
       turboShipmentStatus: canonicalTurboStatus,
       turboMetadata: JSON.stringify(updatedMetadata),
@@ -297,21 +289,23 @@ async function syncTurboStatusToOrder({
   }
 
   // 🔁 Check if this is a partial return (R suffix shipment) — always create return order
-  const turboCode = payload?.code || payload?.order_number || '';
-  const isPartialReturn = /R$/i.test(turboCode) && existingOrder.status === 'DELIVERED';
-
-  if (isPartialReturn) {
+  if (isPartialReturn && existingOrder.status === 'DELIVERED') {
     console.log(`🔁 [TURBO-SYNC] Partial return detected for ${existingOrder.orderNumber} via ${turboCode} — creating return order`);
     try {
       const returnOrder = await ensureReturnOrder(existingOrder, turboCode, canonicalTurboStatus);
       if (returnOrder && returnOrder.orderNumber !== existingOrder.orderNumber) {
+        // IMPORTANT: sync the return order with a CLEAN payload so the recursive
+        // lookup can't re-match the original DELIVERED order via remote_order_id /
+        // order_number (this previously caused an infinite recursion loop).
+        const { remote_order_id, order_number, ...cleanPayload } = payload;
         const returnSyncResult = await syncTurboStatusToOrder({
           orderId: returnOrder.id,
           orderNumber: returnOrder.orderNumber,
           companyId,
           rawStatus,
-          payload,
-          isGuestOrder: false
+          payload: cleanPayload,
+          isGuestOrder: false,
+          isReturnOrderSync: true
         });
         console.log(`✅ [TURBO-SYNC] Return order ${returnOrder.orderNumber} synced: ${returnSyncResult.turboStatus}`);
       }
