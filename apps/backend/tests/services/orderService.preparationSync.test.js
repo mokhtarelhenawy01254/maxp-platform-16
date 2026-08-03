@@ -117,4 +117,30 @@ describe('orderService.updateOrderStatus preparation metadata sync', () => {
     expect(updateData.status).toBe('CANCELLED');
     expect(updateData.metadata).toBeUndefined();
   });
+
+  test('syncs metadata.preparationStatus when moving back to CONFIRMED (preparation page must reflect it)', async () => {
+    const orderInPreparing = {
+      ...baseOrder,
+      status: 'PREPARING',
+      metadata: JSON.stringify({ preparationStatus: 'PREPARING' }),
+    };
+    mockPrisma.order.findFirst.mockResolvedValue(orderInPreparing);
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'CONFIRMED',
+      null,
+      'user_1',
+      'Tester',
+      orderInPreparing,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.status).toBe('CONFIRMED');
+    const parsedMetadata = JSON.parse(updateData.metadata);
+    expect(parsedMetadata.preparationStatus).toBe('CONFIRMED');
+  });
 });

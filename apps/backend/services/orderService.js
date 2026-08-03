@@ -45,11 +45,17 @@ const getWhatsAppOrderEventType = (status) => {
 
 const FAILURE_STATUSES_REQUIRING_CALLS = new Set(['DELIVERY_FAILED', 'NO_ANSWER']);
 
-// Statuses that live in the preparation pipeline. The preparation queue reads
+// Statuses that can appear as preparation stages. The preparation queue reads
 // metadata.preparationStatus as its source of truth (with order.status as a
 // fallback), so any external status change to one of these MUST also sync the
 // metadata field — otherwise the change never appears on the preparation page.
+// This set mirrors the stages of normalizePreparationStage (WAITING/PREPARING/
+// QUALITY_CHECK/PACKAGED/STOCK_SHORTAGE/READY_TO_SHIP/PENDING_CANCELLATION/
+// ON_HOLD_PREP) so moves to e.g. CONFIRMED (from PREPARING) also sync.
 const PREPARATION_PIPELINE_STATUSES = new Set([
+  'PENDING',
+  'CONFIRMED',
+  'SCHEDULED',
   'PENDING_PREPARATION',
   'PREPARING',
   'PROCESSING',
@@ -61,6 +67,7 @@ const PREPARATION_PIPELINE_STATUSES = new Set([
   'STOCK_SHORTAGE',
   'PENDING_STOCK',
   'ON_HOLD_STOCK',
+  'PENDING_CANCELLATION',
   'ON_HOLD_PREP'
 ]);
 

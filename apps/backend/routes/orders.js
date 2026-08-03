@@ -25,6 +25,18 @@ const PRISMA_ORDER_STATUS_ENUM = new Set([
   'ON_HOLD_PREP', 'PARTIALLY_DELIVERED', 'STOCK_SHORTAGE'
 ]);
 
+// Statuses that are stored in order.status under a mapped value (e.g. PREPARING
+// is persisted as PROCESSING) while the real stage lives in
+// metadata.preparationStatus. When filtering /orders by one of these, the query
+// must match COALESCE(metadata.preparationStatus, status) — see the
+// _customStatusFilter SQL below.
+const PREP_FILTER_STATUSES = new Set([
+  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING',
+  'PENDING_PREPARATION', 'PREPARING', 'PROCESSING', 'QUALITY_CHECK', 'PACKAGED',
+  'READY', 'READY_TO_SHIP', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
+  'PENDING_CANCELLATION', 'ON_HOLD_PREP'
+]);
+
 let _knownStatusCodes = null;
 let _knownStatusCodesPromise = null;
 
@@ -766,6 +778,10 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_STOCK'
 ]);
 
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system (dashboards, analytics, WhatsApp, Turbo, confirmations)
+// expects. The detailed prep stage is stored in metadata.preparationStatus and
+// is what the preparation page reads.
 const getMappedRegularOrderStatus = (preparationStatus) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
@@ -2057,7 +2073,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       if (isKnownStatus) {
         if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
-          whereClause.status = upperStatus;
+          // Preparation-queue statuses are stored in order.status as their
+          // mapped value (e.g. PROCESSING), while the real stage lives in
+          // metadata.preparationStatus. Route these through the custom filter
+          // so the SQL matches COALESCE(metadata.preparationStatus, status).
+          if (PREP_FILTER_STATUSES.has(upperStatus)) {
+            whereClause._customStatusFilter = upperStatus;
+          } else {
+            whereClause.status = upperStatus;
+          }
         } else {
           whereClause._customStatusFilter = upperStatus;
         }
@@ -2346,8 +2370,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     if (customStatusFilter) {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
-      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
+      // Prep statuses are stored under their mapped order.status while the real
+      // stage lives in metadata.preparationStatus — match both so filtering by
+      // e.g. PREPARING also finds orders persisted as PROCESSING.
+      const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND UPPER(${effectiveStatusExpr}) = $2`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND UPPER(${effectiveStatusExpr}) = $2`;
       const params = [companyId, customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;

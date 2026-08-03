@@ -64,6 +64,9 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_PREP'
 ]);
 
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system expects (dashboards/analytics/WhatsApp/Turbo). The prep
+// stage itself is stored in metadata.preparationStatus.
 const getMappedRegularOrderStatus = (preparationStatus) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
