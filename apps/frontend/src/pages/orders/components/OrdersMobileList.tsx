@@ -84,7 +84,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
     estimateSize: (index) => {
       const order = orders[index];
       if (!order) return 240;
-      const hasOffers = summarizeOrderDocumentItems(order.items).hasQuantityOffers;
+      const hasOffers = summarizeOrderDocumentItems(order.items || []).hasQuantityOffers;
       return hasOffers ? 300 : 240;
     },
     overscan: 5,

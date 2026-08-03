@@ -80,6 +80,7 @@
   "tableDensity": "كثافة الجدول",
   "compactDensity": "مضغوط",
   "comfortableDensity": "مريح",
+  "modalLoadFailed": "تعذر فتح الطلب، حاول مرة أخرى",
   "guest": "زائر",
   "viewDetails": "عرض التفاصيل",
   "orderPage": "صفحة الطلب",

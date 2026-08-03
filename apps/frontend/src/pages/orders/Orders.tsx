@@ -25,6 +25,7 @@ import { OrdersEmptyState } from "./components/OrdersEmptyState";
 import { OrdersPagination } from "./components/OrdersPagination";
 import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { printOrderInvoice } from "../../utils/printOrderInvoice";
 import type { OrderDetailsType } from "./types";
 
@@ -928,33 +929,6 @@ const Orders: React.FC = () => {
       // ignore storage errors
     }
   };
-
-  const mobileListHelpers = useMemo(
-    () => ({
-      getCustomerDisplayName,
-      formatPrice,
-      getOrderAmount,
-      getOrderSourceText,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-    }),
-    [
-      getCustomerDisplayName,
-      formatPrice,
-      getOrderAmount,
-      getOrderSourceText,
-      getRelativeTime,
-      formatDate,
-      getPaymentStatusBadgeStyle,
-      getPaymentStatusColor,
-      getPaymentStatusText,
-      getUnifiedStatusDisplay,
-    ],
-  );
 
   useEffect(() => {
     const normalized = normalizeOrderTableColumns(
@@ -2491,6 +2465,33 @@ const Orders: React.FC = () => {
     }
   };
 
+  const mobileListHelpers = useMemo(
+    () => ({
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    }),
+    [
+      getCustomerDisplayName,
+      formatPrice,
+      getOrderAmount,
+      getOrderSourceText,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+    ],
+  );
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
@@ -2982,47 +2983,85 @@ const Orders: React.FC = () => {
 
       {/* Enhanced Order Modal */}
       {selectedOrder && (
-        <React.Suspense
+        <ErrorBoundary
           fallback={
-            <div className="flex items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t("orders.modalLoadFailed")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowOrderModal(false)}
+                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  {t("orders.close")}
+                </button>
+              </div>
             </div>
           }
         >
-          <EnhancedOrderModal
-            order={selectedOrder}
-            isOpen={showOrderModal}
-            canManagePaymentStatus={!isMerchant}
-            orderStatuses={orderStatuses}
-            onClose={() => {
-              setShowOrderModal(false);
-              setSelectedOrder(null);
-            }}
-            onOrderUpdate={(updatedOrder) => {
-              setSelectedOrder(updatedOrder);
-              setOrders(
-                orders.map((o) =>
-                  o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
-                ),
-              );
-            }}
-          />
-        </React.Suspense>
+          <React.Suspense
+            fallback={
+              <div className="flex items-center justify-center p-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              </div>
+            }
+          >
+            <EnhancedOrderModal
+              order={selectedOrder}
+              isOpen={showOrderModal}
+              canManagePaymentStatus={!isMerchant}
+              orderStatuses={orderStatuses}
+              onClose={() => {
+                setShowOrderModal(false);
+                setSelectedOrder(null);
+              }}
+              onOrderUpdate={(updatedOrder) => {
+                setSelectedOrder(updatedOrder);
+                setOrders(
+                  orders.map((o) =>
+                    o.orderNumber === updatedOrder.orderNumber ? updatedOrder : o,
+                  ),
+                );
+              }}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
 
       {selectedInvoice && (
-        <React.Suspense
+        <ErrorBoundary
           fallback={
-            <div className="flex items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t("orders.modalLoadFailed")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoice(null)}
+                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  {t("orders.close")}
+                </button>
+              </div>
             </div>
           }
         >
-          <InvoiceModal
-            invoice={selectedInvoice}
-            onClose={() => setSelectedInvoice(null)}
-          />
-        </React.Suspense>
+          <React.Suspense
+            fallback={
+              <div className="flex items-center justify-center p-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              </div>
+            }
+          >
+            <InvoiceModal
+              invoice={selectedInvoice}
+              onClose={() => setSelectedInvoice(null)}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
 
 
