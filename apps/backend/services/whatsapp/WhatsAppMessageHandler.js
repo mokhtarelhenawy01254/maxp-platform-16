@@ -227,6 +227,8 @@ async function sendText(sessionId, to, text, options = {}) {
         await delay(Math.min(text.length * 20, 2000));
 
         // إرسال الرسالة
+        // لا يوجد blind retry: getSendableBaileysSession يضمن جلسة جاهزة قبل الإرسال،
+        // وإعادة الإرسال بعد خطأ شبكة بيسبب رسائل مكررة للعميل (الإرسال قد يكون وصل فعلاً)
         const messageOptions = {
             text
         };
@@ -246,24 +248,8 @@ async function sendText(sessionId, to, text, options = {}) {
             session = await getSendableBaileysSession(sessionId, dbSession);
             result = await session.sock.sendMessage(jid, messageOptions);
         } catch (sendError) {
-            console.warn(`⚠️ [WA-SEND:${sessionId}] First send attempt failed: ${sendError.message}. Reconnecting and retrying...`);
-            try {
-                const companyId = session?.companyId || dbSession?.companyId;
-                if (companyId) {
-                    await WhatsAppManager.reconnectSession(sessionId, companyId, 0, {
-                        syncFullHistory: session?.syncFullHistory || false,
-                        forceRestart: true
-                    });
-                }
-            } catch (reconnectError) {
-                console.error(`❌ [WA-SEND:${sessionId}] Reconnect during retry failed:`, reconnectError.message);
-            }
-            
-            session = await waitForSendableBaileysSession(sessionId);
-            if (!session) {
-                throw sendError;
-            }
-            result = await session.sock.sendMessage(jid, messageOptions);
+            console.error(`❌ [WA-SEND:${sessionId}] Send failed: ${sendError.message}. No blind retry (would duplicate customer messages).`);
+            throw sendError;
         }
 
         // إيقاف حالة الكتابة

@@ -8,11 +8,13 @@ jest.mock('../../services/whatsapp/WhatsAppInboundService', () => ({
 }));
 
 jest.mock('../../utils/webhookSignature', () => ({
-  verifyMetaWebhookSignature: jest.fn(() => ({ ok: false, reason: 'no_signature' }))
+  verifyMetaWebhookSignature: jest.fn(() => ({ ok: false, reason: 'no_signature' })),
+  shouldStrictlyEnforceMetaWebhookSignature: jest.fn(() => true)
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { saveIncomingMessage } = require('../../services/whatsapp/WhatsAppInboundService');
+const { verifyMetaWebhookSignature, shouldStrictlyEnforceMetaWebhookSignature } = require('../../utils/webhookSignature');
 const { buildMetaSessionLookup, getWebhook, postWebhook } = require('../../controller/whatsappMetaWebhookController');
 
 describe('whatsappMetaWebhookController', () => {
@@ -24,6 +26,9 @@ describe('whatsappMetaWebhookController', () => {
     originalEnv = { ...process.env };
     delete process.env.META_WA_APP_SECRET;
     delete process.env.META_WA_WEBHOOK_SECRET;
+
+    verifyMetaWebhookSignature.mockReturnValue({ ok: false, reason: 'no_signature' });
+    shouldStrictlyEnforceMetaWebhookSignature.mockReturnValue(true);
 
     warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     prisma = {
@@ -79,6 +84,8 @@ describe('whatsappMetaWebhookController', () => {
   });
 
   test('saves inbound Meta message against the resolved active session', async () => {
+    process.env.META_WA_APP_SECRET = 'test-app-secret';
+    verifyMetaWebhookSignature.mockReturnValue({ ok: true, reason: 'valid' });
     const req = {
       body: {
         object: 'whatsapp_business_account',
@@ -126,6 +133,59 @@ describe('whatsappMetaWebhookController', () => {
       content: 'عندك منتجات ايه',
       pushName: 'Mokhtar'
     }));
+    expect(res.sendStatus).toHaveBeenCalledWith(200);
+  });
+
+  test('rejects unverified webhook with 403 when strict signature enforcement is enabled', async () => {
+    process.env.META_WA_APP_SECRET = 'test-app-secret';
+    verifyMetaWebhookSignature.mockReturnValue({ ok: false, reason: 'invalid_signature' });
+    shouldStrictlyEnforceMetaWebhookSignature.mockReturnValue(true);
+    const req = { body: { object: 'whatsapp_business_account', entry: [] } };
+    const res = {
+      sendStatus: jest.fn(),
+      status: jest.fn(function status() { return this; }),
+      json: jest.fn()
+    };
+
+    await postWebhook(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(saveIncomingMessage).not.toHaveBeenCalled();
+  });
+
+  test('processes unverified webhook when strict signature enforcement is disabled', async () => {
+    process.env.META_WA_APP_SECRET = 'test-app-secret';
+    verifyMetaWebhookSignature.mockReturnValue({ ok: false, reason: 'invalid_signature' });
+    shouldStrictlyEnforceMetaWebhookSignature.mockReturnValue(false);
+    const req = {
+      body: {
+        object: 'whatsapp_business_account',
+        entry: [{
+          changes: [{
+            field: 'messages',
+            value: {
+              metadata: { phone_number_id: '1165821659950962', display_phone_number: '+201033316739' },
+              messages: [{
+                id: 'wamid.test2',
+                from: '201123087745',
+                timestamp: '1782165000',
+                type: 'text',
+                text: { body: 'سلام' }
+              }]
+            }
+          }]
+        }]
+      }
+    };
+    const res = {
+      sendStatus: jest.fn(),
+      status: jest.fn(function status() { return this; }),
+      json: jest.fn()
+    };
+
+    await postWebhook(req, res);
+
+    expect(saveIncomingMessage).toHaveBeenCalled();
     expect(res.sendStatus).toHaveBeenCalledWith(200);
   });
 

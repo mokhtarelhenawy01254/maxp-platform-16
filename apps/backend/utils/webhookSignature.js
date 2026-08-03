@@ -57,6 +57,12 @@ function verifyMetaWebhookSignature(req, secret) {
 }
 
 function shouldStrictlyEnforceMetaWebhookSignature(env = process.env) {
+  // In production, signature enforcement is mandatory — ignore any opt-out env flag.
+  // Otherwise an operator could disable the only defense against forged webhooks.
+  if (String(env.NODE_ENV).trim().toLowerCase() === 'production') {
+    return true;
+  }
+
   const mode = String(env.FACEBOOK_WEBHOOK_SIGNATURE_MODE || '')
     .trim()
     .toLowerCase();

@@ -4,7 +4,7 @@
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { saveIncomingMessage, updateMessageStatus } = require('../services/whatsapp/WhatsAppInboundService');
-const { verifyMetaWebhookSignature } = require('../utils/webhookSignature');
+const { verifyMetaWebhookSignature, shouldStrictlyEnforceMetaWebhookSignature } = require('../utils/webhookSignature');
 const facebookAppConfig = require('../config/facebookAppConfig');
 
 const DELETED_METADATA_FILTERS = [
@@ -197,10 +197,17 @@ async function postWebhook(req, res) {
 
     if (!signatureOk) {
       if (globalSecret) {
-        console.warn('⚠️ [Meta Webhook] Signature verification failed with all available secrets. Processing without verification.');
+        console.warn('⚠️ [Meta Webhook] Signature verification failed with all available secrets.');
       } else {
-        console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session). Processing without signature verification.');
+        console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session).');
       }
+
+      if (shouldStrictlyEnforceMetaWebhookSignature()) {
+        console.warn('🚫 [Meta Webhook] Strict signature enforcement enabled. Rejecting unverified webhook.');
+        return res.status(403).json({ success: false, error: 'Invalid signature' });
+      }
+
+      console.warn('⚠️ [Meta Webhook] Signature enforcement disabled. Processing without verification.');
     }
 
     const body = req.body;

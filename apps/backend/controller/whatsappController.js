@@ -14,6 +14,13 @@ const {
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
 const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
+const { encryptField, decryptField } = require('../utils/fieldEncryption');
+
+const encryptTokenIfNeeded = (token) => {
+    if (token === undefined || token === null) return token;
+    if (typeof token === 'string' && token.startsWith('enc:v1:')) return token;
+    return encryptField(token);
+};
 
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -37,7 +44,7 @@ const normalizePhoneNumber = (value) => {
 };
 
 const hasRegisteredAuthState = (session) => {
-    const authState = parseJsonSafely(session?.authState, null);
+    const authState = parseJsonSafely(decryptField(session?.authState), null);
     return Boolean(authState?.creds?.registered || authState?.creds?.me);
 };
 const toBooleanOption = (value) =>
@@ -371,7 +378,7 @@ async function createSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: metaAccessToken ? encryptTokenIfNeeded(metaAccessToken) : undefined,
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -682,7 +689,7 @@ async function updateSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: encryptTokenIfNeeded(metaAccessToken),
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -2510,7 +2517,7 @@ async function migrateAuthToDatabase(req, res) {
             await getSharedPrismaClient().whatsAppSession.update({
                 where: { id: sessionId },
                 data: {
-                    authState: JSON.stringify(authState),
+                    authState: encryptField(JSON.stringify(authState)),
                     updatedAt: new Date()
                 }
             });
@@ -4837,7 +4844,7 @@ async function facebookConnect(req, res) {
                 name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: metaPhoneNumberId,
@@ -5095,7 +5102,7 @@ async function facebookEmbeddedConnect(req, res) {
                 name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: phoneNumberId,

@@ -46,6 +46,7 @@ const initBaileys = async () => {
 };
 const crypto = require('crypto');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
+const { decryptField } = require('../../utils/fieldEncryption');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
 const quoteSqlIdentifier = (identifier) =>
@@ -414,6 +415,26 @@ async function runHealthCheck() {
     isHealthCheckRunning = true;
 
     try {
+        // Batch DB status read: 1 query instead of N findUnique per tick
+        const sessionIds = Array.from(activeSessions.keys());
+        let dbStatusMap = new Map();
+        if (sessionIds.length > 0) {
+            try {
+                const dbRecords = await safeQuery(async () => {
+                    const prisma = getSharedPrismaClient();
+                    return await prisma.whatsAppSession.findMany({
+                        where: { id: { in: sessionIds } },
+                        select: { id: true, status: true }
+                    });
+                }, 3);
+                dbStatusMap = new Map((dbRecords || []).map(r => [r.id, r.status]));
+            } catch (dbErr) {
+                WA_LOG.error(null, `Health check batch status read failed:`, dbErr.message);
+            }
+        }
+
+        const statusDiffs = [];
+
         for (const [sessionId, session] of activeSessions) {
             try {
                 if (!session || !session.sock) continue;
@@ -478,29 +499,32 @@ async function runHealthCheck() {
                     }
                 }
 
-                // Update DB status to match in-memory if they differ
-                const currentDbStatus = await safeQuery(async () => {
-                    const prisma = getSharedPrismaClient();
-                    const record = await prisma.whatsAppSession.findUnique({
-                        where: { id: sessionId },
-                        select: { status: true }
-                    });
-                    return record?.status;
-                }, 3);
-
+                // Update DB status to match in-memory if they differ (collected & applied in one transaction)
+                const currentDbStatus = dbStatusMap.get(sessionId);
                 const inMemoryStatus = session.status?.toUpperCase();
                 if (currentDbStatus && currentDbStatus !== inMemoryStatus && inMemoryStatus) {
                     WA_LOG.health(sessionId, `Syncing DB status: ${currentDbStatus} -> ${inMemoryStatus}`);
-                    await safeQuery(async () => {
-                        const prisma = getSharedPrismaClient();
-                        return await prisma.whatsAppSession.update({
-                            where: { id: sessionId },
-                            data: { status: inMemoryStatus }
-                        });
-                    }, 3);
+                    statusDiffs.push({ id: sessionId, status: inMemoryStatus });
                 }
             } catch (sessionErr) {
                 WA_LOG.error(sessionId, `Health check error:`, sessionErr.message);
+            }
+        }
+
+        // Apply rare status diffs in a single transaction
+        if (statusDiffs.length > 0) {
+            try {
+                await safeQuery(async () => {
+                    const prisma = getSharedPrismaClient();
+                    await prisma.$transaction(
+                        statusDiffs.map(d => prisma.whatsAppSession.update({
+                            where: { id: d.id },
+                            data: { status: d.status }
+                        }))
+                    );
+                }, 3);
+            } catch (diffErr) {
+                WA_LOG.error(null, `Health check status sync failed:`, diffErr.message);
             }
         }
     } catch (err) {
@@ -1353,6 +1377,7 @@ async function createSession(sessionId, companyId, options = {}) {
             createdAt: new Date(),
             lastQRTimestamp: null,
             creds: state.creds,
+            saveCreds,
             labels: new Map(), // cache للتصنيفات: labelId -> { id, name, color, deleted, predefinedId }
             labelAssociations: new Map() // labelId -> Set<chatJid>
         };
@@ -4079,7 +4104,7 @@ async function restoreAllSessions() {
         // For QR_PENDING: only restore if they have valid auth state (someone scanned but not yet connected)
         const validQrPending = [];
         for (const s of qrPendingSessions) {
-            const authState = parseJsonSafely(s.authState, null);
+            const authState = parseJsonSafely(decryptField(s.authState), null);
             if (authState?.creds?.registered || authState?.creds?.me) {
                 validQrPending.push(s);
                 WA_LOG.restore(`Keeping QR_PENDING session ${s.id}: has valid auth state`);
@@ -5339,6 +5364,22 @@ async function disconnectAllSessions() {
     whatsappDisconnectAlertTimestamps.clear();
 }
 
+async function flushAllAuthStates() {
+    let flushed = 0;
+    for (const [sessionId, session] of activeSessions) {
+        try {
+            if (session?.saveCreds?.flush) {
+                await session.saveCreds.flush();
+                flushed++;
+            }
+        } catch (error) {
+            WA_LOG.warn(sessionId, `Auth flush on shutdown failed: ${error.message}`);
+        }
+    }
+    WA_LOG.restore(`Flushed auth state for ${flushed} session(s)`);
+    return flushed;
+}
+
 async function migrateOldSessionHistory(companyId, phoneNumber, newSessionId) {
     if (!companyId || !phoneNumber || !newSessionId) return;
 
@@ -5444,6 +5485,7 @@ module.exports = {
     getAllSessions,
     getAllActiveSessions,
     disconnectAllSessions,
+    flushAllAuthStates,
 
     // Connection
     restoreAllSessions,

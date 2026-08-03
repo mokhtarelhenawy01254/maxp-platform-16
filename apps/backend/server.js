@@ -1367,6 +1367,9 @@ async function shutdownGracefully(signal) {
     const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
     if (sessionCount > 0) {
       console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
+      if (typeof WhatsAppManager.flushAllAuthStates === 'function') {
+        await WhatsAppManager.flushAllAuthStates();
+      }
       await WhatsAppManager.disconnectAllSessions();
       console.log('✅ [SERVER] All WhatsApp sessions disconnected');
     }

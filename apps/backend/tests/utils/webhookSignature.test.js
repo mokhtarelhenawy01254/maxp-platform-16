@@ -102,8 +102,8 @@ describe('webhookSignature helper', () => {
 });
 
 describe('Meta webhook signature enforcement mode', () => {
-  test('defaults to warn-only mode so existing page messaging keeps receiving events', () => {
-    expect(shouldStrictlyEnforceMetaWebhookSignature({})).toBe(false);
+  test('defaults to strict enforcement (reject unverified webhooks)', () => {
+    expect(shouldStrictlyEnforceMetaWebhookSignature({})).toBe(true);
   });
 
   test('enables strict mode through the legacy boolean flag', () => {
@@ -116,6 +116,21 @@ describe('Meta webhook signature enforcement mode', () => {
     expect(shouldStrictlyEnforceMetaWebhookSignature({
       FACEBOOK_WEBHOOK_SIGNATURE_MODE: 'strict',
       FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+    })).toBe(true);
+  });
+
+  test('allows opting out in non-production environments', () => {
+    expect(shouldStrictlyEnforceMetaWebhookSignature({
+      NODE_ENV: 'development',
+      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+    })).toBe(false);
+  });
+
+  test('ignores the opt-out flags in production (mandatory enforcement)', () => {
+    expect(shouldStrictlyEnforceMetaWebhookSignature({
+      NODE_ENV: 'production',
+      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+      FACEBOOK_WEBHOOK_SIGNATURE_MODE: 'warn',
     })).toBe(true);
   });
 });

@@ -2372,6 +2372,7 @@ async function sendNotification(options) {
       if ((category === 'ORDERS' || eventType === 'ORDER_CREATED') && process.env.ENABLE_LOCAL_WHATSAPP === 'true') {
         await sendViaLocalWhatsApp({
           phone: formattedPhone,
+          companyId: companyId,
           message: content,
           orderNumber: variables.orderNumber,
           customerName: recipientName,
@@ -2420,12 +2421,13 @@ async function sendNotification(options) {
  */
 async function sendViaLocalWhatsApp(data) {
   try {
-    const { phone, message, orderNumber, customerName, variables, eventType } = data;
+    const { phone, message, orderNumber, customerName, variables, eventType, companyId } = data;
 
     console.log(`🚀 [LOCAL-WHATSAPP] Sending to localhost:3000 for order ${orderNumber || 'N/A'}`);
 
     const response = await axios.post('http://localhost:3007/whatsapp', {
       phone,
+      companyId,
       message,
       orderNumber,
       customerName,

@@ -258,7 +258,7 @@ const hasPermission = (role, permission) => {
 
 /**
  * Middleware factory — requires a specific permission
- * Checks DB-based permissions first, falls back to hardcoded PERMISSIONS
+ * DB permissions are the source of truth (no hardcoded role fallback)
  */
 const requirePermission = (permission) => {
   return (req, res, next) => {
@@ -271,21 +271,9 @@ const requirePermission = (permission) => {
     // SUPER_ADMIN always passes
     if (userRole === 'SUPER_ADMIN') return next();
 
-    // Check if user has DB-based permissions attached (from auth middleware)
-    if (req.user.userPermissions && Array.isArray(req.user.userPermissions) && req.user.userPermissions.length > 0) {
-      if (req.user.userPermissions.includes(permission)) {
-        return next();
-      }
-      return res.status(403).json({
-        error: 'Insufficient permissions',
-        code: 'INSUFFICIENT_PERMISSIONS',
-        requiredPermission: permission,
-        currentRole: userRole
-      });
-    }
-
-    // Fallback to hardcoded PERMISSIONS
-    if (!hasPermission(userRole, permission)) {
+    // DB-based permissions only (loaded by authenticateToken / requireCompanyAccess)
+    const permissions = req.user.userPermissions;
+    if (!permissions || !Array.isArray(permissions) || !permissions.includes(permission)) {
       return res.status(403).json({
         error: 'Insufficient permissions',
         code: 'INSUFFICIENT_PERMISSIONS',
@@ -318,8 +306,6 @@ const requireDbPermission = (permissionKey) => {
     try {
       const permissions = await permissionService.getUserPermissions(req.user.id, companyId);
       if (!permissions.includes(permissionKey)) {
-        // ponytail: fallback to hardcoded map when DB permissions are empty (no roleRef linked)
-        if (hasPermission(req.user.role, permissionKey)) return next();
         return res.status(403).json({
           error: 'Insufficient permissions',
           code: 'INSUFFICIENT_PERMISSIONS',
