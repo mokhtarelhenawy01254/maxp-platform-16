@@ -43,9 +43,40 @@ const normalizePhoneNumber = (value) => {
     return cleaned.length >= 10 ? cleaned : '';
 };
 
+// Cache لنتيجة فحص الـ authState: فك تشفير الـ authState (blob كبير) عملية sync ثقيلة
+// بتبلوك الـ event loop لو اتكررت على كل getSessions/getSession. TTL قصير (30s) —
+// الأسوأ لو جلسة اتربطت لسه مفيش نتيجة (لكام ثانية) والـ reconnect بيتعامل معاه لاحقاً.
+const authStateCheckCache = new Map(); // sessionId -> { hasAuth, expiresAt }
+const AUTH_STATE_CHECK_TTL_MS = 30 * 1000;
+
+const pruneAuthStateCheckCache = () => {
+    const now = Date.now();
+    for (const [key, entry] of authStateCheckCache) {
+        if (entry.expiresAt <= now) authStateCheckCache.delete(key);
+    }
+};
+
 const hasRegisteredAuthState = (session) => {
+    if (!session?.id) return false;
+    const cached = authStateCheckCache.get(session.id);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.hasAuth;
+    }
+    // authState غير متجاب (مستبعد من getSessions) → fallback حسب الـ status:
+    // جلسة DB CONNECTED/CONNECTING من غير session في الذاكرة = عندها auth صالح (هتظهر reconnecting)
+    if (session?.authState === undefined) {
+        return session.status === 'CONNECTED' || session.status === 'CONNECTING';
+    }
     const authState = parseJsonSafely(decryptField(session?.authState), null);
-    return Boolean(authState?.creds?.registered || authState?.creds?.me);
+    const hasAuth = Boolean(authState?.creds?.registered || authState?.creds?.me);
+    authStateCheckCache.set(session.id, { hasAuth, expiresAt: Date.now() + AUTH_STATE_CHECK_TTL_MS });
+    if (authStateCheckCache.size > 500) {
+        pruneAuthStateCheckCache();
+    }
+    return hasAuth;
+};
+const clearAuthStateCheckCache = (sessionId) => {
+    if (sessionId) authStateCheckCache.delete(sessionId);
 };
 const toBooleanOption = (value) =>
     value === true || value === 'true' || value === 1 || value === '1' || value === 'on';
@@ -241,7 +272,39 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
         const sessions = await prisma.whatsAppSession.findMany({
             where: { companyId },
             orderBy: { createdAt: 'desc' },
-            include: {
+            // لا نجيب authState (blob كبير) ولا الـ Meta tokens/secrets (حساسة) —
+            // بيقلل الحمولة ويمنع تسريبهم للـ frontend (mapSessionForResponse بيعمل spread)
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
                         whatsAppMessages: { where: { isHidden: false } },
@@ -575,7 +638,37 @@ async function getSession(req, res) {
 
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
             where: { id, companyId },
-            include: {
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
                         whatsAppMessages: { where: { isHidden: false } },
