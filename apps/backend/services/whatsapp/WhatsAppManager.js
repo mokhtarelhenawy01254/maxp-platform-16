@@ -27,10 +27,11 @@ const {
 } = require('../whatsappRealtimeAudienceService');
 const telegramAlertService = require('../telegramAlertService');
 const MetaCloudProvider = require('./providers/MetaCloudProvider');
+const { buildConversationMetadata } = require('../whatsappInboxMetadata');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET;
+let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET, MessageProtocolType;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
@@ -42,7 +43,7 @@ const initBaileys = async () => {
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
     S_WHATSAPP_NET = baileys.S_WHATSAPP_NET;
-
+    MessageProtocolType = baileys.proto?.Message?.ProtocolMessage?.Type || {};
 };
 const crypto = require('crypto');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
@@ -949,6 +950,20 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
                 }
             });
 
+            // Sync the CRM Conversation metadata (remoteJid) from the LID jid to the resolved phone jid
+            const affectedConversations = await tx.conversation.findMany({
+                where: {
+                    metadata: { contains: `"remoteJid":"${normalizedLidJid}"` }
+                },
+                select: { id: true, metadata: true }
+            });
+            for (const conv of affectedConversations) {
+                await tx.conversation.update({
+                    where: { id: conv.id },
+                    data: { metadata: buildConversationMetadata(conv.metadata, { remoteJid: normalizedPhoneJid }) }
+                });
+            }
+
             const [totalMessages, unreadCount, lastMessage] = await Promise.all([
                 tx.whatsAppMessage.count({
                     where: {
@@ -1141,7 +1156,8 @@ const MESSAGE_STATUS_RANK = {
     PENDING: 0,
     SENT: 1,
     DELIVERED: 2,
-    READ: 3
+    READ: 3,
+    FAILED: 4
 };
 
 function getMessageStatusFromBaileysStatus(baileysStatus) {
@@ -1170,6 +1186,11 @@ function getMessageStatusFromBaileysStatus(baileysStatus) {
 }
 
 function shouldApplyMessageStatus(currentStatus, nextStatus) {
+    // FAILED is terminal-ish: never let a later DELIVERED/READ receipt flip it back,
+    // and never overwrite an already DELIVERED/READ message with FAILED.
+    if (nextStatus === 'FAILED') {
+        return currentStatus !== 'DELIVERED' && currentStatus !== 'READ';
+    }
     const currentRank = MESSAGE_STATUS_RANK[currentStatus] ?? 0;
     const nextRank = MESSAGE_STATUS_RANK[nextStatus] ?? 0;
 
@@ -2317,6 +2338,36 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 skipMediaDownload: Boolean(options.skipMediaDownload)
             });
             if (!messageContent) {
+                // Handle REVOKE (delete-for-everyone) و edits — وصلوا كرسائل protocolMessage/مخفية
+                const proto = msg?.message?.protocolMessage;
+                if (proto) {
+                    if (proto.type === MessageProtocolType?.REVOKE) {
+                        const revokedId = proto.key?.id || msg.key?.id;
+                        if (revokedId) {
+                            await handleRevokedMessage(sessionId, companyId, revokedId, remoteJid);
+                        }
+                        result.skipped++;
+                        continue;
+                    }
+                    if (proto.type === MessageProtocolType?.MESSAGE_EDIT) {
+                        const editedId = msg.key?.id || proto.key?.id;
+                        if (editedId) {
+                            await handleEditedMessage(sessionId, companyId, editedId, remoteJid, proto.message || msg.message);
+                        }
+                        result.skipped++;
+                        continue;
+                    }
+                }
+                // edits ممكن توصل كرسالة فيها messageSecret (من غير protocolMessage)
+                if (msg?.message?.messageContextInfo?.messageSecret) {
+                    const editedId = msg.key?.id;
+                    if (editedId) {
+                        await handleEditedMessage(sessionId, companyId, editedId, remoteJid, msg.message);
+                    }
+                    result.skipped++;
+                    continue;
+                }
+
                 if (importHistory) {
                     const prisma = getSharedPrismaClient();
                     const isHidden = isHistorySystemMessage(msg);
@@ -2434,6 +2485,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         sessionId,
                         remoteJid,
                         {
+                            messageId,
                             type: messageContent.type,
                             content: messageContent.text,
                             mediaUrl: messageContent.mediaUrl,
@@ -2443,7 +2495,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             timestamp: messageTimestamp,
                             pushName: msg.pushName
                         },
-                        !fromMe // isIncoming
+                        !fromMe, // isIncoming
+                        isNewMessage
                     );
                     syncedCustomer = syncResult?.customer;
                     syncedConversation = syncResult?.conversation;
@@ -3103,23 +3156,23 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
 
         // Only update chat metadata if it's NOT a background participant update
         if (!isGroupParticipant) {
-            // Monotonic update: لا نحدث lastMessageAt/preview لو الرسالة الجديدة أقدم من الموجودة
+            // Monotonic update: لا نحدث lastMessageAt/preview لو الرسالة الجديدة أقدم من الموجودة.
+            // (بدون transaction لكل رسالة — الـ read والـ upsert كانوا خارج بعض أصلًا، فمفيش atomicity
+            // حقيقية نضيعها، والـ BEGIN/COMMIT لكل رسالة كان عبء على الـ DB في الـ bursts)
             if (lastMessageAt) {
                 const prisma = getSharedPrismaClient();
-                await prisma.$transaction(async (tx) => {
-                    const existing = await tx.whatsAppContact.findUnique({
-                        where: { sessionId_jid: { sessionId, jid: remoteJid } },
-                        select: { lastMessageAt: true }
-                    });
-                    if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
-                        updateData.lastMessageAt = existing.lastMessageAt;
-                    } else {
-                        updateData.lastMessageAt = lastMessageAt;
-                        if (lastMessagePreview !== undefined) {
-                            updateData.lastMessagePreview = lastMessagePreview;
-                        }
-                    }
+                const existing = await prisma.whatsAppContact.findUnique({
+                    where: { sessionId_jid: { sessionId, jid: remoteJid } },
+                    select: { lastMessageAt: true }
                 });
+                if (existing?.lastMessageAt && existing.lastMessageAt > lastMessageAt) {
+                    updateData.lastMessageAt = existing.lastMessageAt;
+                } else {
+                    updateData.lastMessageAt = lastMessageAt;
+                    if (lastMessagePreview !== undefined) {
+                        updateData.lastMessagePreview = lastMessagePreview;
+                    }
+                }
             } else {
                 updateData.lastMessageAt = new Date();
             }
@@ -3180,12 +3233,175 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
 /**
  * معالجة تحديث حالة الرسائل
  */
+function extractEditedText(message) {
+    let m = message;
+    while (m) {
+        if (m.ephemeralMessage) m = m.ephemeralMessage.message;
+        else if (m.viewOnceMessage) m = m.viewOnceMessage.message;
+        else if (m.viewOnceMessageV2) m = m.viewOnceMessageV2.message;
+        else break;
+    }
+    if (!m) return null;
+    if (m.conversation) return m.conversation;
+    if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+    if (m.imageMessage?.caption) return m.imageMessage.caption;
+    if (m.videoMessage?.caption) return m.videoMessage.caption;
+    return null;
+}
+
+// يساعد في تقسيم البحث عن رسائل الـ CRM: يلاقي الـ conversation المرتبط بـ (sessionId, remoteJid)
+// — من غير full-table scan على الـ messages ولا scan للمetadata لكل محادثات الشركة.
+async function findCrmConversationIdForJid(tx, companyId, sessionId, remoteJid) {
+    if (!companyId || !remoteJid) return null;
+
+    // 1) المسار المفهرس: WhatsAppContact (sessionId, jid) → customerId → conversation (companyId, customerId)
+    try {
+        const contact = await tx.whatsAppContact.findUnique({
+            where: { sessionId_jid: { sessionId, jid: remoteJid } },
+            select: { customerId: true }
+        });
+        if (contact?.customerId) {
+            const conv = await tx.conversation.findFirst({
+                where: { companyId, customerId: contact.customerId, channel: 'WHATSAPP' },
+                select: { id: true },
+                orderBy: { updatedAt: 'desc' }
+            });
+            if (conv) return conv.id;
+        }
+    } catch (e) { /* fall through to metadata scan */ }
+
+    // 2) Fallback: metadata scan (فقط لو الـ contact مش مرتبط بـ customer)
+    const conversation = await tx.conversation.findFirst({
+        where: {
+            companyId,
+            channel: 'WHATSAPP',
+            metadata: { contains: `"remoteJid":"${remoteJid}"` }
+        },
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' }
+    });
+    return conversation?.id || null;
+}
+
+async function findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId) {
+    const conversationId = await findCrmConversationIdForJid(tx, companyId, sessionId, remoteJid);
+    const where = conversationId
+        ? { conversationId, metadata: { contains: `"whatsAppMessageId":"${messageId}"` } }
+        : { metadata: { contains: `"whatsAppMessageId":"${messageId}"` } };
+    return tx.message.findMany({ where, select: { id: true } });
+}
+
+async function handleRevokedMessage(sessionId, companyId, messageId, remoteJid) {
+    const prisma = getSharedPrismaClient();
+    try {
+        await executeWithRetry(async () => {
+            await prisma.$transaction(async (tx) => {
+                const updated = await tx.whatsAppMessage.updateMany({
+                    where: { messageId, isHidden: false },
+                    data: {
+                        isHidden: true,
+                        content: null,
+                        messageType: 'DELETED',
+                        updatedAt: new Date()
+                    }
+                });
+                if (updated.count === 0) return;
+
+                const crmMessages = await findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId);
+                if (crmMessages.length > 0) {
+                    await tx.message.updateMany({
+                        where: { id: { in: crmMessages.map(m => m.id) } },
+                        data: {
+                            content: '[تم حذف الرسالة]',
+                            metadata: JSON.stringify({ deleted: true, whatsAppMessageId: messageId, deletedAt: new Date().toISOString() })
+                        }
+                    });
+                }
+            });
+        });
+
+        const io = getIO();
+        const audience = await getConversationAudience({
+            companyId,
+            sessionId,
+            remoteJid: remoteJid
+        });
+        emitToAudience(io, {
+            companyId,
+            userIds: audience.userIds,
+            eventName: 'whatsapp:message:deleted',
+            payload: { sessionId, messageId, remoteJid }
+        });
+        console.log(`🗑️ [WA-REVOKE:${sessionId}] Message ${messageId} revoked and hidden`);
+    } catch (error) {
+        console.error('❌ Error handling revoked message:', error.message);
+    }
+}
+
+async function handleEditedMessage(sessionId, companyId, messageId, remoteJid, editedMessage) {
+    const prisma = getSharedPrismaClient();
+    try {
+        const text = extractEditedText(editedMessage);
+        if (text === null) return;
+
+        await executeWithRetry(async () => {
+            await prisma.$transaction(async (tx) => {
+                const updated = await tx.whatsAppMessage.updateMany({
+                    where: { messageId, isHidden: false },
+                    data: { content: text, updatedAt: new Date() }
+                });
+                if (updated.count === 0) return;
+
+                const crmMessages = await findCrmMessagesForWhatsAppId(tx, companyId, sessionId, remoteJid, messageId);
+                if (crmMessages.length > 0) {
+                    await tx.message.updateMany({
+                        where: { id: { in: crmMessages.map(m => m.id) } },
+                        data: { content: text, updatedAt: new Date() }
+                    });
+                }
+            });
+        });
+
+        const io = getIO();
+        const audience = await getConversationAudience({
+            companyId,
+            sessionId,
+            remoteJid
+        });
+        emitToAudience(io, {
+            companyId,
+            userIds: audience.userIds,
+            eventName: 'whatsapp:message:edited',
+            payload: { sessionId, messageId, remoteJid, content: text }
+        });
+        console.log(`✏️ [WA-EDIT:${sessionId}] Message ${messageId} edited`);
+    } catch (error) {
+        console.error('❌ Error handling edited message:', error.message);
+    }
+}
+
 async function handleMessageStatusUpdate(sessionId, companyId, updates) {
     const io = getIO();
 
     for (const update of updates) {
         try {
             const { key, update: statusUpdate } = update;
+
+            // REVOKE (delete for everyone)
+            if (statusUpdate?.message?.protocolMessage?.type === MessageProtocolType?.REVOKE) {
+                await handleRevokedMessage(sessionId, companyId, key.id, key.remoteJid);
+                continue;
+            }
+
+            // EDIT — Baileys يبعت التعديل إما كـ protocolMessage(MESSAGE_EDIT) أو كرسالة فيها messageSecret
+            const isEdit =
+                statusUpdate?.message?.protocolMessage?.type === MessageProtocolType?.MESSAGE_EDIT ||
+                statusUpdate?.message?.messageContextInfo?.messageSecret;
+            if (isEdit) {
+                const editedContent = statusUpdate?.message?.protocolMessage?.message || statusUpdate?.message;
+                await handleEditedMessage(sessionId, companyId, key.id, key.remoteJid, editedContent);
+                continue;
+            }
 
             if (statusUpdate.status) {
                 const status = getMessageStatusFromBaileysStatus(statusUpdate.status) || 'SENT';

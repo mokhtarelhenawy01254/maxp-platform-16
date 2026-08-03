@@ -1,3 +1,10 @@
+let parsePhoneNumberFromString = null;
+try {
+  ({ parsePhoneNumberFromString } = require('libphonenumber-js'));
+} catch (e) {
+  // libphonenumber-js غير مثبّت — نفضل الـ heuristics المصرية
+}
+
 function stripPhone(value) {
   return String(value || '').replace(/\D/g, '');
 }
@@ -54,7 +61,26 @@ function toCanonicalE164(value) {
     digits = digits.slice(2);
   }
 
-  // Egyptian corrections -> canonical +20xxxxxxxxxx (mirrors contactIdentity.js)
+  // 1) libphonenumber: رقم دولي صالح (عنده country code) → يبقى E.164 صحيح لأي دولة
+  //    (مش بس مصر). ده بيصلح الأرقام غير المصرية اللي كانت بتتبهدل بالـ heuristics.
+  if (parsePhoneNumberFromString) {
+    try {
+      const parsed = parsePhoneNumberFromString('+' + digits);
+      if (parsed && parsed.isValid()) {
+        return parsed.number;
+      }
+    } catch (e) { /* not parseable — fall through */ }
+
+    // 2) رقم محلي مصري (01...) → +20xxxxxxxxxx
+    try {
+      const parsedEg = parsePhoneNumberFromString(digits, 'EG');
+      if (parsedEg && parsedEg.isValid()) {
+        return parsedEg.number;
+      }
+    } catch (e) { /* fall through */ }
+  }
+
+  // 3) Fallback: heuristics مصرية قديمة (للأرقام اللي libphonenumber مش قادر يصنفها)
   if (digits.startsWith('2001') && digits.length === 13) {
     digits = '20' + digits.slice(3);
   } else if (digits.startsWith('01') && digits.length === 11) {

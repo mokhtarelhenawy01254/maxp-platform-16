@@ -1336,6 +1336,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                     remoteJid,
                     {
                         sessionId,
+                        messageId: data.messageId,
                         type: data.type, // RAW WhatsApp type
                         content: data.content,
                         mediaUrl: data.mediaUrl,

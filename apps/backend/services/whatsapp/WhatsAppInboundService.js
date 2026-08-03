@@ -21,7 +21,8 @@ const MESSAGE_STATUS_RANK = {
   PENDING: 0,
   SENT: 1,
   DELIVERED: 2,
-  READ: 3
+  READ: 3,
+  FAILED: 4
 };
 
 function shouldApplyMessageStatus(currentStatus, nextStatus) {
@@ -149,7 +150,7 @@ async function saveIncomingMessage(payload) {
       sessionId,
       normalizedJid,
       {
-        sessionId,
+        messageId,
         type: messageType,
         content,
         mediaUrl,

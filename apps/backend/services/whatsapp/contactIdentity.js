@@ -1,3 +1,10 @@
+let parsePhoneNumberFromString = null;
+try {
+  ({ parsePhoneNumberFromString } = require('libphonenumber-js'));
+} catch (e) {
+  // libphonenumber-js غير مثبّت — نفضل الـ heuristics المصرية
+}
+
 function getBareJid(jid) {
     return String(jid || '').split('@')[0].split(':')[0];
 }
@@ -46,6 +53,21 @@ function normalizeWhatsAppContactIdentity(remoteJid) {
             normalizedJid: jid,
             phoneNumber: buildFallbackPhoneNumber('jid', jid)
         };
+    }
+
+    // libphonenumber: لو الـ JID رقم دولي صالح (عنده country code) استخدمه زي ما هو —
+    // من غير ما الـ heuristics المصرية تبهدل أرقام دول تانية
+    if (parsePhoneNumberFromString) {
+        try {
+            const parsed = parsePhoneNumberFromString('+' + cleaned);
+            if (parsed && parsed.isValid()) {
+                const e164WithoutPlus = parsed.number.slice(1);
+                return {
+                    normalizedJid: `${e164WithoutPlus}@s.whatsapp.net`,
+                    phoneNumber: e164WithoutPlus
+                };
+            }
+        } catch (e) { /* fall through to Egyptian heuristics */ }
     }
 
     // --- Start of Number Correction Logic ---
