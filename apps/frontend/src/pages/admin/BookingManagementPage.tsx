@@ -416,6 +416,7 @@ export default function BookingManagementPage() {
                 onEdit={d => setDoctorModal(d)}
                 onToggleActive={(id, cur) => toggleActive("doctors", id, cur)}
                 onDelete={id => deleteItem("doctors", id)}
+                onAvailabilitySaved={() => fetchDoctors()}
                 modalDoctor={doctorModal}
                 onModalClose={() => setDoctorModal(undefined)}
                 onSave={saveDoctor}
