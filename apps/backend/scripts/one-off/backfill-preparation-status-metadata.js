@@ -7,9 +7,15 @@
  * /orders only updated `order.status`, leaving a stale metadata value that
  * kept the order stuck in the wrong prep stage.
  *
- * This script syncs `metadata.preparationStatus` = `order.status` for every
- * order whose status is a preparation-pipeline status and whose metadata is
- * missing or stale. Handles both regular and guest orders, batched.
+ * IMPORTANT: orders inside the preparation queue persist their real stage in
+ * metadata.preparationStatus while order.status holds the *mapped* value
+ * (e.g. PREPARING/QUALITY_CHECK/PACKAGED -> PROCESSING, PENDING_PREPARATION ->
+ * CONFIRMED). So this script must NOT overwrite an existing metadata stage with
+ * a mapped order.status. It only syncs when order.status is an explicit stage
+ * code (CONFIRMED, READY, READY_TO_SHIP, ...) that should win over a stale
+ * metadata value, or when metadata is entirely missing.
+ *
+ * Handles both regular and guest orders, batched.
  *
  * Usage (via GitHub workflow or manually on the server):
  *   COMPANY_SLUG=swan DRY_RUN=true node scripts/one-off/backfill-preparation-status-metadata.js
@@ -23,10 +29,17 @@ const COMPANY_SLUG = process.env.COMPANY_SLUG || '';
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '500', 10);
 
-const PREPARATION_PIPELINE_STATUSES = new Set([
+// order.status values that are explicit preparation stages and should be
+// written into metadata.preparationStatus. Note PROCESSING is intentionally
+// absent: orders persisted as PROCESSING usually carry their real stage in
+// metadata already (or are truly "in the queue"), and rewriting metadata to the
+// mapped PROCESSING would corrupt the queue display.
+const EXPLICIT_STAGE_STATUSES = new Set([
+  'PENDING',
+  'CONFIRMED',
+  'SCHEDULED',
   'PENDING_PREPARATION',
   'PREPARING',
-  'PROCESSING',
   'QUALITY_CHECK',
   'PACKAGED',
   'PACKED',
@@ -35,6 +48,7 @@ const PREPARATION_PIPELINE_STATUSES = new Set([
   'STOCK_SHORTAGE',
   'PENDING_STOCK',
   'ON_HOLD_STOCK',
+  'PENDING_CANCELLATION',
   'ON_HOLD_PREP'
 ]);
 
@@ -92,13 +106,44 @@ async function main() {
 
     for (const order of batch) {
       const normalizedStatus = String(order.status || '').trim().toUpperCase();
-      if (!PREPARATION_PIPELINE_STATUSES.has(normalizedStatus)) {
+      if (!EXPLICIT_STAGE_STATUSES.has(normalizedStatus)) {
         skipped += 1;
         continue;
       }
 
       const metadata = parseMetadata(order.metadata);
       const currentPrep = String(metadata.preparationStatus || '').trim().toUpperCase();
+
+      // When metadata already carries a distinct prep stage, keep it (it is the
+      // queue's source of truth). Only override when missing or stale vs an
+      // explicit order.status.
+      if (currentPrep && currentPrep !== normalizedStatus) {
+        // A real stage already exists and differs — but if order.status is an
+        // explicit stage (e.g. CONFIRMED after a move back), the newer intent
+        // is order.status, so sync it.
+        // If currentPrep is the mapped PROCESSING left by an earlier backfill,
+        // replace it with the explicit order.status.
+        if (currentPrep === 'PROCESSING') {
+          const nextMetadata = {
+            ...metadata,
+            preparationStatus: normalizedStatus,
+            preparationStatusUpdatedAt: new Date().toISOString()
+          };
+          if (!DRY_RUN) {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { metadata: JSON.stringify(nextMetadata) }
+            });
+          }
+          updated += 1;
+          console.log(`  ${DRY_RUN ? '[DRY]' : '[OK]'} ${order.orderNumber}: prep ${currentPrep} -> ${normalizedStatus} (stale PROCESSING)`);
+        } else {
+          // Real distinct stage that predates this order.status — leave it.
+          skipped += 1;
+        }
+        continue;
+      }
+
       if (currentPrep === normalizedStatus) {
         skipped += 1;
         continue;
@@ -144,13 +189,34 @@ async function main() {
 
     for (const order of batch) {
       const normalizedStatus = String(order.status || '').trim().toUpperCase();
-      if (!PREPARATION_PIPELINE_STATUSES.has(normalizedStatus)) {
+      if (!EXPLICIT_STAGE_STATUSES.has(normalizedStatus)) {
         gSkipped += 1;
         continue;
       }
 
       const metadata = parseMetadata(order.metadata);
       const currentPrep = String(metadata.preparationStatus || '').trim().toUpperCase();
+
+      if (currentPrep && currentPrep !== normalizedStatus) {
+        if (currentPrep === 'PROCESSING') {
+          const nextMetadata = {
+            ...metadata,
+            preparationStatus: normalizedStatus,
+            preparationStatusUpdatedAt: new Date().toISOString()
+          };
+          if (!DRY_RUN) {
+            await prisma.guestOrder.update({
+              where: { id: order.id },
+              data: { metadata: JSON.stringify(nextMetadata) }
+            });
+          }
+          gUpdated += 1;
+        } else {
+          gSkipped += 1;
+        }
+        continue;
+      }
+
       if (currentPrep === normalizedStatus) {
         gSkipped += 1;
         continue;

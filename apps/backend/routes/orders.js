@@ -2373,9 +2373,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Prep statuses are stored under their mapped order.status while the real
       // stage lives in metadata.preparationStatus — match both so filtering by
       // e.g. PREPARING also finds orders persisted as PROCESSING.
+      // But exclude orders whose order.status is already terminal (e.g.
+      // DELIVERED) — their stale metadata.preparationStatus from the prep phase
+      // must not pull them back into a prep-stage filter.
       const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND UPPER(${effectiveStatusExpr}) = $2`;
-      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND UPPER(${effectiveStatusExpr}) = $2`;
+      const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
+      const matchExpr = `(UPPER(${effectiveStatusExpr}) = $2 AND NOT (${statusIsTerminalExpr}))`;
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       const params = [companyId, customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;
