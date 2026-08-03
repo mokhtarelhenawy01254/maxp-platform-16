@@ -9623,6 +9623,7 @@
     "tableDensity": "Table density",
     "compactDensity": "Compact",
     "comfortableDensity": "Comfortable",
+    "modalLoadFailed": "Could not open order, please try again",
     "guest": "Guest",
     "viewDetails": "View Details",
     "orderPage": "Order Page",

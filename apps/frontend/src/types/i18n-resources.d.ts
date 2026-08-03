@@ -9616,6 +9616,7 @@ declare module 'react-i18next' {
         tableDensity: string;
         compactDensity: string;
         comfortableDensity: string;
+        modalLoadFailed: string;
         guest: string;
         viewDetails: string;
         orderPage: string;

@@ -56,7 +56,27 @@ function verifyMetaWebhookSignature(req, secret) {
   return { ok: false, reason: 'missing_signature' };
 }
 
+// WhatsApp Cloud webhook — opt-in (default معطّل) عشان معظم الـ deployments
+// بتستخدم Baileys أو لسه مش ضابطة META_WA_APP_SECRET. للتفعيل: META_WA_WEBHOOK_STRICT=true
 function shouldStrictlyEnforceMetaWebhookSignature(env = process.env) {
+  const mode = String(
+    env.META_WA_WEBHOOK_STRICT ||
+      env.META_WEBHOOK_STRICT ||
+      ''
+  )
+    .trim()
+    .toLowerCase();
+
+  if (['strict', 'enforce', 'required', 'true', '1', 'yes'].includes(mode)) {
+    return true;
+  }
+
+  return false;
+}
+
+// Facebook (Messenger/Pages) webhook — default شغّال (default-on) للمحافظة على الوضع المستقر.
+// للإلغاء: FACEBOOK_WEBHOOK_STRICT=false (بس مش بيشتغل في production عشان الأمان).
+function shouldStrictlyEnforceFacebookWebhookSignature(env = process.env) {
   // In production, signature enforcement is mandatory — ignore any opt-out env flag.
   // Otherwise an operator could disable the only defense against forged webhooks.
   if (String(env.NODE_ENV).trim().toLowerCase() === 'production') {
@@ -84,5 +104,6 @@ function shouldStrictlyEnforceMetaWebhookSignature(env = process.env) {
 
 module.exports = {
   shouldStrictlyEnforceMetaWebhookSignature,
+  shouldStrictlyEnforceFacebookWebhookSignature,
   verifyMetaWebhookSignature
 };
