@@ -92,16 +92,58 @@ export default function DoctorDetailPage({ doctorId }: { doctorId?: string }) {
               <p className="text-xl font-bold">{doctor.stats?.total ?? 0}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مواعيد اليوم</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{doctor.stats?.today ?? 0}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مواعيد قادمة</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{doctor.stats?.upcoming ?? 0}</p>
+              <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{doctor.stats?.upcoming ?? 0}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مكتملة</p>
               <p className="text-xl font-bold text-green-600 dark:text-green-400">{doctor.stats?.completed ?? 0}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الإيراد المحصل</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmtMoney(doctor.stats?.revenue)}</p>
+          </div>
+
+          {/* Performance + financial */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+              <h4 className="font-bold mb-3">تحليل الأداء</h4>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>نسبة الحضور</span><span className="font-semibold text-gray-700 dark:text-gray-200">{doctor.stats?.attendanceRate ?? 0}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.attendanceRate ?? 0)}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span>نسبة عدم الحضور</span><span className="font-semibold text-gray-700 dark:text-gray-200">{doctor.stats?.noShowRate ?? 0}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.noShowRate ?? 0)}%` }} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1 text-center">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">مكتملة</p><p className="font-bold text-green-600 dark:text-green-400">{doctor.stats?.completed ?? 0}</p></div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">قيد الانتظار</p><p className="font-bold text-yellow-600 dark:text-yellow-400">{doctor.stats?.pending ?? 0}</p></div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">ملغي</p><p className="font-bold text-red-500">{doctor.stats?.cancelled ?? 0}</p></div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">لم يحضر</p><p className="font-bold text-gray-500">{doctor.stats?.noShow ?? 0}</p></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+              <h4 className="font-bold mb-3">الأداء المالي</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">إجمالي المطالب</p><p className="font-bold text-lg">{fmtMoney(doctor.stats?.totalBilled)}</p></div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">المحصل</p><p className="font-bold text-lg text-green-600 dark:text-green-400">{fmtMoney(doctor.stats?.collected)}</p></div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">الخصومات</p><p className="font-bold text-lg text-gray-500">{fmtMoney(doctor.stats?.discounts)}</p></div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">المتبقي</p><p className="font-bold text-lg text-red-600 dark:text-red-400">{fmtMoney(doctor.stats?.outstanding)}</p></div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 col-span-2"><p className="text-xs text-gray-500 dark:text-gray-400">عمولة الطبيب المستحقة ({doctor.commissionRate != null ? `${doctor.commissionRate}%` : "—"})</p><p className="font-bold text-lg text-purple-600 dark:text-purple-400">{fmtMoney(doctor.stats?.commission)}</p></div>
+              </div>
             </div>
           </div>
 
@@ -123,51 +165,93 @@ export default function DoctorDetailPage({ doctorId }: { doctorId?: string }) {
             )}
           </div>
 
-          {/* Availability */}
+          {/* Availability - weekly table */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
             <h4 className="font-bold mb-3">مواعيد العمل</h4>
             {(!doctor.availability || doctor.availability.length === 0) ? (
-              <p className="text-center py-6 text-gray-400 dark:text-gray-500">لم يتم ضبط مواعيد العمل</p>
+              <p className="text-center py-6 text-gray-400 dark:text-gray-500">لم يتم ضبط مواعيد العمل — يجب إضافة الأيام والساعات حتى يظهر للطبيب في الحجز</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {doctor.availability.filter(a => a.isAvailable).map(a => (
-                  <span key={a.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-lg text-sm border border-green-100 dark:border-green-800" dir="ltr">
-                    {WEEKDAY_NAMES[a.dayOfWeek]} · {a.startTime} - {a.endTime}
-                  </span>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {WEEKDAY_NAMES.map((dayName, idx) => {
+                  const slot = (doctor.availability || []).find(a => a.dayOfWeek === idx && a.isAvailable);
+                  return (
+                    <div key={idx} className={`rounded-lg border p-2.5 text-center ${slot ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{dayName}</p>
+                      {slot ? (
+                        <p className="text-sm font-bold text-green-700 dark:text-green-300" dir="ltr">{slot.startTime} - {slot.endTime}</p>
+                      ) : (
+                        <p className="text-xs text-gray-400">راحة</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Appointments */}
+          {/* Today's appointments */}
+          {doctor.todayAppointments && doctor.todayAppointments.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+              <h4 className="font-bold mb-3 text-blue-600 dark:text-blue-400">مواعيد اليوم ({doctor.todayAppointments.length})</h4>
+              <div className="space-y-2">
+                {doctor.todayAppointments.map(a => (
+                  <div key={a.id} className="flex items-center justify-between border dark:border-gray-700 rounded-lg px-3 py-2 text-sm">
+                    <span className="font-medium">{a.startTime} — {a.customerName}</span>
+                    <span className="text-xs text-gray-500">{a.serviceName || "—"}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Appointments - upcoming & past */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
             <h4 className="font-bold mb-3">المواعيد ({doctor.appointments?.length || 0})</h4>
             {(!doctor.appointments || doctor.appointments.length === 0) ? (
               <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["المريض", "التاريخ", "الوقت", "الفرع", "الخدمة", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
-                  <tbody>{doctor.appointments.map(a => (
-                    <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-2.5 px-3 font-medium">{a.customerName}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">{a.appointmentDate}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
-                      <td className="py-2.5 px-3">{a.branchName || "—"}</td>
-                      <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
-                      <td className="py-2.5 px-3 max-w-[180px] truncate" title={a.diagnosis || ""}>{a.diagnosis || "—"}</td>
-                      <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
-                      <td className="py-2.5 px-3 text-xs">
-                        {a.paymentStatus ? (
-                          <span className={`px-2 py-0.5 rounded-full ${a.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : a.paymentStatus === "partial" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
-                            {a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع"}
-                          </span>
-                        ) : "—"}
-                      </td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              </div>
+              <>
+                {doctor.upcomingAppointments && doctor.upcomingAppointments.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-indigo-500 dark:text-indigo-400 mb-2">القادمة</p>
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["المريض", "التاريخ", "الوقت", "الفرع", "الخدمة", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                      <tbody>{doctor.upcomingAppointments.map(a => (
+                        <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="py-2.5 px-3 font-medium">{a.customerName}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">{a.appointmentDate}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
+                          <td className="py-2.5 px-3">{a.branchName || "—"}</td>
+                          <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
+                          <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
+                          <td className="py-2.5 px-3 text-xs">{a.paymentStatus ? (a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع") : "—"}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
+                {doctor.pastAppointments && doctor.pastAppointments.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 mb-2">السابقة</p>
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["المريض", "التاريخ", "الوقت", "الفرع", "الخدمة", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
+                      <tbody>{doctor.pastAppointments.map(a => (
+                        <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="py-2.5 px-3 font-medium">{a.customerName}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">{a.appointmentDate}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
+                          <td className="py-2.5 px-3">{a.branchName || "—"}</td>
+                          <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
+                          <td className="py-2.5 px-3 max-w-[180px] truncate" title={a.diagnosis || ""}>{a.diagnosis || "—"}</td>
+                          <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
+                          <td className="py-2.5 px-3 text-xs">{a.paymentStatus ? (a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع") : "—"}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

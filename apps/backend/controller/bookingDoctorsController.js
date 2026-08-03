@@ -198,25 +198,65 @@ const getDoctorById = async (req, res) => {
       source: a.source || '',
     }));
 
-    const total = await prisma.appointment.count({ where: { companyId, doctorId: id } });
-    const upcoming = await prisma.appointment.count({
-      where: { companyId, doctorId: id, appointmentDate: { gte: new Date() }, status: { notIn: ['cancelled', 'no_show'] } },
+    // ── Performance: aggregate counts by status ─────────────────────────
+    const statusAgg = await prisma.appointment.groupBy({
+      by: ['status'],
+      where: { companyId, doctorId: id },
+      _count: { _all: true },
     });
-    const completed = await prisma.appointment.count({ where: { companyId, doctorId: id, status: 'completed' } });
+    const statusCounts = { total: 0, completed: 0, pending: 0, confirmed: 0, cancelled: 0, noShow: 0, other: 0 };
+    for (const row of statusAgg) {
+      statusCounts.total += row._count._all;
+      if (row.status === 'completed') statusCounts.completed = row._count._all;
+      else if (row.status === 'pending') statusCounts.pending = row._count._all;
+      else if (row.status === 'confirmed') statusCounts.confirmed = row._count._all;
+      else if (row.status === 'cancelled') statusCounts.cancelled = row._count._all;
+      else if (row.status === 'no_show') statusCounts.noShow = row._count._all;
+      else statusCounts.other += row._count._all;
+    }
+    const attended = statusCounts.completed;
+    const attendedBase = statusCounts.total - statusCounts.cancelled - statusCounts.noShow;
+    const attendanceRate = statusCounts.total > 0 ? +((attendedBase > 0 ? attended / attendedBase : 0) * 100).toFixed(1) : 0;
+    const noShowRate = statusCounts.total > 0 ? +((statusCounts.noShow / statusCounts.total) * 100).toFixed(1) : 0;
 
-    // Revenue from invoices on the doctor's appointments
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setDate(today.getDate() + 1);
+
+    const upcoming = await prisma.appointment.count({
+      where: { companyId, doctorId: id, appointmentDate: { gte: today }, status: { notIn: ['cancelled', 'no_show'] } },
+    });
+    const todayCount = await prisma.appointment.count({
+      where: { companyId, doctorId: id, appointmentDate: { gte: today, lt: todayEnd }, status: { notIn: ['cancelled', 'no_show'] } },
+    });
+
+    // Split appointments into buckets by date
+    const todayStr = today.toISOString().split('T')[0];
+    const todayAppointments = appointments.filter(a => a.appointmentDate === todayStr);
+    const upcomingAppointments = appointments.filter(a => a.appointmentDate > todayStr && a.status !== 'cancelled' && a.status !== 'no_show');
+    const pastAppointments = appointments.filter(a => a.appointmentDate < todayStr);
+
+    // ── Financials: bills, collected, discounts, commission ─────────────
     const withInvoices = await prisma.appointment.findMany({
       where: { companyId, doctorId: id },
       select: { id: true },
     });
     const appointmentIds = withInvoices.map(a => a.id);
-    let revenue = 0;
+    let totalBilled = 0, collected = 0, discounts = 0;
+    let commission = 0;
     if (appointmentIds.length > 0) {
       const invoices = await prisma.medicalInvoice.findMany({
         where: { companyId, appointmentId: { in: appointmentIds }, status: { not: 'REFUNDED' } },
-        select: { total: true, amountPaid: true },
+        select: { total: true, discount: true, amountPaid: true },
       });
-      revenue = invoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0);
+      totalBilled = invoices.reduce((s, i) => s + (Number(i.total) || 0), 0);
+      collected = invoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0);
+      discounts = invoices.reduce((s, i) => s + (Number(i.discount) || 0), 0);
+      // Doctor commission = commissionRate% of collected (if a rate is set)
+      if (doctor.commissionRate && doctor.commissionRate > 0) {
+        commission = collected * (doctor.commissionRate / 100);
+      }
     }
 
     res.json({
@@ -227,7 +267,27 @@ const getDoctorById = async (req, res) => {
         services,
         availability,
         appointments,
-        stats: { total, upcoming, completed, revenue: +revenue.toFixed(2) },
+        todayAppointments,
+        upcomingAppointments,
+        pastAppointments,
+        stats: {
+          total: statusCounts.total,
+          completed: statusCounts.completed,
+          pending: statusCounts.pending,
+          confirmed: statusCounts.confirmed,
+          cancelled: statusCounts.cancelled,
+          noShow: statusCounts.noShow,
+          upcoming,
+          today: todayCount,
+          attendanceRate,
+          noShowRate,
+          totalBilled: +totalBilled.toFixed(2),
+          collected: +collected.toFixed(2),
+          discounts: +discounts.toFixed(2),
+          outstanding: +(totalBilled - discounts - collected).toFixed(2),
+          commission: +commission.toFixed(2),
+          revenue: +collected.toFixed(2),
+        },
       },
     });
   } catch (error) {

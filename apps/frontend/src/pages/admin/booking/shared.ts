@@ -119,7 +119,17 @@ export interface BookingDoctorDetail extends BookingDoctor {
     diagnosis?: string; treatmentPlan?: string; prescription?: string;
     paymentStatus?: string; source?: string;
   }[];
-  stats?: { total: number; upcoming: number; completed: number; revenue: number };
+  todayAppointments?: BookingDoctorDetail["appointments"];
+  upcomingAppointments?: BookingDoctorDetail["appointments"];
+  pastAppointments?: BookingDoctorDetail["appointments"];
+  stats?: {
+    total: number; completed: number; pending: number; confirmed: number;
+    cancelled: number; noShow: number;
+    upcoming: number; today: number;
+    attendanceRate: number; noShowRate: number;
+    totalBilled: number; collected: number; discounts: number;
+    outstanding: number; commission: number; revenue: number;
+  };
 }
 
 export interface BookingBranchServiceInfo {
