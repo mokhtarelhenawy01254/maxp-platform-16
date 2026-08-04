@@ -15,6 +15,7 @@ import {
   Cog6ToothIcon,
   ClockIcon,
   BoltIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 interface Template {
@@ -204,6 +205,7 @@ export default function OrderStatusTemplatesPage() {
 
   const [deliveryPreview, setDeliveryPreview] = useState<Record<string, DeliveryPreviewItem>>({});
   const [defaultSessionInfo, setDefaultSessionInfo] = useState<DefaultSessionInfo | null>(null);
+  const [syncingStatus, setSyncingStatus] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -238,10 +240,11 @@ export default function OrderStatusTemplatesPage() {
   const fetchDeliveryPreview = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp-notifications/templates/delivery-preview");
-      if (res.data?.success) {
-        setDefaultSessionInfo(res.data.defaultSession || null);
+      const data = res.data as { success?: boolean; defaultSession?: DefaultSessionInfo | null; preview?: DeliveryPreviewItem[] };
+      if (data?.success) {
+        setDefaultSessionInfo(data.defaultSession || null);
         const map: Record<string, DeliveryPreviewItem> = {};
-        for (const item of res.data.preview || []) {
+        for (const item of data.preview || []) {
           map[item.eventType] = item;
         }
         setDeliveryPreview(map);
@@ -443,6 +446,28 @@ export default function OrderStatusTemplatesPage() {
     }
   }, [dialogOpen, selectedMetaSession, fetchAvailableMetaTemplates]);
 
+  const syncMetaStatuses = async () => {
+    const metaSessionId = selectedMetaSession || metaSessions[0]?.id;
+    if (!metaSessionId) {
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      return;
+    }
+    setSyncingStatus(true);
+    try {
+      const res = await apiClient.post("/whatsapp-notifications/templates/sync-status", { sessionId: metaSessionId });
+      const data = res.data as { success?: boolean; synced?: number };
+      if (data?.success) {
+        toast.success(t("orders.metaSyncDone", `تمت مزامنة ${data.synced ?? 0} قالب`));
+        fetchData();
+        fetchDeliveryPreview();
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
+    } finally {
+      setSyncingStatus(false);
+    }
+  };
+
   const handleSaveSettings = async () => {
     if (!settings) return;
     setSettingsSaving(true);
@@ -503,12 +528,25 @@ export default function OrderStatusTemplatesPage() {
     <div className="mx-auto max-w-6xl px-4 py-4">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-          {t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")}
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          {t("orders.statusTemplatesDesc", "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات")}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+              {t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")}
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+              {t("orders.statusTemplatesDesc", "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات")}
+            </p>
+          </div>
+          <button
+            onClick={syncMetaStatuses}
+            disabled={syncingStatus}
+            title="مزامنة حالة القوالب من ميتا"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${syncingStatus ? "animate-spin" : ""}`} />
+            {t("orders.syncMetaStatus", "مزامنة حالة القوالب من ميتا")}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -628,7 +666,7 @@ export default function OrderStatusTemplatesPage() {
                       {defaultSessionInfo.provider === "META_CLOUD" ? "☁️ Meta Cloud API" : "📱 Baileys"}
                     </span>
                     <span className="text-slate-400 dark:text-slate-500">{defaultSessionInfo.name}</span>
-                    {defaultSessionInfo.provider === "META_CLOUD" && !Object.keys(deliveryPreview).some((k) => deliveryPreview[k].riskLevel === "none") && (
+                    {defaultSessionInfo.provider === "META_CLOUD" && !Object.values(deliveryPreview).some((item) => item.riskLevel === "none") && (
                       <span className="text-amber-500 dark:text-amber-400">تحقق من حالة كل قالب</span>
                     )}
                   </div>
