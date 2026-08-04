@@ -216,6 +216,8 @@ const MedicalLanding: React.FC = () => {
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
+      } else if (data.success && data.data?.walletPaid) {
+        navigate("/admin");
       } else {
         alert(data.message || i18n.t("MedicalLanding.failed_create_2bac"));
         setSubscribing(false);

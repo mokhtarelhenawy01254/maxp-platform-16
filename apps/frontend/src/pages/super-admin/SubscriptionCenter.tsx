@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -38,7 +38,7 @@ import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 import AppPricingSheet from "../subscription/AppPricingSheet";
 import {
-  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard,
+  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard, Loader2,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {
@@ -133,6 +133,8 @@ type MarketplaceManagementItem = {
   logo?: string;
   icon?: string;
   coverImage?: string;
+  images?: string[] | string | null;
+  screenshots?: string[];
   mainRoute?: string;
   adminRoute?: string;
   pricingModel?: PricingModel;
@@ -157,6 +159,7 @@ type MarketplaceDialogFormData = Omit<
   "features" | "apps"
 > & {
   features: string[];
+  screenshots: string[];
   apps: MarketplaceAppReference[];
 };
 
@@ -297,6 +300,20 @@ const parseStringList = (value: unknown): string[] => {
   return [];
 };
 
+const isLikelyImageUrl = (value: string): boolean => {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  if (/\.(png|jpe?g|webp|gif|svg|avif|bmp|ico)(\?.*)?$/.test(v)) return true;
+  return v.startsWith("/uploads/") || v.startsWith("data:image/");
+};
+
+const isLikelyVideoUrl = (value: string): boolean => {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  if (/\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/.test(v)) return true;
+  return /youtube|youtu\.be|vimeo|drive\.google/.test(v);
+};
+
 const normalizeBundleApps = (value: unknown): MarketplaceAppReference[] => {
   if (!Array.isArray(value)) {
     return [];
@@ -347,6 +364,7 @@ const createDefaultMarketplaceFormData = (
   discount: type === "bundle" ? 0 : undefined,
   trialDays: type === "bundle" ? 7 : 0,
   apps: [],
+  screenshots: [],
   companyId: "",
   features: [],
 });
@@ -696,7 +714,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
                 typePath = editingItem?.feature ? "pricing-rules" : "bundles";
               else if (activeTab === 3) typePath = "enterprise-plans";
 
-              const { apps: _apps, ...restData } = itemData;
+              const { apps: _apps, screenshots, ...restData } = itemData;
               const payload =
                 typePath === "bundles"
                   ? {
@@ -705,7 +723,12 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
                         typeof app === "string" ? app : app.slug || app.id || "",
                       ).filter(Boolean),
                     }
-                  : restData;
+                  : typePath === "apps"
+                    ? {
+                        ...restData,
+                        images: (screenshots || []).filter(Boolean),
+                      }
+                    : restData;
 
               if (editingItem?.id) {
                 await axios.put(
@@ -2665,6 +2688,101 @@ const StorefrontThemesTab = ({
   );
 };
 
+const ImageField = ({
+  label,
+  value,
+  onChange,
+  onUpload,
+  uploading,
+  placeholder,
+  hint,
+  accept = "image/*",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onUpload: (file: File) => void | Promise<void>;
+  uploading: boolean;
+  placeholder?: string;
+  hint?: string;
+  accept?: string;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const showImage = isLikelyImageUrl(value);
+  const showVideo = isLikelyVideoUrl(value);
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          dir="ltr"
+          className="flex-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          title="رفع صورة من الجهاز"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+        </Button>
+        {value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => onChange("")}
+            title="حذف"
+            className="text-destructive hover:text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void onUpload(file);
+          event.target.value = "";
+        }}
+      />
+      {(showImage || showVideo) && (
+        <div className="relative h-28 w-full overflow-hidden rounded-xl border bg-muted/30">
+          {showVideo ? (
+            <video
+              src={value}
+              controls
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <img
+              src={value}
+              alt={label}
+              className="h-full w-full object-contain"
+              loading="lazy"
+            />
+          )}
+        </div>
+      )}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+};
+
 const MarketplaceItemDialog = ({
   open,
   onClose,
@@ -2719,6 +2837,10 @@ const MarketplaceItemDialog = ({
         ...item,
         apps: normalizeBundleApps(item.apps),
         features: type === "app" ? parseStringList(item.features) : [],
+        screenshots:
+          type === "app"
+            ? parseStringList(item.screenshots ?? item.images)
+            : [],
       });
     } else {
       setFormData(defaultFormData);
@@ -2753,6 +2875,103 @@ const MarketplaceItemDialog = ({
           : "باقة";
 
   const [bundleSearch, setBundleSearch] = useState("");
+  const [uploadingField, setUploadingField] = useState<
+    "logo" | "coverImage" | "screenshots" | null
+  >(null);
+  const screenshotsInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadSingleImage = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("الملف يجب أن يكون صورة");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 10MB");
+      return null;
+    }
+    const fd = new FormData();
+    fd.append("image", file);
+    try {
+      const res = await axios.post(buildApiUrl("upload/single"), fd, {
+        headers: getAuthHeaders({ "Content-Type": "multipart/form-data" }),
+        timeout: 30000,
+      });
+      if (res.data?.success && res.data?.data?.url) {
+        return res.data.data.url as string;
+      }
+      toast.error(res.data?.error || "فشل رفع الصورة");
+      return null;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } } };
+      toast.error(e?.response?.data?.error || "فشل رفع الصورة");
+      return null;
+    }
+  };
+
+  const uploadMultipleImages = async (files: File[]): Promise<string[]> => {
+    const valid = files.filter(
+      (f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024,
+    );
+    if (valid.length === 0) {
+      toast.error("اختر صورًا صالحة (صور فقط وأقل من 10MB لكل صورة)");
+      return [];
+    }
+    const fd = new FormData();
+    valid.forEach((f) => fd.append("images", f));
+    try {
+      const res = await axios.post(buildApiUrl("upload/multiple"), fd, {
+        headers: getAuthHeaders({ "Content-Type": "multipart/form-data" }),
+        timeout: 60000,
+      });
+      if (res.data?.success && Array.isArray(res.data?.data)) {
+        const urls = (res.data.data as Array<{ url?: string }>)
+          .map((d) => d?.url)
+          .filter((url): url is string => Boolean(url));
+        if (urls.length === 0) {
+          toast.error(res.data?.error || "فشل رفع الصور");
+        }
+        return urls;
+      }
+      toast.error(res.data?.error || "فشل رفع الصور");
+      return [];
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } } };
+      toast.error(e?.response?.data?.error || "فشل رفع الصور");
+      return [];
+    }
+  };
+
+  const uploadToField = async (
+    field: "logo" | "coverImage",
+    file: File,
+  ) => {
+    setUploadingField(field);
+    const url = await uploadSingleImage(file);
+    if (url) setFieldValue(field, url);
+    setUploadingField(null);
+  };
+
+  const handleScreenshotsUpload = async (
+    files: FileList | null,
+  ) => {
+    if (!files || files.length === 0) return;
+    setUploadingField("screenshots");
+    const urls = await uploadMultipleImages(Array.from(files));
+    if (urls.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        screenshots: [...(prev.screenshots || []), ...urls],
+      }));
+    }
+    setUploadingField(null);
+  };
+
+  const removeScreenshot = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      screenshots: (prev.screenshots || []).filter((_, i) => i !== index),
+    }));
+  };
 
   const filteredAvailableApps = useMemo(
     () =>
@@ -3008,15 +3227,79 @@ const MarketplaceItemDialog = ({
                 </label>
               </div>
               <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>رابط اللوجو (URL)</Label>
-                  <Input name="logo" value={formData.logo ?? ""} onChange={handleChange} />
-                </div>
+                <ImageField
+                  label="شعار التطبيق (Logo)"
+                  value={formData.logo ?? ""}
+                  onChange={(v) => setFieldValue("logo", v)}
+                  onUpload={(file) => uploadToField("logo", file)}
+                  uploading={uploadingField === "logo"}
+                  placeholder="رابط مباشر أو ارفع صورة"
+                />
               </div>
               <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>رابط الميديا (صورة أو فيديو URL)</Label>
-                  <Input name="coverImage" value={formData.coverImage ?? ""} onChange={handleChange} placeholder="رابط مباشر للصورة أو يوتيوب/فيديو" />
+                <ImageField
+                  label="صورة الغلاف / الميديا"
+                  value={formData.coverImage ?? ""}
+                  onChange={(v) => setFieldValue("coverImage", v)}
+                  onUpload={(file) => uploadToField("coverImage", file)}
+                  uploading={uploadingField === "coverImage"}
+                  placeholder="رابط مباشر للصورة أو يوتيوب/فيديو"
+                  hint="تُعرض كغلاف في صفحة التطبيق. تدعم صورًا وفيديو."
+                />
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-2">
+                  <Label>لقطات الشاشة (Screenshots)</Label>
+                  <div className="flex flex-wrap items-start gap-2">
+                    {formData.screenshots.map((url, idx) => (
+                      <div
+                        key={`${url}-${idx}`}
+                        className="group relative h-20 w-28 overflow-hidden rounded-lg border bg-muted/30"
+                      >
+                        <img
+                          src={url}
+                          alt={`لقطة ${idx + 1}`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeScreenshot(idx)}
+                          className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          title="حذف"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => screenshotsInputRef.current?.click()}
+                      disabled={uploadingField === "screenshots"}
+                      className="flex h-20 w-28 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                    >
+                      {uploadingField === "screenshots" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                      رفع
+                    </button>
+                    <input
+                      ref={screenshotsInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(event) =>
+                        void handleScreenshotsUpload(event.target.files)
+                      }
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    تُعرض في تبويب «لقطات الشاشة» داخل صفحة التطبيق. يمكنك رفع
+                    أكثر من صورة.
+                  </p>
                 </div>
               </div>
 

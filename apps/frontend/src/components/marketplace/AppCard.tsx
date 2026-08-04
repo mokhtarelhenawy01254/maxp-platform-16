@@ -162,8 +162,10 @@ export function AppCard({
           "flex",
           isFeatured ? "flex-row gap-4" : isHorizontal ? "flex-row gap-3" : "flex-col gap-3"
         )}>
-          <div className={cn("mp-icon-box-v2", isFeatured && "mp-icon-box-lg", isCompact && "mp-icon-box-sm")}>
-            {BrandIcon ? <BrandIcon className={isFeatured ? "size-6" : "size-5"} /> : textIcon ? <span className="text-base font-bold">{textIcon}</span> : <Icon size={isFeatured ? 24 : 20} />}
+          <div className={cn("mp-icon-box-v2 overflow-hidden", isFeatured && "mp-icon-box-lg", isCompact && "mp-icon-box-sm")}>
+            {app.logo ? (
+              <img src={app.logo} alt={app.name} className="size-full object-cover" loading="lazy" />
+            ) : BrandIcon ? <BrandIcon className={isFeatured ? "size-6" : "size-5"} /> : textIcon ? <span className="text-base font-bold">{textIcon}</span> : <Icon size={isFeatured ? 24 : 20} />}
           </div>
 
           <div className={cn("flex flex-col min-w-0", isFeatured ? "flex-1" : "flex-1")}>
@@ -319,8 +321,10 @@ export function AppCard({
         >
           <div className="border-b border-border/40 p-4">
             <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                {BrandIcon ? <BrandIcon className="size-5" /> : textIcon || <Icon size={20} />}
+              <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary">
+                {app.logo ? (
+                  <img src={app.logo} alt={app.name} className="size-full object-cover" loading="lazy" />
+                ) : BrandIcon ? <BrandIcon className="size-5" /> : textIcon || <Icon size={20} />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

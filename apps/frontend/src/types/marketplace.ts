@@ -9,8 +9,10 @@ export interface MarketplaceApp {
   description: string;
   descriptionEn?: string;
   icon?: string;
+  logo?: string;
   coverImage?: string;
   screenshots?: string[];
+  images?: string[] | null;
   demoVideo?: string;
   livePreviewUrl?: string;
   pricingModel: "FREE" | "SUBSCRIPTION" | "PAY_PER_USE";

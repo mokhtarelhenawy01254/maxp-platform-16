@@ -7,6 +7,7 @@ const MessagingCheckout: React.FC = () => {
   const [status, setStatus] = useState<"loading" | "redirecting" | "error" | "trial" | "success">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const [trialInfo, setTrialInfo] = useState<{ trialDays: number } | null>(null);
+  const [successMsg, setSuccessMsg] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -17,7 +18,10 @@ const MessagingCheckout: React.FC = () => {
 
     apiClient.post("/platform-subscription/messaging-checkout", {})
       .then((res: any) => {
-        if (res.data?.success && res.data?.data?.sessionUrl) {
+        if (res.data?.success && res.data?.data?.walletPaid) {
+          setSuccessMsg(res.data?.message || "تم الاشتراك وخصم 999 ج.م من رصيد المحفظة");
+          setStatus("success");
+        } else if (res.data?.success && res.data?.data?.sessionUrl) {
           setStatus("redirecting");
           window.location.href = res.data.data.sessionUrl;
         } else if (res.data?.success && res.data?.data?.skipPayment) {
@@ -38,7 +42,10 @@ const MessagingCheckout: React.FC = () => {
     try {
       setStatus("loading");
       const res = await apiClient.post("/platform-subscription/messaging-upgrade", {});
-      if (res.data?.success && res.data?.data?.sessionUrl) {
+      if (res.data?.success && res.data?.data?.walletPaid) {
+        setSuccessMsg(res.data?.message || "تم تفعيل الاشتراك وخصم 999 ج.م من رصيد المحفظة");
+        setStatus("success");
+      } else if (res.data?.success && res.data?.data?.sessionUrl) {
         setStatus("redirecting");
         window.location.href = res.data.data.sessionUrl;
       } else {
@@ -83,6 +90,18 @@ const MessagingCheckout: React.FC = () => {
                 اشترك الآن — ٩٩٩ ج.م/شهر
               </button>
             </div>
+          </>
+        )}
+        {status === "success" && (
+          <>
+            <div className="w-14 h-14 rounded-full bg-teal-500/20 flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🎉</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2">باقة AI + Inbox مفعّلة!</h2>
+            <p className="text-sm opacity-80 mb-6">{successMsg || "تم الاشتراك بنجاح من رصيد المحفظة"}</p>
+            <button onClick={() => window.location.href = "/unified-inbox"} className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors">
+              ابدأ الآن
+            </button>
           </>
         )}
         {status === "error" && (

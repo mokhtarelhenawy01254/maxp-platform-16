@@ -7,10 +7,10 @@ import {
   Brain, Shield, Globe, Palette, Headphones, Star, Clock,
   GraduationCap, Building2, BadgeCheck, Flame, Award,
   Rocket, LayoutGrid, CreditCard, Monitor, UserPlus,
-  Image, Database,
+  Image, Database, Gamepad2, Layers, CalendarDays,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { MarketplaceApp } from "@/types/marketplace";
+import type { MarketplaceApp, Category } from "@/types/marketplace";
 
 export { appIcons, appIconsBySlug } from "./marketplaceIcons";
 
@@ -35,6 +35,9 @@ export const categoryIcons: Record<string, LucideIcon> = {
   SEO: Globe,
   THEMES: Palette,
   DESIGN: Palette,
+  GAMIFICATION: Gamepad2,
+  AUTOMATION: Layers,
+  CALENDAR: CalendarDays,
 };
 
 export const categoryCssClass: Record<string, string> = {
@@ -146,6 +149,70 @@ export const allCategories = [
   { id: "INTEGRATION", labelKey: "marketplace.categories.integration", icon: Zap },
   { id: "THEMES", labelKey: "marketplace.categories.themes", icon: Palette },
 ];
+
+export interface CategoryGroupDef {
+  id: string;
+  labelKey: string;
+  categories: string[];
+}
+
+export const OTHER_CATEGORY_GROUP_ID = "__other__";
+
+export const categoryGroups: CategoryGroupDef[] = [
+  {
+    id: "commerce",
+    labelKey: "marketplace.categories.groups.commerce",
+    categories: ["ECOMMERCE", "CRM", "SALES", "MARKETING"],
+  },
+  {
+    id: "data",
+    labelKey: "marketplace.categories.groups.data",
+    categories: ["ANALYTICS", "AI"],
+  },
+  {
+    id: "operations",
+    labelKey: "marketplace.categories.groups.operations",
+    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "WAREHOUSE", "SHIPPING"],
+  },
+  {
+    id: "communication",
+    labelKey: "marketplace.categories.groups.communication",
+    categories: ["COMMUNICATION", "INTEGRATION", "WHATSAPP", "SUPPORT", "SEO"],
+  },
+  {
+    id: "specialized",
+    labelKey: "marketplace.categories.groups.specialized",
+    categories: ["MEDICAL", "GAMIFICATION", "THEMES", "DESIGN"],
+  },
+];
+
+export interface GroupedCategories {
+  id: string;
+  labelKey: string;
+  items: Category[];
+}
+
+export function groupCategories(categories: Category[]): GroupedCategories[] {
+  const byGroup = new Map<string, Category[]>();
+  const other: Category[] = [];
+  for (const cat of categories) {
+    const group = categoryGroups.find((g) => g.categories.includes(cat.category));
+    if (group) {
+      const list = byGroup.get(group.id) || [];
+      list.push(cat);
+      byGroup.set(group.id, list);
+    } else {
+      other.push(cat);
+    }
+  }
+  const result: GroupedCategories[] = [];
+  for (const g of categoryGroups) {
+    const items = byGroup.get(g.id);
+    if (items && items.length) result.push({ id: g.id, labelKey: g.labelKey, items });
+  }
+  if (other.length) result.push({ id: OTHER_CATEGORY_GROUP_ID, labelKey: "marketplace.categories.groups.other", items: other });
+  return result;
+}
 
 export const starterBundles = [
   {

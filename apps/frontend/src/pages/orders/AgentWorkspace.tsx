@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
 import { useCurrency } from '../../hooks/useCurrency';
 import { summarizeOrderDocumentItems } from '../../utils/orderDocumentQuantityOffers';
 import OrderConfirmationQueue from './OrderConfirmationQueue';
+import { SYSTEM_STATUS_DEFS } from '../../utils/statusRegistry';
 import {
   PhoneIcon,
   CalendarIcon,
@@ -27,7 +28,7 @@ const EnhancedOrderModal = React.lazy(
 type OrderType = 'GUEST' | 'REGULAR';
 const WORKSPACE_TAB_KEYS = ['all', 'pending', 'confirmed', 'cancelled', 'followup', 'confirmation'] as const;
 type FilterTab = typeof WORKSPACE_TAB_KEYS[number];
-type OrderAction = 'log-call' | 'confirm' | 'cancel' | 'details';
+type OrderAction = 'log-call' | 'confirm' | 'cancel' | 'details' | 'follow-up';
 
 interface Order {
   id: string;
@@ -46,6 +47,21 @@ interface Order {
   type?: OrderType;
 }
 
+interface WorkspaceStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+  followup: number;
+}
+
+interface WorkspacePagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
 interface ApiErrorShape {
   response?: {
     data?: {
@@ -56,20 +72,45 @@ interface ApiErrorShape {
   message?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  CONFIRMED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  PROCESSING: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  SHIPPED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  DELIVERED: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
-  RETURNED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  PARTIALLY_RETURNED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  PARTIALLY_DELIVERED: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-  PARTIALLY_REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-  DUPLICATE_ORDER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+/** Build STATUS_COLORS from SYSTEM_STATUS_DEFS — single source of truth */
+const STATUS_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [code, def.colorClass])
+);
+
+/** English labels for statuses not in the original 14 — extend as needed */
+const STATUS_EN_LABELS: Record<string, string> = {
+  SCHEDULED: 'Scheduled',
+  ON_HOLD: 'On Hold',
+  EXCHANGED: 'Exchanged',
+  LOST: 'Lost',
+  PREPARING: 'Preparing',
+  QUALITY_CHECK: 'Quality Check',
+  PACKAGED: 'Packaged',
+  NOT_SHIPPED: 'Not Shipped',
+  REFUNDED_PARTIALLY: 'Partially Refunded',
+  STOCK_SHORTAGE: 'Stock Shortage',
+  FAILED: 'Failed',
+  COMPLETED: 'Completed',
+  READY_TO_SHIP: 'Ready to Ship',
+  PENDING_PREPARATION: 'Pending Preparation',
+  READY: 'Ready',
+  ON_HOLD_PREP: 'Prep On Hold',
+  TRASH: 'Trash',
+  TRASH_ORDER: 'Trash',
+  DRAFT: 'Draft',
+  PARTIALLY_DELIVERED: 'Partially Delivered',
+  PARTIALLY_RETURNED: 'Partially Returned',
+  WOO_TAGHEZ: 'Woo Taghez',
+  PENDING_CANCELLATION: 'Pending Cancellation',
 };
+
+/** Build STATUS_FALLBACKS from SYSTEM_STATUS_DEFS — single source of truth */
+const STATUS_FALLBACKS: Record<string, { ar: string; en: string }> = Object.fromEntries(
+  Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [
+    code,
+    { ar: def.label, en: STATUS_EN_LABELS[code] || def.label },
+  ])
+);
 
 function getNormalizedStatus(status: string | null | undefined): string {
   return String(status || 'PENDING').toUpperCase();
@@ -117,6 +158,12 @@ function getHoursSince(dateStr: string | null): number {
   return (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60);
 }
 
+function safeParseDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+}
+
 function isOverdue(order: Order): boolean {
   const normalizedStatus = getNormalizedStatus(order.status);
 
@@ -127,7 +174,7 @@ function isOverdue(order: Order): boolean {
   // Alert if no call made and order is older than 24h
   if (order.callAttempts === 0 && getHoursSince(order.createdAt) > 24) return true;
   // Alert if last call was more than 12h ago and order is still pending
-  if (getHoursSince(order.lastCallAt) > 12) return true;
+  if (order.callAttempts > 0 && getHoursSince(order.lastCallAt) > 12) return true;
   return false;
 }
 
@@ -145,6 +192,24 @@ const AgentWorkspace: React.FC = () => {
     normalizeWorkspaceTab(searchParams.get('tab')),
   );
   const [busyOrders, setBusyOrders] = useState<Record<string, OrderAction>>({});
+  const [page, setPage] = useState(1);
+  const [stats, setStats] = useState<WorkspaceStats | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pagination, setPagination] = useState<WorkspacePagination>({
+    total: 0,
+    page: 1,
+    limit: 50,
+    pages: 1,
+  });
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [followUpOrder, setFollowUpOrder] = useState<Order | null>(null);
+  const [followUpDateValue, setFollowUpDateValue] = useState('');
+  const [callResults, setCallResults] = useState<Record<string, string>>({});
+  const detailsCacheRef = useRef<Map<string, any>>(new Map());
+  const activeTabRef = useRef<FilterTab>(activeTab);
+  const isModalOpenRef = useRef(isModalOpen);
+  const skipNextTabFetchRef = useRef(false);
   const activeTabHydratedRef = useRef(false);
 
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
@@ -168,18 +233,31 @@ const AgentWorkspace: React.FC = () => {
       nextParams.set('tab', nextTab);
     }
     setSearchParams(nextParams, { replace: true });
+
+    if (nextTab === 'confirmation') {
+      return;
+    }
+
+    skipNextTabFetchRef.current = true;
+    void fetchOrders({ silent: true, tab: nextTab });
   };
 
-  const formatDate = (dateStr: string) =>
-    new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
-      new Date(dateStr),
+  const formatDate = (dateStr: string | null | undefined) => {
+    const parsed = safeParseDate(dateStr);
+    if (!parsed) return '—';
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+      parsed,
     );
+  };
 
-  const formatTime = (dateStr: string) =>
-    new Intl.DateTimeFormat(locale, {
+  const formatTime = (dateStr: string | null | undefined) => {
+    const parsed = safeParseDate(dateStr);
+    if (!parsed) return '—';
+    return new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(dateStr));
+    }).format(parsed);
+  };
 
   const setOrderBusyState = (orderId: string, action: OrderAction | null) => {
     setBusyOrders((current) => {
@@ -193,28 +271,101 @@ const AgentWorkspace: React.FC = () => {
     });
   };
 
-  const fetchOrders = async (silent = false) => {
+  const fetchOrders = async (options?: {
+    silent?: boolean;
+    page?: number;
+    append?: boolean;
+    tab?: FilterTab;
+  }) => {
+    const { silent = false, page: targetPage = 1, append = false, tab } = options || {};
+    const activeTabForRequest = tab ?? activeTabRef.current;
+
     try {
-      if (!silent) {
-        setLoading(true);
-      } else {
+      if (append) {
+        setLoadingMore(true);
+      } else if (silent) {
         setRefreshing(true);
+      } else {
+        setLoading(true);
       }
 
-      const response = await apiClient.get('/agent-workspace/my-orders');
-      if (!response.data?.success) {
+      const params: Record<string, string | number> = {
+        page: targetPage,
+        limit: 50,
+        withStats: 1,
+      };
+
+      switch (activeTabForRequest) {
+        case 'pending':
+          params['status'] = 'PENDING';
+          params['sort'] = 'oldest';
+          break;
+        case 'confirmed':
+          params['status'] = 'CONFIRMED';
+          break;
+        case 'cancelled':
+          params['status'] = 'CANCELLED';
+          break;
+        case 'followup':
+          params['followUpOnly'] = 'true';
+          break;
+        case 'all':
+        default:
+          break;
+      }
+
+      const response = await apiClient.get('/agent-workspace/my-orders', {
+        params,
+      });
+      const payload = response.data as any;
+
+      if (!payload?.success) {
         throw new Error(
-          (typeof response.data?.error === 'string' && response.data.error) ||
-            response.data?.message ||
+          (typeof payload?.error === 'string' && payload.error) ||
+            payload?.message ||
             t('orders.loadingFailed'),
         );
       }
 
-      const nextOrders = Array.isArray(response.data?.data)
-        ? response.data.data
+      const nextOrders: Order[] = Array.isArray(payload?.data)
+        ? payload.data
         : [];
 
-      setOrders(nextOrders);
+      const paginationData: any = payload?.pagination;
+      const nextTotal = Number(paginationData?.total) || 0;
+      const nextPages = Number(paginationData?.pages) || 1;
+      const nextPage = Number(paginationData?.page) || targetPage;
+
+      if (append) {
+        setOrders((prev) => {
+          const byId = new Map(prev.map((o) => [o.id, o]));
+          nextOrders.forEach((o) => byId.set(o.id, o));
+          return Array.from(byId.values());
+        });
+      } else {
+        setOrders(nextOrders);
+      }
+
+      setPage(append ? nextPage : 1);
+      setPagination({
+        total: nextTotal,
+        page: nextPage,
+        limit: Number(paginationData?.limit) || 50,
+        pages: nextPages,
+      });
+
+      if (payload?.stats && typeof payload.stats === 'object') {
+        setStats({
+          total: Number(payload.stats.total) || 0,
+          pending: Number(payload.stats.pending) || 0,
+          confirmed: Number(payload.stats.confirmed) || 0,
+          cancelled: Number(payload.stats.cancelled) || 0,
+          followup: Number(payload.stats.followup) || 0,
+        });
+      } else {
+        setStats(null);
+      }
+
       setFetchError(null);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -229,17 +380,48 @@ const AgentWorkspace: React.FC = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
     void fetchOrders();
-    // Auto-refresh every 60 seconds
+    // Auto-refresh every 60 seconds (only while the tab is visible)
     const interval = setInterval(() => {
-      void fetchOrders(true);
+      if (document.visibilityState === 'visible' && !isModalOpenRef.current) {
+        void fetchOrders({ silent: true });
+      }
     }, 60000);
-    return () => clearInterval(interval);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !isModalOpenRef.current) {
+        void fetchOrders({ silent: true });
+      }
+    };
+
+    const handleFocus = () => {
+      if (!isModalOpenRef.current) {
+        void fetchOrders({ silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    isModalOpenRef.current = isModalOpen;
+  }, [isModalOpen]);
 
   useEffect(() => {
     const nextTab = normalizeWorkspaceTab(searchParams.get('tab'));
@@ -259,27 +441,31 @@ const AgentWorkspace: React.FC = () => {
       return;
     }
 
-    void fetchOrders(true);
+    if (skipNextTabFetchRef.current) {
+      skipNextTabFetchRef.current = false;
+      return;
+    }
+
+    void fetchOrders({ silent: true });
   }, [activeTab]);
 
-  const handleLogCall = async (order: Order) => {
+  const handleLogCall = async (order: Order, result?: string) => {
     setOrderBusyState(order.id, 'log-call');
 
     try {
       const response = await apiClient.post(
         `/agent-workspace/orders/${order.id}/log-call`,
         {
-          result: 'unreached',
+          result: result || 'unreached',
           notes: t('orders.callAttemptNote'),
-          type: order.type || 'REGULAR',
         },
       );
 
-      if (response.data?.success) {
+      if ((response.data as any)?.success) {
         toast.success(
           t('orders.callLogged'),
         );
-        await fetchOrders(true);
+        await fetchOrders({ silent: true });
       }
     } catch (error) {
       toast.error(
@@ -294,26 +480,17 @@ const AgentWorkspace: React.FC = () => {
   const handleQuickAction = async (
     order: Order,
     action: Extract<OrderAction, 'confirm' | 'cancel'>,
+    explicitNotes?: string,
   ) => {
     let actionNotes = t('orders.confirmNote');
 
     if (action === 'cancel') {
-      const cancellationReason = window.prompt(
-        t('orders.cancellationReasonPrompt'),
-      );
-
-      if (cancellationReason === null) {
+      const reason = (explicitNotes ?? '').trim();
+      if (!reason) {
+        toast.error(t('orders.cancellationReasonRequired'));
         return;
       }
-
-      actionNotes = cancellationReason.trim();
-
-      if (!actionNotes) {
-        toast.error(
-        t('orders.cancellationReasonRequired'),
-        );
-        return;
-      }
+      actionNotes = reason;
     }
 
     setOrderBusyState(order.id, action);
@@ -323,21 +500,26 @@ const AgentWorkspace: React.FC = () => {
         `/agent-workspace/orders/${order.id}/quick-action`,
         {
           action,
-          type: order.type || 'REGULAR',
           notes: actionNotes,
         },
       );
 
-      if (response.data?.success) {
-        const messages: Record<string, string> = {
-          confirm: t('orders.orderConfirmed'),
-          cancel: t('orders.orderCancelled'),
-        };
-        toast.success(
-          messages[action] ||
-            t('orders.actionSuccess'),
-        );
-        await fetchOrders(true);
+      if ((response.data as any)?.success) {
+        const workflowPending =
+          (response.data as any)?.data?.workflowStatus === 'pending';
+        if (workflowPending) {
+          toast.info(t('orders.workspacePendingApproval'));
+        } else {
+          const messages: Record<string, string> = {
+            confirm: t('orders.orderConfirmed'),
+            cancel: t('orders.orderCancelled'),
+          };
+          toast.success(
+            messages[action] ||
+              t('orders.actionSuccess'),
+          );
+        }
+        await fetchOrders({ silent: true });
       }
     } catch (error) {
       toast.error(
@@ -347,6 +529,68 @@ const AgentWorkspace: React.FC = () => {
     } finally {
       setOrderBusyState(order.id, null);
     }
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!cancellingOrder) return;
+
+    const reason = cancelReasonText.trim();
+    if (!reason) {
+      toast.error(t('orders.cancellationReasonRequired'));
+      return;
+    }
+
+    try {
+      await handleQuickAction(cancellingOrder, 'cancel', reason);
+    } finally {
+      setCancellingOrder(null);
+    }
+  };
+
+  const openFollowUpModal = (order: Order) => {
+    setFollowUpDateValue(order.followUpDate ? order.followUpDate.slice(0, 10) : '');
+    setFollowUpOrder(order);
+  };
+
+  const handleSaveFollowUp = async () => {
+    if (!followUpOrder) return;
+
+    if (!followUpDateValue) {
+      toast.error(t('orders.followUpDateLabel'));
+      return;
+    }
+
+    setOrderBusyState(followUpOrder.id, 'follow-up');
+
+    try {
+      const response = await apiClient.post(
+        `/agent-workspace/orders/${followUpOrder.id}/follow-up`,
+        {
+          followUpDate: new Date(followUpDateValue).toISOString(),
+        },
+      );
+
+      if ((response.data as any)?.success) {
+        toast.success(t('orders.followUpScheduled'));
+        setFollowUpOrder(null);
+        await fetchOrders({ silent: true });
+      }
+    } catch (error) {
+      toast.error(
+        extractApiErrorMessage(error) ||
+          t('orders.actionFailed'),
+      );
+    } finally {
+      setOrderBusyState(followUpOrder.id, null);
+    }
+  };
+
+  const handleOrderUpdate = (updatedOrder: any) => {
+    const updatedId = updatedOrder?.id || selectedOrder?.id;
+    if (updatedId) {
+      detailsCacheRef.current.delete(updatedId);
+    }
+    void fetchOrders({ silent: true });
   };
 
   const normalizeItems = (rawItems: any): any[] => {
@@ -403,14 +647,22 @@ const AgentWorkspace: React.FC = () => {
     const orderKey = order.orderNumber || (order as any)?.id;
     const encodedKey = orderKey ? encodeURIComponent(String(orderKey)) : "";
 
+    // Serve from cache when available to avoid repeated endpoint calls
+    if (detailsCacheRef.current.has(order.id)) {
+      setSelectedOrder(detailsCacheRef.current.get(order.id));
+      setIsModalOpen(true);
+      return;
+    }
+
     setOrderBusyState(order.id, 'details');
 
     try {
       // Fetch the full order so the modal gets items + subtotal + shipping
-      const response = await apiClient.get(`/orders-new/simple/${encodedKey}`, {
-        _skipErrorToast: true,
-      });
-      if (response.data.success && response.data.data) {
+      const response = (await apiClient.get(
+        `/orders-new/simple/${encodedKey}`,
+        { _skipErrorToast: true },
+      )) as any;
+      if (response.data?.success && response.data?.data) {
         const fetched = response.data.data;
         const fetchedItems = normalizeItems(fetched.items);
         const workspaceItems = normalizeItems(order.items);
@@ -423,10 +675,10 @@ const AgentWorkspace: React.FC = () => {
         // If still no items, try enhanced endpoint as a fallback
         if (!merged.items || merged.items.length === 0) {
           try {
-            const enhanced = await apiClient.get(
+            const enhanced = (await apiClient.get(
               `/orders-enhanced/${encodedKey}`,
               { _skipErrorToast: true },
-            );
+            )) as any;
             if (enhanced.data?.success && enhanced.data?.data) {
               const enhancedData = enhanced.data.data;
               const enhancedItems = normalizeItems(
@@ -479,6 +731,7 @@ const AgentWorkspace: React.FC = () => {
           }),
         );
 
+        detailsCacheRef.current.set(order.id, merged);
         setSelectedOrder(merged);
       } else {
         // Fallback: use workspace data with what we have
@@ -493,39 +746,16 @@ const AgentWorkspace: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // ─── Computed Stats ──────────────────────────────────────────────────────
-  const stats = useMemo(() => ({
-    total: orders.length,
-    pending: orders.filter(o => getNormalizedStatus(o.status) === 'PENDING').length,
-    confirmed: orders.filter(o => getNormalizedStatus(o.status) === 'CONFIRMED').length,
-    cancelled: orders.filter(o => getNormalizedStatus(o.status) === 'CANCELLED').length,
-    followup: orders.filter(o => !!o.followUpDate && getNormalizedStatus(o.status) !== 'CANCELLED').length,
-  }), [orders]);
-
-  // ─── Filtered + Sorted Orders ────────────────────────────────────────────
-  const filteredOrders = useMemo(() => {
-    let list = [...orders];
-    if (activeTab === 'pending') list = list.filter(o => getNormalizedStatus(o.status) === 'PENDING');
-    else if (activeTab === 'confirmed') list = list.filter(o => getNormalizedStatus(o.status) === 'CONFIRMED');
-    else if (activeTab === 'cancelled') list = list.filter(o => getNormalizedStatus(o.status) === 'CANCELLED');
-    else if (activeTab === 'followup') list = list.filter(o => !!o.followUpDate && getNormalizedStatus(o.status) !== 'CANCELLED');
-
-    // Sort: overdue first → most call attempts → oldest
-    list.sort((a, b) => {
-      if (isOverdue(a) && !isOverdue(b)) return -1;
-      if (!isOverdue(a) && isOverdue(b)) return 1;
-      if (b.callAttempts !== a.callAttempts) return b.callAttempts - a.callAttempts;
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
-    return list;
-  }, [orders, activeTab]);
+  // ─── Server-driven list ──────────────────────────────────────────────────
+  // The list is filtered + sorted server-side by activeTab; `orders` already
+  // reflects the active tab, and tab counters come from server `stats`.
 
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'all', label: t('orders.workspaceAll'), count: stats.total },
-    { key: 'pending', label: t('orders.workspacePending'), count: stats.pending },
-    { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats.confirmed },
-    { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats.cancelled },
-    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats.followup },
+    { key: 'all', label: t('orders.workspaceAll'), count: stats ? stats.total : undefined },
+    { key: 'pending', label: t('orders.workspacePending'), count: stats ? stats.pending : undefined },
+    { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats ? stats.confirmed : undefined },
+    { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats ? stats.cancelled : undefined },
+    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats ? stats.followup : undefined },
     { key: 'confirmation', label: t('orders.workspaceConfirmationQueue') },
   ];
 
@@ -603,7 +833,7 @@ const AgentWorkspace: React.FC = () => {
         {activeTab !== 'confirmation' && (
           <button
             type="button"
-            onClick={() => void fetchOrders(true)}
+            onClick={() => void fetchOrders({ silent: true })}
             disabled={refreshing}
             aria-busy={refreshing}
             className="inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -641,7 +871,7 @@ const AgentWorkspace: React.FC = () => {
       ) : (
         <>
       {/* ─── Orders Inbox ────────────────────────────────────────────────── */}
-      {filteredOrders.length === 0 ? (
+      {orders.length === 0 ? (
         <div
           className="bg-white dark:bg-gray-800 rounded-xl p-8 sm:p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700"
           role={fetchError ? 'alert' : undefined}
@@ -693,13 +923,20 @@ const AgentWorkspace: React.FC = () => {
           </div>
 
           <div className="space-y-2.5">
-            {filteredOrders.map((order) => {
+            {orders.map((order) => {
               const overdue = isOverdue(order);
               const isHighAttempts = order.callAttempts >= 3;
               const currentAction = busyOrders[order.id];
               const isOrderBusy = Boolean(currentAction);
               const statusKey = getNormalizedStatus(order.status);
-              const statusLabel = t(`orders.${statusKey.toLowerCase()}`);
+              const statusFallback = STATUS_FALLBACKS[statusKey];
+              const statusLabel = statusFallback
+                ? resolveCopy(
+                    `orders.${statusKey.toLowerCase()}`,
+                    statusFallback.ar,
+                    statusFallback.en,
+                  )
+                : statusKey;
               const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
               const orderItemsSummary = summarizeOrderDocumentItems(order.items);
 
@@ -811,6 +1048,15 @@ const AgentWorkspace: React.FC = () => {
                         {formatDate(order.followUpDate)}
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => openFollowUpModal(order)}
+                      disabled={isOrderBusy}
+                      className="col-span-2 inline-flex min-h-[32px] items-center justify-center gap-1 rounded-2xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200"
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {t('orders.scheduleFollowUp')}
+                    </button>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 md:mt-0 md:justify-end">
@@ -829,21 +1075,41 @@ const AgentWorkspace: React.FC = () => {
                           )
                         : t('orders.confirmOrder')}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleLogCall(order)}
-                      disabled={isOrderBusy}
-                      className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
-                    >
-                      <PhoneIcon className={`h-4 w-4 ${currentAction === 'log-call' ? 'animate-pulse' : ''}`} />
-                      {currentAction === 'log-call'
-                        ? resolveCopy(
-                            'orders.loggingCall',
-                            'جارٍ التسجيل…',
-                            'Logging…',
-                          )
-                        : t('orders.logCall')}
-                    </button>
+                    <div className="flex items-stretch gap-1.5">
+                      <select
+                        value={callResults[order.id] || 'unreached'}
+                        onChange={(event) =>
+                          setCallResults((prev) => ({
+                            ...prev,
+                            [order.id]: event.target.value,
+                          }))
+                        }
+                        disabled={isOrderBusy}
+                        aria-label={t('orders.callResultLabel') || ''}
+                        className="min-h-[40px] min-w-0 flex-1 rounded-2xl border border-gray-200 bg-white px-2 py-2 text-xs font-bold text-gray-700 outline-none transition-colors focus:border-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                      >
+                        <option value="unreached">{t('orders.callResultUnreached')}</option>
+                        <option value="reached">{t('orders.callResultReached')}</option>
+                        <option value="busy">{t('orders.callResultBusy')}</option>
+                        <option value="wrong_number">{t('orders.callResultWrongNumber')}</option>
+                        <option value="callback">{t('orders.callResultCallback')}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleLogCall(order, callResults[order.id] || 'unreached')}
+                        disabled={isOrderBusy}
+                        className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-2.5 py-2 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                      >
+                        <PhoneIcon className={`h-4 w-4 ${currentAction === 'log-call' ? 'animate-pulse' : ''}`} />
+                        {currentAction === 'log-call'
+                          ? resolveCopy(
+                              'orders.loggingCall',
+                              'جارٍ التسجيل…',
+                              'Logging…',
+                            )
+                          : t('orders.logCall')}
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => void openOrderDetails(order)}
@@ -861,7 +1127,10 @@ const AgentWorkspace: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => void handleQuickAction(order, 'cancel')}
+                      onClick={() => {
+                        setCancelReasonText('');
+                        setCancellingOrder(order);
+                      }}
                       disabled={statusKey === 'CANCELLED' || isOrderBusy}
                       className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300"
                     >
@@ -879,6 +1148,22 @@ const AgentWorkspace: React.FC = () => {
               );
             })}
           </div>
+
+          {orders.length > 0 && pagination.pages > page && (
+            <div className="flex justify-center pt-1">
+              <button
+                type="button"
+                onClick={() => void fetchOrders({ silent: true, page: page + 1, append: true })}
+                disabled={loadingMore}
+                className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                {loadingMore && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+                {loadingMore
+                  ? t('orders.workspaceLoadingMore')
+                  : t('orders.workspaceLoadMore')}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -894,9 +1179,126 @@ const AgentWorkspace: React.FC = () => {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             order={selectedOrder}
-            onOrderUpdate={() => void fetchOrders(true)}
+            onOrderUpdate={handleOrderUpdate}
           />
         </React.Suspense>
+      )}
+
+      {cancellingOrder && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('orders.cancelReasonTitle') || ''}
+          onClick={() => setCancellingOrder(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="mb-3 text-base font-black text-gray-900 dark:text-white">
+              {t('orders.cancelReasonTitle')}
+            </h2>
+            <textarea
+              value={cancelReasonText}
+              onChange={(event) => setCancelReasonText(event.target.value)}
+              placeholder={t('orders.cancelReasonPlaceholder') || ''}
+              rows={3}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            />
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancellingOrder(null)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+              >
+                {t('orders.cancelClose')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmCancelOrder()}
+                disabled={
+                  !cancelReasonText.trim() ||
+                  Boolean(cancellingOrder && busyOrders[cancellingOrder.id])
+                }
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busyOrders[cancellingOrder.id] === 'cancel'
+                  ? t('orders.cancellingOrder')
+                  : t('orders.cancelConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {followUpOrder && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('orders.scheduleFollowUp') || ''}
+          onClick={() => setFollowUpOrder(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="mb-1 text-base font-black text-gray-900 dark:text-white">
+              {t('orders.scheduleFollowUp')}
+            </h2>
+            <p className="mb-4 truncate text-xs text-gray-500 dark:text-gray-400" dir="ltr">
+              #{followUpOrder.orderNumber}
+            </p>
+
+            {followUpOrder.followUpDate && (
+              <p className="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
+                {t('orders.followUpDateLabel')}: {formatDate(followUpOrder.followUpDate)}
+              </p>
+            )}
+
+            <label
+              htmlFor="follow-up-date-input"
+              className="mb-1 block text-xs font-bold text-gray-600 dark:text-gray-300"
+            >
+              {t('orders.followUpDateLabel')}
+            </label>
+            <input
+              id="follow-up-date-input"
+              type="date"
+              value={followUpDateValue}
+              onChange={(event) => setFollowUpDateValue(event.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            />
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFollowUpOrder(null)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+              >
+                {t('orders.cancelClose')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSaveFollowUp()}
+                disabled={
+                  !followUpDateValue ||
+                  Boolean(followUpOrder && busyOrders[followUpOrder.id])
+                }
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busyOrders[followUpOrder.id] === 'follow-up'
+                  ? resolveCopy(
+                      'orders.savingFollowUp',
+                      'جارٍ الحفظ…',
+                      'Saving…',
+                    )
+                  : t('orders.followUpSave')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
         </>
       )}

@@ -44,6 +44,8 @@ import {
   SectionRow,
   HeroBanner,
   FilterSidebar,
+  CategorySidebar,
+  CategoryBar,
   AppCardSkeleton,
   HeroBannerSkeleton,
   SectionSkeleton,
@@ -345,6 +347,11 @@ export default function MarketplaceV2() {
   const categoryDisplay = getCategoryDisplayCategories(categories, t);
   const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.labelKey || "marketplace.sortFeatured";
 
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category === selectedCategory ? "" : category);
+    setDisplayCount(DISPLAY_INCREMENT);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {loading ? (
@@ -414,7 +421,15 @@ export default function MarketplaceV2() {
               )}
             </div>
 
-            <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10 mb-4">
+            <div className="mt-4 flex items-start gap-5">
+              <CategorySidebar
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelect={handleCategorySelect}
+                className="sticky top-2 hidden lg:block w-64 shrink-0 max-h-[calc(100vh-1rem)] overflow-y-auto scrollbar-none"
+              />
+              <div className="flex-1 min-w-0">
+            <div className="sticky top-0 z-40 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10 mb-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
                   <SearchBar
@@ -435,6 +450,13 @@ export default function MarketplaceV2() {
                       <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                     ))}
                   </select>
+                  <CategorySidebar
+                    isMobile
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onSelect={handleCategorySelect}
+                    className="lg:hidden"
+                  />
                   <Button
                     variant={showInstalled ? "default" : "outline"}
                     size="sm"
@@ -473,27 +495,9 @@ export default function MarketplaceV2() {
               </div>
             </div>
 
-            {selectedCategory && (
-              <div className="mt-3 overflow-x-auto scrollbar-none pb-1">
-                <div className="flex gap-2">
-                  {categoryDisplay.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id === selectedCategory ? "" : cat.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold whitespace-nowrap transition-all duration-200 shrink-0",
-                        cat.id === selectedCategory
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <cat.icon size={14} />
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="mt-3 lg:hidden overflow-x-auto scrollbar-none pb-1">
+              <CategoryBar categories={categoryDisplay} selectedCategory={selectedCategory} onSelect={handleCategorySelect} />
+            </div>
 
             <div className="mt-4 space-y-1">
               {displayedApps.length === 0 ? (
@@ -731,6 +735,8 @@ export default function MarketplaceV2() {
                 </>
               )}
             </div>
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -745,8 +751,10 @@ export default function MarketplaceV2() {
             <DialogContent className="max-w-md rounded-2xl">
               <DialogHeader>
                 <div className="flex items-center gap-4">
-                  <div className="flex size-14 items-center justify-center rounded-2xl border bg-primary/10 text-primary shadow-sm">
-                    {PricingBrandIcon ? <PricingBrandIcon className="size-7" /> : <Icon size={26} />}
+                  <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border bg-primary/10 text-primary shadow-sm">
+                    {showPricingDialog.logo ? (
+                      <img src={showPricingDialog.logo} alt={showPricingDialog.name} className="size-full object-cover" loading="lazy" />
+                    ) : PricingBrandIcon ? <PricingBrandIcon className="size-7" /> : <Icon size={26} />}
                   </div>
                   <div>
                     <DialogTitle className="text-lg">{showPricingDialog.name}</DialogTitle>
