@@ -7,6 +7,7 @@ const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppManager = require('./WhatsAppManager');
 const axios = require('axios');
+const { isNonNotifiableStatus } = require('../../utils/orderStatusMeta');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 القوالب الافتراضية (مستخرجة إلى templates/defaultTemplates.js — §5.1)
@@ -1721,8 +1722,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
 
   // 🛡️ حالات داخلية مش لازم تبعت notification للعميل (TRASH/DRAFT/DUPLICATE...) —
   // بيمنع Prisma enum error على eventType وبيوقف spam للعملاء.
-  const NON_NOTIFIABLE_STATUSES = ["TRASH", "TRASH_ORDER", "DRAFT", "DUPLICATE_ORDER", "DELETED"];
-  if (NON_NOTIFIABLE_STATUSES.includes(String(newStatus || "").toUpperCase())) {
+  if (isNonNotifiableStatus(newStatus)) {
     console.log(`[WHATSAPP-STATUS] ⏭️ Skipping notification for internal status: ${newStatus}`);
     return { success: false, reason: "status_not_notifiable" };
   }

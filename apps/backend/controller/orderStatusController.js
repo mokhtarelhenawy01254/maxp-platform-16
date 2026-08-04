@@ -3,6 +3,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): البذر مستخرج إلى خدمة مشتركة
 const { seedDefaultOrderTemplates } = require('../services/orderTemplateSeeding');
+const { isNonNotifiableStatus } = require('../utils/orderStatusMeta');
 
 // ═══════════════════════════════════════════════════════════════
 // 🎨 Default System Statuses
@@ -972,7 +973,8 @@ const getStatusesWithTemplates = async (req, res) => {
       ...statuses.map(s => ({
         ...s,
         template: templateMap[s.code] || null,
-        hasTemplate: !!templateMap[s.code]
+        hasTemplate: !!templateMap[s.code],
+        isNonNotifiable: isNonNotifiableStatus(s.code)
       })),
       // أحداث الطلبات العامة (غير مرتبطة بحالة orderStatusConfig) تظهر هنا
       // حتى يمكن إدارتها من صفحة قوالب الطلبات بدلاً من القوالب المثبتة في الكود.
@@ -986,7 +988,8 @@ const getStatusesWithTemplates = async (req, res) => {
         notifyCustomer: true,
         isSystemStatus: true,
         template: templateMap[e.code] || null,
-        hasTemplate: !!templateMap[e.code]
+        hasTemplate: !!templateMap[e.code],
+        isNonNotifiable: isNonNotifiableStatus(e.code)
       }))
     ];
 
