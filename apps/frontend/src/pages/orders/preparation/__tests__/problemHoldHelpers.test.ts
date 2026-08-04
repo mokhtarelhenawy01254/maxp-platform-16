@@ -13,45 +13,49 @@ import {
 } from "../helpers";
 
 describe("preparation problem hold helpers", () => {
-  test("buildProblemHoldDetails defaults to 'other' reason when none set", () => {
+  test("buildProblemHoldDetails defaults to empty reason when none set", () => {
     const details = buildProblemHoldDetails({});
-    expect(details.reason).toBe("waiting_customer");
+    expect(details.reason).toBe("");
     expect(details.state).toBe("held");
-    expect(details.owner).toBe("");
-    expect(details.followUpDate).toBe("");
   });
 
   test("buildProblemHoldDetails reads preparationHold metadata", () => {
     const details = buildProblemHoldDetails({
       preparationHold: {
-        reason: "payment_issue",
-        owner: "محمود",
-        followUpDate: "2026-08-05",
-        customerNotified: true,
-        note: "الدفع لم يتم",
+        reason: "العميل لم يرد على العنوان",
         heldAt: "2026-08-04T10:00:00.000Z",
         releasedAt: "",
         heldBy: "علي",
         state: "held",
       },
     });
-    expect(details.reason).toBe("payment_issue");
-    expect(details.owner).toBe("محمود");
-    expect(details.followUpDate).toBe("2026-08-05");
-    expect(details.customerNotified).toBe(true);
-    expect(details.note).toBe("الدفع لم يتم");
+    expect(details.reason).toBe("العميل لم يرد على العنوان");
     expect(details.heldBy).toBe("علي");
+  });
+
+  test("buildProblemHoldDetails reads released state", () => {
+    const details = buildProblemHoldDetails({
+      preparationHold: {
+        reason: "بانتظار المورد",
+        heldAt: "2026-08-04T10:00:00.000Z",
+        releasedAt: "2026-08-05T10:00:00.000Z",
+        releasedBy: "سارة",
+        state: "released",
+      },
+    });
+    expect(details.reason).toBe("بانتظار المورد");
+    expect(details.releasedBy).toBe("سارة");
+    expect(details.state).toBe("released");
   });
 
   test("getActiveHoldDetails picks problem hold for ON_HOLD_PREP stage", () => {
     const details = getActiveHoldDetails({
       stage: "ON_HOLD_PREP",
       metadata: {
-        preparationHold: { reason: "address_issue", owner: "عماد" },
+        preparationHold: { reason: "مشكلة في العنوان" },
       },
     });
-    expect(details.reason).toBe("address_issue");
-    expect(details.owner).toBe("عماد");
+    expect(details.reason).toBe("مشكلة في العنوان");
   });
 
   test("getActiveHoldDetails picks shortage hold for STOCK_SHORTAGE stage", () => {
