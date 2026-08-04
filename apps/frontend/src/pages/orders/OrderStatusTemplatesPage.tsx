@@ -52,6 +52,24 @@ interface MetaAvailableTemplate {
   boundToEventType?: string | null;
 }
 
+interface DeliveryPreviewItem {
+  templateId: string;
+  eventType: string;
+  provider: string | null;
+  deliveryStatus: string;
+  riskLevel: "none" | "warning" | "danger";
+  message: string;
+  metaTemplateName?: string | null;
+  metaTemplateStatus?: string | null;
+}
+
+interface DefaultSessionInfo {
+  id: string;
+  name: string;
+  provider: string;
+  phoneNumber?: string;
+}
+
 interface TemplateButton {
   id: string;
   text: string;
@@ -184,6 +202,9 @@ export default function OrderStatusTemplatesPage() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  const [deliveryPreview, setDeliveryPreview] = useState<Record<string, DeliveryPreviewItem>>({});
+  const [defaultSessionInfo, setDefaultSessionInfo] = useState<DefaultSessionInfo | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -214,11 +235,33 @@ export default function OrderStatusTemplatesPage() {
     }
   }, []);
 
+  const fetchDeliveryPreview = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/whatsapp-notifications/templates/delivery-preview");
+      if (res.data?.success) {
+        setDefaultSessionInfo(res.data.defaultSession || null);
+        const map: Record<string, DeliveryPreviewItem> = {};
+        for (const item of res.data.preview || []) {
+          map[item.eventType] = item;
+        }
+        setDeliveryPreview(map);
+      }
+    } catch (err) {
+      // silent fail — الـ preview ميزة مساعدة
+      console.error("Failed to fetch delivery preview", err);
+    }
+  }, []);
+
   useEffect(() => {
     document.title = `${t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")} | MaxP`;
     fetchData();
     fetchSettings();
-  }, [fetchData, fetchSettings, t]);
+    fetchDeliveryPreview();
+  }, [fetchData, fetchSettings, fetchDeliveryPreview, t]);
+
+  useEffect(() => {
+    if (dialogOpen === false) fetchDeliveryPreview();
+  }, [dialogOpen, fetchDeliveryPreview]);
 
   const openCreateDialog = (status: StatusWithTemplate) => {
     setSelectedStatus(status);
@@ -572,6 +615,24 @@ export default function OrderStatusTemplatesPage() {
                     </option>
                   ))}
                 </select>
+                {defaultSessionInfo && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">طريقة الإرسال الحالية:</span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${
+                        defaultSessionInfo.provider === "META_CLOUD"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      }`}
+                    >
+                      {defaultSessionInfo.provider === "META_CLOUD" ? "☁️ Meta Cloud API" : "📱 Baileys"}
+                    </span>
+                    <span className="text-slate-400 dark:text-slate-500">{defaultSessionInfo.name}</span>
+                    {defaultSessionInfo.provider === "META_CLOUD" && !Object.keys(deliveryPreview).some((k) => deliveryPreview[k].riskLevel === "none") && (
+                      <span className="text-amber-500 dark:text-amber-400">تحقق من حالة كل قالب</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <hr className="border-slate-200 dark:border-slate-700" />
@@ -767,6 +828,24 @@ export default function OrderStatusTemplatesPage() {
                       </div>
 
                       <div className="flex shrink-0 items-center gap-1.5">
+                        {(() => {
+                          const p = status.template?.eventType ? deliveryPreview[status.template.eventType] : undefined;
+                          if (!p) return null;
+                          const colors = {
+                            none: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+                            warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                            danger: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                          };
+                          const icons = { none: "🟢", warning: "🟡", danger: "🔴" };
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium ${colors[p.riskLevel]}`}
+                              title={p.message}
+                            >
+                              {icons[p.riskLevel]} {p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message}
+                            </span>
+                          );
+                        })()}
                         {hasTemplate ? (
                           <>
                             <span className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
