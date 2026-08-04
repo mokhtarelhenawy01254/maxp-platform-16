@@ -87,6 +87,9 @@ router.put('/preferences/customer/:customerId', verifyToken.authenticateToken, w
 // نشر قالب محلي على ميتا
 router.post('/templates/:id/publish', verifyToken.authenticateToken, whatsappNotificationController.publishTemplateToMeta);
 
+// إعادة إرسال قالب مربوط لميتا للمراجعة بعد التعديل
+router.post('/templates/:id/resubmit-meta', verifyToken.authenticateToken, whatsappNotificationController.resubmitMetaTemplate);
+
 // مزامنة حالة القوالب مع ميتا
 router.post('/templates/sync-status', verifyToken.authenticateToken, whatsappNotificationController.syncTemplateStatuses);
 
