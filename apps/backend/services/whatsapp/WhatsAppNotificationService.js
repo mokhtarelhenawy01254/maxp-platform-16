@@ -739,7 +739,7 @@ function buildNewsletterAdminAlertContent() {
 // تتبع الدوران (Round Robin) للجلسات لكل شركة لـ موازنة الحمل (Load Balancing)
 
 // موازنة الجلسات مستخرجة (sessionBalancer.js — §5.1)
-const { getOrAssignSession, ensureRuntimeSessionConnected } = require('./sessionBalancer');
+const { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBaileysSession, isMetaWindowError } = require('./sessionBalancer');
 const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
 const { buildMetaBodyParams } = require('../../utils/metaTemplateVariables');
 
@@ -1189,10 +1189,34 @@ async function sendNotification(options) {
 
           console.log(`☁️ [META-CLOUD] Template message result:`, result);
         } catch (metaError) {
-          // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ ونكمل للمسار البديل
+          // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
           console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
-          console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
-          result = null;
+
+          // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
+          // لو الخطأ بسبب نافذة 24 ساعة أو قالب غير معتمد، دوّر على Baileys session
+          // تانية في الشركة وابعت منها نص حر بدل فشل صامت. البتتم مرة واحدة (مفيش loop).
+          const isWindowError = isMetaWindowError(metaError);
+
+          if (isWindowError && sessionProvider === 'META_CLOUD') {
+            console.log(`🔄 [FALLBACK] Meta rejected (24h window / template issue). Searching for a Baileys session...`);
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              console.log(`✅ [FALLBACK] Found Baileys session ${baileysSession.sessionId}. Retrying send as free-text.`);
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
+              } catch (fallbackErr) {
+                console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
+                result = null;
+              }
+            } else {
+              console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
+              result = null;
+            }
+          } else {
+            console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
+            result = null;
+          }
         }
         // إذا نجح الإرسال (result موجود) نتخطى مسار الإرسال العادي بالأسفل (شرط !result)
       }

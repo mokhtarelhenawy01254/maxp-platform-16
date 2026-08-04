@@ -95,6 +95,57 @@ async function getOrAssignSession({ companyId, customerId, recipientPhone, conne
   return connectedSessions[0].sessionId;
 }
 
+/**
+ * يميّز أخطاء ميتا المتعلقة بنافذة 24 ساعة / القالب عن الأخطاء التانية
+ * (فقط هذه الأخطاء تستحق fallback لـ Baileys).
+ *
+ * @param {{code?: string, message?: string}} metaError
+ * @returns {boolean}
+ */
+function isMetaWindowError(metaError) {
+  if (!metaError) return false;
+  const code = metaError.code;
+  const message = metaError.message || '';
+  return (
+    code === 'RECIPIENT_CANNOT_SEND' ||
+    code === 'TEMPLATE_NOT_APPROVED' ||
+    /24\s*hour|outside.*window|template.*window/i.test(message)
+  );
+}
+
+/**
+ * يبحث عن Baileys session متصلة في الشركة (مستثنية session الميتا الفاشلة)
+ * — يستخدمها sendNotification كـ fallback لما ميتا ترفض الإرسال خارج نافذة 24 ساعة.
+ *
+ * @param {string} companyId - الشركة
+ * @param {string} excludeSessionId - الجلسة المستثناة (الميتا الفاشلة)
+ * @returns {Promise<{sessionId: string, name: string, phoneNumber: string}|null>}
+ */
+async function findAlternativeBaileysSession(companyId, excludeSessionId) {
+  const prisma = getSharedPrismaClient();
+  const candidates = await safeQuery(() => prisma.whatsAppSession.findMany({
+    where: {
+      companyId,
+      provider: 'BAILEYS',
+      status: 'CONNECTED',
+      id: { not: excludeSessionId },
+    },
+    select: { id: true, name: true, phoneNumber: true },
+  }));
+
+  if (!candidates || candidates.length === 0) return null;
+
+  // فلتر على الـ in-memory connectivity (مثل getOrAssignSession) —
+  // الجلسة لازم تكون فعلاً socket متصلة في الذاكرة، مش بس CONNECTED في DB.
+  for (const c of candidates) {
+    const live = WhatsAppManager.getSession(c.id);
+    if (live && live.status === 'connected') {
+      return { sessionId: c.id, name: c.name, phoneNumber: c.phoneNumber };
+    }
+  }
+  return null;
+}
+
 async function ensureRuntimeSessionConnected(sessionId, companyId) {
   let pendingInitialization = sessionInitializationInFlight.get(sessionId);
 
@@ -147,4 +198,4 @@ async function ensureRuntimeSessionConnected(sessionId, companyId) {
   return pendingInitialization;
 }
 
-module.exports = { getOrAssignSession, ensureRuntimeSessionConnected };
+module.exports = { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBaileysSession, isMetaWindowError };
