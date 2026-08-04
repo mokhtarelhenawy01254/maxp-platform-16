@@ -8,6 +8,8 @@ const {
     ensureWithinPlanLimit,
     createLimitExceededError,
 } = require('../utils/planLimitPayloads');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
 
 // Clear require cache to force reload
 const statusServicePath = require.resolve('./wooCommerceStatusService');
@@ -367,7 +369,7 @@ async function findOrCreateCustomer(prisma, companyId, orderData) {
 
     let customer = null;
     if (email) customer = await prisma.customer.findFirst({ where: { companyId, email } });
-    if (!customer && phone) customer = await prisma.customer.findFirst({ where: { companyId, phone } });
+    if (!customer && phone) customer = await findCustomerByPhone(prisma, phone, companyId);
     if (customer) return customer.id;
 
     const newCustomer = await prisma.customer.create({
@@ -377,6 +379,7 @@ async function findOrCreateCustomer(prisma, companyId, orderData) {
             lastName: nameParts.slice(1).join(' ') || 'WooCommerce',
             email,
             phone,
+            phoneNormalized: toCanonicalE164(phone),
             notes: 'مستورد من WooCommerce',
             status: 'ACTIVE'
         }

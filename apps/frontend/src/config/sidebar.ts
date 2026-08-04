@@ -424,7 +424,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/company-dashboard', icon: BarChart3, label: t('sidebar.dashboard') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
+            hidden: user?.role === 'AFFILIATE'
         },
         
         // 1.5 الإنبوكس الموحد
@@ -564,9 +564,8 @@ export const getSidebarConfig = (
                 { to: '/returns/settings', icon: Cog, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
                 { to: '/platform-integrations', icon: Zap, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowLeftRight, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
-                { to: '/settings/cod-deposit', icon: Banknote, label: t('sidebar.codDeposit'), requiredPermissions: ['orders.settings.view'] },
-                { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
-                { to: '/whatsapp/templates?category=ORDERS', icon: Bell, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
+                { to: '/settings/cod-deposit', icon: Banknote, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
+                { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates', 'قوالب الواتساب للحالات'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
@@ -839,7 +838,7 @@ export const getSidebarConfig = (
             title: t('sidebar.myAccountSection'),
             icon: CircleUser,
             items: [
-                { to: '/my-dashboard', icon: BarChart3, label: t('sidebar.myDashboard') },
+                { to: '/my-dashboard', icon: BarChart3, label: t('sidebar.myDashboard'), hidden: !isAnyAppActive(['hr-basic', 'hr-attendance-pro']) },
                 { to: '/my-attendance', icon: Clock, label: t('sidebar.attendance'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },
                 { to: '/my-leaves', icon: Calendar, label: t('sidebar.myLeaves'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },
                 { to: '/my-permissions', icon: Clock, label: t('sidebar.myPermissions'), hidden: !isAnyAppActive(['hr-attendance-pro', 'hr-basic']) },

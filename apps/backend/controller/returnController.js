@@ -3,13 +3,14 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const getPrisma = () => getSharedPrismaClient();
 const { calculateCustomerScore } = require('../services/customerRatingService');
 const cashbackService = require('../services/cashbackService');
+const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
 
 // Return Reason Categories
 exports.getCategories = async (req, res) => {
     try {
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const categories = await getPrisma().returnReasonCategory.findMany({
-            where: { companyId: effectiveCompanyId },
+            where: { companyId: effectiveCompanyId, isActive: true },
             include: { returnReasons: true },
             orderBy: { createdAt: 'desc' }
         });
@@ -57,6 +58,38 @@ exports.updateCategory = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update category' });
+    }
+};
+
+exports.deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Security check: category must belong to the company
+        const category = await getPrisma().returnReasonCategory.findFirst({
+            where: { id, companyId: req.user.effectiveCompanyId || req.user.companyId }
+        });
+
+        if (!category) {
+            return res.status(404).json({ error: 'Return reason category not found' });
+        }
+
+        // Soft-delete the category and all its reasons (reasons may be referenced
+        // by historical return requests, so they cannot be hard-deleted)
+        await getPrisma().$transaction(async (tx) => {
+            await tx.returnReason.updateMany({
+                where: { categoryId: id },
+                data: { isActive: false }
+            });
+            await tx.returnReasonCategory.update({
+                where: { id },
+                data: { isActive: false }
+            });
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete return reason category' });
     }
 };
 
@@ -172,6 +205,16 @@ async function ensureShippingReturnRequestsSynced(companyId) {
 
         if (!missingOrders.length) return;
 
+        // Resolve shipping company for returned orders from their shipments
+        const shipments = await prisma.shipment.findMany({
+            where: {
+                orderId: { in: missingOrders.map(o => o.id) },
+                shippingCompanyId: { not: null }
+            },
+            select: { orderId: true, shippingCompanyId: true }
+        });
+        const orderShippingCompanyMap = new Map(shipments.map(s => [s.orderId, s.shippingCompanyId]));
+
         let defaultReason = await prisma.returnReason.findFirst({
             where: { companyId, isActive: true }
         });
@@ -217,8 +260,9 @@ async function ensureShippingReturnRequestsSynced(companyId) {
                     responsibleParty: 'SHIPPING',
                     adminNotes: 'مرتجع تلقائي من شركة الشحن',
                     trackingNumber: o.turboTrackingNumber || null,
+                    shippingCompanyId: orderShippingCompanyMap.get(o.id) || null,
                     receivedStatus: 'IN_TRANSIT',
-                    createdAt: o.createdAt
+                    createdAt: new Date()
                 });
             }
         }
@@ -269,58 +313,34 @@ exports.getReturnRequests = async (req, res) => {
                 where.createdAt = { ...(where.createdAt || {}), lte: to };
             }
         }
+        const andConditions = [];
+
         if (ordersStartDate) {
             const startDate = new Date(ordersStartDate);
             if (!isNaN(startDate.getTime())) {
-                const ordersFromDate = await getPrisma().order.findMany({
-                    where: { companyId: effectiveCompanyId, createdAt: { gte: startDate } },
-                    select: { id: true }
+                andConditions.push({
+                    OR: [
+                        { createdAt: { gte: startDate } },
+                        { order: { createdAt: { gte: startDate } } }
+                    ]
                 });
-                const orderIdsFromDate = ordersFromDate.map(o => o.id);
-                if (!where.OR) where.OR = [];
-                where.OR.push(
-                    { createdAt: { gte: startDate } },
-                    ...(orderIdsFromDate.length ? [{ orderId: { in: orderIdsFromDate } }] : [])
-                );
             }
         }
 
         if (search) {
-            const orderIds = (await getPrisma().order.findMany({
-                where: {
-                    companyId: effectiveCompanyId,
-                    OR: [
-                        { orderNumber: { contains: search } },
-                        { turboTrackingNumber: { contains: search } },
-                    ]
-                },
-                select: { id: true }
-            })).map(o => o.id);
+            andConditions.push({
+                OR: [
+                    { order: { orderNumber: { contains: search } } },
+                    { order: { turboTrackingNumber: { contains: search } } },
+                    { customer: { firstName: { contains: search } } },
+                    { customer: { lastName: { contains: search } } },
+                    { customer: { phone: { contains: search } } }
+                ]
+            });
+        }
 
-            const customerIds = (await getPrisma().customer.findMany({
-                where: {
-                    companyId: effectiveCompanyId,
-                    OR: [
-                        { firstName: { contains: search } },
-                        { lastName: { contains: search } },
-                        { phone: { contains: search } },
-                    ]
-                },
-                select: { id: true }
-            })).map(c => c.id);
-
-            if (!orderIds.length && !customerIds.length) {
-                return res.json({ data: [], total: 0, page: 1, limit: 20, totalPages: 0 });
-            }
-
-            const searchFilters = [];
-            if (orderIds.length) searchFilters.push({ orderId: { in: orderIds } });
-            if (customerIds.length) searchFilters.push({ customerId: { in: customerIds } });
-            if (searchFilters.length === 1) {
-                Object.assign(where, searchFilters[0]);
-            } else if (searchFilters.length > 1) {
-                where.OR = [...(where.OR || []), ...searchFilters];
-            }
+        if (andConditions.length > 0) {
+            where.AND = andConditions;
         }
 
         const page = Math.max(1, parseInt(pageStr) || 1);
@@ -337,12 +357,16 @@ exports.getReturnRequests = async (req, res) => {
                         select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
                     },
                     order: {
-                        select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
+                        select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, shipping: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
                     },
                     returnReason: {
                         include: {
                             returnReasonCategory: true
                         }
+                    },
+                    returnType: true,
+                    shippingCompany: {
+                        select: { id: true, name: true, slug: true }
                     },
                     assignedUser: {
                         select: { firstName: true, lastName: true }
@@ -461,7 +485,7 @@ exports.createReturnRequest = async (req, res) => {
 exports.updateReturnRequest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { adminNotes, customerNotes, reasonId, refundAmount, assignedTo, responsibleParty, isReviewed } = req.body;
+        const { adminNotes, customerNotes, reasonId, refundAmount, assignedTo, responsibleParty, isReviewed, shippingReturnCost, settlementAmount, returnTypeId, shippingCompanyId } = req.body;
 
         // Security & Null Check
         const oldRequest = await getPrisma().returnRequest.findFirst({
@@ -479,7 +503,11 @@ exports.updateReturnRequest = async (req, res) => {
             refundAmount,
             assignedTo,
             responsibleParty,
-            isReviewed
+            isReviewed,
+            ...(returnTypeId !== undefined ? { returnTypeId: returnTypeId || null } : {}),
+            ...(shippingCompanyId !== undefined ? { shippingCompanyId: shippingCompanyId || null } : {}),
+            ...(shippingReturnCost !== undefined ? { shippingReturnCost: shippingReturnCost === '' || shippingReturnCost === null ? null : parseFloat(shippingReturnCost) } : {}),
+            ...(settlementAmount !== undefined ? { settlementAmount: settlementAmount === '' || settlementAmount === null ? null : parseFloat(settlementAmount) } : {})
         };
 
         if (isReviewed && !oldRequest.isReviewed) {
@@ -511,6 +539,19 @@ exports.updateReturnRequest = async (req, res) => {
                 });
             } catch (e) {
                 console.error('❌ [CASHBACK] Failed to reverse cashback for return:', {
+                    returnRequestId: updatedRequest.id,
+                    companyId: req.user.effectiveCompanyId || req.user.companyId,
+                    error: e?.message
+                });
+            }
+            try {
+                await customerLoyaltyService.reverseLoyaltyPointsForReturn({
+                    returnRequestId: updatedRequest.id,
+                    companyId: req.user.effectiveCompanyId || req.user.companyId,
+                    changedBy: req.user.id
+                });
+            } catch (e) {
+                console.error('❌ [LOYALTY] Failed to reverse loyalty points for return:', {
                     returnRequestId: updatedRequest.id,
                     companyId: req.user.effectiveCompanyId || req.user.companyId,
                     error: e?.message
@@ -691,6 +732,17 @@ async function tryAutoApprove(prismaClient, returnRequest, companyId) {
                 console.error('❌ [CASHBACK] Failed to reverse cashback for auto-approved return:', e.message);
             }
 
+            // Reverse loyalty points for auto-approved return
+            try {
+                await customerLoyaltyService.reverseLoyaltyPointsForReturn({
+                    returnRequestId: updated.id,
+                    companyId,
+                    changedBy: null
+                });
+            } catch (e) {
+                console.error('❌ [LOYALTY] Failed to reverse loyalty points for auto-approved return:', e.message);
+            }
+
             return updated;
         }
 
@@ -844,4 +896,164 @@ exports.getActivityLog = async (req, res) => {
 
 // 4. Batch Operations
 
+// 5. Return Types (أنواع المرتجع حسب شركة الشحن)
+exports.getReturnTypes = async (req, res) => {
+    try {
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const { shippingCompanyId, activeOnly } = req.query;
+        const where = { companyId };
 
+        if (shippingCompanyId) where.shippingCompanyId = shippingCompanyId;
+        if (activeOnly === 'true') where.isActive = true;
+
+        const types = await getPrisma().returnType.findMany({
+            where,
+            include: {
+                shippingCompany: { select: { id: true, name: true, slug: true } }
+            },
+            orderBy: [{ shippingCompanyId: 'asc' }, { createdAt: 'asc' }]
+        });
+
+        res.json({ success: true, data: types });
+    } catch (error) {
+        console.error('❌ [GET_RETURN_TYPES] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to fetch return types', details: error.message });
+    }
+};
+
+// Shipping companies with their return types (for the settings page)
+exports.getReturnShippingCompanies = async (req, res) => {
+    try {
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const companies = await getPrisma().shippingCompany.findMany({
+            where: { companyId },
+            include: {
+                returnTypes: {
+                    orderBy: { createdAt: 'asc' }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ success: true, data: companies });
+    } catch (error) {
+        console.error('❌ [GET_RETURN_SHIPPING_COMPANIES] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to fetch shipping companies', details: error.message });
+    }
+};
+
+const parseNullableDecimal = (value) => {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+};
+
+const assertReturnTypeShippingCompany = async (prisma, companyId, shippingCompanyId) => {
+    if (!shippingCompanyId) return;
+    const sc = await prisma.shippingCompany.findFirst({ where: { id: shippingCompanyId, companyId } });
+    if (!sc) {
+        const err = new Error('Shipping company not found');
+        err.statusCode = 404;
+        throw err;
+    }
+};
+
+exports.createReturnType = async (req, res) => {
+    try {
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const { name, code, costModel, fixedAmount, shippingCompanyId } = req.body;
+
+        if (!name || !code || !costModel) {
+            return res.status(400).json({ error: 'name, code and costModel are required' });
+        }
+
+        await assertReturnTypeShippingCompany(getPrisma(), companyId, shippingCompanyId);
+
+        const type = await getPrisma().returnType.create({
+            data: {
+                companyId,
+                name,
+                code,
+                costModel,
+                shippingCompanyId: shippingCompanyId || null,
+                fixedAmount: parseNullableDecimal(fixedAmount)
+            },
+            include: {
+                shippingCompany: { select: { id: true, name: true, slug: true } }
+            }
+        });
+
+        res.json({ success: true, data: type });
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'هذا النوع مسجل مسبقاً لهذه الشركة' });
+        }
+        console.error('❌ [CREATE_RETURN_TYPE] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to create return type', details: error.message });
+    }
+};
+
+exports.updateReturnType = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const { name, code, costModel, fixedAmount, shippingCompanyId, isActive } = req.body;
+
+        const existing = await getPrisma().returnType.findFirst({ where: { id, companyId } });
+        if (!existing) {
+            return res.status(404).json({ error: 'Return type not found' });
+        }
+
+        await assertReturnTypeShippingCompany(getPrisma(), companyId, shippingCompanyId);
+
+        const data = {};
+        if (name !== undefined) data.name = name;
+        if (code !== undefined) data.code = code;
+        if (costModel !== undefined) data.costModel = costModel;
+        if (shippingCompanyId !== undefined) data.shippingCompanyId = shippingCompanyId || null;
+        if (fixedAmount !== undefined) data.fixedAmount = parseNullableDecimal(fixedAmount);
+        if (isActive !== undefined) data.isActive = isActive;
+
+        const updated = await getPrisma().returnType.update({
+            where: { id },
+            data,
+            include: {
+                shippingCompany: { select: { id: true, name: true, slug: true } }
+            }
+        });
+
+        res.json({ success: true, data: updated });
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'هذا النوع مسجل مسبقاً لهذه الشركة' });
+        }
+        console.error('❌ [UPDATE_RETURN_TYPE] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to update return type', details: error.message });
+    }
+};
+
+exports.deleteReturnType = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        const existing = await getPrisma().returnType.findFirst({ where: { id, companyId } });
+        if (!existing) {
+            return res.status(404).json({ error: 'Return type not found' });
+        }
+
+        // Soft delete to preserve historical return request references
+        await getPrisma().returnType.update({ where: { id }, data: { isActive: false } });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ [DELETE_RETURN_TYPE] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to delete return type', details: error.message });
+    }
+};

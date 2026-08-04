@@ -265,4 +265,97 @@ const deleteInvoice = async (req, res) => {
   }
 };
 
-module.exports = { getAllInvoices, getInvoiceById, createInvoice, updateInvoice, addPayment, deleteInvoice };
+const resolveAppointmentPrice = (appointment, service) => {
+  // 1. Doctor-specific fee for this service (if doctor linked to the service)
+  if (appointment.doctorId && service) {
+    const link = (service.doctorServices || []).find(ds => ds.doctorId === appointment.doctorId);
+    if (link && link.fee) return Number(link.fee);
+  }
+  // 2. Doctor consultation fee
+  if (appointment.doctor?.consultationFee) return Number(appointment.doctor.consultationFee);
+  // 3. Service base price
+  if (service?.basePrice) return Number(service.basePrice);
+  // 4. Branch package single-session price (cheapest)
+  if (appointment.branchId && service) {
+    const bs = (service.branchServices || []).find(b => b.branchId === appointment.branchId);
+    if (bs && Array.isArray(bs.packages) && bs.packages.length > 0) {
+      const parsed = bs.packages.map(p => (typeof p === 'string' ? (() => { try { return JSON.parse(p); } catch { return p; } })() : p));
+      const singles = parsed.filter(p => p.count === 1 && p.price).map(p => Number(p.price));
+      if (singles.length > 0) return Math.min(...singles);
+    }
+  }
+  return null;
+};
+
+const createInvoiceFromAppointment = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { appointmentId } = req.params;
+    const { discount, method, initialPayment, dueDate, notes } = req.body;
+
+    const prisma = getSharedPrismaClient();
+    const appointment = await prisma.appointment.findFirst({
+      where: { id: appointmentId, companyId },
+      include: {
+        doctor: { select: { id: true, consultationFee: true } },
+        service: {
+          select: {
+            id: true, name: true, basePrice: true,
+            branchServices: { select: { branchId: true, packages: true } },
+            doctorServices: { select: { doctorId: true, fee: true } }
+          }
+        }
+      }
+    });
+    if (!appointment) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
+
+    // Reject if an invoice already exists for this appointment
+    const existing = await prisma.medicalInvoice.findFirst({ where: { appointmentId, companyId } });
+    if (existing) return res.status(400).json({ success: false, error: 'يوجد فاتورة لهذا الموعد بالفعل' });
+
+    const price = resolveAppointmentPrice(appointment, appointment.service);
+    if (!price) return res.status(400).json({ success: false, error: 'لا يوجد سعر محدد لهذه الخدمة، أضف سعراً أساسياً أو باقة' });
+
+    const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
+    const disc = Math.max(0, Number(discount) || 0);
+    const initialPaid = Number(initialPayment) || 0;
+
+    const invoice = await prisma.$transaction(async (tx) => {
+      const created = await tx.medicalInvoice.create({
+        data: {
+          companyId, invoiceNumber, patientId: appointment.patientId,
+          appointmentId: appointment.id,
+          total: price, discount: disc,
+          amountPaid: initialPaid,
+          status: computeStatus(price, disc, initialPaid),
+          dueDate: dueDate ? new Date(dueDate) : null,
+          notes: notes || `فاتورة تلقائية: ${appointment.serviceName || ''}`.trim(),
+        },
+      });
+      if (initialPaid > 0) {
+        await tx.medicalPayment.create({
+          data: {
+            companyId, invoiceId: created.id, amount: initialPaid,
+            method: method || 'CASH', notes: notes || null, createdById: req.user.id,
+          },
+        });
+      }
+      if (created.appointmentId) {
+        await tx.appointment.update({
+          where: { id: created.appointmentId },
+          data: { paymentStatus: appointmentPaymentStatus(created.status) },
+        });
+      }
+      return created;
+    });
+
+    res.json({ success: true, data: formatInvoice(invoice) });
+  } catch (error) {
+    console.error('Error creating invoice from appointment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الفاتورة' });
+  }
+};
+
+module.exports = { getAllInvoices, getInvoiceById, createInvoice, updateInvoice, addPayment, deleteInvoice, createInvoiceFromAppointment };

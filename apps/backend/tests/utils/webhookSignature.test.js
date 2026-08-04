@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const {
   shouldStrictlyEnforceMetaWebhookSignature,
+  shouldStrictlyEnforceFacebookWebhookSignature,
   verifyMetaWebhookSignature,
 } = require('../../utils/webhookSignature');
 
@@ -101,21 +102,59 @@ describe('webhookSignature helper', () => {
   });
 });
 
-describe('Meta webhook signature enforcement mode', () => {
-  test('defaults to warn-only mode so existing page messaging keeps receiving events', () => {
+describe('WhatsApp webhook signature enforcement mode', () => {
+  test('defaults to disabled (opt-in — lets WhatsApp webhooks through without App Secret)', () => {
     expect(shouldStrictlyEnforceMetaWebhookSignature({})).toBe(false);
   });
 
-  test('enables strict mode through the legacy boolean flag', () => {
+  test('stays disabled in production unless explicitly opted in', () => {
     expect(shouldStrictlyEnforceMetaWebhookSignature({
-      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'true',
+      NODE_ENV: 'production',
+    })).toBe(false);
+  });
+
+  test('enables strict mode through META_WA_WEBHOOK_STRICT flag', () => {
+    expect(shouldStrictlyEnforceMetaWebhookSignature({
+      META_WA_WEBHOOK_STRICT: 'true',
     })).toBe(true);
   });
 
-  test('enables strict mode through the explicit mode flag', () => {
+  test('enables strict mode through the legacy META_WEBHOOK_STRICT flag', () => {
     expect(shouldStrictlyEnforceMetaWebhookSignature({
-      FACEBOOK_WEBHOOK_SIGNATURE_MODE: 'strict',
-      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+      META_WEBHOOK_STRICT: 'true',
     })).toBe(true);
+  });
+
+  test('remains disabled when opt-out flag is set', () => {
+    expect(shouldStrictlyEnforceMetaWebhookSignature({
+      META_WA_WEBHOOK_STRICT: 'false',
+    })).toBe(false);
+  });
+});
+
+describe('Facebook (Messenger) webhook signature enforcement mode', () => {
+  test('defaults to enabled (default-on to keep Messenger stable)', () => {
+    expect(shouldStrictlyEnforceFacebookWebhookSignature({})).toBe(true);
+  });
+
+  test('mandatory in production — ignores opt-out flags', () => {
+    expect(shouldStrictlyEnforceFacebookWebhookSignature({
+      NODE_ENV: 'production',
+      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+      FACEBOOK_WEBHOOK_SIGNATURE_MODE: 'warn',
+    })).toBe(true);
+  });
+
+  test('enables strict mode through FACEBOOK_WEBHOOK_SIGNATURE_MODE flag', () => {
+    expect(shouldStrictlyEnforceFacebookWebhookSignature({
+      FACEBOOK_WEBHOOK_SIGNATURE_MODE: 'strict',
+    })).toBe(true);
+  });
+
+  test('allows opting out in non-production environments', () => {
+    expect(shouldStrictlyEnforceFacebookWebhookSignature({
+      NODE_ENV: 'development',
+      FACEBOOK_WEBHOOK_STRICT_SIGNATURE: 'false',
+    })).toBe(false);
   });
 });

@@ -1,19 +1,14 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
 import {
   ReturnRequest,
   returnService,
   ContactAttempt,
   ActivityLog,
+  ReturnType,
+  ReturnShippingCompany,
 } from "../../services/returnService";
-import {
-  X,
-  Phone,
-  MessageCircle,
-  Clock,
-  Shield,
-  Calendar,
-} from "lucide-react";
+import { X, Phone, MessageCircle, Shield, Calendar, Truck } from 'lucide-react';
 import { toast } from "sonner";
 
 interface ReturnDetailsModalProps {
@@ -49,8 +44,28 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     request.responsibleParty,
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
+  const [shippingReturnCost, setShippingReturnCost] = useState(
+    request.shippingReturnCost !== undefined && request.shippingReturnCost !== null
+      ? String(request.shippingReturnCost)
+      : "",
+  );
+  const [settlementAmount, setSettlementAmount] = useState(
+    request.settlementAmount !== undefined && request.settlementAmount !== null
+      ? String(request.settlementAmount)
+      : "",
+  );
   const isReviewed = true;
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Return Type & Shipping Company
+  const [shippingCompanies, setShippingCompanies] = useState<
+    ReturnShippingCompany[]
+  >([]);
+  const [returnTypes, setReturnTypes] = useState<ReturnType[]>([]);
+  const [shippingCompanyId, setShippingCompanyId] = useState(
+    request.shippingCompanyId || "",
+  );
+  const [returnTypeId, setReturnTypeId] = useState(request.returnTypeId || "");
 
   // Categories & Reasons for dropdown
   const [categories, setCategories] = useState<any[]>([]);
@@ -76,6 +91,54 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
     returnService.getReasons().then((res) => setReasons(res.data)).catch(() => {});
   }, []);
+
+  // Load shipping companies and their return types
+  useEffect(() => {
+    returnService
+      .getReturnShippingCompanies()
+      .then((res) => {
+        const companies: ReturnShippingCompany[] = res.data?.data || [];
+        setShippingCompanies(companies);
+        if (request.shippingCompanyId) {
+          const company = companies.find((c) => c.id === request.shippingCompanyId);
+          setReturnTypes(company?.returnTypes || []);
+        } else {
+          setReturnTypes(companies.flatMap((c) => c.returnTypes || []));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // When a return type is selected, suggest the return shipping cost based on the cost model
+  const applyReturnTypeCost = (type: ReturnType | undefined) => {
+    if (!type) return;
+    if (type.costModel === "FIXED" && type.fixedAmount != null) {
+      setShippingReturnCost(String(type.fixedAmount));
+    } else if (type.costModel === "NONE") {
+      setShippingReturnCost("0");
+    } else if (type.costModel === "FULL") {
+      const orderShippingCost =
+        request.order?.shippingCost != null ? request.order.shippingCost : 0;
+      setShippingReturnCost(String(orderShippingCost));
+    }
+  };
+
+  const handleShippingCompanyChange = (value: string) => {
+    setShippingCompanyId(value);
+    setReturnTypeId("");
+    if (!value) {
+      setReturnTypes([]);
+      return;
+    }
+    const company = shippingCompanies.find((c) => c.id === value);
+    setReturnTypes(company?.returnTypes || []);
+  };
+
+  const handleReturnTypeChange = (value: string) => {
+    setReturnTypeId(value);
+    const type = returnTypes.find((rt) => rt.id === value);
+    applyReturnTypeCost(type);
+  };
 
   const fetchLogs = async () => {
     setLoadingLogs(true);
@@ -107,6 +170,12 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         responsibleParty,
         adminNotes,
         isReviewed,
+        returnTypeId: returnTypeId || undefined,
+        shippingCompanyId: shippingCompanyId || undefined,
+        shippingReturnCost:
+          shippingReturnCost === "" ? null : parseFloat(shippingReturnCost),
+        settlementAmount:
+          settlementAmount === "" ? null : parseFloat(settlementAmount),
       });
       toast.success(t('returns.k_119'));
       onUpdate();
@@ -322,6 +391,88 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     rows={2}
                     className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                   />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_254')}
+                    </label>
+                    <select
+                      value={shippingCompanyId}
+                      onChange={(e) =>
+                        handleShippingCompanyChange(e.target.value)
+                      }
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    >
+                      <option value="">{t('returns.k_30')}</option>
+                      {shippingCompanies.map((sc) => (
+                        <option key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_255')}
+                    </label>
+                    <select
+                      value={returnTypeId}
+                      onChange={(e) => handleReturnTypeChange(e.target.value)}
+                      disabled={!shippingCompanyId}
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md disabled:opacity-50"
+                    >
+                      <option value="">{t('returns.k_30')}</option>
+                      {returnTypes.map((rt) => (
+                        <option key={rt.id} value={rt.id}>
+                          {rt.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {returnTypeId &&
+                  (() => {
+                    const rt = returnTypes.find((x) => x.id === returnTypeId);
+                    return rt ? (
+                      <p className="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                        <Truck size={12} /> {t('returns.k_256')}:{" "}
+                        {rt.costModel === "FIXED"
+                          ? `${rt.fixedAmount} ${request.order?.currency || t('returns.k_22')}`
+                          : rt.costModel === "NONE"
+                            ? "0"
+                            : request.order?.shippingCost ?? 0}{" "}
+                        {request.order?.currency || t('returns.k_22')}
+                      </p>
+                    ) : null;
+                  })()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_228')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={shippingReturnCost}
+                      onChange={(e) => setShippingReturnCost(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      {t('returns.k_229')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={settlementAmount}
+                      onChange={(e) => setSettlementAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -593,7 +593,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     return (
       <div className="app-dashboard-app-root" data-theme={BUSINESS_THEME_ID} data-visual-theme={shellThemeId} data-template={templateId}>
         {headerBlock}
-        <AppShell allSections={menuSections}>
+        <AppShell allSections={menuSections} showMobileHeader={false}>
           {children}
         </AppShell>
       </div>
@@ -709,6 +709,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                        userId={user?.id}
                        companyId={user?.companyId || user?.company?.id}
                        allSections={menuSections}
+                       isLoading={!isI18nReady}
                      />
                    </React.Suspense>
                  ) : (
@@ -823,6 +824,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                        userId={user?.id}
                        companyId={user?.companyId || user?.company?.id}
                        allSections={menuSections}
+                       isLoading={!isI18nReady}
                      />
                    </React.Suspense>
                  ) : (

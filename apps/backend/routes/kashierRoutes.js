@@ -3,6 +3,8 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
 const KashierService = require('../services/kashierService');
 const { extractSubdomainMiddleware, requireCompany } = require('../middleware/subdomainMiddleware');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
 
 const router = express.Router();
 const getPrisma = () => getSharedPrismaClient();
@@ -27,9 +29,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     const companyId = company.id;
 
     // Find or create customer
-    let customer = await prisma.customer.findFirst({
-      where: { phone: guestPhone, companyId },
-    });
+    let customer = await findCustomerByPhone(prisma, guestPhone, companyId);
 
     if (!customer) {
       const nameParts = (guestName || 'Customer').split(/\s+/).filter(Boolean);
@@ -39,6 +39,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
           lastName: nameParts.slice(1).join(' ') || '',
           email: guestEmail || '',
           phone: guestPhone,
+          phoneNormalized: toCanonicalE164(guestPhone),
           companyId,
           status: 'ACTIVE',
         },

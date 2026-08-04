@@ -31,7 +31,7 @@ const splitName = (name) => {
  * @param {string} [opts.customerId] explicit customer link (from authenticated flows)
  * @returns {Promise<{ id: string; created: boolean }>}
  */
-const findOrCreatePatient = async ({ companyId, customerName, customerPhone, customerGender, customerEmail, customerId }) => {
+const findOrCreatePatient = async ({ companyId, customerName, customerPhone, customerGender, customerEmail, customerId, nationalId, nationalIdImage, address }) => {
   const prisma = getSharedPrismaClient();
   const phone = normalizePhone(customerPhone);
 
@@ -41,7 +41,17 @@ const findOrCreatePatient = async ({ companyId, customerName, customerPhone, cus
       select: { id: true },
       orderBy: { createdAt: 'asc' },
     });
-    if (existing) return { id: existing.id, created: false };
+    if (existing) {
+      // Update identity fields if provided (fill gaps on an existing patient)
+      const patch = {};
+      if (nationalId && nationalId !== '') patch.nationalId = nationalId;
+      if (nationalIdImage && nationalIdImage !== '') patch.nationalIdImage = nationalIdImage;
+      if (address && address !== '') patch.address = address;
+      if (Object.keys(patch).length > 0) {
+        await prisma.patient.update({ where: { id: existing.id }, data: patch });
+      }
+      return { id: existing.id, created: false };
+    }
   }
 
   const { firstName, lastName } = splitName(customerName);
@@ -65,6 +75,9 @@ const findOrCreatePatient = async ({ companyId, customerName, customerPhone, cus
       phone: phone || null,
       email: customerEmail || null,
       gender: normalizeGender(customerGender),
+      nationalId: nationalId || null,
+      nationalIdImage: nationalIdImage || null,
+      address: address || null,
     },
   });
 

@@ -152,7 +152,7 @@ export const resolvePostAuthDestination = (
     }
     return "/super-admin/dev-dashboard";
   }
-  if (isCompanyRole(user?.role)) return "/company-dashboard";
+  if (isCompanyRole(user?.role)) return "/apps";
   return "/marketplace";
 };
 

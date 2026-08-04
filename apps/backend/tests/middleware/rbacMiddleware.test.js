@@ -107,41 +107,41 @@ describe('rbacMiddleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('falls back to hardcoded PERMISSIONS when no userPermissions (AGENT + inbox.send = allowed)', () => {
+    it('returns 403 when no DB permissions attached (no hardcoded fallback)', () => {
       const req = {
         user: { role: 'AGENT' },  // no userPermissions
       };
       const res = createResponse();
       const next = jest.fn();
 
-      // AGENT → MODERATOR, MODERATOR is allowed 'inbox.send'
       requirePermission('inbox.send')(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      // DB permissions are the source of truth — empty userPermissions = deny
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
     });
 
-    it('falls back to hardcoded PERMISSIONS — denies when role not in list', () => {
+    it('denies when role lacks the permission even if hardcoded map allows it', () => {
       const req = {
-        user: { role: 'AGENT' },  // AGENT → MODERATOR
+        user: { role: 'AGENT' },  // AGENT → MODERATOR, but no DB permissions
       };
       const res = createResponse();
       const next = jest.fn();
 
-      // MODERATOR is NOT allowed 'users.manage'
+      // MODERATOR is NOT allowed 'users.manage' in hardcoded map; DB perms empty → deny
       requirePermission('users.manage')(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('uses normalizeRole correctly for fallback (MANAGER → TEAM_LEADER)', () => {
+    it('allows when DB permissions include the required permission regardless of role', () => {
       const req = {
-        user: { role: 'MANAGER' },  // MANAGER → TEAM_LEADER
+        user: { role: 'MANAGER', userPermissions: ['teams.view'] },
       };
       const res = createResponse();
       const next = jest.fn();
 
-      // TEAM_LEADER is allowed 'teams.view'
       requirePermission('teams.view')(req, res, next);
 
       expect(next).toHaveBeenCalled();
@@ -182,7 +182,7 @@ describe('rbacMiddleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('falls back to hardcoded PERMISSIONS when DB lacks the specific permission', async () => {
+    it('returns 403 when DB lacks the specific permission (no hardcoded fallback)', async () => {
       mockPermissionService.getUserPermissions.mockResolvedValue(['products.view', 'inbox.send']);
 
       const req = { user: { id: 'user-1', role: 'AGENT', companyId: 'company-1', effectiveCompanyId: 'company-1' } };
@@ -191,8 +191,9 @@ describe('rbacMiddleware', () => {
 
       await requireDbPermission('orders.create')(req, res, next);
 
-      // AGENT→MODERATOR, and MODERATOR has orders.create in hardcoded PERMISSIONS
-      expect(next).toHaveBeenCalled();
+      // DB permissions are the source of truth — no hardcoded role fallback
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('returns 403 when DB + hardcoded both lack the permission', async () => {

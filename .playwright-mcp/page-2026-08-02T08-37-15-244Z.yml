@@ -1,0 +1,54 @@
+- generic [ref=f18e7]:
+  - generic [ref=f18e10]:
+    - generic [ref=f18e12]:
+      - generic [ref=f18e13]:
+        - link [ref=f18e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - img "MAX-P" [ref=f18e16]
+        - generic [ref=f18e17]:
+          - button "sidebar.myAccountSection" [ref=f18e18] [cursor=pointer]
+          - button "sidebar.companyManagementSection" [ref=f18e25] [cursor=pointer]
+          - button "sidebar.marketplace" [ref=f18e31] [cursor=pointer]
+          - button "sidebar.settingsSection" [ref=f18e37] [cursor=pointer]
+      - generic [ref=f18e43]:
+        - generic [ref=f18e44]:
+          - link [ref=f18e46] [cursor=pointer]:
+            - /url: /company-dashboard
+            - img "MAX-P" [ref=f18e47]
+            - generic [ref=f18e48]:
+              - heading "m22" [level=2] [ref=f18e49]
+              - paragraph [ref=f18e50]: sidebar.myAccountSection
+          - button "sidebar.collapse" [ref=f18e51] [cursor=pointer]
+        - generic [ref=f18e54]:
+          - generic [ref=f18e55]: sidebar.searchInMenu
+          - textbox "sidebar.searchInMenu" [ref=f18e56]:
+            - /placeholder: sidebar.search
+        - generic [ref=f18e57]:
+          - link "sidebar.myDashboard" [ref=f18e59] [cursor=pointer]:
+            - /url: /my-dashboard
+          - link "sidebar.myProfile" [ref=f18e65] [cursor=pointer]:
+            - /url: /profile
+          - link "sidebar.myActivity" [ref=f18e73] [cursor=pointer]:
+            - /url: /my-activity
+    - generic [ref=f18e79]:
+      - banner [ref=f18e80]:
+        - generic [ref=f18e82]:
+          - generic [ref=f18e83]:
+            - button "تبديل للوضع الليلي" [ref=f18e84] [cursor=pointer]
+            - button "Change language" [ref=f18e86] [cursor=pointer]:
+              - generic [ref=f18e87]: ar
+            - button "الإشعارات" [ref=f18e89] [cursor=pointer]
+            - link "header.whatsapp" [ref=f18e93] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "sidebar.profile CS" [ref=f18e98]:
+            - generic [ref=f18e99]: CS
+            - generic [ref=f18e100]:
+              - generic [ref=f18e101]: Codex
+              - generic [ref=f18e102]: OWNER
+      - main [ref=f18e105]:
+        - generic [ref=f18e107]:
+          - heading "ممنوع الوصول" [level=3] [ref=f18e108]
+          - paragraph [ref=f18e109]: ليس لديك الصلاحية المطلوبة للوصول لهذه الصفحة
+          - button "الانتقال لصفحتك الرئيسية" [ref=f18e110]
+          - button "العودة" [ref=f18e111]
+  - region "Notifications alt+T"

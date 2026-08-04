@@ -364,8 +364,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">
                 {replyingTo.fromMe
                   ? t("whatsapp.window.you")
-                  : replyingTo.participant
-                    ? getParticipantName(replyingTo.participant)
+                  : replyingTo.participant || replyingTo.participantName
+                    ? (replyingTo.participantName || getParticipantName(replyingTo.participant || ''))
                     : getContactName(selectedContact)}
               </p>
               <p className="line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">

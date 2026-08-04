@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from "react";
 import {
   returnService,
@@ -6,14 +6,7 @@ import {
   ReviewDisplayConfig,
 } from "../../services/returnService";
 import { toast } from "sonner";
-import {
-  Filter,
-  RefreshCw,
-  Clock,
-  Eye,
-  CalendarDays,
-  Package,
-} from "lucide-react";
+import { RefreshCw, Clock, Eye, Package, CalendarDays, Copy } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
 
@@ -114,6 +107,15 @@ const ReturnManagementPage: React.FC = () => {
   useEffect(() => {
     returnService.getCategories().then((res) => setCategories(res.data)).catch(() => {});
   }, []);
+
+  const copyTracking = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(t('returns.k_225'));
+    } catch {
+      toast.error(t('returns.k_226'));
+    }
+  };
 
   const getRatingBadge = (rating: string | undefined) => {
     if (!rating) return null;
@@ -278,7 +280,12 @@ const ReturnManagementPage: React.FC = () => {
               )}
               {displayConfig?.showTrackingColumn !== false && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  رقم التتبع
+                  {t('returns.k_221')}
+                </th>
+              )}
+              {displayConfig?.showFinancialColumn !== false && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {t('returns.k_227')}
                 </th>
               )}
               {displayConfig?.showDateColumn !== false && (
@@ -305,11 +312,11 @@ const ReturnManagementPage: React.FC = () => {
               </tr>
             ) : requests.length === 0 ? (
               <tr>
-                <td
-                  colSpan={99}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
-                >
-                  {t('returns.k_145')}
+                <td colSpan={99} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                    <Package size={40} className="opacity-40" />
+                    <span className="text-sm">{t('returns.k_145')}</span>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -392,12 +399,88 @@ const ReturnManagementPage: React.FC = () => {
                     </td>
                   )}
                   {displayConfig?.showTrackingColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" dir="ltr">
-                      {request.trackingNumber || "-"}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {request.trackingNumber ? (
+                        <div className="flex items-center gap-1.5" dir="ltr">
+                          <span
+                            className="text-sm text-gray-500 dark:text-gray-400 font-mono"
+                            title={t('returns.k_223')}
+                          >
+                            {request.trackingNumber}
+                          </span>
+                          <button
+                            onClick={() =>
+                              copyTracking(request.trackingNumber!)
+                            }
+                            className="text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
+                            title={t('returns.k_224')}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                          -
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  {displayConfig?.showFinancialColumn !== false && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {request.returnType && (
+                        <div className="mb-1.5 flex items-center gap-1 flex-wrap">
+                          <span
+                            className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30"
+                            title={request.returnType.code}
+                          >
+                            {request.returnType.name}
+                          </span>
+                          {request.shippingCompany?.name && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {request.shippingCompany.name}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {request.shippingReturnCost !== undefined &&
+                      request.shippingReturnCost !== null ||
+                      (request.settlementAmount !== undefined &&
+                        request.settlementAmount !== null) ? (
+                        <div className="text-xs space-y-0.5">
+                          {request.shippingReturnCost !== undefined &&
+                            request.shippingReturnCost !== null && (
+                              <div className="text-red-600 dark:text-red-400">
+                                {t('returns.k_228')}:{" "}
+                                {request.shippingReturnCost}{" "}
+                                {request.order?.currency || t('returns.k_22')}
+                              </div>
+                            )}
+                          {request.settlementAmount !== undefined &&
+                            request.settlementAmount !== null && (
+                              <div
+                                className={`font-medium ${
+                                  request.settlementAmount >= 0
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {t('returns.k_229')}: {request.settlementAmount}{" "}
+                                {request.order?.currency || t('returns.k_22')}
+                              </div>
+                            )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                          -
+                        </span>
+                      )}
                     </td>
                   )}
                   {displayConfig?.showDateColumn !== false && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                      title={t('returns.k_222')}
+                    >
                       {new Date(request.createdAt).toLocaleDateString()}
                     </td>
                   )}

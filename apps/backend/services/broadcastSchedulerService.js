@@ -61,12 +61,53 @@ class BroadcastSchedulerService {
 
     console.log('🚀 [BroadcastScheduler] Starting broadcast scheduler...');
 
+    // إعادة جدولة الحملات اللي انقطعت (كانت في منتصف الإرسال لما العملية ماتت)
+    this.resumeInterruptedCampaigns().catch(err =>
+      console.error('❌ [BroadcastScheduler] Resume interrupted campaigns failed:', err.message)
+    );
+
     // فحص كل 5 دقائق للحملات المجدولة (تقليل الضغط على قاعدة البيانات)
     this.cronJob = cron.schedule('*/5 * * * *', async () => {
       await this.checkScheduledCampaigns();
     });
 
     console.log('✅ [BroadcastScheduler] Scheduler started - checking every 5 minutes');
+  }
+
+  /**
+   * إعادة جدولة الحملات العالقة في حالة 'sending' (انقطعت العملية في منتصف الإرسال)
+   * — نرجعها لـ 'scheduled' عشان الـ cron يكمّلها من الـ pending بس (من غير تكرار إرسال)
+   */
+  async resumeInterruptedCampaigns() {
+    try {
+      const stuckCampaigns = await safeQuery(async () => {
+        return await getSharedPrismaClient().broadcastCampaign.findMany({
+          where: { status: 'sending' },
+          select: { id: true, name: true }
+        });
+      }, 5);
+
+      if (stuckCampaigns.length === 0) {
+        console.log('✅ [BroadcastScheduler] No interrupted campaigns to resume');
+        return;
+      }
+
+      console.log(`♻️ [BroadcastScheduler] Resuming ${stuckCampaigns.length} interrupted campaign(s)`);
+      for (const campaign of stuckCampaigns) {
+        await safeQuery(async () => {
+          return await getSharedPrismaClient().broadcastCampaign.update({
+            where: { id: campaign.id },
+            data: {
+              status: 'scheduled',
+              sentAt: null
+            }
+          });
+        }, 5);
+        console.log(`♻️ [BroadcastScheduler] Campaign ${campaign.id} (${campaign.name}) requeued for resume`);
+      }
+    } catch (error) {
+      console.error('❌ [BroadcastScheduler] Error resuming interrupted campaigns:', error.message);
+    }
   }
 
   /**
@@ -315,35 +356,63 @@ class BroadcastSchedulerService {
       });
     }, 5);
 
-    // إنشاء سجلات المستلمين
-    const recipients = conversations.map(conv => ({
-      campaignId: campaign.id,
-      conversationId: conv.id,
-      customerPhone: conv.customer.phone || '',
-      customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
-      messengerUserId: conv.customer.facebookId,
-      status: 'pending'
-    }));
+    // Resume-safe: إذا كانت الحملة انقطعت (status 'sending' عند crash) يكون المستلمين موجودين
+    // — نعيد استخدامهم ونكمل الـ pending بس من غير تكرار الإرسال
+    const existingRecipients = await safeQuery(async () => {
+      return await getSharedPrismaClient().broadcastRecipient.findMany({
+        where: { campaignId: campaign.id },
+        select: { conversationId: true, status: true }
+      });
+    }, 5);
+
+    const resuming = existingRecipients && existingRecipients.length > 0;
+
+    let recipients;
+    if (resuming) {
+      const statusByConv = new Map(existingRecipients.map(r => [r.conversationId, r.status]));
+      const pendingConvs = conversations.filter(c => statusByConv.get(c.id) === 'pending');
+      console.log(`♻️ [BroadcastScheduler] Campaign ${campaign.id} resuming — ${pendingConvs.length} pending of ${existingRecipients.length} existing recipients`);
+      recipients = pendingConvs.map(conv => ({
+        campaignId: campaign.id,
+        conversationId: conv.id,
+        customerPhone: conv.customer.phone || '',
+        customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
+        messengerUserId: conv.customer.facebookId,
+        status: 'pending'
+      }));
+      conversations = pendingConvs;
+    } else {
+      recipients = conversations.map(conv => ({
+        campaignId: campaign.id,
+        conversationId: conv.id,
+        customerPhone: conv.customer.phone || '',
+        customerName: `${conv.customer.firstName} ${conv.customer.lastName}`,
+        messengerUserId: conv.customer.facebookId,
+        status: 'pending'
+      }));
+    }
 
     if (recipients.length > 0) {
-      await safeQuery(async () => {
-        return await getSharedPrismaClient().broadcastRecipient.createMany({
-        data: recipients
-        });
-      }, 5);
+      if (!resuming) {
+        await safeQuery(async () => {
+          return await getSharedPrismaClient().broadcastRecipient.createMany({
+          data: recipients
+          });
+        }, 5);
+      }
     } else {
-      console.log('⚠️ [BroadcastScheduler] No recipients found for campaign');
-      
+      const hadAnySent = resuming && existingRecipients.some(r => r.status === 'sent');
+      const hadAnyPendingOrSent = resuming && existingRecipients.some(r => r.status === 'pending' || r.status === 'sent');
+      console.log('✅ [BroadcastScheduler] No pending recipients left — campaign already fully processed');
       await safeQuery(async () => {
         return await getSharedPrismaClient().broadcastCampaign.update({
         where: { id: campaign.id },
         data: {
-          status: 'failed',
-          failureReason: 'No active recipients found'
+          status: hadAnySent ? 'sent' : 'failed',
+          failureReason: hadAnyPendingOrSent ? null : 'All recipients failed during interrupted send'
         }
         });
       }, 5);
-      
       return;
     }
 
@@ -378,9 +447,30 @@ class BroadcastSchedulerService {
     }
 
     // إرسال الرسائل
-    let sentCount = 0;
-    let failedCount = 0;
+    let sentCount = resuming ? existingRecipients.filter(r => r.status === 'sent').length : 0;
+    let failedCount = resuming ? existingRecipients.filter(r => r.status === 'failed').length : 0;
     const totalRecipients = conversations.length;
+
+    // 🐢 Pacing حسب إعدادات الشركة (messagesPerMinute) — بيحمي من حظر Meta
+    // ويحترم الـ config الفعلي بدل التأخير الثابت 100ms
+    let sendDelayMs = 100;
+    try {
+      const bcastSettings = await safeQuery(async () => {
+        return await getSharedPrismaClient().broadcastSettings.findUnique({
+          where: { companyId: campaign.companyId },
+          select: { messagesPerMinute: true }
+        });
+      }, 3);
+      const mpm = Number(bcastSettings?.messagesPerMinute);
+      if (mpm && mpm > 0) {
+        sendDelayMs = Math.max(100, Math.floor(60000 / mpm));
+        console.log(`🐢 [BroadcastScheduler] Campaign ${campaign.id} paced at ${mpm} msg/min → ${sendDelayMs}ms between sends`);
+      } else {
+        console.log(`🐢 [BroadcastScheduler] Campaign ${campaign.id} no messagesPerMinute configured — using default ${sendDelayMs}ms`);
+      }
+    } catch (settingsErr) {
+      console.warn(`⚠️ [BroadcastScheduler] Could not load broadcast settings for pacing: ${settingsErr.message}`);
+    }
 
     const io = socketService.getIO();
     
@@ -696,8 +786,8 @@ class BroadcastSchedulerService {
           });
         }
 
-        // تأخير صغير لتجنب rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // تأخير وفق pacing الشركة لتجنب rate limiting
+        await new Promise(resolve => setTimeout(resolve, sendDelayMs));
 
       } catch (error) {
         console.error(`❌ [BroadcastScheduler] Error sending to ${conv.customer.firstName}:`, error.message);
@@ -734,11 +824,12 @@ class BroadcastSchedulerService {
     }
 
     // تحديث إحصائيات الحملة
+    const finalRecipientCount = resuming ? existingRecipients.length : recipients.length;
     await safeQuery(async () => {
       return await getSharedPrismaClient().broadcastCampaign.update({
       where: { id: campaign.id },
       data: {
-        recipientCount: recipients.length,
+        recipientCount: finalRecipientCount,
         sentCount: sentCount,
         failedCount: failedCount,
         deliveredCount: 0, // ponytail: starts at 0, updated by webhooks on actual delivery

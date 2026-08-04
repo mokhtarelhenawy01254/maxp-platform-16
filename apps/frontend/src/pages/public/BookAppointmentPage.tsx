@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 
@@ -8,9 +8,20 @@ interface Branch {
   workingDays?: Record<string, string>;
 }
 
+interface ServiceCategory {
+  id: string; name: string; color?: string; icon?: string; serviceCount?: number;
+}
+
+interface DoctorBrief {
+  id: string; name: string; title?: string; specialty?: string; fee?: number;
+}
+
 interface Service {
   id: string; name: string; description?: string;
   hasPackages?: boolean; packages?: any[]; requiresConsultation?: boolean;
+  basePrice?: number; durationMinutes?: number;
+  category?: { id: string; name: string; color?: string; icon?: string } | null;
+  doctors?: DoctorBrief[];
 }
 
 interface Slot {
@@ -30,6 +41,7 @@ const BookAppointmentPage: React.FC = () => {
   const [companyName, setCompanyName] = useState("");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -37,7 +49,9 @@ const BookAppointmentPage: React.FC = () => {
   const [bookingResult, setBookingResult] = useState<any>(null);
 
   const [branchId, setBranchId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [serviceId, setServiceId] = useState("");
+  const [doctorId, setDoctorId] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerGender, setCustomerGender] = useState<"male" | "female" | "">("");
@@ -45,37 +59,58 @@ const BookAppointmentPage: React.FC = () => {
   const [selectedSlot, setSelectedSlot] = useState("");
   const [error, setError] = useState("");
 
+  interface ApiResponse<T> { success: boolean; data: T; error?: string; }
+  const getPublic = async <T,>(path: string, params: Record<string, unknown>): Promise<T> => {
+    const res = await apiClient.get<ApiResponse<T>>(path, { params });
+    if (!res.data.success) throw new Error(res.data.error || "فشل الطلب");
+    return res.data.data;
+  };
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
     Promise.all([
-      apiClient.get("/public/booking/info", { params: { slug } }),
-      apiClient.get("/public/booking/branches", { params: { slug } }),
-    ]).then(([infoRes, branchesRes]) => {
-      if (infoRes.data.success) setCompanyName(infoRes.data.data.name);
-      if (branchesRes.data.success) setBranches(branchesRes.data.data);
+      getPublic<{ name: string }>("/public/booking/info", { slug }),
+      getPublic<Branch[]>("/public/booking/branches", { slug }),
+      getPublic<ServiceCategory[]>("/public/booking/service-categories", { slug }),
+    ]).then(([info, branchesData, cats]) => {
+      setCompanyName(info.name);
+      setBranches(branchesData);
+      setCategories(cats);
     }).catch(() => setError("تعذر تحميل بيانات المركز")).finally(() => setLoading(false));
   }, [slug]);
 
   useEffect(() => {
     if (!branchId || !slug) { setServices([]); return; }
-    apiClient.get("/public/booking/services", { params: { slug, branchId } })
-      .then(res => { if (res.data.success) setServices(res.data.data); })
+    getPublic<Service[]>("/public/booking/services", { slug, branchId })
+      .then(setServices)
       .catch(() => {});
   }, [branchId, slug]);
 
   useEffect(() => {
     if (!branchId || !selectedDate || !customerGender || !slug) { setSlots([]); return; }
-    apiClient.get("/public/booking/slots", { params: { slug, branchId, date: selectedDate, gender: customerGender } })
-      .then(res => { if (res.data.success) setSlots(res.data.data); })
+    getPublic<Slot[]>("/public/booking/slots", { slug, branchId, date: selectedDate, gender: customerGender, serviceId: serviceId || undefined })
+      .then(setSlots)
       .catch(() => {});
-  }, [branchId, selectedDate, customerGender, slug]);
+  }, [branchId, selectedDate, customerGender, serviceId, slug]);
+
+  const filteredServices = useMemo(() => {
+    if (!categoryId) return services;
+    return services.filter(s => s.category?.id === categoryId);
+  }, [services, categoryId]);
+
+  const selectedService = services.find(s => s.id === serviceId);
+  const selectedServiceDoctors = selectedService?.doctors || [];
+  const servicePrice = selectedService?.basePrice || selectedService?.packages?.[0]?.price;
 
   const handleNextToSlots = () => {
     if (!branchId) { setError("اختر الفرع"); return; }
     if (!customerName.trim()) { setError("أدخل الاسم"); return; }
     if (!customerPhone.trim()) { setError("أدخل رقم الجوال"); return; }
     if (!customerGender) { setError("اختر الجنس"); return; }
+    if (doctorId && selectedServiceDoctors.length > 0 && !selectedServiceDoctors.some(d => d.id === doctorId)) {
+      setError("هذا الطبيب لا يقدم هذه الخدمة"); return;
+    }
     setError(""); setStep("slots");
   };
 
@@ -83,8 +118,8 @@ const BookAppointmentPage: React.FC = () => {
     if (!selectedSlot) { setError("اختر الوقت"); return; }
     setSubmitting(true); setError("");
     try {
-      const res = await apiClient.post("/public/booking/appointments", {
-        slug, branchId, serviceId: serviceId || undefined,
+      const res = await apiClient.post<ApiResponse<any>>("/public/booking/appointments", {
+        slug, branchId, serviceId: serviceId || undefined, doctorId: doctorId || undefined,
         customerName, customerPhone, customerGender,
         appointmentDate: selectedDate, startTime: selectedSlot,
       });
@@ -134,13 +169,70 @@ const BookAppointmentPage: React.FC = () => {
             </div>
 
             {services.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">الخدمة</label>
-                <select value={serviceId} onChange={e => setServiceId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500">
-                  <option value="">اختر الخدمة (اختياري)</option>
-                  {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+              <div className="space-y-4">
+                {categories.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">القسم</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => { setCategoryId(""); setServiceId(""); }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!categoryId ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}>
+                        الكل
+                      </button>
+                      {categories.map(c => (
+                        <button key={c.id} type="button" onClick={() => { setCategoryId(c.id); setServiceId(""); }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${categoryId === c.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}>
+                          {c.icon && <span className="ml-1">{c.icon}</span>}{c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">الخدمة</label>
+                  <select value={serviceId} onChange={e => { setServiceId(e.target.value); setDoctorId(""); }}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر الخدمة</option>
+                    {filteredServices.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}{s.basePrice ? ` — ${s.basePrice} ج.م` : (s.packages?.[0]?.price ? ` — ${s.packages[0].price} ج.م` : "")}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedService && (
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {servicePrice != null && servicePrice > 0 && (
+                        <span className="bg-green-50 text-green-700 border border-green-200 rounded-full px-2.5 py-1 font-medium">السعر: {servicePrice} ج.م</span>
+                      )}
+                      {selectedService.durationMinutes && (
+                        <span className="bg-gray-100 text-gray-600 rounded-full px-2.5 py-1">المدة: {selectedService.durationMinutes} دقيقة</span>
+                      )}
+                      {selectedService.requiresConsultation && (
+                        <span className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1">يتطلب استشارة</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {selectedService && selectedServiceDoctors.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">الطبيب</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => setDoctorId("")}
+                        className={`px-3 py-2 rounded-xl border-2 text-sm transition-colors ${!doctorId ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                        أي طبيب
+                      </button>
+                      {selectedServiceDoctors.map(d => (
+                        <button key={d.id} type="button" onClick={() => setDoctorId(d.id)}
+                          className={`px-3 py-2 rounded-xl border-2 text-sm transition-colors ${doctorId === d.id ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                          {d.title && <span className="ml-1">{d.title}</span>}{d.name}
+                          {d.specialty && <div className="text-xs mt-0.5 text-gray-400">{d.specialty}</div>}
+                          {d.fee ? <div className="text-xs mt-0.5 text-green-600">{d.fee} ج.م</div> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -240,6 +332,7 @@ const BookAppointmentPage: React.FC = () => {
               <p><span className="text-gray-500">الجوال:</span> {bookingResult.customerPhone}</p>
               <p><span className="text-gray-500">الفرع:</span> {bookingResult.branchName}</p>
               {bookingResult.serviceName && <p><span className="text-gray-500">الخدمة:</span> {bookingResult.serviceName}</p>}
+              {bookingResult.doctorName && <p><span className="text-gray-500">الطبيب:</span> {bookingResult.doctorName}</p>}
               <p><span className="text-gray-500">التاريخ:</span> {bookingResult.appointmentDate}</p>
               <p><span className="text-gray-500">الوقت:</span> {bookingResult.startTime}</p>
             </div>

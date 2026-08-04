@@ -365,3 +365,6 @@ dist-check/
 # Facebook Local OAuth Config
 apps/backend/data/facebook-oauth-config.json
 
+
+# Browser-automation / dogfooding output (transient)
+dogfood-output/

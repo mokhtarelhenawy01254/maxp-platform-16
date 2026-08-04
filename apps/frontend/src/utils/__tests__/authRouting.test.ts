@@ -70,7 +70,7 @@ describe("getPostAuthDestination", () => {
         role: "AGENT",
         settings: JSON.stringify({ defaultPage: "/apps" }),
       }),
-    ).toBe("/company-dashboard");
+    ).toBe("/apps");
   });
 
   it("falls back to localStorage maxp-default-page when settings missing", () => {
@@ -91,13 +91,13 @@ describe("getPostAuthDestination", () => {
   });
 
   it("returns /super-admin/dev-dashboard for legacy 'Team Lead' only when explicitly SUPER_ADMIN-like is NOT the case", () => {
-    expect(getPostAuthDestination({ role: "Team Lead" })).toBe("/company-dashboard");
+    expect(getPostAuthDestination({ role: "Team Lead" })).toBe("/apps");
   });
 
-  it("returns /company-dashboard for regular company roles", () => {
-    expect(getPostAuthDestination({ role: "MODERATOR" })).toBe("/company-dashboard");
-    expect(getPostAuthDestination({ role: "COMPANY_ADMIN" })).toBe("/company-dashboard");
-    expect(getPostAuthDestination({ role: "EMPLOYEE" })).toBe("/company-dashboard");
+  it("returns /apps (app hub) for regular company roles", () => {
+    expect(getPostAuthDestination({ role: "MODERATOR" })).toBe("/apps");
+    expect(getPostAuthDestination({ role: "COMPANY_ADMIN" })).toBe("/apps");
+    expect(getPostAuthDestination({ role: "EMPLOYEE" })).toBe("/apps");
   });
 
   it("returns /marketplace for unknown roles and null users", () => {
@@ -130,7 +130,7 @@ describe("resolvePostAuthDestination precedence", () => {
   it("ignores state.from when the user no longer has access", () => {
     const user = companyUser({ permissions: ["orders.view"] });
     expect(resolvePostAuthDestination(user, "/customers/42")).toBe(
-      "/company-dashboard",
+      "/apps",
     );
   });
 
@@ -143,7 +143,7 @@ describe("resolvePostAuthDestination precedence", () => {
   it("does not resume a last path the user cannot access anymore", () => {
     const user = companyUser({ permissions: [] });
     saveLastPath(user, "/customers");
-    expect(resolvePostAuthDestination(user)).toBe("/company-dashboard");
+    expect(resolvePostAuthDestination(user)).toBe("/apps");
   });
 
   it("saves last path per user+company", () => {

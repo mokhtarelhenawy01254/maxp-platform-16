@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   MagnifyingGlassIcon,
   XMarkIcon,
@@ -168,80 +174,118 @@ const SimplifiedProductSelectionModal: React.FC<
   const [selectedAttributes, setSelectedAttributes] = useState<
     Record<string, string>
   >({});
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const skipNextSearchRef = useRef(false);
 
-  const fetchProducts = useCallback(async (query: string = "") => {
-    try {
-      setLoading(true);
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      };
+  const fetchProducts = useCallback(
+    async (query: string = "", targetPage: number = 1, append = false) => {
+      try {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+        const token = authService.getAccessToken();
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        };
 
-      const params = new URLSearchParams({
-        page: "1",
-        limit: "30",
-      });
-
-      const response = await fetch(
-        `${config.apiUrl}/products?${params.toString()}`,
-        { headers },
-      );
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const mappedProducts: Product[] = data.data.map((p: any) => {
-          return {
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            stock: p.stock,
-            sku: p.sku,
-            image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
-            variants: (p.variants || p.productVariants || []).map((v: any) => ({
-              ...v,
-              image: getPrimaryImageUrl(v.image, v.images),
-            })),
-          };
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          limit: "30",
         });
+        if (query.trim()) {
+          params.set("search", query.trim());
+        }
 
-        const filtered = query
-          ? mappedProducts.filter(
-              (p) =>
-                String(p.name || "")
-                  .toLowerCase()
-                  .includes(query.toLowerCase()) ||
-                String(p.sku || "")
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-            )
-          : mappedProducts;
+        const response = await fetch(
+          `${config.apiUrl}/products?${params.toString()}`,
+          { headers },
+        );
+        const data = await response.json();
 
-        setProducts(filtered);
+        if (data.success && data.data) {
+          const mappedProducts: Product[] = data.data.map((p: any) => {
+            return {
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              stock: p.stock,
+              sku: p.sku,
+              image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
+              variants: (p.variants || p.productVariants || []).map((v: any) => ({
+                ...v,
+                image: getPrimaryImageUrl(v.image, v.images),
+              })),
+            };
+          });
+
+          setProducts((prev) =>
+            append ? [...prev, ...mappedProducts] : mappedProducts,
+          );
+
+          const total = data.pagination?.total ?? mappedProducts.length;
+          const totalPages =
+            data.pagination?.totalPages ??
+            Math.max(1, Math.ceil(total / 30));
+          setHasMore(targetPage < totalPages && mappedProducts.length > 0);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        tToast.error("SimplifiedProductSelectionModal.failed_fetch_c827");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      tToast.error("SimplifiedProductSelectionModal.failed_fetch_c827");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isOpen) {
-      fetchProducts();
+      skipNextSearchRef.current = true;
+      setPage(1);
+      setHasMore(false);
       setSearchQuery("");
       setSelectedProduct(null);
       setSelectedAttributes({});
+      fetchProducts("", 1);
     }
   }, [isOpen, fetchProducts]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
     const timeoutId = setTimeout(() => {
-      if (searchQuery) fetchProducts(searchQuery);
+      setPage(1);
+      setSelectedProduct(null);
+      setSelectedAttributes({});
+      if (listContainerRef.current) {
+        listContainerRef.current.scrollTop = 0;
+      }
+      fetchProducts(searchQuery, 1);
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, fetchProducts]);
+  }, [searchQuery, fetchProducts, isOpen]);
+
+  const loadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(searchQuery, nextPage, true);
+  }, [loading, loadingMore, hasMore, page, searchQuery, fetchProducts]);
+
+  const handleScroll = useCallback(() => {
+    const el = listContainerRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 150) {
+      loadMore();
+    }
+  }, [loadMore]);
 
   const handleProductClick = (product: Product) => {
     if (product.variants && product.variants.length > 0) {
@@ -356,7 +400,11 @@ const SimplifiedProductSelectionModal: React.FC<
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div
+              ref={listContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-4 custom-scrollbar"
+            >
               {loading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (
@@ -372,69 +420,85 @@ const SimplifiedProductSelectionModal: React.FC<
                   <p className="text-lg">لا توجد منتجات مطابقة</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => handleProductClick(product)}
-                      className={`group relative flex flex-col bg-white dark:bg-gray-800 border-2 rounded-xl overflow-hidden transition-all cursor-pointer h-full ${
-                        selectedProduct?.id === product.id
-                          ? "border-blue-600 dark:border-blue-500 ring-2 ring-blue-50 dark:ring-blue-900/20"
-                          : "border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md"
-                      }`}
-                    >
-                      <div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
-                        {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-200 dark:text-gray-700">
-                            <ArchiveBoxIcon className="w-12 h-12" />
-                          </div>
-                        )}
-                        {product.variants.length > 0 && (
-                          <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg shadow-sm">
-                            خيارات
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
-                          {product.name}
-                        </h3>
-                        <div className="flex justify-between items-center">
-                          <span className="text-blue-600 dark:text-blue-400 font-bold">
-                            {product.price} ج.م
-                          </span>
-                          <div className="text-[10px] text-gray-400 truncate max-w-[60px]">
-                            SKU: {product.sku || "N/A"}
-                          </div>
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {products.map((product) => (
+                      <div
+                        key={product.id}
+                        onClick={() => handleProductClick(product)}
+                        className={`group relative flex flex-col bg-white dark:bg-gray-800 border-2 rounded-xl overflow-hidden transition-all cursor-pointer h-full ${
+                          selectedProduct?.id === product.id
+                            ? "border-blue-600 dark:border-blue-500 ring-2 ring-blue-50 dark:ring-blue-900/20"
+                            : "border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md"
+                        }`}
+                      >
+                        <div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-200 dark:text-gray-700">
+                              <ArchiveBoxIcon className="w-12 h-12" />
+                            </div>
+                          )}
+                          {product.variants.length > 0 && (
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg shadow-sm">
+                              خيارات
+                            </div>
+                          )}
                         </div>
-                        {/* Stock indicator */}
-                        {product.stock !== undefined && (
-                          <div className="mt-1">
-                            {product.stock <= 0 ? (
-                              <span className="text-[10px] text-red-500 font-semibold">
-                                نفذ من المخزون
-                              </span>
-                            ) : product.stock < 5 ? (
-                              <span className="text-[10px] text-orange-500 font-semibold">
-                                متبقي {product.stock}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-green-500 font-semibold">
-                                متوفر
-                              </span>
-                            )}
+                        <div className="p-3 bg-white dark:bg-gray-800">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
+                            {product.name}
+                          </h3>
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-600 dark:text-blue-400 font-bold">
+                              {product.price} ج.م
+                            </span>
+                            <div className="text-[10px] text-gray-400 truncate max-w-[60px]">
+                              SKU: {product.sku || "N/A"}
+                            </div>
                           </div>
-                        )}
+                          {/* Stock indicator */}
+                          {product.stock !== undefined && (
+                            <div className="mt-1">
+                              {product.stock <= 0 ? (
+                                <span className="text-[10px] text-red-500 font-semibold">
+                                  نفذ من المخزون
+                                </span>
+                              ) : product.stock < 5 ? (
+                                <span className="text-[10px] text-orange-500 font-semibold">
+                                  متبقي {product.stock}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-green-500 font-semibold">
+                                  متوفر
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {loadingMore && (
+                    <div className="flex justify-center py-6">
+                      <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
                     </div>
-                  ))}
-                </div>
+                  )}
+                  {!loadingMore && hasMore && (
+                    <button
+                      onClick={loadMore}
+                      className="w-full mt-4 py-3 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold hover:border-blue-400 hover:text-blue-500 transition-colors"
+                    >
+                      عرض المزيد من المنتجات
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

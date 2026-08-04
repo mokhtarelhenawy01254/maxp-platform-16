@@ -62,43 +62,52 @@ async function runOrderStatusAutoChange() {
               updatedAt: { lte: cutoffTime },
             },
             select: { id: true, status: true, updatedAt: true },
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.2): حدّ الدفعة —
+            // استدعاء updateOrderStatus لكل طلب أبطأ من updateMany، والكرون يعمل
+            // كل دقيقة فسيلحق بالدفعات اللاحقة.
+            take: 50,
           });
 
           if (orders.length === 0) continue;
 
           console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Company ${companyId}: Found ${orders.length} orders to transition ${rule.fromStatus} → ${rule.toStatus}`);
 
-          // Batch update
-          await prisma.order.updateMany({
-            where: {
-              id: { in: orders.map(o => o.id) },
-              status: rule.fromStatus, // double-check to avoid race conditions
-            },
-            data: {
-              status: rule.toStatus,
-              updatedAt: now,
-            },
-          });
+          // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.2):
+          // مرّ عبر updateOrderStatus لضمان: إشعارات واتساب + metadata.preparationStatus +
+          // commission/loyalty/invoice side-effects.
+          // ملاحظة (تصحيح §3.1): updateOrderStatus يكتب OrderStatusHistory متداخلاً
+          // (statusHistory.create داخل order.update — orderService.js) — لذا لا createMany منفصل
+          // لتجنّب صفّي history مكررين. changedBy = 'SYSTEM_AUTO' عبر userId.
+          const orderService = require('../services/orderService');
+          const reason = `Auto-changed by rule: after ${rule.waitTime} ${rule.timeUnit}`;
 
-          // Log status history for each order
-          const historyEntries = orders.map(order => ({
-            orderId: order.id,
-            oldStatus: rule.fromStatus,
-            status: rule.toStatus,
-            changedBy: 'SYSTEM_AUTO',
-            reason: `Auto-changed by rule: after ${rule.waitTime} ${rule.timeUnit}`,
-            createdAt: now,
-          }));
+          let updated = 0;
+          let failed = 0;
 
-          try {
-            await prisma.orderStatusHistory.createMany({
-              data: historyEntries,
-              skipDuplicates: true,
-            });
-          } catch (historyErr) {
-            // OrderStatusHistory may not exist on all deployments - non-fatal
-            console.warn('[ORDER-STATUS-AUTO-CHANGE-CRON] Could not write status history:', historyErr.message);
+          for (const order of orders) {
+            try {
+              await orderService.setCompanyId(companyId).updateOrderStatus(
+                order.id,           // orderNumber (يقبل id أو orderNumber)
+                companyId,          // companyId
+                rule.toStatus,      // status
+                reason,             // notes
+                'SYSTEM_AUTO',      // userId → changedBy في OrderStatusHistory
+                'System Automation',// userName
+                null,               // existingOrderObject
+                false,              // isOverride
+                {                   // options
+                  skipTransitionValidation: true, // القاعدة موثوقة؛ تجاوز فحص allowedNextStatuses
+                  skipCallAttemptGuard: true,     // لا يوجد مكالمة عميل في الأتمتة
+                }
+              );
+              updated++;
+            } catch (err) {
+              failed++;
+              console.error(`[ORDER-STATUS-AUTO-CHANGE-CRON] Order ${order.id} failed:`, err.message);
+            }
           }
+
+          console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Rule ${rule.fromStatus}→${rule.toStatus}: ${updated} ok, ${failed} failed`);
 
         } catch (ruleErr) {
           console.error(`[ORDER-STATUS-AUTO-CHANGE-CRON] Error processing rule ${rule.id}:`, ruleErr.message);

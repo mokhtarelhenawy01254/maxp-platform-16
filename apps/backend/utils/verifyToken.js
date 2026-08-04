@@ -269,7 +269,7 @@ const authenticateToken = async (req, res, next) => {
     let effectiveCompanyId = companyId || user.companyId || null;
     let effectiveRole = user.role || decoded.role;
 
-    if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string' && effectiveCompanyId.length > 5) {
+    if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {
       const membership = await executeWithRetry(async () =>
         prisma.userCompany.findUnique({
           where: {
@@ -296,9 +296,12 @@ const authenticateToken = async (req, res, next) => {
         );
 
         if (!allowLegacyPrimary) {
-          console.warn(`⚠️ [VERIFY-TOKEN] User ${user.id} has no active membership for company ${effectiveCompanyId} — continuing for downstream authorization checks (path=${req.path})`);
-          // Do NOT block here — let downstream middleware (requireCompanyAccess, requireOwnerRole, requireRole)
-          // handle authorization. This allows owner routes to check ALL companies, not just the JWT context.
+          console.error(`🚫 [VERIFY-TOKEN] 403 ACCESS_REVOKED | userId=${user.id} | companyId=${effectiveCompanyId} | path=${req.path}`);
+          return res.status(403).json({
+            success: false,
+            message: 'ليس لديك صلاحية للوصول لهذه الشركة',
+            code: 'ACCESS_REVOKED'
+          });
         }
       } else {
         effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;

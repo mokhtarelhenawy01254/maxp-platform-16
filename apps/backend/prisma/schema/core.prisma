@@ -122,6 +122,8 @@ model Company {
   facebookProductCatalogs         FacebookProductCatalog[]
   faqs                            Faq[]
   footerSettings                  FooterSettings?
+  cartConversionLogs              CartConversionLog[]
+  cartContactLogs                 CartContactLog[]
   guestCarts                      GuestCart[]
   guestOrders                     GuestOrder[]
   homepageTemplates               HomepageTemplate[]
@@ -209,6 +211,7 @@ model Company {
   returnReasons                   ReturnReason[]
   returnRequests                  ReturnRequest[]
   returnSettings                  ReturnSettings?
+  returnTypes                     ReturnType[]
   sentMessageStats                SentMessageStat[]
   shippingZones                   ShippingZone[]
   storePages                      StorePage[]
@@ -285,6 +288,8 @@ model Company {
    bookingBranches                  BookingBranch[]
    bookingDoctors                   BookingDoctor[]
    bookingServices                  BookingService[]
+   bookingServiceCategories         BookingServiceCategory[]
+   bookingDoctorServices            BookingDoctorService[]
    doctorAvailabilities             DoctorAvailability[]
    patients                         Patient[]
    medicalInvoices                  MedicalInvoice[]

@@ -7,6 +7,7 @@ router.use(verifyToken.authenticateToken);
 
 const DEFAULT_USER_SETTINGS = {
   sidebarLayout: null,
+  appDashboardFavorites: {},
 };
 
 router.get('/', async (req, res) => {

@@ -5,7 +5,7 @@ const { updateConversationLastMessageStatus, resetConversationUnreadCount } = re
 const { isPermissionError, getPermissionErrorMessage } = require('../utils/dbPermissionHelper');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
 const {
-  shouldStrictlyEnforceMetaWebhookSignature,
+  shouldStrictlyEnforceFacebookWebhookSignature,
   verifyMetaWebhookSignature
 } = require('../utils/webhookSignature');
 const { getFacebookAppSecret } = require('../config/facebookAppConfig');
@@ -139,7 +139,7 @@ const postWebhook = async (req, res) => {
         ? 500
         : 401;
 
-    if (shouldStrictlyEnforceMetaWebhookSignature()) {
+    if (shouldStrictlyEnforceFacebookWebhookSignature()) {
       console.warn(`🔒 [WEBHOOK] Strict mode enabled - rejecting unsigned webhook`);
       return res.status(statusCode).json({
         success: false,

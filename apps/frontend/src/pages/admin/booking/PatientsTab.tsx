@@ -1,7 +1,8 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 ;
 import { BookingPatient } from "./shared";
-import { Check, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Check, Eye, Pencil, Plus, Search, Trash2, ExternalLink } from 'lucide-react'
 import PatientModal from "./PatientModal";
 
 interface Props {
@@ -24,6 +25,7 @@ export default function PatientsTab({
   onView, onEdit, onToggleActive, onDelete,
   modalPatient, onModalClose, onSave
 }: Props) {
+  const navigate = useNavigate();
   const filtered = useMemo(() => patients.filter(p => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -56,6 +58,7 @@ export default function PatientsTab({
               <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">الزيارات: {p.visitCount ?? 0}</p>
               <div className="flex gap-2">
                 <button onClick={() => onView(p.id)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><Eye className="w-3.5 h-3.5 inline ml-1" />عرض</button>
+                <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="text-xs px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50"><ExternalLink className="w-3.5 h-3.5 inline ml-1" />صفحة</button>
                 <button onClick={() => onEdit(p)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><Pencil className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                 <button onClick={() => onToggleActive(p.id, p.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${p.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{p.isActive ? "تعطيل" : "تفعيل"}</button>
                 <button onClick={() => onDelete(p.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><Trash2 className="w-3.5 h-3.5 inline ml-1" />حذف</button>
@@ -78,6 +81,7 @@ export default function PatientsTab({
                 <td className="py-3 px-4">
                   <div className="flex gap-1">
                     <button onClick={() => onView(p.id)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="عرض الملف"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="فتح صفحة مستقلة"><ExternalLink className="w-4 h-4" /></button>
                     <button onClick={() => onEdit(p)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => onToggleActive(p.id, p.isActive)} className={`p-1.5 rounded ${p.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`} title={p.isActive ? "تعطيل" : "تفعيل"}><Check className="w-4 h-4" /></button>
                     <button onClick={() => onDelete(p.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>

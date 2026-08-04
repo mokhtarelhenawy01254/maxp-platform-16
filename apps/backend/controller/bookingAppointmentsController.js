@@ -89,13 +89,20 @@ const getAvailableSlots = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { branchId, date, gender, doctorId } = req.query;
+    const { branchId, date, gender, doctorId, serviceId } = req.query;
     if (!branchId || !date) {
       return res.status(400).json({ success: false, error: 'معرف الفرع والتاريخ مطلوبان' });
     }
 
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
+
+    // Service duration (default 30 minutes)
+    let serviceDuration = BOOKING_SLOT_DURATION;
+    if (serviceId) {
+      const service = await getSharedPrismaClient().bookingService.findFirst({ where: { id: serviceId, companyId } });
+      if (service) serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
+    }
 
     const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
     branch.workingDays = tryParse(branch.workingDays);
@@ -109,7 +116,7 @@ const getAvailableSlots = async (req, res) => {
       const genderMap = branch.genderDays;
       const genderLower = gender.toLowerCase();
       const allowedDays = genderLower === 'male' ? genderMap.male : genderMap.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.json({ success: true, data: [], message: 'اليوم غير متاح لهذا الجنس' });
       }
     }
@@ -150,40 +157,43 @@ const getAvailableSlots = async (req, res) => {
     // Max bookings per slot from branch config
     const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
 
-    // Count existing appointments per time window (30-min bucket)
-    const countInWindow = (time) => {
-      const [h, m] = time.split(':').map(Number);
-      const windowStart = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-      const windowEndM = m + BOOKING_SLOT_DURATION;
-      const windowEnd = `${(h + Math.floor(windowEndM / 60)).toString().padStart(2, '0')}:${(windowEndM % 60).toString().padStart(2, '0')}`;
-      return existingAppointments.filter(apt =>
-        apt.startTime === windowStart || (apt.endTime && apt.endTime > windowStart && apt.startTime < windowEnd)
-      ).length;
+    // Slot occupies [start, start+duration); a candidate is free when it does not overlap any existing slot
+    const overlapsAny = (startTimeStr, durationMin) => {
+      const [sh, sm] = startTimeStr.split(':').map(Number);
+      const startMinTotal = sh * 60 + sm;
+      const endMinTotal = startMinTotal + durationMin;
+      for (const apt of existingAppointments) {
+        const [ah, am] = apt.startTime.split(':').map(Number);
+        const aptStart = ah * 60 + am;
+        let aptEnd = aptStart + BOOKING_SLOT_DURATION;
+        if (apt.endTime) {
+          const [eh, em] = apt.endTime.split(':').map(Number);
+          aptEnd = eh * 60 + em;
+        }
+        if (startMinTotal < aptEnd && endMinTotal > aptStart) return true;
+      }
+      return false;
     };
 
-    // Generate slots within effective working hours [startHour, endHour)
+    const countAtStart = (startTimeStr) => existingAppointments.filter(a => a.startTime === startTimeStr).length;
+
+    // Generate candidate slots within [startHour, endHour) aligned to the service duration
     const slots = [];
     const effectiveEndHour = Math.min(endHour, parseInt(BOOKING_LAST_SLOT.split(':')[0]));
-    const lastSlotHour = Math.max(startHour, effectiveEndHour);
-
-    // First pass: full hours
-    for (let hour = startHour; hour < lastSlotHour; hour++) {
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      const endTimeString = `${(hour + 1).toString().padStart(2, '0')}:00`;
-      const booked = countInWindow(timeString);
-      slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
-    }
-
-    // If all full hours are at max, try half-hour slots
-    const allFull = slots.every(s => !s.available);
-    if (allFull) {
-      for (let hour = startHour; hour < lastSlotHour; hour++) {
-        const timeString = `${hour.toString().padStart(2, '0')}:30`;
-        const endHourTime = hour + 1;
-        const endTimeString = `${endHourTime.toString().padStart(2, '0')}:30`;
-        const booked = countInWindow(timeString);
-        slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
-      }
+    const endMinTotal = effectiveEndHour * 60;
+    for (let minTotal = startHour * 60; minTotal + serviceDuration <= endMinTotal; minTotal += 30) {
+      const h = Math.floor(minTotal / 60);
+      const m = minTotal % 60;
+      const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const endH = Math.floor((minTotal + serviceDuration) / 60);
+      const endM = (minTotal + serviceDuration) % 60;
+      const endTimeString = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      const booked = countAtStart(timeString);
+      slots.push({
+        startTime: timeString, endTime: endTimeString, duration: serviceDuration,
+        available: !overlapsAny(timeString, serviceDuration) && booked < maxPerSlot,
+        bookedCount: booked, maxPerSlot
+      });
     }
 
     res.json({ success: true, data: slots });
@@ -220,6 +230,9 @@ const createAppointment = async (req, res) => {
       customerGender,
       customerEmail,
       customerId: body.customerId || undefined,
+      nationalId: body.nationalId || undefined,
+      nationalIdImage: body.nationalIdImage || undefined,
+      address: body.address || undefined,
     });
 
     const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
@@ -229,12 +242,12 @@ const createAppointment = async (req, res) => {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];
       const genderLower = customerGender.toLowerCase();
       const allowedDays = genderLower === 'male' ? branch.genderDays.male : branch.genderDays.female;
-      if (allowedDays && !allowedDays.includes(dayName)) {
+      if (allowedDays && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
         return res.status(400).json({ success: false, error: 'اليوم غير متاح لهذا الجنس' });
       }
     }
 
-    // Check slot availability (count-based, respect maxBookingsPerSlot)
+    // Check slot availability (count-based, respect maxBookingsPerSlot) with real overlap check
     const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
     const existingCount = await getSharedPrismaClient().appointment.count({
       where: {
@@ -245,6 +258,38 @@ const createAppointment = async (req, res) => {
       }
     });
     if (existingCount >= maxPerSlot) return res.status(400).json({ success: false, error: `هذا الوقت ممتلئ (الحد الأقصى: ${maxPerSlot})` });
+
+    // Resolve service duration for the appointment
+    let serviceDuration = BOOKING_SLOT_DURATION;
+    if (serviceId) {
+      const service = await getSharedPrismaClient().bookingService.findFirst({ where: { id: serviceId, companyId } });
+      if (service) serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
+    }
+
+    // Reject if the requested slot overlaps an existing active appointment in the same branch/doctor
+    const overlapping = await getSharedPrismaClient().appointment.findMany({
+      where: {
+        companyId, branchId,
+        ...(doctorId ? { doctorId } : {}),
+        appointmentDate: new Date(appointmentDate),
+        status: { notIn: ['cancelled', 'no_show'] }
+      },
+      select: { startTime: true, endTime: true }
+    });
+    const [reqSH, reqSM] = startTime.split(':').map(Number);
+    const reqStartMin = reqSH * 60 + reqSM;
+    const reqEndMin = reqStartMin + serviceDuration;
+    const hasOverlap = overlapping.some(apt => {
+      const [ah, am] = apt.startTime.split(':').map(Number);
+      const aptStart = ah * 60 + am;
+      let aptEnd = aptStart + BOOKING_SLOT_DURATION;
+      if (apt.endTime) {
+        const [eh, em] = apt.endTime.split(':').map(Number);
+        aptEnd = eh * 60 + em;
+      }
+      return reqStartMin < aptEnd && reqEndMin > aptStart;
+    });
+    if (hasOverlap) return res.status(400).json({ success: false, error: 'هذا الوقت متعارض مع موعد موجود' });
 
     // Doctor availability gate when a specific doctor is booked
     if (doctorId) {
@@ -261,7 +306,7 @@ const createAppointment = async (req, res) => {
       }
     }
 
-    const duration = BOOKING_SLOT_DURATION;
+    const duration = serviceDuration;
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const endMin = startMinute + duration;
     const endH = startHour + Math.floor(endMin / 60);

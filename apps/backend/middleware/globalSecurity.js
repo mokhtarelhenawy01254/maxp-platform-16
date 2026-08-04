@@ -493,6 +493,12 @@ const PUBLIC_ROUTES = [
   // Parent Portal (public login endpoint)
   'POST /api/v1/education/parent-portal/login',
 
+  // Booking Doctor Portal (public login endpoint)
+  'POST /api/v1/booking/doctor-portal/login',
+
+  // Booking Patient Portal (public login endpoint)
+  'POST /api/v1/booking/patient-portal/login',
+
   // Public Support
   'GET /api/v1/support/faq',
 

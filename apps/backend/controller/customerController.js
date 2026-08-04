@@ -1256,6 +1256,29 @@ const getCustomerDetails = async (req, res) => {
       }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
 
+    // جلب بيانات الولاء (النقاط)
+    const loyaltyRecords = await getSharedPrismaClient().customerLoyaltyRecord.findMany({
+      where: { customerId, companyId },
+      include: {
+        customerLoyaltyProgram: { select: { id: true, name: true, nameAr: true, type: true } },
+        customerLoyaltyTier: { select: { id: true, name: true, nameAr: true } }
+      }
+    });
+
+    // جلب المحفظة والكاش باك
+    const wallet = await getSharedPrismaClient().customerWallet.findFirst({
+      where: { customerId, isActive: true }
+    });
+
+    let cashbackTotal = 0;
+    if (wallet) {
+      const cbAgg = await getSharedPrismaClient().walletTransaction.aggregate({
+        where: { walletId: wallet.id, type: 'CASHBACK' },
+        _sum: { amount: true }
+      });
+      cashbackTotal = parseFloat(cbAgg._sum?.amount || 0);
+    }
+
     // الرد بكل البيانات
     res.json({
       success: true,
@@ -1276,7 +1299,23 @@ const getCustomerDetails = async (req, res) => {
         customerBlock: {
           isBlocked: Boolean(activeBlockRule),
           rule: activeBlockRule || null
-        }
+        },
+        loyalty: loyaltyRecords.map(r => ({
+          programId: r.programId,
+          programName: r.customerLoyaltyProgram?.nameAr || r.customerLoyaltyProgram?.name,
+          programType: r.customerLoyaltyProgram?.type,
+          points: parseFloat(r.currentPoints || 0),
+          totalEarned: parseFloat(r.totalEarned || 0),
+          tierName: r.customerLoyaltyTier?.nameAr || r.customerLoyaltyTier?.name,
+          status: r.status
+        })),
+        wallet: wallet ? {
+          balance: parseFloat(wallet.balance || 0),
+          totalEarned: parseFloat(wallet.totalEarned || 0),
+          totalSpent: parseFloat(wallet.totalSpent || 0),
+          currency: wallet.currency
+        } : null,
+        cashbackTotal
       }
     });
   } catch (error) {
@@ -1380,6 +1419,7 @@ const importCustomersFromCSV = async (req, res) => {
         lastName: c.lastName || c.last_name || c.name?.split(' ').slice(1).join(' ') || '',
         email: c.email || null,
         phone: c.phone || c.mobile || null,
+        phoneNormalized: (c.phone || c.mobile) ? require('../utils/phoneNormalization').toCanonicalE164(c.phone || c.mobile) : null,
         status: c.status || 'LEAD',
         tags: c.tags ? JSON.stringify(c.tags) : '[]',
         notes: c.notes || null,
@@ -1660,13 +1700,20 @@ const updateCustomer = async (req, res) => {
     }
 
     // تحديث بيانات العميل
+    const phoneFields = {};
+    if (phone !== undefined) {
+      const { toCanonicalE164 } = require('../utils/phoneNormalization');
+      phoneFields.phone = phone || null;
+      phoneFields.phoneNormalized = toCanonicalE164(phone) || null;
+    }
+
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
         firstName,
         lastName,
         email: email || null,
-        phone: phone || null,
+        ...phoneFields,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
@@ -1736,6 +1783,7 @@ const createCustomer = async (req, res) => {
         lastName: lastName || '',
         email: email || null,
         phone: phone || null,
+        phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,

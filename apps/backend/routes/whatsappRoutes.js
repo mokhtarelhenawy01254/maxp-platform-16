@@ -13,6 +13,31 @@ const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
+
+// 🚦 Rate limiting: منع السبام على نقاط إرسال الرسائل والبث
+const messageSendLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req, res) => req.user?.companyId
+        ? `wa_send_${req.user.companyId}`
+        : `wa_send_${ipKeyGenerator(req, res)}`,
+    message: { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'تجاوزت الحد المسموح لإرسال الرسائل. حاول بعد دقيقة.' } }
+});
+
+const broadcastLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req, res) => req.user?.companyId
+        ? `wa_broadcast_${req.user.companyId}`
+        : `wa_broadcast_${ipKeyGenerator(req, res)}`,
+    message: { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'تجاوزت الحد المسموح للبث الجماعي. حاول بعد دقيقة.' } }
+});
 
 // إعداد multer لرفع الملفات
 // إعداد multer لرفع الملفات
@@ -135,10 +160,11 @@ const requireLocalBridgeSecret = (req, res, next) => {
 
 router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
     try {
-        const { phone, message, mediaUrl, orderNumber, customerName, variables, eventType, buttons } = req.body;
+        const { phone, message, mediaUrl, orderNumber, customerName, variables, eventType, buttons, companyId } = req.body;
 
         console.log(`🔗 [LOCAL-BRIDGE] Received request:`, {
             phone,
+            companyId,
             orderNumber,
             customerName,
             eventType,
@@ -155,23 +181,31 @@ router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
             });
         }
 
+        if (!companyId || typeof companyId !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'companyId is required to scope the send to a specific company'
+            });
+        }
+
         // Get default session for the company
         const { getSharedPrismaClient } = require('../services/sharedDatabase');
         const prisma = getSharedPrismaClient();
 
-        // Find the first available session
+        // Find the first available session scoped to the requested company only
         const session = await prisma.whatsAppSession.findFirst({
             where: {
+                companyId,
                 status: 'CONNECTED'
             },
             orderBy: { lastConnectedAt: 'desc' }
         });
 
         if (!session) {
-            console.log(`⚠️ [LOCAL-BRIDGE] No active WhatsApp session found`);
+            console.log(`⚠️ [LOCAL-BRIDGE] No active WhatsApp session found for company ${companyId}`);
             return res.status(503).json({
                 success: false,
-                error: 'No active WhatsApp session available'
+                error: 'No active WhatsApp session available for the requested company'
             });
         }
 
@@ -260,16 +294,16 @@ router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('what
 router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getMessages);
 
 // إرسال رسالة نصية
-router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendMessage);
+router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendMessage);
 
 // تصحيح رد الوكيل الآلي
-router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.correctAIMessage);
+router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.correctAIMessage);
 
 // إرسال وسائط
-router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendMedia);
+router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendMedia);
 
 // رفع وإرسال ملف
-router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), upload.single('file'), async (req, res) => {
+router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), upload.single('file'), messageSendLimiter, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم رفع ملف' });
@@ -364,16 +398,16 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
 router.post('/messages/read', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.markAsRead);
 
 // إرسال رسالة بأزرار تفاعلية
-router.post('/messages/send-buttons', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendButtons);
+router.post('/messages/send-buttons', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendButtons);
 
 // إرسال رسالة بقائمة
-router.post('/messages/send-list', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendList);
+router.post('/messages/send-list', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendList);
 
 // إرسال منتج
-router.post('/messages/send-product', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendProduct);
+router.post('/messages/send-product', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendProduct);
 
 // إرسال تفاعل (Reaction)
-router.post('/messages/send-reaction', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendReaction);
+router.post('/messages/send-reaction', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendReaction);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📸 الحالات (Status Updates)
@@ -486,7 +520,7 @@ router.post('/messages/edit', verifyToken.authenticateToken, checkAppAccess('wha
 router.post('/messages/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.chats.manage'), whatsappController.deleteMessage);
 
 // إعادة توجيه رسالة
-router.post('/messages/forward', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.forwardMessage);
+router.post('/messages/forward', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.forwardMessage);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 💬 إدارة المحادثات
@@ -569,7 +603,7 @@ router.post('/business/hours', verifyToken.authenticateToken, checkAppAccess('wh
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال بث جماعي
-router.post('/broadcast/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), whatsappController.sendBroadcast);
+router.post('/broadcast/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), broadcastLimiter, whatsappController.sendBroadcast);
 
 // إنشاء قائمة بث
 router.post('/broadcast/lists', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.broadcast'), whatsappController.createBroadcastList);
@@ -669,13 +703,13 @@ router.get('/url/info', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال استطلاع
-router.post('/messages/send-poll', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendPoll);
+router.post('/messages/send-poll', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendPoll);
 
 // إرسال طلب
-router.post('/messages/send-order', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendOrder);
+router.post('/messages/send-order', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendOrder);
 
 // إرسال كتالوج
-router.post('/messages/send-catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.sendCatalog);
+router.post('/messages/send-catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendCatalog);
 
 // جلب الكتالوج
 router.get('/catalog', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getCatalog);
@@ -704,7 +738,7 @@ router.post('/facebook/connect-embedded', verifyToken.authenticateToken, checkAp
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال رسالة قالب
-router.post('/messages/send-template', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.templates'), whatsappController.sendTemplateMessage);
+router.post('/messages/send-template', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.templates'), messageSendLimiter, whatsappController.sendTemplateMessage);
 
 // جلب قوالب الرسائل
 router.get('/templates', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.templates'), whatsappController.getMessageTemplate);

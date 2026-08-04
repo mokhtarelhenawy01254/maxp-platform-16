@@ -30,6 +30,102 @@ async function fetchOrdersBatch(orderIds) {
   return orders;
 }
 
+// Batch: جلب طلبات الضيف للمعرفات غير الموجودة في الطلبات العادية
+async function fetchGuestOrdersBatch(orderIds) {
+  const prisma = getSharedPrismaClient();
+  
+  const guestOrders = await prisma.guestOrder.findMany({
+    where: {
+      OR: [
+        { id: { in: orderIds } },
+        { orderNumber: { in: orderIds } }
+      ]
+    }
+  });
+
+  return guestOrders;
+}
+
+// تحويل طلب ضيف إلى الشكل المطلوب للطباعة المباشرة من الواجهة
+function mapGuestOrderForPrint(guestOrder) {
+  let items = [];
+  if (typeof guestOrder.items === 'string') {
+    try { items = JSON.parse(guestOrder.items); } catch (e) { items = []; }
+  } else if (Array.isArray(guestOrder.items)) {
+    items = guestOrder.items;
+  }
+
+  let addressText = '';
+  let city = '';
+  let governorate = '';
+  if (typeof guestOrder.shippingAddress === 'string' && guestOrder.shippingAddress.trim()) {
+    try {
+      const parsed = JSON.parse(guestOrder.shippingAddress);
+      if (parsed && typeof parsed === 'object') {
+        addressText = parsed.address || parsed.addressLine1 || parsed.street || '';
+        city = parsed.city || '';
+        governorate = parsed.governorate || '';
+      } else {
+        addressText = String(parsed);
+      }
+    } catch (e) {
+      addressText = guestOrder.shippingAddress;
+    }
+  } else if (guestOrder.shippingAddress && typeof guestOrder.shippingAddress === 'object') {
+    addressText = guestOrder.shippingAddress.address || guestOrder.shippingAddress.addressLine1 || '';
+    city = guestOrder.shippingAddress.city || '';
+    governorate = guestOrder.shippingAddress.governorate || '';
+  }
+
+  let metadata = { source: 'storefront', isGuestOrder: true };
+  if (typeof guestOrder.metadata === 'string' && guestOrder.metadata.trim()) {
+    try {
+      const parsed = JSON.parse(guestOrder.metadata);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        metadata = { ...metadata, ...parsed };
+      }
+    } catch (e) { /* تجاهل */ }
+  }
+
+  return {
+    id: guestOrder.id,
+    orderNumber: guestOrder.orderNumber,
+    customerName: guestOrder.guestName || 'عميل غير محدد',
+    customerPhone: guestOrder.guestPhone || null,
+    customerEmail: guestOrder.guestEmail || null,
+    customerAddress: addressText || null,
+    shippingAddress: guestOrder.shippingAddress || null,
+    city: city || null,
+    governorate: governorate || null,
+    status: guestOrder.status || 'PENDING',
+    paymentStatus: 'PENDING',
+    paymentMethod: guestOrder.paymentMethod || 'cod',
+    items: (Array.isArray(items) ? items : []).map((item) => ({
+      id: item.productId || item.id || '',
+      productId: item.productId || null,
+      productName: item.productName || item.name || 'منتج',
+      productColor: item.productColor || item.color || null,
+      productSize: item.productSize || item.size || null,
+      productSku: item.sku || item.productSku || null,
+      price: Number(item.price || 0),
+      quantity: Number(item.quantity || 1),
+      total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
+    })),
+    subtotal: Number(guestOrder.total || 0),
+    tax: 0,
+    shipping: Number(guestOrder.shippingCost || 0),
+    discount: Number(guestOrder.discountAmount || 0),
+    total: Number(guestOrder.finalTotal || guestOrder.total || 0),
+    currency: 'EGP',
+    metadata,
+    turboTrackingNumber: guestOrder.turboTrackingNumber || null,
+    invoiceNumber: guestOrder.orderNumber,
+    isGuestOrder: true,
+    createdAt: guestOrder.createdAt,
+    updatedAt: guestOrder.updatedAt,
+  };
+}
+
 // Batch: جلب الفواتير الموجودة مرة واحدة
 async function fetchExistingInvoicesBatch(orderIds) {
   const prisma = getSharedPrismaClient();
@@ -55,7 +151,8 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
   const results = {
     success: [],
     existing: [],
-    failed: []
+    failed: [],
+    guestOrders: []
   };
 
   try {
@@ -76,6 +173,18 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
 
     console.log(`📦 [INVOICE-BATCH] Found ${orders.length}/${orderIds.length} orders`);
 
+    // 1b. جلب طلبات الضيف غير الموجودة في الطلبات العادية
+    const missingOrderIds = orderIds.filter(id => !orderMap.has(id));
+    let guestOrderMap = new Map();
+    if (missingOrderIds.length > 0) {
+      const guestOrders = await fetchGuestOrdersBatch(missingOrderIds);
+      guestOrders.forEach(guestOrder => {
+        guestOrderMap.set(guestOrder.id, guestOrder);
+        guestOrderMap.set(guestOrder.orderNumber, guestOrder);
+      });
+      console.log(`🛍️ [INVOICE-BATCH] Found ${guestOrders.length} guest orders for missing identifiers`);
+    }
+
     // 2. جلب إعدادات الفواتير للشركات الموجودة
     const invoiceSettingsMap = await getInvoiceSettingsMap(
       prisma,
@@ -95,6 +204,15 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       const order = orderMap.get(orderIdOrNumber);
       
       if (!order) {
+        const guestOrder = guestOrderMap.get(orderIdOrNumber);
+        if (guestOrder) {
+          results.guestOrders.push({
+            orderId: orderIdOrNumber,
+            order: mapGuestOrderForPrint(guestOrder)
+          });
+          continue;
+        }
+
         results.failed.push({
           orderId: orderIdOrNumber,
           error: 'الطلب غير موجود'

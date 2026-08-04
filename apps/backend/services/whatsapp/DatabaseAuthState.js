@@ -9,6 +9,7 @@ const { getSharedPrismaClient } = require('../sharedDatabase');
 // // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues // ❌ Removed to prevent early loading issues
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const hardening = require('./hardening/whatsappHardening');
+const { encryptField, decryptField } = require('../../utils/fieldEncryption');
 
 // Dynamic import for Baileys
 let initAuthCreds, BufferJSON;
@@ -104,7 +105,7 @@ async function clearDatabaseAuthState(sessionId) {
             fs.mkdirSync(backupDir, { recursive: true });
             fs.writeFileSync(
                 path.join(backupDir, `${sessionId}_${Date.now()}.json`),
-                session.authState,
+                encryptField(session.authState),
                 'utf-8'
             );
         }
@@ -207,9 +208,10 @@ async function useDatabaseAuthState(sessionId) {
                 if (!BufferJSON) {
                     await initBaileysAuth();
                 }
-                authData = JSON.parse(session.authState, BufferJSON.reviver);
+                const decryptedAuthState = decryptField(session.authState);
+                authData = JSON.parse(decryptedAuthState, BufferJSON.reviver);
                 AUTH_LOG.info(sessionId, `Auth state loaded from DB`, {
-                    size: session.authState.length,
+                    size: decryptedAuthState.length,
                     hasCreds: !!authData.creds,
                     hasKeys: !!authData.keys
                 });
@@ -241,7 +243,7 @@ async function useDatabaseAuthState(sessionId) {
 
             await getSharedPrismaClient().whatsAppSession.update({
                 where: { id: sessionId },
-                data: { authState: serialized, updatedAt: new Date() }
+                data: { authState: encryptField(serialized), updatedAt: new Date() }
             });
 
             setCachedAuthState(sessionId, dataToSave);

@@ -7,18 +7,24 @@ import {
   Clock,
   LogIn,
   LogOut,
+  ArrowRight,
   Calendar,
   TrendingUp,
   Target,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
+  AlertTriangle,
+  Check,
+  X,
   Timer,
-  MapPin,
+  Pin,
   Home,
   ChevronLeft,
   ChevronRight,
+  Building,
   Building2,
+  CheckCircle,
+  MapPin,
+  AlertCircle,
+  XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -179,6 +185,7 @@ const MyAttendance: React.FC = () => {
           geofenceData?: {
             distance: number;
             allowedRadius: number;
+            requiresLocation?: boolean;
           };
         };
       };
@@ -450,6 +457,13 @@ const MyAttendance: React.FC = () => {
         apiError.response?.status === 403 &&
         apiError.response?.data?.geofenceData
       ) {
+        if (apiError.response.data.geofenceData.requiresLocation) {
+          toast.error(t("employee.attendance.locationRequired"), {
+            description: t("employee.attendance.locationRequiredDesc"),
+            duration: 8000,
+          });
+          return;
+        }
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
         toast.error(t("employee.attendance.geofenceError"), {
@@ -543,6 +557,13 @@ const MyAttendance: React.FC = () => {
         apiError.response?.status === 403 &&
         apiError.response?.data?.geofenceData
       ) {
+        if (apiError.response.data.geofenceData.requiresLocation) {
+          toast.error(t("employee.attendance.locationRequired"), {
+            description: t("employee.attendance.locationRequiredDesc"),
+            duration: 8000,
+          });
+          return;
+        }
         const { distance, allowedRadius } = apiError.response.data.geofenceData;
         const distanceToMove = Math.round(distance - allowedRadius);
 

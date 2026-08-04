@@ -103,6 +103,21 @@ const getReportsSummary = async (req, res) => {
     const femaleCount = patients.filter(p => p.gender === 'FEMALE').length;
     const invoicePatients = new Set(invoices.map(i => i.patientId));
 
+    // Service revenue: link invoices to appointments to attribute revenue per service
+    const invoiceAppointmentIds = invoices.filter(i => i.appointmentId && i.status !== 'REFUNDED').map(i => i.appointmentId);
+    const serviceRevenueRows = invoiceAppointmentIds.length > 0
+      ? await prisma.appointment.findMany({
+          where: { id: { in: invoiceAppointmentIds } },
+          select: { id: true, serviceName: true },
+        })
+      : [];
+    const serviceRevenueMap = new Map();
+    for (const row of serviceRevenueRows) {
+      const key = row.serviceName || 'غير محدد';
+      const inv = invoices.find(i => i.appointmentId === row.id && i.status !== 'REFUNDED');
+      if (inv) serviceRevenueMap.set(key, (serviceRevenueMap.get(key) || 0) + (Number(inv.total) || 0));
+    }
+
     const data = {
       period,
       dateFrom: fmt(dateFrom),
@@ -115,7 +130,7 @@ const getReportsSummary = async (req, res) => {
       statusBreakdown: byStatus.map(s => ({ status: s.status, count: s._count._all })),
       serviceBreakdown: byService
         .filter(s => s.serviceName)
-        .map(s => ({ service: s.serviceName, count: s._count._all }))
+        .map(s => ({ service: s.serviceName, count: s._count._all, revenue: +(serviceRevenueMap.get(s.serviceName) || 0).toFixed(2) }))
         .sort((a, b) => b.count - a.count),
       branchBreakdown: byBranch
         .filter(b => b.branchId)

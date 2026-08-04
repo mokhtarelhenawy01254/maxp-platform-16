@@ -93,6 +93,7 @@ enum MessageType {
   ON_HOLD_PREP
   PARTIALLY_DELIVERED
   STOCK_SHORTAGE
+  PENDING_CANCELLATION
 }
 
 enum PaymentStatus {
@@ -1804,6 +1805,23 @@ enum ReturnRequestsResponsibleParty {
   OTHER
 
   @@map("return_requests_responsibleParty")
+}
+
+enum ReturnTypeCostModel {
+  FULL
+  NONE
+  FIXED
+
+  @@map("return_type_cost_model")
+}
+
+enum ReturnTypeCode {
+  SENDER_PAYS
+  RECIPIENT_PAYS
+  CANCELLED
+  CUSTOM
+
+  @@map("return_type_code")
 }
 
 // Redundant StorePagesPageType removed

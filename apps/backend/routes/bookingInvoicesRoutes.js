@@ -4,6 +4,7 @@ const controller = require('../controller/bookingInvoicesController');
 const verifyToken = require('../utils/verifyToken');
 
 router.get('/', verifyToken.authenticateToken, controller.getAllInvoices);
+router.post('/from-appointment/:appointmentId', verifyToken.authenticateToken, controller.createInvoiceFromAppointment);
 router.get('/:id', verifyToken.authenticateToken, controller.getInvoiceById);
 router.post('/', verifyToken.authenticateToken, controller.createInvoice);
 router.put('/:id', verifyToken.authenticateToken, controller.updateInvoice);

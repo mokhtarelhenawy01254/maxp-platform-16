@@ -23,27 +23,45 @@ const normalizeWhatsAppOrderStatus = (status) => {
   return statusAliases[normalizedStatus] || normalizedStatus;
 };
 
-const getWhatsAppOrderEventType = (status) => {
-  const normalizedStatus = normalizeWhatsAppOrderStatus(status);
-  if (!normalizedStatus) {
-    return null;
-  }
-
-  const mappedEventTypes = {
-    CONFIRMED: 'ORDER_CONFIRMED',
-    PROCESSING: 'ORDER_PROCESSING',
-    PICKING: 'PICKING',
-    PACKED: 'PACKED',
-    SHIPPED: 'ORDER_SHIPPED',
-    OUT_FOR_DELIVERY: 'ORDER_OUT_FOR_DELIVERY',
-    DELIVERED: 'ORDER_DELIVERED',
-    CANCELLED: 'ORDER_CANCELLED'
-  };
-
-  return mappedEventTypes[normalizedStatus] || null;
-};
-
 const FAILURE_STATUSES_REQUIRING_CALLS = new Set(['DELIVERY_FAILED', 'NO_ANSWER']);
+
+// Statuses that can appear as preparation stages. The preparation queue reads
+// metadata.preparationStatus as its source of truth (with order.status as a
+// fallback), so any external status change to one of these MUST also sync the
+// metadata field — otherwise the change never appears on the preparation page.
+// This set mirrors the stages of normalizePreparationStage (WAITING/PREPARING/
+// QUALITY_CHECK/PACKAGED/STOCK_SHORTAGE/READY_TO_SHIP/PENDING_CANCELLATION/
+// ON_HOLD_PREP) so moves to e.g. CONFIRMED (from PREPARING) also sync.
+const PREPARATION_PIPELINE_STATUSES = new Set([
+  'PENDING',
+  'CONFIRMED',
+  'SCHEDULED',
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'PROCESSING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'PENDING_CANCELLATION',
+  'ON_HOLD_PREP'
+]);
+
+const parsePreparationMetadata = (rawValue) => {
+  if (!rawValue) return {};
+  if (typeof rawValue === 'object' && !Array.isArray(rawValue)) return rawValue;
+  if (typeof rawValue === 'string') {
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    } catch (_error) { /* fall through */ }
+  }
+  return {};
+};
 
 const normalizeOrderStatusCode = (status) => String(status || '').trim().toUpperCase();
 
@@ -94,6 +112,37 @@ class OrderService {
         400
       );
     }
+  }
+
+  /**
+   * 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
+   * مزامنة metadata.preparationStatus لحالة معيّنة — مستخرج من updateOrderStatus
+   * (المنطق الأصلي عند L1012-1021) ليُستدعى من خارج المسار الموحّد (مثل مسارات
+   * الشغّالة المتقدمة التي تستخدم prisma.order.update خام). Idempotent — لا يكتب
+   * شيئاً لو الحالة ليست من PREPARATION_PIPELINE_STATUSES.
+   */
+  async syncPreparationMetadata(orderId, status, prismaClient = null) {
+    const normalized = String(status || '').toUpperCase();
+    if (!PREPARATION_PIPELINE_STATUSES.has(normalized)) {
+      return null;
+    }
+    const prisma = prismaClient || this.getPrisma();
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { metadata: true },
+    });
+    if (!order) return null;
+    const currentMetadata = parsePreparationMetadata(order.metadata);
+    const nextMetadata = JSON.stringify({
+      ...currentMetadata,
+      preparationStatus: normalized,
+      preparationStatusUpdatedAt: new Date().toISOString(),
+    });
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { metadata: nextMetadata },
+    });
+    return nextMetadata;
   }
 
   async validateConfiguredStatusTransition(companyId, currentStatus, nextStatus, options = {}) {
@@ -989,6 +1038,19 @@ class OrderService {
       } : {};
 
       // 🔄 [ORDER-SERVICE-UPDATE] Update the order
+      // Sync metadata.preparationStatus so external status changes (quick-status,
+      // orders page) are reflected on the preparation queue too.
+      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      let nextMetadata = null;
+      if (isPrepPipelineStatus) {
+        const currentMetadata = parsePreparationMetadata(order.metadata);
+        nextMetadata = JSON.stringify({
+          ...currentMetadata,
+          preparationStatus: status,
+          preparationStatusUpdatedAt: new Date().toISOString()
+        });
+      }
+
       const updatedOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.update({
@@ -996,6 +1058,7 @@ class OrderService {
           data: {
             status: status,
             notes: notes || undefined,
+            ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
             ...resetConfirmationData,
             updatedAt: new Date(),
@@ -1116,6 +1179,19 @@ class OrderService {
             });
           }
 
+          // 💸 عند إلغاء طلب اتسلم — رجّع النقاط والكاش باك اللي اتحسبوا
+          if (status === 'CANCELLED') {
+            const cashbackService = require('./cashbackService');
+            const loyaltyService = require('./hr/customerLoyaltyService');
+            const cancelReason = notes || `إلغاء الطلب ${orderNumber}`;
+            await cashbackService.reverseCashbackForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
+              console.error(`❌ [CASHBACK-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+            await loyaltyService.reverseLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId, reason: cancelReason }).catch(error => {
+              console.error(`❌ [LOYALTY-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+          }
+
           if (status === 'CONFIRMED' || status === 'DELIVERED') {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
@@ -1163,28 +1239,23 @@ class OrderService {
           try {
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 
-            const notificationStatus = normalizeWhatsAppOrderStatus(status);
-            const eventType = getWhatsAppOrderEventType(status);
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
+            // لا تحجب الحالات غير المرسومة هنا — دع sendOrderStatusNotification يقرر عبر
+            // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
+            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
 
-            if (!notificationStatus || !eventType) {
-              console.log(`ℹ️ [WHATSAPP-STATUS] Skipping unsupported notification status for Order: ${order.orderNumber}, Status: ${status}`);
+            // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
+            const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
+              companyId: order.companyId,
+              orderId: order.id,
+              eventType: notificationStatus,
+            });
+
+            if (recentNotification) {
+              console.log(`⚠️ [WHATSAPP-STATUS] Duplicate notification blocked for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
             } else {
-              // ✅ Check for duplicate notification in last 10 seconds
-              const prisma = this.getPrisma();
-              const recentNotification = await prisma.whatsAppNotificationLog.findFirst({
-                where: {
-                  orderId: order.id,
-                  eventType,
-                  createdAt: { gte: new Date(Date.now() - 10000) } // Last 10 seconds
-                }
-              });
-
-              if (recentNotification) {
-                console.log(`⚠️ [WHATSAPP-STATUS] Duplicate notification blocked for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
-              } else {
-                await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
-                console.log(`✅ [WHATSAPP-STATUS] Background notification sent for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
-              }
+              await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
+              console.log(`✅ [WHATSAPP-STATUS] Background notification sent for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
             }
           } catch (whatsappError) {
             console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
@@ -1278,6 +1349,17 @@ class OrderService {
         skipValidation: skipTransitionValidation
       });
 
+      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      let nextGuestMetadata = null;
+      if (isPrepPipelineStatus) {
+        const currentMetadata = parsePreparationMetadata(guestOrder.metadata);
+        nextGuestMetadata = JSON.stringify({
+          ...currentMetadata,
+          preparationStatus: status,
+          preparationStatusUpdatedAt: new Date().toISOString()
+        });
+      }
+
       const updatedGuestOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.guestOrder.update({
@@ -1285,6 +1367,7 @@ class OrderService {
           data: {
             status,
             notes: notes || undefined,
+            ...(nextGuestMetadata ? { metadata: nextGuestMetadata } : {}),
             OrderStatusHistory: {
               create: {
                 status,
@@ -1378,22 +1461,17 @@ class OrderService {
               return;
             }
 
-            const notificationStatus = normalizeWhatsAppOrderStatus(status);
-            const eventType = getWhatsAppOrderEventType(status);
+            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
 
-            if (!notificationStatus || !eventType) {
-              console.log(`ℹ️ [WHATSAPP] Skipping unsupported notification status for guest order: ${orderNumber}, Status: ${status}`);
-              return;
-            }
-
-            const prisma = this.getPrisma();
-            const recentNotification = await prisma.whatsAppNotificationLog.findFirst({
-              where: {
-                recipientPhone: notificationOrder.customerPhone,
-                eventType,
-                createdAt: { gte: new Date(Date.now() - 10000) }
-              },
-              select: { id: true }
+            // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
+            // لا تحجب الحالات غير المرسومة — دع sendOrderStatusNotification يقرر
+            // (DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback).
+            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+            // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
+            const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
+              companyId,
+              recipientPhone: notificationOrder.customerPhone,
+              eventType: notificationStatus,
             });
 
             if (recentNotification) {
@@ -1401,7 +1479,6 @@ class OrderService {
               return;
             }
 
-            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
             const notificationResult = await WhatsAppNotificationService.sendOrderStatusNotification(notificationOrder, notificationStatus);
 
             if (notificationResult?.success === false) {

@@ -85,7 +85,7 @@ router.get('/statuses', async (req, res) => {
                         color: s.color || '#6B7280',
                         sortOrder: s.sortOrder || 0,
                         description: s.description || null,
-                        notifyCustomer: s.notifyCustomer || false,
+                        notifyCustomer: s.notifyCustomer ?? true,
                         isTerminal: false,
                         lockAfterEntry: false,
                         requiresApprovalToExit: false,

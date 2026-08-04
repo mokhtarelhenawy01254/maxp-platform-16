@@ -7,6 +7,7 @@ const axios = require('axios');
 const { getSharedPrismaClient } = require('../../sharedDatabase');
 const { getMetaGraphApiVersion } = require('../../../config/metaApi');
 const { mapError } = require('../whatsappErrorCodes');
+const { decryptField } = require('../../../utils/fieldEncryption');
 
 async function getSession(sessionId) {
   return await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -16,7 +17,7 @@ async function getSession(sessionId) {
 
 function resolveBaseConfig(session) {
   const apiVersion = session?.metaApiVersion || getMetaGraphApiVersion();
-  const accessToken = session?.metaAccessToken;
+  const accessToken = decryptField(session?.metaAccessToken);
   if (!accessToken) {
     throw new Error('Missing Meta Cloud access token for session');
   }

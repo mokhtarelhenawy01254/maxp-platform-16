@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, ArrowLeft, X, Settings, Bell, History, Rocket } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Tag, Target, Zap, ClipboardList, Star, Brain, Layout, ArrowLeft, X, Settings, Bell, History, Rocket } from 'lucide-react';
 import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";

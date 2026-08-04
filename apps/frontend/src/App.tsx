@@ -556,6 +556,9 @@ const IncompleteOrders = React.lazy(
 const IncompleteOrderDetails = React.lazy(
   () => import("./pages/orders/IncompleteOrderDetails"),
 );
+const IncompleteReports = React.lazy(
+  () => import("./pages/orders/IncompleteReports"),
+);
 const PreparationQueue = React.lazy(
   () => import("./pages/orders/PreparationQueue"),
 );
@@ -991,6 +994,24 @@ const DoctorAvailabilityPage = React.lazy(
 const DoctorPaymentsPage = React.lazy(
   () => import("./pages/doctor/DoctorPaymentsPage"),
 );
+const PatientLayout = React.lazy(
+  () => import("./components/layout/PatientLayout"),
+);
+const PatientLoginPage = React.lazy(
+  () => import("./pages/auth/PatientLoginPage"),
+);
+const PatientDashboardPage = React.lazy(
+  () => import("./pages/patient/PatientDashboardPage"),
+);
+const PatientAppointmentsPage = React.lazy(
+  () => import("./pages/patient/PatientAppointmentsPage"),
+);
+const PatientHistoryPage = React.lazy(
+  () => import("./pages/patient/PatientHistoryPage"),
+);
+const PatientInvoicesPage = React.lazy(
+  () => import("./pages/patient/PatientInvoicesPage"),
+);
 const ParentLoginPage = React.lazy(
   () => import("./pages/auth/ParentLoginPage"),
 );
@@ -1187,6 +1208,9 @@ const CustomerWalletRouteEntry = React.lazy(
 const Bundles = React.lazy(() => import("./pages/marketplace/Bundles"));
 const BundleDetails = React.lazy(
   () => import("./pages/marketplace/BundleDetails"),
+);
+const CompareApps = React.lazy(
+  () => import("./pages/marketplace/CompareApps"),
 );
 
 const AppPricingSheet = React.lazy(
@@ -1764,6 +1788,15 @@ const AppContent = () => {
                 </AuthLayout>
               }
             />
+            {/* Patient Portal Login */}
+            <Route
+              path="/patient/login"
+              element={
+                <AuthLayout>
+                  <PatientLoginPage />
+                </AuthLayout>
+              }
+            />
             {/* Parent Portal Routes (outside ProtectedRoute - use own auth) */}
             <Route path="/parent/dashboard" element={<ParentLayout><ParentDashboardPage /></ParentLayout>} />
             <Route path="/parent/children" element={<ParentLayout><ParentChildrenPage /></ParentLayout>} />
@@ -1780,6 +1813,20 @@ const AppContent = () => {
                 </AuthLayout>
               }
             />
+            {/* Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
+            <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
+            <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
+            <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
+            <Route path="/doctor/dashboard" element={<DoctorLayout><DoctorDashboardPage /></DoctorLayout>} />
+            <Route path="/doctor/schedule" element={<DoctorLayout><DoctorSchedulePage /></DoctorLayout>} />
+            <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
+            <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
+            <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
+            <Route path="/patient/dashboard" element={<PatientLayout><PatientDashboardPage /></PatientLayout>} />
+            <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
+            <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
+            <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
@@ -2641,6 +2688,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <BundleDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/compare"
+                  element={
+                    <Layout>
+                      <CompareApps />
                     </Layout>
                   }
                 />
@@ -4090,6 +4145,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <IncompleteOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/incomplete/reports"
+                  element={
+                    <Layout>
+                      <IncompleteReports />
                     </Layout>
                   }
                 />
@@ -6804,15 +6867,6 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
-                <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
-                <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
-                <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
-                <Route path="/doctor/dashboard" element={<DoctorLayout><DoctorDashboardPage /></DoctorLayout>} />
-                <Route path="/doctor/schedule" element={<DoctorLayout><DoctorSchedulePage /></DoctorLayout>} />
-                <Route path="/doctor/patients" element={<DoctorLayout><DoctorPatientsPage /></DoctorLayout>} />
-                <Route path="/doctor/payments" element={<DoctorLayout><DoctorPaymentsPage /></DoctorLayout>} />
-                <Route path="/doctor/availability" element={<DoctorLayout><DoctorAvailabilityPage /></DoctorLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={

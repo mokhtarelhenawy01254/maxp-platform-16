@@ -101,6 +101,7 @@ export interface Message {
   senderId?: string;
   senderName?: string;
   participant?: string;
+  participantName?: string;
   metadata?: any;
   interactiveData?: string;
 }

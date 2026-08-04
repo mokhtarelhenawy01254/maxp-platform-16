@@ -17,6 +17,8 @@ const mockPrisma = {
   },
   product: {
     findFirst: jest.fn(),
+    // 🚨 fix: createOrderFromConversation reads product.sku via findUnique (orderService.js:331)
+    findUnique: jest.fn(),
     create: jest.fn(),
   },
 };
@@ -126,6 +128,7 @@ describe('orderService plan limit enforcement', () => {
       id: 'product-1',
       name: 'Test Product',
     });
+    mockPrisma.product.findUnique.mockResolvedValue({ sku: 'SKU-1' });
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{

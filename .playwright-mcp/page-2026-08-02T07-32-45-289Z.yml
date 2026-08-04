@@ -1,0 +1,46 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic [ref=e12]:
+      - generic [ref=e13]: نظام تشغيل الأعمال
+      - heading "كل أعمالك في نظام واحد" [level=1] [ref=e14]
+      - paragraph [ref=e15]: منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — باشتراك واحد.
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: ابدأ فوراً
+          - generic [ref=e19]: فوراً
+        - generic [ref=e20]:
+          - generic [ref=e21]: بدون بطاقة بنكية
+          - generic [ref=e22]: فترة تجريبية
+    - generic [ref=e24]:
+      - link "M ماكس بي لنظام تشغيل الأعمال" [ref=e25] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e26]: M
+        - generic [ref=e27]: ماكس بي لنظام تشغيل الأعمال
+      - generic [ref=e28]:
+        - generic [ref=e29]: تسجيل دخول آمن
+        - heading "الدخول إلى مساحة العمل" [level=2] [ref=e30]
+        - paragraph [ref=e31]: أدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: البريد الإلكتروني
+          - textbox "البريد الإلكتروني" [ref=e37]:
+            - /placeholder: name@company.com
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - link "نسيت كلمة المرور؟" [ref=e40] [cursor=pointer]:
+              - /url: /auth/forgot-password
+            - generic [ref=e41]: كلمة المرور
+          - generic [ref=e42]:
+            - textbox "كلمة المرور" [ref=e43]:
+              - /placeholder: ••••••••
+            - button [ref=e44] [cursor=pointer]
+        - generic [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]: تذكرني
+          - checkbox "تذكرني" [ref=e51]
+        - button "دخول إلى النظام" [disabled] [ref=e52]
+      - contentinfo [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]: ليس لديك حساب؟
+          - link "إنشاء حساب جديد" [ref=e56] [cursor=pointer]:
+            - /url: /auth/register
+  - region "Notifications alt+T"

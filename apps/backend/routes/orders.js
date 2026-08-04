@@ -25,6 +25,18 @@ const PRISMA_ORDER_STATUS_ENUM = new Set([
   'ON_HOLD_PREP', 'PARTIALLY_DELIVERED', 'STOCK_SHORTAGE'
 ]);
 
+// Statuses that are stored in order.status under a mapped value (e.g. PREPARING
+// is persisted as PROCESSING) while the real stage lives in
+// metadata.preparationStatus. When filtering /orders by one of these, the query
+// must match COALESCE(metadata.preparationStatus, status) — see the
+// _customStatusFilter SQL below.
+const PREP_FILTER_STATUSES = new Set([
+  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING',
+  'PENDING_PREPARATION', 'PREPARING', 'PROCESSING', 'QUALITY_CHECK', 'PACKAGED',
+  'READY', 'READY_TO_SHIP', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
+  'PENDING_CANCELLATION', 'ON_HOLD_PREP'
+]);
+
 let _knownStatusCodes = null;
 let _knownStatusCodesPromise = null;
 
@@ -766,6 +778,10 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_STOCK'
 ]);
 
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system (dashboards, analytics, WhatsApp, Turbo, confirmations)
+// expects. The detailed prep stage is stored in metadata.preparationStatus and
+// is what the preparation page reads.
 const getMappedRegularOrderStatus = (preparationStatus) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
@@ -860,11 +876,48 @@ const updateAnyOrderStatus = async ({
           { id: orderIdentifier, companyId },
           { orderNumber: orderIdentifier, companyId }
         ]
-      }
+      },
+      include: { company: { include: { orderWorkflowConfig: true } } }
     });
 
     if (order) {
       const currentMetadata = parseOrderMetadata(order.metadata);
+
+      // ⚙️ Respect the advanced workflow when enabled and transitions exist for
+      // the current stage (fall back to allowing otherwise).
+      if (!skipTransitionValidation) {
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await prisma.orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await prisma.orderWorkflowTransition.count({
+            where: {
+              companyId,
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              normalizedStatus,
+              notes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return { orderType: 'regular', workflowStatus: 'pending', requestId: wfResult.requestId };
+            }
+          }
+        }
+      }
+
       const previousPreparationStatus =
         typeof currentMetadata.preparationStatus === 'string'
           ? currentMetadata.preparationStatus
@@ -1124,6 +1177,8 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const status = (req.query.status || 'all').toString().toLowerCase();
     const search = (req.query.search || '').toString().trim();
+    const sortBy = (req.query.sortBy || '').toString();
+    const sortDir = (req.query.sortDir || 'desc').toString().toLowerCase() === 'asc' ? 'asc' : 'desc';
     const now = new Date();
 
     let lostAfterHours = 24;
@@ -1139,34 +1194,10 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
 
     const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
 
-    const whereClause = {
-      companyId,
-    };
-
-    const andClauses = [];
-
-    if (status === 'active' || status === 'incomplete') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { gte: lostThreshold } },
-          { checkoutStartedAt: { gte: lostThreshold } },
-          { updatedAt: { gte: lostThreshold } }
-        ]
-      });
-    } else if (status === 'expired' || status === 'lost') {
-      andClauses.push({
-        OR: [
-          { checkoutUpdatedAt: { lt: lostThreshold } },
-          { checkoutStartedAt: { lt: lostThreshold } },
-          { updatedAt: { lt: lostThreshold } }
-        ]
-      });
-    }
-
-    const hasPhone = req.query.hasPhone === 'true';
+    const filterClauses = [];
 
     if (search) {
-      andClauses.push({
+      filterClauses.push({
         OR: [
           { cartId: { contains: search } },
           { checkoutData: { contains: search } }
@@ -1174,34 +1205,99 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    const hasPhoneParam = (req.query.hasPhone || '').toString();
+    const hasPhone = hasPhoneParam === 'true';
+    const hasNoPhone = hasPhoneParam === 'false';
+
+    // phone keys written by the storefront checkout draft (and legacy variants)
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+
     if (hasPhone) {
-      andClauses.push({
-        OR: [
-          { checkoutData: { contains: '"guestPhone"' } },
-          { checkoutData: { contains: '"customerPhone"' } },
-          { checkoutData: { contains: '"phoneNumber"' } },
-          { checkoutData: { contains: '"mobileNumber"' } },
-          { checkoutData: { contains: '"phone"' } },
-          { checkoutData: { contains: '"mobile"' } }
-        ]
-      });
+      // only carts that actually carry a non-empty phone value
+      filterClauses.push({ AND: [phoneKeyClause, { NOT: emptyPhoneClause }] });
+    } else if (hasNoPhone) {
+      // carts that carry no phone key at all, or only empty phone values
+      filterClauses.push({ OR: [{ NOT: phoneKeyClause }, emptyPhoneClause] });
     }
 
-    if (andClauses.length) {
-      whereClause.AND = andClauses;
+    // last activity = most recent of checkoutUpdatedAt / checkoutStartedAt / updatedAt
+    // (matches the per-row isLost computation in the data mapping below)
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    const statusClause =
+      status === 'active' || status === 'incomplete' ? activeClause
+        : (status === 'expired' || status === 'lost') ? lostClause
+          : null;
+
+    // القاعدة الأساسية بدون فلتر الحالة — عشان إحصائيات التبويبات تفضل ثابتة
+    const buildBaseWhere = () => {
+      return { companyId, ...(filterClauses.length ? { AND: filterClauses } : {}) };
+    };
+    const buildWhere = (extra = []) => {
+      const and = [...filterClauses, ...extra];
+      return { companyId, ...(and.length ? { AND: and } : {}) };
+    };
+
+    const allowedSorts = {
+      total: 'total',
+      checkoutUpdatedAt: 'checkoutUpdatedAt',
+      checkoutStartedAt: 'checkoutStartedAt',
+    };
+    const sortField = allowedSorts[sortBy];
+    let orderBy;
+    if (sortBy === 'priority') {
+      // الأولوية: الأعلى قيمة أولًا، وبين نفس القيمة الأقدم نشاطًا أولًا (الأقرب للضياع)
+      orderBy = [{ total: 'desc' }, { checkoutUpdatedAt: 'asc' }];
+    } else if (sortField) {
+      orderBy = [{ [sortField]: sortDir }];
+    } else {
+      orderBy = [
+        { checkoutUpdatedAt: 'desc' },
+        { checkoutStartedAt: 'desc' },
+        { updatedAt: 'desc' }
+      ];
     }
 
-    const [totalCount, carts] = await Promise.all([
-      getSharedPrismaClient().guestCart.count({ where: whereClause }),
+    const statusWhere = statusClause ? [statusClause] : [];
+
+    const [totalCount, carts, totalAgg, activeAgg, lostAgg] = await Promise.all([
+      getSharedPrismaClient().guestCart.count({ where: buildWhere(statusWhere) }),
       getSharedPrismaClient().guestCart.findMany({
-        where: whereClause,
-        orderBy: [
-          { checkoutUpdatedAt: 'desc' },
-          { checkoutStartedAt: 'desc' },
-          { updatedAt: 'desc' }
-        ],
+        where: buildWhere(statusWhere),
+        orderBy,
         skip: (page - 1) * limit,
         take: limit
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildBaseWhere(),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([activeClause]),
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      getSharedPrismaClient().guestCart.aggregate({
+        where: buildWhere([lostClause]),
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1253,6 +1349,14 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         page,
         limit,
         pages: Math.ceil(totalCount / limit)
+      },
+      stats: {
+        total: totalCount,
+        active: activeAgg._count._all,
+        lost: lostAgg._count._all,
+        totalValue: Number(totalAgg._sum.total || 0),
+        activeValue: Number(activeAgg._sum.total || 0),
+        lostValue: Number(lostAgg._sum.total || 0)
       }
     });
   } catch (error) {
@@ -1260,6 +1364,234 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب الطلبات غير المكتملة',
+      error: error.message
+    });
+  }
+});
+
+// تقارير استرداد الطلبات غير المكتملة (Recovery Pipeline + أداء الفريق)
+router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'غير مصرح - يجب تسجيل الدخول'
+      });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح - معرف الشركة مطلوب'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] reports: failed to load incomplete settings:', settingsError.message);
+    }
+
+    const lostThreshold = new Date(now.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const lostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
+    // فترة زمنية: إما days (آخر N يوم) أو from/to مخصص
+    const fromRaw = (req.query.from || '').toString();
+    const toRaw = (req.query.to || '').toString();
+    let since;
+    let toDate = null;
+    if (fromRaw) {
+      since = new Date(fromRaw);
+      if (Number.isNaN(since.getTime())) {
+        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+    } else {
+      const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+      since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+    if (toRaw) {
+      const parsedTo = new Date(toRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        // يشمل اليوم كاملاً حتى آخر لحظة
+        toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      }
+    }
+    const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
+
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
+      prisma.guestCart.aggregate({
+        where: { companyId },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...activeClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.guestCart.aggregate({
+        where: { companyId, ...lostClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      prisma.cartConversionLog.findMany({
+        where: { companyId, convertedAt: timeRange },
+        orderBy: { convertedAt: 'desc' },
+        select: {
+          cartId: true,
+          orderId: true,
+          orderNumber: true,
+          employeeId: true,
+          employeeName: true,
+          cartValue: true,
+          governorate: true,
+          convertedAt: true,
+          channel: true
+        }
+      }),
+      prisma.cartContactLog.findMany({
+        where: { companyId, createdAt: timeRange },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          cartId: true,
+          employeeId: true,
+          employeeName: true,
+          method: true,
+          result: true,
+          createdAt: true
+        }
+      })
+    ]);
+
+    const total = totalAgg._count._all || 0;
+    const converted = convWindow.length;
+    const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
+    const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
+    const byTeamConverted = converted - naturalConverted;
+
+    // trend by day (JS aggregation over the window rows)
+    const dayMap = new Map();
+    convWindow.forEach((c) => {
+      const day = c.convertedAt ? new Date(c.convertedAt).toISOString().slice(0, 10) : 'unknown';
+      const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      dayMap.set(day, entry);
+    });
+    const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    // team performance by employee (skips natural conversions - no employee)
+    const teamMap = new Map();
+    convWindow.forEach((c) => {
+      if (!c.employeeId) return;
+      const key = c.employeeId;
+      const entry = teamMap.get(key) || {
+        employeeId: c.employeeId,
+        employeeName: c.employeeName || 'غير معروف',
+        conversions: 0,
+        value: 0,
+        contacts: 0,
+        responses: 0,
+      };
+      entry.conversions += 1;
+      entry.value += Number(c.cartValue || 0);
+      teamMap.set(key, entry);
+    });
+
+    // add contact/response stats per employee
+    contactWindow.forEach((ct) => {
+      if (!ct.employeeId) return;
+      const key = ct.employeeId;
+      let entry = teamMap.get(key);
+      if (!entry) {
+        entry = {
+          employeeId: ct.employeeId,
+          employeeName: ct.employeeName || 'غير معروف',
+          conversions: 0,
+          value: 0,
+          contacts: 0,
+          responses: 0,
+        };
+        teamMap.set(key, entry);
+      }
+      entry.contacts += 1;
+      if ((ct.result || '').toString().toLowerCase() === 'answered') {
+        entry.responses += 1;
+      }
+    });
+
+    const team = Array.from(teamMap.values())
+      .map((e) => ({
+        ...e,
+        avgValue: e.conversions ? e.value / e.conversions : 0,
+        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    res.json({
+      success: true,
+      data: {
+        periodDays: fromRaw ? null : (parseInt(req.query.days, 10) || 30),
+        from: since ? since.toISOString() : null,
+        to: toDate ? toDate.toISOString() : null,
+        pipeline: {
+          total,
+          active: activeAgg._count._all || 0,
+          lost: lostAgg._count._all || 0,
+          totalValue: Number(totalAgg._sum.total || 0),
+          activeValue: Number(activeAgg._sum.total || 0),
+          lostValue: Number(lostAgg._sum.total || 0),
+        },
+        recovery: {
+          converted,
+          convertedValue,
+          avgConvertedValue: converted ? convertedValue / converted : 0,
+          recoveryRate: total ? (converted / total) * 100 : 0,
+          byTeam: byTeamConverted,
+          natural: naturalConverted,
+        },
+        team,
+        trend,
+        recent: convWindow.slice(0, 20).map((c) => ({
+          cartId: c.cartId,
+          orderNumber: c.orderNumber,
+          employeeName: c.employeeName,
+          value: Number(c.cartValue || 0),
+          governorate: c.governorate,
+          convertedAt: c.convertedAt,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching incomplete orders reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب تقارير الطلبات غير المكتملة',
       error: error.message
     });
   }
@@ -1462,6 +1794,26 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const result = createResponse.data;
 
     if (result?.success && result?.data) {
+      // سجل أثر التحويل قبل حذف الـ GuestCart (بيتم الحذف جوه الـ internal API)
+      try {
+        const employee = req.user || {};
+        await getSharedPrismaClient().cartConversionLog.create({
+          data: {
+            cartId,
+            orderId: result.data?.id || null,
+            orderNumber: result.data?.orderNumber || null,
+            employeeId: employee.id || null,
+            employeeName: employee.name || employee.username || employee.email || null,
+            companyId,
+            cartValue: total,
+            governorate: governorate || null,
+            channel: 'admin-convert',
+          },
+        });
+      } catch (logError) {
+        console.error('⚠️ [ORDERS] Failed to record cart conversion log:', logError.message);
+      }
+
       return res.json({
         success: true,
         message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
@@ -1477,6 +1829,56 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       success: false,
       message: detail || 'خطأ في تحويل الطلب غير المكتمل',
     });
+  }
+});
+
+// تسجيل محاولة تواصل (اتصال/واتساب/إيميل) على سلة غير مكتملة
+router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    const allowedMethods = ['call', 'whatsapp', 'email'];
+    const method = (req.body?.method || 'call').toString().toLowerCase();
+    if (!allowedMethods.includes(method)) {
+      return res.status(400).json({ success: false, message: 'طريقة التواصل غير صالحة' });
+    }
+
+    const result = (req.body?.result || '').toString().trim().slice(0, 80) || null;
+    const note = (req.body?.note || '').toString().trim().slice(0, 500) || null;
+    const employee = req.user || {};
+
+    const log = await getSharedPrismaClient().cartContactLog.create({
+      data: {
+        cartId,
+        companyId,
+        employeeId: employee.id || null,
+        employeeName: employee.name || employee.username || employee.email || null,
+        method,
+        result,
+        note,
+      },
+      select: { id: true, cartId: true, method: true, result: true, createdAt: true },
+    });
+
+    return res.json({ success: true, message: 'تم تسجيل محاولة التواصل', data: log });
+  } catch (error) {
+    console.error('❌ Error logging incomplete cart contact:', error.message);
+    return res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة التواصل' });
   }
 });
 
@@ -1708,7 +2110,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       if (isKnownStatus) {
         if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
-          whereClause.status = upperStatus;
+          // Preparation-queue statuses are stored in order.status as their
+          // mapped value (e.g. PROCESSING), while the real stage lives in
+          // metadata.preparationStatus. Route these through the custom filter
+          // so the SQL matches COALESCE(metadata.preparationStatus, status).
+          if (PREP_FILTER_STATUSES.has(upperStatus)) {
+            whereClause._customStatusFilter = upperStatus;
+          } else {
+            whereClause.status = upperStatus;
+          }
         } else {
           whereClause._customStatusFilter = upperStatus;
         }
@@ -1997,8 +2407,17 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     if (customStatusFilter) {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
-      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND status::text = $2`;
+      // Prep statuses are stored under their mapped order.status while the real
+      // stage lives in metadata.preparationStatus — match both so filtering by
+      // e.g. PREPARING also finds orders persisted as PROCESSING.
+      // But exclude orders whose order.status is already terminal (e.g.
+      // DELIVERED) — their stale metadata.preparationStatus from the prep phase
+      // must not pull them back into a prep-stage filter.
+      const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
+      const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
+      const matchExpr = `(UPPER(${effectiveStatusExpr}) = $2 AND NOT (${statusIsTerminalExpr}))`;
+      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       const params = [companyId, customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;
@@ -2592,6 +3011,62 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           typeof currentMetadata.preparationStatus === 'string'
             ? currentMetadata.preparationStatus
             : order.status;
+
+        // ⚙️ Respect the advanced workflow when enabled (transition rules +
+        // approvals). We only enforce it here when the company has actually
+        // configured transitions for the current stage — otherwise we fall back
+        // to allowing the move so an empty workflow config never locks the queue.
+        const workflowConfig = order.company?.orderWorkflowConfig;
+        if (workflowConfig?.enabled) {
+          const orderWorkflowService = require('../services/orderWorkflowService');
+          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const currentStatusDef = await getSharedPrismaClient().orderStatusDefinition.findFirst({
+            where: { companyId, code: effectiveStatus },
+            select: { id: true },
+          });
+          const hasConfiguredTransitions = await getSharedPrismaClient().orderWorkflowTransition.count({
+            where: {
+              companyId,
+              fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+            },
+          });
+          if (hasConfiguredTransitions > 0) {
+            const workflowOrder = { ...order, status: effectiveStatus };
+            const wfResult = await orderWorkflowService.validateStatusChange(
+              companyId,
+              order.id,
+              userId,
+              statusUpper,
+              statusNotes,
+              false,
+              workflowOrder
+            );
+            if (wfResult?.status === 'pending') {
+              return res.json({
+                success: true,
+                message: 'تم تقديم طلب تغيير الحالة للمراجعة.',
+                data: {
+                  orderType: 'regular',
+                  orderNumber,
+                  workflowStatus: 'pending',
+                  requestId: wfResult.requestId,
+                },
+              });
+            }
+          }
+        }
+
+        // 🔒 Enforce the "requireStockBeforePreparing" rule server-side so it
+        // cannot be bypassed with a direct API call.
+        const companySettings = parseOrderMetadata(order.company?.settings);
+        const prepSettings = companySettings.orderPreparation || {};
+        await preparationQueueService.assertPreparationStockRule({
+          orderId: order.id,
+          companyId,
+          targetStatus: statusUpper,
+          prepSettings,
+        });
+
         const mappedStatus = getMappedRegularOrderStatus(statusUpper);
         const nextMetadata = {
           ...currentMetadata,

@@ -64,6 +64,9 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_PREP'
 ]);
 
+// Maps a preparation-queue status to the "regular" order.status value that the
+// rest of the system expects (dashboards/analytics/WhatsApp/Turbo). The prep
+// stage itself is stored in metadata.preparationStatus.
 const getMappedRegularOrderStatus = (preparationStatus) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
@@ -1706,7 +1709,85 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   };
 };
 
+/**
+ * Server-side enforcement of the "requireStockBeforePreparing" rule.
+ *
+ * Mirrors the frontend `validateTransition` stock check so the rule cannot be
+ * bypassed with a direct API call. When `requireStockBeforePreparing` is on and
+ * `allowPartialPreparation` is off, moving an order forward (to QUALITY_CHECK /
+ * PACKAGED / handoff) while items are missing is rejected.
+ *
+ * Returns an Error with statusCode 400 when the move is blocked, otherwise null.
+ */
+const assertPreparationStockRule = async ({
+  orderId,
+  companyId,
+  targetStatus,
+  prepSettings = {},
+}) => {
+  const normalizedTarget = String(targetStatus || '').trim().toUpperCase();
+  const handoffStatus = String(prepSettings.handoffStatus || 'READY_TO_SHIP').trim().toUpperCase();
+
+  const stockBlockedStages = ['QUALITY_CHECK', 'PACKAGED', handoffStatus];
+  if (!stockBlockedStages.includes(normalizedTarget)) {
+    return null;
+  }
+
+  if (prepSettings.requireStockBeforePreparing !== true) {
+    return null;
+  }
+  if (prepSettings.allowPartialPreparation === true) {
+    return null;
+  }
+
+  const prisma = getSharedPrismaClient();
+  const order = await prisma.order.findUnique({
+    where: { id: orderId, companyId },
+    include: {
+      orderItems: { include: { product: { select: { id: true, name: true, sku: true } } } },
+    },
+  });
+  if (!order) {
+    const err = new Error('الطلب غير موجود');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const productIds = [...new Set(
+    order.orderItems
+      .map((item) => String(item.productId || '').trim())
+      .filter(Boolean)
+  )];
+
+  const inventoryRecords = productIds.length > 0
+    ? await prisma.inventory.findMany({
+        where: { productId: { in: productIds }, warehouse: { companyId } },
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          product: { select: { id: true, name: true, sku: true } },
+        },
+      })
+    : [];
+
+  const simpleOrder = mapRegularOrderToSimple(order);
+  const inventorySummary = buildPreparationInventorySummary(inventoryRecords);
+  const summary = buildPreparationOrderSummary(simpleOrder, inventorySummary, null);
+
+  if (summary && summary.missingItemsCount > 0) {
+    const err = new Error(
+      prepSettings.allowCrossWarehouseTransfer
+        ? 'الطلب يحتوي على عناصر ناقصة المخزون. قم بتوفيرها أو تحويلها من مخزن آخر قبل المتابعة'
+        : 'الطلب يحتوي على عناصر ناقصة المخزون ولا يمكن المتابعة قبل اكتمال الكميات'
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return null;
+};
+
 module.exports = {
   getPreparationQueue,
-  bulkUpdateByFilters
+  bulkUpdateByFilters,
+  assertPreparationStockRule
 };

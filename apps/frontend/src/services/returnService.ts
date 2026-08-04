@@ -41,6 +41,17 @@ export interface ReturnRequest {
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionReason?: string;
+  trackingNumber?: string;
+  shippingReturnCost?: number;
+  settlementAmount?: number;
+  returnTypeId?: string;
+  shippingCompanyId?: string;
+  returnType?: ReturnType;
+  shippingCompany?: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
   createdAt: string;
   customer?: {
     firstName: string;
@@ -55,6 +66,7 @@ export interface ReturnRequest {
     total: number;
     currency: string;
     turboTrackingNumber?: string;
+    shippingCost?: number;
     codDepositAmount?: number;
     codDepositPaid?: boolean;
     codDepositRefunded?: boolean;
@@ -64,6 +76,35 @@ export interface ReturnRequest {
     firstName: string;
     lastName: string;
   };
+}
+
+export type ReturnTypeCode = "SENDER_PAYS" | "RECIPIENT_PAYS" | "CANCELLED" | "CUSTOM";
+export type ReturnTypeCostModel = "FULL" | "NONE" | "FIXED";
+
+export interface ReturnType {
+  id: string;
+  companyId: string;
+  shippingCompanyId?: string;
+  name: string;
+  code: ReturnTypeCode;
+  costModel: ReturnTypeCostModel;
+  fixedAmount?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  shippingCompany?: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
+}
+
+export interface ReturnShippingCompany {
+  id: string;
+  name: string;
+  slug?: string;
+  isActive: boolean;
+  returnTypes: ReturnType[];
 }
 
 export const returnService = {
@@ -92,6 +133,7 @@ export const returnService = {
     apiClient.post("/returns/categories", data),
   updateCategory: (id: string, data: any) =>
     apiClient.put(`/returns/categories/${id}`, data),
+  deleteCategory: (id: string) => apiClient.delete(`/returns/categories/${id}`),
 
   // Reasons (Updated with categoryId)
   getReasons: () => apiClient.get<ReturnReason[]>("/returns/reasons"),
@@ -118,6 +160,36 @@ export const returnService = {
     apiClient.get<ContactAttempt[]>(`/returns/requests/${id}/contacts`),
   getActivityLog: (id: string) =>
     apiClient.get<ActivityLog[]>(`/returns/requests/${id}/activity`),
+
+  // Return Types (أنواع المرتجع حسب شركة الشحن)
+  getReturnTypes: (params?: { shippingCompanyId?: string; activeOnly?: boolean }) =>
+    apiClient.get<{ success: boolean; data: ReturnType[] }>("/returns/return-types", {
+      params,
+    }),
+  createReturnType: (data: {
+    name: string;
+    code: ReturnTypeCode;
+    costModel: ReturnTypeCostModel;
+    fixedAmount?: number;
+    shippingCompanyId?: string;
+  }) => apiClient.post<{ success: boolean; data: ReturnType }>("/returns/return-types", data),
+  updateReturnType: (
+    id: string,
+    data: {
+      name?: string;
+      code?: ReturnTypeCode;
+      costModel?: ReturnTypeCostModel;
+      fixedAmount?: number | null;
+      shippingCompanyId?: string;
+      isActive?: boolean;
+    },
+  ) => apiClient.put<{ success: boolean; data: ReturnType }>(`/returns/return-types/${id}`, data),
+  deleteReturnType: (id: string) =>
+    apiClient.delete<{ success: boolean }>(`/returns/return-types/${id}`),
+  getReturnShippingCompanies: () =>
+    apiClient.get<{ success: boolean; data: ReturnShippingCompany[] }>(
+      "/returns/return-shipping-companies",
+    ),
 };
 
 export interface ContactAttempt {
@@ -149,6 +221,7 @@ export interface ReviewDisplayConfig {
   showDateColumn: boolean;
   showActionsColumn: boolean;
   showTrackingColumn?: boolean;
+  showFinancialColumn?: boolean;
   visibleOrderStatuses?: string[];
   ordersStartDate?: string;
 }

@@ -10,6 +10,17 @@ Adds a rule-based automatic order status transition system to the Orders page.
 2. **Cron**: A backend cron job (`orderStatusAutoChangeCron`) runs every minute, fetches all active rules, finds qualifying orders, and batch-updates their status.
 3. **History**: Each auto-transition is logged to `OrderStatusHistory` with `changedBy: SYSTEM_AUTO`.
 
+> ## ⚠️ ثغرة معروفة (Known Bug) — 2026-08-03
+>
+> هذا الكرون يستخدم حالياً `prisma.order.updateMany` الخام لتغيير الحالة، مما **يتجاوز تماماً** `orderService.updateOrderStatus`. النتيجة: الطلبات التي تُغيَّر تلقائياً **لا تتلقى**:
+> - إشعارات واتساب للعميل (حتى لو `OrderStatusConfig.notifyCustomer: true`)
+> - مزامنة `metadata.preparationStatus` (طابور التحضير لا يرى التغيير)
+> - احتساب العمولة / cashback / loyalty / الفواتير
+>
+> **خطة الإصلاح**: راجع `docs/notifications/whatsapp-order-notifications-fix-plan-2026-08-03.md` §1.2 — يتم استبدال `updateMany` بحلقة تستدعي `orderService.updateOrderStatus` لكل طلب.
+>
+> الحالة: **غير مُصلَح بعد** — أنشئ PR قبل اعتبار هذه الميزة كاملة.
+
 ## API
 
 - `GET  /api/v1/order-status-rules` — list all rules for the authenticated company

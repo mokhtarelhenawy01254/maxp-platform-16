@@ -11,6 +11,8 @@ const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotifi
 const verifyToken = require('../utils/verifyToken');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { t } = require('../services/i18n');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
 
 router.get('/ping', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), version: 'v3' }));
 const ensureWallet = async (customerId, companyId) => {
@@ -270,13 +272,7 @@ router.post('/register', getCompanyFromSubdomain, async (req, res) => {
 
     const prisma = getSharedPrismaClient();
 
-    const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        companyId,
-        phone
-      },
-      select: { id: true, firstName: true, lastName: true, phone: true, companyId: true }
-    });
+    const existingCustomer = await findCustomerByPhone(prisma, phone, companyId);
 
     if (existingCustomer) {
       await ensureWallet(existingCustomer.id, companyId);
@@ -293,6 +289,7 @@ router.post('/register', getCompanyFromSubdomain, async (req, res) => {
       data: {
         companyId,
         phone,
+        phoneNormalized: toCanonicalE164(phone),
         firstName: 'عميل',
         lastName: last4 ? `#${last4}` : 'جديد'
       },
@@ -380,7 +377,10 @@ router.post('/lead-capture', getCompanyFromSubdomain, async (req, res) => {
     const prisma = getSharedPrismaClient();
     const duplicateFilters = [];
     if (email) duplicateFilters.push({ email });
-    if (phone) duplicateFilters.push({ phone });
+    if (phone) {
+      const { getPhoneVariants } = require('../utils/phoneNormalization');
+      duplicateFilters.push({ OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }] });
+    }
 
     const leadMetadata = {
       companyName,
@@ -549,7 +549,7 @@ router.post('/request-otp', getCompanyFromSubdomain, async (req, res) => {
     const prisma = getSharedPrismaClient();
 
     const existingCustomer = await prisma.customer.findFirst({
-      where: { companyId, phone },
+      where: { companyId, OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }] },
       select: { id: true, metadata: true }
     });
 
@@ -575,6 +575,7 @@ router.post('/request-otp', getCompanyFromSubdomain, async (req, res) => {
         data: {
           companyId,
           phone,
+          phoneNormalized: toCanonicalE164(phone),
           firstName: 'عميل',
           lastName: last4 ? `#${last4}` : 'جديد',
           metadata: JSON.stringify(nextMetadata)
@@ -654,7 +655,7 @@ router.post('/verify-otp', getCompanyFromSubdomain, async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const customer = await prisma.customer.findFirst({
-      where: { companyId, phone },
+      where: { companyId, OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }] },
       select: { id: true, firstName: true, lastName: true, metadata: true, companyId: true }
     });
 

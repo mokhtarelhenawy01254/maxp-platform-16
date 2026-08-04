@@ -44,9 +44,13 @@ class SocketService {
     this.io = new Server(server, {
       cors: {
         origin: (origin, callback) => {
-          // Allow all origins for now to support custom domains
-          // In a stricter environment, we would validate against our database
-          callback(null, true);
+          // Non-browser clients (workers, AI service, server-to-server) send no Origin header — allow them.
+          if (!origin) return callback(null, true);
+          envConfig.corsOrigins(origin, (err, allowed) => {
+            if (allowed) return callback(null, true);
+            console.warn(`🚫 [SOCKET-CORS] Blocked origin: ${origin}`);
+            return callback(new Error('Origin not allowed by CORS'), false);
+          });
         },
         methods: ['GET', 'POST'],
         credentials: true,
@@ -89,10 +93,11 @@ class SocketService {
     try {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
 
-      // Allow mock tokens for development
-      if (!token || token === 'mock-access-token' || token.includes('mock-signature')) {
+      // Allow mock tokens ONLY in explicit development mode (allow-list, no fail-open)
+      if (process.env.NODE_ENV === 'development' &&
+          (!token || token === 'mock-access-token' || token.includes('mock-signature'))) {
         socket.userId = 'dev-user';
-        socket.companyId = 'cmd5c0c9y0000ymzdd7wtv7ib';
+        socket.companyId = 'dev-company';
         socket.userName = 'Developer';
         socket.role = 'COMPANY_ADMIN';
 
@@ -192,10 +197,51 @@ class SocketService {
       });
 
       // 🚀 معالج الانضمام لغرفة الشركة (للاستيراد في الخلفية)
-      socket.on('join_company_room', (data) => {
-        if (data.companyId) {
+      socket.on('join_company_room', async (data) => {
+        if (!data || !data.companyId) return;
+        if (!socket.userId || !socket.companyId) {
+          socket.emit('error', { message: 'Socket not authenticated' });
+          this.logSecurityEvent('unauthorized_company_room_join', {
+            socketId: socket.id,
+            companyId: data.companyId,
+            timestamp: new Date()
+          });
+          return;
+        }
+
+        if (data.companyId === socket.companyId) {
           socket.join(`company_${data.companyId}`);
-          console.log(`📦 [SOCKET] Socket ${socket.id} joined company room: company_${data.companyId}`);
+          return;
+        }
+
+        try {
+          const membership = await safeQuery(async () => {
+            return await getSharedPrismaClient().userCompany.findUnique({
+              where: {
+                userId_companyId: {
+                  userId: socket.userId,
+                  companyId: data.companyId
+                }
+              },
+              select: { isActive: true }
+            });
+          }, 3);
+
+          if (!membership || !membership.isActive) {
+            socket.emit('error', { message: 'Access denied to this company room' });
+            this.logSecurityEvent('unauthorized_company_room_join', {
+              socketId: socket.id,
+              userId: socket.userId,
+              companyId: data.companyId,
+              timestamp: new Date()
+            });
+            return;
+          }
+
+          socket.join(`company_${data.companyId}`);
+        } catch (err) {
+          console.error(`❌ [SOCKET] join_company_room check failed for socket ${socket.id}:`, err.message);
+          socket.emit('error', { message: 'Failed to join company room' });
         }
       });
 

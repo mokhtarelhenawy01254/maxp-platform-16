@@ -28,6 +28,9 @@ const { safeJsonParse } = require('../utils/jsonUtils');
 const {
   getConversionSuiteFreeShippingPromotion,
 } = require('../utils/storefrontFreeShipping');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { findCustomerByPhone } = require('../utils/customerIdentity');
+const { splitCustomerName } = require('../utils/customerName');
 const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
@@ -1535,19 +1538,14 @@ router.post('/', async (req, res) => {
             orderSource = 'AFFILIATE_REFERRAL';
 
             // البحث عن أو إنشاء العميل لربط الإحالة
-            let customer = await prisma.customer.findFirst({
-              where: {
-                companyId: company.id,
-                phone: guestPhone
-              }
-            });
+            let customer = await findCustomerByPhone(prisma, guestPhone, company.id);
 
             if (!customer) {
               customer = await prisma.customer.create({
                 data: {
-                  firstName: guestName.split(' ')[0] || guestName,
-                  lastName: guestName.split(' ').slice(1).join(' ') || '',
+                  ...splitCustomerName(guestName),
                   phone: guestPhone,
+                  phoneNormalized: toCanonicalE164(guestPhone),
                   email: guestEmail,
                   companyId: company.id,
                   status: 'ACTIVE'
@@ -1766,10 +1764,45 @@ router.post('/', async (req, res) => {
         });
 
         if (existingCart) {
+          // نلتقط بيانات السلة قبل حذفها لتسجيل التحويل الطبيعي
+          let convCheckoutData = {};
+          try {
+            convCheckoutData = existingCart.checkoutData
+              ? (typeof existingCart.checkoutData === 'string' ? JSON.parse(existingCart.checkoutData) : existingCart.checkoutData)
+              : {};
+          } catch (e) {
+            convCheckoutData = {};
+          }
+          const convValue = typeof existingCart.total === 'string'
+            ? parseFloat(existingCart.total) || 0
+            : Number(existingCart.total || 0);
+
           await prisma.guestCart.delete({
             where: { cartId }
           });
           console.log('✅ [CREATE-ORDER] Cart deleted successfully:', cartId);
+
+          // سجل التحويل الطبيعي (العميل كمل الشيك آوت لوحده).
+          // بيتجاهل طلبات admin-convert لأن نقطة التحويل دي بتسجل بالفعل في routes/orders.js
+          if (!req.headers['x-admin-convert']) {
+            try {
+              await prisma.cartConversionLog.create({
+                data: {
+                  cartId,
+                  orderId: newOrder?.id || null,
+                  orderNumber: newOrder?.orderNumber || null,
+                  employeeId: null,
+                  employeeName: null,
+                  companyId: company.id,
+                  cartValue: convValue,
+                  governorate: convCheckoutData?.governorate || convCheckoutData?.city || null,
+                  channel: 'natural',
+                },
+              });
+            } catch (logError) {
+              console.error('⚠️ [CREATE-ORDER] Failed to record natural cart conversion log:', logError.message);
+            }
+          }
         } else {
           console.log('⚠️ [CREATE-ORDER] Cart not found, skipping delete:', cartId);
         }
@@ -1903,12 +1936,7 @@ router.post('/', async (req, res) => {
       const prisma = await getPrisma();
 
       // البحث عن أو إنشاء customer
-      let customer = await prisma.customer.findFirst({
-        where: {
-          phone: order.guestPhone,
-          companyId: company.id
-        }
-      });
+      let customer = await findCustomerByPhone(prisma, order.guestPhone, company.id);
 
       // If order was placed by an authenticated customer, prefer linking to that customer record
       if (customerAuth && customerAuth.companyId === company.id) {
@@ -1925,15 +1953,16 @@ router.post('/', async (req, res) => {
         console.log('🔍 [ORDER-CREATE] Creating new customer:', order.guestName, order.guestPhone);
 
         // Split name into first and last
-        const nameParts = order.guestName?.split(' ') || ['عميل', 'جديد'];
-        const firstName = nameParts[0] || 'عميل';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const nameParts = splitCustomerName(order.guestName);
+        const firstName = nameParts.firstName;
+        const lastName = nameParts.lastName;
 
         customer = await prisma.customer.create({
           data: {
             firstName: firstName,
             lastName: lastName || null,
             phone: order.guestPhone,
+            phoneNormalized: toCanonicalE164(order.guestPhone),
             email: order.guestEmail || null,
             companyId: company.id,
             status: 'ACTIVE',
@@ -1942,6 +1971,22 @@ router.post('/', async (req, res) => {
         });
         console.log('✅ [ORDER-CREATE] Customer created:', customer.id);
       } else {
+        const updateData = {};
+        if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
+        if (!customer.phoneNormalized && customer.phone) {
+          updateData.phoneNormalized = toCanonicalE164(customer.phone);
+        }
+        if (Object.keys(updateData).length > 0) {
+          try {
+            updateData.updatedAt = new Date();
+            customer = await prisma.customer.update({
+              where: { id: customer.id },
+              data: updateData
+            });
+          } catch (statusErr) {
+            console.error('⚠️ [ORDER-CREATE] Failed to update customer:', statusErr.message);
+          }
+        }
         console.log('✅ [ORDER-CREATE] Found existing customer:', customer.id);
       }
 

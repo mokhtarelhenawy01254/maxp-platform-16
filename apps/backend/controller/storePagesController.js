@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const getPrisma = () => getSharedPrismaClient();
 
 /**
@@ -271,7 +272,8 @@ const newsletterSubscribe = async (req, res) => {
     const lastName = restName.join(' ') || 'النشرة';
     const customerFilters = [{ email }];
     if (phone) {
-      customerFilters.push({ phone });
+      const { getPhoneVariants } = require('../utils/phoneNormalization');
+      customerFilters.push({ OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }] });
     }
 
     const existingCustomer = await getPrisma().customer.findFirst({

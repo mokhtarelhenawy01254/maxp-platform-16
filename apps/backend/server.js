@@ -199,6 +199,7 @@ const bookingPatientsRoutes = require("./routes/bookingPatientsRoutes");
 const bookingInvoicesRoutes = require("./routes/bookingInvoicesRoutes");
 const bookingDoctorAvailabilityRoutes = require("./routes/bookingDoctorAvailabilityRoutes");
 const bookingDoctorPortalRoutes = require("./routes/bookingDoctorPortalRoutes");
+const bookingPatientPortalRoutes = require("./routes/bookingPatientPortalRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -754,6 +755,7 @@ app.use("/api/v1/bosta", bostaRoutes);
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
 app.use("/api/v1/booking/branches", bookingBranchesRoutes);
+app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
 app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
 app.use("/api/v1/booking/services", bookingServicesRoutes);
 app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
@@ -761,8 +763,8 @@ app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/booking/patients", bookingPatientsRoutes);
 app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
-app.use("/api/v1/booking/doctors/availability", bookingDoctorAvailabilityRoutes);
 app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
+app.use("/api/v1/booking/patient-portal", bookingPatientPortalRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -1114,6 +1116,16 @@ try {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
 }
 
+// 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
+// (BullMQ إن توفر Redis، وإلا fallback polling كل 60 ثانية)
+try {
+  const { startNotificationQueueWorker } = require("./services/whatsapp/notificationQueueWorker");
+  startNotificationQueueWorker();
+  console.log("✅ [NOTIF-QUEUE] WhatsApp notification queue worker registered");
+} catch (error) {
+  console.error("❌ [NOTIF-QUEUE] Failed to start notification queue worker:", error);
+}
+
 
 // AI Provider Health Check — delegated to Python ai-service
 try {
@@ -1365,6 +1377,9 @@ async function shutdownGracefully(signal) {
     const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
     if (sessionCount > 0) {
       console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
+      if (typeof WhatsAppManager.flushAllAuthStates === 'function') {
+        await WhatsAppManager.flushAllAuthStates();
+      }
       await WhatsAppManager.disconnectAllSessions();
       console.log('✅ [SERVER] All WhatsApp sessions disconnected');
     }

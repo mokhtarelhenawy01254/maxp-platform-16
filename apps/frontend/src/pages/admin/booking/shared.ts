@@ -34,16 +34,30 @@ export interface BookingBranch {
   isActive: boolean; createdAt: string;
   maxBookingsPerSlot?: number;
   location?: string; landmarkImage?: string;
+  facilityType?: string;
   genderDays?: GenderDaysMap | string;
 }
+
+export const FACILITY_TYPES = [
+  { value: "clinic", label: "عيادة" },
+  { value: "medical_center", label: "مركز طبي" },
+  { value: "hospital", label: "مستشفى" },
+  { value: "polyclinic", label: "مستوصف" },
+  { value: "dental", label: "عيادة أسنان" },
+  { value: "cosmetic", label: "مركز تجميل" },
+];
+
+export const FACILITY_TYPE_LABEL: Record<string, string> = Object.fromEntries(FACILITY_TYPES.map(f => [f.value, f.label]));
 
 export interface BranchFormData {
   id?: string; name: string; address: string; phone?: string;
   phones: string[]; workingDays: string;
   workStart: string; workEnd: string;
+  dayHours: Record<string, { start: string; end: string }>;
   maleDays: string[]; femaleDays: string[];
   isActive: boolean; maxBookingsPerSlot: number;
   location?: string; landmarkImage?: string;
+  facilityType: string;
 }
 
 export interface ServiceBranchAssignment {
@@ -55,6 +69,23 @@ export interface ServiceFormData {
   id?: string; name: string; description: string;
   assignedBranchIds?: string[];
   branches: ServiceBranchAssignment[];
+  durationMinutes?: number;
+  basePrice?: number;
+  imageUrl?: string;
+  categoryId?: string;
+  requiresConsultation?: boolean;
+  doctorIds?: string[];
+}
+
+export interface ServiceCategory {
+  id: string; name: string; color?: string; icon?: string;
+  sortOrder: number; isActive: boolean;
+}
+
+export interface DoctorServiceLink {
+  id: string; doctorId: string; serviceId: string;
+  fee?: number; isActive: boolean;
+  doctor?: { id: string; name: string; title: string; specialty?: string };
 }
 
 export const normalizeBranch = (b: BookingBranch): BookingBranch => ({
@@ -67,6 +98,38 @@ export interface BookingDoctor {
   id: string; title: string; name: string; branchId: string; branchName?: string;
   specialty: string; phone: string; isActive: boolean; createdAt: string;
   email?: string; password?: string; consultationFee?: number; commissionRate?: number; bio?: string; avatarUrl?: string;
+  serviceIds?: string[];
+  doctorServices?: DoctorServiceLink[];
+}
+
+export interface DoctorAvailability {
+  id: string; doctorId: string; dayOfWeek: number;
+  startTime: string; endTime: string; isAvailable: boolean;
+}
+
+export interface BookingDoctorDetail extends BookingDoctor {
+  branchName?: string;
+  gender?: string;
+  services?: { id: string; name: string; basePrice?: number | null; durationMinutes?: number | null; fee?: number | null }[];
+  availability?: DoctorAvailability[];
+  appointments?: {
+    id: string; customerName: string; customerPhone?: string;
+    appointmentDate: string; startTime: string; endTime?: string;
+    status: string; branchName?: string; serviceName?: string;
+    diagnosis?: string; treatmentPlan?: string; prescription?: string;
+    paymentStatus?: string; source?: string;
+  }[];
+  todayAppointments?: BookingDoctorDetail["appointments"];
+  upcomingAppointments?: BookingDoctorDetail["appointments"];
+  pastAppointments?: BookingDoctorDetail["appointments"];
+  stats?: {
+    total: number; completed: number; pending: number; confirmed: number;
+    cancelled: number; noShow: number;
+    upcoming: number; today: number;
+    attendanceRate: number; noShowRate: number;
+    totalBilled: number; collected: number; discounts: number;
+    outstanding: number; commission: number; revenue: number;
+  };
 }
 
 export interface BookingBranchServiceInfo {
@@ -78,12 +141,20 @@ export interface BookingBranchServiceInfo {
 
 export interface BookingService {
   id: string; name: string; description: string;
+  requiresConsultation?: boolean;
+  durationMinutes?: number;
+  basePrice?: number;
+  imageUrl?: string;
+  categoryId?: string;
+  category?: { id: string; name: string; color?: string; icon?: string };
+  doctorServices?: DoctorServiceLink[];
   isActive: boolean; createdAt: string;
   branchServices: BookingBranchServiceInfo[];
 }
 
 export interface BookingAppointment {
   id: string; customerName: string; customerPhone: string;
+  customerEmail?: string;
   customerGender?: string;
   branchId: string; branchName?: string;
   doctorId?: string; doctorName?: string;
@@ -94,6 +165,8 @@ export interface BookingAppointment {
   notes: string; confirmedAt?: string; createdAt: string;
   createdById?: string; createdByType?: string; createdByName?: string;
   patientId?: string;
+  nationalId?: string;
+  address?: string;
   diagnosis?: string; treatmentPlan?: string; prescription?: string;
   vitals?: string[] | Record<string, unknown> | string;
   followUpDate?: string;
@@ -102,12 +175,14 @@ export interface BookingAppointment {
 export interface BookingPatient {
   id: string; firstName: string; lastName?: string;
   phone?: string; email?: string; gender?: string;
+  nationalId?: string; nationalIdImage?: string; address?: string;
   birthDate?: string; bloodType?: string;
   allergies?: string[] | string;
   chronicDiseases?: string[] | string;
   medications?: string[] | string;
   notes?: string; isActive: boolean; createdAt: string;
   visitCount?: number;
+  password?: string;
   customer?: { id: string; firstName: string; lastName: string; phone?: string };
 }
 

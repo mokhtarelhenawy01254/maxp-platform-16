@@ -14,6 +14,13 @@ const {
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
 const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
+const { encryptField, decryptField } = require('../utils/fieldEncryption');
+
+const encryptTokenIfNeeded = (token) => {
+    if (token === undefined || token === null) return token;
+    if (typeof token === 'string' && token.startsWith('enc:v1:')) return token;
+    return encryptField(token);
+};
 
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -36,9 +43,40 @@ const normalizePhoneNumber = (value) => {
     return cleaned.length >= 10 ? cleaned : '';
 };
 
+// Cache لنتيجة فحص الـ authState: فك تشفير الـ authState (blob كبير) عملية sync ثقيلة
+// بتبلوك الـ event loop لو اتكررت على كل getSessions/getSession. TTL قصير (30s) —
+// الأسوأ لو جلسة اتربطت لسه مفيش نتيجة (لكام ثانية) والـ reconnect بيتعامل معاه لاحقاً.
+const authStateCheckCache = new Map(); // sessionId -> { hasAuth, expiresAt }
+const AUTH_STATE_CHECK_TTL_MS = 30 * 1000;
+
+const pruneAuthStateCheckCache = () => {
+    const now = Date.now();
+    for (const [key, entry] of authStateCheckCache) {
+        if (entry.expiresAt <= now) authStateCheckCache.delete(key);
+    }
+};
+
 const hasRegisteredAuthState = (session) => {
-    const authState = parseJsonSafely(session?.authState, null);
-    return Boolean(authState?.creds?.registered || authState?.creds?.me);
+    if (!session?.id) return false;
+    const cached = authStateCheckCache.get(session.id);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.hasAuth;
+    }
+    // authState غير متجاب (مستبعد من getSessions) → fallback حسب الـ status:
+    // جلسة DB CONNECTED/CONNECTING من غير session في الذاكرة = عندها auth صالح (هتظهر reconnecting)
+    if (session?.authState === undefined) {
+        return session.status === 'CONNECTED' || session.status === 'CONNECTING';
+    }
+    const authState = parseJsonSafely(decryptField(session?.authState), null);
+    const hasAuth = Boolean(authState?.creds?.registered || authState?.creds?.me);
+    authStateCheckCache.set(session.id, { hasAuth, expiresAt: Date.now() + AUTH_STATE_CHECK_TTL_MS });
+    if (authStateCheckCache.size > 500) {
+        pruneAuthStateCheckCache();
+    }
+    return hasAuth;
+};
+const clearAuthStateCheckCache = (sessionId) => {
+    if (sessionId) authStateCheckCache.delete(sessionId);
 };
 const toBooleanOption = (value) =>
     value === true || value === 'true' || value === 1 || value === '1' || value === 'on';
@@ -91,14 +129,17 @@ const mapSessionForResponse = (session, includeQrData = false) => {
             }
         }
     } else {
-        // No in-memory session - check if there's valid auth state
-        const hasAuth = hasRegisteredAuthState(session);
-        if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
-            // Has valid auth but no in-memory session - session manager will create it
-            // Show as 'reconnecting' to indicate it should reconnect automatically
-            liveStatus = 'reconnecting';
-        } else {
+        // META_CLOUD sessions are API-only (no in-memory socket needed).
+        // Absence of activeSession is normal — trust DB status directly.
+        if (provider === 'META_CLOUD') {
             liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+        } else {
+            const hasAuth = hasRegisteredAuthState(session);
+            if (hasAuth && (session.status === 'CONNECTED' || session.status === 'CONNECTING')) {
+                liveStatus = 'reconnecting';
+            } else {
+                liveStatus = getLiveStatusFromDbStatus(session.status, provider);
+            }
         }
     }
 
@@ -234,7 +275,39 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
         const sessions = await prisma.whatsAppSession.findMany({
             where: { companyId },
             orderBy: { createdAt: 'desc' },
-            include: {
+            // لا نجيب authState (blob كبير) ولا الـ Meta tokens/secrets (حساسة) —
+            // بيقلل الحمولة ويمنع تسريبهم للـ frontend (mapSessionForResponse بيعمل spread)
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
                         whatsAppMessages: { where: { isHidden: false } },
@@ -371,7 +444,7 @@ async function createSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: metaAccessToken ? encryptTokenIfNeeded(metaAccessToken) : undefined,
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -568,7 +641,37 @@ async function getSession(req, res) {
 
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
             where: { id, companyId },
-            include: {
+            select: {
+                id: true,
+                companyId: true,
+                name: true,
+                phoneNumber: true,
+                provider: true,
+                status: true,
+                lastConnectedAt: true,
+                lastDisconnectedAt: true,
+                isDefault: true,
+                aiEnabled: true,
+                autoReply: true,
+                aiMode: true,
+                welcomeMessage: true,
+                awayMessage: true,
+                workingHoursEnabled: true,
+                workingHours: true,
+                loadBalanceWeight: true,
+                metadata: true,
+                metaPhoneNumberId: true,
+                metaWabaId: true,
+                metaBusinessId: true,
+                metaTokenExpiresAt: true,
+                metaDisplayPhoneNumber: true,
+                metaQualityRating: true,
+                metaMessagingLimit: true,
+                metaApiVersion: true,
+                createdAt: true,
+                updatedAt: true,
+                profileName: true,
+                profilePictureUrl: true,
                 _count: {
                     select: {
                         whatsAppMessages: { where: { isHidden: false } },
@@ -682,7 +785,7 @@ async function updateSession(req, res) {
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken,
+                metaAccessToken: encryptTokenIfNeeded(metaAccessToken),
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
@@ -2109,7 +2212,11 @@ async function archiveChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.archiveChat(targetSessionId, jid, archive);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2146,7 +2253,11 @@ async function pinChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.pinChat(targetSessionId, jid, pin);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2183,7 +2294,11 @@ async function muteChat(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.muteChat(targetSessionId, jid, mute);
+        }
 
         // Update local DB
         await getSharedPrismaClient().whatsAppContact.updateMany({
@@ -2220,7 +2335,11 @@ async function markChatUnread(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        // META_CLOUD (official WhatsApp Cloud API) has no chat-modify endpoint —
+        // persist the local inbox state only (the unread badge reads unreadCount)
+        if (session.provider !== 'META_CLOUD') {
+            await WhatsAppManager.markChatUnread(targetSessionId, jid, unread);
+        }
 
         // Update local DB if needed (optional, as unread count comes from messages usually)
         if (unread) {
@@ -2494,7 +2613,7 @@ async function migrateAuthToDatabase(req, res) {
             await getSharedPrismaClient().whatsAppSession.update({
                 where: { id: sessionId },
                 data: {
-                    authState: JSON.stringify(authState),
+                    authState: encryptField(JSON.stringify(authState)),
                     updatedAt: new Date()
                 }
             });
@@ -4821,7 +4940,7 @@ async function facebookConnect(req, res) {
                 name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: metaPhoneNumberId,
@@ -5079,7 +5198,7 @@ async function facebookEmbeddedConnect(req, res) {
                 name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
                 provider: 'META_CLOUD',
                 status: 'CONNECTED',
-                metaAccessToken: longLivedToken,
+                metaAccessToken: encryptField(longLivedToken),
                 metaTokenExpiresAt: tokenExpiresAt,
                 metaWabaId: wabaId,
                 metaPhoneNumberId: phoneNumberId,
