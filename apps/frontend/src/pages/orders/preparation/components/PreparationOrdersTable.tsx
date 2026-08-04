@@ -1,7 +1,7 @@
 import { Fragment, memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   PREPARATION_COLUMN_LABEL_KEYS,
@@ -10,9 +10,11 @@ import {
   type PreparationTableColumn,
 } from "../constants";
 import {
+  buildProblemHoldDetails,
   buildShortageHoldDetails,
   getAgeLabel,
   getNextStatus,
+  getProblemReasonLabel,
   getQuickActionLabel,
   getShortageFollowUpState,
   getShortageFollowUpVisual,
@@ -22,12 +24,14 @@ import type {
   PreparationOrder,
   PreparationQueueSettings,
   PreparationStatusOption,
+  ProblemHoldDetails,
   QcCheckKey,
   ShortageHoldDetails,
 } from "../types";
 import PreparationOrderItemsList from "./PreparationOrderItemsList";
 import PreparationOrderNotices from "./PreparationOrderNotices";
 import PreparationOrderShortagePanel from "./PreparationOrderShortagePanel";
+import PreparationProblemHoldPanel from "./PreparationProblemHoldPanel";
 import PreparationOrderQcChecklist from "./PreparationOrderQcChecklist";
 import PreparationOrderActions from "./PreparationOrderActions";
 
@@ -39,10 +43,12 @@ interface PreparationOrdersTableProps {
   selectedSet: Set<string>;
   rowUpdatingId: string | null;
   shortageSavingOrderId: string | null;
+  problemHoldSavingOrderId: string | null;
   selectedWarehouseId: string;
   enabledQcChecks: QcCheckKey[];
   qcChecklistState: Record<string, Partial<Record<QcCheckKey, boolean>>>;
   shortageHoldDrafts: Record<string, ShortageHoldDetails>;
+  problemHoldDrafts: Record<string, ProblemHoldDetails>;
   transferingItemKey: string | null;
   printingOrderNumber: string | null;
   preparationSettings: PreparationQueueSettings;
@@ -61,6 +67,16 @@ interface PreparationOrdersTableProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
+  onProblemFieldChange: (
+    orderNumber: string,
+    field: keyof ProblemHoldDetails,
+    value: string | boolean,
+  ) => void;
+  onSaveProblemHoldDetails: (
+    orderNumber: string,
+    overrides?: Partial<ProblemHoldDetails>,
+    options?: { successMessage?: string | null },
+  ) => Promise<boolean>;
   onQcCheckToggle: (
     orderNumber: string,
     key: QcCheckKey,
@@ -70,6 +86,8 @@ interface PreparationOrdersTableProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
+  onHoldAsProblem: (orderNumber: string) => void;
+  onReleaseProblemHold: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -81,10 +99,12 @@ const PreparationOrdersTable = ({
   selectedSet,
   rowUpdatingId,
   shortageSavingOrderId,
+  problemHoldSavingOrderId,
   selectedWarehouseId,
   enabledQcChecks,
   qcChecklistState,
   shortageHoldDrafts,
+  problemHoldDrafts,
   transferingItemKey,
   printingOrderNumber,
   preparationSettings,
@@ -95,11 +115,15 @@ const PreparationOrdersTable = ({
   onQuickTransfer,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
+  onProblemFieldChange,
+  onSaveProblemHoldDetails,
   onQcCheckToggle,
   onStatusSelectionChange,
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
+  onHoldAsProblem,
+  onReleaseProblemHold,
   onPrintPreparationSlip,
 }: PreparationOrdersTableProps) => {
   const { t } = useTranslation();
@@ -142,6 +166,9 @@ const PreparationOrdersTable = ({
             {visibleColumns.includes("status") && (
               <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.status)}</th>
             )}
+            {visibleColumns.includes("problem") && (
+              <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.problem)}</th>
+            )}
             {visibleColumns.includes("warehouse") && (
               <th className="px-3 py-2.5">{t(PREPARATION_COLUMN_LABEL_KEYS.warehouse)}</th>
             )}
@@ -173,6 +200,19 @@ const PreparationOrdersTable = ({
                 order.stage,
               ),
             );
+            const problemHoldDetails =
+              problemHoldDrafts[order.orderNumber] ||
+              buildProblemHoldDetails(order.metadata);
+            const problemFollowUpVisual = getShortageFollowUpVisual(
+              getShortageFollowUpState(
+                problemHoldDetails.followUpDate,
+                order.stage,
+              ),
+            );
+            const activeFollowUpVisual =
+              order.stage === "ON_HOLD_PREP"
+                ? problemFollowUpVisual
+                : shortageFollowUpVisual;
             const nextStatus = getNextStatus(
               order.stage,
               preparationSettings.handoffStatus,
@@ -189,6 +229,8 @@ const PreparationOrdersTable = ({
                       ? "PACKAGED"
                       : order.stage === "STOCK_SHORTAGE"
                         ? SHORTAGE_HOLD_STATUS
+                      : order.stage === "ON_HOLD_PREP"
+                        ? preparationSettings.startingStatus
                         : preparationSettings.handoffStatus;
             const defaultTargetStatus = nextStatus || currentStageStatus;
             const currentSelection =
@@ -203,9 +245,11 @@ const PreparationOrdersTable = ({
             );
             const rowBusy =
               rowUpdatingId === order.orderNumber ||
-              shortageSavingOrderId === order.orderNumber;
+              shortageSavingOrderId === order.orderNumber ||
+              problemHoldSavingOrderId === order.orderNumber;
             const hasShortageContext =
               order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
+            const isProblemHeld = order.stage === "ON_HOLD_PREP";
             const isEvenRow = index % 2 === 0;
 
             return (
@@ -305,6 +349,27 @@ const PreparationOrdersTable = ({
                     </td>
                   )}
 
+                  {/* Problem */}
+                  {visibleColumns.includes("problem") && (
+                    <td className="px-3 py-2.5">
+                      {isProblemHeld ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                          title={`${getProblemReasonLabel(problemHoldDetails.reason)}${
+                            problemHoldDetails.owner
+                              ? ` — ${problemHoldDetails.owner}`
+                              : ""
+                          }`}
+                        >
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5" />
+                          {t("preparation.table.hasProblem")}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                  )}
+
                   {/* Warehouse */}
                   {visibleColumns.includes("warehouse") && (
                     <td className="px-3 py-2.5">
@@ -396,7 +461,7 @@ const PreparationOrdersTable = ({
 
                         <PreparationOrderNotices
                           order={order}
-                          shortageFollowUpVisual={shortageFollowUpVisual}
+                          shortageFollowUpVisual={activeFollowUpVisual}
                         />
 
                         {canPrepare && hasShortageContext ? (
@@ -409,6 +474,20 @@ const PreparationOrdersTable = ({
                             onShortageFieldChange={onShortageFieldChange}
                             onSaveShortageHoldDetails={
                               onSaveShortageHoldDetails
+                            }
+                          />
+                        ) : null}
+
+                        {canPrepare && isProblemHeld ? (
+                          <PreparationProblemHoldPanel
+                            order={order}
+                            problemHoldDetails={problemHoldDetails}
+                            shortageFollowUpVisual={problemFollowUpVisual}
+                            rowBusy={rowBusy}
+                            formatDate={formatDate}
+                            onProblemFieldChange={onProblemFieldChange}
+                            onSaveProblemHoldDetails={
+                              onSaveProblemHoldDetails
                             }
                           />
                         ) : null}
@@ -441,6 +520,8 @@ const PreparationOrdersTable = ({
                           onSingleStatusUpdate={onSingleStatusUpdate}
                           onMarkAsShortageHold={onMarkAsShortageHold}
                           onReleaseShortageHold={onReleaseShortageHold}
+                          onHoldAsProblem={onHoldAsProblem}
+                          onReleaseProblemHold={onReleaseProblemHold}
                           onPrintPreparationSlip={onPrintPreparationSlip}
                         />
                       </div>

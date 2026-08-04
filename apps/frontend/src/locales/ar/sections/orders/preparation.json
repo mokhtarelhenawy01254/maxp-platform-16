@@ -34,6 +34,7 @@
     "invoicePrintFailed": "فشل في تجهيز الفواتير",
     "invoiceNotFound": "لم يتم العثور على فواتير للطلبات المحددة",
     "invoicePrintError": "تعذر طباعة الفواتير",
+    "printWindowBlocked": "تعذر فتح نافذة الطباعة. الرجاء السماح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة",
     "guestInvoiceOpened": "تم فتح فواتير طلبات الضيف للطباعة",
     "orderNotFound": "تعذر العثور على الطلب المحدد",
     "stageUpdated": "تم تحديث الطلبات بنجاح",
@@ -51,6 +52,9 @@
     "selectWarehouseFirst": "حدد مخزن الوجهة أولًا لتفعيل النقل السريع",
     "shortageHoldSaved": "تم حفظ بيانات تعليق العجز",
     "shortageHoldFailed": "تعذر حفظ بيانات تعليق العجز",
+    "problemHoldSaved": "تم حفظ بيانات تعليق المشكلة",
+    "problemHoldFailed": "تعذر حفظ بيانات تعليق المشكلة",
+    "holdBlocksForward": "الطلب معلق بانتظار حل المشكلة — يجب إرجاعه للتجهيز أو إزالة التعليق قبل المتابعة",
     "excludedCount": "مع استبعاد {{count}} طلب غير مطابق",
     "bulkUpdated": "تم تحديث {{success}} طلب وفشل {{failed}} طلب",
     "bulkUpdatedAll": "تم تحديث {{count}} طلب بنجاح",
@@ -112,6 +116,7 @@
     "units": "القطع",
     "value": "القيمة",
     "status": "الحالة",
+    "problem": "مشكلة",
     "warehouse": "المخزن",
     "readiness": "التجهيز",
     "printStatus": "الطباعة",
@@ -148,7 +153,8 @@
     "units": "القطع",
     "value": "القيمة",
     "warehouse": "المخزن",
-    "shippingCode": "كود الشحن"
+    "shippingCode": "كود الشحن",
+    "hasProblem": "فيه مشكلة"
   },
   "toasts": {
     "queueUpdated": "تم تحديث قائمة التجهيز",
@@ -191,6 +197,15 @@
     "waiting_restock": "بانتظار إعادة التخزين",
     "other": "سبب آخر"
   },
+  "problemReasons": {
+    "waiting_customer": "بانتظار رد العميل",
+    "payment_issue": "مشكلة في الدفع",
+    "address_issue": "مشكلة في العنوان",
+    "waiting_management": "بانتظار قرار الإدارة",
+    "waiting_supplier": "بانتظار المورد",
+    "qc_issue": "مشكلة في فحص الجودة",
+    "other": "سبب آخر"
+  },
   "shortageFollowUp": {
     "overdueLabel": "متأخر",
     "overdueText": "موعد المتابعة تجاوز — يرجى مراجعة المسؤول وتحديث الحالة.",
@@ -205,6 +220,7 @@
     "QUALITY_CHECK": "اعتماد وتغليف",
     "PACKAGED": "تسليم للشحن",
     "STOCK_SHORTAGE": "استئناف التجهيز",
+    "ON_HOLD_PREP": "إرجاع للتجهيز",
     "default": "تحديث الحالة"
   },
   "age": {
@@ -250,7 +266,9 @@
     "viewOnlyDesc": "التاجر يرى اسم العميل والمنتجات فقط — أدوات التجهيز غير مفعلة.",
     "viewOnly": "عرض فقط",
     "holdShortage": "تعليق بالعجز",
+    "holdProblem": "تجهيز معلق — مشكلة",
     "returnToPreparation": "إرجاع للتجهيز",
+    "releaseProblem": "إفراج وإعادة للتجهيز",
     "print": "طباعة",
     "openOrder": "فتح الطلب"
   },
@@ -321,10 +339,52 @@
     "customerNotifiedBadge": "تم إبلاغ العميل",
     "ownerBadge": "المسؤول: {{name}}"
   },
+  "problemPanel": {
+    "title": "تجهيز معلق — بانتظار حل المشكلة",
+    "desc": "هذا الطلب محجوز حتى تُحل المشكلة من الطرف المسؤول. لا يمكن تسليمه للشحن قبل الإفراج.",
+    "reasonLabel": "نوع المشكلة",
+    "ownerLabel": "المسؤول عن الحل",
+    "ownerPlaceholder": "اسم الموظف أو الفريق",
+    "followUpDate": "تاريخ المتابعة",
+    "customerNotified": "تم إبلاغ العميل",
+    "notesLabel": "تفاصيل المشكلة",
+    "notesPlaceholder": "مثال: بانتظار تأكيد العميل للعنوان أو موافقة المبيعات على التسعير.",
+    "reasonBadge": "المشكلة:",
+    "heldAt": "تاريخ التعليق: {{date}}",
+    "heldBy": "بواسطة {{name}}",
+    "followUpOn": "متابعة في: {{date}}",
+    "noFollowUpDate": "لم يتم تحديد تاريخ متابعة بعد",
+    "save": "حفظ بيانات المشكلة",
+    "releasedNote": "تم إفراج الطلب من تعليق المشكلة",
+    "releasedSuccess": "تم إفراج الطلب وإعادته للتجهيز",
+    "releasedError": "تعذر إفراج الطلب من تعليق المشكلة",
+    "customerNotifiedBadge": "تم إبلاغ العميل",
+    "ownerBadge": "المسؤول: {{name}}"
+  },
+  "holdDialog": {
+    "holdTitle": "تعليق الطلب {{order}} كمشكلة",
+    "advanceTitle": "تحديث {{order}} إلى {{status}}",
+    "holdDesc": "اكتب سبب المشكلة والمسؤول عنها — الطلب لن ينتقل للشحن حتى يتم حلها.",
+    "advanceDesc": "يمكنك إضافة تعليق للتوثيق قبل تنفيذ تغيير الحالة.",
+    "reasonLabel": "نوع المشكلة",
+    "ownerLabel": "المسؤول عن الحل",
+    "ownerPlaceholder": "اسم الموظف أو الفريق",
+    "followUpLabel": "تاريخ المتابعة",
+    "customerNotified": "تم إبلاغ العميل",
+    "reasonNoteLabel": "سبب التعليق (مطلوب)",
+    "reasonNotePlaceholder": "مثال: بانتظار رد العميل على العنوان",
+    "commentLabel": "تعليق",
+    "commentPlaceholder": "اكتب ملاحظة (اختياري)",
+    "reasonRequired": "سبب التعليق مطلوب — اكتب المشكلة التي سيتم حلها",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "saving": "جاري التنفيذ..."
+  },
   "notices": {
     "notes": "ملاحظات:",
     "needsReview": "يحتاج مراجعة مخزون أو تحويل من مخزن آخر قبل إكمال التجهيز.",
-    "shortageHold": "طلب مؤجل بسبب العجز — لن يدخل التشغيل اليومي حتى إرجاعه للتجهيز."
+    "shortageHold": "طلب مؤجل بسبب العجز — لن يدخل التشغيل اليومي حتى إرجاعه للتجهيز.",
+    "problemHold": "طلب محجوز بانتظار حل مشكلة — لن ينتقل للشحن حتى يُحل ويُفرج."
   },
   "pageHeader": {
     "title": "تجهيز الطلبات",
@@ -345,6 +405,7 @@
   "filtersToggle": "فلترة التجهيز",
   "overdueBanner": "{{count}} طلب تجاوز موعد المتابعة",
   "overdueBanner_plural": "{{count}} طلب تجاوز موعد المتابعة",
+  "problemOverdueBanner": "{{count}} طلب معلق تجاوز موعد متابعة المشكلة",
   "selectAllCheckbox": "تحديد الكل",
   "sortOptions": {
     "createdAt_desc": "الأحدث أولاً",

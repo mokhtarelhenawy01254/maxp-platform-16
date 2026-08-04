@@ -775,7 +775,8 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'READY_TO_SHIP',
   'STOCK_SHORTAGE',
   'PENDING_STOCK',
-  'ON_HOLD_STOCK'
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
 ]);
 
 // Maps a preparation-queue status to the "regular" order.status value that the
@@ -883,6 +884,21 @@ const updateAnyOrderStatus = async ({
     if (order) {
       const currentMetadata = parseOrderMetadata(order.metadata);
 
+      const previousPreparationStatus =
+        typeof currentMetadata.preparationStatus === 'string'
+          ? currentMetadata.preparationStatus
+          : order.status;
+
+      // 🔒 Enforce the "problem hold" rules server-side (ON_HOLD_PREP requires
+      // a reason note; a held order cannot move forward until released).
+      const { assertPreparationHoldRule } = preparationQueueService;
+      await assertPreparationHoldRule({
+        currentPreparationStatus: previousPreparationStatus,
+        targetStatus: normalizedStatus,
+        notes,
+        isOverride: options.isOverride || false,
+      });
+
       // ⚙️ Respect the advanced workflow when enabled and transitions exist for
       // the current stage (fall back to allowing otherwise).
       if (!skipTransitionValidation) {
@@ -918,10 +934,6 @@ const updateAnyOrderStatus = async ({
         }
       }
 
-      const previousPreparationStatus =
-        typeof currentMetadata.preparationStatus === 'string'
-          ? currentMetadata.preparationStatus
-          : order.status;
       const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
       const nextMetadata = {
         ...currentMetadata,
@@ -3012,6 +3024,16 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             ? currentMetadata.preparationStatus
             : order.status;
 
+        // 🔒 Enforce the "problem hold" rules server-side so they cannot be
+        // bypassed with a direct API call: ON_HOLD_PREP requires a reason note,
+        // and a held order cannot move forward until it is released.
+        await preparationQueueService.assertPreparationHoldRule({
+          currentPreparationStatus: previousPreparationStatus,
+          targetStatus: statusUpper,
+          notes: statusNotes,
+          isOverride: req.body.isOverride || false,
+        });
+
         // ⚙️ Respect the advanced workflow when enabled (transition rules +
         // approvals). We only enforce it here when the company has actually
         // configured transitions for the current stage — otherwise we fall back
@@ -3193,6 +3215,16 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         message: 'الطلب غير موجود'
       });
     }
+
+    // 🔒 Enforce the "problem hold" rules for guest orders too.
+    const guestMetadata = parseOrderMetadata(guestOrder.metadata);
+    await preparationQueueService.assertPreparationHoldRule({
+      currentPreparationStatus:
+        guestMetadata.preparationStatus || guestOrder.status,
+      targetStatus: statusUpper,
+      notes: statusNotes,
+      isOverride: req.body.isOverride || false,
+    });
 
     const updatedGuestOrder = await orderService.updateGuestOrderStatus(
       orderNumber,

@@ -181,7 +181,7 @@ function mapGuestOrder(order) {
     status: order.status,
     paymentMethod,
     paymentStatus,
-    subtotal: Math.max(Number(order.total || 0) - shippingCost, 0),
+    subtotal: Number(order.total || 0),
     shippingCost,
     tax: 0,
     discount: Number(order.discountAmount || 0),

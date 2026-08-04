@@ -1,5 +1,7 @@
 import type {
   PreparationQueueSettings,
+  ProblemHoldDetails,
+  ProblemReason,
   ShortageHoldDetails,
   ShortageReason,
 } from "./types";
@@ -31,6 +33,8 @@ export const DEFAULT_PREPARATION_QUEUE_SETTINGS: PreparationQueueSettings = {
 
 export const SHORTAGE_HOLD_STATUS = "STOCK_SHORTAGE";
 export const SHORTAGE_HOLD_METADATA_KEY = "preparationShortageHold";
+export const PROBLEM_HOLD_STATUS = "ON_HOLD_PREP";
+export const PROBLEM_HOLD_METADATA_KEY = "preparationHold";
 export const PREPARATION_STATUS_METADATA_KEY = "preparationStatus";
 
 export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
@@ -64,6 +68,33 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
   state: "held",
 };
 
+export const PROBLEM_REASON_OPTIONS: Array<{
+  value: ProblemReason;
+  label: string;
+  labelKey: string;
+}> = [
+  { value: "waiting_customer", label: "Waiting Customer", labelKey: "preparation.problemReasons.waiting_customer" },
+  { value: "payment_issue", label: "Payment Issue", labelKey: "preparation.problemReasons.payment_issue" },
+  { value: "address_issue", label: "Address Issue", labelKey: "preparation.problemReasons.address_issue" },
+  { value: "waiting_management", label: "Waiting Management", labelKey: "preparation.problemReasons.waiting_management" },
+  { value: "waiting_supplier", label: "Waiting Supplier", labelKey: "preparation.problemReasons.waiting_supplier" },
+  { value: "qc_issue", label: "QC Issue", labelKey: "preparation.problemReasons.qc_issue" },
+  { value: "other", label: "Other Reason", labelKey: "preparation.problemReasons.other" },
+];
+
+export const DEFAULT_PROBLEM_HOLD_DETAILS: ProblemHoldDetails = {
+  reason: "waiting_customer",
+  owner: "",
+  followUpDate: "",
+  customerNotified: false,
+  note: "",
+  heldAt: "",
+  releasedAt: "",
+  heldBy: "",
+  releasedBy: "",
+  state: "held",
+};
+
 
 
 export const PREPARATION_TABLE_COLUMNS = [
@@ -71,6 +102,7 @@ export const PREPARATION_TABLE_COLUMNS = [
   "units",
   "value",
   "status",
+  "problem",
   "warehouse",
   "readiness",
   "printStatus",
@@ -84,6 +116,7 @@ export const PREPARATION_COLUMN_LABELS: Record<PreparationTableColumn, string> =
   units: "القطع",
   value: "القيمة",
   status: "الحالة",
+  problem: "مشكلة",
   warehouse: "المخزن",
   readiness: "التجهيز",
   printStatus: "الطباعة",
@@ -95,6 +128,7 @@ export const PREPARATION_COLUMN_LABEL_KEYS: Record<PreparationTableColumn, strin
   units: "preparation.columns.units",
   value: "preparation.columns.value",
   status: "preparation.columns.status",
+  problem: "preparation.columns.problem",
   warehouse: "preparation.columns.warehouse",
   readiness: "preparation.columns.readiness",
   printStatus: "preparation.columns.printStatus",

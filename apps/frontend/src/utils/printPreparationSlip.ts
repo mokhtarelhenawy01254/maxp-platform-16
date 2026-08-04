@@ -1,6 +1,13 @@
 import tokenManager from "./tokenManager";
 
 export const printPreparationSlip = async (orderNumber: string) => {
+  // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    throw new Error("فشل في فتح نافذة جديدة للطباعة");
+  }
+
   const response = await fetch(
     `/api/v1/policy/generate/${encodeURIComponent(orderNumber)}`,
     {
@@ -10,6 +17,7 @@ export const printPreparationSlip = async (orderNumber: string) => {
   );
 
   if (!response.ok) {
+    printWindow.close();
     const contentType = response.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -22,11 +30,6 @@ export const printPreparationSlip = async (orderNumber: string) => {
   }
 
   const htmlContent = await response.text();
-  const printWindow = window.open("", "_blank");
-
-  if (!printWindow) {
-    throw new Error("فشل في فتح نافذة جديدة للطباعة");
-  }
 
   printWindow.document.write(htmlContent);
   printWindow.document.title = `Preparation Slip - ${orderNumber}`;

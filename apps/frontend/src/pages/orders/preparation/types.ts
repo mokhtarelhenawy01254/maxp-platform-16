@@ -142,6 +142,15 @@ export type ShortageReason =
   | "waiting_restock"
   | "other";
 
+export type ProblemReason =
+  | "waiting_customer"
+  | "payment_issue"
+  | "address_issue"
+  | "waiting_management"
+  | "waiting_supplier"
+  | "qc_issue"
+  | "other";
+
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
 export type NotPrintedFilter = "all" | "not_printed";
@@ -167,6 +176,19 @@ export interface ShortageHoldDetails {
   state: "held" | "released";
 }
 
+export interface ProblemHoldDetails {
+  reason: ProblemReason;
+  owner: string;
+  followUpDate: string;
+  customerNotified: boolean;
+  note: string;
+  heldAt?: string;
+  releasedAt?: string;
+  heldBy?: string;
+  releasedBy?: string;
+  state: "held" | "released";
+}
+
 export interface ShortageFollowUpVisual {
   label: string;
   badgeClass: string;
@@ -186,6 +208,8 @@ export interface PreparationOrder extends SimpleOrder {
   warehouseMatch: boolean;
   recommendedWarehouseName: string | null;
   shortageHoldDetails: ShortageHoldDetails;
+  problemHoldDetails?: ProblemHoldDetails;
+  hasProblem?: boolean;
 }
 
 export interface PreparationQueueSettings {
@@ -302,9 +326,12 @@ export interface PreparationQueueSummary {
   readyCount: number;
   shortageCount: number;
   shortageHoldCount: number;
+  onHoldPrepCount: number;
   overdueShortageFollowUpCount: number;
+  overdueProblemFollowUpCount: number;
   readyToShipCount: number;
   allOverdueShortageFollowUpCount: number;
+  allOverdueProblemFollowUpCount: number;
 }
 
 export interface ApiPreparationOrdersResponse {

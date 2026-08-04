@@ -311,32 +311,36 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
     try {
       setIsPrinting(true);
       setError(null);
+      // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        setError(
+          t("orders.invoiceError") ||
+            "Error generating invoice",
+        );
+        return;
+      }
       const response = await apiClient.post("/order-invoices/bulk-generate", {
         orderIds: [order.orderNumber],
       });
 
       if (response.data.success && response.data.data.invoices?.length > 0) {
         const invoice = response.data.data.invoices[0];
-        window.open(
-          `/orders/invoices/print-multiple?ids=${invoice.id}`,
-          "_blank",
-        );
+        printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
       } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
         const guestOrder = response.data.data.guestOrders[0].order as OrderDetailsType;
         const invoiceSettingsResponse = await apiClient
           .get("/order-invoice-settings")
           .catch(() => null);
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          await printOrderInvoice({
-            order: guestOrder,
-            companyName: user?.company?.name,
-            companyLogoUrl: user?.company?.logo || null,
-            printWindow,
-            invoiceSettings: invoiceSettingsResponse?.data?.data,
-          });
-        }
+        await printOrderInvoice({
+          order: guestOrder,
+          companyName: user?.company?.name,
+          companyLogoUrl: user?.company?.logo || null,
+          printWindow,
+          invoiceSettings: invoiceSettingsResponse?.data?.data,
+        });
       } else {
+        printWindow.close();
         setError(
           t("orders.invoiceGenerationFailed") || "Failed to generate invoice",
         );

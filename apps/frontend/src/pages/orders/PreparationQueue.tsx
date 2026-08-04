@@ -14,9 +14,10 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
-import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import { printMultipleGuestInvoices } from "../../utils/printOrderInvoice";
 import type { OrderDetailsType } from "./types";
 import {
+  DEFAULT_PROBLEM_HOLD_DETAILS,
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PAGE_SIZE_OPTIONS,
   PREPARATION_COLUMN_LABELS,
@@ -25,6 +26,8 @@ import {
   PREPARATION_FILTER_SECTION_LABEL_KEYS,
   PREPARATION_FILTER_SECTIONS,
   PREPARATION_TABLE_COLUMNS,
+  PROBLEM_HOLD_METADATA_KEY,
+  PROBLEM_HOLD_STATUS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
   VISIBLE_COLUMNS_STORAGE_KEY,
@@ -33,6 +36,7 @@ import {
   type PreparationTableColumn,
 } from "./preparation/constants";
 import {
+  buildProblemHoldDetails,
   getApiErrorMessage,
   buildShortageHoldDetails,
   getEffectivePreparationStatus,
@@ -50,6 +54,7 @@ import type {
   ItemInsight,
   PreparationOrder,
   PreparationStatusOption,
+  ProblemHoldDetails,
   QcCheckKey,
   ShortageHoldDetails,
 } from "./preparation/types";
@@ -59,6 +64,7 @@ import PreparationBulkActions from "./preparation/components/PreparationBulkActi
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
+import PreparationStatusChangeDialog from "./preparation/components/PreparationStatusChangeDialog";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
 type BulkStatusResult = {
@@ -181,6 +187,9 @@ const PreparationQueue: React.FC = () => {
   const [shortageHoldDrafts, setShortageHoldDrafts] = useState<
     Record<string, ShortageHoldDetails>
   >({});
+  const [problemHoldDrafts, setProblemHoldDrafts] = useState<
+    Record<string, ProblemHoldDetails>
+  >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
@@ -188,6 +197,14 @@ const PreparationQueue: React.FC = () => {
   const [shortageSavingOrderId, setShortageSavingOrderId] = useState<
     string | null
   >(null);
+  const [problemHoldSavingOrderId, setProblemHoldSavingOrderId] = useState<
+    string | null
+  >(null);
+  const [statusChangeDialog, setStatusChangeDialog] = useState<{
+    orderNumber: string;
+    targetStatus: string;
+    isHold: boolean;
+  } | null>(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
@@ -286,6 +303,20 @@ const PreparationQueue: React.FC = () => {
       orders.forEach((order) => {
         if (!nextDrafts[order.orderNumber]) {
           nextDrafts[order.orderNumber] = buildShortageHoldDetails(order.metadata);
+        }
+      });
+
+      return nextDrafts;
+    });
+  }, [orders]);
+
+  useEffect(() => {
+    setProblemHoldDrafts((previous) => {
+      const nextDrafts = { ...previous };
+
+      orders.forEach((order) => {
+        if (!nextDrafts[order.orderNumber]) {
+          nextDrafts[order.orderNumber] = buildProblemHoldDetails(order.metadata);
         }
       });
 
@@ -646,6 +677,8 @@ const PreparationQueue: React.FC = () => {
   const currentPageCount = enrichedOrders.length;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
+  const allOverdueProblemFollowUpCount =
+    summary.allOverdueProblemFollowUpCount;
 
   useEffect(() => {
     uiActions.clampPage(totalPages);
@@ -788,6 +821,31 @@ const PreparationQueue: React.FC = () => {
         };
       }
 
+      // A held-for-problem order (ON_HOLD_PREP) cannot move directly to a
+      // forward preparation stage — it must be released first.
+      const forwardStages = new Set([
+        "PREPARING",
+        "PROCESSING",
+        "QUALITY_CHECK",
+        "PACKAGED",
+        "PACKED",
+        "READY",
+        "READY_TO_SHIP",
+        toUpper(preparationSettings.handoffStatus),
+      ]);
+      if (
+        order.stage === "ON_HOLD_PREP" &&
+        forwardStages.has(normalizedNextStatus) &&
+        !["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(
+          user?.role || "",
+        )
+      ) {
+        return {
+          valid: false,
+          message: t("preparation.page.holdBlocksForward"),
+        };
+      }
+
       return { valid: true, message: "" };
     },
     [
@@ -797,6 +855,7 @@ const PreparationQueue: React.FC = () => {
       preparationSettings.enabled,
       preparationSettings.handoffStatus,
       preparationSettings.requireStockBeforePreparing,
+      user?.role,
     ],
   );
 
@@ -823,6 +882,24 @@ const PreparationQueue: React.FC = () => {
         ...previous,
         [orderNumber]: {
           ...DEFAULT_SHORTAGE_HOLD_DETAILS,
+          ...(previous[orderNumber] || {}),
+          [field]: value,
+        },
+      }));
+    },
+    [],
+  );
+
+  const handleProblemFieldChange = useCallback(
+    (
+      orderNumber: string,
+      field: keyof ProblemHoldDetails,
+      value: string | boolean,
+    ) => {
+      setProblemHoldDrafts((previous) => ({
+        ...previous,
+        [orderNumber]: {
+          ...DEFAULT_PROBLEM_HOLD_DETAILS,
           ...(previous[orderNumber] || {}),
           [field]: value,
         },
@@ -903,6 +980,206 @@ const PreparationQueue: React.FC = () => {
     [fetchAll, orders, shortageHoldDrafts, updateLocalMetadata],
   );
 
+  const saveProblemHoldDetails = useCallback(
+    async (
+      orderNumber: string,
+      overrides: Partial<ProblemHoldDetails> = {},
+      options?: { successMessage?: string | null },
+    ) => {
+      const order = orders.find((item) => item.orderNumber === orderNumber);
+      if (!order) {
+        toast.error(t('preparation.page.orderNotFound'));
+        return false;
+      }
+
+      const currentDraft =
+        problemHoldDrafts[orderNumber] || buildProblemHoldDetails(order.metadata);
+      const nextDraft: ProblemHoldDetails = {
+        ...DEFAULT_PROBLEM_HOLD_DETAILS,
+        ...currentDraft,
+        ...overrides,
+      };
+      const metadataPatch = {
+        [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
+      };
+
+      try {
+        setProblemHoldSavingOrderId(orderNumber);
+        await apiClient.put(`/orders-new/simple/${encodeURIComponent(orderNumber)}`, {
+          metadataPatch,
+        });
+        updateLocalMetadata(orderNumber, metadataPatch);
+        setProblemHoldDrafts((previous) => ({
+          ...previous,
+          [orderNumber]: nextDraft,
+        }));
+
+        if (options?.successMessage !== null) {
+          toast.success(options?.successMessage || t('preparation.page.problemHoldSaved'));
+        }
+
+        if (!options?.skipRefresh) {
+          void fetchAll();
+        }
+
+        return true;
+      } catch (error: unknown) {
+        console.error("Failed to save problem hold details:", error);
+        toast.error(
+          getApiErrorMessage(error) || t('preparation.page.problemHoldFailed'),
+        );
+        return false;
+      } finally {
+        setProblemHoldSavingOrderId(null);
+      }
+    },
+    [fetchAll, orders, problemHoldDrafts, t, updateLocalMetadata],
+  );
+
+  const performStatusUpdate = useCallback(
+    async (
+      orderNumber: string,
+      nextStatus: string,
+      note: string,
+      holdDetails?: Partial<ProblemHoldDetails>,
+    ) => {
+      const order = getOrderByNumber(orderNumber);
+      if (!order) {
+        toast.error(t('preparation.k_20'));
+        return false;
+      }
+
+      const normalizedNextStatus = toUpper(nextStatus);
+      const isHoldTarget = normalizedNextStatus === PROBLEM_HOLD_STATUS;
+      const isReleasingProblemHold =
+        order.stage === "ON_HOLD_PREP" && !isHoldTarget;
+
+      if (isHoldTarget) {
+        const currentDraft =
+          problemHoldDrafts[orderNumber] ||
+          buildProblemHoldDetails(order.metadata);
+        const nextDraft: ProblemHoldDetails = {
+          ...DEFAULT_PROBLEM_HOLD_DETAILS,
+          ...currentDraft,
+          ...holdDetails,
+          heldAt: currentDraft.heldAt || new Date().toISOString(),
+          releasedAt: "",
+          state: "held",
+        };
+        if (currentDraft.heldAt) {
+          nextDraft.heldAt = currentDraft.heldAt;
+        }
+        if (user?.firstName || user?.lastName) {
+          nextDraft.heldBy =
+            `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+            nextDraft.heldBy;
+        }
+
+        try {
+          setProblemHoldSavingOrderId(orderNumber);
+          await apiClient.put(
+            `/orders-new/simple/${encodeURIComponent(orderNumber)}`,
+            { metadataPatch: { [PROBLEM_HOLD_METADATA_KEY]: nextDraft } },
+          );
+          updateLocalMetadata(orderNumber, {
+            [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
+          });
+          setProblemHoldDrafts((previous) => ({
+            ...previous,
+            [orderNumber]: nextDraft,
+          }));
+        } catch (error: unknown) {
+          console.error("Failed to save problem hold details:", error);
+          toast.error(
+            getApiErrorMessage(error) || t('preparation.page.shortageHoldFailed'),
+          );
+          return false;
+        } finally {
+          setProblemHoldSavingOrderId(null);
+        }
+      } else if (isReleasingProblemHold) {
+        const currentDraft =
+          problemHoldDrafts[orderNumber] ||
+          buildProblemHoldDetails(order.metadata);
+        const nextDraft: ProblemHoldDetails = {
+          ...currentDraft,
+          releasedAt: new Date().toISOString(),
+          state: "released",
+        };
+        if (user?.firstName || user?.lastName) {
+          nextDraft.releasedBy =
+            `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+            nextDraft.releasedBy;
+        }
+
+        try {
+          setProblemHoldSavingOrderId(orderNumber);
+          await apiClient.put(
+            `/orders-new/simple/${encodeURIComponent(orderNumber)}`,
+            { metadataPatch: { [PROBLEM_HOLD_METADATA_KEY]: nextDraft } },
+          );
+          updateLocalMetadata(orderNumber, {
+            [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
+          });
+          setProblemHoldDrafts((previous) => ({
+            ...previous,
+            [orderNumber]: nextDraft,
+          }));
+        } catch (error: unknown) {
+          console.error("Failed to release problem hold metadata:", error);
+        } finally {
+          setProblemHoldSavingOrderId(null);
+        }
+      }
+
+      try {
+        setRowUpdatingId(orderNumber);
+        const canOverride = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(user?.role || "");
+        await apiClient.post(
+          `/orders-new/simple/${encodeURIComponent(orderNumber)}/status`,
+          {
+            status: normalizedNextStatus,
+            notes:
+              note ||
+              (order.stage === "QUALITY_CHECK" &&
+              ["PACKAGED", preparationSettings.handoffStatus].includes(
+                normalizedNextStatus,
+              )
+                ? "QC completed from preparation queue"
+                : "Updated from preparation queue"),
+            isOverride: canOverride,
+          },
+        );
+
+        updateLocalStatuses([orderNumber], normalizedNextStatus);
+        toast.success(
+          t("preparation.toasts.statusUpdated", { orderId: orderNumber, status: statusLabelMap.get(normalizedNextStatus) || normalizedNextStatus }),
+        );
+        void fetchAll();
+        return true;
+      } catch (error: unknown) {
+        console.error("Failed to update order status:", error);
+        toast.error(
+          getApiErrorMessage(error) || t('preparation.page.stageUpdateError'),
+        );
+        return false;
+      } finally {
+        setRowUpdatingId(null);
+      }
+    },
+    [
+      getOrderByNumber,
+      fetchAll,
+      preparationSettings.handoffStatus,
+      problemHoldDrafts,
+      statusLabelMap,
+      t,
+      updateLocalMetadata,
+      updateLocalStatuses,
+      user,
+    ],
+  );
+
   const handleSingleStatusUpdate = useCallback(
     async (orderNumber: string, nextStatus: string) => {
       const order = getOrderByNumber(orderNumber);
@@ -917,46 +1194,109 @@ const PreparationQueue: React.FC = () => {
         return;
       }
 
+      await performStatusUpdate(orderNumber, toUpper(nextStatus), "");
+    },
+    [getOrderByNumber, performStatusUpdate, t, validateTransition],
+  );
+
+  const handleRequestStatusChange = useCallback(
+    async (orderNumber: string, nextStatus: string) => {
+      const order = getOrderByNumber(orderNumber);
+      if (!order) {
+        toast.error(t('preparation.k_20'));
+        return;
+      }
+
+      const validation = validateTransition(order, nextStatus);
+      if (!validation.valid) {
+        toast.error(validation.message);
+        return;
+      }
+
+      setStatusChangeDialog({
+        orderNumber,
+        targetStatus: toUpper(nextStatus),
+        isHold: toUpper(nextStatus) === PROBLEM_HOLD_STATUS,
+      });
+    },
+    [getOrderByNumber, t, validateTransition],
+  );
+
+  const handleHoldAsProblem = useCallback(
+    async (orderNumber: string) => {
+      const order = getOrderByNumber(orderNumber);
+      if (!order) return;
+      setStatusChangeDialog({
+        orderNumber,
+        targetStatus: PROBLEM_HOLD_STATUS,
+        isHold: true,
+      });
+    },
+    [getOrderByNumber],
+  );
+
+  const handleReleaseProblemHold = useCallback(
+    async (orderNumber: string) => {
+      const order = getOrderByNumber(orderNumber);
+      const currentDraft =
+        problemHoldDrafts[orderNumber] || buildProblemHoldDetails(order?.metadata);
+      const nextDraft: ProblemHoldDetails = {
+        ...currentDraft,
+        releasedAt: new Date().toISOString(),
+        state: "released",
+      };
+      if (user?.firstName || user?.lastName) {
+        nextDraft.releasedBy =
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+          nextDraft.releasedBy;
+      }
+
       try {
-        setRowUpdatingId(orderNumber);
-        const canOverride = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(user?.role || "");
+        setProblemHoldSavingOrderId(orderNumber);
+        await apiClient.put(
+          `/orders-new/simple/${encodeURIComponent(orderNumber)}`,
+          { metadataPatch: { [PROBLEM_HOLD_METADATA_KEY]: nextDraft } },
+        );
+        updateLocalMetadata(orderNumber, {
+          [PROBLEM_HOLD_METADATA_KEY]: nextDraft,
+        });
+        setProblemHoldDrafts((previous) => ({
+          ...previous,
+          [orderNumber]: nextDraft,
+        }));
+
         await apiClient.post(
           `/orders-new/simple/${encodeURIComponent(orderNumber)}/status`,
           {
-            status: nextStatus,
-            notes:
-              order.stage === "QUALITY_CHECK" &&
-              ["PACKAGED", preparationSettings.handoffStatus].includes(
-                toUpper(nextStatus),
-              )
-                ? "QC completed from preparation queue"
-                : "Updated from preparation queue",
-            isOverride: canOverride,
+            status: preparationSettings.startingStatus,
+            notes: t("preparation.problemPanel.releasedNote"),
+            isOverride: ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(
+              user?.role || "",
+            ),
           },
         );
 
-        updateLocalStatuses([orderNumber], nextStatus);
-        toast.success(
-          t("preparation.toasts.statusUpdated", { orderId: orderNumber, status: statusLabelMap.get(nextStatus) || nextStatus }),
-        );
+        updateLocalStatuses([orderNumber], preparationSettings.startingStatus);
+        toast.success(t("preparation.problemPanel.releasedSuccess"));
         void fetchAll();
       } catch (error: unknown) {
-        console.error("Failed to update order status:", error);
+        console.error("Failed to release problem hold:", error);
         toast.error(
-          getApiErrorMessage(error) || t('preparation.page.stageUpdateError'),
+          getApiErrorMessage(error) || t("preparation.problemPanel.releasedError"),
         );
       } finally {
-        setRowUpdatingId(null);
+        setProblemHoldSavingOrderId(null);
       }
     },
     [
-      getOrderByNumber,
       fetchAll,
-      preparationSettings.handoffStatus,
-      statusLabelMap,
+      getOrderByNumber,
+      preparationSettings.startingStatus,
+      problemHoldDrafts,
+      t,
+      updateLocalMetadata,
       updateLocalStatuses,
       user,
-      validateTransition,
     ],
   );
 
@@ -1239,6 +1579,13 @@ const PreparationQueue: React.FC = () => {
       return;
     }
 
+    // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error(t('preparation.page.printWindowBlocked'));
+      return;
+    }
+
     try {
       setPrintingInvoices(true);
       const response = await apiClient.post("/order-invoices/bulk-generate", {
@@ -1251,6 +1598,7 @@ const PreparationQueue: React.FC = () => {
         const guestOrders: Array<{ orderId: string; order: OrderDetailsType }> = data.guestOrders || [];
 
         if (invoices.length === 0 && guestOrders.length === 0) {
+          printWindow.close();
           toast.error(t('preparation.page.invoiceNotFound'));
           return;
         }
@@ -1259,33 +1607,32 @@ const PreparationQueue: React.FC = () => {
           const invoiceSettingsResponse = await apiClient
             .get("/order-invoice-settings")
             .catch(() => null);
-          for (const entry of guestOrders) {
-            const printWindow = window.open("", "_blank");
-            if (!printWindow) continue;
-            try {
-              await printOrderInvoice({
-                order: entry.order,
-                companyName: user?.company?.name,
-                companyLogoUrl: user?.company?.logo || null,
-                printWindow,
-                invoiceSettings: invoiceSettingsResponse?.data?.data,
-              });
-            } catch (printError: unknown) {
-              console.error("Failed printing guest order invoice:", printError);
-            }
+          try {
+            await printMultipleGuestInvoices({
+              orders: guestOrders.map((entry) => entry.order),
+              companyName: user?.company?.name,
+              companyLogoUrl: user?.company?.logo || null,
+              printWindow,
+              invoiceSettings: invoiceSettingsResponse?.data?.data,
+            });
+          } catch (printError: unknown) {
+            console.error("Failed printing guest order invoices:", printError);
           }
         }
 
         if (invoices.length > 0) {
+          if (guestOrders.length === 0) printWindow.close();
           const invoiceIds = invoices.map((inv) => inv.id).join(",");
           navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
         } else if (guestOrders.length > 0) {
           toast.success(t('preparation.page.guestInvoiceOpened'));
         }
       } else {
+        printWindow.close();
         toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
       }
     } catch (error: unknown) {
+      printWindow.close();
       console.error("Failed to print invoices:", error);
       toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
     } finally {
@@ -1347,10 +1694,45 @@ const PreparationQueue: React.FC = () => {
     ],
   );
 
+  const dialogOrder = useMemo(
+    () =>
+      statusChangeDialog
+        ? getOrderByNumber(statusChangeDialog.orderNumber)
+        : null,
+    [getOrderByNumber, statusChangeDialog],
+  );
+
+  const dialogHoldDetails = useMemo(
+    () =>
+      statusChangeDialog && dialogOrder
+        ? problemHoldDrafts[statusChangeDialog.orderNumber] ||
+          buildProblemHoldDetails(dialogOrder.metadata)
+        : DEFAULT_PROBLEM_HOLD_DETAILS,
+    [dialogOrder, problemHoldDrafts, statusChangeDialog],
+  );
+
+  const handleConfirmStatusChange = useCallback(
+    async (payload: {
+      note: string;
+      holdDetails?: Partial<ProblemHoldDetails>;
+    }) => {
+      if (!statusChangeDialog) return;
+      const ok = await performStatusUpdate(
+        statusChangeDialog.orderNumber,
+        statusChangeDialog.targetStatus,
+        payload.note,
+        payload.holdDetails,
+      );
+      if (ok) {
+        setStatusChangeDialog(null);
+      }
+    },
+    [performStatusUpdate, statusChangeDialog],
+  );
+
   const toggleOrderSelection = (orderNumber: string) => {
     uiActions.toggleOrderSelection(orderNumber);
   };
-
   const toggleSelectAllVisible = () => {
     if (allVisibleSelected) {
       uiActions.clearVisibleSelection(
@@ -1385,6 +1767,13 @@ const PreparationQueue: React.FC = () => {
           <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-400" />
           <span className="font-semibold">{t('preparation.overdueBanner', { count: allOverdueShortageFollowUpCount })}</span>
           <span className="text-orange-700">{t('preparation.k_3')}</span>
+        </div>
+      ) : null}
+
+      {allOverdueProblemFollowUpCount > 0 ? (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+          <span className="font-semibold">{t('preparation.problemOverdueBanner', { count: allOverdueProblemFollowUpCount })}</span>
         </div>
       ) : null}
 
@@ -1601,6 +1990,15 @@ const PreparationQueue: React.FC = () => {
                 const shortageFollowUpVisual = getShortageFollowUpVisual(
                   shortageFollowUpState,
                 );
+                const problemHoldDetails =
+                  problemHoldDrafts[order.orderNumber] ||
+                  buildProblemHoldDetails(order.metadata);
+                const problemFollowUpVisual = getShortageFollowUpVisual(
+                  getShortageFollowUpState(
+                    problemHoldDetails.followUpDate,
+                    order.stage,
+                  ),
+                );
                 const nextStatus = getNextStatus(
                   order.stage,
                   preparationSettings.handoffStatus,
@@ -1617,7 +2015,9 @@ const PreparationQueue: React.FC = () => {
                           ? "PACKAGED"
                           : order.stage === "STOCK_SHORTAGE"
                             ? SHORTAGE_HOLD_STATUS
-                            : preparationSettings.handoffStatus;
+                            : order.stage === "ON_HOLD_PREP"
+                              ? preparationSettings.startingStatus
+                              : preparationSettings.handoffStatus;
                 const defaultTargetStatus = nextStatus || currentStageStatus;
                 const currentSelection =
                   statusSelections[order.orderNumber] || defaultTargetStatus;
@@ -1631,7 +2031,8 @@ const PreparationQueue: React.FC = () => {
                 );
                 const rowBusy =
                   rowUpdatingId === order.orderNumber ||
-                  shortageSavingOrderId === order.orderNumber;
+                  shortageSavingOrderId === order.orderNumber ||
+                  problemHoldSavingOrderId === order.orderNumber;
                 const hasShortageContext =
                   order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
 
@@ -1652,6 +2053,8 @@ const PreparationQueue: React.FC = () => {
                     qcChecklist={qcChecklistState[order.orderNumber]}
                     shortageHoldDetails={shortageHoldDetails}
                     shortageFollowUpVisual={shortageFollowUpVisual}
+                    problemHoldDetails={problemHoldDetails}
+                    problemFollowUpVisual={problemFollowUpVisual}
                     transferingItemKey={transferingItemKey}
                     printingOrderNumber={printingOrderNumber}
                     preparationSettings={preparationSettings}
@@ -1663,16 +2066,24 @@ const PreparationQueue: React.FC = () => {
                     }
                     onShortageFieldChange={handleShortageFieldChange}
                     onSaveShortageHoldDetails={saveShortageHoldDetails}
+                    onProblemFieldChange={handleProblemFieldChange}
+                    onSaveProblemHoldDetails={saveProblemHoldDetails}
                     onQcCheckToggle={handleQcCheckToggle}
                     onStatusSelectionChange={uiActions.setStatusSelection}
                     onSingleStatusUpdate={(orderNumber, nextStatus) =>
-                      void handleSingleStatusUpdate(orderNumber, nextStatus)
+                      void handleRequestStatusChange(orderNumber, nextStatus)
                     }
                     onMarkAsShortageHold={(orderNumber) =>
                       void handleMarkAsShortageHold(orderNumber)
                     }
                     onReleaseShortageHold={(orderNumber) =>
                       void handleReleaseShortageHold(orderNumber)
+                    }
+                    onHoldAsProblem={(orderNumber) =>
+                      void handleHoldAsProblem(orderNumber)
+                    }
+                    onReleaseProblemHold={(orderNumber) =>
+                      void handleReleaseProblemHold(orderNumber)
                     }
                     onPrintPreparationSlip={(orderNumber) =>
                       void handlePrintPreparationSlip(orderNumber)
@@ -1692,10 +2103,12 @@ const PreparationQueue: React.FC = () => {
                 selectedSet={selectedSet}
                 rowUpdatingId={rowUpdatingId}
                 shortageSavingOrderId={shortageSavingOrderId}
+                problemHoldSavingOrderId={problemHoldSavingOrderId}
                 selectedWarehouseId={selectedWarehouseId}
                 enabledQcChecks={enabledQcChecks}
                 qcChecklistState={qcChecklistState}
                 shortageHoldDrafts={shortageHoldDrafts}
+                problemHoldDrafts={problemHoldDrafts}
                 transferingItemKey={transferingItemKey}
                 printingOrderNumber={printingOrderNumber}
                 preparationSettings={preparationSettings}
@@ -1708,16 +2121,24 @@ const PreparationQueue: React.FC = () => {
                 }
                 onShortageFieldChange={handleShortageFieldChange}
                 onSaveShortageHoldDetails={saveShortageHoldDetails}
+                onProblemFieldChange={handleProblemFieldChange}
+                onSaveProblemHoldDetails={saveProblemHoldDetails}
                 onQcCheckToggle={handleQcCheckToggle}
                 onStatusSelectionChange={uiActions.setStatusSelection}
                 onSingleStatusUpdate={(orderNumber, nextStatus) =>
-                  void handleSingleStatusUpdate(orderNumber, nextStatus)
+                  void handleRequestStatusChange(orderNumber, nextStatus)
                 }
                 onMarkAsShortageHold={(orderNumber) =>
                   void handleMarkAsShortageHold(orderNumber)
                 }
                 onReleaseShortageHold={(orderNumber) =>
                   void handleReleaseShortageHold(orderNumber)
+                }
+                onHoldAsProblem={(orderNumber) =>
+                  void handleHoldAsProblem(orderNumber)
+                }
+                onReleaseProblemHold={(orderNumber) =>
+                  void handleReleaseProblemHold(orderNumber)
                 }
                 onPrintPreparationSlip={(orderNumber) =>
                   void handlePrintPreparationSlip(orderNumber)
@@ -1773,6 +2194,27 @@ const PreparationQueue: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <PreparationStatusChangeDialog
+        isOpen={Boolean(statusChangeDialog)}
+        order={dialogOrder}
+        targetStatus={statusChangeDialog?.targetStatus || ""}
+        targetStatusLabel={
+          statusChangeDialog
+            ? statusLabelMap.get(statusChangeDialog.targetStatus) ||
+              statusChangeDialog.targetStatus
+            : ""
+        }
+        isHold={statusChangeDialog?.isHold || false}
+        initialHoldDetails={dialogHoldDetails}
+        busy={Boolean(
+          dialogOrder &&
+            (rowUpdatingId === dialogOrder.orderNumber ||
+              problemHoldSavingOrderId === dialogOrder.orderNumber),
+        )}
+        onClose={() => setStatusChangeDialog(null)}
+        onConfirm={(payload) => void handleConfirmStatusChange(payload)}
+      />
     </div>
   );
 };

@@ -34,6 +34,7 @@
     "invoicePrintFailed": "Failed to prepare invoices",
     "invoiceNotFound": "No invoices found for selected orders",
     "invoicePrintError": "Failed to print invoices",
+    "printWindowBlocked": "Could not open the print window. Please allow pop-ups for this site and try again",
     "guestInvoiceOpened": "Guest order invoice(s) opened for printing",
     "orderNotFound": "Order not found",
     "stageUpdated": "Updated order(s) successfully",
@@ -51,6 +52,9 @@
     "selectWarehouseFirst": "Select destination warehouse first",
     "shortageHoldSaved": "Shortage hold data saved",
     "shortageHoldFailed": "Failed to save shortage hold data",
+    "problemHoldSaved": "Problem hold data saved",
+    "problemHoldFailed": "Failed to save problem hold data",
+    "holdBlocksForward": "Order is on hold pending the problem resolution — release it back to preparation before moving on",
     "excludedCount": "Excluding {{count}} non-matching order(s)",
     "bulkUpdated": "Updated {{success}} order(s), {{failed}} failed",
     "bulkUpdatedAll": "Updated {{success}} order(s) successfully",
@@ -112,6 +116,7 @@
     "units": "Units",
     "value": "Value",
     "status": "Status",
+    "problem": "Problem",
     "warehouse": "Warehouse",
     "readiness": "Readiness",
     "printStatus": "Printed",
@@ -148,7 +153,8 @@
     "units": "Units",
     "value": "Value",
     "warehouse": "Warehouse",
-    "shippingCode": "Shipping Code"
+    "shippingCode": "Shipping Code",
+    "hasProblem": "Has a problem"
   },
   "toasts": {
     "queueUpdated": "Preparation queue updated",
@@ -191,6 +197,15 @@
     "waiting_restock": "Awaiting Restock",
     "other": "Other Reason"
   },
+  "problemReasons": {
+    "waiting_customer": "Awaiting Customer Reply",
+    "payment_issue": "Payment Issue",
+    "address_issue": "Address Issue",
+    "waiting_management": "Awaiting Management Decision",
+    "waiting_supplier": "Awaiting Supplier",
+    "qc_issue": "QC Issue",
+    "other": "Other Reason"
+  },
   "shortageFollowUp": {
     "overdueLabel": "Overdue",
     "overdueText": "Follow-up is overdue — please check with the assignee and update the status.",
@@ -205,6 +220,7 @@
     "QUALITY_CHECK": "Approve & Package",
     "PACKAGED": "Hand Over to Shipping",
     "STOCK_SHORTAGE": "Resume Preparation",
+    "ON_HOLD_PREP": "Return to Preparation",
     "default": "Update Status"
   },
   "age": {
@@ -250,7 +266,9 @@
     "viewOnlyDesc": "Merchant can see customer name and products only — preparation tools are disabled.",
     "viewOnly": "View Only",
     "holdShortage": "Hold by Shortage",
+    "holdProblem": "Hold as Problem",
     "returnToPreparation": "Return to Preparation",
+    "releaseProblem": "Release & Return to Preparation",
     "print": "Print",
     "openOrder": "Open Order"
   },
@@ -321,10 +339,52 @@
     "customerNotifiedBadge": "Customer Notified",
     "ownerBadge": "Assignee: {{name}}"
   },
+  "problemPanel": {
+    "title": "On Hold — Awaiting Problem Resolution",
+    "desc": "This order is blocked until the responsible party resolves the problem. It cannot be handed to shipping before being released.",
+    "reasonLabel": "Problem Type",
+    "ownerLabel": "Resolution Assignee",
+    "ownerPlaceholder": "Employee or team name",
+    "followUpDate": "Follow-Up Date",
+    "customerNotified": "Customer notified of delay",
+    "notesLabel": "Problem Details",
+    "notesPlaceholder": "e.g. Awaiting customer confirmation of the address or sales approval on pricing.",
+    "reasonBadge": "Problem:",
+    "heldAt": "Held on: {{date}}",
+    "heldBy": "by {{name}}",
+    "followUpOn": "Follow-up on: {{date}}",
+    "noFollowUpDate": "No follow-up date set",
+    "save": "Save Problem Data",
+    "releasedNote": "Order released from problem hold",
+    "releasedSuccess": "Order released and returned to preparation",
+    "releasedError": "Failed to release order from problem hold",
+    "customerNotifiedBadge": "Customer Notified",
+    "ownerBadge": "Assignee: {{name}}"
+  },
+  "holdDialog": {
+    "holdTitle": "Hold order {{order}} as a problem",
+    "advanceTitle": "Update {{order}} to {{status}}",
+    "holdDesc": "Describe the problem and who resolves it — the order will not move to shipping until it is resolved.",
+    "advanceDesc": "You can add a comment for the record before applying the status change.",
+    "reasonLabel": "Problem Type",
+    "ownerLabel": "Resolution Assignee",
+    "ownerPlaceholder": "Employee or team name",
+    "followUpLabel": "Follow-Up Date",
+    "customerNotified": "Customer notified of delay",
+    "reasonNoteLabel": "Hold Reason (required)",
+    "reasonNotePlaceholder": "e.g. Awaiting customer reply on the address",
+    "commentLabel": "Comment",
+    "commentPlaceholder": "Write a note (optional)",
+    "reasonRequired": "Hold reason is required — describe the problem to be resolved",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "saving": "Saving..."
+  },
   "notices": {
     "notes": "Notes:",
     "needsReview": "Needs stock review or transfer from another warehouse before completing preparation.",
-    "shortageHold": "Order on hold due to shortage — will not enter daily operations until returned to preparation."
+    "shortageHold": "Order on hold due to shortage — will not enter daily operations until returned to preparation.",
+    "problemHold": "Order is on hold awaiting problem resolution — will not be handed to shipping until resolved and released."
   },
   "pageHeader": {
     "title": "Order Preparation",
@@ -345,6 +405,7 @@
   "filtersToggle": "Preparation Filters",
   "overdueBanner": "{{count}} order overdue for follow-up",
   "overdueBanner_plural": "{{count}} orders overdue for follow-up",
+  "problemOverdueBanner": "{{count}} held order overdue for problem follow-up",
   "selectAllCheckbox": "Select All",
   "sortOptions": {
     "createdAt_desc": "Newest First",
