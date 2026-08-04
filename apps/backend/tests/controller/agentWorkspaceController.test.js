@@ -47,11 +47,102 @@ const createOrder = (id, status, overrides = {}) => ({
   ...overrides
 });
 
-const createAssignment = (order) => ({
+const createGuestOrder = (id, status, overrides = {}) => ({
+  id,
+  orderNumber: `G-${id}`,
+  status,
+  guestName: 'Guest Customer',
+  guestPhone: '01011111111',
+  items: '[]',
+  total: 90,
+  finalTotal: 90,
+  shippingCost: 0,
+  createdAt: new Date('2026-05-03T09:00:00.000Z'),
+  callAttempts: 0,
+  lastCallAt: null,
+  followUpDate: null,
+  orderNotes: [],
+  ...overrides
+});
+
+const createAssignment = ({ order = null, guestOrder = null, companyId = 'company-1', assignedTo = 'user-1', isActive = true } = {}) => ({
+  id: `assignment-${order?.id || guestOrder?.id || Math.random()}`,
+  companyId,
+  assignedTo,
+  isActive,
+  orderId: order ? order.id : null,
+  guestOrderId: guestOrder ? guestOrder.id : null,
   assignedAt: new Date('2026-05-03T10:00:00.000Z'),
   order,
-  guestOrder: null
+  guestOrder
 });
+
+// Minimal Prisma-like matcher for the `where` shapes this controller emits
+// (base fields + OR on order/guestOrder relations or their foreign keys).
+const matchOrderCondition = (order, cond) => {
+  if (cond.status) {
+    if (cond.status.notIn) {
+      if (cond.status.notIn.includes(order.status)) return false;
+    } else if (cond.status.not) {
+      if (order.status === cond.status.not) return false;
+    } else if (order.status !== cond.status) {
+      return false;
+    }
+  }
+  if (cond.followUpDate) {
+    const notIsNull = cond.followUpDate.not === null;
+    const isNull = order.followUpDate === null || order.followUpDate === undefined;
+    if (notIsNull ? isNull : !isNull) return false;
+  }
+  return true;
+};
+
+const matchesWorkspaceWhere = (assignment, where = {}) => {
+  if (where.companyId && assignment.companyId !== where.companyId) return false;
+  if (where.assignedTo && assignment.assignedTo !== where.assignedTo) return false;
+  if (where.isActive === true && assignment.isActive !== true) return false;
+
+  const matchCondition = (cond) => {
+    if (cond.orderId !== undefined) return assignment.orderId === cond.orderId;
+    if (cond.guestOrderId !== undefined) return assignment.guestOrderId === cond.guestOrderId;
+    if (cond.order) {
+      if (!assignment.order) return false;
+      return matchOrderCondition(assignment.order, cond.order);
+    }
+    if (cond.guestOrder) {
+      if (!assignment.guestOrder) return false;
+      return matchOrderCondition(assignment.guestOrder, cond.guestOrder);
+    }
+    return false;
+  };
+
+  if (where.OR) {
+    return where.OR.some(matchCondition);
+  }
+  return true;
+};
+
+// Provides findMany/count/findFirst backed by an in-memory assignment list so
+// tests stay meaningful now that filtering happens server-side in the DB.
+const mockOrderAssignment = ({ assignments }) => {
+  const findMany = jest.fn(({ where, skip = 0, take }) => {
+    const filtered = assignments.filter((a) => matchesWorkspaceWhere(a, where));
+    const sliced = take !== undefined ? filtered.slice(skip, skip + take) : filtered;
+    return Promise.resolve(sliced);
+  });
+  const count = jest.fn(({ where }) =>
+    Promise.resolve(assignments.filter((a) => matchesWorkspaceWhere(a, where)).length)
+  );
+  const findFirst = jest.fn(({ where }) =>
+    Promise.resolve(assignments.find((a) => matchesWorkspaceWhere(a, where)) || null)
+  );
+
+  getSharedPrismaClient.mockReturnValue({
+    orderAssignment: { findMany, count, findFirst }
+  });
+
+  return { findMany, count, findFirst };
+};
 
 describe('agentWorkspaceController.getMyOrders', () => {
   const baseReq = {
@@ -65,22 +156,16 @@ describe('agentWorkspaceController.getMyOrders', () => {
     jest.clearAllMocks();
   });
 
-  const mockAssignments = (assignments) => {
-    getSharedPrismaClient.mockReturnValue({
-      orderAssignment: {
-        findMany: jest.fn().mockResolvedValue(assignments)
-      }
-    });
-  };
-
   test('keeps cancelled assigned orders visible in the default workspace feed', async () => {
-    mockAssignments([
-      createAssignment(createOrder('pending', 'PENDING')),
-      createAssignment(createOrder('cancelled', 'CANCELLED')),
-      createAssignment(createOrder('completed', 'COMPLETED')),
-      createAssignment(createOrder('trash', 'TRASH')),
-      createAssignment(createOrder('deleted', 'DELETED'))
-    ]);
+    const { findMany } = mockOrderAssignment({
+      assignments: [
+        createAssignment({ order: createOrder('pending', 'PENDING') }),
+        createAssignment({ order: createOrder('cancelled', 'CANCELLED') }),
+        createAssignment({ order: createOrder('completed', 'COMPLETED') }),
+        createAssignment({ order: createOrder('trash', 'TRASH') }),
+        createAssignment({ order: createOrder('deleted', 'DELETED') })
+      ]
+    });
 
     const res = createResponse();
     await agentWorkspaceController.getMyOrders({ ...baseReq, query: {} }, res);
@@ -92,14 +177,23 @@ describe('agentWorkspaceController.getMyOrders', () => {
       'PENDING',
       'CANCELLED'
     ]);
+
+    // Exclusion filtering is pushed to the database.
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.where.OR).toEqual([
+      { order: { status: { notIn: ['TRASH', 'DELETED', 'COMPLETED'] } } },
+      { guestOrder: { status: { notIn: ['TRASH', 'DELETED', 'COMPLETED'] } } }
+    ]);
   });
 
   test('filters directly by cancellation status for the cancelled tab', async () => {
-    mockAssignments([
-      createAssignment(createOrder('pending', 'PENDING')),
-      createAssignment(createOrder('cancelled', 'CANCELLED')),
-      createAssignment(createOrder('completed', 'COMPLETED'))
-    ]);
+    const { findMany } = mockOrderAssignment({
+      assignments: [
+        createAssignment({ order: createOrder('pending', 'PENDING') }),
+        createAssignment({ order: createOrder('cancelled', 'CANCELLED') }),
+        createAssignment({ order: createOrder('completed', 'COMPLETED') })
+      ]
+    });
 
     const res = createResponse();
     await agentWorkspaceController.getMyOrders(
@@ -112,6 +206,94 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(res.payload.pagination.total).toBe(1);
     expect(res.payload.data).toHaveLength(1);
     expect(res.payload.data[0].status).toBe('CANCELLED');
+
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.where.OR).toEqual([
+      { order: { status: 'CANCELLED' } },
+      { guestOrder: { status: 'CANCELLED' } }
+    ]);
+  });
+
+  test('filters to follow-up orders only when followUpOnly is set', async () => {
+    const { findMany } = mockOrderAssignment({
+      assignments: [
+        createAssignment({ order: createOrder('fu', 'PENDING', { followUpDate: new Date('2026-06-01T00:00:00.000Z') }) }),
+        createAssignment({ order: createOrder('no-fu', 'PENDING') }),
+        createAssignment({ order: createOrder('cancelled-fu', 'CANCELLED', { followUpDate: new Date('2026-06-01T00:00:00.000Z') }) })
+      ]
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: { followUpOnly: '1' } }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.pagination.total).toBe(1);
+    expect(res.payload.data.map((o) => o.id)).toEqual(['fu']);
+
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.where.OR).toEqual([
+      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
+      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+    ]);
+  });
+
+  test('applies server-side pagination via take/skip on findMany', async () => {
+    const assignments = Array.from({ length: 25 }, (_, i) =>
+      createAssignment({ order: createOrder(`p-${i}`, 'PENDING') })
+    );
+    const { findMany } = mockOrderAssignment({ assignments });
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders(
+      { ...baseReq, query: { page: '3', limit: '10' } },
+      res
+    );
+
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.take).toBe(10);
+    expect(findManyArg.skip).toBe(20);
+    expect(res.payload.pagination).toEqual({ total: 25, page: 3, limit: 10, pages: 3 });
+    expect(res.payload.data).toHaveLength(5);
+  });
+
+  test('passes the attempts ordering to the database when sort=attempts', async () => {
+    const { findMany } = mockOrderAssignment({
+      assignments: [createAssignment({ order: createOrder('a', 'PENDING') })]
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: { sort: 'attempts' } }, res);
+
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.orderBy).toEqual([
+      { order: { callAttempts: 'desc' } },
+      { guestOrder: { callAttempts: 'desc' } },
+      { order: { createdAt: 'asc' } },
+      { guestOrder: { createdAt: 'asc' } }
+    ]);
+  });
+
+  test('computes workspace stats from count queries when withStats is requested', async () => {
+    const { count } = mockOrderAssignment({
+      assignments: [
+        createAssignment({ order: createOrder('a', 'PENDING') }),
+        createAssignment({ order: createOrder('b', 'CANCELLED') }),
+        createAssignment({ order: createOrder('c', 'CONFIRMED') })
+      ]
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: { withStats: 'true' } }, res);
+
+    expect(res.payload.stats).toEqual({
+      total: 3,
+      pending: 1,
+      confirmed: 1,
+      cancelled: 1,
+      followup: 0
+    });
+    // 1 pagination total + 5 stats counts
+    expect(count).toHaveBeenCalledTimes(6);
   });
 });
 
@@ -138,7 +320,6 @@ describe('agentWorkspaceController.quickAction', () => {
       ...baseReq,
       body: {
         action: 'cancel',
-        type: 'REGULAR',
         notes: '   '
       }
     }, res);
@@ -154,13 +335,15 @@ describe('agentWorkspaceController.quickAction', () => {
 
   test('cancels a regular workspace order with the provided reason', async () => {
     orderService.updateOrderStatus.mockResolvedValue({ status: 'CANCELLED' });
-    const res = createResponse();
+    mockOrderAssignment({
+      assignments: [createAssignment({ order: createOrder('order-1', 'PENDING') })]
+    });
 
+    const res = createResponse();
     await agentWorkspaceController.quickAction({
       ...baseReq,
       body: {
         action: 'cancel',
-        type: 'REGULAR',
         notes: 'العميل طلب الإلغاء'
       }
     }, res);
@@ -179,13 +362,15 @@ describe('agentWorkspaceController.quickAction', () => {
 
   test('cancels a guest workspace order with the provided reason', async () => {
     orderService.updateGuestOrderStatus.mockResolvedValue({ status: 'CANCELLED' });
-    const res = createResponse();
+    mockOrderAssignment({
+      assignments: [createAssignment({ guestOrder: createGuestOrder('order-1', 'PENDING') })]
+    });
 
+    const res = createResponse();
     await agentWorkspaceController.quickAction({
       ...baseReq,
       body: {
         action: 'cancel',
-        type: 'GUEST',
         notes: 'رقم العميل غير صحيح'
       }
     }, res);
@@ -203,5 +388,295 @@ describe('agentWorkspaceController.quickAction', () => {
       'user-1',
       'Agent One'
     );
+  });
+
+  test('rejects quickAction with 403 when the order is not assigned to the user', async () => {
+    orderService.updateOrderStatus.mockResolvedValue({ status: 'CANCELLED' });
+    mockOrderAssignment({ assignments: [] });
+
+    const res = createResponse();
+    await agentWorkspaceController.quickAction({
+      ...baseReq,
+      body: {
+        action: 'cancel',
+        notes: 'سبب ما'
+      }
+    }, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.payload.success).toBe(false);
+    expect(res.payload.error).toBe('لا تملك صلاحية التعامل مع هذا الطلب');
+    expect(orderService.updateOrderStatus).not.toHaveBeenCalled();
+    expect(orderService.updateGuestOrderStatus).not.toHaveBeenCalled();
+  });
+
+  test('returns workflow pending response when the status update enters the review workflow', async () => {
+    orderService.updateOrderStatus.mockResolvedValue({
+      workflowStatus: 'pending',
+      workflowRequestId: 'req-123'
+    });
+    mockOrderAssignment({
+      assignments: [createAssignment({ order: createOrder('order-1', 'PENDING') })]
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.quickAction({
+      ...baseReq,
+      body: {
+        status: 'CONFIRMED'
+      }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(res.payload.data).toEqual({
+      workflowStatus: 'pending',
+      requestId: 'req-123'
+    });
+  });
+});
+
+describe('agentWorkspaceController.logCallAttempt', () => {
+  const baseReq = {
+    params: { id: 'order-1' },
+    user: {
+      id: 'user-1',
+      effectiveCompanyId: 'company-1'
+    }
+  };
+
+  const mockTx = {
+    order: { update: jest.fn().mockResolvedValue({}) },
+    guestOrder: { update: jest.fn().mockResolvedValue({}) },
+    callAttemptLog: { create: jest.fn().mockResolvedValue({}) }
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('logs a call attempt for a regular order inside a transaction', async () => {
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      $transaction: jest.fn((cb) => cb(mockTx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'reached', notes: 'رد العميل' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(mockTx.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { callAttempts: { increment: 1 }, lastCallAttemptAt: expect.any(Date) }
+    });
+    expect(mockTx.callAttemptLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orderId: 'order-1',
+        userId: 'user-1',
+        result: 'reached',
+        notes: 'رد العميل'
+      })
+    });
+    expect(mockTx.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('logs a call attempt for a guest order inside a transaction', async () => {
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: 'order-1', orderId: null })
+      },
+      $transaction: jest.fn((cb) => cb(mockTx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'unreached', notes: 'لا رد' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(mockTx.guestOrder.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { callAttempts: { increment: 1 }, lastCallAt: expect.any(Date) }
+    });
+    expect(mockTx.callAttemptLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        guestOrderId: 'order-1',
+        userId: 'user-1',
+        result: 'unreached',
+        notes: 'لا رد'
+      })
+    });
+    expect(mockTx.order.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects an invalid call result value with 400', async () => {
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      $transaction: jest.fn((cb) => cb(mockTx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'bogus', notes: 'test' }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'قيمة نتيجة مكالمة غير صالحة'
+    });
+    expect(mockTx.order.update).not.toHaveBeenCalled();
+    expect(mockTx.callAttemptLog.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('agentWorkspaceController.scheduleFollowUp', () => {
+  const baseReq = {
+    params: { id: 'order-1' },
+    user: {
+      id: 'user-1',
+      effectiveCompanyId: 'company-1'
+    }
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('schedules a follow-up for a regular order', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: '2027-06-05T10:00:00.000Z' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { followUpDate: expect.any(Date) }
+    });
+    expect(prismaMock.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('schedules a follow-up for a guest order', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: 'order-1', orderId: null })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: '2027-06-05T10:00:00.000Z' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.guestOrder.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { followUpDate: expect.any(Date) }
+    });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects an invalid followUpDate with 400', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: 'not-a-date' }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'تاريخ المتابعة غير صالح'
+    });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+    expect(prismaMock.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects a past followUpDate with 400', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const pastDate = new Date(Date.now() - 86400000).toISOString();
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: pastDate }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'يجب أن يكون تاريخ المتابعة في المستقبل'
+    });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+    expect(prismaMock.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('accepts a valid future followUpDate', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: futureDate }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { followUpDate: expect.any(Date) }
+    });
   });
 });

@@ -7,6 +7,7 @@ const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { v4: uuidv4 } = require('uuid');
 const { mapVariablesByOrder, extractLocalVariableOrder } = require('../utils/metaTemplateVariables');
+const { buildMetaTemplatePayload } = require('../utils/metaTemplatePayload');
 
 function buildQueuedSuccessMessage(result) {
   if (!result?.queueId) {
@@ -843,61 +844,18 @@ async function publishTemplateToMeta(req, res) {
     metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
       .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 512);
 
-    metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
-      : localTemplate.category === 'AUTHENTICATION' ? 'AUTHENTICATION'
-      : 'UTILITY';
-
-    // تحويل متغيرات القالب لصيغة ميتا الموضعية {{1}}, {{2}}, {{3}} ...
-    // ميتا تقبل فقط أرقاماً متسلسلة داخل قوسين مجعدين، وترفض الأسماء ({{customerName}})
-    // والأقواس الثلاثية الناتجة عن عدم تطبيع الأقواس.
-    const variableIndex = {};
-    bodyText = (localTemplate.content || '')
-      // توحيد الأقواس المفردة {var} إلى صيغة {{var}} دون كسر الأقواس المزدوجة الموجودة
-      .replace(/(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g, '{{$1}}')
-      // تحويل المتغيرات المسماة إلى أرقام موضعية حسب ترتيب الظهور
-      .replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (match, name) => {
-        if (!(name in variableIndex)) variableIndex[name] = Object.keys(variableIndex).length + 1;
-        return `{{${variableIndex[name]}}}`;
-      });
-
-    // ميتا ترفض أن يبدأ القالب أو ينتهي بمتغير (subcode 2388299)
-    // نضيف نصاً ثابتاً قبل/بعد المتغير تلقائياً مع إشعار المستخدم
-    const metaPaddingNotes = [];
-    const paddedBodyText = bodyText
-      // إذا بدأ النص بمتغير نضيف كلمة ترحيب ثابتة قبلها
-      .replace(/^(\s*)(\{\{\s*\d+\s*\}\})/, (m, ws, varToken) => {
-        metaPaddingNotes.push('تمت إضافة "أهلاً " قبل المتغير في بداية النص');
-        return `${ws}أهلاً ${varToken}`;
-      })
-      // إذا انتهى النص بمتغير نضيف فاصلة عربية بعدها
-      .replace(/(\{\{\s*\d+\s*\}\})(\s*)$/, (m, varToken, ws) => {
-        metaPaddingNotes.push('تمت إضافة "،" بعد المتغير في نهاية النص');
-        return `${varToken}،${ws}`;
-      });
-    bodyText = paddedBodyText;
-    metaPadding = metaPaddingNotes.length > 0 ? metaPaddingNotes.join('، ') : null;
-
-    // 4. تجهيز الأزرار (إن وجدت)
-    buttonsComponent = null;
-    if (localTemplate.hasButtons && localTemplate.buttons) {
-      try {
-        const btns = typeof localTemplate.buttons === 'string'
-          ? JSON.parse(localTemplate.buttons) : localTemplate.buttons;
-        const quickReplies = btns.map(b => ({
-          type: 'QUICK_REPLY',
-          text: b.text
-        }));
-        if (quickReplies.length > 0) {
-          buttonsComponent = { type: 'BUTTONS', buttons: quickReplies };
-        }
-      } catch (e) { /* skip invalid buttons */ }
-    }
+    const built = buildMetaTemplatePayload(localTemplate);
+    metaCategory = built.metaCategory;
+    bodyText = built.bodyText;
+    buttonsComponent = built.buttonsComponent;
+    metaPadding = built.metaPadding;
+    const variableCount = built.variableCount;
+    const variableOrder = built.variableOrder;
 
     // 5. إنشاء القالب في ميتا مع محاولات بديلة لتجاوز قيود الصيغة
     // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
     const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 
-    const variableCount = Object.keys(variableIndex).length;
     const bodyWithExample = {
       type: 'BODY',
       text: bodyText,
@@ -948,15 +906,6 @@ async function publishTemplateToMeta(req, res) {
     }
     metaName = createdName;
 
-    // حفظ ترتيب المتغيرات ({{1}} = اسم المتغير) لاستخدامها عند الإرسال عبر ميتا لاحقاً
-    const variableOrder = Object.keys(variableIndex).length > 0
-      ? JSON.stringify(
-          Object.entries(variableIndex)
-            .sort((a, b) => a[1] - b[1])
-            .map(([name, position]) => ({ position, name }))
-        )
-      : null;
-
     // 5. تحديث القالب المحلي ببيانات ميتا
     await getSharedPrismaClient().whatsAppNotificationTemplate.update({
       where: { id: templateId },
@@ -1005,6 +954,91 @@ async function publishTemplateToMeta(req, res) {
       return res.status(500).json({ error: details, request: requestDebug });
     }
     res.status(500).json({ error: `${error.message || 'Meta API error'}${error.code ? ` (code: ${error.code})` : ''}`, request: requestDebug });
+  }
+}
+
+/**
+ * إعادة إرسال قالب مربوط لميتا للمراجعة بعد التعديل — بيحدّث القالب الموجود باسمه
+ * (مش بيخلق واحد جديد) وبيضعه في حالة PENDING لحد ما ميتا توافق تاني.
+ * POST /templates/:id/resubmit-meta  { sessionId }
+ */
+async function resubmitMetaTemplate(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { sessionId } = req.body;
+
+    if (!id || !sessionId) {
+      return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
+    }
+
+    const localTemplate = await getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+      where: { id, companyId }
+    });
+    if (!localTemplate) {
+      return res.status(404).json({ error: 'القالب غير موجود' });
+    }
+    if (!localTemplate.metaTemplateName) {
+      return res.status(400).json({ error: 'القالب غير مربوط بقالب ميتا بعد' });
+    }
+
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: sessionId, companyId, provider: 'META_CLOUD' }
+    });
+    if (!session) {
+      return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
+    }
+
+    const built = buildMetaTemplatePayload(localTemplate);
+    const bodyWithExample = built.variableCount > 0
+      ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `قيمة ${i + 1}`)] } }
+      : { type: 'BODY', text: built.bodyText };
+
+    const components = [bodyWithExample];
+    if (built.buttonsComponent) components.push(built.buttonsComponent);
+
+    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+    const result = await MetaCloudProvider.updateTemplate(sessionId, localTemplate.metaTemplateName, {
+      components,
+      language: 'ar',
+      category: built.metaCategory
+    });
+
+    await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+      where: { id },
+      data: {
+        metaTemplateStatus: 'PENDING',
+        variables: built.variableOrder || localTemplate.variables,
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → "${localTemplate.metaTemplateName}" sent back for review`);
+
+    res.json({
+      success: true,
+      metaTemplateName: localTemplate.metaTemplateName,
+      metaResult: result,
+      metaPadding: built.metaPadding,
+      message: built.metaPadding
+        ? `تم تحديث القالب على ميتا للمراجعة. ${built.metaPadding}`
+        : 'تم تحديث القالب على ميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
+    });
+  } catch (error) {
+    console.error('❌ Error resubmitting Meta template:', error);
+    const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
+    const rawMetaError = rawMeta?.error;
+    if (rawMetaError) {
+      const details = [
+        rawMetaError.message,
+        rawMetaError.error_user_title,
+        rawMetaError.error_user_msg,
+        rawMetaError.code ? `(code: ${rawMetaError.code})` : '',
+        rawMetaError.error_subcode ? `(subcode: ${rawMetaError.error_subcode})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details });
+    }
+    res.status(500).json({ error: error.message || 'فشل تحديث القالب على ميتا' });
   }
 }
 
@@ -1284,6 +1318,7 @@ module.exports = {
   getCustomerPreferences,
   updateCustomerPreferences,
   publishTemplateToMeta,
+  resubmitMetaTemplate,
   syncTemplateStatuses,
   listAvailableMetaTemplates,
   bindMetaTemplate,
