@@ -18,6 +18,7 @@ const appSchema = z.object({
   logo: z.string().max(500).nullish(),
   icon: z.string().max(200).nullish(),
   coverImage: z.string().max(500).nullish(),
+  images: z.union([z.array(z.string().max(500)), z.string().max(2000)]).nullish(),
   mainRoute: z.string().max(200).nullish(),
   adminRoute: z.string().max(200).nullish(),
   pricingModel: z.enum(['FREE', 'SUBSCRIPTION', 'PAY_PER_USE']).nullish(),

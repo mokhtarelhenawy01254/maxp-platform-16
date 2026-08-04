@@ -65,6 +65,13 @@ function safeParseJson(value: unknown) {
   try { return JSON.parse(value); } catch { return null; }
 }
 
+function isLikelyImageUrl(value?: string | null): boolean {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  if (/\.(png|jpe?g|webp|gif|svg|avif|bmp|ico)(\?.*)?$/.test(v)) return true;
+  return v.startsWith("/uploads/") || v.startsWith("data:image/");
+}
+
 function getPricingSummary(app: MPA) {
   if (app.pricingModel === "FREE") return { title: "مجاني", price: "بدون تكلفة", helper: "يمكن تفعيلها مباشرة من غير اشتراك." };
   if (app.pricingModel === "PAY_PER_USE") return { title: "حسب الاستخدام", price: `${formatMoney(app.unitPrice)} / ${app.unitName || "وحدة"}`, helper: "ادفع فقط مقابل الاستهلاك الفعلي." };
@@ -198,7 +205,11 @@ export default function AppDetails() {
   const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
   const IconComp = appIcons[app.icon?.trim().toLowerCase() || ""] || categoryIcons[app.category] || Package;
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-  const screenshots = Array.isArray(app.screenshots) ? app.screenshots : [];
+  const screenshots = Array.isArray(app.screenshots)
+    ? app.screenshots
+    : Array.isArray(app.images)
+      ? app.images
+      : [];
   const faq = Array.isArray(app.faq) ? app.faq : [];
   const changelog = Array.isArray(app.changelog) ? app.changelog : [];
   const reviews = Array.isArray(app.reviews) ? app.reviews : [];
@@ -215,6 +226,16 @@ export default function AppDetails() {
         </button>
 
         <section className="rounded-[1.75rem] bg-card mt-4 overflow-hidden border border-border/30">
+          {isLikelyImageUrl(app.coverImage) && (
+            <div className="relative h-44 w-full overflow-hidden bg-muted/40 sm:h-56">
+              <img
+                src={app.coverImage}
+                alt={app.name}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          )}
           <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
             <div className="min-w-0 text-right">
               <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
@@ -234,8 +255,10 @@ export default function AppDetails() {
               </div>
 
               <div className="flex flex-col items-end gap-4 sm:flex-row-reverse sm:items-start">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary border text-3xl">
-                  {BrandIcon ? <BrandIcon className="size-8" /> : textIcon || <IconComp size={30} />}
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary border text-3xl">
+                  {app.logo ? (
+                    <img src={app.logo} alt={app.name} className="size-full object-cover" loading="lazy" />
+                  ) : BrandIcon ? <BrandIcon className="size-8" /> : textIcon || <IconComp size={30} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1 className="text-3xl font-extrabold text-foreground leading-tight sm:text-4xl">{app.name}</h1>

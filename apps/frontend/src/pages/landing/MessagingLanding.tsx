@@ -212,6 +212,8 @@ const MessagingLanding: React.FC = () => {
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
+      } else if (data.success && data.data?.walletPaid) {
+        navigate("/admin/ai-hub?tab=sandbox");
       } else {
         alert(data.message || i18n.t("MessagingLanding.failed_create_931a"));
         setSubscribing(false);

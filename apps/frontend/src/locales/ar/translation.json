@@ -8496,6 +8496,18 @@
       "enterpriseReady": "جاهز للمؤسسات",
       "editorChoice": "اختيار المحرر"
     },
+    "categories": {
+      "title": "التصنيفات",
+      "all": "كل التصنيفات",
+      "groups": {
+        "commerce": "البيع والتجارة",
+        "data": "البيانات والذكاء الاصطناعي",
+        "operations": "التشغيل والإدارة",
+        "communication": "التواصل والتكامل",
+        "specialized": "القطاعات المتخصصة",
+        "other": "تصنيفات أخرى"
+      }
+    },
     "filters": {
       "title": "الفلاتر",
       "categories": "الفئات",

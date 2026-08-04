@@ -4,6 +4,7 @@ import { SearchBar } from "./SearchBar";
 import { CategoryBar } from "./CategoryBar";
 import { SectionRow } from "./SectionRow";
 import { FilterSidebar } from "./FilterSidebar";
+import { CategorySidebar } from "./CategorySidebar";
 import { HeroBanner } from "./HeroBanner";
 
 export {
@@ -14,6 +15,7 @@ export {
   SearchBar,
   CategoryBar,
   FilterSidebar,
+  CategorySidebar,
   HeroBanner,
   HeroBannerSkeleton,
 };

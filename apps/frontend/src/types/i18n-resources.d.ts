@@ -8490,6 +8490,18 @@ declare module 'react-i18next' {
           enterpriseReady: string;
           editorChoice: string;
         };
+        categories: {
+          title: string;
+          all: string;
+          groups: {
+            commerce: string;
+            data: string;
+            operations: string;
+            communication: string;
+            specialized: string;
+            other: string;
+          };
+        };
         filters: {
           title: string;
           categories: string;

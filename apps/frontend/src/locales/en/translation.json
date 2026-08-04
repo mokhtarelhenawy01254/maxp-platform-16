@@ -8497,6 +8497,18 @@
       "enterpriseReady": "Enterprise Ready",
       "editorChoice": "Editor's Choice"
     },
+    "categories": {
+      "title": "Categories",
+      "all": "All Categories",
+      "groups": {
+        "commerce": "Commerce & Sales",
+        "data": "Data & AI",
+        "operations": "Operations & Management",
+        "communication": "Communication & Integrations",
+        "specialized": "Specialized Verticals",
+        "other": "Other Categories"
+      }
+    },
     "filters": {
       "title": "Filters",
       "categories": "Categories",
