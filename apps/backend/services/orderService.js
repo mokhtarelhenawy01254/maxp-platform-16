@@ -395,7 +395,7 @@ class OrderService {
           const wooExportService = getWooCommerceAutoExportService();
           wooExportService.exportOrderAsync(order.id);
         } catch (wooError) {
-          console.log('⚠️ [ORDER-SERVICE] WooCommerce auto-export skipped:', wooError.message);
+          console.error('⚠️ [ORDER-SERVICE] WooCommerce auto-export skipped:', wooError.message);
         }
 
         // 🔄 Push order to consumer company if applicable
@@ -875,14 +875,6 @@ class OrderService {
 
   // تحديث حالة الطلب
   async updateOrderStatus(orderNumber, companyId, status, notes = null, userId = null, userName = null, existingOrderObject = null, isOverride = false, options = null) {
-    console.log(`🔄 [ORDER-SERVICE-DEBUG] updateOrderStatus called:`);
-    console.log(`   - Order Number: ${orderNumber}`);
-    console.log(`   - New Status: ${status}`);
-    console.log(`   - Notes: ${notes || 'None'}`);
-    console.log(`   - Company ID: ${companyId}`);
-    console.log(`   - User ID: ${userId || 'None'}`);
-    console.log(`   - User Name: ${userName || 'None'}`);
-    console.log(`   - Is Override: ${isOverride}`);
 
     try {
       const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
@@ -951,7 +943,6 @@ class OrderService {
             
           if (settingsObj?.lateCancellationInterceptEnabled && Array.isArray(settingsObj?.lateCancellationTargetStatuses)) {
             if (settingsObj.lateCancellationTargetStatuses.includes(currentStatus)) {
-              console.log(`⚠️ [ORDER-SERVICE-DEBUG] Intercepting cancellation for order ${order.orderNumber}. Changing to PENDING_CANCELLATION.`);
               status = 'PENDING_CANCELLATION';
               if (!notes) notes = 'تم طلب إلغاء الأوردر أثناء التجهيز';
             }
@@ -977,7 +968,6 @@ class OrderService {
       let workflowAuditLog = null;
 
       if (isWorkflowEnabled && !skipTransitionValidation) {
-        console.log(`🔍 [ORDER-SERVICE-DEBUG] Calling orderWorkflowService.validateStatusChange...`);
         const orderWorkflowService = require('./orderWorkflowService');
         let workflowResult;
         try {
@@ -998,7 +988,6 @@ class OrderService {
         }
 
         if (workflowResult && workflowResult.status === 'allowed') {
-          console.log(`✅ [ORDER-SERVICE-DEBUG] Action allowed by Workflow Service.`);
           workflowAuditLog = workflowResult.auditLog || null;
           if (workflowResult.nextStatusCode) {
             status = workflowResult.nextStatusCode;
@@ -1006,7 +995,6 @@ class OrderService {
         }
 
         if (workflowResult && workflowResult.status === 'pending') {
-          console.log(`ℹ️ [ORDER-SERVICE-DEBUG] Action pending approval.`);
           return { ...order, workflowStatus: 'pending', workflowRequestId: workflowResult.requestId };
         }
       }
@@ -1096,22 +1084,13 @@ class OrderService {
       (async () => {
         try {
           // 🚚 Turbo Integration
-          console.log(`🔍 [TURBO-DEBUG] Checking auto shipment for order ${orderNumber} in background:`);
-          console.log(`   - New Status: ${status}`);
-          console.log(`   - Company ID: ${order.companyId}`);
-          console.log(`   - Turbo Enabled: ${order.company?.turboEnabled}`);
-          console.log(`   - Auto Create: ${order.company?.turboAutoCreate}`);
-          console.log(`   - Has API Key: ${order.company?.turboApiKey ? 'Yes' : 'No'}`);
-          console.log(`   - Existing Shipment ID: ${order.turboShipmentId || 'None'}`);
 
           if (status === 'CONFIRMED' && order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
-            console.log(`🚀 [TURBO] Backgrounding shipment creation for order ${orderNumber}`);
             const TurboService = require('./turboService');
             const turboService = new TurboService(order.company.turboApiKey, order.companyId);
             const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
             const shipmentResult = await turboService.createShipment(orderData);
-            console.log(`📦 [TURBO-BG] Result for ${orderNumber}:`, shipmentResult.success);
 
             if (shipmentResult.success) {
               const prisma = this.getPrisma();
@@ -1125,15 +1104,7 @@ class OrderService {
                   turboMetadata: JSON.stringify(shipmentResult.data)
                 }
               });
-              console.log(`✅ [TURBO-BG] Database updated for ${orderNumber}`);
             }
-          } else {
-            console.log(`❌ [TURBO-DEBUG] Auto shipment conditions not met in background:`);
-            if (status !== 'CONFIRMED') console.log(`   - Status is '${status}', not 'CONFIRMED'`);
-            if (!order.company?.turboEnabled) console.log(`   - Turbo not enabled`);
-            if (!order.company?.turboAutoCreate) console.log(`   - Auto create disabled`);
-            if (!order.company?.turboApiKey) console.log(`   - No API key`);
-            if (order.turboShipmentId) console.log(`   - Shipment already exists`);
           }
 
           // 🔄 Returns Integration
@@ -1148,7 +1119,6 @@ class OrderService {
               });
               if (newStatusConfig && newStatusConfig.mapsToSystem && returnStatuses.includes(newStatusConfig.mapsToSystem)) {
                 shouldCreateReturn = true;
-                console.log(`🔄 [RETURNS-AUTO] Custom status '${status}' maps to '${newStatusConfig.mapsToSystem}', triggering return request in background.`);
               }
             } catch (configError) {
               console.warn('⚠️ [RETURNS-AUTO] Failed to check status config mapping in background:', configError.message);
@@ -1156,9 +1126,7 @@ class OrderService {
           }
 
           if (shouldCreateReturn) {
-            console.log(`🔄 [RETURNS-AUTO] Triggering background return request for order ${orderNumber}`);
             await this.autoCreateReturnRequest(order, userId, status);
-            console.log(`✅ [RETURNS-BG] Auto return created for ${orderNumber}`);
           }
 
           // 💰 Affiliate & Commission & Cashback
@@ -1216,7 +1184,6 @@ class OrderService {
                   await dropshippingService.routeOrderToMerchant(order.id);
                 }
                 await commissionService.calculateCommissions(order.id);
-                console.log(`✅ [COMMISSION-BG] Calculated for order ${orderNumber}`);
               }
             }
           }
@@ -1227,12 +1194,10 @@ class OrderService {
             await cashbackService.applyCashbackForPaidOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [CASHBACK-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
-            console.log(`✅ [CASHBACK-BG] Applied for order ${orderNumber}`);
 
             await loyaltyService.applyLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
-            console.log(`✅ [LOYALTY-BG] Applied for order ${orderNumber}`);
           }
 
           // 📱 WhatsApp Notification (with duplicate check)
@@ -1252,10 +1217,8 @@ class OrderService {
             });
 
             if (recentNotification) {
-              console.log(`⚠️ [WHATSAPP-STATUS] Duplicate notification blocked for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
             } else {
               await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
-              console.log(`✅ [WHATSAPP-STATUS] Background notification sent for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
             }
           } catch (whatsappError) {
             console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
@@ -1275,7 +1238,6 @@ class OrderService {
               if (targetStatuses.includes(normalizedStatus) || targetStatuses.includes('*')) {
                 const { generateInvoiceForOrder } = require('./orderInvoiceService');
                 await generateInvoiceForOrder(order.id, userId);
-                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${order.orderNumber} on status ${normalizedStatus}`);
               }
             }
           } catch (invoiceError) {
@@ -1295,13 +1257,6 @@ class OrderService {
   }
 
   async updateGuestOrderStatus(orderNumber, companyId, status, notes = null, userId = null, userName = null, existingGuestOrderObject = null, options = null) {
-    console.log(`🔄 [GUEST-ORDER-SERVICE-DEBUG] updateGuestOrderStatus called:`);
-    console.log(`   - Order Number: ${orderNumber}`);
-    console.log(`   - New Status: ${status}`);
-    console.log(`   - Notes: ${notes || 'None'}`);
-    console.log(`   - Company ID: ${companyId}`);
-    console.log(`   - User ID: ${userId || 'None'}`);
-    console.log(`   - User Name: ${userName || 'None'}`);
 
     try {
       const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
@@ -1457,7 +1412,6 @@ class OrderService {
             };
 
             if (!notificationOrder.customerPhone) {
-              console.log(`ℹ️ [WHATSAPP] Guest order ${orderNumber} has no phone number for status notifications.`);
               return;
             }
 
@@ -1475,16 +1429,13 @@ class OrderService {
             });
 
             if (recentNotification) {
-              console.log(`⚠️ [WHATSAPP] Duplicate notification blocked for guest order: ${orderNumber}, Status: ${notificationStatus}`);
               return;
             }
 
             const notificationResult = await WhatsAppNotificationService.sendOrderStatusNotification(notificationOrder, notificationStatus);
 
             if (notificationResult?.success === false) {
-              console.log(`ℹ️ [WHATSAPP] Guest order notification skipped for ${orderNumber}: ${notificationResult.reason || 'unknown_reason'}`);
             } else {
-              console.log(`✅ [WHATSAPP] Notification sent for guest order direct update: ${orderNumber}`);
             }
           } catch (waError) {
             console.error(`⚠️ [WHATSAPP] Failed to send notification for guest order: ${waError.message}`);
@@ -1511,7 +1462,6 @@ class OrderService {
       });
 
       if (existingRequest) {
-        console.log(`ℹ️ [RETURNS-AUTO] Return request already exists for order ${order.orderNumber}`);
         return;
       }
 
@@ -1520,7 +1470,6 @@ class OrderService {
       });
 
       if (!reason) {
-        console.log(`ℹ️ [RETURNS-AUTO] No return reasons found, creating a default one...`);
         reason = await prisma.returnReason.create({
           data: {
             reason: 'تغيير حالة تلقائي',
@@ -1553,10 +1502,8 @@ class OrderService {
         }
       });
 
-      console.log(`✅ [RETURNS-AUTO] Return request ${request.id} created automatically for order ${order.orderNumber}`);
     } catch (error) {
       if (error.code === 'P2002') {
-        console.log(`ℹ️ [RETURNS-AUTO] Return request already exists (concurrent creation) for order ${order.orderNumber}`);
         return;
       }
       console.error('❌ [RETURNS-AUTO] Error in autoCreateReturnRequest:', error);
@@ -1646,7 +1593,6 @@ class OrderService {
             });
           }, 3);
 
-          console.log(`✅ [TURBO] Shipment created automatically for order ${orderNumber}: ${shipmentResult.trackingNumber}`);
         } catch (turboError) {
           // لا نوقف العملية إذا فشل Turbo - فقط نسجل الخطأ
           console.error(`❌ [TURBO] Failed to create shipment for order ${orderNumber}:`, turboError.message);

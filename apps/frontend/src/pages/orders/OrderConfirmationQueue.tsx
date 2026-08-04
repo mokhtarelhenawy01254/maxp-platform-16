@@ -215,6 +215,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   const [bulkUserId, setBulkUserId] = useState('');
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<ConfirmationOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const listParentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -418,16 +420,15 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   }, [t]);
 
   const handleCancel = useCallback(async (order: ConfirmationOrder) => {
-    const cancellationReason = window.prompt(
-      resolveCopy('orders.cancellationReasonPrompt', 'Write the reason for cancelling this order:'),
-    );
+    setCancelReason('');
+    setCancelTarget(order);
+  }, []);
 
-    if (cancellationReason === null) {
-      return;
-    }
+  const submitCancel = useCallback(async () => {
+    const order = cancelTarget;
+    if (!order) return;
 
-    const notes = cancellationReason.trim();
-
+    const notes = cancelReason.trim();
     if (!notes) {
       toast.error(resolveCopy('orders.cancellationReasonRequired', 'Cancellation reason is required'));
       return;
@@ -445,8 +446,10 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       toast.error(error?.message || t('orders.cancelFailedToast'));
     } finally {
       setCancellingId(null);
+      setCancelTarget(null);
+      setCancelReason('');
     }
-  }, [resolveCopy, t]);
+  }, [cancelTarget, cancelReason, resolveCopy, t]);
 
   const handleAssign = useCallback(async (orderId: string, userId: string) => {
     if (!userId) {
@@ -1080,6 +1083,50 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             >
               {t('orders.next')}
             </button>
+          </div>
+        </div>
+      )}
+      {cancelTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={resolveCopy('orders.cancelReasonTitle', 'Cancellation reason')}
+          onClick={() => setCancelTarget(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="mb-3 text-base font-bold text-gray-900 dark:text-white">
+              {resolveCopy('orders.cancelReasonPrompt', 'Write the reason for cancelling this order:')}
+            </h2>
+            <textarea
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              placeholder={resolveCopy('orders.cancelReasonPlaceholder', 'Write the cancellation reason...')}
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            />
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancelTarget(null)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+              >
+                {resolveCopy('orders.cancelClose', 'Close')}
+              </button>
+              <button
+                type="button"
+                onClick={submitCancel}
+                disabled={!cancelReason.trim() || cancellingId === cancelTarget.id}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancellingId === cancelTarget.id
+                  ? resolveCopy('orders.cancellingOrder', 'Cancelling...')
+                  : resolveCopy('orders.cancelConfirm', 'Confirm cancellation')}
+              </button>
+            </div>
           </div>
         </div>
       )}

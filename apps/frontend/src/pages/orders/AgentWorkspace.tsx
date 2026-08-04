@@ -5,6 +5,7 @@ import { apiClient } from '../../services/apiClient';
 import { useCurrency } from '../../hooks/useCurrency';
 import { summarizeOrderDocumentItems } from '../../utils/orderDocumentQuantityOffers';
 import OrderConfirmationQueue from './OrderConfirmationQueue';
+import { SYSTEM_STATUS_DEFS } from '../../utils/statusRegistry';
 import {
   PhoneIcon,
   CalendarIcon,
@@ -71,39 +72,45 @@ interface ApiErrorShape {
   message?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  CONFIRMED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  PROCESSING: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  SHIPPED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  DELIVERED: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
-  RETURNED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  PARTIALLY_RETURNED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  PARTIALLY_DELIVERED: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-  PARTIALLY_REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-  DUPLICATE_ORDER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  PENDING_CANCELLATION: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  OUT_FOR_DELIVERY: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
+/** Build STATUS_COLORS from SYSTEM_STATUS_DEFS — single source of truth */
+const STATUS_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [code, def.colorClass])
+);
+
+/** English labels for statuses not in the original 14 — extend as needed */
+const STATUS_EN_LABELS: Record<string, string> = {
+  SCHEDULED: 'Scheduled',
+  ON_HOLD: 'On Hold',
+  EXCHANGED: 'Exchanged',
+  LOST: 'Lost',
+  PREPARING: 'Preparing',
+  QUALITY_CHECK: 'Quality Check',
+  PACKAGED: 'Packaged',
+  NOT_SHIPPED: 'Not Shipped',
+  REFUNDED_PARTIALLY: 'Partially Refunded',
+  STOCK_SHORTAGE: 'Stock Shortage',
+  FAILED: 'Failed',
+  COMPLETED: 'Completed',
+  READY_TO_SHIP: 'Ready to Ship',
+  PENDING_PREPARATION: 'Pending Preparation',
+  READY: 'Ready',
+  ON_HOLD_PREP: 'Prep On Hold',
+  TRASH: 'Trash',
+  TRASH_ORDER: 'Trash',
+  DRAFT: 'Draft',
+  PARTIALLY_DELIVERED: 'Partially Delivered',
+  PARTIALLY_RETURNED: 'Partially Returned',
+  WOO_TAGHEZ: 'Woo Taghez',
+  PENDING_CANCELLATION: 'Pending Cancellation',
 };
 
-const STATUS_FALLBACKS: Record<string, { ar: string; en: string }> = {
-  PENDING: { ar: 'قيد الانتظار', en: 'Pending' },
-  CONFIRMED: { ar: 'تم التأكيد', en: 'Confirmed' },
-  PROCESSING: { ar: 'قيد التجهيز', en: 'Processing' },
-  CANCELLED: { ar: 'ملغي', en: 'Cancelled' },
-  SHIPPED: { ar: 'تم الشحن', en: 'Shipped' },
-  DELIVERED: { ar: 'تم التوصيل', en: 'Delivered' },
-  RETURNED: { ar: 'مرتجع', en: 'Returned' },
-  PARTIALLY_RETURNED: { ar: 'مرتجع جزئي', en: 'Partially Returned' },
-  PARTIALLY_DELIVERED: { ar: 'تسليم جزئي', en: 'Partially Delivered' },
-  REFUNDED: { ar: 'مسترد', en: 'Refunded' },
-  PARTIALLY_REFUNDED: { ar: 'مسترد جزئياً', en: 'Partially Refunded' },
-  DUPLICATE_ORDER: { ar: 'طلب مكرر', en: 'Duplicate Order' },
-  PENDING_CANCELLATION: { ar: 'بانتظار الإلغاء', en: 'Pending Cancellation' },
-  OUT_FOR_DELIVERY: { ar: 'خرج للتسليم', en: 'Out for Delivery' },
-};
+/** Build STATUS_FALLBACKS from SYSTEM_STATUS_DEFS — single source of truth */
+const STATUS_FALLBACKS: Record<string, { ar: string; en: string }> = Object.fromEntries(
+  Object.entries(SYSTEM_STATUS_DEFS).map(([code, def]) => [
+    code,
+    { ar: def.label, en: STATUS_EN_LABELS[code] || def.label },
+  ])
+);
 
 function getNormalizedStatus(status: string | null | undefined): string {
   return String(status || 'PENDING').toUpperCase();

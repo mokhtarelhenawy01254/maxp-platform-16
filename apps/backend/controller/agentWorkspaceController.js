@@ -8,6 +8,8 @@ const orderService = require('../services/orderService');
 
 const WORKSPACE_EXCLUDED_STATUSES = new Set(['TRASH', 'DELETED', 'COMPLETED']);
 
+const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
+
 const normalizeWorkspaceStatus = (value) => String(value || '').trim().toUpperCase();
 const normalizeActionNote = (value) => String(value || '').trim();
 const normalizeQuickActionStatus = (value) => {
@@ -242,6 +244,14 @@ const logCallAttempt = async (req, res) => {
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
 
+    // Validate call result
+    let callResult = result;
+    if (!callResult) {
+      callResult = 'unreached'; // default for backward compatibility
+    } else if (!ALLOWED_CALL_RESULTS.includes(callResult)) {
+      return res.status(400).json({ success: false, error: 'قيمة نتيجة مكالمة غير صالحة' });
+    }
+
     const prisma = getSharedPrismaClient();
     const now = new Date();
 
@@ -260,7 +270,7 @@ const logCallAttempt = async (req, res) => {
           data: {
             guestOrderId: id,
             userId,
-            result,
+            result: callResult,
             notes,
             createdAt: now
           }
@@ -279,7 +289,7 @@ const logCallAttempt = async (req, res) => {
           data: {
             orderId: id,
             userId,
-            result,
+            result: callResult,
             notes,
             createdAt: now
           }
@@ -301,8 +311,19 @@ const scheduleFollowUp = async (req, res) => {
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
 
-    const prisma = getSharedPrismaClient();
+    // Validate followUpDate
+    if (!followUpDate) {
+      return res.status(400).json({ success: false, error: 'يجب تحديد تاريخ المتابعة' });
+    }
     const date = new Date(followUpDate);
+    if (Number.isNaN(date.getTime())) {
+      return res.status(400).json({ success: false, error: 'تاريخ المتابعة غير صالح' });
+    }
+    if (date.getTime() <= Date.now()) {
+      return res.status(400).json({ success: false, error: 'يجب أن يكون تاريخ المتابعة في المستقبل' });
+    }
+
+    const prisma = getSharedPrismaClient();
 
     const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
 

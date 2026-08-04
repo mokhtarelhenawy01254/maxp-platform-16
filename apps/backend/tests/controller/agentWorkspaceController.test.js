@@ -466,7 +466,7 @@ describe('agentWorkspaceController.logCallAttempt', () => {
     const res = createResponse();
     await agentWorkspaceController.logCallAttempt({
       ...baseReq,
-      body: { result: 'answered', notes: 'رد العميل' }
+      body: { result: 'reached', notes: 'رد العميل' }
     }, res);
 
     expect(res.statusCode).toBe(200);
@@ -479,7 +479,7 @@ describe('agentWorkspaceController.logCallAttempt', () => {
       data: expect.objectContaining({
         orderId: 'order-1',
         userId: 'user-1',
-        result: 'answered',
+        result: 'reached',
         notes: 'رد العميل'
       })
     });
@@ -497,7 +497,7 @@ describe('agentWorkspaceController.logCallAttempt', () => {
     const res = createResponse();
     await agentWorkspaceController.logCallAttempt({
       ...baseReq,
-      body: { result: 'no_answer', notes: 'لا رد' }
+      body: { result: 'unreached', notes: 'لا رد' }
     }, res);
 
     expect(res.statusCode).toBe(200);
@@ -510,11 +510,34 @@ describe('agentWorkspaceController.logCallAttempt', () => {
       data: expect.objectContaining({
         guestOrderId: 'order-1',
         userId: 'user-1',
-        result: 'no_answer',
+        result: 'unreached',
         notes: 'لا رد'
       })
     });
     expect(mockTx.order.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects an invalid call result value with 400', async () => {
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      $transaction: jest.fn((cb) => cb(mockTx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'bogus', notes: 'test' }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'قيمة نتيجة مكالمة غير صالحة'
+    });
+    expect(mockTx.order.update).not.toHaveBeenCalled();
+    expect(mockTx.callAttemptLog.create).not.toHaveBeenCalled();
   });
 });
 
@@ -544,7 +567,7 @@ describe('agentWorkspaceController.scheduleFollowUp', () => {
     const res = createResponse();
     await agentWorkspaceController.scheduleFollowUp({
       ...baseReq,
-      body: { followUpDate: '2026-06-05T10:00:00.000Z' }
+      body: { followUpDate: '2027-06-05T10:00:00.000Z' }
     }, res);
 
     expect(res.statusCode).toBe(200);
@@ -569,7 +592,7 @@ describe('agentWorkspaceController.scheduleFollowUp', () => {
     const res = createResponse();
     await agentWorkspaceController.scheduleFollowUp({
       ...baseReq,
-      body: { followUpDate: '2026-06-05T10:00:00.000Z' }
+      body: { followUpDate: '2027-06-05T10:00:00.000Z' }
     }, res);
 
     expect(res.statusCode).toBe(200);
@@ -579,5 +602,81 @@ describe('agentWorkspaceController.scheduleFollowUp', () => {
       data: { followUpDate: expect.any(Date) }
     });
     expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects an invalid followUpDate with 400', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: 'not-a-date' }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'تاريخ المتابعة غير صالح'
+    });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+    expect(prismaMock.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('rejects a past followUpDate with 400', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const pastDate = new Date(Date.now() - 86400000).toISOString();
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: pastDate }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toEqual({
+      success: false,
+      error: 'يجب أن يكون تاريخ المتابعة في المستقبل'
+    });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+    expect(prismaMock.guestOrder.update).not.toHaveBeenCalled();
+  });
+
+  test('accepts a valid future followUpDate', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    const res = createResponse();
+    await agentWorkspaceController.scheduleFollowUp({
+      ...baseReq,
+      body: { followUpDate: futureDate }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1', companyId: 'company-1' },
+      data: { followUpDate: expect.any(Date) }
+    });
   });
 });
