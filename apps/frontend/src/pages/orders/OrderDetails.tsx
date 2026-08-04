@@ -29,8 +29,7 @@ import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
-import { printPreparationSlip } from "../../utils/printPreparationSlip";
-import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import tokenManager from "../../utils/tokenManager";
@@ -317,16 +316,11 @@ const OrderDetails: React.FC = () => {
     }
 
     const printDirectInvoice = async () => {
-      const invoiceSettingsResponse = await apiClient
-        .get("/order-invoice-settings")
-        .catch(() => null);
-
-      await printOrderInvoice({
+      await printSingleShippingLabel({
         order,
         companyName: user?.company?.name,
         companyLogoUrl: user?.company?.logo || null,
         printWindow,
-        invoiceSettings: invoiceSettingsResponse?.data?.data,
       });
     };
 
@@ -379,7 +373,16 @@ const OrderDetails: React.FC = () => {
     if (!order) return;
 
     try {
-      await printPreparationSlip(order.orderNumber);
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        throw new Error("فشل في فتح نافذة جديدة للطباعة");
+      }
+      await printSingleShippingLabel({
+        order,
+        companyName: user?.company?.name,
+        companyLogoUrl: user?.company?.logo || null,
+        printWindow,
+      });
     } catch (error: any) {
       console.error("Error generating preparation slip HTML:", error);
       alert(t("orderDetails.preparationSlipError", { error: error.message }));

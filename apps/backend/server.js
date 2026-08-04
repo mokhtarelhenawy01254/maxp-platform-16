@@ -305,7 +305,6 @@ const kashierRoutes = require("./routes/kashierRoutes");
 const codDepositRoutes = require("./routes/codDepositRoutes");
 const promotionSettingsRoutes = require("./routes/promotionSettingsRoutes");
 const policyCrudRoutes = require("./routes/policy");
-const policyRoutes = require("./routes/policyRoutes");
 const productReviewRoutes = require("./routes/productReviewRoutes");
 const publicProductReviewRoutes = require("./routes/publicProductReviewRoutes");
 const productLandingPagesRoutes = require("./routes/productLandingPagesRoutes");
@@ -687,7 +686,6 @@ app.use("/api/v1/bulk-orders", bulkOrdersRoutes);
 app.use("/api/v1/wholesale", wholesaleRoutes);
 app.use("/api/v1/returns", returnRoutes);
 app.use("/api/v1/cancellations", cancellationRoutes);
-app.use("/api/v1/policy", policyRoutes);
 app.use("/api/v1/policies", policyCrudRoutes);
 app.use("/api/v1/faqs", faqRoutes);
 

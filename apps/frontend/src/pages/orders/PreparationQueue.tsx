@@ -13,8 +13,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { printPreparationSlip } from "../../utils/printPreparationSlip";
-import { printMultipleGuestInvoices } from "../../utils/printOrderInvoice";
+import { printSingleShippingLabel, printMultipleShippingLabels } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "./types";
 import {
   DEFAULT_PROBLEM_HOLD_DETAILS,
@@ -911,7 +910,23 @@ const PreparationQueue: React.FC = () => {
   const handlePrintPreparationSlip = useCallback(async (orderNumber: string) => {
     try {
       setPrintingOrderNumber(orderNumber);
-      await printPreparationSlip(orderNumber);
+      const order = orders.find((item) => item.orderNumber === orderNumber);
+      if (!order) {
+        toast.error(t('preparation.page.orderNotFound'));
+        return;
+      }
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast.error(t('preparation.page.printWindowBlocked'));
+        return;
+      }
+      const { toOrderDetailsType } = await import("../../utils/printShippingLabel");
+      await printSingleShippingLabel({
+        order: toOrderDetailsType(order),
+        companyName: user?.company?.name,
+        companyLogoUrl: user?.company?.logo || null,
+        printWindow,
+      });
       toast.success(t('preparation.page.slipOpened'));
     } catch (error: unknown) {
       console.error("Failed to print preparation slip:", error);
@@ -919,7 +934,7 @@ const PreparationQueue: React.FC = () => {
     } finally {
       setPrintingOrderNumber(null);
     }
-  }, []);
+  }, [orders, user?.company?.name, user?.company?.logo, t]);
 
   const saveShortageHoldDetails = useCallback(
     async (
@@ -1604,16 +1619,13 @@ const PreparationQueue: React.FC = () => {
         }
 
         if (guestOrders.length > 0) {
-          const invoiceSettingsResponse = await apiClient
-            .get("/order-invoice-settings")
-            .catch(() => null);
+          const { toOrderDetailsType } = await import("../../utils/printShippingLabel");
           try {
-            await printMultipleGuestInvoices({
-              orders: guestOrders.map((entry) => entry.order),
+            await printMultipleShippingLabels({
+              orders: guestOrders.map((entry) => toOrderDetailsType(entry.order)),
               companyName: user?.company?.name,
               companyLogoUrl: user?.company?.logo || null,
               printWindow,
-              invoiceSettings: invoiceSettingsResponse?.data?.data,
             });
           } catch (printError: unknown) {
             console.error("Failed printing guest order invoices:", printError);
@@ -1711,17 +1723,20 @@ const PreparationQueue: React.FC = () => {
     [dialogOrder, problemHoldDrafts, statusChangeDialog],
   );
 
+  const dialogHoldReason = dialogHoldDetails.reason || "";
+
   const handleConfirmStatusChange = useCallback(
     async (payload: {
       note: string;
-      holdDetails?: Partial<ProblemHoldDetails>;
+      holdReason?: string;
     }) => {
       if (!statusChangeDialog) return;
+      const holdDetails = payload.holdReason ? { reason: payload.holdReason } : undefined;
       const ok = await performStatusUpdate(
         statusChangeDialog.orderNumber,
         statusChangeDialog.targetStatus,
         payload.note,
-        payload.holdDetails,
+        holdDetails,
       );
       if (ok) {
         setStatusChangeDialog(null);
@@ -2206,7 +2221,7 @@ const PreparationQueue: React.FC = () => {
             : ""
         }
         isHold={statusChangeDialog?.isHold || false}
-        initialHoldDetails={dialogHoldDetails}
+        initialHoldReason={dialogHoldReason}
         busy={Boolean(
           dialogOrder &&
             (rowUpdatingId === dialogOrder.orderNumber ||

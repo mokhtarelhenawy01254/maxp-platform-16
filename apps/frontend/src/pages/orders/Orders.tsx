@@ -26,7 +26,7 @@ import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
 import { OrdersPagination } from "./components/OrdersPagination";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
-import { printOrderInvoice, printMultipleGuestInvoices } from "../../utils/printOrderInvoice";
+import { printSingleShippingLabel, printMultipleShippingLabels, toOrderDetailsType } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "./types";
 
 const EnhancedOrderModal = React.lazy(
@@ -1875,16 +1875,12 @@ const Orders: React.FC = () => {
           }
 
           if (guestOrders && guestOrders.length > 0) {
-            const invoiceSettingsResponse = await apiClient
-              .get("/order-invoice-settings")
-              .catch(() => null);
             try {
-              await printMultipleGuestInvoices({
+              await printMultipleShippingLabels({
                 orders: (guestOrders as Array<{ orderId: string; order: OrderDetailsType }>).map((entry) => entry.order),
                 companyName: user?.company?.name,
                 companyLogoUrl: user?.company?.logo || null,
                 printWindow: guestPrintWindow,
-                invoiceSettings: invoiceSettingsResponse?.data?.data,
               });
             } catch (printError: unknown) {
               console.error("Failed printing guest order invoices:", printError);
@@ -1931,16 +1927,12 @@ const Orders: React.FC = () => {
             printWindow.close();
             setSelectedInvoice(invoices[0]);
           } else if (guestOrders && guestOrders.length > 0) {
-            const invoiceSettingsResponse = await apiClient
-              .get("/order-invoice-settings")
-              .catch(() => null);
             try {
-              await printOrderInvoice({
+              await printSingleShippingLabel({
                 order: guestOrders[0].order,
                 companyName: user?.company?.name,
                 companyLogoUrl: user?.company?.logo || null,
                 printWindow,
-                invoiceSettings: invoiceSettingsResponse?.data?.data,
               });
             } catch (printError: unknown) {
               console.error("Failed printing guest order invoice:", printError);

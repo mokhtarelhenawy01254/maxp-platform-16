@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { printOrderInvoice } from "../../utils/printOrderInvoice";
+import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
@@ -329,15 +329,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
       } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
         const guestOrder = response.data.data.guestOrders[0].order as OrderDetailsType;
-        const invoiceSettingsResponse = await apiClient
-          .get("/order-invoice-settings")
-          .catch(() => null);
-        await printOrderInvoice({
+        await printSingleShippingLabel({
           order: guestOrder,
           companyName: user?.company?.name,
           companyLogoUrl: user?.company?.logo || null,
           printWindow,
-          invoiceSettings: invoiceSettingsResponse?.data?.data,
         });
       } else {
         printWindow.close();
