@@ -113,7 +113,7 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
     jest.clearAllMocks();
   });
 
-  test("يعرض شارة خطر حمرا لو ميتا بدون قالب معتمد", async () => {
+  test("يعرض زر اربط بقالب ميتا للشارة الحمرا (ميتا بدون قالب معتمد)", async () => {
     mockApi({
       defaultSession: { id: "s2", name: "جلسة ميتا", provider: "META_CLOUD" },
       preview: [
@@ -129,11 +129,13 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
     });
 
     renderPage();
-    expect(await screen.findByText(/ميتا بدون قالب معتمد/)).toBeInTheDocument();
+    const bindButton = await screen.findByRole("button", { name: /اربط بقالب ميتا/ });
+    expect(bindButton).toBeInTheDocument();
     expect(screen.getByText(/🔴/)).toBeInTheDocument();
+    expect(screen.getByTitle(/ميتا بدون قالب معتمد/)).toBeInTheDocument();
   });
 
-  test("يعرض رسالة لا توجد جلسة لو مفيش sessions", async () => {
+  test("يعرض زر اربط بقالب ميتا لو مفيش جلسة متصلة", async () => {
     mockApi({
       defaultSession: null,
       preview: [
@@ -149,7 +151,8 @@ describe("OrderStatusTemplatesPage delivery preview", () => {
     });
 
     renderPage();
-    expect(await screen.findByText(/لا توجد جلسة واتساب متصلة/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /اربط بقالب ميتا/ })).toBeInTheDocument();
+    expect(screen.getByTitle(/لا توجد جلسة واتساب متصلة/)).toBeInTheDocument();
   });
 
   test("يعرض بروفايدر الـ default session جنب dropdown في تبويب الإعدادات", async () => {
