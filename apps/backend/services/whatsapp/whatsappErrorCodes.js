@@ -219,8 +219,25 @@ const HTTP_STATUS_TO_ERROR = {
   404: { reason: 'not_found', retryable: false },
   429: { reason: 'too_many_requests', retryable: true },
   500: { reason: 'internal_server_error', retryable: true },
+  502: { reason: 'bad_gateway', retryable: true },
   503: { reason: 'service_unavailable', retryable: true },
+  504: { reason: 'gateway_timeout', retryable: true },
 };
+
+const NETWORK_ERROR_CODES = new Set([
+  'ECONNABORTED',
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'EPIPE',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENETDOWN',
+  'ERR_SOCKET_CONNECTION_TIMEOUT',
+  'ERR_SOCKET_CLOSED',
+]);
 
 function extractErrorCode(err) {
   if (err?.response?.data?.error?.code) {
@@ -265,6 +282,30 @@ function mapError(err) {
     };
   }
 
+  const sysCode = typeof err?.code === 'string' ? err.code.toUpperCase() : null;
+  if (sysCode && NETWORK_ERROR_CODES.has(sysCode)) {
+    return {
+      code: null,
+      reason: 'network_error',
+      retryable: true,
+      details,
+      apiMessage: apiMessage || err?.message,
+      httpStatus,
+    };
+  }
+
+  // لا استجابة HTTP (timeout/network) أو أي 5xx غير معرّف = خطأ عابر قابل لإعادة المحاولة
+  if (!httpStatus || httpStatus >= 500) {
+    return {
+      code: null,
+      reason: httpStatus ? 'server_error' : 'network_error',
+      retryable: true,
+      details,
+      apiMessage: apiMessage || err?.message,
+      httpStatus,
+    };
+  }
+
   return {
     code: null,
     reason: 'send_failed',
@@ -278,6 +319,7 @@ function mapError(err) {
 module.exports = {
   WHATSAPP_ERROR_CODES,
   HTTP_STATUS_TO_ERROR,
+  NETWORK_ERROR_CODES,
   extractErrorCode,
   extractErrorDetails,
   extractErrorMessage,

@@ -7,6 +7,7 @@ const { getSharedPrismaClient, safeQuery } = require('../sharedDatabase');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppManager = require('./WhatsAppManager');
 const axios = require('axios');
+const { isNonNotifiableStatus } = require('../../utils/orderStatusMeta');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 القوالب الافتراضية (مستخرجة إلى templates/defaultTemplates.js — §5.1)
@@ -1313,6 +1314,13 @@ async function sendNotification(options) {
 
       console.log(`[WHATSAPP-DEBUG] Send result:`, result);
 
+      // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3 hardening):
+      // لا نكتب SENT أبداً بدون نتيجة إرسال فعلية — لو Meta رفضت وfallback فشل
+      // (result = null) نرمي خطأ لنمر عبر مسار FAILED بدل نجاح وهمي.
+      if (!result) {
+        throw new Error('Both Meta and Baileys send failed');
+      }
+
       // تحديث السجل
       await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
         where: { id: notificationLog.id },
@@ -1721,8 +1729,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
 
   // 🛡️ حالات داخلية مش لازم تبعت notification للعميل (TRASH/DRAFT/DUPLICATE...) —
   // بيمنع Prisma enum error على eventType وبيوقف spam للعملاء.
-  const NON_NOTIFIABLE_STATUSES = ["TRASH", "TRASH_ORDER", "DRAFT", "DUPLICATE_ORDER", "DELETED"];
-  if (NON_NOTIFIABLE_STATUSES.includes(String(newStatus || "").toUpperCase())) {
+  if (isNonNotifiableStatus(newStatus)) {
     console.log(`[WHATSAPP-STATUS] ⏭️ Skipping notification for internal status: ${newStatus}`);
     return { success: false, reason: "status_not_notifiable" };
   }
@@ -2434,6 +2441,24 @@ async function processNotificationQueue() {
   }
 
   try {
+    // 🧹 Reaper: إعادة تعيين أي صفوف عالقة في PROCESSING منذ أكثر من 5 دقائق
+    // (crash/OOM/deploy أثناء المعالجة يترك الصف في PROCESSING للأبد وإلا)
+    const REAPER_STALE_MS = 5 * 60 * 1000;
+    try {
+      const reaped = await prisma.whatsAppNotificationQueue.updateMany({
+        where: {
+          status: 'PROCESSING',
+          processedAt: { lt: new Date(Date.now() - REAPER_STALE_MS) }
+        },
+        data: { status: 'PENDING', processedAt: null }
+      });
+      if (reaped.count > 0) {
+        console.log(`🧹 [WHATSAPP-QUEUE] Reaped ${reaped.count} stale PROCESSING rows -> PENDING`);
+      }
+    } catch (reaperErr) {
+      console.error('❌ [WHATSAPP-QUEUE] Reaper failed:', reaperErr.message);
+    }
+
     // جلب الإشعارات المستحقة
     const pendingNotifications = await prisma.whatsAppNotificationQueue.findMany({
       where: {
@@ -2444,17 +2469,23 @@ async function processNotificationQueue() {
         { priority: 'asc' },
         { scheduledAt: 'asc' }
       ],
-      take: 50
+      take: 200
     });
 
     console.log(`📬 Processing ${pendingNotifications.length} queued notifications`);
 
     for (const notification of pendingNotifications) {
-      // تحديث الحالة
-      await prisma.whatsAppNotificationQueue.update({
-        where: { id: notification.id },
-        data: { status: 'PROCESSING' }
+      // 🚨 PRODUCTION-FIX (N1): claim ذري — updateMany بـ status: 'PENDING' في
+      // الـ where (compare-and-set). لو صف آخر (worker/replica) استحوذ عليه قبلنا
+      // count = 0 → نتخطى. بيضمن عدم المعالجة المزدوجة حتى لو فتحنا multi-replica.
+      const claimed = await prisma.whatsAppNotificationQueue.updateMany({
+        where: { id: notification.id, status: 'PENDING' },
+        data: { status: 'PROCESSING', processedAt: new Date() }
       });
+      if (claimed.count === 0) {
+        console.log(`⏭️ [WHATSAPP-QUEUE] ${notification.id} already claimed by another worker — skipping`);
+        continue;
+      }
 
       try {
         // التحقق من الجلسة — أعد حلّها وقت المعالجة (إصلاح §4.1):
@@ -2526,7 +2557,7 @@ async function processNotificationQueue() {
             cartId: notification.cartId,
             status: 'SENT',
             sentAt: new Date(),
-            whatsappMessageId: result?.key?.id
+            whatsappMessageId: result?.messageId || result?.key?.id || null
           }
         });
 
@@ -2541,6 +2572,7 @@ async function processNotificationQueue() {
         });
 
         console.log(`✅ Queued notification sent: ${notification.eventType}`);
+        await queueSendPacingDelay(notification, null);
 
       } catch (error) {
         // زيادة عداد المحاولات
@@ -2552,22 +2584,22 @@ async function processNotificationQueue() {
             data: { status: 'FAILED', retryCount: newRetryCount }
           });
         } else {
-          // إعادة الجدولة بعد 5 دقائق
+          // إعادة الجدولة — backoff متفاوت حسب نوع الخطأ:
+          // rate-limit ياخد 15 دقيقة (Meta يفرض النافذة)، والعابر ياخد دقيقتين.
+          const retryDelayMs = isRateLimitedSendError(error) ? 15 * 60 * 1000 : 2 * 60 * 1000;
           await prisma.whatsAppNotificationQueue.update({
             where: { id: notification.id },
             data: {
               status: 'PENDING',
               retryCount: newRetryCount,
-              scheduledAt: new Date(Date.now() + 5 * 60 * 1000)
+              scheduledAt: new Date(Date.now() + retryDelayMs)
             }
           });
         }
 
         console.error(`❌ Failed to process queued notification:`, error);
+        await queueSendPacingDelay(notification, error);
       }
-
-      // تأخير بين الرسائل لتجنب الحظر
-      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
   } catch (error) {
@@ -2575,6 +2607,27 @@ async function processNotificationQueue() {
   } finally {
     notificationQueueProcessing = false;
   }
+}
+
+function isRateLimitedSendError(error) {
+  if (!error) return false;
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return (
+    error?.httpStatus === 429 ||
+    code === '429' ||
+    /rate.?over.?limit|rate.?limit|too_many_requests|rate_over_limits|130429|131048|80007/i.test(message + ' ' + code)
+  );
+}
+
+async function queueSendPacingDelay(notification, error) {
+  // نباعد 2s بين الرسائل الناجحة أو المتأثرة بـ rate-limit لتجنب حظر الرقم،
+  // لكن الفشل الفوري (غير القابل لإعادة المحاولة) لا يدفع التأخير — لا نقطة
+  // في الانتظار بعد فشل دائم (backlog يتفرّغ أسرع).
+  if (error && !error?.retryable && !isRateLimitedSendError(error)) {
+    return;
+  }
+  await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3234,6 +3287,10 @@ module.exports = {
 
   // معالج الطابور
   processNotificationQueue,
+
+  // أدوات الطابور (اختبار)
+  isRateLimitedSendError,
+  queueSendPacingDelay,
 
   // الإحصائيات
   getNotificationStats

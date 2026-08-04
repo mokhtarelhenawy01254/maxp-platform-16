@@ -78,6 +78,26 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() =>
+              onDensityChange(density === "compact" ? "comfortable" : "compact")
+            }
+            aria-pressed={density === "compact"}
+            title={
+              density === "compact"
+                ? t("orders.comfortableDensity")
+                : t("orders.compactDensity")
+            }
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-2xl border px-3 py-2 text-xs font-semibold transition ${density === "compact"
+              ? "border-blue-500 bg-blue-600 text-white"
+              : "border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              }`}
+          >
+            {density === "compact"
+              ? t("orders.compactDensity")
+              : t("orders.comfortableDensity")}
+          </button>
         </div>
       </div>
     );

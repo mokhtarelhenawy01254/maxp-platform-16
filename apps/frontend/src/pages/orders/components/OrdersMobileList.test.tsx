@@ -109,4 +109,16 @@ describe("OrdersMobileList", () => {
 
     expect(document.querySelector(".skeleton-shimmer")).not.toBeNull();
   });
+
+  it("renders order cards in compact density", () => {
+    render(
+      <MemoryRouter>
+        <OrdersMobileList {...baseProps} density="compact" />
+      </MemoryRouter>,
+    );
+
+    const card = document.querySelector("article");
+    expect(card).not.toBeNull();
+    expect(card?.className).toContain("p-2.5");
+  });
 });
