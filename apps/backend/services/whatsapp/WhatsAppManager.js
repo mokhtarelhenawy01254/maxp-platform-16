@@ -5327,6 +5327,78 @@ async function removeChatLabel(sessionId, jid, labelId) {
     }
 }
 
+/**
+ * جلب عملاء تصنيف معين (من الداتابيز + الذاكرة للمزامنة اللحظية)
+ */
+async function getLabelContacts(sessionId, labelId, options = {}) {
+    const { page = 1, limit = 50, search = '' } = options;
+    const prisma = getSharedPrismaClient();
+
+    const where = {
+        sessionId,
+        labels: { contains: `"${labelId}"` },
+        NOT: { jid: { contains: '@lid' } }
+    };
+    if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { pushName: { contains: search } },
+            { phoneNumber: { contains: search } }
+        ];
+    }
+
+    const select = {
+        id: true,
+        sessionId: true,
+        jid: true,
+        phoneNumber: true,
+        name: true,
+        pushName: true,
+        profilePicUrl: true,
+        isGroup: true,
+        customerId: true,
+        lastMessageAt: true,
+        lastMessagePreview: true,
+        totalMessages: true
+    };
+
+    const [contacts, total] = await Promise.all([
+        prisma.whatsAppContact.findMany({
+            where,
+            orderBy: [{ lastMessageAt: 'desc' }],
+            skip: (page - 1) * limit,
+            take: limit,
+            select
+        }),
+        prisma.whatsAppContact.count({ where })
+    ]);
+
+    // دمج الارتباطات اللحظية من الذاكرة (ممكن تكون لسه متسجلتش في الداتابيز)
+    const session = getSession(sessionId);
+    const inMemoryJids = session?.labelAssociations?.get(labelId);
+    let realtimeContacts = [];
+    if (inMemoryJids && inMemoryJids.size > 0) {
+        const dbJids = new Set(contacts.map(c => c.jid));
+        const missingJids = [...inMemoryJids]
+            .filter(jid => !dbJids.has(jid))
+            .filter(jid => !String(jid).includes('@lid'));
+        if (missingJids.length > 0) {
+            realtimeContacts = await prisma.whatsAppContact.findMany({
+                where: { sessionId, jid: { in: missingJids } },
+                select
+            });
+        }
+    }
+
+    return {
+        contacts: [...realtimeContacts, ...contacts],
+        total,
+        page,
+        limit,
+        sessionConnected: Boolean(session)
+    };
+}
+
 // ==================== Starred Messages Features ====================
 
 /**
@@ -5964,6 +6036,7 @@ module.exports = {
     createLabel,
     deleteLabel,
     removeChatLabel,
+    getLabelContacts,
 
     // Starred Messages
     starMessage,

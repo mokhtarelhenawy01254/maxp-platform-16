@@ -3633,6 +3633,36 @@ async function removeLabelFromChat(req, res) {
     }
 }
 
+async function getLabelContacts(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId } = req.params;
+        const { sessionId } = req.query;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 500);
+        const search = (req.query.search || '').trim();
+
+        if (!sessionId || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.getLabelContacts(targetSessionId, labelId, { page, limit, search });
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error getting label contacts:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب عملاء التصنيف' });
+    }
+}
+
 // ==================== Starred Messages Controllers ====================
 
 async function starMessage(req, res) {
@@ -4577,6 +4607,7 @@ module.exports = {
     deleteLabel,
     addLabelToChat,
     removeLabelFromChat,
+    getLabelContacts,
 
     // Starred Messages
     starMessage,
