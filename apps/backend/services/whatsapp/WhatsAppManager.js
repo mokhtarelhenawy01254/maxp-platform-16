@@ -5109,90 +5109,28 @@ async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
 }
 
 /**
- * مزامنة يدوية للتصنيفات — يسأل واتساب مباشرة عن التصنيفات
+ * مزامنة يدوية للتصنيفات — يطلب من واتساب إعادة مزامنة الـ app state
+ * Baileys v6 لا يدعم IQ query للتصنيفات مباشرة.
+ * الحل: نستخدم resyncAppState('regular') لإعادة جلب الـ sync actions
+ * بما فيها label_edit و label_jid، وأحداث labels.edit / labels.association
+ * هتملأ session.labels و session.labelAssociations تلقائياً.
  */
 async function syncLabels(sessionId) {
     const session = getSession(sessionId);
     if (!session) {
-        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
         return [];
     }
 
     try {
-        // اسأل واتساب عن التصنيفات عبر IQ query
-        // WhatsApp بيخزن الـ labels كـ label edit actions في الـ critical block
-        let remoteLabels = [];
-        try {
-            const result = await session.sock.query({
-                tag: 'iq',
-                attrs: {
-                    xmlns: 'w:label:label',
-                    to: S_WHATSAPP_NET,
-                    type: 'get'
-                },
-                content: null
-            });
-            // الـ response بيحتوي على القائمة
-            if (result?.content) {
-                const children = Array.isArray(result.content) ? result.content : [result.content];
-                for (const child of children) {
-                    if (child.tag === 'label' && child.attrs) {
-                        remoteLabels.push({
-                            id: child.attrs.id,
-                            name: child.attrs.name,
-                            color: child.attrs.color || '0',
-                        });
-                    }
-                }
-            }
-        } catch (iqErr) {
-            console.log('⚠️ Label IQ query failed, trying fallback:', iqErr.message);
+        session.labels.clear();
+        session.labelAssociations.clear();
+
+        // مزامنة الـ app state collection "regular" — فيها جميع تعديلات التصنيفات
+        if (session.sock?.resyncAppState) {
+            await session.sock.resyncAppState(['regular'], false);
         }
 
-        if (remoteLabels.length > 0) {
-            // ضيف التصنيفات المسترجعة للـ cache
-            session.labels.clear();
-            session.labelAssociations.clear();
-            for (const label of remoteLabels) {
-                session.labels.set(label.id, {
-                    id: label.id,
-                    name: label.name,
-                    color: parseInt(label.color) || 0,
-                });
-            }
-
-            // كمان حاول نجيب الـ associations لكل تصنيف
-            for (const label of remoteLabels) {
-                try {
-                    const assocResult = await session.sock.query({
-                        tag: 'iq',
-                        attrs: {
-                            xmlns: 'w:label:label',
-                            to: S_WHATSAPP_NET,
-                            type: 'get'
-                        },
-                        content: [{ tag: 'list', attrs: { id: label.id } }]
-                    });
-                    if (assocResult?.content) {
-                        const chats = Array.isArray(assocResult.content) ? assocResult.content : [assocResult.content];
-                        const jids = new Set();
-                        for (const entry of chats) {
-                            if (entry.tag === 'chat' && entry.attrs?.jid) {
-                                jids.add(entry.attrs.jid);
-                            }
-                        }
-                        if (jids.size > 0) {
-                            session.labelAssociations.set(label.id, jids);
-                        }
-                    }
-                } catch { /* skip associations for this label */ }
-            }
-        } else {
-            // Fallback: حاول نستخدم الـ cache الموجود
-            console.log('⚠️ Could not fetch labels from WhatsApp, checking existing cache');
-        }
-
-        // 💾 Persist associations to DB
+        // حفظ associations في الداتابيز
         try {
             const prisma = getSharedPrismaClient();
             const allContacts = await prisma.whatsAppContact.findMany({
@@ -5207,7 +5145,6 @@ async function syncLabels(sessionId) {
                     }
                 }
                 const dbLabels = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
-                // Merge: prefer in-memory (fresh from WhatsApp), keep DB-only labels too
                 const merged = Array.from(new Set([...assignedLabels, ...dbLabels]));
                 if (JSON.stringify(merged) !== contact.labels) {
                     await prisma.whatsAppContact.update({
@@ -5221,9 +5158,9 @@ async function syncLabels(sessionId) {
             console.error('❌ Error persisting labels to DB:', dbErr.message);
         }
 
-        console.log(`🔄 Labels sync completed for session: ${sessionId} (${remoteLabels.length} labels)`);
-
         const labels = Array.from(session.labels.values());
+        console.log(`🔄 Labels sync completed for session: ${sessionId} (${labels.length} labels)`);
+
         return labels.map(label => ({
             id: label.id,
             name: label.name,
