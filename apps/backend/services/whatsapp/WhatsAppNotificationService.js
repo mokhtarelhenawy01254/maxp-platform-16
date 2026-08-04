@@ -741,6 +741,7 @@ function buildNewsletterAdminAlertContent() {
 // موازنة الجلسات مستخرجة (sessionBalancer.js — §5.1)
 const { getOrAssignSession, ensureRuntimeSessionConnected } = require('./sessionBalancer');
 const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
+const { buildMetaBodyParams } = require('../../utils/metaTemplateVariables');
 
 const settingsInitializationInFlight = new Map();
 
@@ -1167,33 +1168,13 @@ async function sendNotification(options) {
         try {
           console.log(`☁️ [META-CLOUD] Sending via approved Meta template "${metaTemplateName}" (status=${metaTemplateStatus}) for event ${eventType}`);
 
-          // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name})
-          const bodyParams = [];
+          // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name}).
+          // 🆕 buildMetaBodyParams يوحّد المسارين (variables JSON + fallback من نص القالب)
+          // بنفس منطق mapVariablesByOrder المستخدم وقت الربط — يمنع رسايل بمتغيرات مغلوطة.
           const variablesOrder = safeTemplate?.variables ? (() => {
             try { const parsed = JSON.parse(safeTemplate.variables); return Array.isArray(parsed) ? parsed : null; } catch { return null; }
           })() : null;
-
-          if (Array.isArray(variablesOrder) && variablesOrder.length > 0) {
-            variablesOrder
-              .sort((a, b) => (a.position || 0) - (b.position || 0))
-              .forEach((v) => {
-                const value = variables[v.name] !== undefined && variables[v.name] !== null
-                  ? String(variables[v.name])
-                  : '';
-                bodyParams.push({ type: 'text', text: value });
-              });
-          } else {
-            // Fallback: استخراج المتغيرات حسب ترتيب ظهورها في نص القالب
-            const bodyVarNames = (safeTemplate.content || '').match(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g) || [];
-            const seen = new Set();
-            for (const m of bodyVarNames) {
-              const name = m.replace(/\{\{|\}\}/g, '').trim();
-              if (seen.has(name)) continue;
-              seen.add(name);
-              const value = variables[name] !== undefined && variables[name] !== null ? String(variables[name]) : '';
-              bodyParams.push({ type: 'text', text: value });
-            }
-          }
+          const bodyParams = buildMetaBodyParams(variablesOrder, safeTemplate?.content, variables);
 
           const components = [{ type: 'BODY', parameters: bodyParams }];
 
