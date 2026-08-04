@@ -1172,6 +1172,98 @@ async function bindMetaTemplate(req, res) {
   }
 }
 
+/**
+ * يرجع مصير الإشعار المتوقع لكل قالب/حالة — شفافية البروفايدر للأدمن.
+ * GET /templates/delivery-preview
+ */
+async function getTemplatesDeliveryPreview(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    // 1. كل القوالب
+    const templates = await prisma.whatsAppNotificationTemplate.findMany({
+      where: { companyId, isActive: true },
+      select: {
+        id: true, eventType: true, category: true,
+        metaTemplateName: true, metaTemplateStatus: true, metaTemplateLanguage: true,
+      },
+    });
+
+    // 2. كل sessions الشركة المتصلة
+    const sessions = await prisma.whatsAppSession.findMany({
+      where: { companyId, status: 'CONNECTED' },
+      select: { id: true, name: true, provider: true, phoneNumber: true, status: true },
+    });
+
+    // 3. default session (أو أول جلسة متصلة لو مش محدد)
+    const settings = await prisma.whatsAppNotificationSettings.findUnique({
+      where: { companyId },
+      select: { defaultSessionId: true },
+    });
+    const defaultSession = sessions.find(s => s.id === settings?.defaultSessionId) || sessions[0];
+
+    // 4. لكل قالب، احسب المصير
+    const preview = templates.map(t => {
+      let deliveryStatus = 'unknown';
+      let provider = null;
+      let riskLevel = 'none'; // none | warning | danger
+      let message = '';
+
+      if (!defaultSession) {
+        deliveryStatus = 'no_session';
+        riskLevel = 'danger';
+        message = 'لا توجد جلسة واتساب متصلة';
+      } else if (defaultSession.provider === 'BAILEYS') {
+        deliveryStatus = 'baileys_free_text';
+        provider = 'BAILEYS';
+        riskLevel = 'none';
+        message = 'سيُرسل كنص حر عبر Baileys — يصل في أي وقت';
+      } else if (defaultSession.provider === 'META_CLOUD') {
+        provider = 'META_CLOUD';
+        if (t.metaTemplateName && String(t.metaTemplateStatus).toUpperCase() === 'APPROVED') {
+          deliveryStatus = 'meta_approved';
+          riskLevel = 'none';
+          message = `سيُرسل عبر قالب ميتا معتمد: ${t.metaTemplateName}`;
+        } else if (t.metaTemplateName && t.metaTemplateStatus !== 'APPROVED') {
+          deliveryStatus = 'meta_not_approved';
+          riskLevel = 'danger';
+          message = `قالب ميتا "${t.metaTemplateName}" حالته: ${t.metaTemplateStatus} — لن يُرسل حتى يعتمد`;
+        } else {
+          deliveryStatus = 'meta_no_template';
+          riskLevel = 'warning';
+          message = '⚠️ ميتا بدون قالب معتمد — سيفشل خارج نافذة 24 ساعة';
+        }
+      }
+
+      return {
+        templateId: t.id,
+        eventType: t.eventType,
+        provider,
+        deliveryStatus,
+        riskLevel,
+        message,
+        metaTemplateName: t.metaTemplateName,
+        metaTemplateStatus: t.metaTemplateStatus,
+      };
+    });
+
+    res.json({
+      success: true,
+      defaultSession: defaultSession ? {
+        id: defaultSession.id, name: defaultSession.name,
+        provider: defaultSession.provider, phoneNumber: defaultSession.phoneNumber,
+      } : null,
+      connectedSessionsCount: sessions.length,
+      hasBaileysBackup: sessions.some(s => s.provider === 'BAILEYS'),
+      preview,
+    });
+  } catch (error) {
+    console.error('❌ Error in getTemplatesDeliveryPreview:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 التصدير
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1194,5 +1286,6 @@ module.exports = {
   publishTemplateToMeta,
   syncTemplateStatuses,
   listAvailableMetaTemplates,
-  bindMetaTemplate
+  bindMetaTemplate,
+  getTemplatesDeliveryPreview
 };

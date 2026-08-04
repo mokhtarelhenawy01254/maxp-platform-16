@@ -28,6 +28,9 @@ router.get('/templates', verifyToken.authenticateToken, whatsappNotificationCont
 // جلب قوالب ميتا المعتمدة المتاحة للربط (قبل /templates/:id)
 router.get('/templates/meta-available', verifyToken.authenticateToken, whatsappNotificationController.listAvailableMetaTemplates);
 
+// مصير الإشعار المتوقع لكل قالب (قبل /templates/:id — مش :id)
+router.get('/templates/delivery-preview', verifyToken.authenticateToken, whatsappNotificationController.getTemplatesDeliveryPreview);
+
 // ربط قالب محلي بقالب ميتا معتمد موجود
 router.post('/templates/:id/bind-meta', verifyToken.authenticateToken, whatsappNotificationController.bindMetaTemplate);
 
