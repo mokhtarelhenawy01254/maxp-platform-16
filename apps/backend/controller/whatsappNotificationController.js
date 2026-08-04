@@ -6,6 +6,7 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { v4: uuidv4 } = require('uuid');
+const { mapVariablesByOrder, extractLocalVariableOrder } = require('../utils/metaTemplateVariables');
 
 function buildQueuedSuccessMessage(result) {
   if (!result?.queueId) {
@@ -1116,28 +1117,41 @@ async function bindMetaTemplate(req, res) {
       return res.status(400).json({ error: 'قالب ميتا غير معتمد بعد (مطلوب APPROVED)' });
     }
 
-    // بناء ترتيب المتغيرات من قالب ميتا ({{1}}, {{2}}, ...) باستخدام أسماء
-    // المتغيرات القياسية لحالات الطلبات بالترتيب القياسي. ميتا لا تكشف أسماء
-    // المتغيرات بل الأرقام فقط، لذلك نعتمد على ترتيب الظهور.
-    const META_VARIABLE_ORDER = [
-      'customerName', 'customerPhone', 'orderNumber', 'orderDate',
-      'orderItems', 'status', 'total', 'currency', 'shipping',
-      'trackingNumber', 'trackingLink', 'estimatedDays', 'reason', 'subtotal'
-    ];
-
+    // بناء ترتيب المتغيرات من قالب ميتا ({{1}}, {{2}}, ...) بمطابقة ترتيب
+    // ظهور {{name}} في القالب المحلي (مش ترتيب هاردكود — يمنع رسايل بمتغيرات مغلوطة).
     let metaVariableCount = 0;
+    let metaBodyText = '';
     try {
       const bodyComponent = (meta.components || []).find(c => c.type === 'BODY');
-      const bodyText = bodyComponent?.text || '';
-      const placeholders = bodyText.match(/\{\{\s*\d+\s*\}\}/g) || [];
+      metaBodyText = bodyComponent?.text || '';
+      const placeholders = metaBodyText.match(/\{\{\s*\d+\s*\}\}/g) || [];
       metaVariableCount = placeholders.length;
     } catch { metaVariableCount = 0; }
 
+    const localContent = local.content || '';
     let variables = null;
+    let validation = null;
+
     if (metaVariableCount > 0) {
-      variables = JSON.stringify(
-        META_VARIABLE_ORDER.slice(0, metaVariableCount).map((name, idx) => ({ position: idx + 1, name }))
-      );
+      // 🆕 validation: التأكد إن عدد المتغيرات المحلية >= ميتا
+      const localUnique = extractLocalVariableOrder(localContent);
+
+      validation = {
+        metaVariableCount,
+        localVariableCount: localUnique.length,
+        matched: localUnique.length >= metaVariableCount,
+        missingInLocal: metaVariableCount > localUnique.length ? metaVariableCount - localUnique.length : 0,
+      };
+
+      if (!validation.matched) {
+        return res.status(400).json({
+          error: `عدد المتغيرات لا يطابق: قالب ميتا يحتاج ${metaVariableCount} متغيرات، لكن القالب المحلي يحتوي على ${localUnique.length} فقط. أضف ${validation.missingInLocal} متغيرات أخرى للقالب المحلي.`,
+          validation,
+        });
+      }
+
+      const mapped = mapVariablesByOrder(localContent, metaBodyText);
+      variables = mapped.length > 0 ? JSON.stringify(mapped) : null;
     }
 
     const updated = await getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -1151,7 +1165,7 @@ async function bindMetaTemplate(req, res) {
       }
     });
 
-    res.json({ success: true, template: updated });
+    res.json({ success: true, template: updated, validation });
   } catch (error) {
     console.error('❌ Error binding Meta template:', error);
     res.status(500).json({ error: error.message });
