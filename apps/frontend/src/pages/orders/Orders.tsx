@@ -2433,6 +2433,7 @@ const Orders: React.FC = () => {
         isMerchant={isMerchant}
         activeFilterCount={activeFilterCount}
         search={filters.search}
+        density={tableDensity}
         helpers={mobileListHelpers}
         onOpenOrder={handleOpenOrder}
         onToggleSelection={toggleOrderSelection}
