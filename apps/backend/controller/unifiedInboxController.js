@@ -688,7 +688,8 @@ const sendUnifiedMessage = async (req, res) => {
 
             if (!isMedia) {
                 message = await WhatsAppMessageHandler.sendText(sessionId, jid, content, {
-                    quotedMessageId
+                    quotedMessageId,
+                    typingSimulation: true
                 });
             } else if (type.toLowerCase() === 'image') {
                 message = await WhatsAppMessageHandler.sendImage(sessionId, jid, mediaUrl, content || '');

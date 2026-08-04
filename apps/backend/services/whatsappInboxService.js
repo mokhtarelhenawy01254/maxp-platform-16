@@ -243,7 +243,8 @@ class WhatsAppInboxService {
 
     await sendText(sessionId, conversation.customer.phone, content, {
       senderId: userId,
-      companyId
+      companyId,
+      typingSimulation: true
     });
 
     const metadata = safeJsonParse(conversation.metadata, {});
@@ -390,7 +391,8 @@ class WhatsAppInboxService {
         try {
           await sendText(sessionId, conversation.customer.phone, correction, {
             senderId: userId,
-            companyId
+            companyId,
+            typingSimulation: true
           });
           messageSent = true;
         } catch (sendErr) {

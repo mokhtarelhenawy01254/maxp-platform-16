@@ -310,15 +310,12 @@ async function useDatabaseAuthState(sessionId) {
     state.keys = keys;
 
     // دالة حفظ بيانات المصادقة (فوري - بدون debounce)
-    let pendingSave = false;
+    // 🚨 PRODUCTION-FIX (H2): الـ short-circuit القديم (if (pendingSave) return)
+    // كان يرمي تحديثات creds متزامنة — أي عملية بايليز سريعة تُفقد وقد تؤدي
+    // لـ "Bad MAC" بعد إعادة تشغيل. saveAuthState يلغي الـ timer القديم عند كل
+    // استدعاء (debounce آمن) فلا يوجد تداخل في doSave.
     const saveCreds = async () => {
-        if (pendingSave) return;
-        pendingSave = true;
-        try {
-            await saveAuthState(true);
-        } finally {
-            pendingSave = false;
-        }
+        await saveAuthState(true);
     };
 
     saveCreds.flush = async () => {

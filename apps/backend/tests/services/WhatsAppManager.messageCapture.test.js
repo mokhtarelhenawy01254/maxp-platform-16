@@ -255,6 +255,20 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.getMessageStatusFromBaileysStatus(undefined)).toBeNull();
     });
 
+    test('maps Baileys ERROR (0) to FAILED and PLAYED (5) to READ', () => {
+        expect(__testing.getMessageStatusFromBaileysStatus(0)).toBe('FAILED');
+        expect(__testing.getMessageStatusFromBaileysStatus(5)).toBe('READ');
+        expect(__testing.getMessageStatusFromBaileysStatus('ERROR')).toBe('FAILED');
+        expect(__testing.getMessageStatusFromBaileysStatus('PLAYED')).toBe('READ');
+    });
+
+    test('never downgrades DELIVERED/READ to FAILED but allows SENT->FAILED', () => {
+        expect(__testing.shouldApplyMessageStatus('SENT', 'FAILED')).toBe(true);
+        expect(__testing.shouldApplyMessageStatus('PENDING', 'FAILED')).toBe(true);
+        expect(__testing.shouldApplyMessageStatus('DELIVERED', 'FAILED')).toBe(false);
+        expect(__testing.shouldApplyMessageStatus('READ', 'FAILED')).toBe(false);
+    });
+
     test('getSocketReadyState extracts websocket readyState from diverse Baileys locations', () => {
         const { getSocketReadyState } = __testing;
         

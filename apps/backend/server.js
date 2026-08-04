@@ -107,6 +107,7 @@ const {
   getReasonMessage,
   isWhatsAppBaileysConnectionClosed,
   isGramJsResolveError,
+  countSwallowedRejection,
 } = require("./utils/recoverableUnhandledRejection");
 
 
@@ -128,11 +129,17 @@ process.on("uncaughtException", async (error) => {
 process.on("unhandledRejection", async (reason, promise) => {
   const msg = getReasonMessage(reason);
   if (isWhatsAppBaileysConnectionClosed(reason)) {
-    console.warn("⚠️ [SERVER] Recoverable WhatsApp socket rejection ignored:", msg);
+    const total = countSwallowedRejection();
+    if (total) {
+      console.warn(`⚠️ [SERVER] Swallowed ${total} WhatsApp socket rejections in the last minute (recoverable, but watch for a half-dead socket)`);
+    }
     return;
   }
   if (isGramJsResolveError(reason)) {
-    console.warn("⚠️ [SERVER] Recoverable GramJS resolve rejection ignored:", msg);
+    const total = countSwallowedRejection();
+    if (total) {
+      console.warn(`⚠️ [SERVER] Swallowed ${total} GramJS resolve rejections in the last minute`);
+    }
     return;
   }
 
@@ -1394,6 +1401,21 @@ async function shutdownGracefully(signal) {
 
 process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
 process.on('SIGINT', () => shutdownGracefully('SIGINT'));
+
+// 🚨 PRODUCTION-FIX (H2): flush auth state عند exit طبيعي (بدون SIGTERM) حتى
+// لا نفقد آخر creds/pre-keys (كانت تسبب "Bad MAC" بعد إعادة التشغيل).
+let authFlushOnExitDone = false;
+process.on('beforeExit', async () => {
+  if (authFlushOnExitDone) return;
+  authFlushOnExitDone = true;
+  try {
+    if (typeof WhatsAppManager?.flushAllAuthStates === 'function') {
+      await WhatsAppManager.flushAllAuthStates();
+    }
+  } catch (e) {
+    console.error('⚠️ [SERVER] Error flushing auth states on beforeExit:', e.message);
+  }
+});
 
 if (require.main === module) {
   startMemoryMonitor();
