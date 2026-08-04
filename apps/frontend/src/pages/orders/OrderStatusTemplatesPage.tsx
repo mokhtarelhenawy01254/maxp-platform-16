@@ -431,11 +431,25 @@ export default function OrderStatusTemplatesPage() {
     if (!saved) return;
     setResubmittingMeta(true);
     try {
-      await apiClient.post(`/whatsapp-notifications/templates/${selectedStatus.template.id}/resubmit-meta`, {
+      const res = await apiClient.post(`/whatsapp-notifications/templates/${selectedStatus.template.id}/resubmit-meta`, {
         sessionId: selectedMetaSession,
       });
-      toast.success(t("orders.metaResubmitted", "تم تحديث القالب على ميتا — هيتراجع تاني"));
-      setDialogOpen(false);
+      const data = res.data;
+      if (data?.applied) {
+        const status = data.verifiedStatus || "PENDING";
+        toast.success(t("orders.metaResubmitted", `تم تحديث القالب على ميتا — الحالة: ${status}`));
+        setDialogOpen(false);
+      } else if (data?.applied === false) {
+        toast.warning(
+          data.applyReason ||
+          t("orders.metaNotApplied", "ميتا لسه شايلة المحتوى القديم — جرب تاني بعد شوية")
+        );
+      } else {
+        toast.warning(
+          data?.applyReason ||
+          t("orders.metaResubmitted", "تم تحديث القالب على ميتا — هيتراجع تاني")
+        );
+      }
       fetchData();
       fetchDeliveryPreview();
     } catch (err: any) {
