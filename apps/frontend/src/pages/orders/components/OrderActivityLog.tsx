@@ -139,7 +139,9 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
   };
 
   const rawActivities: ActivityItem[] = useMemo(() => {
-    const statusActivities: ActivityItem[] = (order.statusHistory || []).map((h: any, idx: number) => {
+    const statusActivities: ActivityItem[] = (order.statusHistory || [])
+      .filter((entry) => entry != null)
+      .map((h: any, idx: number) => {
       const reason =
         typeof h.reason === "string" && h.reason.trim()
           ? h.reason.trim()
