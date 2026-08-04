@@ -51,6 +51,7 @@ interface MetaAvailableTemplate {
   status: string;
   language?: string;
   category?: string;
+  components?: Array<{ type: string; text?: string }> | null;
   boundToLocalTemplateId?: string | null;
   boundToEventType?: string | null;
 }
@@ -242,6 +243,7 @@ export default function OrderStatusTemplatesPage() {
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [resubmittingMeta, setResubmittingMeta] = useState(false);
   const [availableMetaTemplates, setAvailableMetaTemplates] = useState<MetaAvailableTemplate[]>([]);
   const [loadingMetaTemplates, setLoadingMetaTemplates] = useState(false);
   const [bindingId, setBindingId] = useState<string | null>(null);
@@ -358,23 +360,11 @@ export default function OrderStatusTemplatesPage() {
     fetchMetaSessions();
   };
 
-  const handleSave = async () => {
-    if (!selectedStatus) return;
-    if (templateForm.sendMode === "bind_meta") {
-      if (!templateForm.metaTemplateName) {
-        toast.error(t("orders.selectMetaTemplate", "اختر قالب ميتا للربط"));
-        return;
-      }
-      if (selectedStatus.template?.id) {
-        await bindMetaTemplate(selectedStatus.template.id, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
-      } else {
-        toast.error(t("orders.saveTemplateFirst", "احفظ القالب كإرسال مباشر أولاً ثم اربطه بميتا"));
-      }
-      return;
-    }
+  const persistLocalTemplate = useCallback(async (): Promise<boolean> => {
+    if (!selectedStatus) return false;
     if (!templateForm.content.trim()) {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
-      return;
+      return false;
     }
     const saveButtons = templateForm.hasButtons
       ? templateForm.buttons
@@ -400,12 +390,58 @@ export default function OrderStatusTemplatesPage() {
         await apiClient.post("/whatsapp/notifications/templates", payload);
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
       }
-      setDialogOpen(false);
-      fetchData();
+      return true;
     } catch (err: any) {
       toast.error(err?.response?.data?.message || t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
+      return false;
     } finally {
       setSaving(false);
+    }
+  }, [selectedStatus, templateForm, t]);
+
+  const handleSave = async () => {
+    if (!selectedStatus) return;
+    if (templateForm.sendMode === "bind_meta") {
+      if (!templateForm.metaTemplateName) {
+        toast.error(t("orders.selectMetaTemplate", "اختر قالب ميتا للربط"));
+        return;
+      }
+      if (!selectedStatus.template?.id) {
+        toast.error(t("orders.saveTemplateFirst", "احفظ القالب كإرسال مباشر أولاً ثم اربطه بميتا"));
+        return;
+      }
+      const saved = await persistLocalTemplate();
+      if (!saved) return;
+      await bindMetaTemplate(selectedStatus.template.id, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
+      return;
+    }
+    const saved = await persistLocalTemplate();
+    if (!saved) return;
+    setDialogOpen(false);
+    fetchData();
+  };
+
+  const handleResubmitMeta = async () => {
+    if (!selectedStatus?.template?.id) return;
+    if (!templateForm.content.trim()) {
+      toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
+      return;
+    }
+    const saved = await persistLocalTemplate();
+    if (!saved) return;
+    setResubmittingMeta(true);
+    try {
+      await apiClient.post(`/whatsapp-notifications/templates/${selectedStatus.template.id}/resubmit-meta`, {
+        sessionId: selectedMetaSession,
+      });
+      toast.success(t("orders.metaResubmitted", "تم تحديث القالب على ميتا — هيتراجع تاني"));
+      setDialogOpen(false);
+      fetchData();
+      fetchDeliveryPreview();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.metaResubmitFailed", "فشل تحديث القالب على ميتا"));
+    } finally {
+      setResubmittingMeta(false);
     }
   };
 
@@ -651,6 +687,13 @@ export default function OrderStatusTemplatesPage() {
       return next;
     });
   }, []);
+
+  const selectedMetaBody = useMemo(() => {
+    if (!templateForm.metaTemplateName) return "";
+    const mt = availableMetaTemplates.find((m) => m.name === templateForm.metaTemplateName);
+    const body = (mt?.components || []).find((c) => c.type === "BODY");
+    return body?.text || "";
+  }, [templateForm.metaTemplateName, availableMetaTemplates]);
 
   const statusesWithoutTemplate = visibleStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
@@ -1125,7 +1168,7 @@ export default function OrderStatusTemplatesPage() {
                 )}
               </div>
 
-              {templateForm.sendMode === "bind_meta" ? (
+              {templateForm.sendMode === "bind_meta" && (
                 <div className="rounded-lg border border-emerald-200 p-3 dark:border-emerald-800/40">
                   <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
                     اختر قالب ميتا المعتمد
@@ -1135,6 +1178,7 @@ export default function OrderStatusTemplatesPage() {
                       <select
                         value={selectedMetaSession}
                         onChange={(e) => { setSelectedMetaSession(e.target.value); }}
+                        aria-label="جلسة ميتا للربط"
                         className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       >
                         {metaSessions.map((s) => (
@@ -1146,21 +1190,43 @@ export default function OrderStatusTemplatesPage() {
                       {loadingMetaTemplates ? (
                         <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
                       ) : availableMetaTemplates.length > 0 ? (
-                        <select
-                          value={templateForm.metaTemplateName}
-                          onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
-                          className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        >
-                          <option value="">اختر قالب...</option>
-                          {availableMetaTemplates
-                            .filter((mt) => !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedStatus?.template?.id)
-                            .map((mt) => (
-                              <option key={mt.name} value={mt.name}>
-                                {mt.name} {mt.category ? `(${mt.category})` : ""}
-                                {mt.boundToEventType ? ` - مربوط بـ ${mt.boundToEventType}` : ""}
-                              </option>
-                            ))}
-                        </select>
+                        <>
+                          <select
+                            value={templateForm.metaTemplateName}
+                            onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
+                            aria-label="قالب ميتا المعتمد"
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          >
+                            <option value="">اختر قالب...</option>
+                            {availableMetaTemplates
+                              .filter((mt) => !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedStatus?.template?.id)
+                              .map((mt) => (
+                                <option key={mt.name} value={mt.name}>
+                                  {mt.name} {mt.category ? `(${mt.category})` : ""}
+                                  {mt.boundToEventType ? ` - مربوط بـ ${mt.boundToEventType}` : ""}
+                                </option>
+                              ))}
+                          </select>
+                          {selectedMetaBody && (
+                            <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
+                              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                محتوى قالب ميتا المحدد
+                              </p>
+                              <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
+                                {selectedMetaBody}
+                              </p>
+                              <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                                {"المتغيرات {{1}}، {{2}}... بتتحل حسب ترتيب ظهورها في المحتوى المحلي"}
+                              </p>
+                            </div>
+                          )}
+                          {selectedStatus?.template?.metaTemplateName && (
+                            <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
+                              حالياً مربوط بـ: {selectedStatus.template.metaTemplateName}
+                              {selectedStatus.template.metaTemplateStatus ? ` (${selectedStatus.template.metaTemplateStatus})` : ""}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="text-xs text-slate-400">
                           لا توجد قوالب ميتا معتمدة. انشر قالب جديد من القسم اللي تحت أولاً.
@@ -1171,54 +1237,58 @@ export default function OrderStatusTemplatesPage() {
                     <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
                   )}
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      محتوى الرسالة <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={templateForm.content}
-                      onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value }))}
-                      rows={6}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      placeholder="اكتب رسالتك هنا..."
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => setShowVariables(!showVariables)}
-                      className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
-                    >
-                      <ChevronDownIcon className={`h-3 w-3 transition ${showVariables ? "rotate-180" : ""}`} />
-                      {showVariables ? "إخفاء المتغيرات" : "عرض كل المتغيرات المتاحة"}
-                    </button>
-
-                    {showVariables && (
-                      <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                        <table className="w-full text-[11px]">
-                          <thead>
-                            <tr className="bg-slate-50 text-right dark:bg-slate-800">
-                              <th className="px-2 py-1 font-medium text-slate-500">المتغير</th>
-                              <th className="px-2 py-1 font-medium text-slate-500">الوصف</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {ORDER_VARIABLES.map((v) => (
-                              <tr key={v.var} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
-                                  {v.var}
-                                </td>
-                                <td className="px-2 py-1 text-slate-600 dark:text-slate-400">{v.desc}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </>
               )}
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  {templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"} <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={templateForm.content}
+                  onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value }))}
+                  rows={6}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="اكتب رسالتك هنا..."
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowVariables(!showVariables)}
+                  className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                >
+                  <ChevronDownIcon className={`h-3 w-3 transition ${showVariables ? "rotate-180" : ""}`} />
+                  {showVariables ? "إخفاء المتغيرات" : "عرض كل المتغيرات المتاحة"}
+                </button>
+
+                {showVariables && (
+                  <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-50 text-right dark:bg-slate-800">
+                          <th className="px-2 py-1 font-medium text-slate-500">المتغير</th>
+                          <th className="px-2 py-1 font-medium text-slate-500">الوصف</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {ORDER_VARIABLES.map((v) => (
+                          <tr key={v.var} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
+                              {v.var}
+                            </td>
+                            <td className="px-2 py-1 text-slate-600 dark:text-slate-400">{v.desc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {templateForm.sendMode === "bind_meta" && (
+                  <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+                    عدّل المحتوى وضغط "ربط" عشان يتسجّل — أو "إرسال للمراجعة من جديد" عشان ميتا تراجعه وتفعّله تاني.
+                  </p>
+                )}
+              </div>
 
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center justify-between">
@@ -1310,22 +1380,39 @@ export default function OrderStatusTemplatesPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-end gap-2">
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
               <button
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 إلغاء
               </button>
+              {templateForm.sendMode === "bind_meta" && selectedStatus?.template?.metaTemplateName && (
+                <button
+                  onClick={handleResubmitMeta}
+                  disabled={saving || resubmittingMeta || bindingId === selectedStatus?.template?.id}
+                  title="تحديث المحتوى على ميتا ويرجع للمراجعة تاني"
+                  className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                >
+                  {resubmittingMeta ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowPathIcon className="h-4 w-4" />}
+                  إرسال للمراجعة من جديد
+                </button>
+              )}
               <button
                 onClick={handleSave}
-                disabled={saving || bindingId === selectedStatus?.template?.id || (templateForm.sendMode === "direct" && !templateForm.content.trim())}
+                disabled={saving || resubmittingMeta || bindingId === selectedStatus?.template?.id || (templateForm.sendMode === "direct" && !templateForm.content.trim())}
                 className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
               >
                 {saving || bindingId === selectedStatus?.template?.id ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {templateForm.sendMode === "bind_meta" ? "ربط بقالب ميتا" : "حفظ"}
               </button>
             </div>
+
+            {templateForm.sendMode === "bind_meta" && (
+              <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+                أي تعديل على المحتوى أو الأزرار وبعدين "إرسال للمراجعة من جديد" هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.
+              </p>
+            )}
 
             {selectedStatus?.template?.id && (
               <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
@@ -1335,6 +1422,7 @@ export default function OrderStatusTemplatesPage() {
                     <select
                       value={selectedMetaSession}
                       onChange={(e) => setSelectedMetaSession(e.target.value)}
+                      aria-label="جلسة النشر على ميتا"
                       className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     >
                       {metaSessions.map((s) => (
