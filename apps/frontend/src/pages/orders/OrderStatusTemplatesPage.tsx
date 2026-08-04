@@ -42,6 +42,8 @@ interface StatusWithTemplate {
   isSystemStatus: boolean;
   template: Template | null;
   hasTemplate: boolean;
+  isNonNotifiable?: boolean;
+  updatedAt?: string;
 }
 
 interface MetaAvailableTemplate {
@@ -151,6 +153,52 @@ const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
   { value: "CANCELLED", label: "إلغاء الطلب" },
 ];
 
+const LARGE_GROUP_THRESHOLD = 4;
+
+type FilterChip = "all" | "custom" | "meta_bound" | "no_template" | "disabled";
+type SortMode = "alphabetical" | "statusType" | "recent";
+
+const SAMPLE_VARIABLES: Record<string, string> = {
+  customerName: "أحمد محمد",
+  orderNumber: "ORD-12345",
+  customerPhone: "01001234567",
+  total: "500",
+  currency: "EGP",
+  orderItems: "1. تيشيرت أحمر | المقاس: L | الكمية: 2",
+  status: "قيد التجهيز",
+  trackingNumber: "TRK-98765",
+  trackingLink: "https://maxp.online/track/TRK-98765",
+  estimatedDays: "2-3",
+};
+
+function resolveVariablesForPreview(content: string): string {
+  if (!content) return "";
+  return content.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (_, name) => {
+    return SAMPLE_VARIABLES[name] || `[${name}]`;
+  });
+}
+
+export { resolveVariablesForPreview };
+
+function isCustomContent(status: StatusWithTemplate): boolean {
+  const GENERIC_PATTERN = /تم تغيير حالة طلبك إلى/;
+  return !!status.template?.content && !GENERIC_PATTERN.test(status.template.content);
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    setMatches(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [query]);
+  return matches;
+}
+
 function inferButtonAction(id?: string): string {
   const nid = String(id || "").toLowerCase();
   const setMatch = nid.match(/^set_status_(.+)_(.+)$/);
@@ -206,6 +254,14 @@ export default function OrderStatusTemplatesPage() {
   const [deliveryPreview, setDeliveryPreview] = useState<Record<string, DeliveryPreviewItem>>({});
   const [defaultSessionInfo, setDefaultSessionInfo] = useState<DefaultSessionInfo | null>(null);
   const [syncingStatus, setSyncingStatus] = useState(false);
+
+  const [showInternal, setShowInternal] = useState(false);
+  const [activeChip, setActiveChip] = useState<FilterChip>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("statusType");
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -285,7 +341,7 @@ export default function OrderStatusTemplatesPage() {
     fetchMetaSessions();
   };
 
-  const openEditDialog = (status: StatusWithTemplate) => {
+  const openEditDialog = (status: StatusWithTemplate, initialSendMode?: "direct" | "bind_meta") => {
     setSelectedStatus(status);
     const hasBoundMeta = !!(status.template?.metaTemplateName && status.template.metaTemplateStatus === "APPROVED");
     setTemplateForm({
@@ -294,7 +350,7 @@ export default function OrderStatusTemplatesPage() {
       isActive: status.template?.isActive ?? true,
       hasButtons: status.template?.hasButtons ?? true,
       buttons: parseTemplateButtons(status.template?.buttons),
-      sendMode: hasBoundMeta ? "bind_meta" : "direct",
+      sendMode: initialSendMode || (hasBoundMeta ? "bind_meta" : "direct"),
       metaTemplateName: status.template?.metaTemplateName || "",
       metaTemplateLanguage: status.template?.metaTemplateLanguage || "ar",
     });
@@ -457,7 +513,16 @@ export default function OrderStatusTemplatesPage() {
       const res = await apiClient.post("/whatsapp-notifications/templates/sync-status", { sessionId: metaSessionId });
       const data = res.data as { success?: boolean; synced?: number };
       if (data?.success) {
-        toast.success(t("orders.metaSyncDone", `تمت مزامنة ${data.synced ?? 0} قالب`));
+        const synced = data.synced ?? 0;
+        if (synced === 0) {
+          toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
+        } else {
+          toast.success(t("orders.metaSyncDone", `تمت مزامنة ${synced} قالب`));
+          const rejectedCount = Object.values(deliveryPreview).filter((p) => p.metaTemplateStatus === "REJECTED").length;
+          if (rejectedCount > 0) {
+            toast.warning(t("orders.metaSyncRejected", `${rejectedCount} قالب اترفض من ميتا — راجعهم`));
+          }
+        }
         fetchData();
         fetchDeliveryPreview();
       }
@@ -517,10 +582,80 @@ export default function OrderStatusTemplatesPage() {
     ? statuses
     : statuses.filter((s) => s.statusType === activeTab);
 
-  const statusesWithoutTemplate = filteredStatuses.filter((s) => !s.hasTemplate);
+  const visibleStatuses = useMemo(
+    () => filteredStatuses.filter((s) => showInternal || !s.isNonNotifiable),
+    [filteredStatuses, showInternal]
+  );
+
+  const internalCount = filteredStatuses.filter((s) => s.isNonNotifiable).length;
+  const notifiableCount = useMemo(
+    () => statuses.filter((s) => !s.isNonNotifiable).length,
+    [statuses]
+  );
+
+  const filteredByChipAndSearch = useMemo(() => {
+    let result = visibleStatuses;
+
+    if (activeChip === "custom") {
+      result = result.filter((s) => {
+        if (!s.template?.content) return false;
+        return /\{\{|\}\}/.test(s.template.content) || isCustomContent(s);
+      });
+    } else if (activeChip === "meta_bound") {
+      result = result.filter((s) => !!s.template?.metaTemplateName);
+    } else if (activeChip === "no_template") {
+      result = result.filter((s) => !s.hasTemplate);
+    } else if (activeChip === "disabled") {
+      result = result.filter((s) => !s.notifyCustomer);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((s) =>
+        s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)
+      );
+    }
+
+    result = [...result];
+    if (sortMode === "alphabetical") {
+      result.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+    } else if (sortMode === "statusType") {
+      const typeOrder: Record<string, number> = { order: 0, payment: 1, preparation: 2, shipping: 3 };
+      result.sort(
+        (a, b) => (typeOrder[a.statusType] ?? 9) - (typeOrder[b.statusType] ?? 9) || a.sortOrder - b.sortOrder
+      );
+    } else if (sortMode === "recent") {
+      result.sort(
+        (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+      );
+    }
+
+    return result;
+  }, [visibleStatuses, activeChip, searchQuery, sortMode]);
+
+  const { groupedStatuses, groupKeys } = useMemo(() => {
+    const groups = new Map<string, StatusWithTemplate[]>();
+    for (const s of filteredByChipAndSearch) {
+      const key = s.template?.content?.trim() || "__no-template__";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(s);
+    }
+    return { groupedStatuses: groups, groupKeys: Array.from(groups.keys()) };
+  }, [filteredByChipAndSearch]);
+
+  const togglePreview = useCallback((id: string) => {
+    setExpandedPreviews((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const statusesWithoutTemplate = visibleStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
 
-  const boundMetaCount = filteredStatuses.filter((s) => s.template?.metaTemplateName).length;
+  const boundMetaCount = visibleStatuses.filter((s) => s.template?.metaTemplateName).length;
   const defaultSession = settingsSessions.find((s) => s.id === settings?.defaultSessionId);
   const defaultSessionIsMeta = defaultSession?.provider === "META_CLOUD" || !!metaSessions.find((s) => s.id === settings?.defaultSessionId);
 
@@ -537,22 +672,15 @@ export default function OrderStatusTemplatesPage() {
               {t("orders.statusTemplatesDesc", "إدارة قوالب رسائل الواتساب المرتبطة بحالات الطلبات")}
             </p>
           </div>
-          <button
-            onClick={syncMetaStatuses}
-            disabled={syncingStatus}
-            title="مزامنة حالة القوالب من ميتا"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-          >
-            <ArrowPathIcon className={`h-4 w-4 ${syncingStatus ? "animate-spin" : ""}`} />
-            {t("orders.syncMetaStatus", "مزامنة حالة القوالب من ميتا")}
-          </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
         {TABS.map((tab) => {
-          const count = tab.key === "all" ? statuses.length : statuses.filter((s) => s.statusType === tab.key).length;
+          const count = tab.key === "all"
+            ? notifiableCount
+            : statuses.filter((s) => s.statusType === tab.key && !s.isNonNotifiable).length;
           return (
             <button
               key={tab.key}
@@ -670,6 +798,16 @@ export default function OrderStatusTemplatesPage() {
                       <span className="text-amber-500 dark:text-amber-400">تحقق من حالة كل قالب</span>
                     )}
                   </div>
+                )}
+                {defaultSessionInfo?.provider === "META_CLOUD" && (
+                  <button
+                    onClick={syncMetaStatuses}
+                    disabled={syncingStatus}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  >
+                    <ArrowPathIcon className={`h-3.5 w-3.5 ${syncingStatus ? "animate-spin" : ""}`} />
+                    مزامنة الحالات من ميتا
+                  </button>
                 )}
               </div>
 
@@ -796,169 +934,120 @@ export default function OrderStatusTemplatesPage() {
             </div>
           )}
 
+          {/* Toolbar: search + filter chips + sort + internal toggle */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px] flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث باسم الحالة أو الكود..."
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <svg
+                className="absolute right-3 top-2.5 h-4 w-4 text-slate-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                />
+              </svg>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1">
+              {([
+                { key: "all", label: "الكل" },
+                { key: "custom", label: "مخصصة" },
+                { key: "meta_bound", label: "مربوطة بميتا" },
+                { key: "no_template", label: "بدون قالب" },
+                { key: "disabled", label: "متوقفة" },
+              ] as const).map((chip) => (
+                <button
+                  key={chip.key}
+                  onClick={() => setActiveChip(chip.key)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    activeChip === chip.key
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="statusType">حسب التبويب</option>
+              <option value="alphabetical">أبجدي</option>
+              <option value="recent">آخر تعديل</option>
+            </select>
+
+            <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <input
+                type="checkbox"
+                checked={showInternal}
+                onChange={(e) => setShowInternal(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              عرض الحالات الداخلية ({internalCount})
+            </label>
+          </div>
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
               <span className="mb-3 inline-block h-7 w-7 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
               <p className="text-sm">{t("common.loading", "جار التحميل...")}</p>
             </div>
-          ) : filteredStatuses.length === 0 ? (
+          ) : filteredByChipAndSearch.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-16 text-center dark:border-white/10">
               <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                لا توجد حالات في هذا القسم
+                لا توجد حالات مطابقة
               </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredStatuses.map((status) => {
-                const hasTemplate = status.hasTemplate;
-                return (
-                  <div
+              {groupKeys.map((groupKey) => {
+                const members = groupedStatuses.get(groupKey) || [];
+                const isLarge = members.length > LARGE_GROUP_THRESHOLD;
+                const isCollapsed = isLarge && collapsedGroups[groupKey] !== false;
+                const isNoTemplate = groupKey === "__no-template__";
+
+                if (isCollapsed) {
+                  return (
+                    <GroupHeader
+                      key={groupKey}
+                      members={members}
+                      isNoTemplate={isNoTemplate}
+                      onExpand={() => setCollapsedGroups((p) => ({ ...p, [groupKey]: false }))}
+                    />
+                  );
+                }
+
+                return members.map((status) => (
+                  <StatusRow
                     key={status.id}
-                    className="group rounded-lg border border-slate-200/70 bg-white p-3.5 transition hover:shadow-sm dark:border-white/10 dark:bg-slate-900/50"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                        <span
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
-                          style={{ backgroundColor: status.color || "#6B7280" }}
-                        >
-                          {status.sortOrder}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                              {status.name}
-                            </span>
-                            {status.isSystemStatus && (
-                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                {t("orders.system", "نظامي")}
-                              </span>
-                            )}
-                            {status.statusType && status.statusType !== "order" && (
-                              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                                {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className="font-mono">{status.code}</span>
-                            <button
-                              onClick={() => toggleNotify(status)}
-                              disabled={togglingId === status.id}
-                              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
-                                status.notifyCustomer
-                                  ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
-                                  : "bg-slate-50 text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-500"
-                              }`}
-                            >
-                              {togglingId === status.id ? (
-                                <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              ) : status.notifyCustomer ? (
-                                <BellIcon className="h-3 w-3" />
-                              ) : (
-                                <BellSlashIcon className="h-3 w-3" />
-                              )}
-                              {status.notifyCustomer ? "مفعل" : "متوقف"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        {(() => {
-                          const p = status.template?.eventType ? deliveryPreview[status.template.eventType] : undefined;
-                          if (!p) return null;
-                          const colors = {
-                            none: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-                            warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-                            danger: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-                          };
-                          const icons = { none: "🟢", warning: "🟡", danger: "🔴" };
-                          return (
-                            <span
-                              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium ${colors[p.riskLevel]}`}
-                              title={p.message}
-                            >
-                              {icons[p.riskLevel]} {p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message}
-                            </span>
-                          );
-                        })()}
-                        {hasTemplate ? (
-                          <>
-                            <span className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                              <CheckCircleIcon className="h-3 w-3" />
-                              يوجد قالب
-                            </span>
-                            {status.template?.metaTemplateName && (
-                              <span
-                                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                                  status.template.metaTemplateStatus === "APPROVED"
-                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                                }`}
-                                title={`Meta template: ${status.template.metaTemplateName} (${status.template.metaTemplateStatus})`}
-                              >
-                                <GlobeAltIcon className="h-3 w-3" />
-                                {status.template.metaTemplateStatus === "APPROVED" ? "ميتا معتمد" : status.template.metaTemplateStatus || "ميتا"}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => openEditDialog(status)}
-                              className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
-                            >
-                              <PencilSquareIcon className="h-3 w-3" />
-                              تعديل
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                              <XCircleIcon className="h-3 w-3" />
-                              بدون قالب
-                            </span>
-                            <button
-                              onClick={() => openCreateDialog(status)}
-                              disabled={!status.notifyCustomer}
-                              title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-                              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-                                status.notifyCustomer
-                                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                                  : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-                              }`}
-                            >
-                              <PlusIcon className="h-3 w-3" />
-                              إضافة
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {hasTemplate && status.template?.content && (
-                      <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
-                        <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                          معاينة القالب
-                        </p>
-                        <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300 line-clamp-2">
-                          {status.template.content}
-                        </p>
-                        {status.template?.hasButtons && (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {parseTemplateButtons(status.template?.buttons).map((b, i) => (
-                              <span
-                                key={i}
-                                className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-400"
-                              >
-                                {b.text || b.id}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
+                    status={status}
+                    deliveryPreview={deliveryPreview}
+                    isPreviewExpanded={expandedPreviews.has(status.id)}
+                    isMobile={isMobile}
+                    togglingId={togglingId}
+                    onTogglePreview={togglePreview}
+                    onToggleNotify={toggleNotify}
+                    onOpenEdit={openEditDialog}
+                    onOpenCreate={openCreateDialog}
+                  />
+                ));
               })}
             </div>
           )}
@@ -1028,6 +1117,12 @@ export default function OrderStatusTemplatesPage() {
                     ? "القالب المعتمد على ميتا هو اللي هيتبعت للعميل (يشتغل مع جلسة Meta Cloud API)"
                     : "النص اللي بتكتبه تحت هو اللي هيتبعت مباشرة"}
                 </p>
+                {templateForm.sendMode === "bind_meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
+                  <div className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                    ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
+                    القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
+                  </div>
+                )}
               </div>
 
               {templateForm.sendMode === "bind_meta" ? (
@@ -1268,6 +1363,247 @@ export default function OrderStatusTemplatesPage() {
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+interface StatusRowProps {
+  status: StatusWithTemplate;
+  deliveryPreview: Record<string, DeliveryPreviewItem>;
+  isPreviewExpanded: boolean;
+  isMobile: boolean;
+  togglingId: string | null;
+  onTogglePreview: (id: string) => void;
+  onToggleNotify: (status: StatusWithTemplate) => void;
+  onOpenEdit: (status: StatusWithTemplate, initialSendMode?: "direct" | "bind_meta") => void;
+  onOpenCreate: (status: StatusWithTemplate) => void;
+}
+
+function StatusRow({
+  status,
+  deliveryPreview,
+  isPreviewExpanded,
+  isMobile,
+  togglingId,
+  onTogglePreview,
+  onToggleNotify,
+  onOpenEdit,
+  onOpenCreate,
+}: StatusRowProps) {
+  const { t } = useTranslation();
+  const hasTemplate = status.hasTemplate;
+  const hasTemplateContent = hasTemplate && !!status.template?.content;
+  const previewContent = hasTemplateContent && status.template?.content ? status.template.content : "";
+  const p = status.template?.eventType ? deliveryPreview[status.template.eventType] : undefined;
+  const deliveryColors = {
+    none: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    danger: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  };
+  const deliveryIcons = { none: "🟢", warning: "🟡", danger: "🔴" };
+
+  return (
+    <div
+      data-testid={`status-row-${status.id}`}
+      className="group rounded-lg border border-slate-200/70 bg-white p-3.5 transition hover:shadow-sm dark:border-white/10 dark:bg-slate-900/50"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
+            style={{ backgroundColor: status.color || "#6B7280" }}
+          >
+            {status.sortOrder}
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {status.name}
+              </span>
+              {status.isSystemStatus && (
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  {t("orders.system", "نظامي")}
+                </span>
+              )}
+              {status.statusType && status.statusType !== "order" && (
+                <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                  {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="font-mono">{status.code}</span>
+              <button
+                onClick={() => onToggleNotify(status)}
+                disabled={togglingId === status.id}
+                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                  status.notifyCustomer
+                    ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
+                    : "bg-slate-50 text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-500"
+                }`}
+              >
+                {togglingId === status.id ? (
+                  <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : status.notifyCustomer ? (
+                  <BellIcon className="h-3 w-3" />
+                ) : (
+                  <BellSlashIcon className="h-3 w-3" />
+                )}
+                {status.notifyCustomer ? "مفعل" : "متوقف"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          {p && (p.riskLevel === "warning" || p.riskLevel === "danger") ? (
+            <button
+              onClick={() => onOpenEdit(status, "bind_meta")}
+              title={p.message}
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:opacity-80 ${deliveryColors[p.riskLevel]}`}
+            >
+              {deliveryIcons[p.riskLevel]} 🔗 اربط بقالب ميتا
+            </button>
+          ) : p ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium ${deliveryColors[p.riskLevel]}`}
+              title={p.message}
+            >
+              {deliveryIcons[p.riskLevel]}
+              {!isMobile && (p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message)}
+            </span>
+          ) : null}
+
+          {hasTemplate ? (
+            <>
+              <span className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <CheckCircleIcon className="h-3 w-3" />
+                يوجد قالب
+              </span>
+              {status.template?.metaTemplateName && (
+                <span
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    status.template.metaTemplateStatus === "APPROVED"
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                  }`}
+                  title={`Meta template: ${status.template.metaTemplateName} (${status.template.metaTemplateStatus})`}
+                >
+                  <GlobeAltIcon className="h-3 w-3" />
+                  {status.template.metaTemplateStatus === "APPROVED" ? "ميتا معتمد" : status.template.metaTemplateStatus || "ميتا"}
+                </span>
+              )}
+              {hasTemplateContent && (
+                <button
+                  onClick={() => onTogglePreview(status.id)}
+                  className="flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  <DocumentTextIcon className="h-3 w-3" />
+                  {isPreviewExpanded ? "إخفاء" : "معاينة"}
+                </button>
+              )}
+              <button
+                onClick={() => onOpenEdit(status)}
+                className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
+              >
+                <PencilSquareIcon className="h-3 w-3" />
+                تعديل
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                <XCircleIcon className="h-3 w-3" />
+                بدون قالب
+              </span>
+              <button
+                onClick={() => onOpenCreate(status)}
+                disabled={!status.notifyCustomer}
+                title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
+                  status.notifyCustomer
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                }`}
+              >
+                <PlusIcon className="h-3 w-3" />
+                إضافة
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {hasTemplateContent && isPreviewExpanded && (
+        <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              معاينة القالب
+            </p>
+            <button
+              onClick={() => onTogglePreview(status.id)}
+              className="text-[11px] text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              إخفاء
+            </button>
+          </div>
+          <p className="line-clamp-3 whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
+            {resolveVariablesForPreview(previewContent)}
+          </p>
+          {status.template?.hasButtons && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {parseTemplateButtons(status.template?.buttons).map((b, i) => (
+                <span
+                  key={i}
+                  className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-400"
+                >
+                  {b.text || b.id}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface GroupHeaderProps {
+  members: StatusWithTemplate[];
+  isNoTemplate: boolean;
+  onExpand: () => void;
+}
+
+function GroupHeader({ members, isNoTemplate, onExpand }: GroupHeaderProps) {
+  return (
+    <div
+      data-testid="group-header"
+      className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {isNoTemplate
+              ? `${members.length} حالة بدون قالب`
+              : `${members.length} حالة بنفس القالب العام`}
+          </span>
+          <button
+            onClick={onExpand}
+            className="text-xs text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            عرض التفاصيل
+          </button>
+        </div>
+        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+          {members.map((m) => m.code).slice(0, 5).join("، ")}
+          {members.length > 5 ? "…" : ""}
+        </span>
+      </div>
+      {!isNoTemplate && members[0]?.template?.content && (
+        <p className="mt-2 line-clamp-1 text-xs italic text-slate-500 dark:text-slate-500">
+          "{members[0].template.content.substring(0, 80)}…"
+        </p>
       )}
     </div>
   );
