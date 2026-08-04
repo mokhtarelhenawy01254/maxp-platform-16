@@ -32,7 +32,6 @@ interface PreparationOrderCardProps {
   shortageHoldDetails: ShortageHoldDetails;
   shortageFollowUpVisual: ShortageFollowUpVisual | null;
   problemHoldDetails: ProblemHoldDetails;
-  problemFollowUpVisual: ShortageFollowUpVisual | null;
   transferingItemKey: string | null;
   printingOrderNumber: string | null;
   preparationSettings: PreparationQueueSettings;
@@ -50,11 +49,6 @@ interface PreparationOrderCardProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
-  onProblemFieldChange: (
-    orderNumber: string,
-    field: keyof ProblemHoldDetails,
-    value: string | boolean,
-  ) => void;
   onSaveProblemHoldDetails: (
     orderNumber: string,
     overrides?: Partial<ProblemHoldDetails>,
@@ -90,7 +84,6 @@ const PreparationOrderCard = ({
   shortageHoldDetails,
   shortageFollowUpVisual,
   problemHoldDetails,
-  problemFollowUpVisual,
   transferingItemKey,
   printingOrderNumber,
   preparationSettings,
@@ -100,7 +93,6 @@ const PreparationOrderCard = ({
   onQuickTransfer,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
-  onProblemFieldChange,
   onSaveProblemHoldDetails,
   onQcCheckToggle,
   onStatusSelectionChange,
@@ -113,9 +105,8 @@ const PreparationOrderCard = ({
 }: PreparationOrderCardProps) => {
   const canPrepare = order.merchantFulfillment?.canPrepare !== false;
   const isProblemHeld = order.stage === "ON_HOLD_PREP";
-  const activeFollowUpVisual = isProblemHeld
-    ? problemFollowUpVisual
-    : shortageFollowUpVisual;
+  const activeFollowUpVisual =
+    isProblemHeld ? null : shortageFollowUpVisual;
 
   return (
     <article
@@ -163,10 +154,8 @@ const PreparationOrderCard = ({
           <PreparationProblemHoldPanel
             order={order}
             problemHoldDetails={problemHoldDetails}
-            shortageFollowUpVisual={problemFollowUpVisual}
             rowBusy={rowBusy}
             formatDate={formatDate}
-            onProblemFieldChange={onProblemFieldChange}
             onSaveProblemHoldDetails={onSaveProblemHoldDetails}
           />
         ) : null}

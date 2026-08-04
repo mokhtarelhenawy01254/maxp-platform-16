@@ -889,24 +889,6 @@ const PreparationQueue: React.FC = () => {
     [],
   );
 
-  const handleProblemFieldChange = useCallback(
-    (
-      orderNumber: string,
-      field: keyof ProblemHoldDetails,
-      value: string | boolean,
-    ) => {
-      setProblemHoldDrafts((previous) => ({
-        ...previous,
-        [orderNumber]: {
-          ...DEFAULT_PROBLEM_HOLD_DETAILS,
-          ...(previous[orderNumber] || {}),
-          [field]: value,
-        },
-      }));
-    },
-    [],
-  );
-
   const handlePrintPreparationSlip = useCallback(async (orderNumber: string) => {
     try {
       setPrintingOrderNumber(orderNumber);
@@ -2008,12 +1990,6 @@ const PreparationQueue: React.FC = () => {
                 const problemHoldDetails =
                   problemHoldDrafts[order.orderNumber] ||
                   buildProblemHoldDetails(order.metadata);
-                const problemFollowUpVisual = getShortageFollowUpVisual(
-                  getShortageFollowUpState(
-                    problemHoldDetails.followUpDate,
-                    order.stage,
-                  ),
-                );
                 const nextStatus = getNextStatus(
                   order.stage,
                   preparationSettings.handoffStatus,
@@ -2069,7 +2045,6 @@ const PreparationQueue: React.FC = () => {
                     shortageHoldDetails={shortageHoldDetails}
                     shortageFollowUpVisual={shortageFollowUpVisual}
                     problemHoldDetails={problemHoldDetails}
-                    problemFollowUpVisual={problemFollowUpVisual}
                     transferingItemKey={transferingItemKey}
                     printingOrderNumber={printingOrderNumber}
                     preparationSettings={preparationSettings}
@@ -2081,7 +2056,6 @@ const PreparationQueue: React.FC = () => {
                     }
                     onShortageFieldChange={handleShortageFieldChange}
                     onSaveShortageHoldDetails={saveShortageHoldDetails}
-                    onProblemFieldChange={handleProblemFieldChange}
                     onSaveProblemHoldDetails={saveProblemHoldDetails}
                     onQcCheckToggle={handleQcCheckToggle}
                     onStatusSelectionChange={uiActions.setStatusSelection}
@@ -2136,7 +2110,6 @@ const PreparationQueue: React.FC = () => {
                 }
                 onShortageFieldChange={handleShortageFieldChange}
                 onSaveShortageHoldDetails={saveShortageHoldDetails}
-                onProblemFieldChange={handleProblemFieldChange}
                 onSaveProblemHoldDetails={saveProblemHoldDetails}
                 onQcCheckToggle={handleQcCheckToggle}
                 onStatusSelectionChange={uiActions.setStatusSelection}

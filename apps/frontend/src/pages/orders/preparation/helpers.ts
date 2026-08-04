@@ -4,7 +4,6 @@ import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PREPARATION_STATUS_METADATA_KEY,
   PROBLEM_HOLD_METADATA_KEY,
-  PROBLEM_REASON_OPTIONS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_REASON_OPTIONS,
   TERMINAL_NON_PREPARATION_STATUSES,
@@ -12,7 +11,6 @@ import {
 import type {
   JsonObject,
   ProblemHoldDetails,
-  ProblemReason,
   ShortageFollowUpState,
   ShortageFollowUpVisual,
   ShortageHoldDetails,
@@ -141,25 +139,12 @@ export const buildProblemHoldDetails = (metadata: unknown): ProblemHoldDetails =
   const metadataObject = parseMaybeJsonObject(metadata);
   const rawDetails = parseMaybeJsonObject(metadataObject[PROBLEM_HOLD_METADATA_KEY]);
 
-  const reason = PROBLEM_REASON_OPTIONS.some(
-    (option) => option.value === rawDetails["reason"],
-  )
-    ? (rawDetails["reason"] as ProblemReason)
-    : DEFAULT_PROBLEM_HOLD_DETAILS.reason;
-
   return {
     ...DEFAULT_PROBLEM_HOLD_DETAILS,
-    reason,
-    owner:
-      typeof rawDetails["owner"] === "string"
-        ? rawDetails["owner"]
-        : DEFAULT_PROBLEM_HOLD_DETAILS.owner,
-    followUpDate: normalizeDateInputValue(rawDetails["followUpDate"]),
-    customerNotified: Boolean(rawDetails["customerNotified"]),
-    note:
-      typeof rawDetails["note"] === "string"
-        ? rawDetails["note"]
-        : DEFAULT_PROBLEM_HOLD_DETAILS.note,
+    reason:
+      typeof rawDetails["reason"] === "string"
+        ? rawDetails["reason"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.reason,
     heldAt:
       typeof rawDetails["heldAt"] === "string"
         ? rawDetails["heldAt"]
@@ -178,13 +163,6 @@ export const buildProblemHoldDetails = (metadata: unknown): ProblemHoldDetails =
         : DEFAULT_PROBLEM_HOLD_DETAILS.releasedBy,
     state: rawDetails["state"] === "released" ? "released" : "held",
   };
-};
-
-export const getProblemReasonLabel = (reason: ProblemReason) => {
-  const option = PROBLEM_REASON_OPTIONS.find((o) => o.value === reason);
-  return option
-    ? i18n.t(option.labelKey)
-    : i18n.t("preparation.problemReasons.other");
 };
 
 export const getActiveHoldDetails = (

@@ -142,14 +142,7 @@ export type ShortageReason =
   | "waiting_restock"
   | "other";
 
-export type ProblemReason =
-  | "waiting_customer"
-  | "payment_issue"
-  | "address_issue"
-  | "waiting_management"
-  | "waiting_supplier"
-  | "qc_issue"
-  | "other";
+export type ProblemReason = string;
 
 export type ShortageReasonFilter = "all" | ShortageReason;
 export type ShortageFollowUpFilter = "all" | "today" | "overdue" | "without_date";
@@ -177,11 +170,7 @@ export interface ShortageHoldDetails {
 }
 
 export interface ProblemHoldDetails {
-  reason: ProblemReason;
-  owner: string;
-  followUpDate: string;
-  customerNotified: boolean;
-  note: string;
+  reason: string;
   heldAt?: string;
   releasedAt?: string;
   heldBy?: string;

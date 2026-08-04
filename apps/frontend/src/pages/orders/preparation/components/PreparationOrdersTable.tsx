@@ -14,7 +14,6 @@ import {
   buildShortageHoldDetails,
   getAgeLabel,
   getNextStatus,
-  getProblemReasonLabel,
   getQuickActionLabel,
   getShortageFollowUpState,
   getShortageFollowUpVisual,
@@ -67,11 +66,6 @@ interface PreparationOrdersTableProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
-  onProblemFieldChange: (
-    orderNumber: string,
-    field: keyof ProblemHoldDetails,
-    value: string | boolean,
-  ) => void;
   onSaveProblemHoldDetails: (
     orderNumber: string,
     overrides?: Partial<ProblemHoldDetails>,
@@ -115,7 +109,6 @@ const PreparationOrdersTable = ({
   onQuickTransfer,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
-  onProblemFieldChange,
   onSaveProblemHoldDetails,
   onQcCheckToggle,
   onStatusSelectionChange,
@@ -203,16 +196,8 @@ const PreparationOrdersTable = ({
             const problemHoldDetails =
               problemHoldDrafts[order.orderNumber] ||
               buildProblemHoldDetails(order.metadata);
-            const problemFollowUpVisual = getShortageFollowUpVisual(
-              getShortageFollowUpState(
-                problemHoldDetails.followUpDate,
-                order.stage,
-              ),
-            );
             const activeFollowUpVisual =
-              order.stage === "ON_HOLD_PREP"
-                ? problemFollowUpVisual
-                : shortageFollowUpVisual;
+              order.stage === "STOCK_SHORTAGE" ? shortageFollowUpVisual : null;
             const nextStatus = getNextStatus(
               order.stage,
               preparationSettings.handoffStatus,
@@ -354,15 +339,11 @@ const PreparationOrdersTable = ({
                     <td className="px-3 py-2.5">
                       {isProblemHeld ? (
                         <span
-                          className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                          title={`${getProblemReasonLabel(problemHoldDetails.reason)}${
-                            problemHoldDetails.owner
-                              ? ` — ${problemHoldDetails.owner}`
-                              : ""
-                          }`}
+                          className="inline-flex max-w-[150px] items-center gap-1 truncate rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                          title={problemHoldDetails.reason || t("preparation.table.hasProblem")}
                         >
-                          <ExclamationTriangleIcon className="h-3.5 w-3.5" />
-                          {t("preparation.table.hasProblem")}
+                          <ExclamationTriangleIcon className="h-3 w-3 shrink-0" />
+                          {problemHoldDetails.reason || t("preparation.table.hasProblem")}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
@@ -482,10 +463,8 @@ const PreparationOrdersTable = ({
                           <PreparationProblemHoldPanel
                             order={order}
                             problemHoldDetails={problemHoldDetails}
-                            shortageFollowUpVisual={problemFollowUpVisual}
                             rowBusy={rowBusy}
                             formatDate={formatDate}
-                            onProblemFieldChange={onProblemFieldChange}
                             onSaveProblemHoldDetails={
                               onSaveProblemHoldDetails
                             }

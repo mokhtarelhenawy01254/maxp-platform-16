@@ -1,7 +1,6 @@
 import type {
   PreparationQueueSettings,
   ProblemHoldDetails,
-  ProblemReason,
   ShortageHoldDetails,
   ShortageReason,
 } from "./types";
@@ -68,26 +67,8 @@ export const DEFAULT_SHORTAGE_HOLD_DETAILS: ShortageHoldDetails = {
   state: "held",
 };
 
-export const PROBLEM_REASON_OPTIONS: Array<{
-  value: ProblemReason;
-  label: string;
-  labelKey: string;
-}> = [
-  { value: "waiting_customer", label: "Waiting Customer", labelKey: "preparation.problemReasons.waiting_customer" },
-  { value: "payment_issue", label: "Payment Issue", labelKey: "preparation.problemReasons.payment_issue" },
-  { value: "address_issue", label: "Address Issue", labelKey: "preparation.problemReasons.address_issue" },
-  { value: "waiting_management", label: "Waiting Management", labelKey: "preparation.problemReasons.waiting_management" },
-  { value: "waiting_supplier", label: "Waiting Supplier", labelKey: "preparation.problemReasons.waiting_supplier" },
-  { value: "qc_issue", label: "QC Issue", labelKey: "preparation.problemReasons.qc_issue" },
-  { value: "other", label: "Other Reason", labelKey: "preparation.problemReasons.other" },
-];
-
 export const DEFAULT_PROBLEM_HOLD_DETAILS: ProblemHoldDetails = {
-  reason: "waiting_customer",
-  owner: "",
-  followUpDate: "",
-  customerNotified: false,
-  note: "",
+  reason: "",
   heldAt: "",
   releasedAt: "",
   heldBy: "",

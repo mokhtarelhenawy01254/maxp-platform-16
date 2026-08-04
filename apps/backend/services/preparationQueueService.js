@@ -13,15 +13,6 @@ const {
 const PREPARATION_STATUS_METADATA_KEY = 'preparationStatus';
 const PREPARATION_SHORTAGE_HOLD_METADATA_KEY = 'preparationShortageHold';
 const PREPARATION_HOLD_METADATA_KEY = 'preparationHold';
-const PREPARATION_PROBLEM_REASONS = new Set([
-  'waiting_customer',
-  'payment_issue',
-  'address_issue',
-  'waiting_management',
-  'waiting_supplier',
-  'qc_issue',
-  'other'
-]);
 const PREPARATION_HOLD_STAGES = new Set(['STOCK_SHORTAGE', 'ON_HOLD_PREP']);
 const PREPARATION_SHORTAGE_REASONS = new Set([
   'stock_shortage',
@@ -294,16 +285,8 @@ const buildPreparationProblemHoldDetails = (metadata) => {
     metadataObject[PREPARATION_HOLD_METADATA_KEY]
   );
 
-  const reason = PREPARATION_PROBLEM_REASONS.has(rawDetails.reason)
-    ? rawDetails.reason
-    : 'other';
-
   return {
-    reason,
-    owner: typeof rawDetails.owner === 'string' ? rawDetails.owner : '',
-    followUpDate: normalizePreparationDateInputValue(rawDetails.followUpDate),
-    customerNotified: Boolean(rawDetails.customerNotified),
-    note: typeof rawDetails.note === 'string' ? rawDetails.note : '',
+    reason: typeof rawDetails.reason === 'string' ? rawDetails.reason : '',
     heldAt: typeof rawDetails.heldAt === 'string' ? rawDetails.heldAt : '',
     releasedAt: typeof rawDetails.releasedAt === 'string' ? rawDetails.releasedAt : '',
     heldBy: typeof rawDetails.heldBy === 'string' ? rawDetails.heldBy : '',
@@ -318,7 +301,8 @@ const buildPreparationProblemHoldDetails = (metadata) => {
 const getOrderHoldDetails = (order) => {
   if (order.stage === 'STOCK_SHORTAGE') return order.shortageHoldDetails;
   if (order.stage === 'ON_HOLD_PREP') return order.problemHoldDetails;
-  return { reason: '', owner: '', followUpDate: '', customerNotified: false, note: '', state: 'released' };
+  // problemHoldDetails لم يعد يحمل owner/followUpDate — الـ default موحّد مع الشكل الجديد
+  return { reason: '', state: 'released' };
 };
 
 const getEffectivePreparationStatus = (status, metadata) => {
@@ -988,7 +972,9 @@ const matchesPreparationFilters = ({
 
   if (shortageOwnerQuery) {
     if (!hasHoldContext) return false;
-    if (!activeHoldDetails.owner.trim().toLowerCase().includes(shortageOwnerQuery)) {
+    // 🚨 PRODUCTION-FIX: problemHoldDetails لم يعد يحمل owner (اتشال في refactor
+    // الميزة) — لا نجري .trim() على undefined.
+    if (!(activeHoldDetails.owner || '').trim().toLowerCase().includes(shortageOwnerQuery)) {
       return false;
     }
   }
@@ -1501,23 +1487,12 @@ const getPreparationQueue = async ({ user, query }) => {
         if (shortageOwner) {
           shortageOwnerSet.add(shortageOwner);
         }
-        const problemOwner = order.problemHoldDetails.owner.trim();
-        if (problemOwner) {
-          shortageOwnerSet.add(problemOwner);
-        }
 
         if (isPreparationShortageFollowUpOverdue(
           order.shortageHoldDetails.followUpDate,
           order.stage
         )) {
           allOverdueShortageFollowUpCount += 1;
-        }
-
-        if (isPreparationShortageFollowUpOverdue(
-          order.problemHoldDetails.followUpDate,
-          order.stage
-        )) {
-          allOverdueProblemFollowUpCount += 1;
         }
       }
 
@@ -1570,13 +1545,6 @@ const getPreparationQueue = async ({ user, query }) => {
         order.stage
       )) {
         overdueShortageFollowUpCount += 1;
-      }
-
-      if (isPreparationShortageFollowUpOverdue(
-        order.problemHoldDetails.followUpDate,
-        order.stage
-      )) {
-        overdueProblemFollowUpCount += 1;
       }
 
       if (
