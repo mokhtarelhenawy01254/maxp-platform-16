@@ -20,11 +20,11 @@ import {
   hasAnyCompanyAppSlug,
   normalizeCompanyAppSlug,
 } from "../../utils/companyApps";
-import { OrdersSkeleton } from "./components/OrdersSkeleton";
-import { OrdersEmptyState } from "./components/OrdersEmptyState";
-import { OrdersPagination } from "./components/OrdersPagination";
 import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
+import { OrdersTable } from "./components/OrdersTable";
+import { OrdersStatsBar } from "./components/OrdersStatsBar";
+import { OrdersPagination } from "./components/OrdersPagination";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { printOrderInvoice } from "../../utils/printOrderInvoice";
 import type { OrderDetailsType } from "./types";
@@ -46,10 +46,6 @@ import {
   ExclamationTriangleIcon,
   RocketLaunchIcon,
   ChatBubbleLeftRightIcon,
-  BanknotesIcon,
-  CubeIcon,
-  TruckIcon,
-  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 
@@ -315,7 +311,7 @@ interface MerchantInventorySummary {
   warehouseNames?: string[];
 }
 
-interface MerchantOperationsTotals {
+export interface MerchantOperationsTotals {
   assignedOrdersCount: number;
   assignedPieces: number;
   preparationOrdersCount: number;
@@ -338,7 +334,7 @@ interface MerchantOperationsTotals {
   paidAmount: number;
 }
 
-interface MerchantOperationsSummary {
+export interface MerchantOperationsSummary {
   summary?: Partial<MerchantOperationsTotals>;
   rows?: Array<{
     id: string;
@@ -378,7 +374,7 @@ interface MerchantPayoutSummary {
   payouts?: MerchantPayout[];
 }
 
-interface MerchantSettlementSummary {
+export interface MerchantSettlementSummary {
   merchant?: MerchantFilterOption & {
     inventorySummary?: MerchantInventorySummary | null;
     operationsSummary?: MerchantOperationsSummary | null;
@@ -715,19 +711,19 @@ const EMPTY_MERCHANT_OPERATIONS_TOTALS: MerchantOperationsTotals = {
   paidAmount: 0,
 };
 
-const formatMerchantPieces = (value: string | number | undefined | null) =>
+export const formatMerchantPieces = (value: string | number | undefined | null) =>
   Number(value || 0).toLocaleString("ar-EG", {
     maximumFractionDigits: 0,
   });
 
-const payoutStatusLabels: Record<string, string> = {
+export const payoutStatusLabels: Record<string, string> = {
   PENDING: i18n.t('orders.pendingWithdrawal'),
   PROCESSED: i18n.t('orders.transferred'),
   FAILED: i18n.t('orders.transferFailed'),
   CANCELLED: i18n.t('orders.cancelled'),
 };
 
-const getMerchantOperationsTotals = (
+export const getMerchantOperationsTotals = (
   summary?: MerchantOperationsSummary | null,
 ): MerchantOperationsTotals => ({
   ...EMPTY_MERCHANT_OPERATIONS_TOTALS,
@@ -2134,217 +2130,6 @@ const Orders: React.FC = () => {
     }
   };
 
-  const renderMerchantSettlementPanel = () => {
-    if (!isAdmin || isMerchant || !filters.merchantId) {
-      return null;
-    }
-
-    const selectedMerchant = merchantSettlementSummary?.merchant;
-    const selectedMerchantOption = merchantOptions.find(
-      (merchantOption) => merchantOption.id === filters.merchantId,
-    );
-    const merchantName =
-      selectedMerchant?.name ||
-      selectedMerchantOption?.name ||
-      selectedMerchant?.email ||
-      selectedMerchantOption?.email ||
-      t("orders.selectedMerchant");
-
-    if (merchantSettlementLoading) {
-      return (
-        <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-          <div className="skeleton-shimmer h-24 rounded-2xl" />
-        </section>
-      );
-    }
-
-    if (merchantSettlementError) {
-      return (
-        <section className="mb-4 rounded-[26px] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>{merchantSettlementError}</span>
-            <Link
-              to={`/merchants/${filters.merchantId}`}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2 font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-200"
-            >
-              {t("orders.openMerchantProfile")}
-            </Link>
-          </div>
-        </section>
-      );
-    }
-
-    if (!merchantSettlementSummary) {
-      return null;
-    }
-
-    const operationsTotals = getMerchantOperationsTotals(
-      merchantSettlementSummary.operationsSummary,
-    );
-    const inventorySummary = merchantSettlementSummary.inventorySummary || {};
-    const payoutBalances = merchantSettlementSummary.payoutSummary?.balances || {};
-    const pendingPayouts =
-      merchantSettlementSummary.payoutSummary?.payouts?.filter(
-        (payout) => String(payout.status).toUpperCase() === "PENDING",
-      ) || [];
-    const fulfillmentLabel = getFulfillmentSourceText(
-      selectedMerchant?.fulfillmentMode,
-    ) || selectedMerchant?.fulfillmentMode || t("orders.merchantFulfillment");
-
-    const metricCards = [
-      {
-        label: t("orders.availableForWithdrawal"),
-        value: formatPrice(payoutBalances.availableAmount || 0),
-        subValue: `${formatMerchantPieces(payoutBalances.availableCommissionsCount)} ${t("orders.deliveredOrders")}`,
-        icon: BanknotesIcon,
-        className:
-          "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100",
-      },
-      {
-        label: t("orders.pendingWithdrawalRequest"),
-        value: formatPrice(payoutBalances.pendingPayoutAmount || 0),
-        subValue: `${formatMerchantPieces(pendingPayouts.length)} ${t("orders.pendingWithdrawalRequest")}`,
-        icon: ClockIcon,
-        className:
-          "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100",
-      },
-      {
-        label: t("orders.transferred"),
-        value: formatPrice(payoutBalances.paidAmount || 0),
-        subValue: t("orders.paidAndClosed"),
-        icon: CheckCircleIcon,
-        className:
-          "border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
-      },
-      {
-        label: t("orders.settlementInShipping"),
-        value: formatPrice(operationsTotals.inShippingAmount),
-        subValue: t("orders.piecesPending", { count: formatMerchantPieces(operationsTotals.inShippingPieces) }),
-        icon: TruckIcon,
-        className:
-          "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-100",
-      },
-      {
-        label: t("orders.sellableBalance"),
-        value: `${formatMerchantPieces(inventorySummary.availableForSale)} ${t("orders.pieces")}`,
-        subValue: t("orders.reservedPieces", { count: formatMerchantPieces(inventorySummary.reservedQuantity) }),
-        icon: CubeIcon,
-        className:
-          "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-100",
-      },
-      {
-        label: t("orders.deliveredOrders"),
-        value: `${formatMerchantPieces(operationsTotals.deliveredOrdersCount)} ${t("orders.orders2")}`,
-        subValue: t("orders.piecesDue", { count: formatMerchantPieces(operationsTotals.payablePieces) }),
-        icon: CheckCircleIcon,
-        className:
-          "border-emerald-200 bg-white text-emerald-900 dark:border-emerald-500/20 dark:bg-slate-900 dark:text-emerald-100",
-      },
-      {
-        label: t("orders.settlementNotDelivered"),
-        value: `${formatMerchantPieces(operationsTotals.notDeliveredOrdersCount)} ${t("orders.orders2")}`,
-        subValue: formatPrice(operationsTotals.notDeliveredAmount),
-        icon: ExclamationTriangleIcon,
-        className:
-          "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100",
-      },
-    ];
-
-    return (
-      <section className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-                <BanknotesIcon className="h-4 w-4" />
-                {t("orders.merchantSettlementLabel")}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {fulfillmentLabel}
-              </span>
-              {inventorySummary.stockLocationLabel ? (
-                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200">
-                  {inventorySummary.stockLocationLabel}
-                </span>
-              ) : null}
-            </div>
-            <h2 className="mt-2 text-xl font-black text-slate-950 dark:text-white">
-              {merchantName}
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-              {t("orders.merchantSettlementDesc")}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                handleFilterChange("merchantOperationStatus", "");
-                handleFilterChange("merchantSettlementStatus", "");
-              }}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              {t("orders.allMerchantOrders")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                handleFilterChange("merchantOperationStatus", "DELIVERED");
-                handleFilterChange("merchantSettlementStatus", "PAYABLE");
-              }}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-            >
-              {t("orders.dueOrders")}
-            </button>
-            <Link
-              to={`/merchants/${filters.merchantId}`}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              {t("orders.merchantProfile")}
-            </Link>
-            <Link
-              to="/inventory"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200"
-            >
-              {t("orders.inventory")}
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {metricCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <div key={card.label} className={`rounded-2xl border p-3 ${card.className}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold">{card.label}</p>
-                  <Icon className="h-4 w-4 opacity-70" />
-                </div>
-                <p className="mt-2 text-lg font-black">{card.value}</p>
-                <p className="mt-1 text-[11px] opacity-75">{card.subValue}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {pendingPayouts.length > 0 ? (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <span className="font-bold">
-                {t("orders.pendingWithdrawalRequests", { count: formatMerchantPieces(pendingPayouts.length) })}
-              </span>
-              <span className="text-[11px] opacity-80">
-                {t("orders.lastPayout")}: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} •{" "}
-                {formatPrice(Number(pendingPayouts[0]?.amount || 0))}
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </section>
-    );
-  };
-
   const handleUpdateStatus = async (orderNumber: string, newStatus: string) => {
     const normalizedStatus = normalizeStatusCode(newStatus);
     let notes = "";
@@ -2492,6 +2277,33 @@ const Orders: React.FC = () => {
     ],
   );
 
+  const tableHelpers = useMemo(
+    () => ({
+      getCustomerDisplayName,
+      formatPrice,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+      getConfidenceColor,
+      getConfidenceIcon,
+    }),
+    [
+      getCustomerDisplayName,
+      formatPrice,
+      getRelativeTime,
+      formatDate,
+      getPaymentStatusBadgeStyle,
+      getPaymentStatusColor,
+      getPaymentStatusText,
+      getUnifiedStatusDisplay,
+      getConfidenceColor,
+      getConfidenceIcon,
+    ],
+  );
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
@@ -2527,7 +2339,25 @@ const Orders: React.FC = () => {
         onRetry={fetchOrders}
       />
 
-      {renderMerchantSettlementPanel()}
+      <OrdersStatsBar
+        isAdmin={isAdmin}
+        isMerchant={isMerchant}
+        merchantId={filters.merchantId}
+        merchantSettlementSummary={merchantSettlementSummary}
+        merchantSettlementLoading={merchantSettlementLoading}
+        merchantSettlementError={merchantSettlementError}
+        merchantOptions={merchantOptions}
+        formatPrice={formatPrice}
+        getFulfillmentSourceText={getFulfillmentSourceText}
+        onClearMerchantFilters={() => {
+          handleFilterChange("merchantOperationStatus", "");
+          handleFilterChange("merchantSettlementStatus", "");
+        }}
+        onShowDueOrders={() => {
+          handleFilterChange("merchantOperationStatus", "DELIVERED");
+          handleFilterChange("merchantSettlementStatus", "PAYABLE");
+        }}
+      />
 
       {/* Bulk Toolbar */}
       {canSelectOrders && selectedOrders.length > 0 && (
@@ -2603,6 +2433,7 @@ const Orders: React.FC = () => {
         isMerchant={isMerchant}
         activeFilterCount={activeFilterCount}
         search={filters.search}
+        density={tableDensity}
         helpers={mobileListHelpers}
         onOpenOrder={handleOpenOrder}
         onToggleSelection={toggleOrderSelection}
@@ -2610,361 +2441,32 @@ const Orders: React.FC = () => {
         onClearFilters={clearAllFilters}
       />
 
-      {/* Orders Table */}
-      <div
-        data-orders-density={tableDensity}
-        className="hidden overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.5)] dark:border-slate-700/70 dark:bg-slate-900/70 lg:block"
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-right">
-            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
-              <tr>
-                {canSelectOrders && (
-                  <th className="w-10 px-3 py-2.5 lg:px-4">
-                    <input
-                      type="checkbox"
-                      aria-label={String(t("orders.selectAllOrders"))}
-                      className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
-                      onChange={toggleAllSelection}
-                      checked={
-                        orders.length > 0 &&
-                        orders.every((o) =>
-                          selectedOrders.includes(o.orderNumber),
-                        )
-                      }
-                    />
-                  </th>
-                )}
-                {columnsToRender.includes("orderNumber") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.orderNumber")}
-                  </th>
-                )}
-                {columnsToRender.includes("customer") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.customer")}
-                  </th>
-                )}
-                {columnsToRender.includes("amount") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.amount")}
-                  </th>
-                )}
-                {columnsToRender.includes("status") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.status")}
-                  </th>
-                )}
-                {columnsToRender.includes("payment") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.payment")}
-                  </th>
-                )}
-                {columnsToRender.includes("date") && (
-                  <th className="hidden px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4 xl:table-cell">
-                    {t("orders.date")}
-                  </th>
-                )}
-                {columnsToRender.includes("actions") && (
-                  <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
-                    {t("orders.actions")}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {loading ? (
-                <OrdersSkeleton
-                  variant="table"
-                  rowCount={5}
-                  columns={columnsToRender}
-                  showSelect={canSelectOrders}
-                />
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={tableColumnCount}
-                    className="px-6 py-10 text-center text-slate-500 dark:text-slate-400"
-                  >
-                    <OrdersEmptyState
-                      variant="table"
-                      error={ordersLoadError}
-                      isMerchant={isMerchant}
-                      hasActiveFilters={activeFilterCount > 0 || Boolean(filters.search)}
-                      onClearFilters={clearAllFilters}
-                    />
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order, idx) => {
-                  const orderItemsSummary = summarizeOrderDocumentItems(order.items);
-                  return (
-                    <tr
-                      key={order.id || idx}
-                      onClick={() => {
-                        handleOpenOrder(order);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleOpenOrder(order);
-                        }
-                      }}
-                      tabIndex={0}
-                      aria-label={`${t("orders.viewDetails")} ${order.orderNumber}`}
-                      className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
-                        ? "bg-blue-50/60 dark:bg-blue-900/30"
-                        : !order.isViewed
-                          ? "bg-blue-50 dark:bg-blue-900/20"
-                          : ""
-                        }`}
-                    >
-                      {canSelectOrders && (
-                        <td
-                          className="px-3 py-2.5 lg:px-4"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
-                            className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
-                            checked={selectedOrders.includes(order.orderNumber)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              toggleOrderSelection(order.orderNumber);
-                            }}
-                          />
-                        </td>
-                      )}
-                      {columnsToRender.includes("orderNumber") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div>
-                              <span className="font-medium text-slate-900 dark:text-slate-100">
-                                #{order.orderNumber}
-                              </span>
-                              {order.metadata?.isGuestOrder && (
-                                <span className="mr-2 px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
-                                  {t("orders.guest")}
-                                </span>
-                              )}
-                              {!order.isViewed && (
-                                <span className="mr-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
-                                  {t("orders.newLabel")}
-                                </span>
-                              )}
-                            </div>
-                            {orderItemsSummary.hasQuantityOffers ? (
-                              <div className="max-w-[240px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
-                                <div className="font-semibold">
-                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                                </div>
-                                <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                                  {orderItemsSummary.secondaryLabel}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("customer") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col">
-                            <span className="text-slate-900 dark:text-slate-100 font-medium">
-                              {getCustomerDisplayName(order)}
-                            </span>
-                            {order.customerPhone && (
-                              <span
-                                className="text-slate-500 dark:text-slate-400 text-sm"
-                                dir="ltr"
-                              >
-                                {order.customerPhone}
-                              </span>
-                            )}
-                            {order.extractionMethod && (
-                              <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">
-                                {order.extractionMethod === "ai_enhanced"
-                                  ? t("orders.enhancedExtraction")
-                                  : order.extractionMethod === "ai_basic"
-                                    ? t("orders.basicExtraction")
-                                    : order.extractionMethod === "manual"
-                                      ? t("orders.manual")
-                                      : order.extractionMethod}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("amount") && (
-                        <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100 lg:px-4">
-                          {(() => {
-                            try {
-                              // PRIORITIZE: subtotal + shipping + tax for consistency with OrderDetails
-                              const subtotal =
-                                typeof order.subtotal === "number"
-                                  ? order.subtotal
-                                  : 0;
-                              const shipping =
-                                typeof order.shipping === "number"
-                                  ? order.shipping
-                                  : 0;
-                              const tax =
-                                typeof order.tax === "number" ? order.tax : 0;
-
-                              const amount =
-                                subtotal + shipping + tax || order.total || 0;
-                              return formatPrice(amount);
-                            } catch (e) {
-                              return "0.00";
-                            }
-                          })()}
-                        </td>
-                      )}
-                      {columnsToRender.includes("status") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex flex-col gap-1">
-                            {(() => {
-                              const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                              return (
-                                <span
-                                  className={unifiedStatus.className}
-                                  style={unifiedStatus.style}
-                                  aria-label={unifiedStatus.labelKey}
-                                >
-                                  {unifiedStatus.text}
-                                </span>
-                              );
-                            })()}
-                            {order.isScheduled &&
-                              order.scheduledDeliveryDate && (
-                                <span
-                                  className="text-xs text-slate-600 dark:text-slate-400"
-                                  dir="ltr"
-                                >
-                                  📅{" "}
-                                  {new Date(
-                                    order.scheduledDeliveryDate,
-                                  ).toLocaleDateString("ar-EG", {
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </span>
-                              )}
-                            {order.confidence && (
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${getConfidenceColor(order.confidence)}`}
-                              >
-                                {getConfidenceIcon(order.confidence)}
-                                <span className="mr-1">
-                                  {(order.confidence * 100).toFixed(0)}%
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      {columnsToRender.includes("payment") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusBadgeStyle(
-                              order.paymentStatus || "pending",
-                            )
-                              ? ""
-                              : getPaymentStatusColor(
-                                  (order.paymentStatus || "pending").toLowerCase(),
-                                )}`}
-                            style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
-                          >
-                            {getPaymentStatusText(
-                              (order.paymentStatus || "pending").toLowerCase(),
-                            )}
-                          </span>
-                        </td>
-                      )}
-                      {columnsToRender.includes("date") && (
-                        <td
-                          className="hidden px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400 lg:px-4 xl:table-cell"
-                          title={formatDate(
-                            order.createdAt || new Date().toISOString(),
-                          )}
-                        >
-                          {(() => {
-                            try {
-                              return getRelativeTime(
-                                order.createdAt || new Date().toISOString(),
-                              );
-                            } catch (e) {
-                              return "-";
-                            }
-                          })()}
-                        </td>
-                      )}
-                      {columnsToRender.includes("actions") && (
-                        <td className="px-3 py-2.5 lg:px-4">
-                          <div className="flex items-center gap-1.5 lg:gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenOrder(order);
-                              }}
-                              aria-label={`${t("orders.quickView")} ${order.orderNumber}`}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={t("orders.quickView")}
-                            >
-                              <EyeIcon className="w-4 h-4 lg:w-5 lg:h-5" />
-                            </button>
-                            <Link
-                              to={`/orders/${order.orderNumber}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!order.isViewed) {
-                                  handleMarkAsViewed(order.orderNumber);
-                                }
-                              }}
-                              aria-label={`${t("orders.viewFullDetails")} ${order.orderNumber}`}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={t("orders.viewFullDetails")}
-                            >
-                              <ShoppingBagIcon className="w-4 h-4 lg:w-5 lg:h-5" />
-                            </Link>
-                            {order.conversationId && (
-                              <Link
-                                to={`/whatsapp?conversationId=${order.conversationId}`}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                                title={t("orders.conversation")}
-                              >
-                                <ChatBubbleLeftRightIcon className="w-4 h-4 lg:w-5 lg:h-5" />
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Controls */}
-        {!loading && orders.length > 0 && (
-          <OrdersPagination
-            variant="desktop"
-            page={page}
-            totalPages={totalPages}
-            totalOrders={totalOrders}
-            limit={limit}
-            density={tableDensity}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-            onDensityChange={changeTableDensity}
-          />
-        )}
-      </div>
+      <OrdersTable
+        orders={orders}
+        loading={loading}
+        ordersLoadError={ordersLoadError}
+        selectedOrders={selectedOrders}
+        canSelectOrders={canSelectOrders}
+        isMerchant={isMerchant}
+        activeFilterCount={activeFilterCount}
+        search={filters.search}
+        columns={columnsToRender}
+        columnCount={tableColumnCount}
+        density={tableDensity}
+        page={page}
+        totalPages={totalPages}
+        totalOrders={totalOrders}
+        limit={limit}
+        helpers={tableHelpers}
+        onOpenOrder={handleOpenOrder}
+        onToggleSelection={toggleOrderSelection}
+        onToggleAllSelection={toggleAllSelection}
+        onMarkAsViewed={handleMarkAsViewed}
+        onClearFilters={clearAllFilters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+        onDensityChange={changeTableDensity}
+      />
 
       {!loading && orders.length > 0 && (
         <OrdersPagination

@@ -42,6 +42,7 @@ interface OrdersMobileListProps {
   isMerchant: boolean;
   activeFilterCount: number;
   search: string;
+  density?: "comfortable" | "compact";
   helpers: OrdersMobileListHelpers;
   onOpenOrder: (order: Order) => void;
   onToggleSelection: (orderNumber: string) => void;
@@ -58,6 +59,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
   isMerchant,
   activeFilterCount,
   search,
+  density = "comfortable",
   helpers,
   onOpenOrder,
   onToggleSelection,
@@ -125,7 +127,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                 }}
               >
                 <article
-                  className={`rounded-2xl border p-3.5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.5)] transition ${isSelected
+                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3.5"} shadow-[0_20px_60px_-42px_rgba(15,23,42,0.5)] transition ${isSelected
                     ? "border-blue-400/70 bg-blue-50/90 dark:border-blue-500/60 dark:bg-blue-500/10"
                     : "border-slate-200/70 bg-white/90 dark:border-slate-700/70 dark:bg-slate-900/70"
                     }`}

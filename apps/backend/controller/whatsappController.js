@@ -1295,9 +1295,36 @@ async function sendMessage(req, res) {
         // Resolve virtual session ID with optional auto-failover for contacts
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId, { contactId });
 
+        // 🚨 PRODUCTION-FIX (C5): نافذة الـ 24 ساعة على الإرسال اليدوي لـ META_CLOUD فقط.
+        // خارج النافذة Meta ترفض الإرسال الحر — نمنعه مبكراً بدل "SENT" الوهمي.
+        try {
+            const sessionRecord = await getSharedPrismaClient().whatsAppSession.findUnique({
+                where: { id: targetSessionId },
+                select: { provider: true }
+            });
+            if (sessionRecord?.provider === 'META_CLOUD') {
+                const jid = WhatsAppMessageHandler.formatJid(to);
+                const contact = await getSharedPrismaClient().whatsAppContact.findUnique({
+                    where: { sessionId_jid: { sessionId: targetSessionId, jid } },
+                    select: { lastCustomerMessageAt: true }
+                });
+                const window = computeWindowStatus(contact);
+                if (!window.isOpen) {
+                    return res.status(409).json({
+                        error: 'نافذة الـ 24 ساعة مع هذا العميل مغلقة. استخدم قالباً معتمداً من Meta لإرسال رسالة.',
+                        code: 'WA_24H_WINDOW_CLOSED',
+                        window
+                    });
+                }
+            }
+        } catch (windowErr) {
+            console.error('❌ Error checking 24h window:', windowErr.message);
+        }
+
         const message = await WhatsAppMessageHandler.sendText(targetSessionId, to, text, {
             quotedMessageId,
-            senderId: req.body.userId || req.user?.userId
+            senderId: req.body.userId || req.user?.userId,
+            typingSimulation: true
         });
 
         res.json({ success: true, message });

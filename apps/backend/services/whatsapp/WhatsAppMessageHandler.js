@@ -100,6 +100,19 @@ function createBaileysSessionNotReadyError(sessionId, reason) {
     return error;
 }
 
+/**
+ * إعادة فحص الجاهزية بعد تحضير الوسائط/تأخير الكتابة — قراءة فقط (no reconnect).
+ * لو socket مات أثناء التحضير نرفض فوراً بـ WA_SESSION_NOT_READY بدل ما
+ * getSendableBaileysSession يعمل reconnect كامل كـ side effect (خطر إرسال مكرر).
+ */
+function assertSessionReadyAfterPrep(sessionId, phase) {
+    const session = WhatsAppManager.getSession(sessionId);
+    if (!isSendableBaileysSession(session)) {
+        throw createBaileysSessionNotReadyError(sessionId, getBaileysSessionReadinessReason(session) || `socket died during ${phase}`);
+    }
+    return session;
+}
+
 function getBaileysSendReconnectWaitMs() {
     const configured = Number(process.env.WHATSAPP_SEND_RECONNECT_WAIT_MS);
     return Number.isFinite(configured) && configured >= 0
@@ -218,13 +231,30 @@ async function sendText(sessionId, to, text, options = {}) {
             hasSocket: !!session?.sock
         });
 
-        const jid = formatJid(to);
+        let jid = formatJid(to);
+
+        // 🚨 PRODUCTION-FIX (C3): الـ LID غير محلول لا يمكن الإرسال إليه — نرفض مبكراً
+        // بدل الإرسال في فراغ ثم كتابة SENT وهمي. الحل لا يستخدم recursion:
+        // نعيد تعيين jid للـ JID المحلول ونكمل المسار العادي.
+        if (jid.includes('@lid')) {
+            const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
+            if (!resolved || String(resolved).includes('@lid')) {
+                const err = new Error('المرسل إليه يستخدم معرّف جهاز مرتبط (LID) غير محلول بعد');
+                err.code = 'WA_RECIPIENT_LID_UNRESOLVED';
+                throw err;
+            }
+            jid = resolved;
+        }
 
         // إرسال حالة الكتابة
         await sendTypingSafely(sessionId, jid, true);
 
-        // تأخير بسيط لمحاكاة الكتابة
-        await delay(Math.min(text.length * 20, 2000));
+        // تأخير بسيط لمحاكاة الكتابة — opt-in للإرسال التفاعلي اليدوي فقط
+        // (typingSimulation: true). للإرسال الآلي (notification/API/AI/queue)
+        // لا ندفع حتى 2s تأخير ولا نوسّع نافذة موت الـ socket أثناء الـ flap.
+        if (options.typingSimulation) {
+            await delay(Math.min(text.length * 20, 2000));
+        }
 
         // إرسال الرسالة
         // لا يوجد blind retry: getSendableBaileysSession يضمن جلسة جاهزة قبل الإرسال،
@@ -245,7 +275,7 @@ async function sendText(sessionId, to, text, options = {}) {
 
         let result;
         try {
-            session = await getSendableBaileysSession(sessionId, dbSession);
+            session = assertSessionReadyAfterPrep(sessionId, 'typing delay');
             result = await session.sock.sendMessage(jid, messageOptions);
         } catch (sendError) {
             console.error(`❌ [WA-SEND:${sessionId}] Send failed: ${sendError.message}. No blind retry (would duplicate customer messages).`);
@@ -301,7 +331,7 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -317,6 +347,7 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             };
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -362,7 +393,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -372,6 +403,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
             mimetype: videoSource.mimetype || 'video/mp4'
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -417,7 +449,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -427,6 +459,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             ptt: options.ptt || false // voice note
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -474,7 +507,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -485,6 +518,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
             caption: options.caption
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -532,7 +566,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -545,6 +579,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -596,7 +631,7 @@ async function sendContact(sessionId, to, contact, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -613,6 +648,7 @@ END:VCARD`;
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -642,10 +678,11 @@ async function sendReaction(sessionId, to, messageId, emoji) {
             return result;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
+        session = assertSessionReadyAfterPrep(sessionId, 'reaction');
         const result = await session.sock.sendMessage(jid, {
             react: {
                 text: emoji,
@@ -710,7 +747,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
         const footer = options.footer || '';
@@ -726,6 +763,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
         const btnText = buttons.map((btn, i) => `   ${['1️⃣', '2️⃣', '3️⃣'][i]} *${btn.text}*`).join('\n');
         const formattedText = `${text}\n\n┌─────────────────┐\n${btnText}\n└─────────────────┘\n\n_${footer}_`;
 
+        session = assertSessionReadyAfterPrep(sessionId, 'buttons prep');
         const result = await session.sock.sendMessage(jid, { text: formattedText });
         console.log(`✅ [WHATSAPP-BTN] Formatted text message sent successfully to ${jid}`);
 
@@ -807,7 +845,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -832,6 +870,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
             description: options.description
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         // حفظ الرسالة في قاعدة البيانات
@@ -882,7 +921,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -906,6 +945,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
             messageOptions.buttons = buttonRows;
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         // حفظ الرسالة في قاعدة البيانات
@@ -1109,11 +1149,12 @@ async function resolveGroupParticipantNames(sessionId, messages) {
 async function deleteMessage(sessionId, remoteJid, messageId, forEveryone = false) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(remoteJid);
 
         if (forEveryone) {
+            session = assertSessionReadyAfterPrep(sessionId, 'delete');
             await session.sock.sendMessage(jid, {
                 delete: {
                     remoteJid: jid,
@@ -1412,7 +1453,7 @@ function delay(ms) {
 async function sendPoll(sessionId, to, pollData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1433,6 +1474,7 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
             };
         }
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1458,7 +1500,7 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
 async function sendOrder(sessionId, to, orderData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1466,6 +1508,7 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
             order: orderData
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1489,7 +1532,7 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
 async function sendCatalog(sessionId, to, catalogData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1497,6 +1540,7 @@ async function sendCatalog(sessionId, to, catalogData, options = {}) {
             catalog: catalogData
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1520,7 +1564,7 @@ async function sendCatalog(sessionId, to, catalogData, options = {}) {
 async function getCatalog(sessionId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const catalog = await session.sock.getCatalog();
         return catalog;
@@ -1536,7 +1580,7 @@ async function getCatalog(sessionId) {
 async function getProducts(sessionId, catalogId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const products = await session.sock.getProducts(catalogId);
         return products;
@@ -1552,7 +1596,7 @@ async function getProducts(sessionId, catalogId) {
 async function getCart(sessionId, cartId) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const cart = await session.sock.getCart(cartId);
         return cart;
@@ -1615,7 +1659,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             return savedMessage;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1626,6 +1670,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             }
         };
 
+        session = assertSessionReadyAfterPrep(sessionId, 'media prep');
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -1655,7 +1700,7 @@ async function getMessageTemplate(sessionId) {
             return templates;
         }
 
-        const session = await getSendableBaileysSession(sessionId, dbSession);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
 
         const templates = await session.sock.getMessageTemplate();
         return templates;

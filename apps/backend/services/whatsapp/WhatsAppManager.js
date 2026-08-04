@@ -67,6 +67,30 @@ const historySyncCompletionRequested = new Set();
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
 
+// 🚨 PRODUCTION-FIX: سقف لمحاولات إعادة الاتصال المتتالية الفاشلة.
+// بعدها الجلسة auth state محطّمة على الأرجح — نوقف التكرار (الذي يستدعي
+// rate-limit/block من واتساب)، نمسح auth state ونحوّل لـ QR_PENDING مع تنبيه.
+const MAX_RECONNECT_ATTEMPTS = 10;
+
+// عداد تراكمي دائم عبر إعادة إنشاء sessionData — لا يُعاد لأي سبب إلا عند نجاح
+// اتصال فعلي (open). لازم دائم لأنه sessionData/state.attempt بيتعملهم reset
+// عند كل requestReconnect وكل إعادة إنشاء جلسة.
+const consecutiveReconnectFailures = new Map(); // sessionId -> count
+
+function getReconnectFailureCount(sessionId) {
+    return consecutiveReconnectFailures.get(sessionId) || 0;
+}
+
+function incrementReconnectFailureCount(sessionId) {
+    const count = getReconnectFailureCount(sessionId) + 1;
+    consecutiveReconnectFailures.set(sessionId, count);
+    return count;
+}
+
+function resetReconnectFailures(sessionId) {
+    consecutiveReconnectFailures.delete(sessionId);
+}
+
 // Health check configuration
 const HEALTH_CHECK_INTERVAL = 25000; // 25 seconds
 const HEALTH_CHECK_WARN_THRESHOLD = 60000; // 60 seconds in 'connecting' state = warn
@@ -198,6 +222,12 @@ function _scheduleReconnect(sessionId, companyId, options, delayMs, source) {
             releaseReconnectLock(sessionId);
         } catch (error) {
             WA_LOG.reconnect(sessionId, `reconnect_failed sessionId=${sessionId} reason=${source} attempt=${state.attempt} error=${error.message}`);
+
+            if (state.attempt >= MAX_RECONNECT_ATTEMPTS || getReconnectFailureCount(sessionId) >= MAX_RECONNECT_ATTEMPTS) {
+                await giveUpOnReconnect(sessionId, companyId);
+                return;
+            }
+
             const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
             _scheduleReconnect(sessionId, companyId, options, nextDelay, source);
         }
@@ -215,6 +245,56 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
     state.phase = 'scheduled';
     state.reason = 'legacy';
     _scheduleReconnect(sessionId, companyId, options, delayMs, 'legacy');
+}
+
+async function giveUpOnReconnect(sessionId, companyId, phoneNumber) {
+    WA_LOG.error(sessionId, `Reconnect attempts exceeded (${MAX_RECONNECT_ATTEMPTS}). Giving up: clearing auth state + QR_PENDING.`);
+    resetReconnectFailures(sessionId);
+
+    // تنظيف الجلسة (لو لسه موجودة) قبل مسح auth state
+    const existing = activeSessions.get(sessionId);
+    if (existing) {
+        activeSessions.delete(sessionId);
+        if (existing.sock) {
+            cleanupSocketListeners(existing.sock);
+            await endSocketQuietly(existing.sock, 'Reconnect exhausted');
+            existing.sock = null;
+        }
+        cleanupSessionState(sessionId, existing.companyId || companyId);
+    }
+    sessionHealthChecks.delete(sessionId);
+
+    try {
+        await clearDatabaseAuthState(sessionId);
+    } catch (authErr) {
+        WA_LOG.error(sessionId, `Failed to clear auth state after reconnect exhaustion:`, authErr.message);
+    }
+    try {
+        await safeQuery(async () => {
+            const prisma = getSharedPrismaClient();
+            await prisma.whatsAppSession.update({
+                where: { id: sessionId },
+                data: { status: 'QR_PENDING', updatedAt: new Date() }
+            });
+        }, 3);
+    } catch (dbErr) {
+        WA_LOG.error(sessionId, `Failed to update DB status to QR_PENDING after reconnect exhaustion:`, dbErr.message);
+    }
+    releaseReconnectLock(sessionId);
+    queueWhatsAppDisconnectAlert({
+        sessionId,
+        companyId,
+        phoneNumber: phoneNumber || existing?.phoneNumber,
+        errorMessage: `Reconnect failed ${MAX_RECONNECT_ATTEMPTS} times in a row — clearing auth state, QR re-link required`,
+        shouldReconnect: false,
+        nextDbStatus: 'QR_PENDING',
+        source: 'reconnect_give_up'
+    });
+    getIO()?.to(`company_${companyId}`).emit('whatsapp:connection', {
+        sessionId,
+        status: 'qr_pending',
+        reason: 'reconnect_give_up'
+    });
 }
 
 function getSocketGeneration(sessionId) {
@@ -347,6 +427,17 @@ function emitAllSessionStatuses() {
         }
     }
     WA_LOG.restore(`Emitted session statuses for ${companiesEmitted.size} company/ies`);
+}
+
+/**
+ * يسجّل نشاطًا واصلًا من socket (رسائل/إيصالات/حضور) — يغذّي فحص الـ staleness
+ * (classifySessionSocketHealth يقرأ sock.lastReceivedMessageTimestamp).
+ */
+function markSocketActivity(sock) {
+    if (!sock) return;
+    try {
+        sock.lastReceivedMessageTimestamp = Date.now();
+    } catch (e) { /* best-effort */ }
 }
 
 /**
@@ -909,6 +1000,24 @@ async function resolveLinkedDeviceRemoteJid(sessionId, remoteJid, msg, options =
     return await findPhoneJidForLinkedDeviceJid(sessionId, normalizedJid) || normalizedJid;
 }
 
+/**
+ * تحويل JID وجهة الإرسال إلى JID فعلي قابل للإرسال.
+ * الـ LID (Linked Device ID) لا يُرسَل إليه مباشرة — نفضّه عبر الـ mapping
+ * (ما تبعتش في فراغ). يرجع null لو LID غير محلول.
+ */
+async function resolveOutgoingRemoteJid(sessionId, to) {
+    const { normalizedJid } = normalizeWhatsAppContactIdentity(to);
+    if (!sessionId || !isLinkedDeviceJid(normalizedJid)) {
+        return normalizedJid;
+    }
+
+    const persisted = await getPersistedLidMapping(sessionId, normalizedJid);
+    if (persisted) return persisted;
+
+    const heuristic = await findPhoneJidForLinkedDeviceJid(sessionId, normalizedJid);
+    return heuristic || null;
+}
+
 async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, options = {}) {
     const normalizedLidJid = normalizeWhatsAppContactIdentity(lidJid).normalizedJid;
     const normalizedPhoneJid = normalizePhoneJid(phoneJid);
@@ -1162,18 +1271,21 @@ const MESSAGE_STATUS_RANK = {
 
 function getMessageStatusFromBaileysStatus(baileysStatus) {
     const statusMap = {
+        0: 'FAILED', // WAMessageStatus.ERROR — الإيصال صار خطأ فعلًا
         1: 'PENDING',
         2: 'SENT',
         3: 'DELIVERED',
-        4: 'READ'
+        4: 'READ',
+        5: 'READ' // PLAYED → READ
     };
     const parsedStatus = Number(baileysStatus);
 
-    if (statusMap[parsedStatus]) {
+    if (Number.isFinite(parsedStatus) && statusMap[parsedStatus] !== undefined) {
         return statusMap[parsedStatus];
     }
 
     const statusNameMap = {
+        ERROR: 'FAILED',
         PENDING: 'PENDING',
         SERVER_ACK: 'SENT',
         DELIVERY_ACK: 'DELIVERED',
@@ -1489,6 +1601,7 @@ async function createSession(sessionId, companyId, options = {}) {
 
         // معالجة الرسائل الواردة
         sock.ev.on('messages.upsert', async (m) => {
+            markSocketActivity(sock);
             try {
                 await handleIncomingMessages(sessionId, companyId, m, sock);
             } catch (err) {
@@ -1497,6 +1610,7 @@ async function createSession(sessionId, companyId, options = {}) {
         });
 
         sock.ev.on('messaging-history.set', async (history) => {
+            markSocketActivity(sock);
             try {
                 await enqueueMessagingHistorySet(sessionId, companyId, history, sock);
             } catch (err) {
@@ -1506,30 +1620,36 @@ async function createSession(sessionId, companyId, options = {}) {
 
         // معالجة تحديث حالة الرسائل
         sock.ev.on('messages.update', async (updates) => {
+            markSocketActivity(sock);
             await handleMessageStatusUpdate(sessionId, companyId, updates);
         });
 
         sock.ev.on('message-receipt.update', async (updates) => {
+            markSocketActivity(sock);
             await handleMessageReceiptUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث المجموعات
         sock.ev.on('groups.update', async (updates) => {
+            markSocketActivity(sock);
             await handleGroupsUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث جهات الاتصال
         sock.ev.on('contacts.update', async (updates) => {
+            markSocketActivity(sock);
             await handleContactsUpdate(sessionId, companyId, updates);
         });
 
         // معالجة أحداث الحضور (typing, online, etc.)
         sock.ev.on('presence.update', async (update) => {
+            markSocketActivity(sock);
             await handlePresenceUpdate(sessionId, companyId, update);
         });
 
         // معالجة أحداث المكالمات
         sock.ev.on('call.update', async (update) => {
+            markSocketActivity(sock);
             await handleCallUpdate(sessionId, companyId, update);
         });
 
@@ -1742,6 +1862,15 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             // إعادة الاتصال إذا لزم الأمر
             if (shouldReconnect) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (shouldReconnect=true)`);
+                // 🚨 PRODUCTION-FIX: عداد فشل تراكمي عبر إعادة الإنشاء —
+                // لو بلغ السقف نستسلم (مسح auth + QR_PENDING + تنبيه) بدل
+                // إعادة محاولة لا نهائية تعرّض الرقم لـ rate-limit/block.
+                const failureCount = incrementReconnectFailureCount(sessionId);
+                if (failureCount >= MAX_RECONNECT_ATTEMPTS) {
+                    await giveUpOnReconnect(sessionId, companyId, sessionData?.phoneNumber);
+                    return;
+                }
+                WA_LOG.reconnect(sessionId, `Reconnect failure count ${failureCount}/${MAX_RECONNECT_ATTEMPTS}`);
                 const currentData = sessionData ? { syncFullHistory: sessionData.syncFullHistory } : { syncFullHistory: false };
                 activeSessions.delete(sessionId);
                 if (sessionData?.sock) {
@@ -1751,8 +1880,13 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 }
                 cleanupSessionState(sessionId, companyId);
                 sessionHealthChecks.delete(sessionId);
-                // 440 = connectionReplaced — back off harder to break the death spiral
-                const reconnectDelay = statusCode === 440 ? 30000 : 3000;
+                // 440 = connectionReplaced, 515 = stream error, 428 = connection closed —
+                // كلها عابرة: backoff موحّد 30s (بدل 3s) + jitter يوزّع عبر الجلسات
+                // لتفادي thundering herd وقت أعطال واتساب.
+                const TRANSIENT_CLOSE_CODES = new Set([440, 515, 428, 500, 502, 503, 504]);
+                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? 30000 : 5000;
+                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 3000));
+                const reconnectDelay = jitteredBackoff;
                 requestReconnect(sessionId, companyId, 'socket_close', {}, reconnectDelay);
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
@@ -1789,6 +1923,8 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
         } else if (connection === 'open') {
             WA_LOG.ok(sessionId, `WhatsApp connection OPEN`);
             clearReconnectTimer(sessionId);
+            // 🚨 PRODUCTION-FIX: أي اتصال ناجح فعلي يصفّر عداد الفشل التراكمي
+            resetReconnectFailures(sessionId);
 
             // الحصول على معلومات المستخدم
             const user = sock.user;
@@ -1884,6 +2020,9 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             WA_LOG.event(sessionId, 'connecting_state_received');
             const sessionData = activeSessions.get(sessionId);
             if (sessionData) {
+                const wasAlreadyConnecting =
+                    sessionData.status === 'connecting' ||
+                    sessionData.status === 'authenticating';
                 // If we had QR and now connecting, the user scanned the QR - show "authenticating"
                 if (sessionData.status === 'qr_pending' || sessionData.status === 'QR_PENDING') {
                     sessionData.status = 'authenticating';
@@ -1897,7 +2036,12 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 } else {
                     sessionData.status = 'connecting';
                 }
-                sessionData.createdAt = new Date();
+                // 🚨 PRODUCTION-FIX: ما نعملش reset لـ createdAt إلا عند الدخول
+                // الفعلي لحالة connecting من حالة أخرى — تكرار حدث connecting أثناء
+                // نفس المحاولة كان يخفي الجلسات العالقة عن الفحص الصحي (elapsed دايماً < 120s).
+                if (!wasAlreadyConnecting) {
+                    sessionData.createdAt = new Date();
+                }
             }
             if (io) {
                 io.to(`company_${companyId}`).emit('whatsapp:connection', {
@@ -3404,7 +3548,10 @@ async function handleMessageStatusUpdate(sessionId, companyId, updates) {
             }
 
             if (statusUpdate.status) {
-                const status = getMessageStatusFromBaileysStatus(statusUpdate.status) || 'SENT';
+                // 🚨 PRODUCTION-FIX (M1): الأكواد غير المعروفة كانت تتحول لـ 'SENT' (إخفاء فشل).
+                // الآن نتخطى الإيصالات غير المعروفة بدل كتابة حالة زائفة.
+                const status = getMessageStatusFromBaileysStatus(statusUpdate.status);
+                if (!status) continue;
 
                 const updatedCount = await updateMessageDeliveryStatus(key.id, status);
 
@@ -3826,18 +3973,48 @@ async function syncPendingHistoryMedia(sessionId, companyId) {
 /**
  * إرسال رسالة نصية
  */
-async function sendTextMessage(sessionId, to, text, options = {}) {
-    const session = activeSessions.get(sessionId);
+const SEND_MESSAGE_TIMEOUT_MS = 30000;
+
+function withSendTimeout(sendFn, sessionId, label) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(Object.assign(new Error(`${label} timed out after ${SEND_MESSAGE_TIMEOUT_MS}ms`), {
+                code: 'WA_SEND_TIMEOUT',
+                retryable: true,
+            }));
+        }, SEND_MESSAGE_TIMEOUT_MS);
+    });
+    return Promise.race([sendFn(), timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
+function assertSocketReady(session, sessionId) {
     if (!session || session.status !== 'connected') {
         throw new Error('Session not connected');
     }
+    if (getSocketReadyState(session.sock) !== 1) {
+        throw new Error('Session socket not ready');
+    }
+}
+
+async function sendTextMessage(sessionId, to, text, options = {}) {
+    const session = activeSessions.get(sessionId);
+    assertSocketReady(session, sessionId);
 
     const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
 
-    const result = await session.sock.sendMessage(jid, {
-        text,
-        ...options
-    });
+    let result;
+    try {
+        result = await withSendTimeout(() => session.sock.sendMessage(jid, {
+            text,
+            ...options
+        }), sessionId, 'sendTextMessage');
+    } catch (sendErr) {
+        if (sendErr?.code === 'WA_SEND_TIMEOUT') {
+            requestReconnect(sessionId, session?.companyId, 'send_timeout');
+        }
+        throw sendErr;
+    }
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -3870,13 +4047,19 @@ async function sendTextMessage(sessionId, to, text, options = {}) {
  */
 async function sendMediaMessage(sessionId, to, media, options = {}) {
     const session = activeSessions.get(sessionId);
-    if (!session || session.status !== 'connected') {
-        throw new Error('Session not connected');
-    }
+    assertSocketReady(session, sessionId);
 
     const { normalizedJid: jid } = normalizeWhatsAppContactIdentity(to);
 
-    const result = await session.sock.sendMessage(jid, media, options);
+    let result;
+    try {
+        result = await withSendTimeout(() => session.sock.sendMessage(jid, media, options), sessionId, 'sendMediaMessage');
+    } catch (sendErr) {
+        if (sendErr?.code === 'WA_SEND_TIMEOUT') {
+            requestReconnect(sessionId, session?.companyId, 'send_timeout');
+        }
+        throw sendErr;
+    }
 
     // إذا تم تمرير userId، قم بتحديث الرسالة
     if (options.userId && result.key.id) {
@@ -5741,6 +5924,7 @@ module.exports = {
     updateContact,
     blockContact,
     unblockContact,
+    resolveOutgoingRemoteJid,
 
     // Groups
     createGroup,
@@ -5831,6 +6015,10 @@ module.exports = {
         getReconnectState,
         hasPendingReconnect,
         releaseReconnectLock,
+        getReconnectFailureCount,
+        incrementReconnectFailureCount,
+        resetReconnectFailures,
+        giveUpOnReconnect,
         getSocketGeneration,
         getSessionHistoryImportState: async (prisma, sessionId) => {
             try {

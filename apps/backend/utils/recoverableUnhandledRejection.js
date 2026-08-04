@@ -40,8 +40,37 @@ function isGramJsResolveError(reason) {
   );
 }
 
+// 🚨 PRODUCTION-FIX (M3): نعدّ الـ rejections "المبلوعة" حتى لا تختفي بصمت.
+// أي تركيز زائد هنا (مئات خلال دقيقة) يعني socket نصف ميت أو مشكلة إرسال نشطة.
+let swallowedRejections = 0;
+let lastSwallowedLogAt = 0;
+
+function countSwallowedRejection() {
+  swallowedRejections++;
+  const now = Date.now();
+  if (now - lastSwallowedLogAt >= 60000) {
+    lastSwallowedLogAt = now;
+    const snapshot = swallowedRejections;
+    swallowedRejections = 0;
+    return snapshot;
+  }
+  return null;
+}
+
+function getSwallowedRejectionCount() {
+  return swallowedRejections;
+}
+
+function resetSwallowedRejectionCount() {
+  swallowedRejections = 0;
+  lastSwallowedLogAt = 0;
+}
+
 module.exports = {
   getReasonMessage,
   isWhatsAppBaileysConnectionClosed,
   isGramJsResolveError,
+  countSwallowedRejection,
+  getSwallowedRejectionCount,
+  resetSwallowedRejectionCount,
 };
