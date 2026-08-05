@@ -1662,6 +1662,8 @@ async function createSession(sessionId, companyId, options = {}) {
             } else {
                 sd.labels.set(label.id, { id: label.id, name: label.name, color: label.color, predefinedId: label.predefinedId });
             }
+            // 💾 حفظ تعريف التصنيف في الداتابيز عشان يفضل موجود بعد إعادة التشغيل
+            persistLabelDefinition(sessionId, label).catch(() => {});
         });
 
         sock.ev.on('labels.association', ({ type, association }) => {
@@ -5061,23 +5063,49 @@ async function labelChat(sessionId, jid, labelId) {
 }
 
 /**
- * جلب العلامات (من cache session)
+ * جلب العلامات (من cache session + الداتابيز كـ fallback)
  */
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
-    if (!session) {
-        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
-        return [];
-    }
 
     try {
-        const labels = Array.from(session.labels.values());
+        let labels = [];
+        if (session) {
+            labels = Array.from(session.labels.values());
+        }
+
+        // لو الـ cache فاضي (مثلاً بعد إعادة تشغيل السيرفر) — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        color: l.color,
+                        predefinedId: l.predefinedId
+                    }));
+                    // نرجع نملّي الـ cache لو الجلسة موجودة
+                    if (session) {
+                        for (const l of labels) {
+                            session.labels.set(l.id, l);
+                        }
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB:', dbErr.message);
+            }
+        }
+
         return labels.map(label => ({
             id: label.id,
             name: label.name,
             color: formatLabelColor(label.color),
             predefinedId: label.predefinedId,
-            chatCount: session.labelAssociations.get(label.id)?.size || 0
+            chatCount: session?.labelAssociations.get(label.id)?.size || 0
         }));
     } catch (error) {
         console.error('❌ Error getting labels:', error);
@@ -5105,6 +5133,41 @@ async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
         });
     } catch (err) {
         console.error('❌ Error persisting label association:', err.message);
+    }
+}
+
+/**
+ * حفظ تعريف تصنيف في الداتابيز
+ */
+async function persistLabelDefinition(sessionId, label) {
+    try {
+        const prisma = getSharedPrismaClient();
+        if (!prisma.whatsAppLabel) return;
+        if (label.deleted) {
+            await prisma.whatsAppLabel.deleteMany({
+                where: { sessionId, id: label.id }
+            });
+        } else {
+            await prisma.whatsAppLabel.upsert({
+                where: { sessionId_id: { sessionId, id: label.id } },
+                create: {
+                    id: label.id,
+                    sessionId,
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                },
+                update: {
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                }
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error persisting label definition:', err.message);
     }
 }
 
@@ -5178,7 +5241,26 @@ async function syncLabels(sessionId) {
             console.error('❌ Error persisting labels to DB:', dbErr.message);
         }
 
-        const labels = Array.from(session.labels.values());
+        let labels = Array.from(session.labels.values());
+
+        // لو الـ resync ماجبش حاجة (مثلاً الـ socket مش جاهز) — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({ id: l.id, name: l.name, color: l.color, predefinedId: l.predefinedId }));
+                    for (const l of labels) {
+                        session.labels.set(l.id, l);
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB on sync:', dbErr.message);
+            }
+        }
+
         console.log(`🔄 Labels sync completed for session: ${sessionId} (${labels.length} labels)`);
 
         return labels.map(label => ({
