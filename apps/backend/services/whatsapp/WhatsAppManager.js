@@ -5189,6 +5189,8 @@ async function syncLabels(sessionId) {
         // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
         if (session.sock?.resyncAppState) {
             try {
+                const myKeyId = session.sock.authState?.creds?.myAppStateKeyId;
+                console.log(`🔍 [SYNC-LABELS] myAppStateKeyId present=${!!myKeyId} value=${myKeyId || 'NONE'}`);
                 // جملة reset للـ app-state-sync-version عشان نجبر واتساب يبعت snapshot كامل
                 // (الـ resync من غير reset بيجيب patches زيادة بس — ومفيش patches جديدة فبيرجع فاضي)
                 const keys = session.sock.authState?.keys;
