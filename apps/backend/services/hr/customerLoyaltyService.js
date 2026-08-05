@@ -242,8 +242,13 @@ class CustomerLoyaltyService {
           programId: data.programId,
           name: data.name,
           nameAr: data.nameAr,
-          minPoints: data.minPoints,
-          maxPoints: data.maxPoints,
+          calculationType: data.calculationType || 'POINTS',
+          minPoints: data.minPoints != null ? data.minPoints : undefined,
+          maxPoints: data.maxPoints != null ? data.maxPoints : undefined,
+          minSpent: data.minSpent != null ? data.minSpent : undefined,
+          maxSpent: data.maxSpent != null ? data.maxSpent : undefined,
+          minItems: data.minItems != null ? data.minItems : undefined,
+          maxItems: data.maxItems != null ? data.maxItems : undefined,
           benefits: data.benefits ? JSON.stringify(data.benefits) : null,
           color: data.color || '#6366f1',
           icon: data.icon || 'crown',
@@ -253,7 +258,7 @@ class CustomerLoyaltyService {
 
       return {
         ...tier,
-        benefits: tier.benefits ? JSON.parse(tier.benefits) : []
+        benefits: tier.benefits ? JSON.parse(tier.benefits) : null
       };
     } catch (error) {
       console.error('❌ Error creating loyalty tier:', error);
@@ -270,8 +275,13 @@ class CustomerLoyaltyService {
       const updateData = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.nameAr !== undefined) updateData.nameAr = data.nameAr;
+      if (data.calculationType !== undefined) updateData.calculationType = data.calculationType;
       if (data.minPoints !== undefined) updateData.minPoints = data.minPoints;
       if (data.maxPoints !== undefined) updateData.maxPoints = data.maxPoints;
+      if (data.minSpent !== undefined) updateData.minSpent = data.minSpent;
+      if (data.maxSpent !== undefined) updateData.maxSpent = data.maxSpent;
+      if (data.minItems !== undefined) updateData.minItems = data.minItems;
+      if (data.maxItems !== undefined) updateData.maxItems = data.maxItems;
       if (data.color !== undefined) updateData.color = data.color;
       if (data.icon !== undefined) updateData.icon = data.icon;
       if (data.priority !== undefined) updateData.priority = data.priority;
@@ -287,7 +297,7 @@ class CustomerLoyaltyService {
 
       return {
         ...tier,
-        benefits: tier.benefits ? JSON.parse(tier.benefits) : []
+        benefits: tier.benefits ? JSON.parse(tier.benefits) : null
       };
     } catch (error) {
       console.error('❌ Error updating loyalty tier:', error);
@@ -406,8 +416,13 @@ class CustomerLoyaltyService {
         throw new Error('العميل مسجل بالفعل في هذا البرنامج');
       }
 
-      // تحديد المستوى الأولي
-      const initialTier = await this.determineTier(companyId, programId, initialPoints);
+      // تحديد المستوى الأولي حسب طريقة حساب العميل/البرنامج
+      const initialMethod = await this.resolveTierMethod(companyId, customerId, programId);
+      let initialMetric = initialPoints;
+      if (initialMethod !== 'POINTS') {
+        initialMetric = await this.computeTierMetric(companyId, customerId, programId, initialMethod);
+      }
+      const initialTier = await this.determineTier(companyId, programId, initialMetric, initialMethod);
 
       // إنشاء السجل
       const record = await prisma.customerLoyaltyRecord.create({
@@ -611,7 +626,10 @@ class CustomerLoyaltyService {
 
       if (!record) return;
 
-      const newTier = await this.determineTier(companyId, programId, record.currentPoints);
+      const method = await this.resolveTierMethod(companyId, customerId, programId);
+      const metricValue = await this.computeTierMetric(companyId, customerId, programId, method);
+
+      const newTier = await this.determineTier(companyId, programId, metricValue, method);
 
       if (newTier && newTier.id !== record.tierId) {
         await prisma.customerLoyaltyRecord.update({
@@ -630,28 +648,175 @@ class CustomerLoyaltyService {
   }
 
   /**
-   * تحديد المستوى بناءً على النقاط
+   * تحديد طريقة حساب المستوى للعميل: تجاوز العميل > افتراضي البرنامج > نقاط
    */
-  async determineTier(companyId, programId, points) {
+  async resolveTierMethod(companyId, customerId, programId) {
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { tierMethod: true }
+    });
+    if (customer?.tierMethod) return customer.tierMethod;
+
+    const program = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId, id: programId },
+      select: { defaultTierMethod: true }
+    });
+    return program?.defaultTierMethod || 'POINTS';
+  }
+
+  /**
+   * حساب القيمة المعيارية حسب الطريقة: نقاط / فلوس مستلمة / عدد القطع المستلمة
+   */
+  async computeTierMetric(companyId, customerId, programId, method) {
+    const prisma = getSharedPrismaClient();
+
+    if (method === 'SPENT') {
+      const agg = await prisma.order.aggregate({
+        where: { customerId, companyId, status: 'DELIVERED' },
+        _sum: { total: true }
+      });
+      return parseFloat(agg._sum?.total || 0);
+    }
+
+    if (method === 'ITEMS') {
+      const agg = await prisma.orderItem.aggregate({
+        where: { order: { customerId, companyId, status: 'DELIVERED' } },
+        _sum: { quantity: true }
+      });
+      return agg._sum?.quantity || 0;
+    }
+
+    // POINTS
+    const record = await prisma.customerLoyaltyRecord.findUnique({
+      where: {
+        customerId_programId: {
+          customerId,
+          programId
+        }
+      }
+    });
+    return parseFloat(record?.currentPoints || 0);
+  }
+
+  /**
+   * جلب إعدادات المستويات (الافتراضي + الفئات) لصفحة الإعدادات
+   */
+  async getTierConfig(companyId, programId) {
+    const prisma = getSharedPrismaClient();
+    const program = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId, id: programId },
+      select: { defaultTierMethod: true, id: true }
+    });
+
+    const tiers = await this.getTiers(companyId, programId);
+
+    return {
+      defaultTierMethod: program?.defaultTierMethod || 'POINTS',
+      programId,
+      tiers
+    };
+  }
+
+  /**
+   * تحديث طريقة الحساب الافتراضية للبرنامج
+   */
+  async updateDefaultTierMethod(companyId, programId, method) {
+    const prisma = getSharedPrismaClient();
+    const normalized = ['SPENT', 'ITEMS'].includes(method) ? method : 'POINTS';
+    return prisma.customerLoyaltyProgram.update({
+      where: { id: programId, companyId },
+      data: { defaultTierMethod: normalized }
+    });
+  }
+
+  /**
+   * جلب تجاوز العميل (طريقة الحساب + المزايا المخصصة)
+   */
+  async getCustomerTierOverride(companyId, customerId) {
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true, firstName: true, lastName: true, phone: true, tierMethod: true, tierBenefits: true }
+    });
+    if (!customer) return null;
+    return {
+      ...customer,
+      tierBenefits: customer.tierBenefits ? JSON.parse(customer.tierBenefits) : null
+    };
+  }
+
+  /**
+   * تحديث تجاوز العميل (طريقة الحساب + المزايا المخصصة)
+   */
+  async updateCustomerTierOverride(companyId, customerId, data) {
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true }
+    });
+    if (!customer) throw new Error('العميل غير موجود');
+
+    const updateData = {};
+    if (data.tierMethod !== undefined) {
+      updateData.tierMethod = ['SPENT', 'ITEMS'].includes(data.tierMethod) ? data.tierMethod : (data.tierMethod ? 'POINTS' : null);
+    }
+    if (data.tierBenefits !== undefined) {
+      updateData.tierBenefits = data.tierBenefits ? JSON.stringify(data.tierBenefits) : null;
+    }
+
+    const updated = await prisma.customer.update({
+      where: { id: customerId },
+      data: updateData
+    });
+
+    return {
+      id: updated.id,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      phone: updated.phone,
+      tierMethod: updated.tierMethod,
+      tierBenefits: updated.tierBenefits ? JSON.parse(updated.tierBenefits) : null
+    };
+  }
+
+  /**
+   * تحديد المستوى بناءً على طريقة الحساب (نقاط / فلوس / قطع)
+   */
+  async determineTier(companyId, programId, metricValue, method = 'POINTS') {
     const prisma = getSharedPrismaClient();
     try {
       const tiers = await prisma.customerLoyaltyTier.findMany({
         where: {
           companyId,
-          programId
+          programId,
+          calculationType: method
         },
         orderBy: {
           priority: 'desc' // أعلى أولوية أولاً
         }
       });
 
-      for (const tier of tiers) {
-        // تحويل Decimal -> Number لأن مقارنة الكائنات (valueOf) بتعمل string comparison غلط
-        const pts = Number(points);
-        const minPts = Number(tier.minPoints);
-        const maxPts = tier.maxPoints != null ? Number(tier.maxPoints) : null;
+      const val = Number(metricValue);
 
-        if (pts >= minPts && (maxPts == null || pts <= maxPts)) {
+      for (const tier of tiers) {
+        let match = false;
+        if (method === 'SPENT') {
+          const min = tier.minSpent != null ? Number(tier.minSpent) : 0;
+          const max = tier.maxSpent != null ? Number(tier.maxSpent) : null;
+          match = val >= min && (max == null || val <= max);
+        } else if (method === 'ITEMS') {
+          const min = tier.minItems != null ? Number(tier.minItems) : 0;
+          const max = tier.maxItems != null ? Number(tier.maxItems) : null;
+          match = val >= min && (max == null || val <= max);
+        } else {
+          // POINTS
+          const min = tier.minPoints != null ? Number(tier.minPoints) : 0;
+          const max = tier.maxPoints != null ? Number(tier.maxPoints) : null;
+          match = val >= min && (max == null || val <= max);
+        }
+
+        if (match) {
           return tier;
         }
       }
@@ -753,6 +918,33 @@ class CustomerLoyaltyService {
           }
         }
       }
+
+      // دمج مزايا مستوى العميل الحالي + المزايا المخصصة للعميل (من صفحة إعدادات المستويات)
+      const customer = await prisma.customer.findFirst({
+        where: { id: customerId, companyId },
+        select: { tierBenefits: true }
+      });
+
+      const parseBenefits = (raw) => {
+        if (!raw) return {};
+        try {
+          return typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch (e) {
+          return {};
+        }
+      };
+
+      const tierBenefits = records[0]?.customerLoyaltyTier ? parseBenefits(records[0].customerLoyaltyTier.benefits) : {};
+      const overrideBenefits = customer ? parseBenefits(customer.tierBenefits) : {};
+
+      const applyBenefits = (b) => {
+        if (!b || typeof b !== 'object') return;
+        if (b.freeShipping) effectiveRewards.freeShipping = true;
+        const d = Number(b.discountPercent || 0);
+        if (d > 0 && d > effectiveRewards.discountPercent) effectiveRewards.discountPercent = d;
+      };
+      applyBenefits(tierBenefits);
+      applyBenefits(overrideBenefits);
 
       return effectiveRewards;
     } catch (error) {

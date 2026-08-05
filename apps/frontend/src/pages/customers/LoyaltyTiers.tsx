@@ -21,7 +21,7 @@ interface CustomerLoyaltyTier {
   nameAr?: string;
   minPoints: number;
   maxPoints?: number;
-  benefits: string[];
+  benefits: any;
   color: string;
   icon: string;
   customersCount: number;
@@ -36,6 +36,20 @@ const LoyaltyTiers: React.FC = () => {
   const [editingTier, setEditingTier] = useState<Partial<CustomerLoyaltyTier> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // تحويل المزايا لأي صيغة (array قديم أو object جديد) لصف array نصي للعرض
+  const normalizeBenefits = (b: any): string[] => {
+    if (Array.isArray(b)) return b.map(String).filter(x => x.trim() !== "");
+    if (b && typeof b === "object") {
+      const items: string[] = [];
+      if (b.freeShipping) items.push("شحن مجاني");
+      if (b.priorityShipping) items.push("شحن سريع / أولوية");
+      if (Number(b.discountPercent) > 0) items.push(`خصم ${b.discountPercent}%`);
+      if (b.customText) items.push(b.customText);
+      return items;
+    }
+    return [];
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -47,7 +61,7 @@ const LoyaltyTiers: React.FC = () => {
         apiClient.get("/hr/customer-loyalty/tiers"),
         apiClient.get("/hr/customer-loyalty/programs"),
       ]);
-      setTiers(tiersRes.data.data || []);
+      setTiers((tiersRes.data.data || []).map((t: any) => ({ ...t, benefits: normalizeBenefits(t.benefits) })));
       setPrograms(programsRes.data.data?.filter((p: any) => p.status === "ACTIVE" || p.type === "TIERS" || p.type === "POINTS") || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -60,7 +74,7 @@ const LoyaltyTiers: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await apiClient.get("/hr/customer-loyalty/tiers");
-      setTiers(res.data.data || []);
+      setTiers((res.data.data || []).map((t: any) => ({ ...t, benefits: normalizeBenefits(t.benefits) })));
     } catch (error) {
       console.error("Error fetching tiers:", error);
     } finally {

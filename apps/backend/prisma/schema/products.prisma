@@ -6,6 +6,8 @@ model Customer {
   phone                          String?
   phoneNormalized                String?
   password                      String?  /// Hashed password for parent portal login
+  tierMethod                     String?
+  tierBenefits                   String?
   avatar                         String?
   facebookId                     String?
   instagramId                    String?
@@ -478,6 +480,7 @@ model CustomerLoyaltyProgram {
   minimumPoints           Decimal                       @default(100.00) @db.Decimal(10, 2)
   maxPointsPerTransaction Decimal?                      @db.Decimal(10, 2)
   expiryMonths            Int                           @default(12)
+  defaultTierMethod       String                        @default("POINTS")
   rules                   String?
   createdBy               String
   createdAt               DateTime                      @default(now())
@@ -530,8 +533,13 @@ model CustomerLoyaltyTier {
   programId              String
   name                   String
   nameAr                 String?
-  minPoints              Decimal                 @db.Decimal(10, 2)
+  calculationType        String                  @default("POINTS")
+  minPoints              Decimal?                @db.Decimal(10, 2)
   maxPoints              Decimal?                @db.Decimal(10, 2)
+  minSpent               Decimal?                @db.Decimal(10, 2)
+  maxSpent               Decimal?                @db.Decimal(10, 2)
+  minItems               Int?
+  maxItems               Int?
   benefits               String?
   color                  String                  @default("#6366f1")
   icon                   String                  @default("crown")

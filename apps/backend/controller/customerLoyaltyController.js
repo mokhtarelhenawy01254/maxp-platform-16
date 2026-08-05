@@ -553,6 +553,89 @@ async function adjustPoints(req, res) {
   }
 }
 
+/**
+ * إعدادات المستويات (الافتراضي + الفئات)
+ * GET /api/v1/hr/customer-loyalty/tier-config
+ */
+async function getTierConfig(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { programId } = req.query;
+
+    if (!programId) {
+      return res.status(400).json({ success: false, error: 'programId مطلوب' });
+    }
+
+    const config = await customerLoyaltyService.getTierConfig(companyId, programId);
+
+    res.json({ success: true, data: config });
+  } catch (error) {
+    console.error('❌ Error getting tier config:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات المستويات' });
+  }
+}
+
+/**
+ * تحديث طريقة الحساب الافتراضية
+ * PUT /api/v1/hr/customer-loyalty/tier-config
+ */
+async function updateTierConfig(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { programId, defaultTierMethod } = req.body;
+
+    if (!programId) {
+      return res.status(400).json({ success: false, error: 'programId مطلوب' });
+    }
+
+    const program = await customerLoyaltyService.updateDefaultTierMethod(companyId, programId, defaultTierMethod);
+
+    res.json({ success: true, data: program, message: 'تم تحديث طريقة الحساب الافتراضية بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating tier config:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات المستويات' });
+  }
+}
+
+/**
+ * جلب تجاوز عميل (طريقة الحساب + المزايا)
+ * GET /api/v1/hr/customer-loyalty/customers/:customerId/tier-override
+ */
+async function getCustomerTierOverride(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { customerId } = req.params;
+
+    const override = await customerLoyaltyService.getCustomerTierOverride(companyId, customerId);
+    if (!override) {
+      return res.status(404).json({ success: false, error: 'العميل غير موجود' });
+    }
+
+    res.json({ success: true, data: override });
+  } catch (error) {
+    console.error('❌ Error getting customer tier override:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب تجاوز العميل' });
+  }
+}
+
+/**
+ * تحديث تجاوز عميل (طريقة الحساب + المزايا)
+ * PUT /api/v1/hr/customer-loyalty/customers/:customerId/tier-override
+ */
+async function updateCustomerTierOverride(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { customerId } = req.params;
+
+    const override = await customerLoyaltyService.updateCustomerTierOverride(companyId, customerId, req.body);
+
+    res.json({ success: true, data: override, message: 'تم تحديث تجاوز العميل بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating customer tier override:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث تجاوز العميل' });
+  }
+}
+
 module.exports = {
   getPrograms,
   getProgramById,
@@ -567,6 +650,10 @@ module.exports = {
   addPoints,
   redeemPoints,
   adjustPoints,
+  getTierConfig,
+  updateTierConfig,
+  getCustomerTierOverride,
+  updateCustomerTierOverride,
   getCashbackSettings,
   updateCashbackSettings
 };

@@ -105,6 +105,28 @@ router.post('/adjust-points',
   customerLoyaltyController.adjustPoints
 );
 
+// إعدادات المستويات (طريقة الحساب + الفئات)
+router.get('/tier-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getTierConfig
+);
+
+router.put('/tier-config',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateTierConfig
+);
+
+// تجاوز عميل (طريقة الحساب + المزايا المخصصة)
+router.get('/customers/:customerId/tier-override',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerTierOverride
+);
+
+router.put('/customers/:customerId/tier-override',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateCustomerTierOverride
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 💰 Cashback Settings
 // ═══════════════════════════════════════════════════════════════════════════════

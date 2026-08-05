@@ -15,8 +15,10 @@ describe('customerLoyaltyService compound unique input key', () => {
   const findMany = jest.fn();
   const create = jest.fn();
   const update = jest.fn();
+  const customerFindFirst = jest.fn();
 
   const prisma = {
+    customer: { findFirst: customerFindFirst },
     customerLoyaltyProgram: { findFirst, findMany },
     customerLoyaltyTier: { findMany },
     customerLoyaltyRecord: { findUnique, create, update },
@@ -26,6 +28,7 @@ describe('customerLoyaltyService compound unique input key', () => {
     jest.clearAllMocks();
     sharedDatabase.getSharedPrismaClient.mockReturnValue(prisma);
     findFirst.mockResolvedValue({ id: programId, companyId, status: 'ACTIVE' });
+    customerFindFirst.mockResolvedValue({ tierMethod: null });
     findUnique.mockResolvedValue(null);
     findMany.mockResolvedValue([]);
     create.mockImplementation(async ({ data }) => ({ ...data, id: 'record-1' }));
