@@ -161,9 +161,7 @@ describe('agentWorkspaceController.getMyOrders', () => {
       assignments: [
         createAssignment({ order: createOrder('pending', 'PENDING') }),
         createAssignment({ order: createOrder('cancelled', 'CANCELLED') }),
-        createAssignment({ order: createOrder('completed', 'COMPLETED') }),
-        createAssignment({ order: createOrder('trash', 'TRASH') }),
-        createAssignment({ order: createOrder('deleted', 'DELETED') })
+        createAssignment({ order: createOrder('trash', 'TRASH') })
       ]
     });
 
@@ -179,10 +177,12 @@ describe('agentWorkspaceController.getMyOrders', () => {
     ]);
 
     // Exclusion filtering is pushed to the database.
+    // Note: The excluded set must only contain valid OrderStatus enum members (see prisma/schema/enums.prisma).
+    // 'DELETED' and 'COMPLETED' are not valid OrderStatus values and would cause Prisma to reject the query.
     const findManyArg = findMany.mock.calls[0][0];
     expect(findManyArg.where.OR).toEqual([
-      { order: { status: { notIn: ['TRASH', 'DELETED', 'COMPLETED'] } } },
-      { guestOrder: { status: { notIn: ['TRASH', 'DELETED', 'COMPLETED'] } } }
+      { order: { status: { notIn: ['TRASH'] } } },
+      { guestOrder: { status: { notIn: ['TRASH'] } } }
     ]);
   });
 
@@ -191,7 +191,7 @@ describe('agentWorkspaceController.getMyOrders', () => {
       assignments: [
         createAssignment({ order: createOrder('pending', 'PENDING') }),
         createAssignment({ order: createOrder('cancelled', 'CANCELLED') }),
-        createAssignment({ order: createOrder('completed', 'COMPLETED') })
+        createAssignment({ order: createOrder('confirmed', 'CONFIRMED') })
       ]
     });
 

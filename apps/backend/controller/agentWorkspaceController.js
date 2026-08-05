@@ -6,7 +6,8 @@ const orderService = require('../services/orderService');
  * Handles orders assigned to specific agents
  */
 
-const WORKSPACE_EXCLUDED_STATUSES = new Set(['TRASH', 'DELETED', 'COMPLETED']);
+// Must only contain valid OrderStatus enum values (see prisma/schema/enums.prisma) — 'DELETED' and 'COMPLETED' are not part of the enum and would make Prisma reject the query.
+const WORKSPACE_EXCLUDED_STATUSES = new Set(['TRASH']);
 
 const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
 
