@@ -5122,14 +5122,24 @@ async function syncLabels(sessionId) {
     }
 
     try {
-        session.labels.clear();
-        session.labelAssociations.clear();
-
-        // مزامنة الـ app state collection "regular" — فيها جميع تعديلات التصنيفات
+        // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
         if (session.sock?.resyncAppState) {
-            await session.sock.resyncAppState(['regular'], false);
+            const prevLabels = session.labels;
+            const prevAssociations = session.labelAssociations;
+            session.labels = new Map();
+            session.labelAssociations = new Map();
+            try {
+                await Promise.race([
+                    session.sock.resyncAppState(['regular'], false),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
+                ]);
+            } catch (resyncErr) {
+                console.log('⚠️ resyncAppState failed, using existing cache:', resyncErr.message);
+                // استرجاع الـ cache القديم عشان ميرجعش فاضي
+                session.labels = prevLabels;
+                session.labelAssociations = prevAssociations;
+            }
         }
-
         // حفظ associations في الداتابيز
         try {
             const prisma = getSharedPrismaClient();
@@ -5299,36 +5309,64 @@ async function getLabelContacts(sessionId, labelId, options = {}) {
         totalMessages: true
     };
 
-    const [contacts, total] = await Promise.all([
-        prisma.whatsAppContact.findMany({
-            where,
-            orderBy: [{ lastMessageAt: 'desc' }],
-            skip: (page - 1) * limit,
-            take: limit,
-            select
-        }),
-        prisma.whatsAppContact.count({ where })
-    ]);
-
-    // دمج الارتباطات اللحظية من الذاكرة (ممكن تكون لسه متسجلتش في الداتابيز)
     const session = getSession(sessionId);
     const inMemoryJids = session?.labelAssociations?.get(labelId);
-    let realtimeContacts = [];
-    if (inMemoryJids && inMemoryJids.size > 0) {
-        const dbJids = new Set(contacts.map(c => c.jid));
-        const missingJids = [...inMemoryJids]
-            .filter(jid => !dbJids.has(jid))
-            .filter(jid => !String(jid).includes('@lid'));
+
+    // المصدر الأساسي: الارتباطات اللحظية من الذاكرة (الموجودة من أحداث واتساب)
+    // الـ DB لوحده مش كفاية لأن الـ associations بتتخزن فيه بعد ما الـ contacts نفسها تتخزن.
+    const sourceJids = inMemoryJids && inMemoryJids.size > 0
+        ? [...inMemoryJids].filter(jid => !String(jid).includes('@lid'))
+        : [];
+
+    // لو في بحث، نرشح الـ jids على الـ contact details من الداتابيز
+    let contacts = [];
+    let total = 0;
+    if (sourceJids.length > 0) {
+        let dbContacts = await prisma.whatsAppContact.findMany({
+            where: { sessionId, jid: { in: sourceJids } },
+            select
+        });
+        const knownJids = new Set(dbContacts.map(c => c.jid));
+
+        // الـ jids اللي لسه متتخزنش في الداتابيز — نضيفهم بأبسط بيانات (jid فقط)
+        const missingJids = sourceJids.filter(jid => !knownJids.has(jid));
         if (missingJids.length > 0) {
-            realtimeContacts = await prisma.whatsAppContact.findMany({
-                where: { sessionId, jid: { in: missingJids } },
-                select
-            });
+            dbContacts = [
+                ...dbContacts,
+                ...missingJids.map(jid => ({ id: null, sessionId, jid, phoneNumber: String(jid).split('@')[0], name: null, pushName: null, profilePicUrl: null, isGroup: String(jid).includes('@g.us'), customerId: null, lastMessageAt: null, lastMessagePreview: null, totalMessages: 0 }))
+            ];
         }
+
+        if (search) {
+            const q = search.toLowerCase();
+            dbContacts = dbContacts.filter(c =>
+                (c.name?.toLowerCase() || '').includes(q) ||
+                (c.pushName?.toLowerCase() || '').includes(q) ||
+                (c.phoneNumber || '').includes(q)
+            );
+        }
+
+        dbContacts.sort((a, b) => (b.lastMessageAt?.getTime?.() || 0) - (a.lastMessageAt?.getTime?.() || 0));
+        total = dbContacts.length;
+        contacts = dbContacts.slice((page - 1) * limit, (page - 1) * limit + limit);
+    } else {
+        // Fallback: لو مفيش associations في الذاكرة، نستخدم الداتابيز
+        const [dbContacts, dbTotal] = await Promise.all([
+            prisma.whatsAppContact.findMany({
+                where,
+                orderBy: [{ lastMessageAt: 'desc' }],
+                skip: (page - 1) * limit,
+                take: limit,
+                select
+            }),
+            prisma.whatsAppContact.count({ where })
+        ]);
+        contacts = dbContacts;
+        total = dbTotal;
     }
 
     return {
-        contacts: [...realtimeContacts, ...contacts],
+        contacts,
         total,
         page,
         limit,
