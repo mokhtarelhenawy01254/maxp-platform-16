@@ -13,6 +13,7 @@ import { useStorefrontFacebookTracking } from '../hooks/useStorefrontFacebookTra
 import { trackConversionSuiteUsage } from '../utils/conversionSuiteTracking';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { useCheckoutShippingQuote } from '../hooks/useCheckoutShippingQuote';
+import TierProgressBanner from '../components/TierProgressBanner';
 
 interface PaymentSectionProps {
   section?: {
@@ -395,7 +396,17 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       : 'Shipping will be calculated once storefront details finish loading.',
   });
   const shipping = shippingCost;
-  const total = Math.max(0, subtotal + shipping - couponDiscount);
+
+  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+  const tierProgress = useCheckoutStore((s) => s.tierProgress);
+  const loyaltyFreeShipping = Boolean(tierProgress?.rewards?.freeShipping);
+  const loyaltyDiscountPercent = Number(tierProgress?.rewards?.discountPercent || 0);
+  const loyaltyDiscount =
+    loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  const effectiveShipping =
+    loyaltyFreeShipping && Number(shipping) > 0 ? 0 : Number(shipping);
+
+  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount);
   const summaryShippingValueText = (() => {
     if (isShippingLoading) {
       return calculatingText;
@@ -403,6 +414,10 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
     if (quantityOfferFreeShippingActive) {
       return quantityOfferFreeShippingText.replace(/\.$/, '');
+    }
+
+    if (loyaltyFreeShipping && Number(shipping) > 0) {
+      return 'مجاني (مستوى الولاء)';
     }
 
     if (!trimmedGovernorate) {
@@ -744,10 +759,11 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       metadata: {
         paymentMethod,
         subtotal,
-        shippingCost: shipping,
-        discountAmount: couponDiscount,
+        shippingCost: effectiveShipping,
+        discountAmount: couponDiscount + loyaltyDiscount,
         total,
         couponApplied: Boolean(activeCoupon?.code),
+        loyaltyTier: tierProgress?.tier?.nameAr || tierProgress?.tier?.name || null,
       },
     });
 
@@ -755,7 +771,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       ...formData,
       paymentMethod,
       couponCode: activeCoupon?.code,
-      shippingCost: shipping,
+      shippingCost: effectiveShipping,
       subtotal,
       total,
     });
@@ -967,6 +983,9 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
         {showSummaryCard ? (
           <div className={summaryWrapperClassName}>
+            <div className="mb-3">
+              <TierProgressBanner />
+            </div>
             <div className="space-y-1">
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                 {summaryTitle}
@@ -983,7 +1002,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
               <span className="text-muted-foreground">{shippingLabel}</span>
               <span
                 className={`font-medium ${
-                  checkoutFreeShippingActive && trimmedGovernorate && !isShippingLoading
+                  (checkoutFreeShippingActive || loyaltyFreeShipping) && trimmedGovernorate && !isShippingLoading
                     ? 'text-emerald-600'
                     : 'text-foreground'
                 }`}
@@ -991,6 +1010,16 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                 {summaryShippingValueText}
               </span>
             </div>
+            {loyaltyDiscount > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  خصم مستوى {tierProgress?.tier?.nameAr || tierProgress?.tier?.name || ''} ({loyaltyDiscountPercent}%)
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
             {couponDiscount > 0 ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">

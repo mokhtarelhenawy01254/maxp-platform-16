@@ -21,6 +21,7 @@ import { calculateVolumeDiscountPricing } from "../utils/volumeDiscounts";
 import { storefrontApi } from "../../utils/storefrontApi";
 import { trackStorefrontAppUsage } from "../utils/appUsageTracking";
 import { useCheckoutShippingQuote } from "../hooks/useCheckoutShippingQuote";
+import TierProgressBanner from "../components/TierProgressBanner";
 import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
@@ -367,6 +368,15 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     ? 0
     : Number(activeCoupon?.discountAmount || 0);
 
+  // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+  const tierProgress = useCheckoutStore((s) => s.tierProgress);
+  const loyaltyFreeShipping = Boolean(tierProgress?.rewards?.freeShipping);
+  const loyaltyDiscountPercent = Number(tierProgress?.rewards?.discountPercent || 0);
+  const loyaltyDiscount =
+    loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  const effectiveShipping =
+    loyaltyFreeShipping && Number(shippingCost) > 0 ? 0 : Number(shippingCost);
+
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
     "conversion-suite",
@@ -661,7 +671,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     sectionSettings?.showNextSteps,
     shouldShowNextStepsCard,
   );
-  const estimatedTotal = Math.max(0, subtotal + shippingCost - couponDiscount - storePromotionDiscount);
+  const estimatedTotal = Math.max(0, subtotal + effectiveShipping - couponDiscount - storePromotionDiscount - loyaltyDiscount);
   const resolvedFreeShippingText = quantityOfferFreeShippingActive
     ? quantityOfferFreeShippingText
     : freeShippingReachedText;
@@ -1339,6 +1349,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         ) : null}
 
+        <div className="mb-3">
+          <TierProgressBanner />
+        </div>
         <div className={totalsCardClassName}>
           <div className="flex justify-between text-foreground">
             <span className="text-[#6f6455]">{subtotalLabel}</span>
@@ -1348,14 +1361,26 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             <span className="text-[#6f6455]">{shippingLabel}</span>
             <span
               className={
-                checkoutFreeShippingActive && trimmedGovernorate && !isShippingLoading
+                (checkoutFreeShippingActive || loyaltyFreeShipping) && trimmedGovernorate && !isShippingLoading
                   ? "text-emerald-600"
                   : "text-[#6f6455]"
               }
             >
-              {resolvedShippingValueText}
+              {loyaltyFreeShipping && Number(shippingCost) > 0
+                ? "مجاني (مستوى الولاء)"
+                : resolvedShippingValueText}
             </span>
           </div>
+          {loyaltyDiscount > 0 ? (
+            <div className="flex justify-between text-foreground">
+              <span className="text-[#6f6455]">
+                خصم مستوى {tierProgress?.tier?.nameAr || tierProgress?.tier?.name || ""} ({loyaltyDiscountPercent}%)
+              </span>
+              <span className="text-emerald-600">
+                -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+              </span>
+            </div>
+          ) : null}
           {couponDiscount > 0 ? (
             <div className="flex justify-between text-foreground">
               <span className="text-[#6f6455]">

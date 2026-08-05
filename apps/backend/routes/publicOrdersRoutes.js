@@ -30,6 +30,7 @@ const {
 } = require('../utils/storefrontFreeShipping');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone } = require('../utils/customerIdentity');
+const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
 const { splitCustomerName } = require('../utils/customerName');
 const {
   applyVolumeDiscount,
@@ -1403,6 +1404,37 @@ router.post('/', async (req, res) => {
       discountAmount += promoDiscount;
     }
 
+    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+    let loyaltyDiscount = 0;
+    let loyaltyRewards = null;
+    let loyaltyTierInfo = null;
+    try {
+      const loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
+      if (loyaltyCustomer) {
+        loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
+        const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
+        loyaltyTierInfo = progress?.tier || null;
+
+        if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
+          freeShippingAdjustment = {
+            source: 'loyalty_tier',
+            originalShippingCost: Number(shippingCost),
+            discountAmount: Number(shippingCost),
+            appliedShippingCost: 0,
+          };
+          shippingCost = 0;
+        }
+
+        const lp = Number(loyaltyRewards?.discountPercent || 0);
+        if (lp > 0) {
+          loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
+          discountAmount += loyaltyDiscount;
+        }
+      }
+    } catch (loyaltyError) {
+      console.error('⚠️ [LOYALTY] Failed to apply tier rewards at checkout:', loyaltyError?.message);
+    }
+
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
 
     // Wallet usage (optional - requires CUSTOMER token)
@@ -1666,6 +1698,16 @@ router.post('/', async (req, res) => {
 
       if (freeShippingAdjustment) {
         orderMetadata.freeShipping = freeShippingAdjustment;
+      }
+
+      if (loyaltyDiscount > 0 || loyaltyTierInfo) {
+        orderMetadata.loyalty = {
+          tierName: loyaltyTierInfo?.name || loyaltyTierInfo?.nameAr || null,
+          tierNameAr: loyaltyTierInfo?.nameAr || null,
+          discountPercent: Number(loyaltyRewards?.discountPercent || 0),
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          freeShipping: Boolean(loyaltyRewards?.freeShipping),
+        };
       }
 
       if (sanitizedAttribution) {
@@ -2404,7 +2446,14 @@ router.post('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: { ...order, storePromotionDiscount: promoDiscount, storePromotionLabel: promoLabel },
+      data: {
+        ...order,
+        storePromotionDiscount: promoDiscount,
+        storePromotionLabel: promoLabel,
+        loyaltyDiscount,
+        loyaltyFreeShipping: Boolean(loyaltyRewards?.freeShipping),
+        loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
+      },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'
     });
