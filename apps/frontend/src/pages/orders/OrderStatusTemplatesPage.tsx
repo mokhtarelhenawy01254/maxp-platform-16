@@ -435,16 +435,20 @@ export default function OrderStatusTemplatesPage() {
         sessionId: selectedMetaSession,
       });
       const data = res.data;
-      if (data?.success && data?.metaTemplateName) {
-        // تم إنشاء قالب ميتا جديد باسم فريد بالمحتوى المعدل — سيصبح الأساسي بعد اعتماده
+      if (data?.applied && data?.success) {
+        // تم تعديل قالب ميتا الموجود نفسه بالمحتوى الجديد — ميتا تعيد مراجعته تلقائياً
+        const status = data.verifiedStatus || "PENDING";
         toast.success(
           data.message ||
-          t("orders.metaResubmittedNew", "تم إنشاء قالب جديد في ميتا للمراجعة — سيتم تفعيله بعد الموافقة")
+          t("orders.metaResubmitted", `تم تحديث القالب على ميتا — الحالة: ${status}`)
         );
         setDialogOpen(false);
-      } else if (data?.applied) {
-        const status = data.verifiedStatus || "PENDING";
-        toast.success(t("orders.metaResubmitted", `تم تحديث القالب على ميتا — الحالة: ${status}`));
+      } else if (data?.success && data?.metaTemplateName) {
+        // (توافق للخلف) في حال أنشأ الخادم قالباً جديداً
+        toast.success(
+          data.message ||
+          t("orders.metaResubmittedNew", "تم تحديث القالب على ميتا — سيتم تفعيله بعد الموافقة")
+        );
         setDialogOpen(false);
       } else if (data?.applied === false) {
         toast.warning(

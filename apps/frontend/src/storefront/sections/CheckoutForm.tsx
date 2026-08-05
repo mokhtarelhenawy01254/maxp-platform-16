@@ -5,6 +5,8 @@ import { useCartStore } from '../store/useCartStore';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { buildStorefrontPath } from '../utils/paths';
 import { isKhemetLuxeTheme } from '../utils/navigationGuards';
+import { useTierProgress } from '../hooks/useTierProgress';
+import TierProgressBanner from '../components/TierProgressBanner';
 
 interface CheckoutFormProps {
   section?: {
@@ -145,6 +147,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
   const { items } = useCartStore();
   const { theme } = useStorefrontTheme();
   const location = useLocation();
+  const { refreshTierProgress } = useTierProgress();
   const variant = normalizeVariant(section?.variant);
   const isAirlume = theme.id === 'airlume-ai';
   const isZenOrganic = theme.id === 'zen-organic';
@@ -176,6 +179,10 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
   ) => {
     const { name, value } = event.target;
     updateFormData({ [name]: value });
+  };
+
+  const handlePhoneBlur = () => {
+    refreshTierProgress(formData.phone);
   };
 
   const normalizeArabic = (value: string) =>
@@ -752,6 +759,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handlePhoneBlur}
                     placeholder={phonePlaceholder}
                     autoComplete="tel"
                     required
@@ -759,6 +767,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     pattern="^01[0-9]{9}$"
                     className={inputClassName}
                   />
+                  <TierProgressBanner />
                 </div>
               </div>
             </>
@@ -798,6 +807,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handlePhoneBlur}
                     placeholder={phonePlaceholder}
                     autoComplete="tel"
                     required
@@ -807,6 +817,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                   />
                 </div>
               </div>
+              <TierProgressBanner />
               <div className="space-y-2">
                 <label
                   htmlFor={fieldIds.email}

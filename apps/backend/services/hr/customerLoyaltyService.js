@@ -231,11 +231,89 @@ class CustomerLoyaltyService {
   }
 
   /**
+   * استخراج الحدود (min/max) حسب طريقة الحساب
+   */
+  _toNum(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  _extractTierRange(calculationType, data) {
+    const c = calculationType || 'POINTS';
+    if (c === 'SPENT') return { min: this._toNum(data.minSpent), max: this._toNum(data.maxSpent) };
+    if (c === 'ITEMS' || c === 'ORDER_COUNT') return { min: this._toNum(data.minItems), max: this._toNum(data.maxItems) };
+    return { min: this._toNum(data.minPoints), max: this._toNum(data.maxPoints) };
+  }
+
+  _isRangeEmpty(range) {
+    return range.min === null && range.max === null;
+  }
+
+  _rangesOverlap(a, b) {
+    const aMin = a.min === null ? 0 : a.min;
+    const bMin = b.min === null ? 0 : b.min;
+    const aMax = a.max === null ? Infinity : a.max;
+    const bMax = b.max === null ? Infinity : b.max;
+    return aMin <= bMax && bMin <= aMax;
+  }
+
+  /**
+   * التأكد من عدم وجود مستوى آخر بنفس الحدود أو متداخل معها في نفس البرنامج
+   */
+  async _assertNoTierRangeConflict(prisma, companyId, programId, calculationType, excludeTierId, range) {
+    if (range.min !== null && range.max !== null && range.min > range.max) {
+      const err = new Error('الحد الأدنى أكبر من الحد الأقصى');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const existing = await prisma.customerLoyaltyTier.findMany({
+      where: { companyId, programId, calculationType },
+      select: {
+        id: true,
+        name: true,
+        nameAr: true,
+        minPoints: true,
+        maxPoints: true,
+        minSpent: true,
+        maxSpent: true,
+        minItems: true,
+        maxItems: true
+      }
+    });
+
+    for (const t of existing) {
+      if (excludeTierId && t.id === excludeTierId) continue;
+      const tRange = this._extractTierRange(calculationType, t);
+      if (this._isRangeEmpty(tRange)) continue;
+
+      if (tRange.min === range.min && tRange.max === range.max) {
+        const err = new Error(`يوجد مستوى آخر بنفس الحد الأدنى والأقصى ("${t.nameAr || t.name}")`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (this._rangesOverlap(tRange, range)) {
+        const err = new Error(`حدود المستوى تتداخل مع مستوى آخر ("${t.nameAr || t.name}") في نفس البرنامج`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+  }
+
+  /**
    * إنشاء مستوى جديد
    */
   async createTier(companyId, data) {
     const prisma = getSharedPrismaClient();
     try {
+      const calcType = data.calculationType || 'POINTS';
+      const newRange = this._extractTierRange(calcType, data);
+      if (!this._isRangeEmpty(newRange)) {
+        await this._assertNoTierRangeConflict(prisma, companyId, data.programId, calcType, null, newRange);
+      }
+
       const tier = await prisma.customerLoyaltyTier.create({
         data: {
           companyId,
@@ -272,6 +350,26 @@ class CustomerLoyaltyService {
   async updateTier(companyId, tierId, data) {
     const prisma = getSharedPrismaClient();
     try {
+      const existing = await prisma.customerLoyaltyTier.findFirst({
+        where: { id: tierId, companyId },
+        select: {
+          id: true,
+          programId: true,
+          calculationType: true,
+          minPoints: true,
+          maxPoints: true,
+          minSpent: true,
+          maxSpent: true,
+          minItems: true,
+          maxItems: true
+        }
+      });
+      if (!existing) {
+        const err = new Error('المستوى غير موجود');
+        err.statusCode = 404;
+        throw err;
+      }
+
       const updateData = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.nameAr !== undefined) updateData.nameAr = data.nameAr;
@@ -286,6 +384,14 @@ class CustomerLoyaltyService {
       if (data.icon !== undefined) updateData.icon = data.icon;
       if (data.priority !== undefined) updateData.priority = data.priority;
       if (data.benefits !== undefined) updateData.benefits = data.benefits ? JSON.stringify(data.benefits) : null;
+
+      // التحقق من عدم تكرار/تداخل الحدود مع مستويات أخرى في نفس البرنامج
+      const calcType = data.calculationType !== undefined ? data.calculationType : (existing.calculationType || 'POINTS');
+      const merged = { ...existing, ...updateData };
+      const newRange = this._extractTierRange(calcType, merged);
+      if (!this._isRangeEmpty(newRange)) {
+        await this._assertNoTierRangeConflict(prisma, companyId, existing.programId, calcType, tierId, newRange);
+      }
 
       const tier = await prisma.customerLoyaltyTier.update({
         where: {
@@ -687,6 +793,14 @@ class CustomerLoyaltyService {
       return agg._sum?.quantity || 0;
     }
 
+    if (method === 'ORDER_COUNT') {
+      const agg = await prisma.order.aggregate({
+        where: { customerId, companyId, status: 'DELIVERED' },
+        _count: true
+      });
+      return agg._count || 0;
+    }
+
     // POINTS
     const record = await prisma.customerLoyaltyRecord.findUnique({
       where: {
@@ -723,7 +837,7 @@ class CustomerLoyaltyService {
    */
   async updateDefaultTierMethod(companyId, programId, method) {
     const prisma = getSharedPrismaClient();
-    const normalized = ['SPENT', 'ITEMS'].includes(method) ? method : 'POINTS';
+    const normalized = ['SPENT', 'ITEMS', 'ORDER_COUNT'].includes(method) ? method : 'POINTS';
     return prisma.customerLoyaltyProgram.update({
       where: { id: programId, companyId },
       data: { defaultTierMethod: normalized }
@@ -759,7 +873,7 @@ class CustomerLoyaltyService {
 
     const updateData = {};
     if (data.tierMethod !== undefined) {
-      updateData.tierMethod = ['SPENT', 'ITEMS'].includes(data.tierMethod) ? data.tierMethod : (data.tierMethod ? 'POINTS' : null);
+      updateData.tierMethod = ['SPENT', 'ITEMS', 'ORDER_COUNT'].includes(data.tierMethod) ? data.tierMethod : (data.tierMethod ? 'POINTS' : null);
     }
     if (data.tierBenefits !== undefined) {
       updateData.tierBenefits = data.tierBenefits ? JSON.stringify(data.tierBenefits) : null;
@@ -790,6 +904,91 @@ class CustomerLoyaltyService {
   }
 
   /**
+   * جلب مستوى العميل + المزايا + التقدم للمستوى التالي (للعرض في المتجر)
+   */
+  async getCustomerTierProgress(companyId, customerId) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const program = await prisma.customerLoyaltyProgram.findFirst({
+        where: { companyId, type: 'POINTS', status: 'ACTIVE' },
+        orderBy: { createdAt: 'asc' }
+      });
+      if (!program) return null;
+
+      const method = await this.resolveTierMethod(companyId, customerId, program.id);
+      const metric = await this.computeTierMetric(companyId, customerId, program.id, method);
+
+      const tiers = await prisma.customerLoyaltyTier.findMany({
+        where: { companyId, programId: program.id, calculationType: method },
+        orderBy: { minPoints: 'asc' }
+      });
+
+      // ترتيب حسب الحد الأدنى الصحيح لكل طريقة
+      const sortKey = (t) => {
+        if (method === 'SPENT') return Number(t.minSpent || 0);
+        if (method === 'ITEMS' || method === 'ORDER_COUNT') return Number(t.minItems || 0);
+        return Number(t.minPoints || 0);
+      };
+      const sorted = [...tiers].sort((a, b) => sortKey(a) - sortKey(b));
+
+      const currentTier = await this.determineTier(companyId, program.id, metric, method);
+      let nextTier = null;
+      for (const t of sorted) {
+        if (sortKey(t) > metric && (!nextTier || sortKey(t) < sortKey(nextTier))) {
+          nextTier = t;
+        }
+      }
+
+      const metricLabels = {
+        POINTS: { label: 'نقطة', remainingPrefix: 'فاضل', remainingSuffix: 'نقطة' },
+        SPENT: { label: 'ج.م', remainingPrefix: 'فاضل', remainingSuffix: 'ج.م' },
+        ITEMS: { label: 'قطعة', remainingPrefix: 'فاضل', remainingSuffix: 'قطعة' },
+        ORDER_COUNT: { label: 'أوردر', remainingPrefix: 'فاضل', remainingSuffix: 'أوردر' },
+      };
+      const ml = metricLabels[method] || metricLabels.POINTS;
+
+      const rewards = await this.getCustomerActiveRewards(companyId, customerId);
+
+      const parseBenefits = (tier) => {
+        if (!tier || !tier.benefits) return null;
+        try {
+          return typeof tier.benefits === 'string' ? JSON.parse(tier.benefits) : tier.benefits;
+        } catch (e) { return null; }
+      };
+
+      return {
+        customerId,
+        programId: program.id,
+        method,
+        metricLabel: ml.label,
+        currentMetric: Number(metric),
+        tier: currentTier ? {
+          id: currentTier.id,
+          name: currentTier.name,
+          nameAr: currentTier.nameAr,
+          color: currentTier.color,
+          icon: currentTier.icon,
+          benefits: parseBenefits(currentTier)
+        } : null,
+        nextTier: nextTier ? {
+          id: nextTier.id,
+          name: nextTier.name,
+          nameAr: nextTier.nameAr,
+          color: nextTier.color,
+          icon: nextTier.icon,
+          targetMetric: sortKey(nextTier),
+          remainingMetric: Math.max(0, sortKey(nextTier) - Number(metric)),
+          benefits: parseBenefits(nextTier)
+        } : null,
+        rewards: rewards || { freeShipping: false, discountPercent: 0 }
+      };
+    } catch (error) {
+      console.error('❌ Error getting customer tier progress:', error);
+      return null;
+    }
+  }
+
+  /**
    * تحديد المستوى بناءً على طريقة الحساب (نقاط / فلوس / قطع)
    */
   async determineTier(companyId, programId, metricValue, method = 'POINTS') {
@@ -814,7 +1013,7 @@ class CustomerLoyaltyService {
           const min = tier.minSpent != null ? Number(tier.minSpent) : 0;
           const max = tier.maxSpent != null ? Number(tier.maxSpent) : null;
           match = val >= min && (max == null || val <= max);
-        } else if (method === 'ITEMS') {
+        } else if (method === 'ITEMS' || method === 'ORDER_COUNT') {
           const min = tier.minItems != null ? Number(tier.minItems) : 0;
           const max = tier.maxItems != null ? Number(tier.maxItems) : null;
           match = val >= min && (max == null || val <= max);

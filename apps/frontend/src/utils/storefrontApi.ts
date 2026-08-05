@@ -432,6 +432,22 @@ export const storefrontApi = {
     return payload;
   },
 
+  getTierProgress: async (phone: string) => {
+    const params: Record<string, string> = { phone };
+    const companyId = getCompanyId();
+    if (companyId) params['companyId'] = companyId;
+    const url = buildUrl(API_BASE, "/loyalty/tier-progress", params);
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+    });
+    const payload = await parseResponseBody(response);
+    if (!response.ok) {
+      throw createStorefrontError(response, payload);
+    }
+    return payload;
+  },
+
   validateCoupon: async (
     companyId: string,
     couponCode: string,

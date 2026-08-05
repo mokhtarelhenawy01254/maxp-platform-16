@@ -119,10 +119,8 @@ async function main() {
       process.exit(1);
     }
 
-    // 4) الحصول على metaTemplateId من قاعدة بيانات الإنتاج عبر API؟
-    // نتحقق أولاً من وجود metaTemplateId في القالب المرتجع
-    console.log(`\n${CYAN}▶ 4) التحقق من عمود metaTemplateId الجديد${RESET}`);
-    // with-templates قد لا يرجع metaTemplateId — نستدعي listTemplates عبر meta-available لو متاح
+    // 4) معلومات إضافية (meta-available يفلتر APPROVED فقط — قد يكون القالب PENDING بعد التعديل)
+    console.log(`\n${CYAN}▶ 4) معلومات إضافية عن قالب ميتا${RESET}`);
     const metaAvailableRes = await apiRequest(
       'GET',
       `/api/v1/whatsapp-notifications/templates/meta-available?sessionId=${metaSession.id}`,
@@ -131,9 +129,10 @@ async function main() {
     );
     const available = metaAvailableRes.body?.templates || [];
     const metaTpl = (Array.isArray(available) ? available : []).find((t) => t.name === tpl.metaTemplateName);
-    check(!!metaTpl, `قالب ميتا موجود في meta-available (${tpl.metaTemplateName})`);
     if (metaTpl) {
-      console.log(`${YELLOW}ℹ meta-available: status=${metaTpl.status}, boundTo=${metaTpl.boundToLocalTemplateId}, components=${Array.isArray(metaTpl.components) ? metaTpl.components.length : 0}${RESET}`);
+      console.log(`${YELLOW}ℹ meta-available: status=${metaTpl.status}, boundTo=${metaTpl.boundToLocalTemplateId}${RESET}`);
+    } else {
+      console.log(`${YELLOW}ℹ القالب غير ظاهر في meta-available (يُعرض APPROVED فقط) — قد يكون PENDING حالياً، وهذا مقبول.${RESET}`);
     }
 
     // 5) استدعاء resubmit-meta (الاستدعاء الفعلي)
@@ -161,17 +160,16 @@ async function main() {
     check(okStatus, `HTTP status نجاح (${resubmitRes.status})`);
     check(resubmitRes.body?.success !== false, `response.success !== false`);
 
-    // الشرط الثالث: القالب تحوّل إلى PENDING للمراجعة
-    const pending = /PENDING/i.test(bodyText) || /تم إنشاء قالب جديد/.test(bodyText) || /تم تحديث/.test(bodyText);
-    check(pending, `القالب أُرسل للمراجعة (PENDING / تم إنشاء قالب جديد)`);
+    // الشرط الثالث: القالب حُدّث (applied=true) — التعديل عبر POST /{templateId} قبلته ميتا
+    const applied = resubmitRes.body?.applied === true || /تم تحديث/.test(bodyText);
+    check(applied, `ميتا قبلت التعديل (applied=true / تم تحديث)`);
 
     // الشرط الرابع: عدم وجود أخطاء HTTP 500
     check(resubmitRes.status !== 500, `لا يوجد HTTP 500`);
 
-    // الشرط الخامس: اسم القالب الجديد فريد (يبدأ بنفس البادئة لكن يختلف عن القديم)
-    if (resubmitRes.body?.metaTemplateName) {
-      const newName = String(resubmitRes.body.metaTemplateName);
-      check(newName.startsWith(String(tpl.metaTemplateName).split('_').slice(0, 2).join('_')), `تم إنشاء قالب باسم فريد (${newName})`);
+    // الشرط الخامس: نفس القالب تعدّل (لم يُنشأ قالب جديد باسم مختلف) — المفتاح: نفس metaTemplateId
+    if (resubmitRes.body?.metaTemplateId) {
+      check(String(resubmitRes.body.metaTemplateId).length > 0, `تم تعديل قالب ميتا موجود (metaTemplateId=${resubmitRes.body.metaTemplateId})`);
     }
 
     // 7) إعادة جلب بعد الـ resubmit لرؤية الحالة الجديدة

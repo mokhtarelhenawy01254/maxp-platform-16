@@ -571,6 +571,7 @@ app.use(
   require("./routes/publicCustomerRoutes"),
 );
 app.use("/api/v1/public/orders", require("./routes/publicOrdersRoutes"));
+app.use("/api/v1/public/loyalty", require("./routes/publicLoyaltyRoutes"));
 app.use(
   "/api/v1/public/storefront",
   require("./routes/publicStorefrontRoutes"),

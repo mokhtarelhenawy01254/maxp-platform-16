@@ -3,14 +3,16 @@ import { apiClient } from "../../services/apiClient";
 import {
   Settings,
   Save,
-  RefreshCw,
   Search,
   User,
   Crown,
-  Sparkles,
   Loader2,
   Plus,
   Trash2,
+  Pencil,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface TierItem {
@@ -53,6 +55,7 @@ const METHODS = [
   { value: "POINTS", label: "بالنقاط", hint: "الحدود بالنقاط" },
   { value: "SPENT", label: "بالفلوس المدفوعة", hint: "الحدود بالمبلغ (ج.م)" },
   { value: "ITEMS", label: "بعدد القطع", hint: "الحدود بعدد القطع" },
+  { value: "ORDER_COUNT", label: "بعدد الأوردرات", hint: "الحدود بعدد الأوردرات" },
 ];
 
 const emptyBenefits = { freeShipping: false, discountPercent: 0, priorityShipping: false, customText: "" };
@@ -68,6 +71,64 @@ const normalizeBenefits = (b: any) => {
   };
 };
 
+// ── Range helpers (تحديد الحدود حسب طريقة الحساب) ──────────────────
+const rangeFields = (calcType: string) => {
+  const c = calcType || "POINTS";
+  if (c === "SPENT") return { minKey: "minSpent", maxKey: "maxSpent", unit: "ج.م" };
+  if (c === "ITEMS" || c === "ORDER_COUNT") return { minKey: "minItems", maxKey: "maxItems", unit: c === "ORDER_COUNT" ? "أوردر" : "قطعة" };
+  return { minKey: "minPoints", maxKey: "maxPoints", unit: "نقطة" };
+};
+
+const extractRange = (tier: TierItem): { min: number | null; max: number | null } => {
+  const { minKey, maxKey } = rangeFields(tier.calculationType);
+  const minVal = (tier as any)[minKey];
+  const maxVal = (tier as any)[maxKey];
+  const min = minVal === undefined || minVal === null || minVal === "" ? null : Number(minVal);
+  const max = maxVal === undefined || maxVal === null || maxVal === "" ? null : Number(maxVal);
+  return { min, max };
+};
+
+const isRangeEmpty = (r: { min: number | null; max: number | null }) => r.min === null && r.max === null;
+
+const rangesOverlap = (a: { min: number | null; max: number | null }, b: { min: number | null; max: number | null }) => {
+  const aMin = a.min === null ? 0 : a.min;
+  const bMin = b.min === null ? 0 : b.min;
+  const aMax = a.max === null ? Infinity : a.max;
+  const bMax = b.max === null ? Infinity : b.max;
+  return aMin <= bMax && bMin <= aMax;
+};
+
+const rangeLabel = (tier: TierItem): string => {
+  const { unit } = rangeFields(tier.calculationType);
+  const { min, max } = extractRange(tier);
+  if (isRangeEmpty({ min, max })) return "لم يتم تحديد الحدود بعد";
+  const minTxt = min === null ? `من 0 ${unit}` : `من ${min.toLocaleString("ar-EG")} ${unit}`;
+  const maxTxt = max === null ? "فما فوق" : `إلى ${max.toLocaleString("ar-EG")} ${unit}`;
+  return `${minTxt} — ${maxTxt}`;
+};
+
+// فحص التكرار/التداخل بين حدود المستويات
+const validateRangeConflicts = (tier: TierItem, allTiers: TierItem[]): string => {
+  const { min, max } = extractRange(tier);
+  if (!isRangeEmpty({ min, max }) && min !== null && max !== null && min > max) {
+    return "الحد الأدنى أكبر من الحد الأقصى";
+  }
+  if (isRangeEmpty({ min, max })) return "";
+  for (const other of allTiers) {
+    if (other.id === tier.id) continue;
+    if ((other.calculationType || "POINTS") !== (tier.calculationType || "POINTS")) continue;
+    const oRange = extractRange(other);
+    if (isRangeEmpty(oRange)) continue;
+    if (oRange.min === min && oRange.max === max) {
+      return `يوجد مستوى آخر ("${other.nameAr || other.name}") بنفس الحد الأدنى والأقصى`;
+    }
+    if (rangesOverlap(oRange, { min, max })) {
+      return `حدود هذا المستوى تتداخل مع حدود مستوى آخر ("${other.nameAr || other.name}")`;
+    }
+  }
+  return "";
+};
+
 const TierConfigTab: React.FC = () => {
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programId, setProgramId] = useState<string>("");
@@ -77,6 +138,7 @@ const TierConfigTab: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [expandedTierId, setExpandedTierId] = useState<string | null>(null);
 
   // per-customer override
   const [phoneQuery, setPhoneQuery] = useState("");
@@ -142,6 +204,11 @@ const TierConfigTab: React.FC = () => {
   };
 
   const saveTier = async (tier: TierItem) => {
+    const conflict = validateRangeConflicts(tier, tiers);
+    if (conflict) {
+      setErrorMsg(conflict);
+      return;
+    }
     setSaving(true);
     setSavedMsg("");
     setErrorMsg("");
@@ -154,8 +221,8 @@ const TierConfigTab: React.FC = () => {
         maxPoints: tier.calculationType === "POINTS" ? tier.maxPoints : null,
         minSpent: tier.calculationType === "SPENT" ? tier.minSpent : null,
         maxSpent: tier.calculationType === "SPENT" ? tier.maxSpent : null,
-        minItems: tier.calculationType === "ITEMS" ? tier.minItems : null,
-        maxItems: tier.calculationType === "ITEMS" ? tier.maxItems : null,
+        minItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.minItems : null,
+        maxItems: tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT" ? tier.maxItems : null,
         benefits: tier.benefits,
         color: tier.color,
         priority: tier.priority,
@@ -179,14 +246,16 @@ const TierConfigTab: React.FC = () => {
         name: "New Tier",
         nameAr: "مستوى جديد",
         calculationType: defaultMethod,
-        minPoints: 0,
+        minPoints: null,
         maxPoints: null,
         benefits: emptyBenefits,
         priority: tiers.length + 1,
       };
-      await apiClient.post("/hr/customer-loyalty/tiers", newTier);
+      const res = await apiClient.post("/hr/customer-loyalty/tiers", newTier);
+      const createdId = res.data?.data?.id || res.data?.id;
       setSavedMsg("تم إضافة مستوى جديد ✓");
-      loadConfig(programId);
+      await loadConfig(programId);
+      if (createdId) setExpandedTierId(createdId);
     } catch (e: any) {
       setErrorMsg(e.response?.data?.error || "فشل إضافة المستوى");
     } finally {
@@ -201,6 +270,7 @@ const TierConfigTab: React.FC = () => {
     try {
       await apiClient.delete(`/hr/customer-loyalty/tiers/${id}`);
       setSavedMsg("تم حذف المستوى ✓");
+      if (expandedTierId === id) setExpandedTierId(null);
       loadConfig(programId);
     } catch (e: any) {
       setErrorMsg(e.response?.data?.error || "فشل حذف المستوى");
@@ -254,6 +324,15 @@ const TierConfigTab: React.FC = () => {
 
   const inputCls = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100";
 
+  const renderBenefitsChips = (b: any) => {
+    const chips: string[] = [];
+    if (b?.freeShipping) chips.push("شحن مجاني");
+    if (b?.priorityShipping) chips.push("شحن سريع");
+    if (Number(b?.discountPercent || 0) > 0) chips.push(`خصم ${b.discountPercent}%`);
+    if (b?.customText) chips.push(b.customText);
+    return chips;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -271,28 +350,18 @@ const TierConfigTab: React.FC = () => {
         {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
       </div>
 
-      {/* Program selector */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">برنامج الولاء</label>
-          <select value={programId} onChange={(e) => setProgramId(e.target.value)} className={inputCls + " mt-2"}>
-            {programs.map(p => (
-              <option key={p.id} value={p.id}>{p.nameAr || p.name}</option>
-            ))}
+      {/* طريقة الحساب الافتراضية */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">طريقة الحساب الافتراضية للشركة</label>
+        <div className="flex gap-2 mt-2">
+          <select value={defaultMethod} onChange={(e) => setDefaultMethod(e.target.value)} className={inputCls}>
+            {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
+          <button onClick={saveDefaultMethod} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ
+          </button>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">طريقة الحساب الافتراضية للشركة</label>
-          <div className="flex gap-2 mt-2">
-            <select value={defaultMethod} onChange={(e) => setDefaultMethod(e.target.value)} className={inputCls}>
-              {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
-            <button onClick={saveDefaultMethod} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ
-            </button>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">لو العميل ملوش طريقة مخصصة، بيتم حسابه بالطريقة دي</p>
-        </div>
+        <p className="text-xs text-gray-400 mt-2">لو العميل ملوش طريقة مخصصة، بيتم حسابه بالطريقة دي</p>
       </div>
 
       {/* Tiers list */}
@@ -308,64 +377,107 @@ const TierConfigTab: React.FC = () => {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {tiers.length === 0 && <p className="p-6 text-gray-500 text-center">لا توجد مستويات — أضف مستوى جديد</p>}
-            {tiers.map(tier => (
-              <div key={tier.id} className="p-5 space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <input value={tier.nameAr || ""} onChange={(e) => updateTierField(tier.id, "nameAr", e.target.value)} placeholder="الاسم بالعربي" className={inputCls + " !w-44"} />
-                  <input value={tier.name || ""} onChange={(e) => updateTierField(tier.id, "name", e.target.value)} placeholder="الاسم (en)" className={inputCls + " !w-44"} />
-                  <select value={tier.calculationType} onChange={(e) => updateTierField(tier.id, "calculationType", e.target.value)} className={inputCls + " !w-52"}>
-                    {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                  <input type="color" value={tier.color || "#6366f1"} onChange={(e) => updateTierField(tier.id, "color", e.target.value)} className="h-9 w-12 rounded border border-gray-300 dark:border-gray-600" title="اللون" />
-                  <div className="flex-1" />
-                  <button onClick={() => saveTier(tier)} disabled={saving} className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
-                    <Save className="h-4 w-4" /> حفظ
-                  </button>
-                  <button onClick={() => deleteTier(tier.id)} disabled={saving} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {/* Thresholds */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {tier.calculationType === "POINTS" && (
-                    <>
-                      <div><label className="text-xs text-gray-500">الحد الأدنى (نقاط)</label><input type="number" value={tier.minPoints ?? ""} onChange={(e) => updateTierField(tier.id, "minPoints", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                      <div><label className="text-xs text-gray-500">الحد الأقصى (نقاط)</label><input type="number" value={tier.maxPoints ?? ""} onChange={(e) => updateTierField(tier.id, "maxPoints", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                    </>
-                  )}
-                  {tier.calculationType === "SPENT" && (
-                    <>
-                      <div><label className="text-xs text-gray-500">الحد الأدنى (ج.م)</label><input type="number" value={tier.minSpent ?? ""} onChange={(e) => updateTierField(tier.id, "minSpent", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                      <div><label className="text-xs text-gray-500">الحد الأقصى (ج.م)</label><input type="number" value={tier.maxSpent ?? ""} onChange={(e) => updateTierField(tier.id, "maxSpent", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                    </>
-                  )}
-                  {tier.calculationType === "ITEMS" && (
-                    <>
-                      <div><label className="text-xs text-gray-500">الحد الأدنى (قطع)</label><input type="number" value={tier.minItems ?? ""} onChange={(e) => updateTierField(tier.id, "minItems", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                      <div><label className="text-xs text-gray-500">الحد الأقصى (قطع)</label><input type="number" value={tier.maxItems ?? ""} onChange={(e) => updateTierField(tier.id, "maxItems", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
-                    </>
-                  )}
-                </div>
-
-                {/* Benefits */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-700/40 p-3 rounded-lg">
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                    <input type="checkbox" checked={Boolean(tier.benefits?.freeShipping)} onChange={(e) => updateTierBenefits(tier.id, "freeShipping", e.target.checked)} className="h-4 w-4 accent-indigo-600" />
-                    شحن مجاني
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                    <input type="checkbox" checked={Boolean(tier.benefits?.priorityShipping)} onChange={(e) => updateTierBenefits(tier.id, "priorityShipping", e.target.checked)} className="h-4 w-4 accent-indigo-600" />
-                    شحن سريع / أولوية
-                  </label>
-                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                    <span className="whitespace-nowrap">خصم %</span>
-                    <input type="number" min="0" max="100" value={tier.benefits?.discountPercent ?? 0} onChange={(e) => updateTierBenefits(tier.id, "discountPercent", Number(e.target.value))} className={inputCls} />
+            {tiers.map(tier => {
+              const isExpanded = expandedTierId === tier.id;
+              const benefitChips = renderBenefitsChips(tier.benefits);
+              return (
+                <div key={tier.id} className="p-5">
+                  {/* Compact summary */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="h-8 w-8 rounded-lg inline-flex items-center justify-center" style={{ backgroundColor: tier.color + "20", color: tier.color }}>
+                      <Crown className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{tier.nameAr || tier.name || "مستوى بدون اسم"}</p>
+                      <p className="text-xs text-gray-500">{rangeLabel(tier)}</p>
+                    </div>
+                    {benefitChips.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {benefitChips.map((ch, i) => (
+                          <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">{ch}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex-1" />
+                    <button
+                      onClick={() => setExpandedTierId(isExpanded ? null : tier.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                    >
+                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Pencil className="h-4 w-4" />} تعديل
+                    </button>
+                    <button onClick={() => deleteTier(tier.id)} disabled={saving} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <input value={tier.benefits?.customText || ""} onChange={(e) => updateTierBenefits(tier.id, "customText", e.target.value)} placeholder="ميزة مخصصة..." className={inputCls} />
+
+                  {/* Expanded edit form */}
+                  {isExpanded && (
+                    <div className="mt-4 space-y-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input value={tier.nameAr || ""} onChange={(e) => updateTierField(tier.id, "nameAr", e.target.value)} placeholder="الاسم بالعربي" className={inputCls + " !w-44"} />
+                        <input value={tier.name || ""} onChange={(e) => updateTierField(tier.id, "name", e.target.value)} placeholder="الاسم (en)" className={inputCls + " !w-44"} />
+                        <select value={tier.calculationType} onChange={(e) => updateTierField(tier.id, "calculationType", e.target.value)} className={inputCls + " !w-52"}>
+                          {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                        </select>
+                        <input type="color" value={tier.color || "#6366f1"} onChange={(e) => updateTierField(tier.id, "color", e.target.value)} className="h-9 w-12 rounded border border-gray-300 dark:border-gray-600" title="اللون" />
+                        <div className="flex-1" />
+                        <button onClick={() => setExpandedTierId(null)} className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-gray-700 rounded-lg text-sm whitespace-nowrap">
+                          <X className="h-4 w-4" /> إغلاق
+                        </button>
+                      </div>
+
+                      {/* Thresholds */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {tier.calculationType === "POINTS" && (
+                          <>
+                            <div><label className="text-xs text-gray-500">الحد الأدنى (نقاط)</label><input type="number" value={tier.minPoints ?? ""} onChange={(e) => updateTierField(tier.id, "minPoints", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                            <div><label className="text-xs text-gray-500">الحد الأقصى (نقاط)</label><input type="number" value={tier.maxPoints ?? ""} onChange={(e) => updateTierField(tier.id, "maxPoints", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                          </>
+                        )}
+                        {tier.calculationType === "SPENT" && (
+                          <>
+                            <div><label className="text-xs text-gray-500">الحد الأدنى (ج.م)</label><input type="number" value={tier.minSpent ?? ""} onChange={(e) => updateTierField(tier.id, "minSpent", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                            <div><label className="text-xs text-gray-500">الحد الأقصى (ج.م)</label><input type="number" value={tier.maxSpent ?? ""} onChange={(e) => updateTierField(tier.id, "maxSpent", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                          </>
+                        )}
+                        {(tier.calculationType === "ITEMS" || tier.calculationType === "ORDER_COUNT") && (
+                          <>
+                            <div><label className="text-xs text-gray-500">الحد الأدنى ({tier.calculationType === "ORDER_COUNT" ? "أوردرات" : "قطع"})</label><input type="number" value={tier.minItems ?? ""} onChange={(e) => updateTierField(tier.id, "minItems", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                            <div><label className="text-xs text-gray-500">الحد الأقصى ({tier.calculationType === "ORDER_COUNT" ? "أوردرات" : "قطع"})</label><input type="number" value={tier.maxItems ?? ""} onChange={(e) => updateTierField(tier.id, "maxItems", e.target.value === "" ? null : Number(e.target.value))} className={inputCls + " mt-1"} /></div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Benefits */}
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-700/40 p-3 rounded-lg">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                          <input type="checkbox" checked={Boolean(tier.benefits?.freeShipping)} onChange={(e) => updateTierBenefits(tier.id, "freeShipping", e.target.checked)} className="h-4 w-4 accent-indigo-600" />
+                          شحن مجاني
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                          <input type="checkbox" checked={Boolean(tier.benefits?.priorityShipping)} onChange={(e) => updateTierBenefits(tier.id, "priorityShipping", e.target.checked)} className="h-4 w-4 accent-indigo-600" />
+                          شحن سريع / أولوية
+                        </label>
+                        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                          <span className="whitespace-nowrap">خصم %</span>
+                          <input type="number" min="0" max="100" value={tier.benefits?.discountPercent ?? 0} onChange={(e) => updateTierBenefits(tier.id, "discountPercent", Number(e.target.value))} className={inputCls} />
+                        </div>
+                        <input value={tier.benefits?.customText || ""} onChange={(e) => updateTierBenefits(tier.id, "customText", e.target.value)} placeholder="ميزة مخصصة..." className={inputCls} />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => saveTier(tier)} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ المستوى
+                        </button>
+                        {validateRangeConflicts(tier, tiers) && (
+                          <span className="text-xs text-red-600 dark:text-red-400 font-medium">{validateRangeConflicts(tier, tiers)}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
