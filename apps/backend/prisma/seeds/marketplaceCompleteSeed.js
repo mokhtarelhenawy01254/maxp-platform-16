@@ -149,6 +149,23 @@ async function seedMarketplace() {
       isFeatured: false
     },
     {
+      slug: 'manual-orders-pro',
+      name: 'الطلب اليدوي',
+      category: 'ORDER_OPS',
+      description: 'إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.',
+      icon: '✍️',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'نموذج الطلب اليدوي',
+        'بيانات العميل',
+        'الدفع والشحن'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
       slug: 'inventory-pro',
       name: 'إدارة المخزون المتقدمة',
       category: 'WAREHOUSE',

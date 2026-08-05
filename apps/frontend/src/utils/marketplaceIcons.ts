@@ -7,7 +7,7 @@ import {
   Gift, GitBranch, ShoppingBag, Webhook, Activity,
   FileSpreadsheet, Wallet, Award, Gamepad2,
   CreditCard, Monitor, UserPlus, Image, Database,
-  Clock,
+  Clock, SquarePen,
 } from "lucide-react";
 import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "@/components/icons/brands";
 import type { ReactElement } from "react";
@@ -79,4 +79,5 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "woocommerce-pro": ShoppingBag,
   "multi-warehouse-pro": PackageOpen,
   "order-accounting-sources": GitBranch,
+  "manual-orders-pro": SquarePen,
 };

@@ -667,6 +667,21 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     ],
     action: "تتبع مصادر الطلبات مع محاسبة منفصلة لكل قناة عبر order-accounting-sources.",
   },
+  {
+    id: "manual-orders",
+    area: "orders",
+    label: "الطلب اليدوي",
+    description: "إنشاء طلبات يدوية من صفحة مخصصة مع اختيار المنتجات والعميل والدفع والشحن.",
+    status: "covered",
+    appSlug: "manual-orders-pro",
+    appLabel: "الطلب اليدوي",
+    currentGate: "manual-orders-pro",
+    legacyGate: "order-core",
+    routes: [
+      { path: "/orders/manual", label: "الطلب اليدوي" },
+    ],
+    action: "فصل الطلب اليدوي إلى تطبيق مستقل manual-orders-pro مع محاسبة مصدره.",
+  },
 ];
 
 export const getMarketplaceFeatureAudit = (

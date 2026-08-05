@@ -137,8 +137,8 @@ async function applyCashbackForPaidOrder({ orderId, companyId, changedBy }) {
     // We strictly use subtotal - discount here to be fair.
     baseAmount = Math.max(0, Number(order.subtotal || 0) - Number(order.discount || 0));
   } else {
-    // Total inc. tax/shipping
-    baseAmount = Math.max(0, Number(order.total || 0));
+    // المبلغ المدفوع فعلاً بعد الخصومات (finalTotal)، مع fallback للإجمالي
+    baseAmount = Math.max(0, Number(order.finalTotal ?? order.total ?? 0));
   }
 
   let cashbackAmount = Math.max(0, (baseAmount * percent) / 100);
