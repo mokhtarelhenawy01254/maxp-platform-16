@@ -25,6 +25,7 @@ const {
   getNowInTimezone,
   getStartOfDayInTimezone,
   getEndOfDayInTimezone,
+  getDateStringInTimezone,
   toStartOfDay,
   toEndOfDay,
   combineDateAndTime,
@@ -2119,6 +2120,209 @@ class AttendanceService {
       };
     } catch (error) {
       console.error("❌ Error getting monthly report:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * تقرير أيام الغياب التفصيلي لكل موظف
+   * يعرض التواريخ الفعلية لأيام الغياب في الشهر
+   */
+  async getAbsentDaysReport(
+    companyId,
+    year,
+    month,
+    employeeId = null,
+    departmentId = null,
+  ) {
+    try {
+      const timezone = await this.getCompanyTimezone(companyId);
+
+      const settings = await this.prisma.hRSettings.findUnique({
+        where: { companyId },
+        select: { workDays: true, publicHolidays: true },
+      });
+
+      let workDaysConfig = [1, 2, 3, 4, 5];
+      try {
+        if (settings?.workDays) {
+          workDaysConfig =
+            typeof settings.workDays === "string"
+              ? JSON.parse(settings.workDays)
+              : settings.workDays;
+        }
+      } catch (e) {
+        console.error("⚠️ [AbsentDays] Error parsing workDays:", e);
+      }
+
+      let publicHolidays = [];
+      try {
+        if (settings?.publicHolidays) {
+          publicHolidays = JSON.parse(settings.publicHolidays);
+        }
+      } catch (e) {
+        console.error("⚠️ [AbsentDays] Error parsing publicHolidays:", e);
+      }
+
+      const holidaySet = new Set(
+        (Array.isArray(publicHolidays) ? publicHolidays : []).map((h) =>
+          String(h).split("T")[0],
+        ),
+      );
+
+      const dateKeyOf = (d) =>
+        getDateStringInTimezone(new Date(d), timezone);
+
+      const now = new Date();
+      const isCurrentMonth =
+        now.getFullYear() === year && now.getMonth() + 1 === month;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const limitDay = isCurrentMonth ? now.getDate() : daysInMonth;
+
+      const workingDates = [];
+      for (let day = 1; day <= limitDay; day++) {
+        const date = new Date(year, month - 1, day);
+        const dateKey = dateKeyOf(date);
+        if (workDaysConfig.includes(date.getDay()) && !holidaySet.has(dateKey)) {
+          workingDates.push(dateKey);
+        }
+      }
+
+      const userWhere = {
+        companyId,
+        isActive: true,
+        employeeNumber: { not: null },
+      };
+      if (employeeId) userWhere.id = employeeId;
+      if (departmentId) userWhere.departmentId = departmentId;
+
+      const activeEmployees = await this.prisma.user.findMany({
+        where: userWhere,
+        include: {
+          departmentRelation: { select: { id: true, name: true } },
+          positionRelation: { select: { title: true } },
+        },
+      });
+
+      if (activeEmployees.length === 0) {
+        return {
+          month,
+          year,
+          totalEmployees: 0,
+          totalAbsentDays: 0,
+          totalWorkingDays: workingDates.length,
+          attendanceRate: 0,
+          employees: [],
+        };
+      }
+
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      const attendanceRecords = await this.prisma.attendance.findMany({
+        where: {
+          companyId,
+          date: { gte: startDate, lte: endDate },
+          userId: employeeId
+            ? employeeId
+            : { in: activeEmployees.map((e) => e.id) },
+        },
+        select: { userId: true, date: true, status: true },
+      });
+
+      const attendedByUser = {};
+      attendanceRecords.forEach((r) => {
+        if (r.status === "ABSENT") return;
+        const key = dateKeyOf(r.date);
+        if (!attendedByUser[r.userId]) attendedByUser[r.userId] = new Set();
+        attendedByUser[r.userId].add(key);
+      });
+
+      const approvedLeaves = await this.prisma.leaveRequest.findMany({
+        where: {
+          companyId,
+          status: "APPROVED",
+          userId: employeeId
+            ? employeeId
+            : { in: activeEmployees.map((e) => e.id) },
+          startDate: { lte: endDate },
+          endDate: { gte: startDate },
+        },
+        select: { userId: true, startDate: true, endDate: true },
+      });
+
+      const leaveByUser = {};
+      approvedLeaves.forEach((l) => {
+        if (!leaveByUser[l.userId]) leaveByUser[l.userId] = new Set();
+        let cur = new Date(l.startDate);
+        const last = new Date(l.endDate);
+        while (cur <= last) {
+          leaveByUser[l.userId].add(dateKeyOf(cur));
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
+
+      const employeesReport = activeEmployees.map((emp) => {
+        const hireDate = emp.hireDate ? dateKeyOf(emp.hireDate) : null;
+        const attendedSet = attendedByUser[emp.id] || new Set();
+        const leaveSet = leaveByUser[emp.id] || new Set();
+
+        const absentDates = workingDates.filter((d) => {
+          if (leaveSet.has(d)) return false;
+          if (attendedSet.has(d)) return false;
+          if (hireDate && d < hireDate) return false;
+          return true;
+        });
+
+        return {
+          id: emp.id,
+          userId: emp.id,
+          name: `${emp.firstName} ${emp.lastName}`,
+          employeeNumber: emp.employeeNumber,
+          department: emp.departmentRelation?.name || "بدون قسم",
+          departmentId: emp.departmentRelation?.id,
+          position: emp.positionRelation?.title || "-",
+          absentDays: absentDates.length,
+          absentDates,
+          attendanceRate:
+            workingDates.length > 0
+              ? parseFloat(
+                  ((1 - absentDates.length / workingDates.length) * 100).toFixed(
+                    1,
+                  ),
+                )
+              : 0,
+        };
+      });
+
+      const sorted = employeesReport.sort(
+        (a, b) => b.absentDays - a.absentDays,
+      );
+      const totalAbsentDays = sorted.reduce(
+        (sum, e) => sum + e.absentDays,
+        0,
+      );
+
+      return {
+        month,
+        year,
+        totalEmployees: sorted.length,
+        totalAbsentDays,
+        totalWorkingDays: workingDates.length,
+        attendanceRate:
+          sorted.length > 0 && workingDates.length > 0
+            ? parseFloat(
+                (
+                  (1 -
+                    totalAbsentDays / (sorted.length * workingDates.length)) *
+                  100
+                ).toFixed(1),
+              )
+            : 0,
+        employees: sorted,
+      };
+    } catch (error) {
+      console.error("❌ Error getting absent days report:", error);
       throw error;
     }
   }

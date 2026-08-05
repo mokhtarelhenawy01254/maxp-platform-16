@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Settings,
   Clock,
   Calendar,
   DollarSign,
@@ -22,11 +21,13 @@ import PerformanceReport from "./PerformanceReport";
 import TurnoverReport from "./TurnoverReport";
 import OvertimeReport from "./OvertimeReport";
 import LateAbsenceReport from "./LateAbsenceReport";
+import AbsentDaysReport from "./AbsentDaysReport";
 import EmployeeReport from "./EmployeeReport";
 
 type TabId =
   | "employee"
   | "attendance"
+  | "absent-days"
   | "leaves"
   | "payroll"
   | "performance"
@@ -75,6 +76,12 @@ const HRReportsHub: React.FC = () => {
       label: "تقرير الحضور",
       icon: Clock,
       description: "الحضور والانصراف والتأخير",
+    },
+    {
+      id: "absent-days",
+      label: "تقرير أيام الغياب",
+      icon: Calendar,
+      description: "تواريخ أيام الغياب لكل موظف",
     },
     {
       id: "leaves",
@@ -212,6 +219,7 @@ const HRReportsHub: React.FC = () => {
             <ErrorBoundary>
               {activeTab === "employee" && <EmployeeReport />}
               {activeTab === "attendance" && <AttendanceReport />}
+              {activeTab === "absent-days" && <AbsentDaysReport />}
               {activeTab === "leaves" && <LeaveReport />}
               {activeTab === "payroll" && <PayrollReport />}
               {activeTab === "performance" && <PerformanceReport />}
