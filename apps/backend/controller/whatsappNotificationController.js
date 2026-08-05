@@ -1004,10 +1004,50 @@ async function resubmitMetaTemplate(req, res) {
       category: built.metaCategory
     });
 
+    // التحقق الصادق: بنشوف المحتوى الفعلي اللي رجع من ميتا ونقارنه باللي أرسلناه،
+    // مش بس الـ status — عشان نعرف هل التعديل اتبقى فعلاً ولا ميتا لسه شايلة القديم.
+    const normalize = (s = '') => (s || '').replace(/\s+/g, ' ').trim();
+    const extractBodyText = (comps = []) => {
+      const body = comps.find(c => c.type === 'BODY');
+      return body ? body.text : null;
+    };
+
+    let verifiedStatus = null;
+    let applied = null;
+    let applyReason = null;
+    let verifiedBodyText = null;
+
+    try {
+      const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+      const found = metaTemplates.find(t => t.name === localTemplate.metaTemplateName);
+      if (found) {
+        verifiedStatus = found.status;
+        verifiedBodyText = extractBodyText(found.components);
+
+        if (verifiedBodyText == null) {
+          applied = null;
+          applyReason = 'ميتا رجعت القالب بدون محتوى نصي واضح، تعذر التأكد';
+        } else {
+          const contentMatched = normalize(verifiedBodyText) === normalize(built.bodyText);
+          applied = contentMatched;
+          if (!contentMatched) {
+            applyReason = 'ميتا لسه شايلة المحتوى القديم — الطلب اتقبل بس التعديل متطبقش بشكل مؤكد';
+          }
+        }
+        console.log(`☁️ [RESUBMIT-META] Verified on Meta: status=${found.status}, applied=${applied}`);
+      } else {
+        console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.metaTemplateName}" not found in Meta list — may still be processing`);
+        applyReason = 'القالب مش لاقيه في قائمة ميتا بعد — ممكن لسه بيتم المعالجة';
+      }
+    } catch (verifyErr) {
+      console.warn('⚠️ [RESUBMIT-META] Could not verify template on Meta:', verifyErr.message);
+      applyReason = 'تعذر التحقق من القالب على ميتا في الوقت الحالي';
+    }
+
     await getSharedPrismaClient().whatsAppNotificationTemplate.update({
       where: { id },
       data: {
-        metaTemplateStatus: 'PENDING',
+        metaTemplateStatus: verifiedStatus || 'PENDING',
         variables: built.variableOrder || localTemplate.variables,
         updatedAt: new Date()
       }
@@ -1015,17 +1055,36 @@ async function resubmitMetaTemplate(req, res) {
 
     console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → "${localTemplate.metaTemplateName}" sent back for review`);
 
+    const message = applied === true
+      ? (built.metaPadding
+        ? `تم تحديث القالب على ميتا للمراجعة. ${built.metaPadding}`
+        : 'تم تحديث القالب على ميتا للمراجعة. سيتم تفعيله بعد الموافقة.')
+      : applyReason || 'تم إرسال التعديل لميتا، لكن لم يتم التأكد من تطبيقه بعد';
+
     res.json({
-      success: true,
+      success: applied !== false,
+      applied,
+      applyReason,
       metaTemplateName: localTemplate.metaTemplateName,
       metaResult: result,
+      verifiedStatus,
+      verifiedBodyText,
       metaPadding: built.metaPadding,
-      message: built.metaPadding
-        ? `تم تحديث القالب على ميتا للمراجعة. ${built.metaPadding}`
-        : 'تم تحديث القالب على ميتا للمراجعة. سيتم تفعيله بعد الموافقة.'
+      message
     });
   } catch (error) {
     console.error('❌ Error resubmitting Meta template:', error);
+    if (error.metaError) {
+      const e = error.metaError;
+      const details = [
+        e.message,
+        e.error_user_title,
+        e.error_user_msg,
+        e.code ? `(code: ${e.code})` : '',
+        e.error_subcode ? `(subcode: ${e.error_subcode})` : ''
+      ].filter(Boolean).join(' — ');
+      return res.status(500).json({ error: details });
+    }
     const rawMeta = error?.originalError?.response?.data || error?.response?.data || null;
     const rawMetaError = rawMeta?.error;
     if (rawMetaError) {

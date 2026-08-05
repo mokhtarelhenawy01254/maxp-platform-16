@@ -17,10 +17,11 @@ jest.mock('../../services/whatsapp/WhatsAppNotificationService', () => ({
 
 jest.mock('../../services/whatsapp/providers/MetaCloudProvider', () => ({
   updateTemplate: jest.fn(),
+  listTemplates: jest.fn(),
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const { updateTemplate } = require('../../services/whatsapp/providers/MetaCloudProvider');
+const { updateTemplate, listTemplates } = require('../../services/whatsapp/providers/MetaCloudProvider');
 const { resubmitMetaTemplate } = require('../../controller/whatsappNotificationController');
 
 function buildPrisma({ template, session }) {
@@ -62,6 +63,7 @@ describe('POST /templates/:id/resubmit-meta', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     updateTemplate.mockResolvedValue({ id: '12345', status: 'PENDING' });
+    listTemplates.mockResolvedValue([{ name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] }]);
   });
 
   test('يرفض لو القالب غير مربوط بقالب ميتا', async () => {
@@ -87,6 +89,9 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(payload.language).toBe('ar');
     expect(payload.category).toBe('UTILITY');
 
+    expect(listTemplates).toHaveBeenCalledTimes(1);
+    expect(listTemplates).toHaveBeenCalledWith('s1');
+
     const updateCall = prisma.whatsAppNotificationTemplate.update.mock.calls[0];
     expect(updateCall[0].where.id).toBe('t1');
     expect(updateCall[0].data.metaTemplateStatus).toBe('PENDING');
@@ -94,12 +99,72 @@ describe('POST /templates/:id/resubmit-meta', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.success).toBe(true);
     expect(body.metaTemplateName).toBe('order_confirm_ar');
+    expect(body.verifiedStatus).toBe('PENDING');
+  });
+
+  test('بيرجع applied=true لو المحتوى اتبقى فعلاً على ميتا', async () => {
+    listTemplates.mockResolvedValue([
+      { name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
+    ]);
+    const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.applied).toBe(true);
+    expect(body.verifiedStatus).toBe('PENDING');
+    expect(body.success).toBe(true);
+    expect(body.message).toContain('تم تحديث');
+  });
+
+  test('بيرجع applied=false لو ميتا لسه شايلة المحتوى القديم', async () => {
+    listTemplates.mockResolvedValue([
+      { name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'نص قديم مختلف تماماً' }] },
+    ]);
+    const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.applied).toBe(false);
+    expect(body.success).toBe(false);
+    expect(body.applyReason).toContain('المحتوى القديم');
+  });
+
+  test('بيرجع applied=null لو ميتا مش لاقيالها القالب بعد', async () => {
+    listTemplates.mockResolvedValue([]);
+    const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    const updateCall = prisma.whatsAppNotificationTemplate.update.mock.calls[0];
+    expect(updateCall[0].data.metaTemplateStatus).toBe('PENDING');
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.applied).toBeNull();
+    expect(body.verifiedStatus).toBeNull();
+    expect(body.applyReason).toContain('مش لاقيه');
+  });
+
+  test('بيرجع applied=null لو ميتا رجعت القالب بدون محتوى نصي واضح', async () => {
+    listTemplates.mockResolvedValue([
+      { name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [] },
+    ]);
+    const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.applied).toBeNull();
+    expect(body.applyReason).toContain('بدون محتوى نصي');
+    expect(body.success).toBe(true);
   });
 
   test('بيرجع خطأ 500 مع رسالة ميتا لو ميتا رفضت التحديث', async () => {
-    updateTemplate.mockRejectedValue({
-      response: { data: { error: { message: 'Template not approved for update', error_user_title: 'غير متاح', code: 100 } } },
-    });
+    const metaErr = new Error('Template not approved for update');
+    metaErr.code = 100;
+    metaErr.metaError = { message: 'Template not approved for update', error_user_title: 'غير متاح', code: 100 };
+    updateTemplate.mockRejectedValue(metaErr);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
     await resubmitMetaTemplate(req, res);

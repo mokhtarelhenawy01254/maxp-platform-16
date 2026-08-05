@@ -3,6 +3,7 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  PauseIcon,
   PrinterIcon,
   TruckIcon,
 } from "@heroicons/react/24/outline";
@@ -26,6 +27,8 @@ interface PreparationOrderActionsProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
+  onHoldAsProblem: (orderNumber: string) => void;
+  onReleaseProblemHold: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -42,12 +45,19 @@ const PreparationOrderActions = ({
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
+  onHoldAsProblem,
+  onReleaseProblemHold,
   onPrintPreparationSlip,
 }: PreparationOrderActionsProps) => {
   const { t } = useTranslation();
   const merchantFulfillment = order.merchantFulfillment;
   const canPrepare = merchantFulfillment?.canPrepare !== false;
   const isPrinting = printingOrderNumber === order.orderNumber;
+  const isProblemHeld = order.stage === "ON_HOLD_PREP";
+  const canHoldAsProblem =
+    !isProblemHeld &&
+    order.stage !== "READY_TO_SHIP" &&
+    order.normalizedStatus !== preparationSettings.handoffStatus;
 
   if (!canPrepare) {
     return (
@@ -105,7 +115,7 @@ const PreparationOrderActions = ({
         </button>
       ) : null}
 
-      {/* Release hold */}
+      {/* Release shortage hold */}
       {order.stage === "STOCK_SHORTAGE" ? (
         <button
           type="button"
@@ -115,6 +125,32 @@ const PreparationOrderActions = ({
         >
           <ArrowPathIcon className="h-3.5 w-3.5" />
           {t("preparation.actionLabels.returnToPreparation")}
+        </button>
+      ) : null}
+
+      {/* Hold as problem */}
+      {canHoldAsProblem ? (
+        <button
+          type="button"
+          onClick={() => onHoldAsProblem(order.orderNumber)}
+          disabled={rowBusy}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-700 transition active:scale-95 hover:border-amber-400 disabled:opacity-50 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:border-amber-700 max-sm:min-h-[40px] max-sm:flex-1"
+        >
+          <PauseIcon className="h-3.5 w-3.5" />
+          {t("preparation.actionLabels.holdProblem")}
+        </button>
+      ) : null}
+
+      {/* Release problem hold */}
+      {isProblemHeld ? (
+        <button
+          type="button"
+          onClick={() => onReleaseProblemHold(order.orderNumber)}
+          disabled={rowBusy}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-xs font-medium text-indigo-700 transition active:scale-95 hover:border-indigo-300 disabled:opacity-50 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:border-indigo-700 max-sm:min-h-[40px] max-sm:flex-1"
+        >
+          <ArrowPathIcon className="h-3.5 w-3.5" />
+          {t("preparation.actionLabels.releaseProblem")}
         </button>
       ) : null}
 

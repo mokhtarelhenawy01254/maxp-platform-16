@@ -1,13 +1,16 @@
 import i18n from "../../../i18n";
 import {
+  DEFAULT_PROBLEM_HOLD_DETAILS,
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PREPARATION_STATUS_METADATA_KEY,
+  PROBLEM_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_REASON_OPTIONS,
   TERMINAL_NON_PREPARATION_STATUSES,
 } from "./constants";
 import type {
   JsonObject,
+  ProblemHoldDetails,
   ShortageFollowUpState,
   ShortageFollowUpVisual,
   ShortageHoldDetails,
@@ -127,6 +130,50 @@ export const buildShortageHoldDetails = (
   };
 };
 
+export const PREPARATION_HOLD_STAGES = new Set(["STOCK_SHORTAGE", "ON_HOLD_PREP"]);
+
+export const isProblemHoldStage = (stage: StageKey | null): boolean =>
+  Boolean(stage && PREPARATION_HOLD_STAGES.has(stage));
+
+export const buildProblemHoldDetails = (metadata: unknown): ProblemHoldDetails => {
+  const metadataObject = parseMaybeJsonObject(metadata);
+  const rawDetails = parseMaybeJsonObject(metadataObject[PROBLEM_HOLD_METADATA_KEY]);
+
+  return {
+    ...DEFAULT_PROBLEM_HOLD_DETAILS,
+    reason:
+      typeof rawDetails["reason"] === "string"
+        ? rawDetails["reason"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.reason,
+    heldAt:
+      typeof rawDetails["heldAt"] === "string"
+        ? rawDetails["heldAt"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.heldAt,
+    releasedAt:
+      typeof rawDetails["releasedAt"] === "string"
+        ? rawDetails["releasedAt"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.releasedAt,
+    heldBy:
+      typeof rawDetails["heldBy"] === "string"
+        ? rawDetails["heldBy"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.heldBy,
+    releasedBy:
+      typeof rawDetails["releasedBy"] === "string"
+        ? rawDetails["releasedBy"]
+        : DEFAULT_PROBLEM_HOLD_DETAILS.releasedBy,
+    state: rawDetails["state"] === "released" ? "released" : "held",
+  };
+};
+
+export const getActiveHoldDetails = (
+  order: { stage: StageKey | null; metadata: unknown },
+): ShortageHoldDetails | ProblemHoldDetails => {
+  if (order.stage === "ON_HOLD_PREP") {
+    return buildProblemHoldDetails(order.metadata);
+  }
+  return buildShortageHoldDetails(order.metadata);
+};
+
 export const getEffectivePreparationStatus = (
   status: string,
   metadata: unknown,
@@ -159,7 +206,7 @@ export const isShortageFollowUpToday = (
   followUpDate: string,
   stage: StageKey | null,
 ) => {
-  if (stage !== "STOCK_SHORTAGE" || !followUpDate) return false;
+  if (!isProblemHoldStage(stage) || !followUpDate) return false;
 
   return normalizeDateInputValue(followUpDate) === getDateInputValueWithOffset(0);
 };
@@ -168,7 +215,7 @@ export const isShortageFollowUpOverdue = (
   followUpDate: string,
   stage: StageKey | null,
 ) => {
-  if (stage !== "STOCK_SHORTAGE" || !followUpDate) return false;
+  if (!isProblemHoldStage(stage) || !followUpDate) return false;
 
   const parsedDate = new Date(
     followUpDate.length <= 10 ? `${followUpDate}T00:00:00` : followUpDate,
@@ -185,7 +232,7 @@ export const getShortageFollowUpState = (
   followUpDate: string,
   stage: StageKey | null,
 ): ShortageFollowUpState => {
-  if (stage !== "STOCK_SHORTAGE") return "none";
+  if (!isProblemHoldStage(stage)) return "none";
   if (!followUpDate) return "without_date";
   if (isShortageFollowUpOverdue(followUpDate, stage)) return "overdue";
   if (isShortageFollowUpToday(followUpDate, stage)) return "today";
@@ -297,6 +344,8 @@ export const getQuickActionLabel = (stage: StageKey | null) => {
       return i18n.t("preparation.quickAction.PACKAGED");
     case "STOCK_SHORTAGE":
       return i18n.t("preparation.quickAction.STOCK_SHORTAGE");
+    case "ON_HOLD_PREP":
+      return i18n.t("preparation.quickAction.ON_HOLD_PREP");
     default:
       return i18n.t("preparation.quickAction.default");
   }

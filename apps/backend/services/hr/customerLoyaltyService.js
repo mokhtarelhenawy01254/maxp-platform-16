@@ -646,7 +646,12 @@ class CustomerLoyaltyService {
       });
 
       for (const tier of tiers) {
-        if (points >= tier.minPoints && (!tier.maxPoints || points <= tier.maxPoints)) {
+        // تحويل Decimal -> Number لأن مقارنة الكائنات (valueOf) بتعمل string comparison غلط
+        const pts = Number(points);
+        const minPts = Number(tier.minPoints);
+        const maxPts = tier.maxPoints != null ? Number(tier.maxPoints) : null;
+
+        if (pts >= minPts && (maxPts == null || pts <= maxPts)) {
           return tier;
         }
       }

@@ -91,6 +91,7 @@ import {
   WhatsAppPageShell,
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
+import LabelContactsDialog from "../../components/whatsapp/LabelContactsDialog";
 
 type TabId =
   | "sessions"
@@ -193,6 +194,7 @@ interface LabelItem {
   id: string;
   name: string;
   color: string;
+  chatCount?: number;
 }
 
 interface DeleteState {
@@ -453,6 +455,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [editingQuickReply, setEditingQuickReply] =
     useState<QuickReply | null>(null);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [labelContactsLabel, setLabelContactsLabel] =
+    useState<LabelItem | null>(null);
   const [deleteState, setDeleteState] = useState<DeleteState | null>(null);
   const [keepHistory, setKeepHistory] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
@@ -2175,22 +2179,29 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           {labels.map((label) => (
             <div
               key={label.id}
-              className="flex items-center justify-between gap-3 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm"
+              className="group flex items-center justify-between gap-3 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_6%,white)]"
             >
-              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-3 text-start"
+                onClick={() => setLabelContactsLabel(label)}
+              >
                 <span
-                  className="inline-flex size-5 rounded-full border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
+                  className="inline-flex size-5 shrink-0 rounded-full border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
                   style={{ backgroundColor: label.color || "#25D366" }}
                 />
-                <div>
-                  <p className="text-sm font-medium text-[color:var(--color-foreground)]">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[color:var(--color-foreground)] group-hover:text-[color:var(--color-primary)]">
                     {label.name}
                   </p>
-                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                    {label.color}
+                  <p className="flex items-center gap-1 text-xs text-[color:var(--color-muted-foreground)]">
+                    <Users className="size-3" />
+                    {label.chatCount ?? 0} عميل
+                    <span className="mx-1">•</span>
+                    اضغط للعرض
                   </p>
                 </div>
-              </div>
+              </button>
 
               <Button
                 variant="outline"
@@ -3545,6 +3556,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LabelContactsDialog
+        open={Boolean(labelContactsLabel)}
+        onClose={() => setLabelContactsLabel(null)}
+        sessionId={scopedSessionId || ""}
+        label={labelContactsLabel}
+        onSynced={() => {
+          if (scopedSessionId) {
+            void loadLabels(scopedSessionId);
+          }
+        }}
+      />
 
       <style>{`
         .qr-fade-in {

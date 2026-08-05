@@ -370,7 +370,7 @@ function generateComponentExamples(components) {
   return components.map(comp => {
     if (comp.type === 'BODY' && comp.text) {
       const varCount = (comp.text.match(/\{\{\d+\}\}/g) || []).length;
-      if (varCount > 0) {
+      if (varCount > 0 && !comp.example) {
         const examples = Array.from({ length: varCount }, (_, i) => `example${i + 1}`);
         return { ...comp, example: { body_text: [examples] } };
       }
@@ -425,10 +425,16 @@ async function updateTemplate(sessionId, templateName, templateData) {
   const wabaId = session?.metaWabaId;
   if (!wabaId) throw new Error('Missing Meta WABA ID for session');
 
+  const components = templateData.components
+    ? generateComponentExamples(templateData.components)
+    : undefined;
+
   const payload = {};
-  if (templateData.components) payload.components = templateData.components;
+  if (components) payload.components = components;
   if (templateData.language) payload.language = templateData.language;
   if (templateData.category) payload.category = templateData.category;
+
+  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
   const response = await apiCall(() => axios.post(url, payload, {
@@ -439,7 +445,16 @@ async function updateTemplate(sessionId, templateName, templateData) {
     timeout: 30000
   }));
 
-  return response.data;
+  const data = response.data;
+  if (data?.error) {
+    const metaErr = new Error(data.error.message || 'Meta API rejected template update');
+    metaErr.code = data.error.code;
+    metaErr.metaError = data.error;
+    throw metaErr;
+  }
+
+  console.log(`☁️ [META-UPDATE] Response:`, JSON.stringify({ id: data?.id, status: data?.status, name: data?.name }));
+  return data;
 }
 
 async function deleteTemplate(sessionId, templateName) {

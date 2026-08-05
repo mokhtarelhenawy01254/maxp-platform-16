@@ -3456,20 +3456,20 @@ async function syncLabels(req, res) {
             return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
+        // نتحقق من وجود الجلسة مباشرة
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
         });
-
-        if (!session) {
+        if (!targetSessionId) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const labels = await WhatsAppManager.syncLabels(targetSessionId);
+        const labels = await WhatsAppManager.syncLabels(targetSessionId.id);
         res.json({ success: true, labels, message: 'تمت المزامنة بنجاح' });
     } catch (error) {
         console.error('❌ Error syncing labels:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات' });
+        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات', detail: error?.message });
     }
 }
 
@@ -3482,20 +3482,21 @@ async function getLabels(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
+        // نتحقق من وجود الجلسة مباشرة (من غير ما نطلب أن تكون متصلة)
+        // لأن الـ labels متخزنة في الداتابيز وتظهر حتى لو الجلسة فصلت
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
         });
-
-        if (!session) {
+        if (!targetSessionId) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const labels = await WhatsAppManager.getLabels(targetSessionId);
+        const labels = await WhatsAppManager.getLabels(targetSessionId.id);
         res.json({ success: true, labels });
     } catch (error) {
         console.error('❌ Error getting labels:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات' });
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات', detail: error?.message });
     }
 }
 
@@ -3630,6 +3631,36 @@ async function removeLabelFromChat(req, res) {
     } catch (error) {
         console.error('❌ Error removing label from chat:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء إزالة العلامة من المحادثة' });
+    }
+}
+
+async function getLabelContacts(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { labelId } = req.params;
+        const { sessionId } = req.query;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 500);
+        const search = (req.query.search || '').trim();
+
+        if (!sessionId || !labelId) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        // نتحقق من وجود الجلسة مباشرة (الـ labels موجودة حتى لو الجلسة مش متصلة)
+        const targetSessionId = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: sessionId, companyId },
+            select: { id: true }
+        });
+        if (!targetSessionId) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.getLabelContacts(targetSessionId.id, labelId, { page, limit, search });
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error getting label contacts:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب عملاء التصنيف' });
     }
 }
 
@@ -4577,6 +4608,7 @@ module.exports = {
     deleteLabel,
     addLabelToChat,
     removeLabelFromChat,
+    getLabelContacts,
 
     // Starred Messages
     starMessage,

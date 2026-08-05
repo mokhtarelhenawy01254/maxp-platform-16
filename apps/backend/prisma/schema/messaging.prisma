@@ -203,6 +203,22 @@ model WhatsAppEventLog {
   @@map("whatsapp_event_logs")
 }
 
+model WhatsAppLabel {
+  id           String   @id
+  sessionId    String
+  name         String
+  color        Int      @default(0)
+  predefinedId String?
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  whatsAppSession WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, id])
+  @@index([sessionId])
+  @@map("whatsapp_labels")
+}
+
 model WhatsAppMessage {
   id              String          @id @default(cuid())
   sessionId       String
@@ -305,6 +321,7 @@ model WhatsAppSession {
   profileStatus          String?
   whatsAppContacts       WhatsAppContact[]
   whatsAppMessages       WhatsAppMessage[]
+  whatsAppLabels         WhatsAppLabel[]
   company                Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   whatsAppStatuses       WhatsAppStatus[]
   assignment             WhatsAppNumberAssignment?
