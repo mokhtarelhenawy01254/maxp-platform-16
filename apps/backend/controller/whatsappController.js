@@ -3529,7 +3529,8 @@ async function createLabel(req, res) {
 async function deleteLabel(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, labelId } = req.body;
+        const { sessionId } = req.body;
+        const labelId = req.params.id || req.params.labelId || req.body.labelId;
 
         if (!sessionId || !labelId) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
