@@ -117,7 +117,7 @@ describe("OrderStatusTemplatesPage Meta template binding", () => {
     await screen.findByTestId("status-row-st1");
     await user.click(screen.getByRole("button", { name: /تعديل/ }));
 
-    await user.click(screen.getByRole("button", { name: /ربط قالب ميتا معتمد/ }));
+    await user.click(screen.getByRole("tab", { name: /ربط قالب ميتا/ }));
     await user.selectOptions(screen.getByRole("combobox", { name: /قالب ميتا المعتمد/ }), "order_confirm_ar");
 
     expect(await screen.findByText(/مرحباً \{\{1\}\}، طلبك \{\{2\}\} في الطريق/)).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe("OrderStatusTemplatesPage Meta template binding", () => {
 
     await screen.findByTestId("status-row-st1");
     await user.click(screen.getByRole("button", { name: /تعديل/ }));
-    await user.click(screen.getByRole("button", { name: /ربط قالب ميتا معتمد/ }));
+    await user.click(screen.getByRole("tab", { name: /ربط قالب ميتا/ }));
 
     const contentArea = screen.getByPlaceholderText(/اكتب رسالتك هنا/);
     expect(contentArea).toBeInTheDocument();

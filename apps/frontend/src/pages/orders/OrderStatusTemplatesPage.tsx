@@ -296,6 +296,33 @@ function parseTemplateButtons(raw?: string): TemplateButton[] {
   }
 }
 
+/**
+ * استخراج أسماء المتغيرات المحلية بالترتيب اللي بتظهر بيه في المحتوى.
+ * بيتم استخدامه لربط كل متغير محلي {{customerName}} برقم ميتا {{1}}، {{2}}... بصرياً.
+ */
+function extractLocalVariableOrder(content: string): string[] {
+  const seen = new Set<string>();
+  const order: string[] = [];
+  const re = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      order.push(m[1]);
+    }
+  }
+  return order;
+}
+
+const VARIABLE_DESCRIPTIONS: Record<string, string> = ORDER_VARIABLES.reduce(
+  (acc, v) => {
+    const key = v.var.replace(/^\{\{|\}\}$/g, "").trim();
+    acc[key] = v.desc;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
 export default function OrderStatusTemplatesPage() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState("all");
@@ -306,7 +333,9 @@ export default function OrderStatusTemplatesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTab, setDialogTab] = useState<"local" | "meta">("local");
   const [showVariables, setShowVariables] = useState(false);
+  const [showAdvancedPublish, setShowAdvancedPublish] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
@@ -408,6 +437,8 @@ export default function OrderStatusTemplatesPage() {
       metaTemplateName: "",
       metaTemplateLanguage: "ar",
     });
+    setDialogTab("local");
+    setShowAdvancedPublish(false);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -415,16 +446,19 @@ export default function OrderStatusTemplatesPage() {
   const openEditDialog = (status: StatusWithTemplate, initialSendMode?: "direct" | "bind_meta") => {
     setSelectedStatus(status);
     const hasBoundMeta = !!(status.template?.metaTemplateName && status.template.metaTemplateStatus === "APPROVED");
+    const resolvedSendMode = initialSendMode || (hasBoundMeta ? "bind_meta" : "direct");
     setTemplateForm({
       name: status.template?.name || `قالب ${status.name}`,
       content: status.template?.content || DEFAULT_TEMPLATE_CONTENT,
       isActive: status.template?.isActive ?? true,
       hasButtons: status.template?.hasButtons ?? true,
       buttons: parseTemplateButtons(status.template?.buttons),
-      sendMode: initialSendMode || (hasBoundMeta ? "bind_meta" : "direct"),
+      sendMode: resolvedSendMode,
       metaTemplateName: status.template?.metaTemplateName || "",
       metaTemplateLanguage: status.template?.metaTemplateLanguage || "ar",
     });
+    setDialogTab(resolvedSendMode === "bind_meta" ? "meta" : "local");
+    setShowAdvancedPublish(false);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -1246,48 +1280,60 @@ export default function OrderStatusTemplatesPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">طريقة الإرسال</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTemplateForm((p) => ({ ...p, sendMode: "direct" }))}
-                    className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                      templateForm.sendMode === "direct"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-900/20 dark:text-indigo-300"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    إرسال مباشر (نص)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTemplateForm((p) => ({ ...p, sendMode: "bind_meta" }))}
-                    className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                      templateForm.sendMode === "bind_meta"
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-400 dark:bg-emerald-900/20 dark:text-emerald-300"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    ربط قالب ميتا معتمد
-                  </button>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
-                  {templateForm.sendMode === "bind_meta"
-                    ? "القالب المعتمد على ميتا هو اللي هيتبعت للعميل (يشتغل مع جلسة Meta Cloud API)"
-                    : "النص اللي بتكتبه تحت هو اللي هيتبعت مباشرة"}
-                </p>
-                {templateForm.sendMode === "bind_meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
-                  <div className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                    ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
-                    القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
-                  </div>
+              {/* Tabs: local template vs Meta binding */}
+              <div role="tablist" aria-label="طريقة الإرسال" className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={dialogTab === "local"}
+                  onClick={() => { setDialogTab("local"); setTemplateForm((p) => ({ ...p, sendMode: "direct" })); }}
+                  className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
+                    dialogTab === "local"
+                      ? "bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-300"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                  }`}
+                >
+                  📝 القالب المحلي
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={dialogTab === "meta"}
+                  onClick={() => { setDialogTab("meta"); setTemplateForm((p) => ({ ...p, sendMode: "bind_meta" })); }}
+                  className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
+                    dialogTab === "meta"
+                      ? "bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                  }`}
+                >
+                  ☁️ ربط قالب ميتا
+                </button>
+              </div>
+
+              {/* Contextual explainer — يوضح أنهي اللي بيتابعت للعميل فعلياً */}
+              <div className={`rounded-lg p-2.5 text-[11px] leading-relaxed ${
+                dialogTab === "meta"
+                  ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
+                  : "bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300"
+              }`}>
+                {dialogTab === "meta" ? (
+                  <>☁️ <strong>قالب ميتا المعتمد هو اللي بيتابعت للعميل</strong> — النص المحلي مجرد مرجع للربط. بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
+                ) : (
+                  <>📝 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys أو Meta).</>
                 )}
               </div>
 
-              {templateForm.sendMode === "bind_meta" && (
-                <div className="rounded-lg border border-emerald-200 p-3 dark:border-emerald-800/40">
-                  <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+              {dialogTab === "bind_meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                  ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
+                  القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
+                </div>
+              )}
+
+              {/* ===== META TAB CONTENT ===== */}
+              {dialogTab === "meta" && (
+                <div className="space-y-3 rounded-lg border border-emerald-200 p-3 dark:border-emerald-800/40">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                     اختر قالب ميتا المعتمد
                   </label>
                   {metaSessions.length > 0 ? (
@@ -1324,6 +1370,7 @@ export default function OrderStatusTemplatesPage() {
                                 </option>
                               ))}
                           </select>
+
                           {selectedMetaBody && (
                             <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
                               <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -1332,11 +1379,45 @@ export default function OrderStatusTemplatesPage() {
                               <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
                                 {selectedMetaBody}
                               </p>
-                              <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                                {"المتغيرات {{1}}، {{2}}... بتتحل حسب ترتيب ظهورها في المحتوى المحلي"}
-                              </p>
                             </div>
                           )}
+
+                          {/* Variable mapping {{1}} → customerName — بصري وواضح */}
+                          {selectedMetaBody && (() => {
+                            const localVars = extractLocalVariableOrder(templateForm.content);
+                            const metaNums = [...selectedMetaBody.matchAll(/\{\{(\d+)\}\}/g)].map((m) => m[1]);
+                            if (localVars.length === 0 || metaNums.length === 0) return null;
+                            const pairs = metaNums.map((n, i) => ({
+                              meta: `{{${n}}}`,
+                              local: localVars[i] ? `{{${localVars[i]}}}` : "—",
+                              desc: localVars[i] ? (VARIABLE_DESCRIPTIONS[localVars[i]] || "") : "غير متوفر",
+                              matched: !!localVars[i],
+                            }));
+                            return (
+                              <div className="mt-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+                                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  تطابق المتغيرات
+                                </p>
+                                <div className="space-y-1">
+                                  {pairs.map((pr) => (
+                                    <div key={pr.meta} className="flex items-center gap-2 text-[11px]">
+                                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{pr.meta}</span>
+                                      <span className="text-slate-400">←</span>
+                                      <span className={`rounded px-1.5 py-0.5 font-mono ${pr.matched ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"}`}>
+                                        {pr.local}
+                                      </span>
+                                      {pr.desc && <span className="text-slate-500 dark:text-slate-400">{pr.desc}</span>}
+                                      {!pr.matched && <span className="text-red-500">⚠️ متغير ناقص في النص المحلي</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+                                  ميتا بترقّم المتغيرات بترتيب ظهورها؛ تأكد إن كل رقم ميتا ليه متغير محلي مطابق.
+                                </p>
+                              </div>
+                            );
+                          })()}
+
                           {selectedStatus?.template?.metaTemplateName && (
                             <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
                               حالياً مربوط بـ: {selectedStatus.template.metaTemplateName}
@@ -1346,7 +1427,7 @@ export default function OrderStatusTemplatesPage() {
                         </>
                       ) : (
                         <p className="text-xs text-slate-400">
-                          لا توجد قوالب ميتا معتمدة. انشر قالب جديد من القسم اللي تحت أولاً.
+                          لا توجد قوالب ميتا معتمدة. استخدم تبويب «القالب المحلي» واضغط «خيارات متقدمة» عشان تنشر قالب جديد على ميتا.
                         </p>
                       )}
                     </>
@@ -1356,6 +1437,7 @@ export default function OrderStatusTemplatesPage() {
                 </div>
               )}
 
+              {/* ===== LOCAL CONTENT (shared: visible in both tabs) ===== */}
               <div>
                 <div className="mb-1 flex items-center justify-between">
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1561,44 +1643,60 @@ export default function OrderStatusTemplatesPage() {
               </button>
             </div>
 
-            {templateForm.sendMode === "bind_meta" && (
+            {dialogTab === "meta" && (
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                 أي تعديل على المحتوى أو الأزرار وبعدين "إرسال للمراجعة من جديد" هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.
               </p>
             )}
 
             {selectedStatus?.template?.id && (
-              <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
-                <p className="mb-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">النشر على Meta Cloud API</p>
-                {metaSessions.length > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectedMetaSession}
-                      onChange={(e) => setSelectedMetaSession(e.target.value)}
-                      aria-label="جلسة النشر على ميتا"
-                      className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    >
-                      {metaSessions.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => publishToMeta(selectedStatus.template!.id!)}
-                      disabled={publishingId === selectedStatus.template!.id}
-                      className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      {publishingId === selectedStatus.template!.id ? (
-                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      ) : (
-                        <GlobeAltIcon className="h-3.5 w-3.5" />
-                      )}
-                      نشر
-                    </button>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedPublish(!showAdvancedPublish)}
+                  className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
+                  aria-expanded={showAdvancedPublish}
+                >
+                  <span>⚙️ خيارات متقدمة (نشر القالب على Meta Cloud API)</span>
+                  <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showAdvancedPublish ? "rotate-180" : ""}`} />
+                </button>
+                {showAdvancedPublish && (
+                  <div className="mt-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                    <p className="mb-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">النشر على Meta Cloud API</p>
+                    <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      بينشر القالب المحلي على ميتا للمراجعة — عملية تتعمل مرة وحدة وقت إنشاء قالب جديد.
+                    </p>
+                    {metaSessions.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={selectedMetaSession}
+                          onChange={(e) => setSelectedMetaSession(e.target.value)}
+                          aria-label="جلسة النشر على ميتا"
+                          className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          {metaSessions.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => publishToMeta(selectedStatus.template!.id!)}
+                          disabled={publishingId === selectedStatus.template!.id}
+                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {publishingId === selectedStatus.template!.id ? (
+                            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <GlobeAltIcon className="h-3.5 w-3.5" />
+                          )}
+                          نشر
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة</p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة</p>
                 )}
               </div>
             )}
