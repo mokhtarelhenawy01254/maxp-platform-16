@@ -5193,6 +5193,10 @@ async function syncLabels(sessionId) {
                 const keys = session.sock.authState?.keys;
                 if (keys?.get && keys?.set) {
                     try {
+                        // الـ makeCacheableSignalKeyStore عنده cache داخلي (TTL) — بنضربه عشان الـ get يقرا من الـ DB
+                        if (typeof keys.clear === 'function') {
+                            try { await keys.clear(); } catch { /* clear may not be supported */ }
+                        }
                         const before = await keys.get('app-state-sync-version', ['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low']);
                         console.log(`🔍 [SYNC-LABELS] Current app-state versions:`, JSON.stringify(Object.keys(before).map(k => ({ c: k, v: before[k]?.version }))));
                         await keys.set({
