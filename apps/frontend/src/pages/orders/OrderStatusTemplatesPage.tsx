@@ -492,16 +492,30 @@ export default function OrderStatusTemplatesPage() {
         return selectedStatus.template!.id;
       } else {
         const res = await apiClient.post("/whatsapp/notifications/templates", payload);
-        const created = res?.data?.template;
-        if (!created?.id) {
+        const created = (res?.data as { template?: { id?: string } })?.template;
+        const newTemplateId = created?.id;
+        if (!newTemplateId) {
           toast.error(t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
           return null;
         }
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
         setSelectedStatus((prev) =>
-          prev ? { ...prev, template: { ...prev.template, id: created.id } } : prev
+          prev
+            ? {
+                ...prev,
+                template: {
+                  id: newTemplateId,
+                  name: templateForm.name,
+                  content: templateForm.content,
+                  eventType: prev.code,
+                  isActive: templateForm.isActive,
+                  hasButtons: saveButtons.length > 0,
+                  buttons: saveButtons.length > 0 ? JSON.stringify(saveButtons) : undefined,
+                },
+              }
+            : prev
         );
-        return created.id;
+        return newTemplateId;
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
