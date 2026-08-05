@@ -5193,6 +5193,10 @@ async function syncLabels(sessionId) {
                 const keys = session.sock.authState?.keys;
                 if (keys?.get && keys?.set) {
                     try {
+                        // الـ makeCacheableSignalKeyStore عنده cache داخلي (TTL) — بنضربه عشان الـ get يقرا من الـ DB
+                        if (typeof keys.clear === 'function') {
+                            try { await keys.clear(); } catch { /* clear may not be supported */ }
+                        }
                         const before = await keys.get('app-state-sync-version', ['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low']);
                         console.log(`🔍 [SYNC-LABELS] Current app-state versions:`, JSON.stringify(Object.keys(before).map(k => ({ c: k, v: before[k]?.version }))));
                         await keys.set({
@@ -5212,8 +5216,8 @@ async function syncLabels(sessionId) {
                     console.log('🔍 [SYNC-LABELS] keys unavailable:', !!keys, keys && Object.keys(keys));
                 }
                 await Promise.race([
-                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 20000))
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], true),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 30000))
                 ]);
                 console.log(`🔍 [SYNC-LABELS] After resyncAppState: ${session.labels.size} labels, ${session.labelAssociations.size} associations`);
             } catch (resyncErr) {

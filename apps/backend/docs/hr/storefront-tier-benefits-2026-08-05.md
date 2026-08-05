@@ -77,6 +77,24 @@ The server is the source of truth: the frontend only previews the numbers.
   "خصم مستوى {name} ({pct}%)" row. Totals account for `effectiveShipping` and
   `loyaltyDiscount`.
 
+## Reward base = amount actually paid
+
+Rewards (cashback, loyalty points, and the SPENT tier metric) are computed on
+**what the customer actually paid** (`Order.finalTotal`, i.e. after all discounts),
+NOT the gross order value:
+
+- `cashbackService.js` — the `total` base now uses `order.finalTotal`
+  (fallback `order.total`). The `subtotal` base stays `subtotal - discount`.
+- `customerLoyaltyService.js` points award — base is
+  `order.finalTotal || order.total || order.subtotal`.
+- `computeTierMetric` SPENT method — aggregates `finalTotal` of DELIVERED orders.
+
+The tier **discount** benefit is unchanged: it is a fixed % of the order
+subtotal (`cartTotal * pct / 100`) applied at checkout.
+
+Example (order = 1000, tier discount 10% + redeemed cashback 100): customer pays
+800; earned cashback/points for that order are based on 800, not 1000.
+
 ## Docs
 
 - `tier-calculation-config-2026-08-05.md` — the configurable methods/benefits feature.

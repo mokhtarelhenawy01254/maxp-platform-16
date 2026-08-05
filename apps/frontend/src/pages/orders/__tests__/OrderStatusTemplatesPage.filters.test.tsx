@@ -210,6 +210,6 @@ describe("OrderStatusTemplatesPage filters", () => {
     await user.click(screen.getByRole("button", { name: "مخصصة" }));
     await user.type(screen.getByPlaceholderText(/ابحث باسم الحالة أو الكود/), "SHIPPED");
 
-    expect(await screen.findByText("لا توجد حالات مطابقة")).toBeInTheDocument();
+    expect(await screen.findByText(/لا توجد حالات مطابقة لبحثك/)).toBeInTheDocument();
   });
 });

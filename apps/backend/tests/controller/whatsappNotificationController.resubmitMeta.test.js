@@ -1,7 +1,8 @@
 /**
  * إعادة إرسال قالب إلى ميتا للمراجعة بعد التعديل (resubmit-meta):
  * - بيرفض لو القالب مش مربوط
- * - بيعدّل القالب الموجود عبر POST /{templateId} (endpoint ميتا الصحيح 2026)
+ * - لو الحالة APPROVED/REJECTED/PAUSED → بيعدّل القالب الموجود عبر POST /{templateId}
+ * - لو الحالة PENDING (ميتا تمنع تعديلها، subcode 2388003) → بينشئ قالباً جديداً باسم فريد
  * - بيحفظ metaTemplateId وبيحدّث الحالة
  */
 jest.mock('../../services/sharedDatabase', () => ({
@@ -81,12 +82,14 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(updateTemplate).not.toHaveBeenCalled();
   });
 
-  test('بيعدّل القالب الموجود عبر POST /{templateId} بالمحتوى المعدل', async () => {
+  test('APPROVED → بيعدّل القالب الموجود عبر POST /{templateId} بالمحتوى المعدل', async () => {
+    listTemplates.mockResolvedValue([
+      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
+    ]);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
     await resubmitMetaTemplate(req, res);
 
-    // التعديل عبر الـ template ID (مش إنشاء قالب جديد)
     expect(createTemplate).not.toHaveBeenCalled();
     expect(updateTemplate).toHaveBeenCalledTimes(1);
 
@@ -95,10 +98,8 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(templateId).toBe('778899');
     expect(payload.components[0].type).toBe('BODY');
     expect(payload.components[0].text).toContain('{{1}}');
-    // لا category للقالب المعتمد
     expect(payload.category).toBeUndefined();
 
-    // الحالة حُدّثت على ميتا والقالب المحلي
     const updateCall = prisma.whatsAppNotificationTemplate.update.mock.calls[0];
     expect(updateCall[0].where.id).toBe('t1');
     expect(updateCall[0].data.metaTemplateId).toBe('778899');
@@ -106,7 +107,31 @@ describe('POST /templates/:id/resubmit-meta', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.success).toBe(true);
     expect(body.applied).toBe(true);
-    expect(body.verifiedStatus).toBe('APPROVED');
+    expect(body.action).toBe('edited');
+  });
+
+  test('PENDING → بينشئ قالباً جديداً باسم فريد (لأن ميتا تمنع تعديل PENDING)', async () => {
+    listTemplates.mockResolvedValue([
+      { id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
+    ]);
+    const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    expect(updateTemplate).not.toHaveBeenCalled();
+    expect(createTemplate).toHaveBeenCalledTimes(1);
+    const [, payload] = createTemplate.mock.calls[0];
+    expect(payload.name).toMatch(/^order_confirm_ar/);
+    expect(payload.components[0].text).toContain('{{1}}');
+
+    const updateCall = prisma.whatsAppNotificationTemplate.update.mock.calls[0];
+    expect(updateCall[0].data.metaTemplateName).toMatch(/^order_confirm_ar/);
+    expect(updateCall[0].data.metaTemplateId).toBe('12345');
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.success).toBe(true);
+    expect(body.applied).toBe(false);
+    expect(body.action).toBe('created');
   });
 
   test('بيرجع خطأ 500 مع رسالة ميتا لو فشل التعديل', async () => {
