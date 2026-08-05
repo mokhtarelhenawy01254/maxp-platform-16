@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { lazy, Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const IncompleteCartMessagingPanel = lazy(() => import("./IncompleteCartMessagingPanel"));
 
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
@@ -177,6 +179,7 @@ const SAMPLE_VARIABLES: Record<string, string> = {
   customerPhone: "01001234567",
   total: "500",
   currency: "EGP",
+  itemCount: "3",
   orderItems: "1. تيشيرت أحمر | المقاس: L | الكمية: 2",
   status: "قيد التجهيز",
   trackingNumber: "TRK-98765",
@@ -335,7 +338,6 @@ export default function OrderStatusTemplatesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<"local" | "meta">("local");
   const [showVariables, setShowVariables] = useState(false);
-  const [showAdvancedPublish, setShowAdvancedPublish] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
@@ -438,7 +440,6 @@ export default function OrderStatusTemplatesPage() {
       metaTemplateLanguage: "ar",
     });
     setDialogTab("local");
-    setShowAdvancedPublish(false);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -458,7 +459,6 @@ export default function OrderStatusTemplatesPage() {
       metaTemplateLanguage: status.template?.metaTemplateLanguage || "ar",
     });
     setDialogTab(resolvedSendMode === "bind_meta" ? "meta" : "local");
-    setShowAdvancedPublish(false);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -640,6 +640,20 @@ export default function OrderStatusTemplatesPage() {
     } finally {
       setPublishingId(null);
     }
+  };
+
+  const createMetaTemplate = async () => {
+    if (!selectedMetaSession) {
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      return;
+    }
+    if (!templateForm.content.trim()) {
+      toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
+      return;
+    }
+    const templateId = await persistLocalTemplate();
+    if (!templateId) return;
+    await publishToMeta(templateId);
   };
 
   const fetchAvailableMetaTemplates = useCallback(async () => {
@@ -899,9 +913,24 @@ export default function OrderStatusTemplatesPage() {
           <Cog6ToothIcon className="h-4 w-4" />
           الإعدادات
         </button>
+        <button
+          onClick={() => setActiveTab("incomplete")}
+          className={`flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === "incomplete"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+          }`}
+        >
+          <DocumentTextIcon className="h-4 w-4" />
+          رسائل الأوردر غير المكتمل
+        </button>
       </div>
 
-      {activeTab === "settings" ? (
+      {activeTab === "incomplete" ? (
+        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+          <IncompleteCartMessagingPanel />
+        </Suspense>
+      ) : activeTab === "settings" ? (
         /* ⚙️ Settings Panel */
         <div className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
@@ -1357,6 +1386,19 @@ export default function OrderStatusTemplatesPage() {
                   </label>
                   {metaSessions.length > 0 ? (
                     <>
+                      <button
+                        type="button"
+                        onClick={createMetaTemplate}
+                        disabled={!!publishingId || saving}
+                        className="flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                      >
+                        {publishingId ? (
+                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                          <PlusIcon className="h-3.5 w-3.5" />
+                        )}
+                        إنشاء قالب ميتا جديد
+                      </button>
                       <select
                         value={selectedMetaSession}
                         onChange={(e) => { setSelectedMetaSession(e.target.value); }}
@@ -1446,7 +1488,7 @@ export default function OrderStatusTemplatesPage() {
                         </>
                       ) : (
                         <p className="text-xs text-slate-400">
-                          لا توجد قوالب ميتا معتمدة. استخدم تبويب «القالب المحلي» واضغط «خيارات متقدمة» عشان تنشر قالب جديد على ميتا.
+                          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
                         </p>
                       )}
                     </>
@@ -1666,58 +1708,6 @@ export default function OrderStatusTemplatesPage() {
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                 أي تعديل على المحتوى أو الأزرار وبعدين "إرسال للمراجعة من جديد" هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.
               </p>
-            )}
-
-            {selectedStatus?.template?.id && (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedPublish(!showAdvancedPublish)}
-                  className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
-                  aria-expanded={showAdvancedPublish}
-                >
-                  <span>⚙️ خيارات متقدمة (نشر القالب على Meta Cloud API)</span>
-                  <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showAdvancedPublish ? "rotate-180" : ""}`} />
-                </button>
-                {showAdvancedPublish && (
-                  <div className="mt-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-                    <p className="mb-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">النشر على Meta Cloud API</p>
-                    <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400">
-                      بينشر القالب المحلي على ميتا للمراجعة — عملية تتعمل مرة وحدة وقت إنشاء قالب جديد.
-                    </p>
-                    {metaSessions.length > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={selectedMetaSession}
-                          onChange={(e) => setSelectedMetaSession(e.target.value)}
-                          aria-label="جلسة النشر على ميتا"
-                          className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        >
-                          {metaSessions.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => publishToMeta(selectedStatus.template!.id!)}
-                          disabled={publishingId === selectedStatus.template!.id}
-                          className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                        >
-                          {publishingId === selectedStatus.template!.id ? (
-                            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <GlobeAltIcon className="h-3.5 w-3.5" />
-                          )}
-                          نشر
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة</p>
-                    )}
-                  </div>
-                )}
-              </div>
             )}
             </div>
           )}

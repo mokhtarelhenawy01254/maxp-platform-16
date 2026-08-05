@@ -683,6 +683,7 @@ model WhatsAppNotificationSettings {
   abandonedCartThirdReminder    Int      @default(72)
   abandonedCartDiscountEnabled  Boolean  @default(false)
   abandonedCartDiscountPercent  Int      @default(10)
+  incompleteCartImmediateMessage Boolean @default(false)
   marketingNotificationsEnabled Boolean  @default(false)
   promotionalEnabled            Boolean  @default(false)
   couponEnabled                 Boolean  @default(false)

@@ -93,6 +93,7 @@ model Company {
   customerLoyaltyRecords          CustomerLoyaltyRecord[]
   customerLoyaltyTiers            CustomerLoyaltyTier[]
   customerNotificationPreferences CustomerNotificationPreference[]
+  customerNotificationSchedules   CustomerNotificationSchedule[]
   customerWallets                 CustomerWallet[]
   customerBlockRules              CustomerBlockRule[]
   customerBlockSettings           CustomerBlockSettings?

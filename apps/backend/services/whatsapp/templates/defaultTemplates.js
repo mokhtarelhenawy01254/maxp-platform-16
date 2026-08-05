@@ -235,6 +235,18 @@ const DEFAULT_TEMPLATES = {
     variables: ['customerName', 'itemCount', 'discount', 'discountedTotal', 'currency', 'couponCode']
   },
 
+  INCOMPLETE_CART_FIRST_APPEARANCE: {
+    name: 'رسالة أول ظهور - طلب غير مكتمل',
+    content: `مرحباً {customerName} 👋
+
+لاحظنا أنك بدأت طلباً ولم تُكمله بعد!
+
+🛒 لديك {itemCount} منتج بقيمة {total} {currency}
+
+نحن هنا لمساعدتك — أكمل طلبك الآن!`,
+    variables: ['customerName', 'itemCount', 'total', 'currency']
+  },
+
   // التسويق
   PROMOTIONAL: {
     name: 'عرض ترويجي',
@@ -620,6 +632,113 @@ const DEFAULT_TEMPLATES = {
 
 شكراً لولائك الدائم لنا! ❤️`,
     variables: ['customerName', 'points', 'currentPoints', 'reason']
+  },
+
+  LOYALTY_TIER_UPGRADED: {
+    name: 'إشعار الترقية لمستوى أعلى',
+    content: `مبروك {customerName}! 🏆
+
+تم ترقيتك إلى مستوى {tierName}!
+
+بفضل ولائك المستمر أصبحت تتمتع بمزايا خاصة:
+- خصم على طلباتك القادمة
+- شحن مجاني (حسب الإعدادات)
+
+شكراً لأنك عميل مميز عندنا! 💎`,
+    variables: ['customerName', 'tierName']
+  },
+
+  LOYALTY_TIER_DOWNGRADED: {
+    name: 'إشعار انخفاض المستوى',
+    content: `مرحباً {customerName} 🙏
+
+نود إعلامك أن مستواك في برنامج الولاء أصبح {tierName}.
+
+لا تقلق! يمكنك العودة لمستواك السابق من خلال مزيد من الطلبات.
+نقدّر وجودك معنا دائماً 💙`,
+    variables: ['customerName', 'tierName']
+  },
+
+  LOYALTY_POINTS_EXPIRY_WARNING: {
+    name: 'تنبيه قرب انتهاء النقاط',
+    content: `عزيزنا {customerName} ⏰
+
+نذكّرك أن لديك {points} نقطة ولاء تنتهي بتاريخ {expiryDate}.
+
+استخدم نقاطك قبل انتهاء صلاحيتها حتى لا تضيع!
+شكراً لولائك لنا 💙`,
+    variables: ['customerName', 'points', 'expiryDate', 'programName']
+  },
+
+  LOYALTY_POINTS_EXPIRED: {
+    name: 'إشعار انتهاء صلاحية النقاط',
+    content: `عزيزنا {customerName} 💔
+
+نأسف لإعلامك بانتهاء صلاحية {points} نقطة من نقاط الولاء الخاصة بك في برنامج {programName}.
+
+لا تحزن! يمكنك كسب نقاط جديدة مع كل طلب 🛒
+تابع شكراً لولائك لنا 💙`,
+    variables: ['customerName', 'points', 'programName']
+  },
+
+  LOYALTY_POINTS_REDEEMED: {
+    name: 'تأكيد استبدال النقاط',
+    content: `عزيزنا {customerName} ✅
+
+تم استبدال نقاط الولاء الخاصة بك بنجاح!
+
+🏷️ عدد النقاط: {points}
+💰 القيمة: {cashAmount} {currency}
+
+سيتم خصم القيمة من طلبك القادم.
+شكراً لاختيارك لنا! 💙`,
+    variables: ['customerName', 'points', 'cashAmount', 'currency', 'programName']
+  },
+
+  CASHBACK_CREDITED: {
+    name: 'إشعار ايداع كاش باك',
+    content: `مبروك {customerName}! 🎉
+
+تم ايداع {amount} {currency} كاش باك في محفظتك!
+
+📦 الطلب: #{orderNumber}
+💰 رصيدك الحالي: {balance} {currency}
+
+يمكنك استخدام رصيدك في طلبك القادم 💙`,
+    variables: ['customerName', 'amount', 'currency', 'orderNumber', 'balance']
+  },
+
+  CASHBACK_REVERSED: {
+    name: 'إشعار خصم كاش باك',
+    content: `عزيزنا {customerName} ℹ️
+
+تم خصم مبلغ {amount} {currency} من رصيد الكاش باك الخاص بك.
+
+📦 الطلب: #{orderNumber}
+
+لأي استفسار تواصل معنا 💙`,
+    variables: ['customerName', 'amount', 'currency', 'orderNumber', 'balance']
+  },
+
+  CUSTOMER_QUALITY_UPGRADED: {
+    name: 'إشعار ارتفاع تصنيف الجودة',
+    content: `مبروك {customerName}! 🌟
+
+تم رفع تصنيف جودتك إلى {qualityTier} بتقييم {score} من 100!
+
+أنت من عملائنا المميزين ونقدّر ثقتك 💎`,
+    variables: ['customerName', 'qualityTier', 'score']
+  },
+
+  CUSTOMER_QUALITY_DOWNGRADED: {
+    name: 'إشعار انخفاض تصنيف الجودة',
+    content: `عزيزنا {customerName} 🙏
+
+تم تحديث تصنيف جودتك إلى {qualityTier}.
+
+نحاول دائماً تحسين تجربتك معنا،
+تواصل معنا لأي استفسار 💙`,
+    variables: ['customerName', 'qualityTier']
   },
 
   // السلف

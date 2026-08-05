@@ -995,6 +995,7 @@ model WhatsAppNotificationSettings {
   abandonedCartThirdReminder    Int      @default(72)
   abandonedCartDiscountEnabled  Boolean  @default(false)
   abandonedCartDiscountPercent  Int      @default(10)
+  incompleteCartImmediateMessage Boolean @default(false)
   marketingNotificationsEnabled Boolean  @default(false)
   promotionalEnabled            Boolean  @default(false)
   couponEnabled                 Boolean  @default(false)
@@ -1146,6 +1147,7 @@ model WhatsAppNotificationTemplate {
   hasList                    Boolean                                @default(false)
   listData                   String?
   variables                  String?
+  channel                    String                                 @default("AUTO")
   isActive                   Boolean                                @default(true)
   isDefault                  Boolean                                @default(false)
   metaTemplateName           String?
@@ -1219,4 +1221,23 @@ model OverlayCampaignProduct {
   @@index([campaignId])
   @@index([productId])
   @@map("overlay_campaign_products")
+}
+
+/// 📅 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+/// يحدد لكل حدث: هل مفعّل؟ القناة النشطة (Auto/عادي/Meta)؟ والتأجيل قبل الإرسال
+model CustomerNotificationSchedule {
+  id            String   @id @default(cuid())
+  companyId     String
+  eventType     String
+  enabled       Boolean  @default(true)
+  activeChannel String   @default("AUTO")
+  delayValue    Int      @default(0)
+  delayUnit     String   @default("HOURS")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, eventType])
+  @@index([companyId])
+  @@map("customer_notification_schedules")
 }

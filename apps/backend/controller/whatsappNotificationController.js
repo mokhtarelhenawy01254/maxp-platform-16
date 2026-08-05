@@ -104,9 +104,18 @@ async function getTemplates(req, res) {
     const { companyId } = req.user;
     const { category, eventType } = req.query;
 
+    const ORDER_TAB_EVENT_TYPES = [
+      'CART_ABANDONED_1H',
+      'CART_ABANDONED_24H',
+      'CART_ABANDONED_72H',
+      'CART_ABANDONED_WITH_DISCOUNT',
+      'INCOMPLETE_CART_FIRST_APPEARANCE',
+    ];
+
     const where = { companyId };
     if (category) where.category = category;
     if (eventType) where.eventType = eventType;
+    else where.eventType = { notIn: ORDER_TAB_EVENT_TYPES };
 
     const templates = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: {
@@ -123,6 +132,8 @@ async function getTemplates(req, res) {
 
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
       if (existingEvents.includes(evtType)) continue;
+      if (eventType && evtType !== eventType) continue;
+      if (!eventType && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
       const templateCategory = getCategoryForEvent(evtType);
       if (!category && templateCategory === 'ORDERS') continue;
       if (category && templateCategory !== category) continue;
@@ -188,7 +199,8 @@ async function createTemplate(req, res) {
       hasList,
       listData,
       variables,
-      isDefault
+      isDefault,
+      channel
     } = req.body;
 
     if (!name || !category || !eventType || !content) {
@@ -211,6 +223,7 @@ async function createTemplate(req, res) {
         hasList: hasList || false,
         listData: listData ? JSON.stringify(listData) : null,
         variables: variables ? JSON.stringify(variables) : null,
+        channel: channel || 'AUTO',
         isDefault: isDefault || false,
         updatedAt: new Date()
       }
@@ -263,7 +276,11 @@ async function updateTemplate(req, res) {
       listData,
       variables,
       isActive,
-      isDefault
+      isDefault,
+      channel,
+      metaTemplateName,
+      metaTemplateId,
+      metaTemplateStatus
     } = req.body;
 
     const template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -279,8 +296,12 @@ async function updateTemplate(req, res) {
         hasList,
         listData: listData ? JSON.stringify(listData) : existing.listData,
         variables: variables ? JSON.stringify(variables) : existing.variables,
+        channel: channel !== undefined ? channel : existing.channel,
         isActive,
         isDefault,
+        metaTemplateName,
+        metaTemplateId,
+        metaTemplateStatus,
         updatedAt: new Date()
       }
     }));
@@ -786,6 +807,7 @@ function getCategoryForEvent(eventType) {
   }
   if (eventType === 'NEWSLETTER_SUBSCRIBED') return 'MARKETING';
   if (eventType.startsWith('CART_')) return 'ABANDONED_CART';
+  if (eventType === 'INCOMPLETE_CART_FIRST_APPEARANCE') return 'ABANDONED_CART';
   if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT') || eventType === 'LOW_STOCK_ALERT') return 'PRODUCTS';
   if (eventType.startsWith('ATTENDANCE_') || eventType.startsWith('LEAVE_') || eventType.startsWith('PAYROLL') || eventType.startsWith('BIRTHDAY_EMPLOYEE') || eventType.startsWith('WARNING_') || eventType.startsWith('ANNOUNCEMENT')) return 'HR';
   if (eventType === 'OTP') return 'SYSTEM';

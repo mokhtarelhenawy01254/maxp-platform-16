@@ -152,6 +152,15 @@ router.post('/checkout-draft', async (req, res) => {
           },
         });
 
+    if (!existingCart && savedCart) {
+      try {
+        const { handleCartCreated } = require('../services/orders/incompleteCartMessagingService');
+        handleCartCreated(savedCart);
+      } catch (triggerError) {
+        console.warn('⚠️ [PUBLIC-ORDERS] Incomplete cart messaging trigger failed:', triggerError.message);
+      }
+    }
+
     if (typeof res.cookie === 'function') {
       res.cookie('cart_id', resolvedCartId, {
         maxAge: CHECKOUT_DRAFT_TTL_MS,
