@@ -5188,10 +5188,32 @@ async function syncLabels(sessionId) {
         // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
         if (session.sock?.resyncAppState) {
             try {
-                // مزامنة الـ app state collections اللي فيها labels
+                // جملة reset للـ app-state-sync-version عشان نجبر واتساب يبعت snapshot كامل
+                // (الـ resync من غير reset بيجيب patches زيادة بس — ومفيش patches جديدة فبيرجع فاضي)
+                const keys = session.sock.authState?.keys;
+                if (keys?.get && keys?.set) {
+                    try {
+                        const before = await keys.get('app-state-sync-version', ['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low']);
+                        console.log(`🔍 [SYNC-LABELS] Current app-state versions:`, JSON.stringify(Object.keys(before).map(k => ({ c: k, v: before[k]?.version }))));
+                        await keys.set({
+                            'app-state-sync-version': {
+                                regular: null,
+                                regular_high: null,
+                                regular_low: null,
+                                critical_block: null,
+                                critical_unblock_low: null
+                            }
+                        });
+                        console.log('🔍 [SYNC-LABELS] Reset app-state-sync-version to force full snapshot');
+                    } catch (keyErr) {
+                        console.log('⚠️ Failed to reset app-state-sync-version:', keyErr.message);
+                    }
+                } else {
+                    console.log('🔍 [SYNC-LABELS] keys unavailable:', !!keys, keys && Object.keys(keys));
+                }
                 await Promise.race([
                     session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 20000))
                 ]);
                 console.log(`🔍 [SYNC-LABELS] After resyncAppState: ${session.labels.size} labels, ${session.labelAssociations.size} associations`);
             } catch (resyncErr) {
