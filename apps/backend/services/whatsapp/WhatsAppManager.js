@@ -5228,32 +5228,28 @@ async function syncLabels(sessionId) {
 
         let labels = Array.from(session.labels.values());
 
-        // المزامنة اليدوية = إعادة اتصال كاملة بالجلسة
-        // عشان الـ initial sync يجيب كل الـ labels.edit و labels.association events من واتساب
-        // (الـ resyncAppState لوحده مبيجيبش الـ labels لو الجلسة جديدة أو الـ cache اتمسح)
+        // من غير reconnect — بندفع الـ app state sync ونستنى الـ events من غير ما نقطع الاتصال
         let activeSession = session;
         try {
-            const companyId = activeSession.companyId;
-            if (companyId) {
-                console.log('🔄 [SYNC-LABELS] Forcing session reconnect to fetch labels from WhatsApp...');
-                await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
-                // الـ reconnect بيحصل async — بنستنى عشان الـ initial sync
-                // يوصّل الـ labels.edit و labels.association events
-                activeSession = getSession(sessionId) || activeSession;
-                for (let i = 0; i < 20; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 2500));
-                    const refreshed = getSession(sessionId);
-                    if (refreshed && refreshed.labels.size > 0) {
-                        activeSession = refreshed;
-                        labels = Array.from(refreshed.labels.values());
-                        console.log(`🔍 [SYNC-LABELS] Got ${labels.length} labels after reconnect (attempt ${i + 1})`);
-                        break;
-                    }
-                    if (i === 19) activeSession = getSession(sessionId) || activeSession;
+            if (session.sock?.resyncAppState) {
+                await Promise.race([
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
+                ]);
+            }
+            // نستنى شوية عشان الـ labels.edit events تيجي من غير ما نقطع الاتصال
+            for (let i = 0; i < 6; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const refreshed = getSession(sessionId);
+                if (refreshed && refreshed.labels.size > labels.length) {
+                    activeSession = refreshed;
+                    labels = Array.from(refreshed.labels.values());
+                    console.log(`🔍 [SYNC-LABELS] Got ${labels.length} labels after app-state sync (attempt ${i + 1})`);
+                    break;
                 }
             }
-        } catch (reconnectErr) {
-            console.error('❌ Reconnect failed while syncing labels:', reconnectErr.message);
+        } catch (resyncErr) {
+            console.log('⚠️ app-state sync failed during label sync:', resyncErr.message);
         }
 
         // لو لسه فاضي — نجيب من الداتابيز
