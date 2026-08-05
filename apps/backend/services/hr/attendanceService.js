@@ -1958,9 +1958,11 @@ class AttendanceService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       const userWhere = {
-        companyId,
-        isActive: true,
         employeeNumber: { not: null },
+        OR: [
+          { companyId },
+          { userCompanies: { some: { companyId, isActive: true } } },
+        ],
       };
 
       if (employeeId) userWhere.id = employeeId;
@@ -2189,9 +2191,11 @@ class AttendanceService {
       }
 
       const userWhere = {
-        companyId,
-        isActive: true,
         employeeNumber: { not: null },
+        OR: [
+          { companyId },
+          { userCompanies: { some: { companyId, isActive: true } } },
+        ],
       };
       if (employeeId) userWhere.id = employeeId;
       if (departmentId) userWhere.departmentId = departmentId;
@@ -2406,9 +2410,11 @@ class AttendanceService {
       }
 
       const userWhere = {
-        companyId,
-        isActive: true,
         employeeNumber: { not: null },
+        OR: [
+          { companyId },
+          { userCompanies: { some: { companyId, isActive: true } } },
+        ],
       };
       if (employeeId) userWhere.id = employeeId;
       if (departmentId) userWhere.departmentId = departmentId;
