@@ -14,7 +14,14 @@ export type FeatureAuditArea =
   | "finance"
   | "productivity"
   | "integration"
-  | "platform";
+  | "platform"
+  | "orders"
+  | "shipping"
+  | "warehouse"
+  | "payments"
+  | "procurement"
+  | "wholesale"
+  | "accounting";
 
 export type FeatureRoute = {
   path: string;
@@ -66,6 +73,13 @@ export const areaLabels: Record<FeatureAuditArea, string> = {
   productivity: "الإنتاجية",
   integration: "التكاملات",
   platform: "المنصة",
+  orders: "الطلبات والتنفيذ",
+  shipping: "الشحن والتوصيل",
+  warehouse: "المخزون والمستودعات",
+  payments: "الدفع والتحصيل",
+  procurement: "المشتريات والموردين",
+  wholesale: "البيع بالجملة",
+  accounting: "الفواتير والمحاسبة",
 };
 
 export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
@@ -88,7 +102,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "orders-core",
-    area: "commerce",
+    area: "orders",
     label: "إدارة الطلبات الأساسية",
     description: "قائمة الطلبات، التجهيز، الطلبات الناقصة، POS، الطلب اليدوي، والمرتجعات.",
     status: "covered",
@@ -108,7 +122,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "order-shipping",
-    area: "commerce",
+    area: "shipping",
     label: "الشحن و Turbo",
     description: "إعدادات Turbo، شركات الشحن، سجلات الشحن، وتذاكر Turbo.",
     status: "covered",
@@ -127,7 +141,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "order-invoicing",
-    area: "finance",
+    area: "accounting",
     label: "فواتير الطلبات",
     description: "فواتير الطلبات، إعدادات الفواتير، والفواتير الاحترافية.",
     status: "covered",
@@ -163,7 +177,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "inventory",
-    area: "commerce",
+    area: "warehouse",
     label: "المخزون والمستودعات",
     description: "المخزون، المستودعات، الجرد، تحليلات وتقارير المخزون.",
     status: "covered",
@@ -500,7 +514,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "procurement",
-    area: "commerce",
+    area: "procurement",
     label: "المشتريات والموردين",
     description: "الموردون، أوامر الشراء، فواتير الشراء، ومدفوعات الموردين.",
     status: "covered",
@@ -556,7 +570,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
   },
   {
     id: "wholesale",
-    area: "commerce",
+    area: "wholesale",
     label: "البيع بالجملة",
     description: "قوائم الأسعار، عملاء الجملة، كشوف الحساب، المديونية، وبوابة الموزعين.",
     status: "covered",

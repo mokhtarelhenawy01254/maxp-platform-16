@@ -1,37 +1,79 @@
 [
   {
     "category": "ECOMMERCE",
-    "name": "E-Commerce",
-    "nameEn": "E-Commerce",
+    "name": "المتجر والمنتجات",
+    "nameEn": "Store & Products",
     "iconKey": "Store"
   },
   {
+    "category": "ORDER_OPS",
+    "name": "الطلبات والتنفيذ",
+    "nameEn": "Orders & Fulfillment",
+    "iconKey": "ClipboardList"
+  },
+  {
+    "category": "WAREHOUSE",
+    "name": "المخزون والمستودعات",
+    "nameEn": "Inventory & Warehousing",
+    "iconKey": "PackageOpen"
+  },
+  {
+    "category": "SHIPPING",
+    "name": "الشحن والتوصيل",
+    "nameEn": "Shipping & Delivery",
+    "iconKey": "Truck"
+  },
+  {
+    "category": "ACCOUNTING",
+    "name": "الفواتير والمحاسبة",
+    "nameEn": "Invoicing & Accounting",
+    "iconKey": "FileText"
+  },
+  {
+    "category": "PAYMENTS",
+    "name": "الدفع والتحصيل",
+    "nameEn": "Payments & Collections",
+    "iconKey": "CreditCard"
+  },
+  {
+    "category": "PROCUREMENT",
+    "name": "المشتريات والموردين",
+    "nameEn": "Procurement & Suppliers",
+    "iconKey": "ShoppingBag"
+  },
+  {
+    "category": "WHOLESALE",
+    "name": "البيع بالجملة",
+    "nameEn": "Wholesale & B2B",
+    "iconKey": "Percent"
+  },
+  {
     "category": "ANALYTICS",
-    "name": "Analytics",
+    "name": "التحليلات",
     "nameEn": "Analytics",
     "iconKey": "BarChart3"
   },
   {
     "category": "MARKETING",
-    "name": "Marketing",
+    "name": "التسويق",
     "nameEn": "Marketing",
     "iconKey": "Megaphone"
   },
   {
     "category": "AI",
-    "name": "AI",
+    "name": "الذكاء الاصطناعي",
     "nameEn": "AI",
     "iconKey": "Bot"
   },
   {
     "category": "CRM",
-    "name": "CRM",
+    "name": "إدارة العملاء",
     "nameEn": "CRM",
     "iconKey": "Users"
   },
   {
     "category": "PRODUCTIVITY",
-    "name": "Productivity",
+    "name": "الإنتاجية",
     "nameEn": "Productivity",
     "iconKey": "Calendar"
   },
@@ -40,5 +82,77 @@
     "name": "النظام الطبي",
     "nameEn": "Medical System",
     "iconKey": "Heart"
+  },
+  {
+    "category": "SALES",
+    "name": "المبيعات",
+    "nameEn": "Sales",
+    "iconKey": "ShoppingCart"
+  },
+  {
+    "category": "HR",
+    "name": "الموارد البشرية",
+    "nameEn": "HR",
+    "iconKey": "Users"
+  },
+  {
+    "category": "COMMUNICATION",
+    "name": "التواصل",
+    "nameEn": "Communication",
+    "iconKey": "MessageSquare"
+  },
+  {
+    "category": "INTEGRATION",
+    "name": "التكاملات",
+    "nameEn": "Integrations",
+    "iconKey": "Zap"
+  },
+  {
+    "category": "FINANCE",
+    "name": "المالية",
+    "nameEn": "Finance",
+    "iconKey": "DollarSign"
+  },
+  {
+    "category": "SUPPORT",
+    "name": "الدعم وخدمة العملاء",
+    "nameEn": "Support",
+    "iconKey": "Headphones"
+  },
+  {
+    "category": "WHATSAPP",
+    "name": "واتساب",
+    "nameEn": "WhatsApp",
+    "iconKey": "MessageSquare"
+  },
+  {
+    "category": "SEO",
+    "name": "تحسين محركات البحث",
+    "nameEn": "SEO",
+    "iconKey": "Globe"
+  },
+  {
+    "category": "THEMES",
+    "name": "الثيمات والقوالب",
+    "nameEn": "Themes",
+    "iconKey": "Palette"
+  },
+  {
+    "category": "DESIGN",
+    "name": "التصميم",
+    "nameEn": "Design",
+    "iconKey": "Palette"
+  },
+  {
+    "category": "GAMIFICATION",
+    "name": "الألعاب والترفيه",
+    "nameEn": "Gamification",
+    "iconKey": "Gamepad2"
+  },
+  {
+    "category": "AUTOMATION",
+    "name": "الأتمتة",
+    "nameEn": "Automation",
+    "iconKey": "Layers"
   }
 ]

@@ -30,7 +30,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "mainRoute": null,
         "adminRoute": null,
-        "category": "ECOMMERCE",
+        "category": "WAREHOUSE",
         "rating": 0,
         "reviewCount": 0,
         "installCount": 0,
@@ -1013,7 +1013,7 @@ async function seedMarketplace() {
         "isActive": true,
         "isPublic": true,
         "isPopular": true,
-        "category": "ECOMMERCE",
+        "category": "ORDER_OPS",
         "trialDays": 0
       },
       {
@@ -1028,7 +1028,7 @@ async function seedMarketplace() {
         "isActive": true,
         "isPublic": true,
         "isFeatured": true,
-        "category": "ECOMMERCE",
+        "category": "SHIPPING",
         "trialDays": 0
       },
       {
@@ -1058,7 +1058,7 @@ async function seedMarketplace() {
         "isActive": true,
         "isPublic": true,
         "isPopular": false,
-        "category": "FINANCE",
+        "category": "ACCOUNTING",
         "trialDays": 0
       },
       {

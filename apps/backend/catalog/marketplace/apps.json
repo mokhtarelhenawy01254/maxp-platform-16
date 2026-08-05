@@ -441,7 +441,7 @@
     "name": "Procurement Pro",
     "nameEn": "Procurement Pro",
     "description": "Supplier, purchase order, purchase invoice, and supplier payment workflows.",
-    "category": "ECOMMERCE",
+    "category": "PROCUREMENT",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
@@ -491,7 +491,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-05-01T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-affiliate-pro",
@@ -557,7 +557,7 @@
     "name": "Order Source Tracking",
     "nameEn": "Order Source Tracking",
     "description": "Track the operational source of each order, including manual, storefront, import, API, and conversation sources.",
-    "category": "ECOMMERCE",
+    "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
@@ -595,7 +595,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-05-04T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-campaign-attribution",
@@ -649,7 +649,7 @@
     "name": "Order Confirmation & Distribution",
     "nameEn": "Order Confirmation & Distribution",
     "description": "Confirmation and internal assignment details for order operations teams.",
-    "category": "ECOMMERCE",
+    "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
@@ -687,7 +687,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-05-04T00:00:00Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-unified-inbox",
@@ -925,7 +925,7 @@
     "name": "المخزون والمستودعات",
     "nameEn": "Inventory Pro",
     "description": "نظام إدارة مخزون متقدم مع باركود، تتبع Serial Numbers، وتنبيهات ذكية.",
-    "category": "ECOMMERCE",
+    "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
@@ -975,7 +975,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-order-shipping-turbo",
@@ -983,7 +983,7 @@
     "name": "الشحن الذكي",
     "nameEn": "Smart Shipping",
     "description": "تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات.",
-    "category": "ECOMMERCE",
+    "category": "SHIPPING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
@@ -1027,7 +1027,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-order-invoicing",
@@ -1035,7 +1035,7 @@
     "name": "الفواتير",
     "nameEn": "Invoicing",
     "description": "تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.",
-    "category": "ECOMMERCE",
+    "category": "ACCOUNTING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 129,
     "yearlyPrice": 1290,
@@ -1079,7 +1079,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-wholesale-pro",
@@ -1087,7 +1087,7 @@
     "name": "البيع بالجملة",
     "nameEn": "Wholesale Pro",
     "description": "نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.",
-    "category": "ECOMMERCE",
+    "category": "WHOLESALE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2990,
@@ -1143,7 +1143,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-30T00:00:00.000Z",
-    "updatedAt": "2026-06-30T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-product-presentations",
@@ -1208,14 +1208,16 @@
     "name": "COD Deposit",
     "nameEn": "COD Deposit",
     "description": "طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.",
-    "category": "ECOMMERCE",
+    "category": "PAYMENTS",
     "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": ["store"],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
       "surface": "داخل إعدادات الدفع، ولوحة تحكم الطلبات، وواتساب.",
@@ -1256,7 +1258,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
-    "updatedAt": "2026-07-21T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
     "id": "cat-app-agent-workspace",
@@ -1264,14 +1266,16 @@
     "name": "مركز التأكيد والمتابعة",
     "nameEn": "Confirmation & Follow-up Center",
     "description": "مساحة عمل موحدة لفريق التأكيد — إدارة اتصالات العملاء، تأكيد الطلبات، جدولة المتابعات، وتحديث الحالات.",
-    "category": "ECOMMERCE",
+    "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": ["store"],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "فرق التأكيد والمتابعة الداخلية التي تدير الطلبات الواردة.",
       "surface": "داخل صفحة مركز التأكيد والمتابعة بشكل مباشر.",
@@ -1306,6 +1310,6 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-29T00:00:00.000Z",
-    "updatedAt": "2026-07-29T00:00:00.000Z"
+    "updatedAt": "2026-08-04T00:00:00.000Z"
   }
 ]

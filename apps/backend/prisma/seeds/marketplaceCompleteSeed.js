@@ -66,7 +66,7 @@ async function seedMarketplace() {
     {
       slug: 'inventory-pro',
       name: 'إدارة المخزون المتقدمة',
-      category: 'ECOMMERCE',
+      category: 'WAREHOUSE',
       description: 'نظام إدارة مخزون متقدم مع Barcode، تتبع Serial Numbers، وتنبيهات ذكية.',
       icon: '📦',
       monthlyPrice: 199,
@@ -862,7 +862,7 @@ async function seedMarketplace() {
     {
       slug: 'order-core',
       name: 'إدارة الطلبات - المستوى الأساسي',
-      category: 'ECOMMERCE',
+      category: 'ORDER_OPS',
       description: 'نظام متكامل لمعالجة الطلبات، تتبع الحالات، وطباعة الفواتير. يشمل التكامل مع سلة التسوق.',
       icon: '📝',
       monthlyPrice: 0,
@@ -882,7 +882,7 @@ async function seedMarketplace() {
     {
       slug: 'order-shipping-turbo',
       name: 'شحن Turbo الذكي',
-      category: 'ECOMMERCE',
+      category: 'SHIPPING',
       description: 'تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات.',
       icon: '🚀',
       monthlyPrice: 149,
@@ -922,7 +922,7 @@ async function seedMarketplace() {
     {
       slug: 'order-invoicing',
       name: 'نظام الفواتير المتقدم',
-      category: 'FINANCE',
+      category: 'ACCOUNTING',
       description: 'تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.',
       icon: '🧾',
       monthlyPrice: 129,
