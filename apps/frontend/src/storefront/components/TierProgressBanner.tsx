@@ -1,4 +1,3 @@
-import React from "react";
 import { useCheckoutStore, StorefrontTierProgress } from "../store/useCheckoutStore";
 
 const METHOD_LABELS: Record<string, string> = {

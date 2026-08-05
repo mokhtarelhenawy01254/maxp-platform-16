@@ -374,8 +374,6 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const loyaltyDiscountPercent = Number(tierProgress?.rewards?.discountPercent || 0);
   const loyaltyDiscount =
     loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
-  const effectiveShipping =
-    loyaltyFreeShipping && Number(shippingCost) > 0 ? 0 : Number(shippingCost);
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
@@ -649,6 +647,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         ? "سيتم حساب الشحن بمجرد اكتمال تحميل بيانات المتجر."
         : "Shipping will be calculated once storefront details finish loading.",
   });
+  const effectiveShipping =
+    loyaltyFreeShipping && Number(shippingCost) > 0 ? 0 : Number(shippingCost);
   const showLineItems = parseBooleanSetting(
     sectionSettings?.showLineItems,
     isFittingRoomSummary,
