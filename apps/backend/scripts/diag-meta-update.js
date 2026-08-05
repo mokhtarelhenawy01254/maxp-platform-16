@@ -7,8 +7,11 @@
  * 4) يعرض الاستجابة الخام من ميتا لكل محاولة
  */
 
-const { getSharedPrismaClient } = require('./services/sharedDatabase');
-const MetaCloudProvider = require('./services/whatsapp/providers/MetaCloudProvider');
+const path = require('path');
+const backendRoot = path.resolve(__dirname, '..');
+
+const { getSharedPrismaClient } = require(path.join(backendRoot, 'services/sharedDatabase'));
+const MetaCloudProvider = require(path.join(backendRoot, 'services/whatsapp/providers/MetaCloudProvider'));
 
 const companyEmail = 'swan@h2m.com';
 
@@ -65,7 +68,7 @@ async function main() {
   console.log('\nFOUND meta template: name=' + (found && found.name) + ' id=' + (found && found.id) + ' status=' + (found && found.status));
 
   // بناء payload مشابه لما يرسله controller
-  const { buildMetaTemplatePayload } = require('./utils/metaTemplatePayload');
+  const { buildMetaTemplatePayload } = require(path.join(backendRoot, 'utils/metaTemplatePayload'));
   const built = buildMetaTemplatePayload(local);
   const bodyWithExample = built.variableCount > 0
     ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `قيمة ${i + 1}`)] } }
