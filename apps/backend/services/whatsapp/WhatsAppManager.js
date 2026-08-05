@@ -5187,38 +5187,15 @@ async function syncLabels(sessionId) {
     try {
         // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
         if (session.sock?.resyncAppState) {
-            const prevLabels = session.labels;
-            const prevAssociations = session.labelAssociations;
-            session.labels = new Map();
-            session.labelAssociations = new Map();
             try {
-                // نجبر واتساب يبعت snapshot كامل (مش patches زيادة بس)
-                // عشان كده بنعمل reset للـ app-state-sync-version للـ collections اللي فيها labels
-                const keys = session.sock.authState?.keys;
-                if (keys) {
-                    try {
-                        await keys.set({
-                            'app-state-sync-version': {
-                                regular: null,
-                                regular_high: null,
-                                regular_low: null,
-                                critical_block: null,
-                                critical_unblock_low: null
-                            }
-                        });
-                    } catch (keyErr) {
-                        console.log('⚠️ Failed to reset app-state-sync-version:', keyErr.message);
-                    }
-                }
+                // مزامنة الـ app state collections اللي فيها labels
                 await Promise.race([
                     session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 20000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
                 ]);
+                console.log(`🔍 [SYNC-LABELS] After resyncAppState: ${session.labels.size} labels, ${session.labelAssociations.size} associations`);
             } catch (resyncErr) {
                 console.log('⚠️ resyncAppState failed, using existing cache:', resyncErr.message);
-                // استرجاع الـ cache القديم عشان ميرجعش فاضي
-                session.labels = prevLabels;
-                session.labelAssociations = prevAssociations;
             }
         }
         // حفظ associations في الداتابيز
@@ -5254,29 +5231,25 @@ async function syncLabels(sessionId) {
         // المزامنة اليدوية = إعادة اتصال كاملة بالجلسة
         // عشان الـ initial sync يجيب كل الـ labels.edit و labels.association events من واتساب
         // (الـ resyncAppState لوحده مبيجيبش الـ labels لو الجلسة جديدة أو الـ cache اتمسح)
+        let activeSession = session;
         try {
-            const companyId = session.companyId;
+            const companyId = activeSession.companyId;
             if (companyId) {
                 console.log('🔄 [SYNC-LABELS] Forcing session reconnect to fetch labels from WhatsApp...');
                 await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
-                // الـ reconnect بيحصل async — بنستنى شوية عشان الـ initial sync
+                // الـ reconnect بيحصل async — بنستنى عشان الـ initial sync
                 // يوصّل الـ labels.edit و labels.association events
-                for (let i = 0; i < 12; i++) {
+                activeSession = getSession(sessionId) || activeSession;
+                for (let i = 0; i < 20; i++) {
                     await new Promise(resolve => setTimeout(resolve, 2500));
                     const refreshed = getSession(sessionId);
                     if (refreshed && refreshed.labels.size > 0) {
+                        activeSession = refreshed;
                         labels = Array.from(refreshed.labels.values());
-                        session.labelAssociations = refreshed.labelAssociations;
                         console.log(`🔍 [SYNC-LABELS] Got ${labels.length} labels after reconnect (attempt ${i + 1})`);
                         break;
                     }
-                }
-                if (labels.length === 0) {
-                    const refreshed = getSession(sessionId);
-                    if (refreshed) {
-                        labels = Array.from(refreshed.labels.values());
-                        session.labelAssociations = refreshed.labelAssociations;
-                    }
+                    if (i === 19) activeSession = getSession(sessionId) || activeSession;
                 }
             }
         } catch (reconnectErr) {
@@ -5293,7 +5266,7 @@ async function syncLabels(sessionId) {
                     });
                     labels = dbLabels.map(l => ({ id: l.id, name: l.name, color: l.color, predefinedId: l.predefinedId }));
                     for (const l of labels) {
-                        session.labels.set(l.id, l);
+                        activeSession.labels.set(l.id, l);
                     }
                 }
             } catch (dbErr) {
@@ -5308,7 +5281,7 @@ async function syncLabels(sessionId) {
             name: label.name,
             color: formatLabelColor(label.color),
             predefinedId: label.predefinedId,
-            chatCount: session.labelAssociations.get(label.id)?.size || 0
+            chatCount: activeSession.labelAssociations.get(label.id)?.size || 0
         }));
     } catch (error) {
         console.error('❌ Error syncing labels:', error);
