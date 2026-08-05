@@ -43,7 +43,7 @@ jobs:
             "$SERVER_USER@$SERVER_HOST:/tmp/diag-meta-update.js"
           echo "✅ Scripts uploaded to /tmp"
 
-      - name: Execute diagnostics on server
+      - name: Execute test on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -53,8 +53,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            cd /var/www/backend2
-            echo "📍 Running diag-meta-update.js (from server dir, uses live modules)..."
-            cp /tmp/diag-meta-update.js ./scripts/diag-meta-update.js
-            node scripts/diag-meta-update.js
-            echo "=== DIAG DONE ==="
+            echo "📍 Running test-meta-resubmit-fix.js (calls real resubmit-meta endpoint)..."
+            export PASSWORD="${{ github.event.inputs.password }}"
+            node /tmp/test-meta-resubmit-fix.js
+            echo "✅ Finished!"

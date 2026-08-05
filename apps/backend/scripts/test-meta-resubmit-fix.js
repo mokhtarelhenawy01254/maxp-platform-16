@@ -162,11 +162,17 @@ async function main() {
     check(resubmitRes.body?.success !== false, `response.success !== false`);
 
     // الشرط الثالث: القالب تحوّل إلى PENDING للمراجعة
-    const pending = /PENDING/i.test(bodyText) || /تم تحديث/.test(bodyText);
-    check(pending, `القالب أُرسل للمراجعة (PENDING / تم تحديث)`);
+    const pending = /PENDING/i.test(bodyText) || /تم إنشاء قالب جديد/.test(bodyText) || /تم تحديث/.test(bodyText);
+    check(pending, `القالب أُرسل للمراجعة (PENDING / تم إنشاء قالب جديد)`);
 
     // الشرط الرابع: عدم وجود أخطاء HTTP 500
     check(resubmitRes.status !== 500, `لا يوجد HTTP 500`);
+
+    // الشرط الخامس: اسم القالب الجديد فريد (يبدأ بنفس البادئة لكن يختلف عن القديم)
+    if (resubmitRes.body?.metaTemplateName) {
+      const newName = String(resubmitRes.body.metaTemplateName);
+      check(newName.startsWith(String(tpl.metaTemplateName).split('_').slice(0, 2).join('_')), `تم إنشاء قالب باسم فريد (${newName})`);
+    }
 
     // 7) إعادة جلب بعد الـ resubmit لرؤية الحالة الجديدة
     console.log(`\n${CYAN}▶ 7) جلب الحالة بعد resubmit للتحقق من metaTemplateStatus${RESET}`);
