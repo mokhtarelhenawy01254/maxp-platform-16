@@ -8,12 +8,14 @@ const calculateCustomerScore = async (customerId, companyId) => {
         const prisma = getSharedPrismaClient();
 
         // 1. Fetch all orders for this customer in final states
+        // Must only contain valid OrderStatus enum members (see prisma/schema/enums.prisma).
+        // 'COMPLETED' is not part of the OrderStatus enum and would make Prisma reject the query.
         const orders = await prisma.order.findMany({
             where: {
                 customerId,
                 companyId,
                 status: {
-                    in: ['DELIVERED', 'COMPLETED', 'RETURNED', 'CANCELLED']
+                    in: ['DELIVERED', 'RETURNED', 'CANCELLED']
                 }
             },
             include: {
