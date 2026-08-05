@@ -11,7 +11,7 @@ import {
   ShoppingBag, Flame, Rocket, Brain, BadgeCheck,
   Clock, Shield, Award, GraduationCap, LayoutGrid,
   ListFilter, Eye, SlidersHorizontal, Truck,
-  CreditCard, Gamepad2, Palette, ClipboardList,
+  CreditCard, Gamepad2, Palette, ClipboardList, Percent,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
