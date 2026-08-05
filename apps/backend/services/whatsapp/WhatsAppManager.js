@@ -5212,8 +5212,8 @@ async function syncLabels(sessionId) {
                     console.log('🔍 [SYNC-LABELS] keys unavailable:', !!keys, keys && Object.keys(keys));
                 }
                 await Promise.race([
-                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 20000))
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], true),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 30000))
                 ]);
                 console.log(`🔍 [SYNC-LABELS] After resyncAppState: ${session.labels.size} labels, ${session.labelAssociations.size} associations`);
             } catch (resyncErr) {
