@@ -211,4 +211,33 @@ describe("OrderStatusTemplatesPage Meta template binding", () => {
       )
     );
   });
+
+  test("زر إنشاء قالب ميتا جديد بيحفظ المحلي ثم بينشر القالب على ميتا للمراجعة", async () => {
+    mockApi(makeStatus({}));
+    apiClient.post.mockImplementation((url: string, body?: any) => {
+      if (url.endsWith("/publish")) {
+        return Promise.resolve({ data: { success: true } });
+      }
+      return Promise.resolve({ data: { success: true, metaTemplateName: "order_confirm_ar" } });
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(screen.getByRole("button", { name: /تعديل/ }));
+    await user.click(screen.getByRole("tab", { name: /ربط قالب ميتا/ }));
+
+    await user.click(screen.getByRole("button", { name: /إنشاء قالب ميتا جديد/ }));
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        expect.stringContaining("/publish"),
+        expect.objectContaining({ sessionId: "ms1" })
+      )
+    );
+    expect(apiClient.put).toHaveBeenCalledWith(
+      expect.stringContaining("/templates/t1"),
+      expect.objectContaining({ content: "مرحبا {{customerName}} أكد طلبك" })
+    );
+  });
 });
