@@ -435,7 +435,7 @@ export const storefrontApi = {
   getTierProgress: async (phone: string) => {
     const params: Record<string, string> = { phone };
     const companyId = getCompanyId();
-    if (companyId) params.companyId = companyId;
+    if (companyId) params['companyId'] = companyId;
     const url = buildUrl(API_BASE, "/loyalty/tier-progress", params);
     const response = await fetch(url, {
       method: "GET",
