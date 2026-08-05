@@ -770,6 +770,15 @@ class CustomerLoyaltyService {
       data: updateData
     });
 
+    // إعادة حساب مستوى العميل فوراً بعد تغيير الطريقة/المزايا
+    const records = await prisma.customerLoyaltyRecord.findMany({
+      where: { customerId, companyId },
+      select: { programId: true }
+    });
+    for (const r of records) {
+      await this.updateCustomerTier(companyId, customerId, r.programId);
+    }
+
     return {
       id: updated.id,
       firstName: updated.firstName,
