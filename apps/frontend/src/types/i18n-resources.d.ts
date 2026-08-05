@@ -8493,6 +8493,31 @@ declare module 'react-i18next' {
         categories: {
           title: string;
           all: string;
+          ecommerce: string;
+          orderOps: string;
+          warehouse: string;
+          shipping: string;
+          accounting: string;
+          payments: string;
+          procurement: string;
+          wholesale: string;
+          ai: string;
+          marketing: string;
+          sales: string;
+          crm: string;
+          finance: string;
+          analytics: string;
+          hr: string;
+          support: string;
+          whatsapp: string;
+          seo: string;
+          integration: string;
+          themes: string;
+          productivity: string;
+          communication: string;
+          gamification: string;
+          medical: string;
+          design: string;
           groups: {
             commerce: string;
             data: string;
