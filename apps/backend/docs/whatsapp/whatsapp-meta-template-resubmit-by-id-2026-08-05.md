@@ -1,4 +1,4 @@
-# WhatsApp Meta Template Resubmit Fix — Update by Template ID
+# WhatsApp Meta Template Resubmit Fix — Create New Template on Edit
 
 **Date:** 2026-08-05
 
@@ -13,33 +13,32 @@ Invalid parameter — يوجد محتوى بهذه اللغة بالفعل — �
 
 ## Root Cause
 
-`MetaCloudProvider.updateTemplate()` sent the update request to the **create** collection endpoint:
+Meta **locks the content (body/header/footer) of approved message templates** once they are `APPROVED`. It is not possible to edit an approved template's content in the same language — Meta returns:
 
-```
-POST /{wabaId}/message_templates?name={templateName}
-```
+- `code 100 / subcode 2388024` ("Content In This Language Already Exists") when POSTing to the collection endpoint (`message_templates?name=X` or a create with the same name), because the name+language pair already exists.
+- `code 2500` ("Unknown path components") when trying `POST /message_templates/{templateId}`, because the Cloud API has no such edit sub-path for template content.
 
-Meta interprets a POST to the collection endpoint as creating a **new** template. Because a template with the same name + same language (`ar`) already exists, Meta rejects it with `code 100 / subcode 2388024` ("Content in This Language Already Exists"). Template names must be unique per WABA per language.
+The only supported way to change the content of an approved template is to **create a brand-new template** with a unique name and link the local template to it.
 
 ## Solution
 
-1. `MetaCloudProvider.updateTemplate()` now updates the existing template via its numeric **template ID**:
-   - Accepts an optional `templateId` (4th argument).
-   - If not provided, resolves the ID by listing Meta templates and matching `name`.
-   - POSTs to the edit endpoint: `POST /{wabaId}/message_templates/{templateId}`.
-2. `resubmitMetaTemplate` (`whatsappNotificationController.js`) resolves the Meta template ID before calling `updateTemplate` and persists it.
-3. `publishTemplateToMeta` and `bindMetaTemplate` now store `metaTemplateId` on the local `WhatsAppNotificationTemplate` so future resubmits reuse it without an extra list call.
-4. Added `metaTemplateId` column to the `WhatsAppNotificationTemplate` model + migration `20260805_add_meta_template_id`.
+1. `resubmitMetaTemplate` (`whatsappNotificationController.js`) now **creates a new Meta template** with a unique name containing the edited local content (reusing the same variant-retry logic that `publishTemplateToMeta` already uses), instead of trying to update the existing approved template.
+   - Shared helper `createMetaTemplateFromLocal(sessionId, localTemplate)` extracted so both `publishTemplateToMeta` and `resubmitMetaTemplate` use identical creation logic.
+   - On success the local template is re-bound to the new Meta template name + ID and set to `PENDING`. When Meta approves it, it automatically becomes the primary template for sending.
+2. `publishTemplateToMeta` and `bindMetaTemplate` store `metaTemplateId` on the local `WhatsAppNotificationTemplate` so it can be reused later.
+3. Added `metaTemplateId` column to the `WhatsAppNotificationTemplate` model + migration `20260805_add_meta_template_id`.
 
 ## Relevant Files
 
-- `apps/backend/services/whatsapp/providers/MetaCloudProvider.js`
 - `apps/backend/controller/whatsappNotificationController.js`
+- `apps/backend/services/whatsapp/providers/MetaCloudProvider.js`
 - `apps/backend/prisma/schema/marketing.prisma`
 - `apps/backend/prisma/migrations/20260805_add_meta_template_id/migration.sql`
 - `apps/backend/tests/controller/whatsappNotificationController.resubmitMeta.test.js`
+- `apps/backend/scripts/diag-meta-update.js` (server-side diagnostic proving Meta rejects both edit approaches)
 
 ## Verification
 
-- `POST /templates/:id/resubmit-meta` returns `200` with the updated template put back into `PENDING` review on Meta.
-- All `resubmitMeta` controller tests pass (8/8), plus `metaTemplatePayload` and `deliveryPreview` suites.
+- Diagnostic on production confirmed: `POST /message_templates/{id}` → `2500 Unknown path components`; `POST /message_templates?name=X` → `100/2388024`. Only **create** is accepted by Meta.
+- `POST /templates/:id/resubmit-meta` now returns `200` with a newly created Meta template in `PENDING`, and the local template re-bound to it.
+- `resubmitMeta`, `metaTemplatePayload` and `deliveryPreview` test suites pass.

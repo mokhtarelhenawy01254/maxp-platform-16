@@ -435,7 +435,14 @@ export default function OrderStatusTemplatesPage() {
         sessionId: selectedMetaSession,
       });
       const data = res.data;
-      if (data?.applied) {
+      if (data?.success && data?.metaTemplateName) {
+        // تم إنشاء قالب ميتا جديد باسم فريد بالمحتوى المعدل — سيصبح الأساسي بعد اعتماده
+        toast.success(
+          data.message ||
+          t("orders.metaResubmittedNew", "تم إنشاء قالب جديد في ميتا للمراجعة — سيتم تفعيله بعد الموافقة")
+        );
+        setDialogOpen(false);
+      } else if (data?.applied) {
         const status = data.verifiedStatus || "PENDING";
         toast.success(t("orders.metaResubmitted", `تم تحديث القالب على ميتا — الحالة: ${status}`));
         setDialogOpen(false);

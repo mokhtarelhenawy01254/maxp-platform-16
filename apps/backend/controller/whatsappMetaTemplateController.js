@@ -80,7 +80,7 @@ async function createMetaTemplate(req, res) {
 async function updateMetaTemplate(req, res) {
   try {
     const { companyId } = req.user;
-    const { sessionId, templateName } = req.body;
+    const { sessionId, templateName, templateId } = req.body;
 
     if (!sessionId || !templateName) {
       return res.status(400).json({ error: 'sessionId و templateName مطلوبان' });
@@ -97,14 +97,25 @@ async function updateMetaTemplate(req, res) {
 
     const updateData = {};
     if (req.body.components) updateData.components = req.body.components;
-    if (req.body.language) updateData.language = req.body.language;
     if (req.body.category) updateData.category = req.body.category;
 
-    if (!updateData.components && !updateData.language && !updateData.category) {
-      return res.status(400).json({ error: 'يجب توفير components أو language أو category للتحديث' });
+    if (!updateData.components && !updateData.category) {
+      return res.status(400).json({ error: 'يجب توفير components أو category للتحديث' });
     }
 
-    const result = await MetaCloudProvider.updateTemplate(targetSessionId, templateName, updateData);
+    // تعديل قالب في ميتا يتم عبر الـ numeric template ID (POST /{id}).
+    // إن لم يُرسل templateId، نحلّه من الاسم عبر listTemplates.
+    let resolvedTemplateId = templateId;
+    if (!resolvedTemplateId) {
+      const templates = await MetaCloudProvider.listTemplates(targetSessionId);
+      const found = (templates || []).find((t) => t.name === templateName);
+      resolvedTemplateId = found && found.id;
+    }
+    if (!resolvedTemplateId) {
+      return res.status(400).json({ error: 'لم يتم العثور على القالب في ميتا (templateId مطلوب)' });
+    }
+
+    const result = await MetaCloudProvider.updateTemplate(targetSessionId, resolvedTemplateId, updateData);
     res.json({ success: true, result });
   } catch (error) {
     console.error('Error updating Meta template:', error);

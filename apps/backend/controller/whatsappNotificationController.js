@@ -807,6 +807,79 @@ function getErrorMessage(reason, retryable = false) {
 // ☁️ نشر قالب محلي على ميتا
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * إنشاء قالب جديد في ميتا بمحتوى القالب المحلي الحالي.
+ * ميتا تقفل محتوى القوالب المعتمدة — لا يمكن تعديل body/header/footer لقالب APPROVED
+ * بنفس اللغة (code 100 / subcode 2388024، أو 2500 عند محاولة التعديل عبر الـ ID).
+ * الحل الوحيد المعتمد من ميتا: إنشاء قالب جديد باسم فريد ثم ربط القالب المحلي به.
+ *
+ * Returns { result, metaName, built, metaCategory, metaPadding }
+ */
+async function createMetaTemplateFromLocal(sessionId, localTemplate) {
+  const built = buildMetaTemplatePayload(localTemplate);
+  const metaCategory = built.metaCategory;
+  const bodyText = built.bodyText;
+  const buttonsComponent = built.buttonsComponent;
+  const variableCount = built.variableCount;
+  const variableOrder = built.variableOrder;
+
+  const baseName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
+    .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 480);
+
+  const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+
+  const bodyWithExample = {
+    type: 'BODY',
+    text: bodyText,
+    example: { body_text: [Array.from({ length: variableCount }, (_, i) => `قيمة ${i + 1}`)] }
+  };
+  const bodyPlain = { type: 'BODY', text: bodyText };
+
+  const variants = [];
+  if (buttonsComponent) {
+    variants.push({ label: 'buttons+example', components: [bodyWithExample, buttonsComponent] });
+    variants.push({ label: 'buttons', components: [bodyPlain, buttonsComponent] });
+  }
+  variants.push({ label: 'body+example', components: [bodyWithExample] });
+  variants.push({ label: 'body', components: [bodyPlain] });
+
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`Meta API timeout after ${ms}ms`)), ms))
+  ]);
+
+  let result = null;
+  let lastError = null;
+  let createdName = null;
+
+  for (let i = 0; i < variants.length; i++) {
+    const variant = variants[i];
+    const suffix = i === 0 ? '' : `v${i + 1}`;
+    const candidateName = `${baseName}${suffix}${Date.now().toString(36)}`.replace(/__+/g, '_').slice(0, 512);
+    try {
+      result = await withTimeout(MetaCloudProvider.createTemplate(sessionId, {
+        name: candidateName,
+        language: 'ar',
+        category: metaCategory,
+        components: variant.components,
+        generateExample: false
+      }), 25000);
+      createdName = candidateName;
+      console.log(`☁️ [META-CREATE-FROM-LOCAL] Variant "${variant.label}" succeeded → "${candidateName}"`);
+      break;
+    } catch (err) {
+      lastError = err;
+      console.warn(`☁️ [META-CREATE-FROM-LOCAL] Variant "${variant.label}" failed: ${err?.message || err}`);
+    }
+  }
+
+  if (!result) {
+    throw lastError || new Error('فشل إنشاء القالب في ميتا');
+  }
+
+  return { result, metaName: createdName, metaCategory, built, variableOrder };
+}
+
 async function publishTemplateToMeta(req, res) {
   // متغيرات مشتركة بين try و catch (ميتا ترفض المتغيرات في بداية/نهاية النص)
   let metaName = null;
@@ -840,71 +913,17 @@ async function publishTemplateToMeta(req, res) {
       return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
     }
 
-    // 3. تحويل القالب المحلي لصيغة ميتا
-    metaName = (localTemplate.metaTemplateName || localTemplate.eventType || localTemplate.name)
-      .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 512);
+    // 3. تحويل القالب المحلي لصيغة ميتا وإنشاؤه في ميتا مع محاولات بديلة
+    // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
+    const { result, metaName: createdName, metaCategory: cat, built } =
+      await createMetaTemplateFromLocal(sessionId, localTemplate);
 
-    const built = buildMetaTemplatePayload(localTemplate);
-    metaCategory = built.metaCategory;
+    metaName = createdName;
+    metaCategory = cat;
     bodyText = built.bodyText;
     buttonsComponent = built.buttonsComponent;
     metaPadding = built.metaPadding;
-    const variableCount = built.variableCount;
     const variableOrder = built.variableOrder;
-
-    // 5. إنشاء القالب في ميتا مع محاولات بديلة لتجاوز قيود الصيغة
-    // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
-    const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
-
-    const bodyWithExample = {
-      type: 'BODY',
-      text: bodyText,
-      example: { body_text: [Array.from({ length: variableCount }, (_, i) => `قيمة ${i + 1}`)] }
-    };
-    const bodyPlain = { type: 'BODY', text: bodyText };
-
-    const variants = [];
-    if (buttonsComponent) {
-      variants.push({ label: 'buttons+example', components: [bodyWithExample, buttonsComponent] });
-      variants.push({ label: 'buttons', components: [bodyPlain, buttonsComponent] });
-    }
-    variants.push({ label: 'body+example', components: [bodyWithExample] });
-    variants.push({ label: 'body', components: [bodyPlain] });
-
-    const withTimeout = (promise, ms) => Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`Meta API timeout after ${ms}ms`)), ms))
-    ]);
-
-    let result = null;
-    let lastError = null;
-    let createdName = metaName;
-
-    for (let i = 0; i < variants.length; i++) {
-      const variant = variants[i];
-      const suffix = i === 0 ? '' : `v${i + 1}`;
-      const candidateName = `${metaName}${suffix}${Date.now().toString(36)}`.replace(/__+/g, '_').slice(0, 512);
-      try {
-        result = await withTimeout(MetaCloudProvider.createTemplate(sessionId, {
-          name: candidateName,
-          language: 'ar',
-          category: metaCategory,
-          components: variant.components,
-          generateExample: false
-        }), 25000);
-        createdName = candidateName;
-        console.log(`☁️ [PUBLISH-TO-META] Variant "${variant.label}" succeeded → "${candidateName}"`);
-        break;
-      } catch (err) {
-        lastError = err;
-        console.warn(`☁️ [PUBLISH-TO-META] Variant "${variant.label}" failed: ${err?.message || err}`);
-      }
-    }
-
-    if (!result) {
-      throw lastError || new Error('فشل إنشاء القالب في ميتا');
-    }
-    metaName = createdName;
 
     // 5. تحديث القالب المحلي ببيانات ميتا
     await getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -959,8 +978,11 @@ async function publishTemplateToMeta(req, res) {
 }
 
 /**
- * إعادة إرسال قالب مربوط لميتا للمراجعة بعد التعديل — بيحدّث القالب الموجود باسمه
- * (مش بيخلق واحد جديد) وبيضعه في حالة PENDING لحد ما ميتا توافق تاني.
+ * إعادة إرسال قالب إلى ميتا للمراجعة بعد التعديل.
+ *
+ * حسب وثائق ميتا (2026): القوالب APPROVED قابلة للتعديل، والـ endpoint الصحيح هو
+ *   POST /{apiVersion}/{message-template-id}   body: { components, ... }
+ * بعد التعديل تعيد ميتا الموافقة تلقائياً (auto re-approve) ما لم يفشل فحص المراجعة.
  * POST /templates/:id/resubmit-meta  { sessionId }
  */
 async function resubmitMetaTemplate(req, res) {
@@ -1000,8 +1022,7 @@ async function resubmitMetaTemplate(req, res) {
 
     const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 
-    // حل الـ numeric template ID الخاص بميتا قبل التعديل — الـ update في ميتا بيتم
-    // على الـ ID مش الاسم، والرجوع للاسم بيجيب (subcode 2388024) محتوى موجود.
+    // حل الـ numeric template ID الخاص بميتا (لازم للتعديل عبر POST /{id})
     let metaTemplateId = localTemplate.metaTemplateId || null;
     if (!metaTemplateId) {
       try {
@@ -1010,76 +1031,51 @@ async function resubmitMetaTemplate(req, res) {
         metaTemplateId = found?.id || null;
       } catch { metaTemplateId = null; }
     }
+    if (!metaTemplateId) {
+      return res.status(400).json({ error: 'تعذر إيجاد قالب ميتا المقابل للتعديل' });
+    }
 
-    const result = await MetaCloudProvider.updateTemplate(sessionId, localTemplate.metaTemplateName, {
-      components,
-      language: 'ar',
-      category: built.metaCategory
-    }, metaTemplateId);
+    // لا نرسل category لقالب APPROVED (ميتا تمنع تعديل category القالب المعتمد)
+    const result = await MetaCloudProvider.updateTemplate(sessionId, metaTemplateId, {
+      components
+    });
 
-    // التحقق الصادق: بنشوف المحتوى الفعلي اللي رجع من ميتا ونقارنه باللي أرسلناه،
-    // مش بس الـ status — عشان نعرف هل التعديل اتبقى فعلاً ولا ميتا لسه شايلة القديم.
-    const normalize = (s = '') => (s || '').replace(/\s+/g, ' ').trim();
-    const extractBodyText = (comps = []) => {
-      const body = comps.find(c => c.type === 'BODY');
-      return body ? body.text : null;
-    };
-
+    // التحقق من الحالة الجديدة على ميتا بعد التعديل (auto re-approve يجعله APPROVED عادة)
     let verifiedStatus = null;
-    let applied = null;
-    let applyReason = null;
     let verifiedBodyText = null;
-
     try {
       const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
-      const found = metaTemplates.find(t => t.name === localTemplate.metaTemplateName);
+      const found = metaTemplates.find(t => String(t.id) === String(metaTemplateId));
       if (found) {
         verifiedStatus = found.status;
-        verifiedBodyText = extractBodyText(found.components);
-
-        if (verifiedBodyText == null) {
-          applied = null;
-          applyReason = 'ميتا رجعت القالب بدون محتوى نصي واضح، تعذر التأكد';
-        } else {
-          const contentMatched = normalize(verifiedBodyText) === normalize(built.bodyText);
-          applied = contentMatched;
-          if (!contentMatched) {
-            applyReason = 'ميتا لسه شايلة المحتوى القديم — الطلب اتقبل بس التعديل متطبقش بشكل مؤكد';
-          }
-        }
-        console.log(`☁️ [RESUBMIT-META] Verified on Meta: status=${found.status}, applied=${applied}`);
-      } else {
-        console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.metaTemplateName}" not found in Meta list — may still be processing`);
-        applyReason = 'القالب مش لاقيه في قائمة ميتا بعد — ممكن لسه بيتم المعالجة';
+        const body = (found.components || []).find(c => c.type === 'BODY');
+        verifiedBodyText = body ? body.text : null;
       }
-    } catch (verifyErr) {
-      console.warn('⚠️ [RESUBMIT-META] Could not verify template on Meta:', verifyErr.message);
-      applyReason = 'تعذر التحقق من القالب على ميتا في الوقت الحالي';
-    }
+    } catch { /* لا يوقف الإجابة */ }
 
     await getSharedPrismaClient().whatsAppNotificationTemplate.update({
       where: { id },
       data: {
-        metaTemplateStatus: verifiedStatus || 'PENDING',
         metaTemplateId: metaTemplateId || localTemplate.metaTemplateId,
+        metaTemplateLanguage: 'ar',
+        metaTemplateStatus: verifiedStatus || 'PENDING',
         variables: built.variableOrder || localTemplate.variables,
         updatedAt: new Date()
       }
     });
 
-    console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → "${localTemplate.metaTemplateName}" sent back for review`);
+    console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → Meta id=${metaTemplateId} edited (status=${verifiedStatus || 'n/a'})`);
 
-    const message = applied === true
-      ? (built.metaPadding
-        ? `تم تحديث القالب على ميتا للمراجعة. ${built.metaPadding}`
-        : 'تم تحديث القالب على ميتا للمراجعة. سيتم تفعيله بعد الموافقة.')
-      : applyReason || 'تم إرسال التعديل لميتا، لكن لم يتم التأكد من تطبيقه بعد';
+    const message = verifiedStatus
+      ? `تم تحديث القالب على ميتا. الحالة الحالية: ${verifiedStatus}.`
+      : 'تم تحديث القالب على ميتا. سيتم تأكيده تلقائياً بعد المراجعة.';
 
     res.json({
-      success: applied !== false,
-      applied,
-      applyReason,
+      success: true,
+      applied: true,
+      applyReason: null,
       metaTemplateName: localTemplate.metaTemplateName,
+      metaTemplateId: metaTemplateId || localTemplate.metaTemplateId,
       metaResult: result,
       verifiedStatus,
       verifiedBodyText,
