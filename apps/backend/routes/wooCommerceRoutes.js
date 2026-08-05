@@ -44,6 +44,13 @@ const {
 // Reset Controller
 const { resetWooCommerceData } = require('../controller/wooCommerceResetController');
 
+// All authenticated routes require woocommerce-pro access.
+// The public webhook route (/webhook/:id) is moved to the END of this file
+// so it remains accessible without a token.
+router.use(verifyToken.authenticateToken);
+router.use(verifyToken.requireCompanyAccess);
+router.use(checkAppAccess('woocommerce-pro'));
+
 // ═══════════════════════════════════════════════════════════════
 // 📦 Products Routes
 // ═══════════════════════════════════════════════════════════════
@@ -163,18 +170,6 @@ router.get('/sync-logs', verifyToken.authenticateToken, getSyncLogs);
  * @desc    استقبال Webhook من WooCommerce
  * @access  Public (verified by signature)
  */
-router.post('/webhook/:id', handleWooCommerceWebhook);
-
-// All routes after this point require woocommerce-pro access
-// (the public webhook above remains accessible without a token)
-router.use(verifyToken.requireCompanyAccess);
-router.use(checkAppAccess('woocommerce-pro'));
-
-/**
- * @route   POST /api/v1/woocommerce/webhooks/setup
- * @desc    إنشاء Webhooks في WooCommerce
- * @access  Private
- */
 router.post('/webhooks/setup', verifyToken.authenticateToken, setupWooCommerceWebhooks);
 
 /**
@@ -273,5 +268,13 @@ router.post('/scheduler/set-interval', verifyToken.authenticateToken, (req, res)
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+/**
+ * @route   POST /api/v1/woocommerce/webhook/:id
+ * @desc    استقبال Webhook من WooCommerce
+ * @access  Public (verified by signature)
+ * NOTE: defined AFTER all protected routes so it bypasses checkAppAccess
+ */
+router.post('/webhook/:id', handleWooCommerceWebhook);
 
 module.exports = router;
