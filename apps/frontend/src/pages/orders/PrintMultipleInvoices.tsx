@@ -76,6 +76,109 @@ function toInvoiceData(inv: Invoice): InvoiceData {
   };
 }
 
+/**
+ * الشكل اللي بيرجعه bulk-generate لكل طلب ضيف (مطابق لـ mapGuestOrderForPrint في الـ backend).
+ * بنخزّنه في sessionStorage ونبني منه InvoiceData بدون الحاجة لصف DB.
+ */
+interface GuestOrderPrint {
+  id: string;
+  orderNumber: string;
+  customerName?: string;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  customerAddress?: string | null;
+  city?: string | null;
+  governorate?: string | null;
+  status?: string;
+  paymentStatus?: string;
+  paymentMethod?: string | null;
+  currency?: string;
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  discount?: number;
+  total?: number;
+  turboTrackingNumber?: string | null;
+  items?: Array<{
+    productName?: string;
+    productSku?: string | null;
+    productColor?: string | null;
+    productSize?: string | null;
+    price?: number;
+    quantity?: number;
+    total?: number;
+  }>;
+}
+
+/** بيانات الشركة اللي بتتركب مع كل طلب ضيف (مفيهاش شركة في جدول الضيف) */
+export interface GuestPrintCompanyInfo {
+  companyName: string;
+  companyPhone?: string | null;
+  companyLogo?: string | null;
+}
+
+/** حمولة الـ sessionStorage تحت مفتاح guestKey: { company, orders } */
+export interface GuestPrintPayload {
+  company: GuestPrintCompanyInfo;
+  orders: GuestOrderPrint[];
+}
+
+/** مفتاح prefix موحّد لتبادل حمولة طباعة طلبات الضيف عبر sessionStorage */
+export const GUEST_PRINT_STORAGE_PREFIX = "maxp:print-guest:";
+/** أنشئ مفتاحاً فريداً لدفعة طباعة طلبات ضيف */
+export function makeGuestPrintKey(): string {
+  return `${GUEST_PRINT_STORAGE_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** خزّن حمولة طباعة طلبات الضيف في sessionStorage وارجع المفتاح */
+export function storeGuestPrintPayload(payload: GuestPrintPayload): string {
+  const key = makeGuestPrintKey();
+  try {
+    sessionStorage.setItem(key, JSON.stringify(payload));
+  } catch (e) {
+    console.error("Failed storing guest print payload:", e);
+  }
+  return key;
+}
+
+/** Convert a guest order (from bulk-generate) to InvoiceData using company info */
+function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintCompanyInfo): InvoiceData {
+  return {
+    id: guest.id,
+    invoiceNumber: guest.orderNumber,
+    companyName: company.companyName,
+    companyPhone: company.companyPhone,
+    companyLogo: company.companyLogo,
+    customerName: guest.customerName || "عميل غير محدد",
+    customerPhone: guest.customerPhone,
+    customerEmail: guest.customerEmail,
+    customerAddress: guest.customerAddress,
+    city: guest.city,
+    governorate: guest.governorate,
+    paymentMethod: guest.paymentMethod,
+    paymentStatus: guest.paymentStatus || "PENDING",
+    currency: guest.currency || "EGP",
+    subtotal: Number(guest.subtotal || 0),
+    tax: Number(guest.tax || 0),
+    shipping: Number(guest.shipping || 0),
+    discount: Number(guest.discount || 0),
+    totalAmount: Number(guest.total || 0),
+    order: {
+      orderNumber: guest.orderNumber,
+      turboTrackingNumber: guest.turboTrackingNumber,
+      orderItems: (guest.items || []).map((item) => ({
+        productName: item.productName || "منتج",
+        quantity: Number(item.quantity || 1),
+        price: Number(item.price || 0),
+        total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
+        productSku: item.productSku,
+        productColor: item.productColor,
+        productSize: item.productSize,
+      })),
+    },
+  };
+}
+
 /** Represents one slot on a printed sheet */
 interface PageSlot {
   invoiceData: InvoiceData;
@@ -108,6 +211,8 @@ const SLOTS_PER_SHEET: Record<PrintLayout, number> = {
 const PrintMultipleInvoices: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // طلبات الضيف المحوّلة لـ InvoiceData (مصدرها sessionStorage، مش DB)
+  const [guestSlots, setGuestSlots] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { settings } = useInvoiceSettings();
@@ -117,22 +222,47 @@ const PrintMultipleInvoices: React.FC = () => {
   const fetchInvoices = useCallback(async () => {
     try {
       const ids = searchParams.get("ids");
-      if (!ids) {
-        setError("لم يتم تحديد فواتير");
-        setLoading(false);
-        return;
-      }
-      const invoiceIds = ids.split(",");
-      const fetched: Invoice[] = [];
-      for (const id of invoiceIds) {
+      const guestKey = searchParams.get("guestKey");
+
+      // حمّل طلبات الضيف من sessionStorage لو موجودة
+      let guests: InvoiceData[] = [];
+      if (guestKey) {
         try {
-          const response = await apiClient.get(`/order-invoices/${id}`);
-          if (response.data.success) fetched.push(response.data.data);
-        } catch (err) {
-          console.error(`Error fetching invoice ${id}:`, err);
+          const raw = sessionStorage.getItem(guestKey);
+          if (raw) {
+            const payload = JSON.parse(raw) as GuestPrintPayload;
+            guests = (payload.orders || []).map((g) =>
+              guestOrderToInvoiceData(g, payload.company || { companyName: "" }),
+            );
+          }
+        } catch (e) {
+          console.error("Failed reading guest print payload:", e);
+        } finally {
+          // نظّف المفتاح عشان ميتleraّكش
+          try { sessionStorage.removeItem(guestKey); } catch { /* ignore */ }
+        }
+        setGuestSlots(guests);
+      }
+
+      // الفواتير العادية من DB
+      const fetched: Invoice[] = [];
+      if (ids) {
+        const invoiceIds = ids.split(",");
+        for (const id of invoiceIds) {
+          try {
+            const response = await apiClient.get(`/order-invoices/${id}`);
+            if (response.data.success) fetched.push(response.data.data);
+          } catch (err) {
+            console.error(`Error fetching invoice ${id}:`, err);
+          }
         }
       }
       setInvoices(fetched);
+
+      // لو مفيش فواتير ولا طلبات ضيف → خطأ
+      if (fetched.length === 0 && guests.length === 0) {
+        setError("لم يتم تحديد فواتير");
+      }
       setLoading(false);
     } catch (err: unknown) {
       console.error("Error fetching invoices:", err);
@@ -144,6 +274,7 @@ const PrintMultipleInvoices: React.FC = () => {
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
 
   // Expand every invoice into its page chunks, collect all slots
+  // (يدمج الفواتير العادية + طلبات الضيف في قائمة عرض واحدة)
   const allSlots: PageSlot[] = useMemo(() => {
     const slots: PageSlot[] = [];
     invoices.forEach((inv) => {
@@ -153,8 +284,14 @@ const PrintMultipleInvoices: React.FC = () => {
         slots.push({ invoiceData: data, page, key: `${inv.id}-p${page.pageIndex}` });
       });
     });
+    guestSlots.forEach((data, idx) => {
+      const pages = getInvoicePages(data);
+      pages.forEach((page) => {
+        slots.push({ invoiceData: data, page, key: `guest-${idx}-p${page.pageIndex}` });
+      });
+    });
     return slots;
-  }, [invoices]);
+  }, [invoices, guestSlots]);
 
   // Auto-set layout once slots are known (only if user hasn't overridden)
   useEffect(() => {
@@ -163,7 +300,7 @@ const PrintMultipleInvoices: React.FC = () => {
     }
   }, [allSlots, loading, autoLayout]);
 
-  // Increment print count for all invoices (fire once per page load)
+  // Increment print count for DB invoices only (skip guest orders — لا يوجد لها سجل فاتورة)
   const printedRef = useRef(false);
   useEffect(() => {
     if (!loading && invoices.length > 0 && !printedRef.current) {
@@ -380,7 +517,7 @@ const PrintMultipleInvoices: React.FC = () => {
               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
-          طباعة ({invoices.length})
+          طباعة ({invoices.length + guestSlots.length})
         </button>
       </div>
 

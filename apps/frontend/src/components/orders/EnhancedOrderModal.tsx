@@ -13,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
@@ -328,13 +327,19 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         const invoice = response.data.data.invoices[0];
         printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
       } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
-        const guestOrder = response.data.data.guestOrders[0].order as OrderDetailsType;
-        await printSingleShippingLabel({
-          order: guestOrder,
-          companyName: user?.company?.name,
-          companyLogoUrl: user?.company?.logo || null,
-          printWindow,
+        // طلب ضيف فردي: اعرضه في صفحة print-multiple الموحّدة (نفس شريط التقسيم والأكواد)
+        const { storeGuestPrintPayload } = await import("../../pages/orders/PrintMultipleInvoices");
+        const guestKey = storeGuestPrintPayload({
+          company: {
+            companyName: user?.company?.name || "",
+            companyPhone: user?.company?.phone || null,
+            companyLogo: user?.company?.logo || null,
+          },
+          orders: response.data.data.guestOrders.map(
+            (entry: { order: OrderDetailsType }) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number],
+          ),
         });
+        printWindow.location.href = `/orders/invoices/print-multiple?guestKey=${encodeURIComponent(guestKey)}`;
       } else {
         printWindow.close();
         setError(

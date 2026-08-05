@@ -26,7 +26,6 @@ import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
 import { OrdersPagination } from "./components/OrdersPagination";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
-import { printSingleShippingLabel, printMultipleShippingLabels, toOrderDetailsType } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "./types";
 
 const EnhancedOrderModal = React.lazy(
@@ -1849,52 +1848,43 @@ const Orders: React.FC = () => {
 
       try {
         setPrintingInvoices(true);
-        // فتح نافذة طباعة واحدة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
-        const guestPrintWindow = window.open("", "_blank");
-        if (!guestPrintWindow) {
-          alert(t("orders.invoicePrintError"));
-          return;
-        }
         const response = await apiClient.post("/order-invoices/bulk-generate", {
           orderIds: selectedOrders,
         });
 
         if (response.data.success) {
           const { success, existing, failed, invoices, guestOrders } = response.data.data;
+          const invoiceList = (invoices as GeneratedInvoice[]) || [];
+          const guestList = (guestOrders as Array<{ orderId: string; order: OrderDetailsType }>) || [];
 
-          if (invoices && invoices.length > 0) {
-            const invoiceIds = (invoices as GeneratedInvoice[]).map(
-              (invoice) => invoice.id,
-            );
-            const printUrl = `/orders/invoices/print-multiple?ids=${invoiceIds.join(",")}`;
-            if (guestOrders && guestOrders.length > 0) {
-              window.open(printUrl, "_blank");
-            } else {
-              guestPrintWindow.location.href = printUrl;
+          if (invoiceList.length === 0 && guestList.length === 0) {
+            alert(t("orders.invoicePrintError"));
+          } else {
+            // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
+            // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
+            const params = new URLSearchParams();
+            if (invoiceList.length > 0) {
+              params.set("ids", invoiceList.map((inv) => inv.id).join(","));
             }
-          }
-
-          if (guestOrders && guestOrders.length > 0) {
-            try {
-              await printMultipleShippingLabels({
-                orders: (guestOrders as Array<{ orderId: string; order: OrderDetailsType }>).map((entry) => entry.order),
-                companyName: user?.company?.name,
-                companyLogoUrl: user?.company?.logo || null,
-                printWindow: guestPrintWindow,
+            if (guestList.length > 0) {
+              const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
+              const guestKey = storeGuestPrintPayload({
+                company: {
+                  companyName: user?.company?.name || "",
+                  companyPhone: user?.company?.phone || null,
+                  companyLogo: user?.company?.logo || null,
+                },
+                orders: guestList.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
               });
-            } catch (printError: unknown) {
-              console.error("Failed printing guest order invoices:", printError);
+              params.set("guestKey", guestKey);
             }
-          } else if (invoices && invoices.length === 0) {
-            guestPrintWindow.close();
+            window.open(`/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`, "_blank");
           }
 
           alert(
             t("orders.invoicesGenerated", { success: success.length, existing: existing.length, failed: failed.length }),
           );
           setSelectedOrders([]);
-        } else {
-          guestPrintWindow.close();
         }
       } catch (error: unknown) {
         console.error("Error bulk printing invoices:", error);
@@ -1927,16 +1917,18 @@ const Orders: React.FC = () => {
             printWindow.close();
             setSelectedInvoice(invoices[0]);
           } else if (guestOrders && guestOrders.length > 0) {
-            try {
-              await printSingleShippingLabel({
-                order: guestOrders[0].order,
-                companyName: user?.company?.name,
-                companyLogoUrl: user?.company?.logo || null,
-                printWindow,
-              });
-            } catch (printError: unknown) {
-              console.error("Failed printing guest order invoice:", printError);
-            }
+            // طلب ضيف واحد: اعرضه في صفحة print-multiple الموحّدة (بنفس شريط التقسيم والأكواد)
+            printWindow.close();
+            const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
+            const guestKey = storeGuestPrintPayload({
+              company: {
+                companyName: user?.company?.name || "",
+                companyPhone: user?.company?.phone || null,
+                companyLogo: user?.company?.logo || null,
+              },
+              orders: guestOrders.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
+            });
+            navigate(`/orders/invoices/print-multiple?guestKey=${encodeURIComponent(guestKey)}`);
           } else {
             printWindow.close();
           }

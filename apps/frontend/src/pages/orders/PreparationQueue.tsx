@@ -13,7 +13,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { printSingleShippingLabel, printMultipleShippingLabels } from "../../utils/printShippingLabel";
+import { printSingleShippingLabel } from "../../utils/printShippingLabel";
 import type { OrderDetailsType } from "./types";
 import {
   DEFAULT_PROBLEM_HOLD_DETAILS,
@@ -1616,13 +1616,6 @@ const PreparationQueue: React.FC = () => {
       return;
     }
 
-    // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error(t('preparation.page.printWindowBlocked'));
-      return;
-    }
-
     try {
       setPrintingInvoices(true);
       const response = await apiClient.post("/order-invoices/bulk-generate", {
@@ -1636,41 +1629,30 @@ const PreparationQueue: React.FC = () => {
         const failed: Array<{ orderId: string; error?: string }> = data.failed || [];
 
         if (invoices.length === 0 && guestOrders.length === 0) {
-          printWindow.close();
           toast.error(t('preparation.page.invoiceNotFound'));
           return;
         }
 
-        const hasInvoices = invoices.length > 0;
-        const hasGuests = guestOrders.length > 0;
-
-        if (hasGuests) {
-          const { toOrderDetailsType } = await import("../../utils/printShippingLabel");
-          try {
-            await printMultipleShippingLabels({
-              orders: guestOrders.map((entry) => toOrderDetailsType(entry.order)),
-              companyName: user?.company?.name,
-              companyLogoUrl: user?.company?.logo || null,
-              printWindow,
-            });
-          } catch (printError: unknown) {
-            console.error("Failed printing guest order invoices:", printError);
-          }
+        // ابنِ URL صفحة الطباعة: فواتير DB عبر ids، وطلبات الضيف عبر sessionStorage
+        // (كلا النوعين يُعرض في نفس الصفحة بنفس شريط التقسيم ومكوّن الفاتورة)
+        const params = new URLSearchParams();
+        if (invoices.length > 0) {
+          params.set("ids", invoices.map((inv) => inv.id).join(","));
         }
-
-        if (hasInvoices) {
-          const invoiceIds = invoices.map((inv) => inv.id).join(",");
-          const printUrl = `/orders/invoices/print-multiple?ids=${invoiceIds}`;
-          if (hasGuests) {
-            // طلبات مختلطة: الفواتير في تاب منفصل، وبوليصات الضيف في printWindow المفتوح
-            // (تجنب اختفاء البوليصات خلف صفحة print-multiple التي كانت تنقل الصفحة الحالية)
-            window.open(printUrl, "_blank");
-          } else {
-            // فواتير فقط: استخدم التاب المفتوح لتفادي نافذة فارغة
-            printWindow.close();
-            navigate(printUrl);
-          }
+        if (guestOrders.length > 0) {
+          const { storeGuestPrintPayload } = await import("./PrintMultipleInvoices");
+          const guestKey = storeGuestPrintPayload({
+            company: {
+              companyName: user?.company?.name || "",
+              companyPhone: user?.company?.phone || null,
+              companyLogo: user?.company?.logo || null,
+            },
+            orders: guestOrders.map((entry) => entry.order as unknown as Parameters<typeof storeGuestPrintPayload>[0]["orders"][number]),
+          });
+          params.set("guestKey", guestKey);
         }
+        const printUrl = `/orders/invoices/print-multiple${params.toString() ? `?${params.toString()}` : ""}`;
+        navigate(printUrl);
 
         // رسالة واضحة بالأعداد (فواتير + بوليصات ضيف)، مع تنبيه منفصل للطلبات المتعثرة
         toast.success(
@@ -1685,11 +1667,9 @@ const PreparationQueue: React.FC = () => {
           );
         }
       } else {
-        printWindow.close();
         toast.error(response.data?.message || t('preparation.page.invoicePrintFailed'));
       }
     } catch (error: unknown) {
-      printWindow.close();
       console.error("Failed to print invoices:", error);
       toast.error(getApiErrorMessage(error) || t('preparation.page.invoicePrintError'));
     } finally {
