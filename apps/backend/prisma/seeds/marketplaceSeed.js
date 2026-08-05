@@ -1229,6 +1229,27 @@ async function seedMarketplace() {
         "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🔀"
+      },
+      {
+        "slug": "manual-orders-pro",
+        "name": "الطلب اليدوي",
+        "description": "إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.",
+        "logo": null,
+        "images": null,
+        "monthlyPrice": 99,
+        "yearlyPrice": 990,
+        "pricingModel": "SUBSCRIPTION",
+        "unitPrice": null,
+        "unitName": null,
+        "features": "[\"نموذج الطلب اليدوي\",\"بيانات العميل\",\"الدفع والشحن\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "ORDER_OPS",
+        "requiredApps": "[\"store\"]",
+        "trialDays": 14,
+        "icon": "✍️"
       }
 
     ];

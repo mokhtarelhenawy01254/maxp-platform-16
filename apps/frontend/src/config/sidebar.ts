@@ -375,7 +375,7 @@ export const getSidebarConfig = (
                 icon: Archive,
                 items: [
                     { to: '/orders', icon: Archive, label: t('sidebar.orders') },
-                    { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder') },
+                    { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), hidden: !isAnyAppActive(['manual-orders-pro', 'ecommerce-pro', 'store-pro', 'order-core', 'ecommerce-basic', 'store-basic']) },
                     { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 ],
             },
@@ -545,7 +545,7 @@ export const getSidebarConfig = (
                 { to: '/pos', icon: CreditCard, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'], hidden: !isAnyAppActive(['pos-pro', 'ecommerce-pro', 'store-pro']) },
                 { to: '/orders/invoices', icon: FileText, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/settings/order-invoice', icon: Cog, label: t('sidebar.orderInvoiceSettings'), requiredPermissions: ['orders.invoices.view'] },
-                { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'] },
+                { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'], hidden: !isAnyAppActive(['manual-orders-pro', 'ecommerce-pro', 'store-pro', 'order-core', 'ecommerce-basic', 'store-basic']) },
                 { to: '/bulk-search', icon: ListOrdered, label: t('sidebar.bulkSearch'), requiredPermissions: ['orders.bulk-search.view'] },
                 { to: '/products/reviews', icon: Star, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'] },
                 { to: '/settings/orders', icon: Cog, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },

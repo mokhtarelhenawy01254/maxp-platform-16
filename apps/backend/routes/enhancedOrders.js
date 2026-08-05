@@ -10,6 +10,7 @@ const customerBlocklistService = require('../services/customerBlocklistService')
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const verifyToken = require("../utils/verifyToken");
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
 
@@ -415,7 +416,7 @@ router.get('/stats', async (req, res) => {
  * POST /api/v1/orders-enhanced
  */
 console.log('🚧 [ENHANCED-ORDERS] Route initialization');
-router.post('/', async (req, res) => {
+router.post('/', checkAppAccess('manual-orders-pro'), async (req, res) => {
   try {
     console.log('📝 [ENHANCED-ORDERS] Received POST / request');
     // Auth check handled by middleware

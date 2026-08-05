@@ -8,7 +8,8 @@ const LEGACY_APP_SLUG_ALIASES = {
   'coupons-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
   'woocommerce-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
   'multi-warehouse-pro': ['ecommerce-pro', 'store-pro', 'inventory-pro'],
-  'order-accounting-sources': ['ecommerce-pro', 'store-pro', 'order-source-tracking']
+  'order-accounting-sources': ['ecommerce-pro', 'store-pro', 'order-source-tracking'],
+  'manual-orders-pro': ['ecommerce-pro', 'store-pro', 'order-core', 'ecommerce-basic', 'store-basic']
 };
 
 const getCandidateAppSlugs = (appSlug) => {

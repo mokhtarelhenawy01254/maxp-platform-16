@@ -1571,5 +1571,57 @@
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
     "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-manual-orders-pro",
+    "slug": "manual-orders-pro",
+    "name": "الطلب اليدوي",
+    "nameEn": "Manual Orders",
+    "description": "إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "الفرق التي تنشئ الطلبات يدوياً للعملاء عبر الهاتف أو واتساب أو في المعرض.",
+      "surface": "داخل صفحة الطلب اليدوي الجديدة.",
+      "outcome": "إنشاء طلبات دقيقة بسرعة مع تتبع المصدر اليدوي."
+    },
+    "features": {
+      "manualOrderForm": {
+        "enabled": true,
+        "name": "نموذج الطلب اليدوي",
+        "description": "اختيار المنتجات والمتغيرات والكميات مباشرة.",
+        "access": "PAID"
+      },
+      "customerInfo": {
+        "enabled": true,
+        "name": "بيانات العميل",
+        "description": "إدخال أو اختيار العميل وبيانات الشحن والدفع.",
+        "access": "PAID"
+      },
+      "paymentShipping": {
+        "enabled": true,
+        "name": "الدفع والشحن",
+        "description": "تحديد طريقة الدفع وشركة الشحن والتكلفة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "square-pen",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
   }
 ]
