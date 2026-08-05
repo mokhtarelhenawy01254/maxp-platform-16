@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { SOURCE_LABEL_KEYS } from "../constants";
 import { getAgeLabel } from "../helpers";
 import { summarizeOrderDocumentItems } from "../../../../utils/orderDocumentQuantityOffers";
@@ -14,6 +15,7 @@ interface PreparationOrderCardHeaderProps {
   selected: boolean;
   statusLabelMap: Map<string, string>;
   shortageFollowUpVisual: ShortageFollowUpVisual | null;
+  problemHoldReason?: string;
   formatPrice: (value: number) => string;
   formatDate: (value: string) => string;
   onToggleSelection: (orderNumber: string) => void;
@@ -24,6 +26,7 @@ const PreparationOrderCardHeader = ({
   selected,
   statusLabelMap,
   shortageFollowUpVisual,
+  problemHoldReason = "",
   formatPrice,
   formatDate,
   onToggleSelection,
@@ -111,6 +114,13 @@ const PreparationOrderCardHeader = ({
                 : ""}
             </span>
           </p>
+
+          {order.stage === "ON_HOLD_PREP" ? (
+            <p className="mt-1.5 line-clamp-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+              <ExclamationTriangleIcon className="ml-1 inline h-3 w-3 shrink-0 align-[-2px]" />
+              {problemHoldReason || t("preparation.problemPanel.addReason")}
+            </p>
+          ) : null}
         </div>
 
         {/* Right-side compact stats */}

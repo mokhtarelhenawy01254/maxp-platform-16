@@ -1129,6 +1129,11 @@ const PreparationQueue: React.FC = () => {
         }
       }
 
+      if (isHoldTarget && !(holdDetails?.reason || "").trim()) {
+        toast.error(t("preparation.holdDialog.reasonRequired"));
+        return false;
+      }
+
       try {
         setRowUpdatingId(orderNumber);
         const canOverride = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER"].includes(user?.role || "");
@@ -1137,6 +1142,7 @@ const PreparationQueue: React.FC = () => {
           {
             status: normalizedNextStatus,
             notes:
+              (isHoldTarget && (holdDetails?.reason || "").trim()) ||
               note ||
               (order.stage === "QUALITY_CHECK" &&
               ["PACKAGED", preparationSettings.handoffStatus].includes(

@@ -343,7 +343,7 @@
     "title": "On Hold — Problem Reason",
     "desc": "This order is blocked until the problem is resolved. It will not move to shipping until returned to preparation.",
     "edit": "Edit",
-    "noReason": "No reason specified",
+    "addReason": "Add reason",
     "heldAt": "Held on: {{date}}",
     "save": "Save",
     "releasedNote": "Order released from problem hold",

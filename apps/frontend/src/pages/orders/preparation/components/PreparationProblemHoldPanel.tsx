@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowPathIcon, CheckCircleIcon, PencilIcon } from "@heroicons/react/24/outline";
 import type { PreparationOrder, ProblemHoldDetails } from "../types";
@@ -6,6 +6,8 @@ import type { PreparationOrder, ProblemHoldDetails } from "../types";
 interface PreparationProblemHoldPanelProps {
   order: PreparationOrder;
   problemHoldDetails: ProblemHoldDetails;
+  autoEdit?: boolean;
+  onAutoEditConsumed?: () => void;
   rowBusy: boolean;
   formatDate: (value: string) => string;
   onSaveProblemHoldDetails: (
@@ -18,13 +20,25 @@ interface PreparationProblemHoldPanelProps {
 const PreparationProblemHoldPanel = ({
   order,
   problemHoldDetails,
+  autoEdit = false,
+  onAutoEditConsumed,
   rowBusy,
   formatDate,
   onSaveProblemHoldDetails,
 }: PreparationProblemHoldPanelProps) => {
   const { t } = useTranslation();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(autoEdit);
   const [reason, setReason] = useState(problemHoldDetails.reason);
+  const autoEditConsumedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoEdit && !autoEditConsumedRef.current) {
+      autoEditConsumedRef.current = true;
+      setIsEditing(true);
+      setReason(problemHoldDetails.reason);
+      onAutoEditConsumed?.();
+    }
+  }, [autoEdit, problemHoldDetails.reason, onAutoEditConsumed]);
 
   const handleSave = async () => {
     const success = await onSaveProblemHoldDetails(order.orderNumber, { reason: reason.trim() });
@@ -98,11 +112,21 @@ const PreparationProblemHoldPanel = ({
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <div className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-amber-700 dark:bg-gray-800 dark:text-gray-100">
-            {problemHoldDetails.reason || (
-              <span className="italic text-gray-400">{t("preparation.problemPanel.noReason")}</span>
-            )}
-          </div>
+          {problemHoldDetails.reason ? (
+            <div className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-amber-700 dark:bg-gray-800 dark:text-gray-100">
+              {problemHoldDetails.reason}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              disabled={rowBusy}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-amber-400 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+            >
+              <PencilIcon className="h-3.5 w-3.5" />
+              {t("preparation.problemPanel.addReason")}
+            </button>
+          )}
           <div className="flex flex-wrap gap-3 text-xs text-amber-800 dark:text-amber-300">
             {problemHoldDetails.heldAt ? (
               <span>

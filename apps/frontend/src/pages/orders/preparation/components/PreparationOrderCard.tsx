@@ -119,6 +119,7 @@ const PreparationOrderCard = ({
         selected={selected}
         statusLabelMap={statusLabelMap}
         shortageFollowUpVisual={activeFollowUpVisual}
+        problemHoldReason={isProblemHeld ? problemHoldDetails.reason : ""}
           formatPrice={formatPrice}
           formatDate={formatDate}
           onToggleSelection={onToggleSelection}

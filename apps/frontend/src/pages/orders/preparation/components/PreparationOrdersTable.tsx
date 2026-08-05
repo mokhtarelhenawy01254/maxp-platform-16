@@ -1,7 +1,7 @@
 import { Fragment, memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ExclamationTriangleIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
 import {
   PREPARATION_COLUMN_LABEL_KEYS,
@@ -121,6 +121,7 @@ const PreparationOrdersTable = ({
 }: PreparationOrdersTableProps) => {
   const { t } = useTranslation();
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [pendingEditOrderNumber, setPendingEditOrderNumber] = useState<string | null>(null);
 
   const toggleExpanded = (orderNumber: string) => {
     setExpandedOrders((prev) => {
@@ -132,6 +133,15 @@ const PreparationOrdersTable = ({
       }
       return next;
     });
+  };
+
+  const handleEditProblemReason = (orderNumber: string) => {
+    setExpandedOrders((prev) => {
+      const next = new Set(prev);
+      next.add(orderNumber);
+      return next;
+    });
+    setPendingEditOrderNumber(orderNumber);
   };
 
   if (orders.length === 0) return null;
@@ -338,13 +348,35 @@ const PreparationOrdersTable = ({
                   {visibleColumns.includes("problem") && (
                     <td className="px-3 py-2.5">
                       {isProblemHeld ? (
-                        <span
-                          className="inline-flex max-w-[150px] items-center gap-1 truncate rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                          title={problemHoldDetails.reason || t("preparation.table.hasProblem")}
-                        >
-                          <ExclamationTriangleIcon className="h-3 w-3 shrink-0" />
-                          {problemHoldDetails.reason || t("preparation.table.hasProblem")}
-                        </span>
+                        <div className="flex items-start gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditProblemReason(order.orderNumber)}
+                            disabled={rowBusy}
+                            title={String(t("preparation.problemPanel.edit"))}
+                            className="mt-0.5 shrink-0 rounded-md border border-amber-200 bg-white p-1 text-amber-700 transition hover:border-amber-400 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:border-amber-600"
+                          >
+                            <PencilIcon className="h-3 w-3" />
+                          </button>
+                          {problemHoldDetails.reason ? (
+                            <span
+                              className="line-clamp-2 max-w-[180px] rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                              title={problemHoldDetails.reason}
+                            >
+                              {problemHoldDetails.reason}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleEditProblemReason(order.orderNumber)}
+                              disabled={rowBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 transition hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                            >
+                              <ExclamationTriangleIcon className="h-3 w-3" />
+                              {t("preparation.problemPanel.addReason")}
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
                       )}
@@ -463,6 +495,10 @@ const PreparationOrdersTable = ({
                           <PreparationProblemHoldPanel
                             order={order}
                             problemHoldDetails={problemHoldDetails}
+                            autoEdit={pendingEditOrderNumber === order.orderNumber}
+                            onAutoEditConsumed={() =>
+                              setPendingEditOrderNumber(null)
+                            }
                             rowBusy={rowBusy}
                             formatDate={formatDate}
                             onSaveProblemHoldDetails={
