@@ -3469,7 +3469,7 @@ async function syncLabels(req, res) {
         res.json({ success: true, labels, message: 'تمت المزامنة بنجاح' });
     } catch (error) {
         console.error('❌ Error syncing labels:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات' });
+        res.status(500).json({ error: 'حدث خطأ أثناء مزامنة التصنيفات', detail: error?.message });
     }
 }
 
@@ -3495,7 +3495,7 @@ async function getLabels(req, res) {
         res.json({ success: true, labels });
     } catch (error) {
         console.error('❌ Error getting labels:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات' });
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب العلامات', detail: error?.message });
     }
 }
 
