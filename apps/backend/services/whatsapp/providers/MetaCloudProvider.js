@@ -417,7 +417,7 @@ async function createTemplate(sessionId, templateData) {
   return response.data;
 }
 
-async function updateTemplate(sessionId, templateName, templateData, templateId) {
+async function updateTemplate(sessionId, templateName, templateData) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
 
@@ -434,22 +434,12 @@ async function updateTemplate(sessionId, templateName, templateData, templateId)
   if (templateData.language) payload.language = templateData.language;
   if (templateData.category) payload.category = templateData.category;
 
-  // تعديل قالب موجود في ميتا يتم عبر الـ numeric template ID مش الاسم.
-  // الرجوع للمسار العام (message_templates?name=...) بيتم تفسيره كـ CREATE
-  // وبيقشل بـ code 100 / subcode 2388024 (يوجد محتوى بهذه اللغة بالفعل).
-  let resolvedTemplateId = templateId;
-  if (!resolvedTemplateId) {
-    const templates = await listTemplates(sessionId);
-    const found = templates.find(t => t.name === templateName);
-    if (!found) {
-      throw new Error(`Template "${templateName}" not found on Meta — تعذر العثور على القالب`);
-    }
-    resolvedTemplateId = found.id;
-  }
+  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
 
-  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" (id=${resolvedTemplateId}) on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
-
-  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${encodeURIComponent(resolvedTemplateId)}`;
+  // ميتا لا تدعم تعديل محتوى قالب معتمد بنفس اللغة — الـ POST للمسار العام يُفسَّر
+  // كإنشاء قالب جديد بنفس الاسم فيرفضه (code 100 / subcode 2388024). الحل المعتمد
+  // من ميتا هو إنشاء قالب جديد باسم فريد (يتم في resubmitMetaTemplate/publishTemplateToMeta).
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
   const response = await apiCall(() => axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
