@@ -49,11 +49,6 @@ interface PreparationOrderCardProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
-  onSaveProblemHoldDetails: (
-    orderNumber: string,
-    overrides?: Partial<ProblemHoldDetails>,
-    options?: { successMessage?: string | null },
-  ) => Promise<boolean>;
   onQcCheckToggle: (
     orderNumber: string,
     key: QcCheckKey,
@@ -65,6 +60,7 @@ interface PreparationOrderCardProps {
   onReleaseShortageHold: (orderNumber: string) => void;
   onHoldAsProblem: (orderNumber: string) => void;
   onReleaseProblemHold: (orderNumber: string) => void;
+  onEditProblemReason: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -93,7 +89,6 @@ const PreparationOrderCard = ({
   onQuickTransfer,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
-  onSaveProblemHoldDetails,
   onQcCheckToggle,
   onStatusSelectionChange,
   onSingleStatusUpdate,
@@ -101,6 +96,7 @@ const PreparationOrderCard = ({
   onReleaseShortageHold,
   onHoldAsProblem,
   onReleaseProblemHold,
+  onEditProblemReason,
   onPrintPreparationSlip,
 }: PreparationOrderCardProps) => {
   const canPrepare = order.merchantFulfillment?.canPrepare !== false;
@@ -120,6 +116,9 @@ const PreparationOrderCard = ({
         statusLabelMap={statusLabelMap}
         shortageFollowUpVisual={activeFollowUpVisual}
         problemHoldReason={isProblemHeld ? problemHoldDetails.reason : ""}
+        onEditProblemReason={
+          isProblemHeld ? onEditProblemReason : undefined
+        }
           formatPrice={formatPrice}
           formatDate={formatDate}
           onToggleSelection={onToggleSelection}
@@ -157,7 +156,7 @@ const PreparationOrderCard = ({
             problemHoldDetails={problemHoldDetails}
             rowBusy={rowBusy}
             formatDate={formatDate}
-            onSaveProblemHoldDetails={onSaveProblemHoldDetails}
+            onEditProblemReason={onEditProblemReason}
           />
         ) : null}
 

@@ -16,6 +16,7 @@ interface PreparationOrderCardHeaderProps {
   statusLabelMap: Map<string, string>;
   shortageFollowUpVisual: ShortageFollowUpVisual | null;
   problemHoldReason?: string;
+  onEditProblemReason?: (orderNumber: string) => void;
   formatPrice: (value: number) => string;
   formatDate: (value: string) => string;
   onToggleSelection: (orderNumber: string) => void;
@@ -27,6 +28,7 @@ const PreparationOrderCardHeader = ({
   statusLabelMap,
   shortageFollowUpVisual,
   problemHoldReason = "",
+  onEditProblemReason,
   formatPrice,
   formatDate,
   onToggleSelection,
@@ -116,10 +118,15 @@ const PreparationOrderCardHeader = ({
           </p>
 
           {order.stage === "ON_HOLD_PREP" ? (
-            <p className="mt-1.5 line-clamp-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+            <button
+              type="button"
+              onClick={() => onEditProblemReason?.(order.orderNumber)}
+              className="mt-1.5 block w-full text-left line-clamp-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 transition hover:border-amber-400 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+              title={String(t("preparation.problemPanel.edit"))}
+            >
               <ExclamationTriangleIcon className="ml-1 inline h-3 w-3 shrink-0 align-[-2px]" />
               {problemHoldReason || t("preparation.problemPanel.addReason")}
-            </p>
+            </button>
           ) : null}
         </div>
 

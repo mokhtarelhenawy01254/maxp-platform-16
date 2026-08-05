@@ -64,6 +64,7 @@ import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
 import PreparationStatusChangeDialog from "./preparation/components/PreparationStatusChangeDialog";
+import ProblemHoldReasonDialog from "./preparation/components/ProblemHoldReasonDialog";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
 type BulkStatusResult = {
@@ -203,6 +204,10 @@ const PreparationQueue: React.FC = () => {
     orderNumber: string;
     targetStatus: string;
     isHold: boolean;
+  } | null>(null);
+  const [editReasonOrder, setEditReasonOrder] = useState<{
+    orderNumber: string;
+    reason: string;
   } | null>(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
@@ -1238,6 +1243,35 @@ const PreparationQueue: React.FC = () => {
     [getOrderByNumber],
   );
 
+  const handleEditProblemReason = useCallback(
+    (orderNumber: string) => {
+      const order = getOrderByNumber(orderNumber);
+      if (!order) return;
+      const details =
+        problemHoldDrafts[orderNumber] ||
+        buildProblemHoldDetails(order.metadata);
+      setEditReasonOrder({ orderNumber, reason: details.reason });
+    },
+    [getOrderByNumber, problemHoldDrafts],
+  );
+
+  const editReasonOrderOrder = useMemo(
+    () =>
+      editReasonOrder ? getOrderByNumber(editReasonOrder.orderNumber) : null,
+    [editReasonOrder, getOrderByNumber],
+  );
+
+  const handleConfirmEditReason = useCallback(
+    async (reason: string) => {
+      if (!editReasonOrder) return;
+      const ok = await saveProblemHoldDetails(editReasonOrder.orderNumber, {
+        reason,
+      });
+      if (ok) setEditReasonOrder(null);
+    },
+    [editReasonOrder, saveProblemHoldDetails],
+  );
+
   const handleReleaseProblemHold = useCallback(
     async (orderNumber: string) => {
       const order = getOrderByNumber(orderNumber);
@@ -2062,7 +2096,6 @@ const PreparationQueue: React.FC = () => {
                     }
                     onShortageFieldChange={handleShortageFieldChange}
                     onSaveShortageHoldDetails={saveShortageHoldDetails}
-                    onSaveProblemHoldDetails={saveProblemHoldDetails}
                     onQcCheckToggle={handleQcCheckToggle}
                     onStatusSelectionChange={uiActions.setStatusSelection}
                     onSingleStatusUpdate={(orderNumber, nextStatus) =>
@@ -2080,6 +2113,7 @@ const PreparationQueue: React.FC = () => {
                     onReleaseProblemHold={(orderNumber) =>
                       void handleReleaseProblemHold(orderNumber)
                     }
+                    onEditProblemReason={handleEditProblemReason}
                     onPrintPreparationSlip={(orderNumber) =>
                       void handlePrintPreparationSlip(orderNumber)
                     }
@@ -2116,7 +2150,6 @@ const PreparationQueue: React.FC = () => {
                 }
                 onShortageFieldChange={handleShortageFieldChange}
                 onSaveShortageHoldDetails={saveShortageHoldDetails}
-                onSaveProblemHoldDetails={saveProblemHoldDetails}
                 onQcCheckToggle={handleQcCheckToggle}
                 onStatusSelectionChange={uiActions.setStatusSelection}
                 onSingleStatusUpdate={(orderNumber, nextStatus) =>
@@ -2134,6 +2167,7 @@ const PreparationQueue: React.FC = () => {
                 onReleaseProblemHold={(orderNumber) =>
                   void handleReleaseProblemHold(orderNumber)
                 }
+                onEditProblemReason={handleEditProblemReason}
                 onPrintPreparationSlip={(orderNumber) =>
                   void handlePrintPreparationSlip(orderNumber)
                 }
@@ -2208,6 +2242,18 @@ const PreparationQueue: React.FC = () => {
         )}
         onClose={() => setStatusChangeDialog(null)}
         onConfirm={(payload) => void handleConfirmStatusChange(payload)}
+      />
+
+      <ProblemHoldReasonDialog
+        isOpen={Boolean(editReasonOrder)}
+        order={editReasonOrderOrder}
+        initialReason={editReasonOrder?.reason || ""}
+        busy={Boolean(
+          editReasonOrderOrder &&
+            problemHoldSavingOrderId === editReasonOrderOrder.orderNumber,
+        )}
+        onClose={() => setEditReasonOrder(null)}
+        onConfirm={(reason) => void handleConfirmEditReason(reason)}
       />
     </div>
   );

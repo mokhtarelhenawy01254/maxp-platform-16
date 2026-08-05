@@ -66,11 +66,6 @@ interface PreparationOrdersTableProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
-  onSaveProblemHoldDetails: (
-    orderNumber: string,
-    overrides?: Partial<ProblemHoldDetails>,
-    options?: { successMessage?: string | null },
-  ) => Promise<boolean>;
   onQcCheckToggle: (
     orderNumber: string,
     key: QcCheckKey,
@@ -82,6 +77,7 @@ interface PreparationOrdersTableProps {
   onReleaseShortageHold: (orderNumber: string) => void;
   onHoldAsProblem: (orderNumber: string) => void;
   onReleaseProblemHold: (orderNumber: string) => void;
+  onEditProblemReason: (orderNumber: string) => void;
   onPrintPreparationSlip: (orderNumber: string) => void;
 }
 
@@ -109,7 +105,6 @@ const PreparationOrdersTable = ({
   onQuickTransfer,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
-  onSaveProblemHoldDetails,
   onQcCheckToggle,
   onStatusSelectionChange,
   onSingleStatusUpdate,
@@ -117,11 +112,11 @@ const PreparationOrdersTable = ({
   onReleaseShortageHold,
   onHoldAsProblem,
   onReleaseProblemHold,
+  onEditProblemReason,
   onPrintPreparationSlip,
 }: PreparationOrdersTableProps) => {
   const { t } = useTranslation();
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
-  const [pendingEditOrderNumber, setPendingEditOrderNumber] = useState<string | null>(null);
 
   const toggleExpanded = (orderNumber: string) => {
     setExpandedOrders((prev) => {
@@ -133,15 +128,6 @@ const PreparationOrdersTable = ({
       }
       return next;
     });
-  };
-
-  const handleEditProblemReason = (orderNumber: string) => {
-    setExpandedOrders((prev) => {
-      const next = new Set(prev);
-      next.add(orderNumber);
-      return next;
-    });
-    setPendingEditOrderNumber(orderNumber);
   };
 
   if (orders.length === 0) return null;
@@ -351,7 +337,7 @@ const PreparationOrdersTable = ({
                         <div className="flex items-start gap-1">
                           <button
                             type="button"
-                            onClick={() => handleEditProblemReason(order.orderNumber)}
+                            onClick={() => onEditProblemReason(order.orderNumber)}
                             disabled={rowBusy}
                             title={String(t("preparation.problemPanel.edit"))}
                             className="mt-0.5 shrink-0 rounded-md border border-amber-200 bg-white p-1 text-amber-700 transition hover:border-amber-400 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:border-amber-600"
@@ -368,7 +354,7 @@ const PreparationOrdersTable = ({
                           ) : (
                             <button
                               type="button"
-                              onClick={() => handleEditProblemReason(order.orderNumber)}
+                              onClick={() => onEditProblemReason(order.orderNumber)}
                               disabled={rowBusy}
                               className="inline-flex items-center gap-1 rounded-lg border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 transition hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
                             >
@@ -495,15 +481,9 @@ const PreparationOrdersTable = ({
                           <PreparationProblemHoldPanel
                             order={order}
                             problemHoldDetails={problemHoldDetails}
-                            autoEdit={pendingEditOrderNumber === order.orderNumber}
-                            onAutoEditConsumed={() =>
-                              setPendingEditOrderNumber(null)
-                            }
                             rowBusy={rowBusy}
                             formatDate={formatDate}
-                            onSaveProblemHoldDetails={
-                              onSaveProblemHoldDetails
-                            }
+                            onEditProblemReason={onEditProblemReason}
                           />
                         ) : null}
 
