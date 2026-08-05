@@ -12,6 +12,7 @@ const TEMPLATE_CATEGORY = "ABANDONED_CART";
 interface NotificationSettings {
   isEnabled?: boolean;
   incompleteCartImmediateMessage?: boolean;
+  defaultSessionId?: string | null;
 }
 
 interface NotificationTemplate {
@@ -21,6 +22,8 @@ interface NotificationTemplate {
   eventType?: string;
   isDefault?: boolean;
   isActive?: boolean;
+  metaTemplateName?: string | null;
+  metaTemplateStatus?: string | null;
 }
 
 interface TemplatesResponse {
@@ -28,9 +31,18 @@ interface TemplatesResponse {
   templates?: NotificationTemplate[];
 }
 
+interface Session {
+  id: string;
+  name?: string;
+  phoneNumber?: string;
+  status?: string;
+  provider?: string;
+}
+
 interface SettingsResponse {
   success?: boolean;
   settings?: NotificationSettings;
+  sessions?: Session[];
 }
 
 interface TemplateWriteResponse {
@@ -42,6 +54,7 @@ const IncompleteCartMessagingPanel: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [template, setTemplate] = useState<NotificationTemplate | null>(null);
   const [savingToggle, setSavingToggle] = useState(false);
   const [content, setContent] = useState("");
@@ -60,6 +73,7 @@ const IncompleteCartMessagingPanel: React.FC = () => {
 
       if (settingsRes.data?.success) {
         setSettings(settingsRes.data.settings || null);
+        setSessions(Array.isArray(settingsRes.data.sessions) ? settingsRes.data.sessions : []);
       }
 
       const templates = Array.isArray(templatesRes.data?.templates) ? templatesRes.data.templates : [];
@@ -145,8 +159,53 @@ const IncompleteCartMessagingPanel: React.FC = () => {
 
   const immediateEnabled = Boolean(settings?.incompleteCartImmediateMessage);
 
+  const connectedSessions = sessions.filter((s) => s.status === "CONNECTED");
+  const defaultConnected = settings?.defaultSessionId
+    ? connectedSessions.find((s) => s.id === settings.defaultSessionId)
+    : undefined;
+  const effectiveSession = defaultConnected || connectedSessions[0] || null;
+  const provider = effectiveSession?.provider || null;
+  const metaApproved =
+    template?.metaTemplateName &&
+    String(template.metaTemplateStatus).toUpperCase() === "APPROVED";
+
   return (
     <div className="space-y-5">
+      <div
+        className={`rounded-xl border p-4 text-sm ${
+          provider === "BAILEYS"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300"
+            : provider === "META_CLOUD"
+              ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300"
+              : "border-red-200 bg-red-50 text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300"
+        }`}
+      >
+        {!effectiveSession ? (
+          <p>
+            مفيش جلسة واتساب متصلة حالياً — الرسالة مش هتتبعت. اربط رقم واتساب من صفحة إعدادات الواتساب.
+          </p>
+        ) : provider === "BAILEYS" ? (
+          <div>
+            <p>
+              الرسالة بتتبعت <strong>نص حر من رقم الواتساب العادي المتصل</strong> (
+              {effectiveSession.name || "جلسة واتساب"}{" "}
+              {effectiveSession.phoneNumber ? `(${effectiveSession.phoneNumber})` : ""}
+              ) — بدون قالب معتمد من ميتا.
+            </p>
+            <p className="mt-1 text-xs opacity-80">
+              تنبيه: العميل لسه ما راسلش على الواتساب، فإرسال رسالة فورية بهذه الطريقة يُعد رسالة غير مطلوبة — قلّل
+              تكرارها وراقب الحظر/البلاغات على الرقم.
+            </p>
+          </div>
+        ) : (
+          <p>
+            جلسة الإرسال الحالية هي <strong>ميتا الرسمي (Cloud API)</strong> وهذا الحدث غير مربوط بقالب ميتا
+            معتمد، وميتا ترفض النص الحر خارج نافذة الـ 24 ساعة. الرسالة هتحاول الإرسال من جلسة واتساب عادية
+            (بايليز) إن وجدت في الشركة، وإلا لن تُرسل.
+          </p>
+        )}
+      </div>
+
       <div className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -183,11 +242,15 @@ const IncompleteCartMessagingPanel: React.FC = () => {
               استخدم المتغيرات: {"{customerName}"} {"{itemCount}"} {"{total}"} {"{currency}"}
             </p>
           </div>
-          {template?.id && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-              محفوظ
+          {metaApproved ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+              قالب ميتا معتمد
             </span>
-          )}
+          ) : template?.id ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+              محفوظ (قالب محلي)
+            </span>
+          ) : null}
         </div>
 
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">اسم القالب</label>
