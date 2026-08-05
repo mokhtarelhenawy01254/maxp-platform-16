@@ -153,9 +153,12 @@ const EMPTY_SUMMARY: PreparationQueueSummary = {
   readyCount: 0,
   shortageCount: 0,
   shortageHoldCount: 0,
+  onHoldPrepCount: 0,
   overdueShortageFollowUpCount: 0,
+  overdueProblemFollowUpCount: 0,
   readyToShipCount: 0,
   allOverdueShortageFollowUpCount: 0,
+  allOverdueProblemFollowUpCount: 0,
 };
 
 const PREPARATION_QUERY_KEYS = {
@@ -255,12 +258,19 @@ const fetchOrdersData = async (
       readyCount: Number(summary?.readyCount || 0),
       shortageCount: Number(summary?.shortageCount || 0),
       shortageHoldCount: Number(summary?.shortageHoldCount || 0),
+      onHoldPrepCount: Number(summary?.onHoldPrepCount || 0),
       overdueShortageFollowUpCount: Number(
         summary?.overdueShortageFollowUpCount || 0,
+      ),
+      overdueProblemFollowUpCount: Number(
+        summary?.overdueProblemFollowUpCount || 0,
       ),
       readyToShipCount: Number(summary?.readyToShipCount || 0),
       allOverdueShortageFollowUpCount: Number(
         summary?.allOverdueShortageFollowUpCount || 0,
+      ),
+      allOverdueProblemFollowUpCount: Number(
+        summary?.allOverdueProblemFollowUpCount || 0,
       ),
     },
     shortageOwnerOptions: Array.isArray(response.data?.shortageOwnerOptions)

@@ -12,6 +12,8 @@ const {
 
 const PREPARATION_STATUS_METADATA_KEY = 'preparationStatus';
 const PREPARATION_SHORTAGE_HOLD_METADATA_KEY = 'preparationShortageHold';
+const PREPARATION_HOLD_METADATA_KEY = 'preparationHold';
+const PREPARATION_HOLD_STAGES = new Set(['STOCK_SHORTAGE', 'ON_HOLD_PREP']);
 const PREPARATION_SHORTAGE_REASONS = new Set([
   'stock_shortage',
   'waiting_transfer',
@@ -111,6 +113,14 @@ const updatePreparationOrderStatus = async ({
       typeof currentMetadata.preparationStatus === 'string'
         ? currentMetadata.preparationStatus
         : order.status;
+
+    await assertPreparationHoldRule({
+      currentPreparationStatus: previousPreparationStatus,
+      targetStatus: normalizedStatus,
+      notes,
+      isOverride: false,
+    });
+
     const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
     const nextMetadata = {
       ...currentMetadata,
@@ -152,6 +162,18 @@ const updatePreparationOrderStatus = async ({
 
   if (guestOrder) {
     const currentMetadata = parsePreparationJsonObject(guestOrder.metadata);
+    const previousPreparationStatus =
+      typeof currentMetadata.preparationStatus === 'string'
+        ? currentMetadata.preparationStatus
+        : guestOrder.status;
+
+    await assertPreparationHoldRule({
+      currentPreparationStatus: previousPreparationStatus,
+      targetStatus: normalizedStatus,
+      notes,
+      isOverride: false,
+    });
+
     const nextMetadata = {
       ...currentMetadata,
       preparationStatus: normalizedStatus,
@@ -257,6 +279,32 @@ const buildPreparationShortageHoldDetails = (metadata) => {
   };
 };
 
+const buildPreparationProblemHoldDetails = (metadata) => {
+  const metadataObject = parsePreparationJsonObject(metadata);
+  const rawDetails = parsePreparationJsonObject(
+    metadataObject[PREPARATION_HOLD_METADATA_KEY]
+  );
+
+  return {
+    reason: typeof rawDetails.reason === 'string' ? rawDetails.reason : '',
+    heldAt: typeof rawDetails.heldAt === 'string' ? rawDetails.heldAt : '',
+    releasedAt: typeof rawDetails.releasedAt === 'string' ? rawDetails.releasedAt : '',
+    heldBy: typeof rawDetails.heldBy === 'string' ? rawDetails.heldBy : '',
+    releasedBy: typeof rawDetails.releasedBy === 'string' ? rawDetails.releasedBy : '',
+    state: rawDetails.state === 'released' ? 'released' : 'held'
+  };
+};
+
+// Returns the active hold details object for an order based on its stage. Used
+// by follow-up/owner filters and sorting so both STOCK_SHORTAGE and
+// ON_HOLD_PREP orders follow the same "hold" rules.
+const getOrderHoldDetails = (order) => {
+  if (order.stage === 'STOCK_SHORTAGE') return order.shortageHoldDetails;
+  if (order.stage === 'ON_HOLD_PREP') return order.problemHoldDetails;
+  // problemHoldDetails لم يعد يحمل owner/followUpDate — الـ default موحّد مع الشكل الجديد
+  return { reason: '', state: 'released' };
+};
+
 const getEffectivePreparationStatus = (status, metadata) => {
   const normalizedStatus = toPreparationUpper(status);
   if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
@@ -301,14 +349,14 @@ const normalizePreparationStage = (status) => {
 };
 
 const isPreparationShortageFollowUpToday = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE' || !followUpDate) return false;
+  if (!PREPARATION_HOLD_STAGES.has(stage) || !followUpDate) return false;
 
   const today = new Date().toISOString().slice(0, 10);
   return normalizePreparationDateInputValue(followUpDate) === today;
 };
 
 const isPreparationShortageFollowUpOverdue = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE' || !followUpDate) return false;
+  if (!PREPARATION_HOLD_STAGES.has(stage) || !followUpDate) return false;
 
   const parsedDate = new Date(
     followUpDate.length <= 10 ? `${followUpDate}T00:00:00` : followUpDate
@@ -322,7 +370,7 @@ const isPreparationShortageFollowUpOverdue = (followUpDate, stage) => {
 };
 
 const getPreparationShortageFollowUpState = (followUpDate, stage) => {
-  if (stage !== 'STOCK_SHORTAGE') return 'none';
+  if (!PREPARATION_HOLD_STAGES.has(stage)) return 'none';
   if (!followUpDate) return 'without_date';
   if (isPreparationShortageFollowUpOverdue(followUpDate, stage)) return 'overdue';
   if (isPreparationShortageFollowUpToday(followUpDate, stage)) return 'today';
@@ -687,6 +735,7 @@ const buildPreparationOrderSummary = (
   }
 
   const shortageHoldDetails = buildPreparationShortageHoldDetails(order.metadata);
+  const problemHoldDetails = buildPreparationProblemHoldDetails(order.metadata);
   const itemInsights = (Array.isArray(order.items) ? order.items : []).map((item) => {
     const summary = inventorySummaryByProduct.get(String(item.productId || ''));
     const scopedWarehouses = selectedWarehouseId
@@ -742,6 +791,8 @@ const buildPreparationOrderSummary = (
     normalizedStatus,
     stage,
     shortageHoldDetails,
+    problemHoldDetails,
+    hasProblem: stage === 'STOCK_SHORTAGE' || stage === 'ON_HOLD_PREP',
     itemInsights,
     missingItemsCount,
     totalUnits,
@@ -772,9 +823,12 @@ const createEmptyPreparationQueueResponse = (page, limit) => ({
     readyCount: 0,
     shortageCount: 0,
     shortageHoldCount: 0,
+    onHoldPrepCount: 0,
     overdueShortageFollowUpCount: 0,
+    overdueProblemFollowUpCount: 0,
     readyToShipCount: 0,
-    allOverdueShortageFollowUpCount: 0
+    allOverdueShortageFollowUpCount: 0,
+    allOverdueProblemFollowUpCount: 0
   },
   shortageOwnerOptions: []
 });
@@ -795,16 +849,20 @@ const VALID_SORT_BY = new Set(['createdAt', 'totalUnits', 'totalValue']);
 
 const comparePreparationOrders = (left, right, prioritizeShortageOrders, sortByField = 'createdAt', sortOrderDir = 'desc') => {
   if (sortByField === 'createdAt' && sortOrderDir === 'desc') {
-    if (left.stage === 'STOCK_SHORTAGE' && right.stage === 'STOCK_SHORTAGE') {
+    const leftIsHold = PREPARATION_HOLD_STAGES.has(left.stage);
+    const rightIsHold = PREPARATION_HOLD_STAGES.has(right.stage);
+    if (leftIsHold && rightIsHold) {
+      const leftHold = getOrderHoldDetails(left);
+      const rightHold = getOrderHoldDetails(right);
       const leftPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
         getPreparationShortageFollowUpState(
-          left.shortageHoldDetails.followUpDate,
+          leftHold.followUpDate,
           left.stage
         )
       ];
       const rightPriority = PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY[
         getPreparationShortageFollowUpState(
-          right.shortageHoldDetails.followUpDate,
+          rightHold.followUpDate,
           right.stage
         )
       ];
@@ -836,8 +894,10 @@ const stripPreparationTransientFields = ({
   warehouseMatch,
   recommendedWarehouseName,
   shortageHoldDetails,
+  problemHoldDetails,
   normalizedStatus,
   stage,
+  hasProblem,
   createdAtMs,
   ...order
 }) => order;
@@ -894,6 +954,9 @@ const matchesPreparationFilters = ({
 
   const hasShortageContext =
     order.missingItemsCount > 0 || order.stage === 'STOCK_SHORTAGE';
+  const hasHoldContext =
+    order.stage === 'STOCK_SHORTAGE' || order.stage === 'ON_HOLD_PREP';
+  const activeHoldDetails = getOrderHoldDetails(order);
 
   if (stockFilter === 'ready' && !order.isReady) return false;
   if (stockFilter === 'shortage' && order.missingItemsCount === 0) {
@@ -908,27 +971,29 @@ const matchesPreparationFilters = ({
   }
 
   if (shortageOwnerQuery) {
-    if (!hasShortageContext) return false;
-    if (!order.shortageHoldDetails.owner.trim().toLowerCase().includes(shortageOwnerQuery)) {
+    if (!hasHoldContext) return false;
+    // 🚨 PRODUCTION-FIX: problemHoldDetails لم يعد يحمل owner (اتشال في refactor
+    // الميزة) — لا نجري .trim() على undefined.
+    if (!(activeHoldDetails.owner || '').trim().toLowerCase().includes(shortageOwnerQuery)) {
       return false;
     }
   }
 
   if (shortageFollowUpFilter !== 'all') {
-    if (!hasShortageContext) return false;
+    if (!hasHoldContext) return false;
 
     if (shortageFollowUpFilter === 'without_date') {
-      if (order.shortageHoldDetails.followUpDate) return false;
+      if (activeHoldDetails.followUpDate) return false;
     }
 
     if (shortageFollowUpFilter === 'today') {
-      if (!isPreparationShortageFollowUpToday(order.shortageHoldDetails.followUpDate, order.stage)) {
+      if (!isPreparationShortageFollowUpToday(activeHoldDetails.followUpDate, order.stage)) {
         return false;
       }
     }
 
     if (shortageFollowUpFilter === 'overdue') {
-      if (!isPreparationShortageFollowUpOverdue(order.shortageHoldDetails.followUpDate, order.stage)) {
+      if (!isPreparationShortageFollowUpOverdue(activeHoldDetails.followUpDate, order.stage)) {
         return false;
       }
     }
@@ -1352,9 +1417,12 @@ const getPreparationQueue = async ({ user, query }) => {
   let readyCount = 0;
   let shortageCount = 0;
   let shortageHoldCount = 0;
+  let onHoldPrepCount = 0;
   let overdueShortageFollowUpCount = 0;
+  let overdueProblemFollowUpCount = 0;
   let readyToShipCount = 0;
   let allOverdueShortageFollowUpCount = 0;
+  let allOverdueProblemFollowUpCount = 0;
   let candidateOffset = 0;
 
   while (true) {
@@ -1415,9 +1483,9 @@ const getPreparationQueue = async ({ user, query }) => {
 
     batchPreparationOrders.forEach((order) => {
       if (order.warehouseMatch) {
-        const ownerName = order.shortageHoldDetails.owner.trim();
-        if (ownerName) {
-          shortageOwnerSet.add(ownerName);
+        const shortageOwner = order.shortageHoldDetails.owner.trim();
+        if (shortageOwner) {
+          shortageOwnerSet.add(shortageOwner);
         }
 
         if (isPreparationShortageFollowUpOverdue(
@@ -1466,6 +1534,10 @@ const getPreparationQueue = async ({ user, query }) => {
 
       if (order.normalizedStatus === 'STOCK_SHORTAGE') {
         shortageHoldCount += 1;
+      }
+
+      if (order.normalizedStatus === 'ON_HOLD_PREP') {
+        onHoldPrepCount += 1;
       }
 
       if (isPreparationShortageFollowUpOverdue(
@@ -1524,9 +1596,12 @@ const getPreparationQueue = async ({ user, query }) => {
       readyCount,
       shortageCount,
       shortageHoldCount,
+      onHoldPrepCount,
       overdueShortageFollowUpCount,
+      overdueProblemFollowUpCount,
       readyToShipCount,
-      allOverdueShortageFollowUpCount
+      allOverdueShortageFollowUpCount,
+      allOverdueProblemFollowUpCount
     },
     shortageOwnerOptions
   };
@@ -1786,8 +1861,58 @@ const assertPreparationStockRule = async ({
   return null;
 };
 
+const PREPARATION_HOLD_FORWARD_BLOCKED = new Set([
+  'PREPARING',
+  'PROCESSING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP'
+]);
+
+/**
+ * Mirrors the frontend `validateTransition` hold rules so they cannot be
+ * bypassed with a direct API call:
+ *  1. Putting an order on hold (ON_HOLD_PREP) requires a reason note.
+ *  2. A held order cannot move directly to a forward preparation stage
+ *     (including the handoff READY_TO_SHIP) without being released first —
+ *     unless an OWNER/COMPANY_ADMIN/MANAGER overrides with isOverride.
+ *
+ * Returns an Error with statusCode 400 when the move is blocked, otherwise null.
+ */
+const assertPreparationHoldRule = async ({
+  currentPreparationStatus,
+  targetStatus,
+  notes,
+  isOverride = false,
+}) => {
+  const normalizedTarget = String(targetStatus || '').trim().toUpperCase();
+  const normalizedNote = String(notes || '').trim();
+
+  if (normalizedTarget === 'ON_HOLD_PREP' && !normalizedNote) {
+    const error = new Error('سبب تعليق الطلب مطلوب — اكتب المشكلة التي سيتم حلها قبل التعليق');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (isOverride) return null;
+
+  const currentStatus = String(currentPreparationStatus || '').trim().toUpperCase();
+  if (currentStatus !== 'ON_HOLD_PREP') return null;
+
+  if (PREPARATION_HOLD_FORWARD_BLOCKED.has(normalizedTarget)) {
+    const error = new Error('الطلب معلق بانتظار حل المشكلة — يجب إرجاعه للتجهيز أو إزالة التعليق قبل المتابعة');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return null;
+};
+
 module.exports = {
   getPreparationQueue,
   bulkUpdateByFilters,
-  assertPreparationStockRule
+  assertPreparationStockRule,
+  assertPreparationHoldRule
 };

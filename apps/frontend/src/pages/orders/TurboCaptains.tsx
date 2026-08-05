@@ -233,7 +233,7 @@ const TurboCaptains: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {cap.delayReasonSummary.length > 0 ? (
-                          cap.delayReasonSummary.map((d, idx) => (
+                          cap.delayReasonSummary.filter((d) => d != null).map((d, idx) => (
                             <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap max-w-[200px] truncate" title={d.reason}>
                               {d.reason.substring(0, 25)}... ({d.count})
                             </span>

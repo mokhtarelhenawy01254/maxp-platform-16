@@ -11,6 +11,7 @@ import {
   ShoppingBag, Flame, Rocket, Brain, BadgeCheck,
   Clock, Shield, Award, GraduationCap, LayoutGrid,
   ListFilter, Eye, SlidersHorizontal, Truck,
+  CreditCard, Gamepad2, Palette, ClipboardList,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
@@ -54,7 +55,7 @@ import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters
 import {
   appIconsBySlug, categoryIcons, categoryCssClass, appIcons,
   shouldUseTextIcon, isAddOnApp, normalizeRequiredApps,
-  getPrice, formatInstallCount, getAllCategories,
+  getPrice, formatInstallCount,
   starterBundles,
 } from "@/utils/marketplace";
 import { getMarketplaceFeatureItems } from "./featureCatalog";
@@ -136,6 +137,10 @@ function getCategoryDisplayCategories(categories: Category[], t: (key: string) =
     SUPPORT: MessageSquare, WHATSAPP: MessageSquare,
     SEO: TrendingUp, INTEGRATION: Zap, THEMES: LayoutGrid,
     ECOMMERCE: Store, MEDICAL: Heart,
+    ORDER_OPS: ClipboardList, PAYMENTS: CreditCard,
+    PROCUREMENT: ShoppingBag, WHOLESALE: Percent,
+    PRODUCTIVITY: Package, COMMUNICATION: MessageSquare,
+    GAMIFICATION: Gamepad2, DESIGN: Palette,
   };
   return categories.map(c => ({
     id: c.category,

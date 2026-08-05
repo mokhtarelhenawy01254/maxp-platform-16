@@ -39,6 +39,13 @@ const PreparationOrderNotices = ({
         </div>
       ) : null}
 
+      {order.stage === "ON_HOLD_PREP" ? (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span>{t("preparation.notices.problemHold")}</span>
+        </div>
+      ) : null}
+
       {shortageFollowUpVisual ? (
         <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${shortageFollowUpVisual.alertClass}`}>
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />

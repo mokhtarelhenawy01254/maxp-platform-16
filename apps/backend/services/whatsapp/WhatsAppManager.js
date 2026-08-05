@@ -1662,6 +1662,8 @@ async function createSession(sessionId, companyId, options = {}) {
             } else {
                 sd.labels.set(label.id, { id: label.id, name: label.name, color: label.color, predefinedId: label.predefinedId });
             }
+            // 💾 حفظ تعريف التصنيف في الداتابيز عشان يفضل موجود بعد إعادة التشغيل
+            persistLabelDefinition(sessionId, label).catch(() => {});
         });
 
         sock.ev.on('labels.association', ({ type, association }) => {
@@ -5061,23 +5063,49 @@ async function labelChat(sessionId, jid, labelId) {
 }
 
 /**
- * جلب العلامات (من cache session)
+ * جلب العلامات (من cache session + الداتابيز كـ fallback)
  */
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
-    if (!session) {
-        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
-        return [];
-    }
 
     try {
-        const labels = Array.from(session.labels.values());
+        let labels = [];
+        if (session) {
+            labels = Array.from(session.labels.values());
+        }
+
+        // لو الـ cache فاضي (مثلاً بعد إعادة تشغيل السيرفر) — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        color: l.color,
+                        predefinedId: l.predefinedId
+                    }));
+                    // نرجع نملّي الـ cache لو الجلسة موجودة
+                    if (session) {
+                        for (const l of labels) {
+                            session.labels.set(l.id, l);
+                        }
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB:', dbErr.message);
+            }
+        }
+
         return labels.map(label => ({
             id: label.id,
             name: label.name,
             color: formatLabelColor(label.color),
             predefinedId: label.predefinedId,
-            chatCount: session.labelAssociations.get(label.id)?.size || 0
+            chatCount: session?.labelAssociations.get(label.id)?.size || 0
         }));
     } catch (error) {
         console.error('❌ Error getting labels:', error);
@@ -5109,90 +5137,91 @@ async function persistLabelAssociation(sessionId, chatJid, labelId, isAdd) {
 }
 
 /**
- * مزامنة يدوية للتصنيفات — يسأل واتساب مباشرة عن التصنيفات
+ * حفظ تعريف تصنيف في الداتابيز
+ */
+async function persistLabelDefinition(sessionId, label) {
+    try {
+        const prisma = getSharedPrismaClient();
+        if (!prisma.whatsAppLabel) return;
+        if (label.deleted) {
+            await prisma.whatsAppLabel.deleteMany({
+                where: { sessionId, id: label.id }
+            });
+        } else {
+            await prisma.whatsAppLabel.upsert({
+                where: { sessionId_id: { sessionId, id: label.id } },
+                create: {
+                    id: label.id,
+                    sessionId,
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                },
+                update: {
+                    name: label.name || '',
+                    color: parseInt(label.color) || 0,
+                    predefinedId: label.predefinedId ? String(label.predefinedId) : null,
+                    deleted: false
+                }
+            });
+        }
+    } catch (err) {
+        console.error('❌ Error persisting label definition:', err.message);
+    }
+}
+
+/**
+ * مزامنة يدوية للتصنيفات — يطلب من واتساب إعادة مزامنة الـ app state
+ * Baileys v6 لا يدعم IQ query للتصنيفات مباشرة.
+ * الحل: نستخدم resyncAppState('regular') لإعادة جلب الـ sync actions
+ * بما فيها label_edit و label_jid، وأحداث labels.edit / labels.association
+ * هتملأ session.labels و session.labelAssociations تلقائياً.
  */
 async function syncLabels(sessionId) {
     const session = getSession(sessionId);
     if (!session) {
-        // الجلسة غير متصلة حالياً في الذاكرة — رجّع قائمة فارغة بدل ما ترمي خطأ 500
         return [];
     }
 
     try {
-        // اسأل واتساب عن التصنيفات عبر IQ query
-        // WhatsApp بيخزن الـ labels كـ label edit actions في الـ critical block
-        let remoteLabels = [];
-        try {
-            const result = await session.sock.query({
-                tag: 'iq',
-                attrs: {
-                    xmlns: 'w:label:label',
-                    to: S_WHATSAPP_NET,
-                    type: 'get'
-                },
-                content: null
-            });
-            // الـ response بيحتوي على القائمة
-            if (result?.content) {
-                const children = Array.isArray(result.content) ? result.content : [result.content];
-                for (const child of children) {
-                    if (child.tag === 'label' && child.attrs) {
-                        remoteLabels.push({
-                            id: child.attrs.id,
-                            name: child.attrs.name,
-                            color: child.attrs.color || '0',
+        // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
+        if (session.sock?.resyncAppState) {
+            const prevLabels = session.labels;
+            const prevAssociations = session.labelAssociations;
+            session.labels = new Map();
+            session.labelAssociations = new Map();
+            try {
+                // نجبر واتساب يبعت snapshot كامل (مش patches زيادة بس)
+                // عشان كده بنعمل reset للـ app-state-sync-version للـ collections اللي فيها labels
+                const keys = session.sock.authState?.keys;
+                if (keys) {
+                    try {
+                        await keys.set({
+                            'app-state-sync-version': {
+                                regular: null,
+                                regular_high: null,
+                                regular_low: null,
+                                critical_block: null,
+                                critical_unblock_low: null
+                            }
                         });
+                    } catch (keyErr) {
+                        console.log('⚠️ Failed to reset app-state-sync-version:', keyErr.message);
                     }
                 }
+                await Promise.race([
+                    session.sock.resyncAppState(['regular', 'regular_high', 'regular_low', 'critical_block', 'critical_unblock_low'], false),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 20000))
+                ]);
+            } catch (resyncErr) {
+                console.log('⚠️ resyncAppState failed, using existing cache:', resyncErr.message);
+                // استرجاع الـ cache القديم عشان ميرجعش فاضي
+                session.labels = prevLabels;
+                session.labelAssociations = prevAssociations;
             }
-        } catch (iqErr) {
-            console.log('⚠️ Label IQ query failed, trying fallback:', iqErr.message);
         }
-
-        if (remoteLabels.length > 0) {
-            // ضيف التصنيفات المسترجعة للـ cache
-            session.labels.clear();
-            session.labelAssociations.clear();
-            for (const label of remoteLabels) {
-                session.labels.set(label.id, {
-                    id: label.id,
-                    name: label.name,
-                    color: parseInt(label.color) || 0,
-                });
-            }
-
-            // كمان حاول نجيب الـ associations لكل تصنيف
-            for (const label of remoteLabels) {
-                try {
-                    const assocResult = await session.sock.query({
-                        tag: 'iq',
-                        attrs: {
-                            xmlns: 'w:label:label',
-                            to: S_WHATSAPP_NET,
-                            type: 'get'
-                        },
-                        content: [{ tag: 'list', attrs: { id: label.id } }]
-                    });
-                    if (assocResult?.content) {
-                        const chats = Array.isArray(assocResult.content) ? assocResult.content : [assocResult.content];
-                        const jids = new Set();
-                        for (const entry of chats) {
-                            if (entry.tag === 'chat' && entry.attrs?.jid) {
-                                jids.add(entry.attrs.jid);
-                            }
-                        }
-                        if (jids.size > 0) {
-                            session.labelAssociations.set(label.id, jids);
-                        }
-                    }
-                } catch { /* skip associations for this label */ }
-            }
-        } else {
-            // Fallback: حاول نستخدم الـ cache الموجود
-            console.log('⚠️ Could not fetch labels from WhatsApp, checking existing cache');
-        }
-
-        // 💾 Persist associations to DB
+        // حفظ associations في الداتابيز
         try {
             const prisma = getSharedPrismaClient();
             const allContacts = await prisma.whatsAppContact.findMany({
@@ -5207,7 +5236,6 @@ async function syncLabels(sessionId) {
                     }
                 }
                 const dbLabels = (() => { try { return JSON.parse(contact.labels || '[]'); } catch { return []; } })();
-                // Merge: prefer in-memory (fresh from WhatsApp), keep DB-only labels too
                 const merged = Array.from(new Set([...assignedLabels, ...dbLabels]));
                 if (JSON.stringify(merged) !== contact.labels) {
                     await prisma.whatsAppContact.update({
@@ -5221,9 +5249,46 @@ async function syncLabels(sessionId) {
             console.error('❌ Error persisting labels to DB:', dbErr.message);
         }
 
-        console.log(`🔄 Labels sync completed for session: ${sessionId} (${remoteLabels.length} labels)`);
+        let labels = Array.from(session.labels.values());
 
-        const labels = Array.from(session.labels.values());
+        // لو الـ resync ماجبش حاجة — نعمل reconnect للجلسة عشان الـ initial sync يجيب الـ labels.edit events
+        if (labels.length === 0) {
+            try {
+                const companyId = session.companyId;
+                if (companyId) {
+                    console.log('🔄 Labels still empty after resync, forcing session reconnect to fetch labels...');
+                    await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
+                    const refreshed = getSession(sessionId);
+                    if (refreshed) {
+                        labels = Array.from(refreshed.labels.values());
+                        session.labelAssociations = refreshed.labelAssociations;
+                    }
+                }
+            } catch (reconnectErr) {
+                console.error('❌ Reconnect failed while syncing labels:', reconnectErr.message);
+            }
+        }
+
+        // لو لسه فاضي — نجيب من الداتابيز
+        if (labels.length === 0) {
+            try {
+                const prisma = getSharedPrismaClient();
+                if (prisma.whatsAppLabel) {
+                    const dbLabels = await prisma.whatsAppLabel.findMany({
+                        where: { sessionId, deleted: false }
+                    });
+                    labels = dbLabels.map(l => ({ id: l.id, name: l.name, color: l.color, predefinedId: l.predefinedId }));
+                    for (const l of labels) {
+                        session.labels.set(l.id, l);
+                    }
+                }
+            } catch (dbErr) {
+                console.error('❌ Error loading labels from DB on sync:', dbErr.message);
+            }
+        }
+
+        console.log(`🔄 Labels sync completed for session: ${sessionId} (${labels.length} labels)`);
+
         return labels.map(label => ({
             id: label.id,
             name: label.name,
@@ -5362,36 +5427,64 @@ async function getLabelContacts(sessionId, labelId, options = {}) {
         totalMessages: true
     };
 
-    const [contacts, total] = await Promise.all([
-        prisma.whatsAppContact.findMany({
-            where,
-            orderBy: [{ lastMessageAt: 'desc' }],
-            skip: (page - 1) * limit,
-            take: limit,
-            select
-        }),
-        prisma.whatsAppContact.count({ where })
-    ]);
-
-    // دمج الارتباطات اللحظية من الذاكرة (ممكن تكون لسه متسجلتش في الداتابيز)
     const session = getSession(sessionId);
     const inMemoryJids = session?.labelAssociations?.get(labelId);
-    let realtimeContacts = [];
-    if (inMemoryJids && inMemoryJids.size > 0) {
-        const dbJids = new Set(contacts.map(c => c.jid));
-        const missingJids = [...inMemoryJids]
-            .filter(jid => !dbJids.has(jid))
-            .filter(jid => !String(jid).includes('@lid'));
+
+    // المصدر الأساسي: الارتباطات اللحظية من الذاكرة (الموجودة من أحداث واتساب)
+    // الـ DB لوحده مش كفاية لأن الـ associations بتتخزن فيه بعد ما الـ contacts نفسها تتخزن.
+    const sourceJids = inMemoryJids && inMemoryJids.size > 0
+        ? [...inMemoryJids].filter(jid => !String(jid).includes('@lid'))
+        : [];
+
+    // لو في بحث، نرشح الـ jids على الـ contact details من الداتابيز
+    let contacts = [];
+    let total = 0;
+    if (sourceJids.length > 0) {
+        let dbContacts = await prisma.whatsAppContact.findMany({
+            where: { sessionId, jid: { in: sourceJids } },
+            select
+        });
+        const knownJids = new Set(dbContacts.map(c => c.jid));
+
+        // الـ jids اللي لسه متتخزنش في الداتابيز — نضيفهم بأبسط بيانات (jid فقط)
+        const missingJids = sourceJids.filter(jid => !knownJids.has(jid));
         if (missingJids.length > 0) {
-            realtimeContacts = await prisma.whatsAppContact.findMany({
-                where: { sessionId, jid: { in: missingJids } },
-                select
-            });
+            dbContacts = [
+                ...dbContacts,
+                ...missingJids.map(jid => ({ id: null, sessionId, jid, phoneNumber: String(jid).split('@')[0], name: null, pushName: null, profilePicUrl: null, isGroup: String(jid).includes('@g.us'), customerId: null, lastMessageAt: null, lastMessagePreview: null, totalMessages: 0 }))
+            ];
         }
+
+        if (search) {
+            const q = search.toLowerCase();
+            dbContacts = dbContacts.filter(c =>
+                (c.name?.toLowerCase() || '').includes(q) ||
+                (c.pushName?.toLowerCase() || '').includes(q) ||
+                (c.phoneNumber || '').includes(q)
+            );
+        }
+
+        dbContacts.sort((a, b) => (b.lastMessageAt?.getTime?.() || 0) - (a.lastMessageAt?.getTime?.() || 0));
+        total = dbContacts.length;
+        contacts = dbContacts.slice((page - 1) * limit, (page - 1) * limit + limit);
+    } else {
+        // Fallback: لو مفيش associations في الذاكرة، نستخدم الداتابيز
+        const [dbContacts, dbTotal] = await Promise.all([
+            prisma.whatsAppContact.findMany({
+                where,
+                orderBy: [{ lastMessageAt: 'desc' }],
+                skip: (page - 1) * limit,
+                take: limit,
+                select
+            }),
+            prisma.whatsAppContact.count({ where })
+        ]);
+        contacts = dbContacts;
+        total = dbTotal;
     }
 
     return {
-        contacts: [...realtimeContacts, ...contacts],
+        contacts,
         total,
         page,
         limit,

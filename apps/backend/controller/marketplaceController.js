@@ -1172,7 +1172,15 @@ exports.getCategories = async (req, res) => {
     });
 
     const categoryMap = {
-      ECOMMERCE: { name: 'التجارة الإلكترونية', nameEn: 'E-Commerce', icon: '🛒' },
+      ECOMMERCE: { name: 'المتجر والمنتجات', nameEn: 'Store & Products', icon: '🛒' },
+      ORDER_OPS: { name: 'الطلبات والتنفيذ', nameEn: 'Orders & Fulfillment', icon: '📝' },
+      WAREHOUSE: { name: 'المخزون والمستودعات', nameEn: 'Inventory & Warehousing', icon: '📦' },
+      SHIPPING: { name: 'الشحن والتوصيل', nameEn: 'Shipping & Delivery', icon: '🚚' },
+      ACCOUNTING: { name: 'الفواتير والمحاسبة', nameEn: 'Invoicing & Accounting', icon: '🧾' },
+      PAYMENTS: { name: 'الدفع والتحصيل', nameEn: 'Payments & Collections', icon: '💳' },
+      PROCUREMENT: { name: 'المشتريات والموردين', nameEn: 'Procurement & Suppliers', icon: '🛍️' },
+      WHOLESALE: { name: 'البيع بالجملة', nameEn: 'Wholesale & B2B', icon: '🏪' },
+      SALES: { name: 'المبيعات', nameEn: 'Sales', icon: '🛒' },
       HR: { name: 'الموارد البشرية', nameEn: 'HR', icon: '👥' },
         [LEGACY_AUTOMATION_CATEGORY]: { name: 'الأتمتة', nameEn: 'Automation', icon: '⚙️' },
       COMMUNICATION: { name: 'التواصل', nameEn: 'Communication', icon: '💬' },
@@ -1182,6 +1190,11 @@ exports.getCategories = async (req, res) => {
       PRODUCTIVITY: { name: 'الإنتاجية', nameEn: 'Productivity', icon: '⚡' },
       FINANCE: { name: 'المالية', nameEn: 'Finance', icon: '💰' },
       MARKETING: { name: 'التسويق', nameEn: 'Marketing', icon: '📣' },
+      SUPPORT: { name: 'الدعم وخدمة العملاء', nameEn: 'Support', icon: '🎧' },
+      WHATSAPP: { name: 'واتساب', nameEn: 'WhatsApp', icon: '💬' },
+      SEO: { name: 'تحسين محركات البحث', nameEn: 'SEO', icon: '🌐' },
+      THEMES: { name: 'الثيمات والقوالب', nameEn: 'Themes', icon: '🎨' },
+      DESIGN: { name: 'التصميم', nameEn: 'Design', icon: '🎨' },
       GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' },
       MEDICAL: { name: 'النظام الطبي', nameEn: 'Medical System', icon: '🏥' }
     };

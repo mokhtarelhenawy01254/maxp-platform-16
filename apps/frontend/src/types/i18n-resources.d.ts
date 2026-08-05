@@ -9840,6 +9840,22 @@ declare module 'react-i18next' {
         workspaceCancelled: string;
         workspaceFollowUpLater: string;
         workspaceConfirmationQueue: string;
+        workspacePendingApproval: string;
+        workspaceLoadMore: string;
+        workspaceLoadingMore: string;
+        callResultLabel: string;
+        callResultUnreached: string;
+        callResultReached: string;
+        callResultBusy: string;
+        callResultWrongNumber: string;
+        callResultCallback: string;
+        followUpDateLabel: string;
+        followUpSave: string;
+        followUpScheduled: string;
+        cancelReasonTitle: string;
+        cancelReasonPlaceholder: string;
+        cancelConfirm: string;
+        cancelClose: string;
         workspaceSubtitle: string;
         bulkOrders: string;
         bulkOrdersSubtitle: string;
@@ -10358,7 +10374,10 @@ declare module 'react-i18next' {
           invoicePrintFailed: string;
           invoiceNotFound: string;
           invoicePrintError: string;
+          printWindowBlocked: string;
           guestInvoiceOpened: string;
+          bulkPrintSummary: string;
+          bulkPrintFailed: string;
           orderNotFound: string;
           stageUpdated: string;
           stageUpdateFailed: string;
@@ -10375,6 +10394,9 @@ declare module 'react-i18next' {
           selectWarehouseFirst: string;
           shortageHoldSaved: string;
           shortageHoldFailed: string;
+          problemHoldSaved: string;
+          problemHoldFailed: string;
+          holdBlocksForward: string;
           excludedCount: string;
           bulkUpdated: string;
           bulkUpdatedAll: string;
@@ -10436,6 +10458,7 @@ declare module 'react-i18next' {
           units: string;
           value: string;
           status: string;
+          problem: string;
           warehouse: string;
           readiness: string;
           printStatus: string;
@@ -10473,6 +10496,7 @@ declare module 'react-i18next' {
           value: string;
           warehouse: string;
           shippingCode: string;
+          hasProblem: string;
         };
         toasts: {
           queueUpdated: string;
@@ -10515,6 +10539,15 @@ declare module 'react-i18next' {
           waiting_restock: string;
           other: string;
         };
+        problemReasons: {
+          waiting_customer: string;
+          payment_issue: string;
+          address_issue: string;
+          waiting_management: string;
+          waiting_supplier: string;
+          qc_issue: string;
+          other: string;
+        };
         shortageFollowUp: {
           overdueLabel: string;
           overdueText: string;
@@ -10529,6 +10562,7 @@ declare module 'react-i18next' {
           QUALITY_CHECK: string;
           PACKAGED: string;
           STOCK_SHORTAGE: string;
+          ON_HOLD_PREP: string;
           default: string;
         };
         age: {
@@ -10574,7 +10608,9 @@ declare module 'react-i18next' {
           viewOnlyDesc: string;
           viewOnly: string;
           holdShortage: string;
+          holdProblem: string;
           returnToPreparation: string;
+          releaseProblem: string;
           print: string;
           openOrder: string;
         };
@@ -10645,10 +10681,41 @@ declare module 'react-i18next' {
           customerNotifiedBadge: string;
           ownerBadge: string;
         };
+        problemPanel: {
+          title: string;
+          desc: string;
+          edit: string;
+          addReason: string;
+          noReason: string;
+          heldAt: string;
+          save: string;
+          releasedNote: string;
+          releasedSuccess: string;
+          releasedError: string;
+        };
+        holdReasonDialog: {
+          title: string;
+          desc: string;
+        };
+        holdDialog: {
+          holdTitle: string;
+          advanceTitle: string;
+          holdDesc: string;
+          advanceDesc: string;
+          reasonLabel: string;
+          reasonPlaceholder: string;
+          commentLabel: string;
+          commentPlaceholder: string;
+          reasonRequired: string;
+          cancel: string;
+          confirm: string;
+          saving: string;
+        };
         notices: {
           notes: string;
           needsReview: string;
           shortageHold: string;
+          problemHold: string;
         };
         pageHeader: {
           title: string;
@@ -10669,6 +10736,7 @@ declare module 'react-i18next' {
         filtersToggle: string;
         overdueBanner: string;
         overdueBanner_plural: string;
+        problemOverdueBanner: string;
         selectAllCheckbox: string;
         sortOptions: {
           createdAt_desc: string;

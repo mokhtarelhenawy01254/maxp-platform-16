@@ -208,4 +208,37 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
       expect(second.reason).toBe('already_reversed');
     });
   });
+
+  describe('determineTier Decimal comparison', () => {
+    const tiers = [
+      { id: 'plat', name: 'Platinum', nameAr: 'بلاتيني', minPoints: '100', maxPoints: null, priority: 4 },
+      { id: 'gold', name: 'Gold', nameAr: 'ذهبي', minPoints: '30', maxPoints: '99', priority: 3 },
+      { id: 'silver', name: 'Silver', nameAr: 'فضي', minPoints: '10', maxPoints: '29', priority: 2 },
+      { id: 'bronze', name: 'Bronze', nameAr: 'برونزي', minPoints: '0', maxPoints: '9', priority: 1 },
+    ];
+
+    it('returns Gold (not Platinum) for 30 points', async () => {
+      prisma.customerLoyaltyTier.findMany.mockResolvedValue(tiers);
+      const tier = await loyaltyService.determineTier(companyId, programId, 30);
+      expect(tier?.id).toBe('gold');
+    });
+
+    it('returns Platinum only at 100 points', async () => {
+      prisma.customerLoyaltyTier.findMany.mockResolvedValue(tiers);
+      const tier = await loyaltyService.determineTier(companyId, programId, 100);
+      expect(tier?.id).toBe('plat');
+    });
+
+    it('returns Silver for 10 points', async () => {
+      prisma.customerLoyaltyTier.findMany.mockResolvedValue(tiers);
+      const tier = await loyaltyService.determineTier(companyId, programId, 10);
+      expect(tier?.id).toBe('silver');
+    });
+
+    it('returns Bronze for 5 points', async () => {
+      prisma.customerLoyaltyTier.findMany.mockResolvedValue(tiers);
+      const tier = await loyaltyService.determineTier(companyId, programId, 5);
+      expect(tier?.id).toBe('bronze');
+    });
+  });
 });

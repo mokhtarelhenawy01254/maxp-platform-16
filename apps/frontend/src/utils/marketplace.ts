@@ -3,7 +3,7 @@ import {
   DollarSign, Package, Sparkles, Heart, Zap, Bot,
   Camera, Megaphone, ShoppingCart, PackageOpen,
   ClipboardList, Truck, HeartHandshake,
-  ShoppingBag, FileSpreadsheet,
+  ShoppingBag, FileSpreadsheet, Percent,
   Brain, Shield, Globe, Palette, Headphones, Star, Clock,
   GraduationCap, Building2, BadgeCheck, Flame, Award,
   Rocket, LayoutGrid, CreditCard, Monitor, UserPlus,
@@ -38,6 +38,10 @@ export const categoryIcons: Record<string, LucideIcon> = {
   GAMIFICATION: Gamepad2,
   AUTOMATION: Layers,
   CALENDAR: CalendarDays,
+  ORDER_OPS: ClipboardList,
+  PAYMENTS: CreditCard,
+  PROCUREMENT: ShoppingBag,
+  WHOLESALE: Percent,
 };
 
 export const categoryCssClass: Record<string, string> = {
@@ -61,6 +65,12 @@ export const categoryCssClass: Record<string, string> = {
   SEO: "mp-cat-marketing",
   THEMES: "mp-cat-marketing",
   DESIGN: "mp-cat-marketing",
+  ORDER_OPS: "mp-cat-ecommerce",
+  PAYMENTS: "mp-cat-finance",
+  PROCUREMENT: "mp-cat-ecommerce",
+  WHOLESALE: "mp-cat-ecommerce",
+  AUTOMATION: "mp-cat-integration",
+  GAMIFICATION: "mp-cat-medical",
 };
 
 export function shouldUseTextIcon(icon?: string) {
@@ -133,12 +143,17 @@ export function getSectionIcon(type: string): LucideIcon {
 }
 
 export const allCategories = [
+  { id: "ECOMMERCE", labelKey: "marketplace.categories.ecommerce", icon: Store },
+  { id: "ORDER_OPS", labelKey: "marketplace.categories.orderOps", icon: ClipboardList },
+  { id: "WHOLESALE", labelKey: "marketplace.categories.wholesale", icon: Percent },
   { id: "AI", labelKey: "marketplace.categories.ai", icon: Brain },
   { id: "MARKETING", labelKey: "marketplace.categories.marketing", icon: Sparkles },
   { id: "SALES", labelKey: "marketplace.categories.sales", icon: ShoppingCart },
   { id: "CRM", labelKey: "marketplace.categories.crm", icon: HeartHandshake },
   { id: "ACCOUNTING", labelKey: "marketplace.categories.accounting", icon: FileSpreadsheet },
   { id: "FINANCE", labelKey: "marketplace.categories.finance", icon: DollarSign },
+  { id: "PAYMENTS", labelKey: "marketplace.categories.payments", icon: CreditCard },
+  { id: "PROCUREMENT", labelKey: "marketplace.categories.procurement", icon: ShoppingBag },
   { id: "ANALYTICS", labelKey: "marketplace.categories.analytics", icon: TrendingUp },
   { id: "HR", labelKey: "marketplace.categories.hr", icon: Users },
   { id: "WAREHOUSE", labelKey: "marketplace.categories.warehouse", icon: PackageOpen },
@@ -148,6 +163,11 @@ export const allCategories = [
   { id: "SEO", labelKey: "marketplace.categories.seo", icon: Globe },
   { id: "INTEGRATION", labelKey: "marketplace.categories.integration", icon: Zap },
   { id: "THEMES", labelKey: "marketplace.categories.themes", icon: Palette },
+  { id: "PRODUCTIVITY", labelKey: "marketplace.categories.productivity", icon: Package },
+  { id: "COMMUNICATION", labelKey: "marketplace.categories.communication", icon: MessageSquare },
+  { id: "GAMIFICATION", labelKey: "marketplace.categories.gamification", icon: Gamepad2 },
+  { id: "MEDICAL", labelKey: "marketplace.categories.medical", icon: Heart },
+  { id: "DESIGN", labelKey: "marketplace.categories.design", icon: Palette },
 ];
 
 export interface CategoryGroupDef {
@@ -162,7 +182,7 @@ export const categoryGroups: CategoryGroupDef[] = [
   {
     id: "commerce",
     labelKey: "marketplace.categories.groups.commerce",
-    categories: ["ECOMMERCE", "CRM", "SALES", "MARKETING"],
+    categories: ["ECOMMERCE", "ORDER_OPS", "WHOLESALE", "CRM", "SALES", "MARKETING"],
   },
   {
     id: "data",
@@ -172,7 +192,7 @@ export const categoryGroups: CategoryGroupDef[] = [
   {
     id: "operations",
     labelKey: "marketplace.categories.groups.operations",
-    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "WAREHOUSE", "SHIPPING"],
+    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "PAYMENTS", "PROCUREMENT", "WAREHOUSE", "SHIPPING"],
   },
   {
     id: "communication",
