@@ -5129,6 +5129,16 @@ async function syncLabels(sessionId) {
             session.labels = new Map();
             session.labelAssociations = new Map();
             try {
+                // نجبر واتساب يبعت snapshot كامل (مش patches زيادة بس)
+                // عشان كده بنعمل reset للـ app-state-sync-version للـ regular collection
+                const keys = session.sock.authState?.keys;
+                if (keys) {
+                    try {
+                        await keys.set({ 'app-state-sync-version': { regular: null } });
+                    } catch (keyErr) {
+                        console.log('⚠️ Failed to reset app-state-sync-version:', keyErr.message);
+                    }
+                }
                 await Promise.race([
                     session.sock.resyncAppState(['regular'], false),
                     new Promise((_, reject) => setTimeout(() => reject(new Error('resyncAppState timeout')), 15000))
