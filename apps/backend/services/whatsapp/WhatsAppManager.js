@@ -5053,11 +5053,12 @@ async function labelChat(sessionId, jid, labelId) {
     }
 
     try {
-        await session.sock.addChatLabel(jid, labelId);
-        console.log(`🏷️ Chat labeled: ${jid}`);
+        const result = await session.sock.addChatLabel(jid, labelId);
+        console.log(`🏷️ Chat labeled: ${jid} label=${labelId}`, result ? JSON.stringify(result) : '');
         return { success: true };
     } catch (error) {
-        console.error('❌ Error labeling chat:', error);
+        console.error(`❌ Error labeling chat: ${jid} label=${labelId}`);
+        console.error(`   [BAILEYS-ERR] ${error?.message} | code=${error?.output?.statusCode} | stack=${error?.stack?.split('\n').slice(0, 3).join(' | ')}`);
         throw error;
     }
 }
@@ -5336,10 +5337,11 @@ async function createLabel(sessionId, name, color) {
 
         // 📡 Try Baileys sync (non-blocking - don't fail if disconnected)
         try {
-            await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
-            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`);
+            const addResult = await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
+            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`, addResult ? JSON.stringify(addResult) : '');
         } catch (baileysErr) {
             console.log(`⚠️ Label saved locally (Baileys unavailable): ${name} (${labelId})`);
+            console.log(`   [BAILEYS-ERR] ${baileysErr?.message} | code=${baileysErr?.output?.statusCode} | stack=${baileysErr?.stack?.split('\n').slice(0, 3).join(' | ')}`);
         }
 
         return { id: labelId, name, color: colorHex };
