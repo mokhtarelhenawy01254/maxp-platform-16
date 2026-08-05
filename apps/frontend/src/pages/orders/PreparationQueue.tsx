@@ -1633,6 +1633,7 @@ const PreparationQueue: React.FC = () => {
         const data = response.data.data || {};
         const invoices: Array<{ id: string }> = data.invoices || [];
         const guestOrders: Array<{ orderId: string; order: OrderDetailsType }> = data.guestOrders || [];
+        const failed: Array<{ orderId: string; error?: string }> = data.failed || [];
 
         if (invoices.length === 0 && guestOrders.length === 0) {
           printWindow.close();
@@ -1640,7 +1641,10 @@ const PreparationQueue: React.FC = () => {
           return;
         }
 
-        if (guestOrders.length > 0) {
+        const hasInvoices = invoices.length > 0;
+        const hasGuests = guestOrders.length > 0;
+
+        if (hasGuests) {
           const { toOrderDetailsType } = await import("../../utils/printShippingLabel");
           try {
             await printMultipleShippingLabels({
@@ -1654,12 +1658,31 @@ const PreparationQueue: React.FC = () => {
           }
         }
 
-        if (invoices.length > 0) {
-          if (guestOrders.length === 0) printWindow.close();
+        if (hasInvoices) {
           const invoiceIds = invoices.map((inv) => inv.id).join(",");
-          navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
-        } else if (guestOrders.length > 0) {
-          toast.success(t('preparation.page.guestInvoiceOpened'));
+          const printUrl = `/orders/invoices/print-multiple?ids=${invoiceIds}`;
+          if (hasGuests) {
+            // طلبات مختلطة: الفواتير في تاب منفصل، وبوليصات الضيف في printWindow المفتوح
+            // (تجنب اختفاء البوليصات خلف صفحة print-multiple التي كانت تنقل الصفحة الحالية)
+            window.open(printUrl, "_blank");
+          } else {
+            // فواتير فقط: استخدم التاب المفتوح لتفادي نافذة فارغة
+            printWindow.close();
+            navigate(printUrl);
+          }
+        }
+
+        // رسالة واضحة بالأعداد (فواتير + بوليصات ضيف)، مع تنبيه منفصل للطلبات المتعثرة
+        toast.success(
+          t('preparation.page.bulkPrintSummary', {
+            invoiceCount: invoices.length,
+            guestCount: guestOrders.length,
+          }),
+        );
+        if (failed.length > 0) {
+          toast.warning(
+            t('preparation.page.bulkPrintFailed', { failedCount: failed.length }),
+          );
         }
       } else {
         printWindow.close();

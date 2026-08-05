@@ -10383,6 +10383,8 @@
       "invoicePrintError": "Failed to print invoices",
       "printWindowBlocked": "Could not open the print window. Please allow pop-ups for this site and try again",
       "guestInvoiceOpened": "Guest order invoice(s) opened for printing",
+      "bulkPrintSummary": "Print prepared: {{invoiceCount}} invoice(s) and {{guestCount}} shipping label(s). Opened in separate windows.",
+      "bulkPrintFailed": "Failed to print {{failedCount}} order(s) (not found or invalid)",
       "orderNotFound": "Order not found",
       "stageUpdated": "Updated order(s) successfully",
       "stageUpdateFailed": "Failed to update order stage",
@@ -10691,11 +10693,16 @@
       "desc": "This order is blocked until the problem is resolved. It will not move to shipping until returned to preparation.",
       "edit": "Edit",
       "addReason": "Add reason",
+      "noReason": "No reason specified",
       "heldAt": "Held on: {{date}}",
       "save": "Save",
       "releasedNote": "Order released from problem hold",
       "releasedSuccess": "Order released and returned to preparation",
       "releasedError": "Failed to release order from problem hold"
+    },
+    "holdReasonDialog": {
+      "title": "Edit hold reason for {{order}}",
+      "desc": "Update the current hold reason for this order."
     },
     "holdDialog": {
       "holdTitle": "Hold order {{order}} as a problem",

@@ -10376,6 +10376,8 @@ declare module 'react-i18next' {
           invoicePrintError: string;
           printWindowBlocked: string;
           guestInvoiceOpened: string;
+          bulkPrintSummary: string;
+          bulkPrintFailed: string;
           orderNotFound: string;
           stageUpdated: string;
           stageUpdateFailed: string;
@@ -10684,11 +10686,16 @@ declare module 'react-i18next' {
           desc: string;
           edit: string;
           addReason: string;
+          noReason: string;
           heldAt: string;
           save: string;
           releasedNote: string;
           releasedSuccess: string;
           releasedError: string;
+        };
+        holdReasonDialog: {
+          title: string;
+          desc: string;
         };
         holdDialog: {
           holdTitle: string;

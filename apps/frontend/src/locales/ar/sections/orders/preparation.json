@@ -36,6 +36,8 @@
     "invoicePrintError": "تعذر طباعة الفواتير",
     "printWindowBlocked": "تعذر فتح نافذة الطباعة. الرجاء السماح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة",
     "guestInvoiceOpened": "تم فتح فواتير طلبات الضيف للطباعة",
+    "bulkPrintSummary": "تم تجهيز الطباعة: {{invoiceCount}} فاتورة و {{guestCount}} بوليصة شحن. طُبعت في نوافذ منفصلة.",
+    "bulkPrintFailed": "تعذّر طباعة {{failedCount}} طلب (غير موجود أو غير صالح)",
     "orderNotFound": "تعذر العثور على الطلب المحدد",
     "stageUpdated": "تم تحديث الطلبات بنجاح",
     "stageUpdateFailed": "تعذر تحديث الطلبات المحددة",
