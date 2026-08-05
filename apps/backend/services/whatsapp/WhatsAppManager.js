@@ -5350,6 +5350,47 @@ async function createLabel(sessionId, name, color) {
 }
 
 /**
+ * استعادة التصنيفات الافتراضية القديمة (اللي كانت موجودة على حساب واتساب سابق)
+ * بيعمل create لكل تصنيف مش موجود حالياً في الجلسة
+ */
+const DEFAULT_LABELS = [
+    { name: 'زبون جديد', color: '#2196F3' },
+    { name: 'مهم', color: '#FF5722' },
+    { name: 'متدربة جديده', color: '#4CAF50' },
+    { name: 'اوردرات واتساب', color: '#9C27B0' },
+    { name: 'تواريخ ميلاد', color: '#FF9800' },
+    { name: 'غير مقروءة', color: '#607D8B' },
+    { name: 'المفضلة', color: '#E91E63' },
+    { name: 'المجموعات', color: '#00BCD4' },
+    { name: '000', color: '#795548' },
+];
+
+async function restoreDefaultLabels(sessionId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        throw new Error('Session not found');
+    }
+
+    const existingNames = new Set(
+        Array.from(session.labels.values()).map(l => String(l.name || '').trim())
+    );
+
+    const created = [];
+    for (const def of DEFAULT_LABELS) {
+        if (existingNames.has(def.name)) continue;
+        try {
+            const result = await createLabel(sessionId, def.name, def.color);
+            created.push({ name: def.name, id: result.id });
+        } catch (err) {
+            console.error(`❌ Error restoring label ${def.name}:`, err.message);
+        }
+    }
+
+    console.log(`🏷️ Restore labels: created ${created.length} labels for session ${sessionId}`);
+    return { created, total: DEFAULT_LABELS.length };
+}
+
+/**
  * حذف علامة
  */
 async function deleteLabel(sessionId, labelId) {
@@ -6139,6 +6180,7 @@ module.exports = {
     deleteLabel,
     removeChatLabel,
     getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,

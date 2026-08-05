@@ -463,11 +463,11 @@ export default function OrderStatusTemplatesPage() {
     fetchMetaSessions();
   };
 
-  const persistLocalTemplate = useCallback(async (): Promise<boolean> => {
-    if (!selectedStatus) return false;
+  const persistLocalTemplate = useCallback(async (): Promise<string | null> => {
+    if (!selectedStatus) return null;
     if (!templateForm.content.trim()) {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
-      return false;
+      return null;
     }
     const saveButtons = templateForm.hasButtons
       ? templateForm.buttons
@@ -489,14 +489,23 @@ export default function OrderStatusTemplatesPage() {
       if (isEdit) {
         await apiClient.put(`/whatsapp/notifications/templates/${selectedStatus.template!.id}`, payload);
         toast.success(t("orders.templateUpdated", "تم تحديث القالب بنجاح"));
+        return selectedStatus.template!.id;
       } else {
-        await apiClient.post("/whatsapp/notifications/templates", payload);
+        const res = await apiClient.post("/whatsapp/notifications/templates", payload);
+        const created = res?.data?.template;
+        if (!created?.id) {
+          toast.error(t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
+          return null;
+        }
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
+        setSelectedStatus((prev) =>
+          prev ? { ...prev, template: { ...prev.template, id: created.id } } : prev
+        );
+        return created.id;
       }
-      return true;
     } catch (err: any) {
       toast.error(err?.response?.data?.message || t("orders.templateSaveError", "حدث خطأ في حفظ القالب"));
-      return false;
+      return null;
     } finally {
       setSaving(false);
     }
@@ -509,17 +518,13 @@ export default function OrderStatusTemplatesPage() {
         toast.error(t("orders.selectMetaTemplate", "اختر قالب ميتا للربط"));
         return;
       }
-      if (!selectedStatus.template?.id) {
-        toast.error(t("orders.saveTemplateFirst", "احفظ القالب كإرسال مباشر أولاً ثم اربطه بميتا"));
-        return;
-      }
-      const saved = await persistLocalTemplate();
-      if (!saved) return;
-      await bindMetaTemplate(selectedStatus.template.id, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
+      const templateId = await persistLocalTemplate();
+      if (!templateId) return;
+      await bindMetaTemplate(templateId, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
       return;
     }
-    const saved = await persistLocalTemplate();
-    if (!saved) return;
+    const templateId = await persistLocalTemplate();
+    if (!templateId) return;
     setDialogOpen(false);
     fetchData();
   };
@@ -1323,7 +1328,7 @@ export default function OrderStatusTemplatesPage() {
                 )}
               </div>
 
-              {dialogTab === "bind_meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
+              {dialogTab === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
                   ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
                   القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
@@ -1625,7 +1630,7 @@ export default function OrderStatusTemplatesPage() {
               {templateForm.sendMode === "bind_meta" && selectedStatus?.template?.metaTemplateName && (
                 <button
                   onClick={handleResubmitMeta}
-                  disabled={saving || resubmittingMeta || bindingId === selectedStatus?.template?.id}
+                  disabled={saving || resubmittingMeta || !!bindingId}
                   title="تحديث المحتوى على ميتا ويرجع للمراجعة تاني"
                   className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
                 >
@@ -1635,10 +1640,10 @@ export default function OrderStatusTemplatesPage() {
               )}
               <button
                 onClick={handleSave}
-                disabled={saving || resubmittingMeta || bindingId === selectedStatus?.template?.id || (templateForm.sendMode === "direct" && !templateForm.content.trim())}
+                disabled={saving || resubmittingMeta || !!bindingId || (templateForm.sendMode === "direct" && !templateForm.content.trim())}
                 className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
               >
-                {saving || bindingId === selectedStatus?.template?.id ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
+                {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {templateForm.sendMode === "bind_meta" ? "ربط بقالب ميتا" : "حفظ"}
               </button>
             </div>

@@ -3526,6 +3526,32 @@ async function createLabel(req, res) {
     }
 }
 
+async function restoreDefaultLabels(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.restoreDefaultLabels(targetSessionId);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error restoring default labels:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء استعادة التصنيفات' });
+    }
+}
+
 async function deleteLabel(req, res) {
     try {
         const { companyId } = req.user;
@@ -4610,6 +4636,7 @@ module.exports = {
     addLabelToChat,
     removeLabelFromChat,
     getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,

@@ -455,6 +455,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [editingQuickReply, setEditingQuickReply] =
     useState<QuickReply | null>(null);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [restoringLabels, setRestoringLabels] = useState(false);
   const [labelContactsLabel, setLabelContactsLabel] =
     useState<LabelItem | null>(null);
   const [deleteState, setDeleteState] = useState<DeleteState | null>(null);
@@ -1242,6 +1243,34 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       showError(error, t("common.error"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRestoreDefaultLabels = async () => {
+    if (!scopedSessionId) {
+      return;
+    }
+
+    try {
+      setRestoringLabels(true);
+      const response = await apiClient.post(
+        "/whatsapp/labels/restore",
+        { sessionId: scopedSessionId },
+        withCompanyConfig(),
+      );
+      const data = (response as any).data;
+      if (scopedSessionId) {
+        await loadLabels(scopedSessionId);
+      }
+      toast.success(
+        data?.created?.length
+          ? `تم استعادة ${data.created.length} تصنيف`
+          : "جميع التصنيفات موجودة بالفعل",
+      );
+    } catch (error) {
+      showError(error, t("common.error"));
+    } finally {
+      setRestoringLabels(false);
     }
   };
 
@@ -2160,6 +2189,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           >
             <Plus className="size-4" />
             {t("whatsappSettings.addLabel")}
+          </Button>
+          <Button
+            variant="outline"
+            className="rounded-full border-[color:var(--shell-control-border)]"
+            onClick={() => void handleRestoreDefaultLabels()}
+            disabled={!scopedSessionId || restoringLabels}
+          >
+            <RefreshCw className={`size-4 ${restoringLabels ? "animate-spin" : ""}`} />
+            {restoringLabels ? "جاري الاستعادة..." : "استعادة التصنيفات"}
           </Button>
         </div>
       }

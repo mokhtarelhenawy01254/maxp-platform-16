@@ -174,4 +174,41 @@ describe("OrderStatusTemplatesPage Meta template binding", () => {
     expect(contentArea).toBeInTheDocument();
     expect(contentArea).toHaveValue("مرحبا {{customerName}} أكد طلبك");
   });
+
+  test("ربط قالب جديد (مفيش template.id) بينشئ القالب المحلي أولاً ثم يربطه بميتا", async () => {
+    const createdId = "t-new";
+    mockApi(makeStatus({ template: null }));
+    apiClient.post.mockImplementation((url: string, body?: any) => {
+      if (url === "/whatsapp/notifications/templates") {
+        return Promise.resolve({
+          data: { success: true, template: { id: createdId, ...body } },
+        });
+      }
+      if (url.endsWith("/bind-meta")) {
+        return Promise.resolve({ data: { success: true } });
+      }
+      return Promise.resolve({ data: { success: true, metaTemplateName: "order_confirm_ar" } });
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(screen.getByRole("button", { name: /تعديل/ }));
+    await user.click(screen.getByRole("tab", { name: /ربط قالب ميتا/ }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /قالب ميتا المعتمد/ }), "order_confirm_ar");
+    await user.click(screen.getByRole("button", { name: /ربط بقالب ميتا/ }));
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        "/whatsapp/notifications/templates",
+        expect.objectContaining({ name: "قالب مؤكد", eventType: "CONFIRMED" })
+      )
+    );
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(
+        expect.stringContaining("/bind-meta"),
+        expect.objectContaining({ metaTemplateName: "order_confirm_ar" })
+      )
+    );
+  });
 });
