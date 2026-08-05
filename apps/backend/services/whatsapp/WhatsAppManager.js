@@ -5251,7 +5251,25 @@ async function syncLabels(sessionId) {
 
         let labels = Array.from(session.labels.values());
 
-        // لو الـ resync ماجبش حاجة (مثلاً الـ socket مش جاهز) — نجيب من الداتابيز
+        // لو الـ resync ماجبش حاجة — نعمل reconnect للجلسة عشان الـ initial sync يجيب الـ labels.edit events
+        if (labels.length === 0) {
+            try {
+                const companyId = session.companyId;
+                if (companyId) {
+                    console.log('🔄 Labels still empty after resync, forcing session reconnect to fetch labels...');
+                    await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
+                    const refreshed = getSession(sessionId);
+                    if (refreshed) {
+                        labels = Array.from(refreshed.labels.values());
+                        session.labelAssociations = refreshed.labelAssociations;
+                    }
+                }
+            } catch (reconnectErr) {
+                console.error('❌ Reconnect failed while syncing labels:', reconnectErr.message);
+            }
+        }
+
+        // لو لسه فاضي — نجيب من الداتابيز
         if (labels.length === 0) {
             try {
                 const prisma = getSharedPrismaClient();
