@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
+const { requireCompanyAccess } = verifyToken;
 
 // Products Controller
 const {
@@ -44,13 +45,6 @@ const {
 // Reset Controller
 const { resetWooCommerceData } = require('../controller/wooCommerceResetController');
 
-// All authenticated routes require woocommerce-pro access.
-// The public webhook route (/webhook/:id) is moved to the END of this file
-// so it remains accessible without a token.
-router.use(verifyToken.authenticateToken);
-router.use(verifyToken.requireCompanyAccess);
-router.use(checkAppAccess('woocommerce-pro'));
-
 // ═══════════════════════════════════════════════════════════════
 // 📦 Products Routes
 // ═══════════════════════════════════════════════════════════════
@@ -60,28 +54,28 @@ router.use(checkAppAccess('woocommerce-pro'));
  * @desc    جلب المنتجات من WooCommerce
  * @access  Private
  */
-router.post('/fetch-products', verifyToken.authenticateToken, fetchProductsFromWooCommerce);
+router.post('/fetch-products', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), fetchProductsFromWooCommerce);
 
 /**
  * @route   POST /api/v1/woocommerce/import-selected
  * @desc    استيراد المنتجات المحددة من WooCommerce
  * @access  Private
  */
-router.post('/import-selected', verifyToken.authenticateToken, importSelectedProducts);
+router.post('/import-selected', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), importSelectedProducts);
 
 /**
  * @route   GET /api/v1/woocommerce/product/:productId
  * @desc    جلب منتج واحد من WooCommerce بـ ID
  * @access  Private
  */
-router.get('/product/:productId', verifyToken.authenticateToken, fetchProductById);
+router.get('/product/:productId', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), fetchProductById);
 
 /**
  * @route   POST /api/v1/woocommerce/sync-stock
  * @desc    مزامنة المخزون بين النظام والووكومرس
  * @access  Private
  */
-router.post('/sync-stock', verifyToken.authenticateToken, syncProductStock);
+router.post('/sync-stock', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), syncProductStock);
 
 // ═══════════════════════════════════════════════════════════════
 // 📋 Orders Routes
@@ -92,42 +86,42 @@ router.post('/sync-stock', verifyToken.authenticateToken, syncProductStock);
  * @desc    جلب الطلبات من WooCommerce (معاينة)
  * @access  Private
  */
-router.post('/orders/fetch', verifyToken.authenticateToken, fetchOrdersFromWooCommerce);
+router.post('/orders/fetch', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), fetchOrdersFromWooCommerce);
 
 /**
  * @route   POST /api/v1/woocommerce/orders/count
  * @desc    جلب عدد الطلبات الكلي من WooCommerce
  * @access  Private
  */
-router.post('/orders/count', verifyToken.authenticateToken, getOrdersCount);
+router.post('/orders/count', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), getOrdersCount);
 
 /**
  * @route   GET /api/v1/woocommerce/orders/statuses
  * @desc    جلب حالات الطلبات من WooCommerce
  * @access  Private
  */
-router.get('/orders/statuses', verifyToken.authenticateToken, getWooCommerceStatuses);
+router.get('/orders/statuses', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), getWooCommerceStatuses);
 
 /**
  * @route   POST /api/v1/woocommerce/orders/import
  * @desc    استيراد الطلبات المحددة من WooCommerce
  * @access  Private
  */
-router.post('/orders/import', verifyToken.authenticateToken, importOrdersFromWooCommerce);
+router.post('/orders/import', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), importOrdersFromWooCommerce);
 
 /**
  * @route   GET /api/v1/woocommerce/orders/local
  * @desc    جلب الطلبات المحلية للتصدير
  * @access  Private
  */
-router.get('/orders/local', verifyToken.authenticateToken, getLocalOrdersForExport);
+router.get('/orders/local', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), getLocalOrdersForExport);
 
 /**
  * @route   POST /api/v1/woocommerce/orders/export
  * @desc    تصدير الطلبات إلى WooCommerce
  * @access  Private
  */
-router.post('/orders/export', verifyToken.authenticateToken, exportOrdersToWooCommerce);
+router.post('/orders/export', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), exportOrdersToWooCommerce);
 
 // ═══════════════════════════════════════════════════════════════
 // ⚙️ Settings Routes
@@ -138,28 +132,28 @@ router.post('/orders/export', verifyToken.authenticateToken, exportOrdersToWooCo
  * @desc    جلب إعدادات WooCommerce
  * @access  Private
  */
-router.get('/settings', verifyToken.authenticateToken, getWooCommerceSettings);
+router.get('/settings', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), getWooCommerceSettings);
 
 /**
  * @route   POST /api/v1/woocommerce/settings
  * @desc    حفظ إعدادات WooCommerce
  * @access  Private
  */
-router.post('/settings', verifyToken.authenticateToken, saveWooCommerceSettings);
+router.post('/settings', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), saveWooCommerceSettings);
 
 /**
  * @route   DELETE /api/v1/woocommerce/settings/:id
  * @desc    حذف إعدادات WooCommerce
  * @access  Private
  */
-router.delete('/settings/:id', verifyToken.authenticateToken, disconnectWooCommerce);
+router.delete('/settings/:id', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), disconnectWooCommerce);
 
 /**
  * @route   GET /api/v1/woocommerce/sync-logs
  * @desc    جلب سجل المزامنة
  * @access  Private
  */
-router.get('/sync-logs', verifyToken.authenticateToken, getSyncLogs);
+router.get('/sync-logs', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), getSyncLogs);
 
 // ═══════════════════════════════════════════════════════════════
 // 🔔 Webhook Routes
@@ -170,14 +164,14 @@ router.get('/sync-logs', verifyToken.authenticateToken, getSyncLogs);
  * @desc    استقبال Webhook من WooCommerce
  * @access  Public (verified by signature)
  */
-router.post('/webhooks/setup', verifyToken.authenticateToken, setupWooCommerceWebhooks);
+router.post('/webhooks/setup', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), setupWooCommerceWebhooks);
 
 /**
  * @route   POST /api/v1/woocommerce/webhooks/test
  * @desc    اختبار Webhook
  * @access  Private
  */
-router.post('/webhooks/test', verifyToken.authenticateToken, testWebhook);
+router.post('/webhooks/test', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), testWebhook);
 
 // ═══════════════════════════════════════════════════════════════
 // 🔄 Auto Sync Routes
@@ -188,14 +182,14 @@ router.post('/webhooks/test', verifyToken.authenticateToken, testWebhook);
  * @desc    إعادة ضبط بيانات WooCommerce
  * @access  Private
  */
-router.post('/reset', verifyToken.authenticateToken, resetWooCommerceData);
+router.post('/reset', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), resetWooCommerceData);
 
 /**
  * @route   POST /api/v1/woocommerce/auto-sync
  * @desc    تشغيل المزامنة التلقائية يدوياً
  * @access  Private
  */
-router.post('/auto-sync', verifyToken.authenticateToken, triggerAutoSync);
+router.post('/auto-sync', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), triggerAutoSync);
 
 // ═══════════════════════════════════════════════════════════════
 // 🔄 Polling Scheduler Routes (Works on localhost)
@@ -208,7 +202,7 @@ const { getWooCommerceAutoSyncScheduler } = require('../services/wooCommerceAuto
  * @desc    الحصول على حالة المزامنة التلقائية
  * @access  Private
  */
-router.get('/scheduler/status', verifyToken.authenticateToken, (req, res) => {
+router.get('/scheduler/status', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), (req, res) => {
   try {
     const scheduler = getWooCommerceAutoSyncScheduler();
     res.json({
@@ -225,7 +219,7 @@ router.get('/scheduler/status', verifyToken.authenticateToken, (req, res) => {
  * @desc    تشغيل المزامنة الآن (للشركة الحالية)
  * @access  Private
  */
-router.post('/scheduler/sync-now', verifyToken.authenticateToken, async (req, res) => {
+router.post('/scheduler/sync-now', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -250,7 +244,7 @@ router.post('/scheduler/sync-now', verifyToken.authenticateToken, async (req, re
  * @desc    تغيير فترة المزامنة التلقائية
  * @access  Private
  */
-router.post('/scheduler/set-interval', verifyToken.authenticateToken, (req, res) => {
+router.post('/scheduler/set-interval', verifyToken.authenticateToken, requireCompanyAccess, checkAppAccess('woocommerce-pro'), (req, res) => {
   try {
     const { minutes } = req.body;
     if (!minutes || minutes < 1) {
