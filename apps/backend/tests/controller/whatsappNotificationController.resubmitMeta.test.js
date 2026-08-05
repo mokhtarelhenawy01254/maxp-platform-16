@@ -55,6 +55,7 @@ const BOUND_TEMPLATE = {
   hasButtons: false,
   buttons: null,
   metaTemplateName: 'order_confirm_ar',
+  metaTemplateId: null,
   metaTemplateStatus: 'APPROVED',
   variables: null,
 };
@@ -63,7 +64,7 @@ describe('POST /templates/:id/resubmit-meta', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     updateTemplate.mockResolvedValue({ id: '12345', status: 'PENDING' });
-    listTemplates.mockResolvedValue([{ name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] }]);
+    listTemplates.mockResolvedValue([{ id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] }]);
   });
 
   test('يرفض لو القالب غير مربوط بقالب ميتا', async () => {
@@ -88,13 +89,17 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(payload.components[0].text).toContain('{{1}}');
     expect(payload.language).toBe('ar');
     expect(payload.category).toBe('UTILITY');
+    // الـ templateId اللي بيتحل من الليست قبل التعديل بيتُبعت رابع بارامتر
+    expect(updateTemplate.mock.calls[0][3]).toBe('778899');
 
-    expect(listTemplates).toHaveBeenCalledTimes(1);
+    // listTemplates بيتستخدم مرتين: حلّ الـ template ID + التحقق من المحتوى على ميتا
+    expect(listTemplates).toHaveBeenCalledTimes(2);
     expect(listTemplates).toHaveBeenCalledWith('s1');
 
     const updateCall = prisma.whatsAppNotificationTemplate.update.mock.calls[0];
     expect(updateCall[0].where.id).toBe('t1');
     expect(updateCall[0].data.metaTemplateStatus).toBe('PENDING');
+    expect(updateCall[0].data.metaTemplateId).toBe('778899');
 
     const body = res.json.mock.calls[0][0];
     expect(body.success).toBe(true);
@@ -102,9 +107,21 @@ describe('POST /templates/:id/resubmit-meta', () => {
     expect(body.verifiedStatus).toBe('PENDING');
   });
 
+  test('بيستخدم metaTemplateId المحفوظ في القالب مباشرة لو موجود (من غير listTemplates إضافية)', async () => {
+    listTemplates.mockResolvedValue([{ id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] }]);
+    const prisma = buildPrisma({ template: { ...BOUND_TEMPLATE, metaTemplateId: '778899' }, session: { id: 's1', provider: 'META_CLOUD' } });
+    const { req, res } = makeReqRes(prisma);
+    await resubmitMetaTemplate(req, res);
+
+    expect(updateTemplate).toHaveBeenCalledTimes(1);
+    expect(updateTemplate.mock.calls[0][3]).toBe('778899');
+    // لا استدعاء listTemplates لحل الـ id (فقط التحقق بعد التحديث)
+    expect(listTemplates).toHaveBeenCalledTimes(1);
+  });
+
   test('بيرجع applied=true لو المحتوى اتبقى فعلاً على ميتا', async () => {
     listTemplates.mockResolvedValue([
-      { name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
+      { id: '778899', name: 'order_confirm_ar', status: 'PENDING', category: 'UTILITY', components: [{ type: 'BODY', text: 'مرحبا {{1}}، أكد طلبك' }] },
     ]);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);
@@ -119,7 +136,7 @@ describe('POST /templates/:id/resubmit-meta', () => {
 
   test('بيرجع applied=false لو ميتا لسه شايلة المحتوى القديم', async () => {
     listTemplates.mockResolvedValue([
-      { name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'نص قديم مختلف تماماً' }] },
+      { id: '778899', name: 'order_confirm_ar', status: 'APPROVED', category: 'UTILITY', components: [{ type: 'BODY', text: 'نص قديم مختلف تماماً' }] },
     ]);
     const prisma = buildPrisma({ template: BOUND_TEMPLATE, session: { id: 's1', provider: 'META_CLOUD' } });
     const { req, res } = makeReqRes(prisma);

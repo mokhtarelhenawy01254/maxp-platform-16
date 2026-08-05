@@ -417,7 +417,7 @@ async function createTemplate(sessionId, templateData) {
   return response.data;
 }
 
-async function updateTemplate(sessionId, templateName, templateData) {
+async function updateTemplate(sessionId, templateName, templateData, templateId) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
 
@@ -434,9 +434,22 @@ async function updateTemplate(sessionId, templateName, templateData) {
   if (templateData.language) payload.language = templateData.language;
   if (templateData.category) payload.category = templateData.category;
 
-  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
+  // تعديل قالب موجود في ميتا يتم عبر الـ numeric template ID مش الاسم.
+  // الرجوع للمسار العام (message_templates?name=...) بيتم تفسيره كـ CREATE
+  // وبيقشل بـ code 100 / subcode 2388024 (يوجد محتوى بهذه اللغة بالفعل).
+  let resolvedTemplateId = templateId;
+  if (!resolvedTemplateId) {
+    const templates = await listTemplates(sessionId);
+    const found = templates.find(t => t.name === templateName);
+    if (!found) {
+      throw new Error(`Template "${templateName}" not found on Meta — تعذر العثور على القالب`);
+    }
+    resolvedTemplateId = found.id;
+  }
 
-  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" (id=${resolvedTemplateId}) on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${encodeURIComponent(resolvedTemplateId)}`;
   const response = await apiCall(() => axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,

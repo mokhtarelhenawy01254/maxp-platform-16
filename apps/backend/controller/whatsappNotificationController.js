@@ -911,6 +911,7 @@ async function publishTemplateToMeta(req, res) {
       where: { id: templateId },
       data: {
         metaTemplateName: metaName,
+        metaTemplateId: result?.id || localTemplate.metaTemplateId,
         metaTemplateLanguage: 'ar',
         metaTemplateStatus: 'PENDING',
         variables: variableOrder || localTemplate.variables,
@@ -998,11 +999,23 @@ async function resubmitMetaTemplate(req, res) {
     if (built.buttonsComponent) components.push(built.buttonsComponent);
 
     const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
+
+    // حل الـ numeric template ID الخاص بميتا قبل التعديل — الـ update في ميتا بيتم
+    // على الـ ID مش الاسم، والرجوع للاسم بيجيب (subcode 2388024) محتوى موجود.
+    let metaTemplateId = localTemplate.metaTemplateId || null;
+    if (!metaTemplateId) {
+      try {
+        const metaTemplates = await MetaCloudProvider.listTemplates(sessionId);
+        const found = (metaTemplates || []).find(t => t.name === localTemplate.metaTemplateName);
+        metaTemplateId = found?.id || null;
+      } catch { metaTemplateId = null; }
+    }
+
     const result = await MetaCloudProvider.updateTemplate(sessionId, localTemplate.metaTemplateName, {
       components,
       language: 'ar',
       category: built.metaCategory
-    });
+    }, metaTemplateId);
 
     // التحقق الصادق: بنشوف المحتوى الفعلي اللي رجع من ميتا ونقارنه باللي أرسلناه،
     // مش بس الـ status — عشان نعرف هل التعديل اتبقى فعلاً ولا ميتا لسه شايلة القديم.
@@ -1048,6 +1061,7 @@ async function resubmitMetaTemplate(req, res) {
       where: { id },
       data: {
         metaTemplateStatus: verifiedStatus || 'PENDING',
+        metaTemplateId: metaTemplateId || localTemplate.metaTemplateId,
         variables: built.variableOrder || localTemplate.variables,
         updatedAt: new Date()
       }
@@ -1251,6 +1265,7 @@ async function bindMetaTemplate(req, res) {
       where: { id },
       data: {
         metaTemplateName,
+        metaTemplateId: meta.id || local.metaTemplateId,
         metaTemplateLanguage,
         metaTemplateStatus: 'APPROVED',
         variables,

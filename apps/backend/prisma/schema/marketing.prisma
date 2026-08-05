@@ -1149,6 +1149,7 @@ model WhatsAppNotificationTemplate {
   isActive                   Boolean                                @default(true)
   isDefault                  Boolean                                @default(false)
   metaTemplateName           String?
+  metaTemplateId             String?
   metaTemplateLanguage       String?
   metaTemplateStatus         String?
   sentCount                  Int                                    @default(0)
