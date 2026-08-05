@@ -417,13 +417,24 @@ async function createTemplate(sessionId, templateData) {
   return response.data;
 }
 
-async function updateTemplate(sessionId, templateName, templateData) {
+/**
+ * تعديل قالب موجود في ميتا.
+ * الـ endpoint الصحيح (حسب وثائق ميتا 2026) هو POST مباشرة على الـ template ID:
+ *   POST /{apiVersion}/{message-template-id}   body: { components, category, message_send_ttl_seconds }
+ * (وليس /{wabaId}/message_templates/{id} ولا ?name= — تلك تُفسَّر كإنشاء وترفض).
+ * القوالب APPROVED/REJECTED/PAUSED قابلة للتعديل، وميتا تعيد الموافقة تلقائياً بعد التعديل.
+ * لا يمكن تعديل category لقالب APPROVED — أرسل components فقط في هذه الحالة.
+ *
+ * @param {string} sessionId
+ * @param {string} templateId  الرقمي لقالب ميتا (message-template-id)
+ * @param {object} templateData  { components?, category?, messageSendTtlSeconds? }
+ */
+async function updateTemplate(sessionId, templateId, templateData) {
   const session = await getSession(sessionId);
   if (!session) throw new Error('Session not found');
 
   const { apiVersion, accessToken } = resolveBaseConfig(session);
-  const wabaId = session?.metaWabaId;
-  if (!wabaId) throw new Error('Missing Meta WABA ID for session');
+  if (!templateId) throw new Error('Missing Meta message template ID for update');
 
   const components = templateData.components
     ? generateComponentExamples(templateData.components)
@@ -431,15 +442,12 @@ async function updateTemplate(sessionId, templateName, templateData) {
 
   const payload = {};
   if (components) payload.components = components;
-  if (templateData.language) payload.language = templateData.language;
   if (templateData.category) payload.category = templateData.category;
+  if (templateData.messageSendTtlSeconds != null) payload.message_send_ttl_seconds = templateData.messageSendTtlSeconds;
 
-  console.log(`☁️ [META-UPDATE] Updating template "${templateName}" on WABA ${wabaId}`, JSON.stringify({ components: payload.components?.length, language: payload.language, category: payload.category }));
+  console.log(`☁️ [META-UPDATE] Updating Meta template id=${templateId}`, JSON.stringify({ components: payload.components?.length, category: payload.category, message_send_ttl_seconds: payload.message_send_ttl_seconds }));
 
-  // ميتا لا تدعم تعديل محتوى قالب معتمد بنفس اللغة — الـ POST للمسار العام يُفسَّر
-  // كإنشاء قالب جديد بنفس الاسم فيرفضه (code 100 / subcode 2388024). الحل المعتمد
-  // من ميتا هو إنشاء قالب جديد باسم فريد (يتم في resubmitMetaTemplate/publishTemplateToMeta).
-  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+  const url = `https://graph.facebook.com/${apiVersion}/${encodeURIComponent(templateId)}`;
   const response = await apiCall(() => axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -456,7 +464,7 @@ async function updateTemplate(sessionId, templateName, templateData) {
     throw metaErr;
   }
 
-  console.log(`☁️ [META-UPDATE] Response:`, JSON.stringify({ id: data?.id, status: data?.status, name: data?.name }));
+  console.log(`☁️ [META-UPDATE] Response:`, JSON.stringify({ success: data?.success, id: data?.id, status: data?.status }));
   return data;
 }
 

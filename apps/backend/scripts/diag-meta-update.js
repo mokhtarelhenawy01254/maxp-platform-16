@@ -64,33 +64,23 @@ async function main() {
     }
   }
 
-  // A) POST /message_templates/{id}  (الطريقة الحالية)
-  await tryUrl('A: byId', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${templateId}`, {
-    components, language: 'ar', category: built.metaCategory,
+  // A) POST /{templateId}  — الـ endpoint الصحيح حسب وثائق ميتا 2026 (POST مباشرة على الـ template-id)
+  await tryUrl('A: directTemplateId', 'post', `https://graph.facebook.com/${apiVersion}/${templateId}`, {
+    components, category: built.metaCategory,
   });
 
-  // B) POST /message_templates?name=X  (الطريقة القديمة)
+  // B) POST /message_templates?name=X  (كانت تفشل بـ 2388024)
   await tryUrl('B: byNameQuery', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(local.metaTemplateName)}`, {
-    components, language: 'ar', category: built.metaCategory,
+    components, category: built.metaCategory,
   });
 
-  // C) POST /message_templates  مع name في الـ body (create-like لكن بنفس الاسم)
-  await tryUrl('C: createWithName', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`, {
-    name: local.metaTemplateName, language: 'ar', category: built.metaCategory, components,
+  // C) POST /message_templates/{id}  (كانت تفشل بـ 2500)
+  await tryUrl('C: messageTemplatesById', 'post', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${templateId}`, {
+    components, category: built.metaCategory,
   });
 
-  // D) PATCH /message_templates/{id}
-  await tryUrl('D: patchById', 'patch', `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates/${templateId}`, {
-    components, language: 'ar', category: built.metaCategory,
-  });
-
-  // E) POST /{phoneNumberId}/message_templates/{id} باستخدام phoneNumberId
-  const phoneNumberId = session.metaPhoneNumberId;
-  if (phoneNumberId) {
-    await tryUrl('E: byPhoneNumberId', 'post', `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/message_templates/${templateId}`, {
-      components, language: 'ar', category: built.metaCategory,
-    });
-  }
+  // D) GET /{templateId} — التحقق من القالب مباشرة بالـ id
+  await tryUrl('D: getTemplateById', 'get', `https://graph.facebook.com/${apiVersion}/${templateId}`, null);
 
   await prisma.$disconnect();
 }
