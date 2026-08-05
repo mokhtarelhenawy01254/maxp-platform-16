@@ -780,9 +780,9 @@ class CustomerLoyaltyService {
     if (method === 'SPENT') {
       const agg = await prisma.order.aggregate({
         where: { customerId, companyId, status: 'DELIVERED' },
-        _sum: { total: true }
+        _sum: { finalTotal: true }
       });
-      return parseFloat(agg._sum?.total || 0);
+      return parseFloat(agg._sum?.finalTotal || 0);
     }
 
     if (method === 'ITEMS') {
@@ -1264,9 +1264,9 @@ class CustomerLoyaltyService {
           record = await this.enrollCustomer(companyId, order.customerId, program.id, 0);
         }
 
-        // حساب النقاط
+        // حساب النقاط (على المبلغ المدفوع فعلاً بعد الخصومات)
         let points = 0;
-        const baseAmount = parseFloat(order.subtotal || order.total || 0);
+        const baseAmount = parseFloat(order.finalTotal || order.total || order.subtotal || 0);
 
         if (program.pointsPerAmount && parseFloat(program.pointsPerAmount) > 0) {
           points = Math.floor(baseAmount / parseFloat(program.pointsPerAmount)) * parseFloat(program.pointsPerPurchase || 1);
