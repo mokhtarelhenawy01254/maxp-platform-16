@@ -55,6 +55,18 @@ Three gaps existed in the loyalty points flow:
   awarded cashback from the customer wallet on order cancel and guards against
   double reversal via `metadata.cashback.cancelledReversed`.
 
+## Fix: determineTier Decimal comparison bug
+
+`determineTier` compared Prisma `Decimal` fields with `>=`/`<=` directly.
+Prisma `Decimal` instances coerce via `valueOf()` to strings, so comparisons
+were **lexicographic**, e.g. `"30" >= "100"` was `true`. That made a tier with a
+higher `minPoints` (e.g. Platinum 100+) incorrectly match customers with far
+fewer points.
+
+Fixed by converting `points`/`minPoints`/`maxPoints` to `Number` before
+comparing. Regression tests added in `customerLoyaltyService.autoAward.test.js`
+(30→Gold, 100→Platinum, 10→Silver, 5→Bronze).
+
 ## Tests
 
 `apps/backend/tests/services/customerLoyaltyService.autoAward.test.js`:
@@ -64,3 +76,5 @@ Three gaps existed in the loyalty points flow:
   awards exactly `500`.
 - reversal: full refund reverses all points and a second call is blocked with
   `already_reversed`.
+- determineTier boundaries: 30→Gold (not Platinum), 100→Platinum, 10→Silver,
+  5→Bronze.
