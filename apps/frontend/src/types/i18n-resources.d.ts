@@ -10683,7 +10683,7 @@ declare module 'react-i18next' {
           title: string;
           desc: string;
           edit: string;
-          noReason: string;
+          addReason: string;
           heldAt: string;
           save: string;
           releasedNote: string;
