@@ -9,7 +9,10 @@ const LEGACY_APP_SLUG_ALIASES = {
   'woocommerce-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
   'multi-warehouse-pro': ['ecommerce-pro', 'store-pro', 'inventory-pro'],
   'order-accounting-sources': ['ecommerce-pro', 'store-pro', 'order-source-tracking'],
-  'manual-orders-pro': ['ecommerce-pro', 'store-pro', 'order-core', 'ecommerce-basic', 'store-basic']
+  // Grandfathering only for monolithic apps that historically included manual orders.
+  // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
+  // manual-orders-pro is now a standalone paid app.
+  'manual-orders-pro': ['ecommerce-pro', 'store-pro']
 };
 
 const getCandidateAppSlugs = (appSlug) => {

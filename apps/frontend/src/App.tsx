@@ -16,6 +16,7 @@ import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
+import { AppAccessRoute } from "./components/protection/AppAccessRoute";
 import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
@@ -4281,7 +4282,9 @@ const AppContent = () => {
                   path="/orders/manual"
                   element={
                     <Layout>
-                      <ManualOrderPage />
+                      <AppAccessRoute requiredAppSlugs={['manual-orders-pro', 'ecommerce-pro', 'store-pro']}>
+                        <ManualOrderPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
