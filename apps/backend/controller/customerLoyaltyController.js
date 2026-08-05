@@ -636,6 +636,44 @@ async function updateCustomerTierOverride(req, res) {
   }
 }
 
+/**
+ * جلب جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+ * GET /api/v1/hr/customer-loyalty/notifications/schedule
+ */
+async function getNotificationSchedule(req, res) {
+  try {
+    const { companyId } = req.user;
+    const scheduleService = require('../services/hr/customerNotificationScheduleService');
+    const data = await scheduleService.getSchedules(companyId);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error getting notification schedule:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب جدول الإشعارات' });
+  }
+}
+
+/**
+ * تحديث صف من جدول إشعارات العملاء
+ * PUT /api/v1/hr/customer-loyalty/notifications/schedule
+ */
+async function updateNotificationSchedule(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { eventType, ...data } = req.body;
+    if (!eventType) {
+      return res.status(400).json({ success: false, error: 'eventType مطلوب' });
+    }
+
+    const scheduleService = require('../services/hr/customerNotificationScheduleService');
+    const updated = await scheduleService.updateSchedule(companyId, eventType, data);
+
+    res.json({ success: true, data: updated, message: 'تم تحديث الجدول بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating notification schedule:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث جدول الإشعارات' });
+  }
+}
+
 module.exports = {
   getPrograms,
   getProgramById,
@@ -655,5 +693,7 @@ module.exports = {
   getCustomerTierOverride,
   updateCustomerTierOverride,
   getCashbackSettings,
-  updateCashbackSettings
+  updateCashbackSettings,
+  getNotificationSchedule,
+  updateNotificationSchedule
 };

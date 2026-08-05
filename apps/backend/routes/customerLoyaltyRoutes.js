@@ -128,6 +128,22 @@ router.put('/customers/:customerId/tier-override',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 🔔 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// جلب جدول الإشعارات
+router.get('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getNotificationSchedule
+);
+
+// تحديث صف من جدول الإشعارات
+router.put('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateNotificationSchedule
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 💰 Cashback Settings
 // ═══════════════════════════════════════════════════════════════════════════════
 

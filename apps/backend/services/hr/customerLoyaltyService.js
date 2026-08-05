@@ -607,17 +607,21 @@ class CustomerLoyaltyService {
       // تحديث المستوى إذا لزم الأمر
       await this.updateCustomerTier(companyId, customerId, programId);
 
-      // 🔔 إرسال إشعار عبر الواتساب
+      // 🔔 إرسال إشعار كسب النقاط عبر جدول إشعارات العملاء
       try {
-        const WhatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
         if (updatedRecord.customer && updatedRecord.customer.phone) {
-          await WhatsAppNotificationService.sendLoyaltyPointsNotification(
+          const scheduleService = require('./customerNotificationScheduleService');
+          await scheduleService.sendCustomerNotification({
             companyId,
-            updatedRecord.customer,
-            points,
-            updatedRecord.currentPoints,
-            reason
-          );
+            eventType: 'LOYALTY_POINTS_AWARDED',
+            customer: updatedRecord.customer,
+            customerId,
+            variables: {
+              points: String(points),
+              currentPoints: String(updatedRecord.currentPoints),
+              reason: reason || 'شكراً لتعاملك معنا'
+            }
+          });
         }
       } catch (notifyError) {
         console.warn('⚠️ [LOYALTY] Failed to send points notification:', notifyError.message);
@@ -708,6 +712,26 @@ class CustomerLoyaltyService {
         }
       }
 
+      // 🔔 إشعار استبدال النقاط
+      try {
+        if (updatedRecord.customer && updatedRecord.customer.phone) {
+          const scheduleService = require('./customerNotificationScheduleService');
+          await scheduleService.sendCustomerNotification({
+            companyId,
+            eventType: 'LOYALTY_POINTS_REDEEMED',
+            customer: updatedRecord.customer,
+            customerId,
+            variables: {
+              points: String(points),
+              cashAmount: cashAmount.toFixed(2),
+              programName: program.nameAr || program.name
+            }
+          });
+        }
+      } catch (notifyError) {
+        console.warn('⚠️ [LOYALTY] Failed to send redemption notification:', notifyError.message);
+      }
+
       return updatedRecord;
     } catch (error) {
       console.error('❌ Error redeeming points:', error);
@@ -738,6 +762,13 @@ class CustomerLoyaltyService {
       const newTier = await this.determineTier(companyId, programId, metricValue, method);
 
       if (newTier && newTier.id !== record.tierId) {
+        const oldTier = record.tierId
+          ? await prisma.customerLoyaltyTier.findUnique({
+              where: { id: record.tierId },
+              select: { name: true, nameAr: true, priority: true }
+            })
+          : null;
+
         await prisma.customerLoyaltyRecord.update({
           where: {
             id: record.id
@@ -746,10 +777,43 @@ class CustomerLoyaltyService {
             tierId: newTier.id
           }
         });
+
+        // 🔔 إشعار تغيير المستوى (ترقية / انخفاض)
+        this._notifyTierChange(companyId, customerId, oldTier, newTier).catch(() => {});
       }
     } catch (error) {
       console.error('❌ Error updating customer tier:', error);
       // لا نرمي الخطأ هنا لأنها عملية ثانوية
+    }
+  }
+
+  /**
+   * 🔔 إرسال إشعار تغيير المستوى (ترقية/انخفاض) عبر جدول إشعارات العملاء
+   */
+  async _notifyTierChange(companyId, customerId, oldTier, newTier) {
+    try {
+      const prisma = getSharedPrismaClient();
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, phone: true, firstName: true, lastName: true }
+      });
+      if (!customer || !customer.phone) return;
+
+      const tierName = newTier.nameAr || newTier.name;
+      const oldPriority = oldTier?.priority ?? 0;
+      const newPriority = Number(newTier.priority) || 0;
+      const eventType = newPriority > oldPriority ? 'LOYALTY_TIER_UPGRADED' : 'LOYALTY_TIER_DOWNGRADED';
+
+      const scheduleService = require('./customerNotificationScheduleService');
+      await scheduleService.sendCustomerNotification({
+        companyId,
+        eventType,
+        customer,
+        customerId: customer.id,
+        variables: { tierName }
+      });
+    } catch (error) {
+      console.warn('⚠️ [LOYALTY] Failed to send tier change notification:', error.message);
     }
   }
 
@@ -1172,7 +1236,8 @@ class CustomerLoyaltyService {
       const records = await prisma.customerLoyaltyRecord.findMany({
         where,
         include: {
-          customerLoyaltyProgram: true
+          customerLoyaltyProgram: true,
+          customer: { select: { id: true, phone: true, firstName: true, lastName: true } }
         }
       });
 
@@ -1204,6 +1269,25 @@ class CustomerLoyaltyService {
             }
           });
 
+          // 🔔 إشعار انتهاء صلاحية النقاط
+          try {
+            if (record.customer && record.customer.phone) {
+              const scheduleService = require('./customerNotificationScheduleService');
+              await scheduleService.sendCustomerNotification({
+                companyId: record.companyId,
+                eventType: 'LOYALTY_POINTS_EXPIRED',
+                customer: record.customer,
+                customerId: record.customerId,
+                variables: {
+                  points: String(pointsToExpire),
+                  programName: program.nameAr || program.name
+                }
+              });
+            }
+          } catch (notifyError) {
+            console.warn('⚠️ [LOYALTY] Failed to send expiry notification:', notifyError.message);
+          }
+
           totalExpired++;
           console.log(`⚠️ Expired ${pointsToExpire} points for customer ${record.customerId} in program ${program.name}`);
         }
@@ -1213,6 +1297,103 @@ class CustomerLoyaltyService {
     } catch (error) {
       console.error('❌ Error processing expired points:', error);
       throw error;
+    }
+  }
+
+  /**
+   * ⏰ تنبيه قرب انتهاء صلاحية النقاط
+   * يرسل إشعار LOYALTY_POINTS_EXPIRY_WARNING قبل انتهاء الصلاحية بعدة أيام
+   * (المدة تُقرأ من جدول إشعارات العملاء — delayValue لحدث التنبيه).
+   */
+  async processExpiryWarnings(companyId = null) {
+    const prisma = getSharedPrismaClient();
+    const scheduleService = require('./customerNotificationScheduleService');
+    try {
+      const where = companyId ? { companyId, status: 'ACTIVE' } : { status: 'ACTIVE' };
+      const records = await prisma.customerLoyaltyRecord.findMany({
+        where,
+        include: {
+          customerLoyaltyProgram: true,
+          customer: { select: { id: true, phone: true, firstName: true, lastName: true } }
+        }
+      });
+
+      let totalWarned = 0;
+
+      for (const record of records) {
+        const program = record.customerLoyaltyProgram;
+        const expiryMonths = program.expiryMonths || 12;
+
+        if (!record.lastPointsEarned) continue;
+        if (parseFloat(record.currentPoints) <= 0) continue;
+
+        const expiryDate = new Date(record.lastPointsEarned);
+        expiryDate.setMonth(expiryDate.getMonth() + expiryMonths);
+        if (expiryDate <= new Date()) continue; // خلصت الصلاحية — يتعامل معها processExpiredPoints
+
+        // مدة التنبيه من جدول الإشعارات (افتراضياً 7 أيام)
+        const warningDays = await this._getExpiryWarningDays(record.companyId);
+
+        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        if (daysLeft > warningDays) continue;
+
+        // منع تكرار الإشعار — نرسل مرة واحدة فقط لنفس موعد انتهاء الصلاحية
+        const metadata = record.metadata ? JSON.parse(record.metadata) : {};
+        const lastExpiryWarnAt = metadata.expiryWarningSentAt ? new Date(metadata.expiryWarningSentAt) : null;
+        const warnedForSameExpiry = lastExpiryWarnAt && lastExpiryWarnAt >= new Date(expiryDate.getTime() - 24 * 60 * 60 * 1000) && lastExpiryWarnAt <= new Date(expiryDate.getTime() + 24 * 60 * 60 * 1000);
+
+        if (warnedForSameExpiry) continue;
+
+        try {
+          if (record.customer && record.customer.phone) {
+            await scheduleService.sendCustomerNotification({
+              companyId: record.companyId,
+              eventType: 'LOYALTY_POINTS_EXPIRY_WARNING',
+              customer: record.customer,
+              customerId: record.customerId,
+              variables: {
+                points: String(parseFloat(record.currentPoints)),
+                expiryDate: expiryDate.toLocaleDateString('ar-EG'),
+                programName: program.nameAr || program.name
+              }
+            });
+
+            await prisma.customerLoyaltyRecord.update({
+              where: { id: record.id },
+              data: {
+                metadata: JSON.stringify({
+                  ...metadata,
+                  expiryWarningSentAt: new Date().toISOString(),
+                  expiryWarningTargetDate: expiryDate.toISOString()
+                })
+              }
+            });
+
+            totalWarned++;
+          }
+        } catch (notifyError) {
+          console.warn('⚠️ [LOYALTY] Failed to send expiry warning:', notifyError.message);
+        }
+      }
+
+      return { success: true, totalWarned };
+    } catch (error) {
+      console.error('❌ Error processing expiry warnings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * عدد أيام تنبيه انتهاء الصلاحية من جدول إشعارات العملاء
+   */
+  async _getExpiryWarningDays(companyId) {
+    try {
+      const scheduleService = require('./customerNotificationScheduleService');
+      const schedule = await scheduleService.getEffectiveSchedule(companyId, 'LOYALTY_POINTS_EXPIRY_WARNING');
+      const days = schedule?.delayUnit === 'DAYS' ? Number(schedule.delayValue) : 0;
+      return Number.isFinite(days) && days >= 0 ? days : 7;
+    } catch (error) {
+      return 7;
     }
   }
 
@@ -1553,19 +1734,23 @@ class CustomerLoyaltyService {
         }
       });
 
-      // 🔔 إرسال إشعار عبر الواتساب إذا كان التعديل إيجابياً (كسب نقاط)
+      // 🔔 إرسال إشعار كسب النقاط عبر جدول إشعارات العملاء إذا كان التعديل إيجابياً
       if (isIncrement) {
         try {
-          const WhatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
           const customer = await prisma.customer.findUnique({ where: { id: customerId } });
           if (customer && customer.phone) {
-            await WhatsAppNotificationService.sendLoyaltyPointsNotification(
+            const scheduleService = require('./customerNotificationScheduleService');
+            await scheduleService.sendCustomerNotification({
               companyId,
+              eventType: 'LOYALTY_POINTS_AWARDED',
               customer,
-              points,
-              updatedRecord.currentPoints,
-              reason || 'تعديل رصيد من قبل الإدارة'
-            );
+              customerId,
+              variables: {
+                points: String(points),
+                currentPoints: String(updatedRecord.currentPoints),
+                reason: reason || 'تعديل رصيد من قبل الإدارة'
+              }
+            });
           }
         } catch (notifyError) {
           console.warn('⚠️ [LOYALTY] Failed to send adjustment notification:', notifyError.message);

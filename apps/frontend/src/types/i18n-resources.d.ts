@@ -13617,6 +13617,7 @@ declare module 'react-i18next' {
         customerLoyalty: string;
         customerPointsCenter: string;
         customerSegments: string;
+        customerNotifications: string;
         customers: string;
         customersBirthday: string;
         customersOccasions: string;

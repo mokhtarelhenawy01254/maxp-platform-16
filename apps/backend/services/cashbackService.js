@@ -189,6 +189,32 @@ async function applyCashbackForPaidOrder({ orderId, companyId, changedBy }) {
 
     console.log(`✅ Applied ${percent}% Cashback (${cashbackAmount} EGP) for Order ${order.orderNumber}`);
 
+    // 🔔 إشعار ايداع كاش باك
+    try {
+      const customer = await prisma.customer.findUnique({
+        where: { id: order.customerId },
+        select: { id: true, phone: true, firstName: true, lastName: true }
+      });
+      if (customer && customer.phone) {
+        const scheduleService = require('./hr/customerNotificationScheduleService');
+        const balance = await WalletService.getWalletBalance(order.customerId).catch(() => 0);
+        await scheduleService.sendCustomerNotification({
+          companyId,
+          eventType: 'CASHBACK_CREDITED',
+          customer,
+          customerId: order.customerId,
+          orderId: order.id,
+          variables: {
+            amount: cashbackAmount.toFixed(2),
+            orderNumber: order.orderNumber,
+            balance: String(Number(balance || 0).toFixed(2))
+          }
+        });
+      }
+    } catch (notifyError) {
+      console.warn('⚠️ [CASHBACK] Failed to send credited notification:', notifyError.message);
+    }
+
     return {
       applied: true,
       amount: cashbackAmount.toFixed(2),
@@ -277,6 +303,30 @@ async function reverseCashbackForReturn({ returnRequestId, companyId, changedBy 
 
     console.log(`✅ Reversed Cashback (${reverseAmount.toFixed(2)} EGP) for Return on Order ${rr.order.orderNumber}`);
 
+    // 🔔 إشعار خصم كاش باك (مرتجع)
+    try {
+      const customer = await prisma.customer.findUnique({
+        where: { id: rr.order.customerId },
+        select: { id: true, phone: true, firstName: true, lastName: true }
+      });
+      if (customer && customer.phone) {
+        const scheduleService = require('./hr/customerNotificationScheduleService');
+        await scheduleService.sendCustomerNotification({
+          companyId,
+          eventType: 'CASHBACK_REVERSED',
+          customer,
+          customerId: rr.order.customerId,
+          orderId: rr.order.id,
+          variables: {
+            amount: reverseAmount.toFixed(2),
+            orderNumber: rr.order.orderNumber
+          }
+        });
+      }
+    } catch (notifyError) {
+      console.warn('⚠️ [CASHBACK] Failed to send reversed notification:', notifyError.message);
+    }
+
     return { reversed: true, amount: reverseAmount.toFixed(2) };
 
   } catch (error) {
@@ -341,6 +391,30 @@ async function reverseCashbackForOrder({ orderId, companyId, changedBy }) {
   });
 
   console.log(`✅ Reversed ${cashbackAmount} EGP cashback for cancelled order #${order.orderNumber}`);
+
+  // 🔔 إشعار خصم كاش باك (إلغاء طلب)
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id: order.customerId },
+      select: { id: true, phone: true, firstName: true, lastName: true }
+    });
+    if (customer && customer.phone) {
+      const scheduleService = require('./hr/customerNotificationScheduleService');
+      await scheduleService.sendCustomerNotification({
+        companyId,
+        eventType: 'CASHBACK_REVERSED',
+        customer,
+        customerId: order.customerId,
+        orderId: order.id,
+        variables: {
+          amount: cashbackAmount.toFixed(2),
+          orderNumber: order.orderNumber
+        }
+      });
+    }
+  } catch (notifyError) {
+    console.warn('⚠️ [CASHBACK] Failed to send reversed notification:', notifyError.message);
+  }
 
   return { reversed: true, amount: cashbackAmount };
 }

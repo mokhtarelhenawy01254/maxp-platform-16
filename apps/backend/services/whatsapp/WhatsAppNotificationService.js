@@ -301,10 +301,19 @@ function getModuleSettingKey(eventType) {
     eventType.startsWith('CART_') ||
     eventType === 'PROMOTIONAL' ||
     eventType === 'COUPON_SENT' ||
-    eventType === 'BIRTHDAY_WISH' ||
-    eventType === 'LOYALTY_POINTS_AWARDED'
+    eventType === 'BIRTHDAY_WISH'
   ) {
     return 'marketingNotificationsEnabled';
+  }
+
+  // 🎁 إشعارات الولاء والكاش باك والجودة — تُدار من مفتاح الولاء الخاص
+  // (loyaltyEnabled) بدل الاعتماد على marketingNotificationsEnabled.
+  if (
+    eventType.startsWith('LOYALTY_') ||
+    eventType.startsWith('CASHBACK_') ||
+    eventType.startsWith('CUSTOMER_QUALITY_')
+  ) {
+    return 'loyaltyEnabled';
   }
 
   if (
@@ -824,7 +833,10 @@ async function sendNotification(options) {
     priority = 5,
     scheduleAt = null,
     buttons = null,
-    fallbackEventType = null
+    fallbackEventType = null,
+    // 🎁 دعم إشعارات العملاء: إرسال قالب محدد + فرض قناة (BAILEYS/META_CLOUD/AUTO)
+    preferredTemplateId = null,
+    channel = null
   } = options;
 
   const prisma = getSharedPrismaClient();
@@ -992,76 +1004,85 @@ async function sendNotification(options) {
     if (options.contentOverride) {
       console.log(`[WHATSAPP-NOTIFY] Using contentOverride for journey notification`);
     } else {
-      // محاولة العثور على القالب برمز الحالة مباشرة أولاً
-      // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
-      if (fallbackEventType && fallbackEventType !== eventType) {
+      // 🎁 إشعارات العملاء: عند تمرير قالب محدد نستخدمه مباشرة (وليس بحثاً بالحدث)
+      if (preferredTemplateId) {
         template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-          where: {
-            companyId,
-            eventType: fallbackEventType,
-            isActive: true
-          },
-          orderBy: { isDefault: 'desc' }
+          where: { id: preferredTemplateId, companyId, isActive: true }
         }));
-      }
-
-      if (!template) {
-        template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-          where: {
-            companyId,
-            eventType,
-            isActive: true
-          },
-          orderBy: { isDefault: 'desc' }
-        }));
-      }
-
-      // استخدام القالب الافتراضي إذا لم يوجد
-      // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
-      // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
-      const isOrderEvent = isOrderCategory(category, eventType);
-      if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
-        const defaultTemplate = DEFAULT_TEMPLATES[eventType];
-        template = {
-          id: null,
-          content: defaultTemplate.content,
-          hasButtons: defaultTemplate.hasButtons || false,
-          buttons: defaultTemplate.buttons || null,
-          hasList: false
-        };
-      }
-
-      // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): auto-seed دفاعي —
-      // شركة جديدة لم تفتح صفحة /orders/status-templates بعد كانت تفشل بصمت
-      // بـ no_template. نضمن قالباً (صف DB قابلاً للتعديل من الصفحة) ثم نعيد البحث.
-      if (!template && isOrderEvent) {
-        try {
-          const { ensureOrderTemplate } = require('../orderTemplateSeeding');
-          template = await ensureOrderTemplate({
-            companyId,
-            eventType,
-            fallbackEventType,
-            prisma: getSharedPrismaClient(),
-          });
-        } catch (seedErr) {
-          console.error('⚠️ [WHATSAPP-ORDER] Auto-seed failed:', seedErr.message);
+        if (!template) return { success: false, reason: 'template_not_found' };
+        templateId = template.id;
+      } else {
+        // محاولة العثور على القالب برمز الحالة مباشرة أولاً
+        // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
+        if (fallbackEventType && fallbackEventType !== eventType) {
+          template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+            where: {
+              companyId,
+              eventType: fallbackEventType,
+              isActive: true
+            },
+            orderBy: { isDefault: 'desc' }
+          }));
         }
-      }
 
-      if (!template) {
-        if (isOrderEvent) {
-          // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
-          // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
-          console.error(
-            `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
-            `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
-            `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
-          );
+        if (!template) {
+          template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+            where: {
+              companyId,
+              eventType,
+              isActive: true
+            },
+            orderBy: { isDefault: 'desc' }
+          }));
+        }
+
+        // استخدام القالب الافتراضي إذا لم يوجد
+        // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
+        // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
+        const isOrderEvent = isOrderCategory(category, eventType);
+        if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
+          const defaultTemplate = DEFAULT_TEMPLATES[eventType];
+          template = {
+            id: null,
+            content: defaultTemplate.content,
+            hasButtons: defaultTemplate.hasButtons || false,
+            buttons: defaultTemplate.buttons || null,
+            hasList: false
+          };
+        }
+
+        // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): auto-seed دفاعي —
+        // شركة جديدة لم تفتح صفحة /orders/status-templates بعد كانت تفشل بصمت
+        // بـ no_template. نضمن قالباً (صف DB قابلاً للتعديل من الصفحة) ثم نعيد البحث.
+        if (!template && isOrderEvent) {
+          try {
+            const { ensureOrderTemplate } = require('../orderTemplateSeeding');
+            template = await ensureOrderTemplate({
+              companyId,
+              eventType,
+              fallbackEventType,
+              prisma: getSharedPrismaClient(),
+            });
+          } catch (seedErr) {
+            console.error('⚠️ [WHATSAPP-ORDER] Auto-seed failed:', seedErr.message);
+          }
+        }
+
+        if (!template) {
+          if (isOrderEvent) {
+            // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
+            // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
+            console.error(
+              `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
+              `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
+              `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
+            );
+            return { success: false, reason: 'no_template' };
+          }
           return { success: false, reason: 'no_template' };
         }
-        return { success: false, reason: 'no_template' };
+        templateId = template.id || null;
       }
-      templateId = template.id || null;
     }
 
     const safeTemplate = template || {
@@ -1073,6 +1094,20 @@ async function sendNotification(options) {
       listData: null,
       footer: null
     };
+
+    // 🎁 فرض القناة المطلوبة (من جدول إشعارات العملاء)
+    if (channel === 'BAILEYS') {
+      // إرسال نص حر دائماً — نجرد ربط الميتا حتى لا يدخل مسار القالب المعتمد
+      safeTemplate.metaTemplateName = null;
+      safeTemplate.metaTemplateStatus = null;
+    } else if (channel === 'META_CLOUD') {
+      const metaName = safeTemplate?.metaTemplateName;
+      const metaStatus = String(safeTemplate?.metaTemplateStatus || '').toUpperCase();
+      if (!metaName || metaStatus !== 'APPROVED') {
+        console.warn(`⚠️ [WHATSAPP] Channel=META_CLOUD لكن قالب "${eventType}" غير مربوط/معتمد — تم التخطي.`);
+        return { success: false, reason: 'meta_template_not_ready' };
+      }
+    }
 
     // 5. تجهيز المحتوى
     const rawContent = options.contentOverride || safeTemplate.content || '';

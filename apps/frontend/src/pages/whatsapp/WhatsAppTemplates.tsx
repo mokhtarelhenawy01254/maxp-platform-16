@@ -183,6 +183,26 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       PROMOTIONAL: t("whatsappNotifications.marketing.promotional"),
       COUPON_SENT: t("whatsappNotifications.marketing.coupons"),
       BIRTHDAY_WISH: t("whatsappNotifications.marketing.birthday"),
+      LOYALTY_POINTS_AWARDED:
+        i18n.language === "ar" ? "إشعار كسب نقاط ولاء" : "Loyalty points awarded",
+      LOYALTY_TIER_UPGRADED:
+        i18n.language === "ar" ? "الترقية لمستوى أعلى" : "Loyalty tier upgrade",
+      LOYALTY_TIER_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض مستوى الولاء" : "Loyalty tier downgrade",
+      LOYALTY_POINTS_EXPIRY_WARNING:
+        i18n.language === "ar" ? "تنبيه قرب انتهاء النقاط" : "Points expiry warning",
+      LOYALTY_POINTS_EXPIRED:
+        i18n.language === "ar" ? "انتهاء صلاحية النقاط" : "Loyalty points expired",
+      LOYALTY_POINTS_REDEEMED:
+        i18n.language === "ar" ? "استبدال النقاط" : "Loyalty points redeemed",
+      CASHBACK_CREDITED:
+        i18n.language === "ar" ? "ايداع كاش باك" : "Cashback credited",
+      CASHBACK_REVERSED:
+        i18n.language === "ar" ? "خصم كاش باك" : "Cashback reversed",
+      CUSTOMER_QUALITY_UPGRADED:
+        i18n.language === "ar" ? "ارتفاع تصنيف الجودة" : "Customer quality upgrade",
+      CUSTOMER_QUALITY_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض تصنيف الجودة" : "Customer quality downgrade",
       REVIEW_REQUEST: t("whatsappNotifications.products.priceDrop"),
       NEW_SIGNUP_WELCOME:
         i18n.language === "ar" ? "رسالة ترحيب بعد التسجيل" : "Welcome after signup",

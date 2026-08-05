@@ -25,7 +25,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
 
   beforeEach(() => {
     prisma = {
-      order: { findUnique: jest.fn(), update: jest.fn() },
+      order: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       customer: { findFirst: jest.fn() },
       customerLoyaltyProgram: { findMany: jest.fn(), findFirst: jest.fn() },
       customerLoyaltyTier: { findMany: jest.fn() },
@@ -91,7 +91,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
 
       // 100000 / 100 = 1000 points, capped at 500
       expect(result.totalPointsAwarded).toBe(500);
-      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][1].data.metadata);
+      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][0].data.metadata);
       expect(metaUpdate.loyaltyPoints.programs[0].points).toBe(500);
     });
   });
@@ -134,7 +134,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
       expect(first.reversed).toBe(true);
       expect(first.points).toBe(10);
       // reversal recorded in metadata
-      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][1].data.metadata);
+      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][0].data.metadata);
       expect(metaUpdate.loyaltyPoints.reversals['return-1'].points).toBe(10);
 
       // second attempt is blocked
@@ -195,7 +195,7 @@ describe('customerLoyaltyService auto-award & reversal guards', () => {
       );
 
       // second cancel attempt blocked
-      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][1].data.metadata);
+      const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][0].data.metadata);
       expect(metaUpdate.loyaltyPoints.cancelledReversed).toBe(true);
       prisma.order.findFirst.mockResolvedValue({
         id: orderId,

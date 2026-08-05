@@ -695,6 +695,7 @@ export const getSidebarConfig = (
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/cashback', icon: DollarSign, label: t('sidebar.cashbackSettings') },
+                { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['crm-basic', 'crm-lite'])
