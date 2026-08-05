@@ -17,6 +17,18 @@ import {
   BoltIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
+const META_BODY_CHAR_LIMIT = 1024;
 
 interface Template {
   id: string;
@@ -180,6 +192,63 @@ function resolveVariablesForPreview(content: string): string {
 }
 
 export { resolveVariablesForPreview };
+
+/**
+ * WhatsAppBubblePreview — معاينة مباشرة لشكل الرسالة في محادثة واتساب.
+ * بترسم bubble أخضر بـ timestamp ومتغيرات محلولة + الأزرار التفاعلية.
+ */
+interface WhatsAppBubblePreviewProps {
+  content: string;
+  buttons: TemplateButton[];
+  hasButtons: boolean;
+}
+
+function formatWhatsAppText(text: string): string {
+  return text.trim();
+}
+
+export function WhatsAppBubblePreview({ content, buttons, hasButtons }: WhatsAppBubblePreviewProps) {
+  const resolved = resolveVariablesForPreview(content);
+  const now = new Date();
+  const time = now.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+  const visibleButtons = hasButtons ? buttons.filter((b) => b.text.trim()) : [];
+
+  return (
+    <div
+      data-testid="whatsapp-preview"
+      className="relative ml-auto w-[88%] max-w-[340px] rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+      dir="auto"
+    >
+      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 text-[#34b7f1] dark:text-sky-300">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+          <path d="M11.071.653a.5.5 0 0 1 .076.704l-6 7.5a.5.5 0 0 1-.762.026L2.146 6.16a.5.5 0 1 1 .708-.706l1.864 1.864 5.65-7.06a.5.5 0 0 1 .703-.075z" fill="currentColor"/>
+          <path d="M15.071.653a.5.5 0 0 1 .076.704l-6 7.5a.5.5 0 0 1-.762.026l-.5-.5.707-.707.13.13 5.65-7.06a.5.5 0 0 1 .7-.075z" fill="currentColor"/>
+        </svg>
+      </div>
+
+      <p className="whitespace-pre-wrap break-words pr-5 font-[system-ui]">
+        {formatWhatsAppText(resolved) || (
+          <span className="text-slate-400 dark:text-slate-500">معاينة الرسالة ستظهر هنا...</span>
+        )}
+      </p>
+
+      <p className="mt-1 pl-5 text-right text-[10px] text-slate-500 dark:text-slate-400">{time}</p>
+
+      {visibleButtons.length > 0 && (
+        <div className="mt-2 space-y-1 border-t border-black/5 pt-1.5 dark:border-white/10">
+          {visibleButtons.map((b, i) => (
+            <div
+              key={b.id || i}
+              className="rounded-md bg-white/70 py-1.5 text-center text-[12px] font-medium text-[#34b7f1] dark:bg-white/10 dark:text-sky-300"
+            >
+              {b.text}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function isCustomContent(status: StatusWithTemplate): boolean {
   const GENERIC_PATTERN = /تم تغيير حالة طلبك إلى/;
@@ -801,15 +870,11 @@ export default function OrderStatusTemplatesPage() {
                   <p className="text-sm font-medium text-slate-900 dark:text-white">تفعيل إشعارات واتساب</p>
                   <p className="text-xs text-slate-500">تشغيل أو إيقاف جميع إشعارات الواتساب</p>
                 </div>
-                <label className="relative inline-flex cursor-pointer items-center">
-                  <input
-                    type="checkbox"
-                    checked={settings.isEnabled}
-                    onChange={(e) => setSettings((p) => p ? { ...p, isEnabled: e.target.checked } : p)}
-                    className="peer sr-only"
-                  />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
-                </label>
+                <Switch
+                  checked={settings.isEnabled}
+                  onCheckedChange={(val) => setSettings((p) => p ? { ...p, isEnabled: val } : p)}
+                  aria-label="تفعيل إشعارات واتساب"
+                />
               </div>
 
               <hr className="border-slate-200 dark:border-slate-700" />
@@ -820,15 +885,11 @@ export default function OrderStatusTemplatesPage() {
                   <p className="text-sm font-medium text-slate-900 dark:text-white">إشعارات حالات الطلبات</p>
                   <p className="text-xs text-slate-500">إرسال رسالة واتساب عند تغيير حالة الطلب</p>
                 </div>
-                <label className="relative inline-flex cursor-pointer items-center">
-                  <input
-                    type="checkbox"
-                    checked={settings.orderNotificationsEnabled}
-                    onChange={(e) => setSettings((p) => p ? { ...p, orderNotificationsEnabled: e.target.checked } : p)}
-                    className="peer sr-only"
-                  />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
-                </label>
+                <Switch
+                  checked={settings.orderNotificationsEnabled}
+                  onCheckedChange={(val) => setSettings((p) => p ? { ...p, orderNotificationsEnabled: val } : p)}
+                  aria-label="إشعارات حالات الطلبات"
+                />
               </div>
 
               <hr className="border-slate-200 dark:border-slate-700" />
@@ -887,15 +948,11 @@ export default function OrderStatusTemplatesPage() {
                   <p className="text-sm font-medium text-slate-900 dark:text-white">تثبيت الجلسة (Sticky Session)</p>
                   <p className="text-xs text-slate-500">نفس العميل يستخدم نفس الجلسة دايمًا</p>
                 </div>
-                <label className="relative inline-flex cursor-pointer items-center">
-                  <input
-                    type="checkbox"
-                    checked={settings.stickySessionEnabled}
-                    onChange={(e) => setSettings((p) => p ? { ...p, stickySessionEnabled: e.target.checked } : p)}
-                    className="peer sr-only"
-                  />
-                  <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
-                </label>
+                <Switch
+                  checked={settings.stickySessionEnabled}
+                  onCheckedChange={(val) => setSettings((p) => p ? { ...p, stickySessionEnabled: val } : p)}
+                  aria-label="تثبيت الجلسة"
+                />
               </div>
 
               <hr className="border-slate-200 dark:border-slate-700" />
@@ -910,15 +967,11 @@ export default function OrderStatusTemplatesPage() {
                     </p>
                     <p className="text-xs text-slate-500">ما ترسلش رسايل في الوقت ده</p>
                   </div>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      checked={settings.quietHoursEnabled}
-                      onChange={(e) => setSettings((p) => p ? { ...p, quietHoursEnabled: e.target.checked } : p)}
-                      className="peer sr-only"
-                    />
-                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
-                  </label>
+                  <Switch
+                    checked={settings.quietHoursEnabled}
+                    onCheckedChange={(val) => setSettings((p) => p ? { ...p, quietHoursEnabled: val } : p)}
+                    aria-label="ساعات الهدوء"
+                  />
                 </div>
                 {settings.quietHoursEnabled && (
                   <div className="mt-2 flex items-center gap-3">
@@ -1072,16 +1125,47 @@ export default function OrderStatusTemplatesPage() {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-              <span className="mb-3 inline-block h-7 w-7 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-              <p className="text-sm">{t("common.loading", "جار التحميل...")}</p>
+            <div data-testid="status-skeleton" className="space-y-2" aria-busy="true" aria-live="polite">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-lg border border-slate-200/70 bg-white p-3.5 dark:border-white/10 dark:bg-slate-900/50"
+                >
+                  <Skeleton className="h-7 w-7 shrink-0 rounded-md" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-1/3" />
+                    <Skeleton className="h-2.5 w-1/4" />
+                  </div>
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : filteredByChipAndSearch.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/70 py-16 text-center dark:border-white/10">
               <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
-                لا توجد حالات مطابقة
+                {searchQuery || activeChip !== "all"
+                  ? "لا توجد حالات مطابقة لبحثك"
+                  : "لا توجد حالات بعد"}
               </p>
+              <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
+                {searchQuery || activeChip !== "all"
+                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل الحالات."
+                  : "الحالات الخاصة بالطلبات هتظهر هنا أول ما تتضاف."}
+              </p>
+              {(searchQuery || activeChip !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveChip("all");
+                  }}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-indigo-700"
+                >
+                  <XCircleIcon className="h-3.5 w-3.5" />
+                  مسح الفلاتر
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -1123,16 +1207,24 @@ export default function OrderStatusTemplatesPage() {
       )}
 
       {/* Template dialog */}
-      {dialogOpen && selectedStatus && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-900">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              {selectedStatus.template?.id
-                ? `تعديل قالب: ${selectedStatus.name}`
-                : `إنشاء قالب: ${selectedStatus.name}`}
-            </h2>
-
-            <div className="mt-4 space-y-3">
+      <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
+        <DialogContent
+          showCloseButton
+          closeLabel="إغلاق"
+          className="max-w-2xl overflow-y-auto p-5 sm:max-h-[90vh] sm:max-w-2xl"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
+              {selectedStatus?.template?.id
+                ? `تعديل قالب: ${selectedStatus?.name}`
+                : `إنشاء قالب: ${selectedStatus?.name}`}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
+            </DialogDescription>
+          </DialogHeader>
+          {dialogOpen && selectedStatus && (
+            <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
                 <input
@@ -1265,16 +1357,57 @@ export default function OrderStatusTemplatesPage() {
               )}
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                  {templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"} <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={templateForm.content}
-                  onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value }))}
-                  rows={6}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="اكتب رسالتك هنا..."
-                />
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                    {templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"} <span className="text-red-500">*</span>
+                  </label>
+                  <span
+                    className={`text-[10px] font-medium tabular-nums ${
+                      templateForm.content.length > META_BODY_CHAR_LIMIT
+                        ? "text-red-600 dark:text-red-400"
+                        : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-slate-400 dark:text-slate-500"
+                    }`}
+                    aria-live="polite"
+                  >
+                    {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
+                  </span>
+                </div>
+
+                {/* Editor + live WhatsApp preview side-by-side (lg+) */}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <textarea
+                    value={templateForm.content}
+                    onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) }))}
+                    rows={7}
+                    aria-label={templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      templateForm.content.length > META_BODY_CHAR_LIMIT
+                        ? "border-red-400 dark:border-red-500"
+                        : "border-slate-200"
+                    }`}
+                    placeholder="اكتب رسالتك هنا..."
+                  />
+
+                  {/* Live WhatsApp-style preview */}
+                  <div className="rounded-lg border border-slate-200 bg-[#e5ddd5] p-3 dark:border-slate-700 dark:bg-slate-900/60">
+                    <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      معاينة مباشرة
+                    </p>
+                    <WhatsAppBubblePreview
+                      content={templateForm.content}
+                      buttons={templateForm.buttons}
+                      hasButtons={templateForm.hasButtons}
+                    />
+                  </div>
+                </div>
+
+                {templateForm.content.length > META_BODY_CHAR_LIMIT && (
+                  <p className="mt-1 text-[11px] text-red-600 dark:text-red-400" role="alert">
+                    ⚠️ النص أطول من حد ميتا ({META_BODY_CHAR_LIMIT} حرف) — القالب هيترفض عند النشر على Meta Cloud API.
+                  </p>
+                )}
 
                 <button
                   type="button"
@@ -1320,15 +1453,11 @@ export default function OrderStatusTemplatesPage() {
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                     الأزرار التفاعلية
                   </label>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      checked={templateForm.hasButtons}
-                      onChange={(e) => setTemplateForm((p) => ({ ...p, hasButtons: e.target.checked }))}
-                      className="peer sr-only"
-                    />
-                    <span className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-indigo-600 peer-checked:after:translate-x-full dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
-                  </label>
+                  <Switch
+                    checked={templateForm.hasButtons}
+                    onCheckedChange={(val) => setTemplateForm((p) => ({ ...p, hasButtons: val }))}
+                    aria-label="الأزرار التفاعلية"
+                  />
                 </div>
                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                   لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
@@ -1403,7 +1532,6 @@ export default function OrderStatusTemplatesPage() {
                   قالب نشط
                 </label>
               </div>
-            </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
               <button
@@ -1474,9 +1602,10 @@ export default function OrderStatusTemplatesPage() {
                 )}
               </div>
             )}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
