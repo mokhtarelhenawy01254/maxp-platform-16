@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const couponsController = require('../controller/couponsController');
 const verifyToken = require("../utils/verifyToken");
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 /**
  * 🎟️ Coupons Routes
@@ -10,29 +11,30 @@ const verifyToken = require("../utils/verifyToken");
 
 // جميع المسارات تتطلب مصادقة
 router.use(verifyToken.authenticateToken);
+router.use(verifyToken.requireCompanyAccess);
 
-// ✅ الحصول على جميع الكوبونات
-router.get('/', couponsController.getCoupons);
+// ✅ الحصول على جميع الكوبونات (يتطلب coupons-pro)
+router.get('/', checkAppAccess('coupons-pro'), couponsController.getCoupons);
 
-// ✅ إحصائيات الكوبونات
-router.get('/stats', couponsController.getCouponStats);
+// ✅ إحصائيات الكوبونات (يتطلب coupons-pro)
+router.get('/stats', checkAppAccess('coupons-pro'), couponsController.getCouponStats);
 
-// ✅ التحقق من صلاحية كوبون
+// ✅ التحقق من صلاحية كوبون (مفتوح — يُستخدم عند إتمام الشراء)
 router.post('/validate', couponsController.validateCoupon);
 
-// ✅ تطبيق كوبون على طلب
+// ✅ تطبيق كوبون على طلب (مفتوح — يُستخدم عند إتمام الشراء)
 router.post('/apply', couponsController.applyCoupon);
 
-// ✅ الحصول على كوبون واحد
-router.get('/:id', couponsController.getCoupon);
+// ✅ الحصول على كوبون واحد (يتطلب coupons-pro)
+router.get('/:id', checkAppAccess('coupons-pro'), couponsController.getCoupon);
 
-// ✅ إنشاء كوبون جديد
-router.post('/', couponsController.createCoupon);
+// ✅ إنشاء كوبون جديد (يتطلب coupons-pro)
+router.post('/', checkAppAccess('coupons-pro'), couponsController.createCoupon);
 
-// ✅ تحديث كوبون
-router.put('/:id', couponsController.updateCoupon);
+// ✅ تحديث كوبون (يتطلب coupons-pro)
+router.put('/:id', checkAppAccess('coupons-pro'), couponsController.updateCoupon);
 
-// ✅ حذف كوبون
-router.delete('/:id', couponsController.deleteCoupon);
+// ✅ حذف كوبون (يتطلب coupons-pro)
+router.delete('/:id', checkAppAccess('coupons-pro'), couponsController.deleteCoupon);
 
 module.exports = router;

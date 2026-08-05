@@ -3,7 +3,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
   },
   marketplaceApp: {
-    findUnique: jest.fn(),
+    findMany: jest.fn(),
   },
   companyApp: {
     findUnique: jest.fn(),
@@ -45,13 +45,13 @@ describe("checkAppAccess middleware", () => {
     const res = createResponse();
     const next = jest.fn();
 
-    mockPrisma.marketplaceApp.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
+    mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+      {
         id: "app-1",
         slug: "ecommerce-basic",
         name: "Ecommerce Basic",
-      });
+      },
+    ]);
     mockPrisma.companyApp.findUnique.mockResolvedValue({
       id: "company-app-1",
       status: "ACTIVE",
@@ -63,11 +63,8 @@ describe("checkAppAccess middleware", () => {
       "order-core",
       "ecommerce-basic",
     ]);
-    expect(mockPrisma.marketplaceApp.findUnique).toHaveBeenNthCalledWith(1, {
-      where: { slug: "order-core" },
-    });
-    expect(mockPrisma.marketplaceApp.findUnique).toHaveBeenNthCalledWith(2, {
-      where: { slug: "ecommerce-basic" },
+    expect(mockPrisma.marketplaceApp.findMany).toHaveBeenNthCalledWith(1, {
+      where: { slug: { in: ["order-core", "ecommerce-basic"] } },
     });
     expect(mockPrisma.companyApp.findUnique).toHaveBeenCalledWith({
       where: {
@@ -91,7 +88,7 @@ describe("checkAppAccess middleware", () => {
     const res = createResponse();
     const next = jest.fn();
 
-    mockPrisma.marketplaceApp.findUnique.mockResolvedValue(null);
+    mockPrisma.marketplaceApp.findMany.mockResolvedValue([]);
 
     await checkAppAccess("order-core")(req, res, next);
 

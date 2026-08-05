@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 // Products Controller
 const {
@@ -163,6 +164,11 @@ router.get('/sync-logs', verifyToken.authenticateToken, getSyncLogs);
  * @access  Public (verified by signature)
  */
 router.post('/webhook/:id', handleWooCommerceWebhook);
+
+// All routes after this point require woocommerce-pro access
+// (the public webhook above remains accessible without a token)
+router.use(verifyToken.requireCompanyAccess);
+router.use(checkAppAccess('woocommerce-pro'));
 
 /**
  * @route   POST /api/v1/woocommerce/webhooks/setup

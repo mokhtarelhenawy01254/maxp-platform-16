@@ -1311,5 +1311,265 @@
     "engineCompatibility": null,
     "createdAt": "2026-07-29T00:00:00.000Z",
     "updatedAt": "2026-08-04T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-pos-pro",
+    "slug": "pos-pro",
+    "name": "نظام POS",
+    "nameEn": "POS System",
+    "description": "نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تبيع من نقطة البيع أو المعرض مباشرة.",
+      "surface": "داخل صفحة نقطة البيع (POS) لإتمام البيع الفوري.",
+      "outcome": "بيع أسرع مع فواتير فورية وتقليل الأخطاء اليدوية."
+    },
+    "features": {
+      "posCashier": {
+        "enabled": true,
+        "name": "كاشير POS",
+        "description": "واجهة كاشير سريعة لإتمام عمليات البيع بضغطة واحدة.",
+        "access": "PAID"
+      },
+      "quickSale": {
+        "enabled": true,
+        "name": "بيع سريع",
+        "description": "سلة بيع سريعة مع إضافة المنتجات بالباركود أو البحث.",
+        "access": "PAID"
+      },
+      "instantInvoice": {
+        "enabled": true,
+        "name": "فاتورة بيع فورية",
+        "description": "إصدار وطباعة فاتورة بيع مباشرة بعد كل عملية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "monitor",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-coupons-pro",
+    "slug": "coupons-pro",
+    "name": "الكوبونات والعروض",
+    "nameEn": "Coupons & Promotions",
+    "description": "إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تعتمد على الكوبونات والعروض لزيادة المبيعات.",
+      "surface": "داخل صفحة الكوبونات والعروض الترويجية.",
+      "outcome": "زيادة الطلبات عبر عروض مستهدفة وتتبع أداء كل كوبون."
+    },
+    "features": {
+      "discountCoupons": {
+        "enabled": true,
+        "name": "كوبونات الخصم",
+        "description": "إنشاء كوبونات بنسبة أو مبلغ خصم مع حد أدنى للطلب.",
+        "access": "PAID"
+      },
+      "promoOffers": {
+        "enabled": true,
+        "name": "العروض الترويجية",
+        "description": "عروض شراء 1+1، خصومات موسمية، وعروض على منتجات محددة.",
+        "access": "PAID"
+      },
+      "couponAnalytics": {
+        "enabled": true,
+        "name": "تتبع أداء الكوبونات",
+        "description": "تقارير عن استخدام الكوبونات والطلبات الناتجة عنها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "percent",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-woocommerce-pro",
+    "slug": "woocommerce-pro",
+    "name": "تكامل WooCommerce",
+    "nameEn": "WooCommerce Integration",
+    "description": "مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.",
+    "category": "INTEGRATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 79,
+    "yearlyPrice": 790,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تستخدم WooCommerce وتريد مزامنة بياناتها مع MaxP.",
+      "surface": "داخل صفحة مزامنة WooCommerce والمنتجات.",
+      "outcome": "مزامنة تلقائية بدون عمل يدوي وتقليل أخطاء الإدخال."
+    },
+    "features": {
+      "productSync": {
+        "enabled": true,
+        "name": "مزامنة المنتجات",
+        "description": "استيراد وتصدير المنتجات بين MaxP و WooCommerce تلقائياً.",
+        "access": "PAID"
+      },
+      "orderSync": {
+        "enabled": true,
+        "name": "مزامنة الطلبات",
+        "description": "جلب طلبات WooCommerce إلى MaxP ومزامنة حالاتها.",
+        "access": "PAID"
+      },
+      "inventorySync": {
+        "enabled": true,
+        "name": "مزامنة المخزون",
+        "description": "تحديث الكميات في المتجرين بشكل متزامن.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "globe",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-multi-warehouse-pro",
+    "slug": "multi-warehouse-pro",
+    "name": "المخزون المتعدد",
+    "nameEn": "Multi-Warehouse Inventory",
+    "description": "إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.",
+    "category": "WAREHOUSE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "inventory-pro"
+    ],
+    "positioning": {
+      "audience": "الشركات التي تدير أكثر من مستودع أو فرع وتحتاج توزيع المخزون.",
+      "surface": "داخل صفحة إدارة المستودعات وتحويلات المخزون.",
+      "outcome": "توزيع المخزون بدقة بين الفروع وتقليل نفاد المنتجات."
+    },
+    "features": {
+      "multiWarehouse": {
+        "enabled": true,
+        "name": "مستودعات متعددة",
+        "description": "إنشاء وإدارة أكثر من مستودع لكل شركة.",
+        "access": "PAID"
+      },
+      "transfers": {
+        "enabled": true,
+        "name": "تحويلات المخزون",
+        "description": "نقل الكميات بين المستودعات مع سجل كامل.",
+        "access": "PAID"
+      },
+      "branchAllocation": {
+        "enabled": true,
+        "name": "توزيع الكميات",
+        "description": "توزيع الكميات المتاحة على الفروع والمستودعات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "warehouse",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-accounting-sources",
+    "slug": "order-accounting-sources",
+    "name": "مصادر الطلبات والمحاسبة",
+    "nameEn": "Order Sources & Accounting",
+    "description": "تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "الشركات التي تتلقى طلبات من عدة قنوات وتريد معرفة أداء كل قناة مالياً.",
+      "surface": "داخل صفحة الطلبات وتقارير المصادر.",
+      "outcome": "معرفة أي قناة تحقق أعلى إيراد وأي قناة تحتاج تحسين."
+    },
+    "features": {
+      "sourceTracking": {
+        "enabled": true,
+        "name": "تتبع مصدر الطلب",
+        "description": "تسجيل مصدر كل طلب عند الإنشاء (متجر، يدوي، محادثة، استيراد).",
+        "access": "PAID"
+      },
+      "perSourceAccounting": {
+        "enabled": true,
+        "name": "محاسبة كل مصدر",
+        "description": "إيرادات ومصاريف وربحية منفصلة لكل قناة طلبات.",
+        "access": "PAID"
+      },
+      "sourceAnalytics": {
+        "enabled": true,
+        "name": "تقارير المصادر",
+        "description": "لوحات تحليل لمقارنة أداء القنوات المختلفة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "git-branch",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z"
   }
 ]

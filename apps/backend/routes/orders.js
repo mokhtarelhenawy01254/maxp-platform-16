@@ -417,7 +417,7 @@ const serializeMerchantOrderScope = (merchantOrder, order = {}) => {
   };
 };
 
-const ORDER_SOURCE_TRACKING_APP_SLUGS = new Set(['order-source-tracking']);
+const ORDER_SOURCE_TRACKING_APP_SLUGS = new Set(['order-source-tracking', 'order-accounting-sources']);
 const ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS = new Set(['campaign-attribution']);
 const ORDER_CONFIRMATION_DISTRIBUTION_APP_SLUGS = new Set(['order-confirmation-distribution']);
 const ORDER_DETAIL_OPTIONAL_APP_SLUGS = [

@@ -2,7 +2,13 @@ const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedD
 
 const LEGACY_APP_SLUG_ALIASES = {
   'order-core': ['ecommerce-basic'],
-  'order-invoicing': ['ecommerce-basic']
+  'order-invoicing': ['ecommerce-basic'],
+  // Grandfathering: companies with old monolithic store apps keep access to new granular apps
+  'pos-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
+  'coupons-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
+  'woocommerce-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
+  'multi-warehouse-pro': ['ecommerce-pro', 'store-pro', 'inventory-pro'],
+  'order-accounting-sources': ['ecommerce-pro', 'store-pro', 'order-source-tracking']
 };
 
 const getCandidateAppSlugs = (appSlug) => {

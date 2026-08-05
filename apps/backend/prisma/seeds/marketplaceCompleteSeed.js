@@ -64,6 +64,91 @@ async function seedMarketplace() {
       isFeatured: true
     },
     {
+      slug: 'pos-pro',
+      name: 'نظام POS',
+      category: 'ECOMMERCE',
+      description: 'نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية.',
+      icon: '🖥️',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'كاشير POS',
+        'بيع سريع',
+        'فاتورة بيع فورية'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'coupons-pro',
+      name: 'الكوبونات والعروض',
+      category: 'MARKETING',
+      description: 'إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.',
+      icon: '🎟️',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'كوبونات الخصم',
+        'العروض الترويجية',
+        'تتبع أداء الكوبونات'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'woocommerce-pro',
+      name: 'تكامل WooCommerce',
+      category: 'INTEGRATION',
+      description: 'مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.',
+      icon: '🛒',
+      monthlyPrice: 79,
+      yearlyPrice: 790,
+      trialDays: 14,
+      features: JSON.stringify([
+        'مزامنة المنتجات',
+        'مزامنة الطلبات',
+        'مزامنة المخزون'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'multi-warehouse-pro',
+      name: 'المخزون المتعدد',
+      category: 'WAREHOUSE',
+      description: 'إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.',
+      icon: '🏬',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'مستودعات متعددة',
+        'تحويلات المخزون',
+        'توزيع الكميات'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
+      slug: 'order-accounting-sources',
+      name: 'مصادر الطلبات والمحاسبة',
+      category: 'ORDER_OPS',
+      description: 'تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.',
+      icon: '🔀',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      trialDays: 14,
+      features: JSON.stringify([
+        'تتبع مصدر الطلب',
+        'محاسبة كل مصدر',
+        'تقارير المصادر'
+      ]),
+      isActive: true,
+      isFeatured: false
+    },
+    {
       slug: 'inventory-pro',
       name: 'إدارة المخزون المتقدمة',
       category: 'WAREHOUSE',
