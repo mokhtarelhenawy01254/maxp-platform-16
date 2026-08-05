@@ -457,6 +457,8 @@ const AttendanceSheetReport: React.FC = () => {
                 <div className="p-3 border-b dark:border-gray-700">
                   <input
                     type="text"
+                    id="attendance-sheet-search"
+                    name="attendance-sheet-search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="بحث بالاسم أو رقم الموظف أو القسم..."
