@@ -2899,6 +2899,40 @@ async function getAbsentDaysReport(req, res) {
 }
 
 /**
+ * كشف الحضور الشهري التفصيلي (موظف × يوم)
+ * GET /api/hr/reports/attendance-sheet
+ */
+async function getAttendanceSheetReport(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year, employeeId, departmentId } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: "يجب تحديد الشهر والسنة",
+      });
+    }
+
+    const report = await attendanceService.getMonthlyAttendanceSheet(
+      companyId,
+      parseInt(year),
+      parseInt(month),
+      employeeId || null,
+      departmentId || null,
+    );
+
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error("❌ Error getting attendance sheet report:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "حدث خطأ أثناء جلب كشف الحضور الشهري",
+    });
+  }
+}
+
+/**
  * تقرير الأداء الشامل
  * GET /api/hr/reports/performance
  */
@@ -6819,6 +6853,7 @@ module.exports = {
   // Reports
   getAttendanceReport,
   getAbsentDaysReport,
+  getAttendanceSheetReport,
   getPerformanceReport,
   getLeaveReport,
   getPayrollReport,

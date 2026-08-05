@@ -22,11 +22,13 @@ import TurnoverReport from "./TurnoverReport";
 import OvertimeReport from "./OvertimeReport";
 import LateAbsenceReport from "./LateAbsenceReport";
 import AbsentDaysReport from "./AbsentDaysReport";
+import AttendanceSheetReport from "./AttendanceSheetReport";
 import EmployeeReport from "./EmployeeReport";
 
 type TabId =
   | "employee"
   | "attendance"
+  | "attendance-sheet"
   | "absent-days"
   | "leaves"
   | "payroll"
@@ -76,6 +78,12 @@ const HRReportsHub: React.FC = () => {
       label: "تقرير الحضور",
       icon: Clock,
       description: "الحضور والانصراف والتأخير",
+    },
+    {
+      id: "attendance-sheet",
+      label: "كشف الحضور الشهري",
+      icon: Calendar,
+      description: "حالة كل موظف يومياً + أوقات الحضور والانصراف",
     },
     {
       id: "absent-days",
@@ -219,6 +227,7 @@ const HRReportsHub: React.FC = () => {
             <ErrorBoundary>
               {activeTab === "employee" && <EmployeeReport />}
               {activeTab === "attendance" && <AttendanceReport />}
+              {activeTab === "attendance-sheet" && <AttendanceSheetReport />}
               {activeTab === "absent-days" && <AbsentDaysReport />}
               {activeTab === "leaves" && <LeaveReport />}
               {activeTab === "payroll" && <PayrollReport />}
