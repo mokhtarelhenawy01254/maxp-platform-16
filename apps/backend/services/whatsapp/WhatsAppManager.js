@@ -5251,22 +5251,36 @@ async function syncLabels(sessionId) {
 
         let labels = Array.from(session.labels.values());
 
-        // لو الـ resync ماجبش حاجة — نعمل reconnect للجلسة عشان الـ initial sync يجيب الـ labels.edit events
-        if (labels.length === 0) {
-            try {
-                const companyId = session.companyId;
-                if (companyId) {
-                    console.log('🔄 Labels still empty after resync, forcing session reconnect to fetch labels...');
-                    await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
+        // المزامنة اليدوية = إعادة اتصال كاملة بالجلسة
+        // عشان الـ initial sync يجيب كل الـ labels.edit و labels.association events من واتساب
+        // (الـ resyncAppState لوحده مبيجيبش الـ labels لو الجلسة جديدة أو الـ cache اتمسح)
+        try {
+            const companyId = session.companyId;
+            if (companyId) {
+                console.log('🔄 [SYNC-LABELS] Forcing session reconnect to fetch labels from WhatsApp...');
+                await reconnectSession(sessionId, companyId, 0, { syncFullHistory: true });
+                // الـ reconnect بيحصل async — بنستنى شوية عشان الـ initial sync
+                // يوصّل الـ labels.edit و labels.association events
+                for (let i = 0; i < 12; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 2500));
+                    const refreshed = getSession(sessionId);
+                    if (refreshed && refreshed.labels.size > 0) {
+                        labels = Array.from(refreshed.labels.values());
+                        session.labelAssociations = refreshed.labelAssociations;
+                        console.log(`🔍 [SYNC-LABELS] Got ${labels.length} labels after reconnect (attempt ${i + 1})`);
+                        break;
+                    }
+                }
+                if (labels.length === 0) {
                     const refreshed = getSession(sessionId);
                     if (refreshed) {
                         labels = Array.from(refreshed.labels.values());
                         session.labelAssociations = refreshed.labelAssociations;
                     }
                 }
-            } catch (reconnectErr) {
-                console.error('❌ Reconnect failed while syncing labels:', reconnectErr.message);
             }
+        } catch (reconnectErr) {
+            console.error('❌ Reconnect failed while syncing labels:', reconnectErr.message);
         }
 
         // لو لسه فاضي — نجيب من الداتابيز
