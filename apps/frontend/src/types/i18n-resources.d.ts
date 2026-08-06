@@ -9798,6 +9798,8 @@ declare module 'react-i18next' {
         incompleteCopyFailed: string;
         incompleteDetailsTitle: string;
         incompleteDetailsSubtitle: string;
+        incompleteConvertToOrder: string;
+        incompleteConverting: string;
         incompleteBack: string;
         incompleteLastActivity: string;
         incompleteCustomerInfo: string;
@@ -13789,6 +13791,7 @@ declare module 'react-i18next' {
         orderStatuses: string;
         orderWorkflow: string;
         orders: string;
+        orderAutomation: string;
         orderConfirmations: string;
         orderPreparation: string;
         incompleteOrders: string;

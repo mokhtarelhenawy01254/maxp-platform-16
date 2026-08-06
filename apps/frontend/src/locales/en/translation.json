@@ -1908,7 +1908,7 @@
     "good": "Good"
   },
   "fulfillmentReport": {
-    "title": "Order Fulfillment Performance",
+    "title": "Product Fulfillment Performance",
     "subtitle": "Delivery, cancellation and return rates for each product ordered in the period",
     "fetchError": "Error fetching data",
     "retry": "Retry",
@@ -9805,6 +9805,8 @@
     "incompleteCopyFailed": "Failed to copy ID",
     "incompleteDetailsTitle": "Incomplete Order Details",
     "incompleteDetailsSubtitle": "Checkout and customer information",
+    "incompleteConvertToOrder": "Convert to Order",
+    "incompleteConverting": "Converting...",
     "incompleteBack": "Back",
     "incompleteLastActivity": "Last Activity",
     "incompleteCustomerInfo": "Customer Info",
@@ -13796,6 +13798,7 @@
     "orderStatuses": "Order Statuses",
     "orderWorkflow": "Order Workflow",
     "orders": "Orders",
+    "orderAutomation": "Order Automation",
     "orderConfirmations": "Orders Needing Confirmation",
     "orderPreparation": "Order Preparation",
     "incompleteOrders": "Incomplete Orders",

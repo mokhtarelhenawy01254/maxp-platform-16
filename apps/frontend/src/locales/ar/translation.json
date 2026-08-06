@@ -1908,7 +1908,7 @@
     "good": "جيد"
   },
   "fulfillmentReport": {
-    "title": "أداء تنفيذ الطلبات",
+    "title": "أداء تنفيذ المنتجات",
     "subtitle": "نسبة التسليم والإلغاء والمرتجعات لكل منتج اتطلب في الفترة",
     "fetchError": "حدث خطأ في جلب البيانات",
     "retry": "إعادة المحاولة",
@@ -9805,6 +9805,8 @@
     "incompleteCopyFailed": "فشل نسخ المعرّف",
     "incompleteDetailsTitle": "تفاصيل الطلب غير المكتمل",
     "incompleteDetailsSubtitle": "معلومات الشيك آوت والعميل",
+    "incompleteConvertToOrder": "تحويل إلى طلب",
+    "incompleteConverting": "جاري التحويل...",
     "incompleteBack": "رجوع",
     "incompleteLastActivity": "آخر نشاط",
     "incompleteCustomerInfo": "بيانات العميل",
@@ -13796,6 +13798,7 @@
     "orderStatuses": "حالات الطلبات",
     "orderWorkflow": "مسار الطلبات",
     "orders": "الطلبات",
+    "orderAutomation": "أتمتة الطلبات",
     "orderConfirmations": "طلبات تحتاج تأكيد",
     "orderPreparation": "تجهيز الطلبات",
     "incompleteOrders": "الطلبات غير المكتملة",

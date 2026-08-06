@@ -184,6 +184,8 @@
   "incompleteCopyFailed": "فشل نسخ المعرّف",
   "incompleteDetailsTitle": "تفاصيل الطلب غير المكتمل",
   "incompleteDetailsSubtitle": "معلومات الشيك آوت والعميل",
+  "incompleteConvertToOrder": "تحويل إلى طلب",
+  "incompleteConverting": "جاري التحويل...",
   "incompleteBack": "رجوع",
   "incompleteLastActivity": "آخر نشاط",
   "incompleteCustomerInfo": "بيانات العميل",
@@ -791,5 +793,6 @@
   "orderInvoices_pendingInvoices": "فواتير معلقة",
   "orderInvoices_pendingInvoicesSub": "حالات تحتاج مراجعة أو متابعة في السداد.",
   "orderInvoices_totalAmount": "إجمالي المبلغ",
-  "orderInvoices_totalAmountSub": "القيمة الإجمالية للفواتير ضمن النتائج الحالية."
+  "orderInvoices_totalAmountSub": "القيمة الإجمالية للفواتير ضمن النتائج الحالية.",
+  "sidebarOrderAutomation": "[AR] Order Automation"
 }

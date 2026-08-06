@@ -184,6 +184,8 @@
   "incompleteCopyFailed": "Failed to copy ID",
   "incompleteDetailsTitle": "Incomplete Order Details",
   "incompleteDetailsSubtitle": "Checkout and customer information",
+  "incompleteConvertToOrder": "Convert to Order",
+  "incompleteConverting": "Converting...",
   "incompleteBack": "Back",
   "incompleteLastActivity": "Last Activity",
   "incompleteCustomerInfo": "Customer Info",
