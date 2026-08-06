@@ -101,9 +101,11 @@ The public track endpoints (`GET /api/v1/public/orders/track` and the legacy
 `/:orderNumber/track`) return the **GuestOrder** snapshot first. Reward stamps
 (points/cashback) and the real status are written to the **primary Order** on
 delivery, so the GuestOrder would show stale data. The handlers now also look up
-the primary Order by `orderNumber` and merge its `metadata` (primary wins),
-`status`, `discountAmount`, `finalTotal`, `shippingCost` and `total` into the
-tracked response.
+the primary Order and merge its `metadata` (primary wins), `status`,
+`discountAmount`, `finalTotal`, `shippingCost` and `total` into the tracked
+response. Note that storefront orders store the order number in the primary
+Order's **`id`** field, so the lookup searches `id` OR `orderNumber`
+(same as the admin order-detail endpoint).
 
 ## Docs
 

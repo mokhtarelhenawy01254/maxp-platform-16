@@ -2511,10 +2511,17 @@ router.get('/track', async (req, res) => {
     // دمج بيانات الطلب الأساسي (Order) مع GuestOrder:
     // الـ GuestOrder لقطة وقت الإنشاء وبتفضل متجمدة، بينما مكافآت الولاء
     // (النقاط والكاش باك) والحالة الحقيقية بتتكتب على الـ Order الأساسي بعد التسليم.
+    // ملاحظة: أوردرات الستور بتخزن رقم الطلب في حقل id، فبنبحث بـ id أو orderNumber.
     if (order) {
       try {
         const primaryOrder = await prisma.order.findFirst({
-          where: { orderNumber: order.orderNumber, companyId: company.id },
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: order.orderNumber },
+              { orderNumber: order.orderNumber }
+            ]
+          },
           select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
         });
         if (primaryOrder) {
@@ -2711,7 +2718,13 @@ router.get('/:orderNumber/track', async (req, res) => {
     if (order) {
       try {
         const primaryOrder = await prisma.order.findFirst({
-          where: { orderNumber, companyId: company.id },
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: orderNumber },
+              { orderNumber }
+            ]
+          },
           select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
         });
         if (primaryOrder) {
