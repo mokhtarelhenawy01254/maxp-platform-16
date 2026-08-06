@@ -187,7 +187,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   section,
   settings: sectionSettings,
 }) => {
-  const { paymentMethod, setPaymentMethod, formData, appliedCoupon, tierProgress } = useCheckoutStore();
+  const { paymentMethod, setPaymentMethod, formData, appliedCoupon } = useCheckoutStore();
   const { placeOrder, isSubmitting, orderSuccess } = useCheckout();
   const { items, getSubtotal } = useCartStore();
   const { settings: storefrontSettings } = useStorefrontSettings();
