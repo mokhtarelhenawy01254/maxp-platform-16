@@ -312,7 +312,7 @@ export const useWhatsAppConversations = (
       return undefined;
     },
     staleTime: 10 * 1000,
-    refetchInterval: 15 * 1000,
+    refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
     gcTime: 10 * 60 * 1000, // 10 minutes
     ...options,

@@ -192,18 +192,34 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     if (!conversationId) return;
 
     socketService.joinConversation(conversationId);
-    const refresh = () => loadConversation();
-    socketService.on('conversation:updated', refresh);
-    socketService.on('conversation:assignment', refresh);
-    socketService.on('whatsapp:message:new', refresh);
-    socketService.on('whatsapp:message:sent', refresh);
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    // Coalesce socket events: نداء واحد بدل نداء لكل رسالة
+    const scheduleRefresh = () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        void loadConversation();
+      }, 800);
+    };
+
+    socketService.on('conversation:updated', scheduleRefresh);
+    socketService.on('conversation:assignment', scheduleRefresh);
+    socketService.on('whatsapp:message:new', scheduleRefresh);
+    socketService.on('whatsapp:message:sent', scheduleRefresh);
 
     return () => {
       socketService.leaveConversation(conversationId);
-      socketService.off('conversation:updated', refresh);
-      socketService.off('conversation:assignment', refresh);
-      socketService.off('whatsapp:message:new', refresh);
-      socketService.off('whatsapp:message:sent', refresh);
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+      socketService.off('conversation:updated', scheduleRefresh);
+      socketService.off('conversation:assignment', scheduleRefresh);
+      socketService.off('whatsapp:message:new', scheduleRefresh);
+      socketService.off('whatsapp:message:sent', scheduleRefresh);
     };
   }, [conversationId, loadConversation]);
 

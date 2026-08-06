@@ -818,20 +818,8 @@ class WhatsAppInboxService {
   }
 
   async _getQueueCounters(prisma, where) {
-    const conversations = await prisma.conversation.findMany({
-      where,
-      select: {
-        id: true,
-        status: true,
-        lastMessageAt: true,
-        lastMessageIsFromCustomer: true,
-        assignedUserId: true,
-        metadata: true
-      }
-    });
-
     const counters = {
-      total: conversations.length,
+      total: 0,
       waiting: 0,
       assigned: 0,
       pending: 0,
@@ -843,23 +831,61 @@ class WhatsAppInboxService {
 
     const now = Date.now();
 
-    for (const conversation of conversations) {
-      const status = String(conversation.status || '').toUpperCase();
+    // 1) توزيع الحالات عبر groupBy (بدل سحب كل الصفوف لحساب العدادات في JS)
+    const statusGroups = await prisma.conversation.groupBy({
+      by: ['status'],
+      where,
+      _count: { _all: true }
+    });
+
+    for (const group of statusGroups) {
+      const status = String(group.status || '').toUpperCase();
+      const count = group._count._all;
+      counters.total += count;
+
       const queueKey = buildQueueKeyFromStatus(status);
-      const metadata = safeJsonParse(conversation.metadata, {});
-      const sla = metadata.sla || {};
+      if (queueKey === 'WAITING_QUEUE') counters.waiting += count;
+      if (queueKey === 'ASSIGNED_QUEUE') counters.assigned += count;
+      if (queueKey === 'PENDING_QUEUE') counters.pending += count;
+      if (queueKey === 'CLOSED_QUEUE') counters.closed += count;
+      if (status === 'ESCALATED') counters.escalated += count;
+    }
 
-      if (queueKey === 'WAITING_QUEUE') counters.waiting += 1;
-      if (queueKey === 'ASSIGNED_QUEUE') counters.assigned += 1;
-      if (queueKey === 'PENDING_QUEUE') counters.pending += 1;
-      if (queueKey === 'CLOSED_QUEUE') counters.closed += 1;
-      if (status === 'ESCALATED') counters.escalated += 1;
+    // 2) SLA breaches: نفلتر status !== CLOSED في الـ SQL (نفس منطق النسخة الأصلية)
+    const slaCandidates = await prisma.conversation.findMany({
+      where: {
+        ...where,
+        status: { not: 'CLOSED' }
+      },
+      select: {
+        status: true,
+        metadata: true
+      }
+    });
 
+    for (const conversation of slaCandidates) {
+      const status = String(conversation.status || '').toUpperCase();
+      const sla = safeJsonParse(conversation.metadata, {}).sla || {};
       if (sla.maxWaitingDeadlineAt && new Date(sla.maxWaitingDeadlineAt).getTime() < now && status !== 'CLOSED') {
         counters.slaBreached += 1;
       }
+    }
 
-      if (conversation.lastMessageIsFromCustomer && conversation.lastMessageAt) {
+    // 3) Missed chats: نفلتر في الـ SQL الرسائل العميلة الأقدم من 30 دقيقة
+    const cutoff = new Date(now - 30 * 60 * 1000);
+    const missedCandidates = await prisma.conversation.findMany({
+      where: {
+        ...where,
+        lastMessageIsFromCustomer: true,
+        lastMessageAt: { lte: cutoff }
+      },
+      select: {
+        lastMessageAt: true
+      }
+    });
+
+    for (const conversation of missedCandidates) {
+      if (conversation.lastMessageAt) {
         const ageMinutes = (now - new Date(conversation.lastMessageAt).getTime()) / 60000;
         if (ageMinutes >= 30) {
           counters.missedChats += 1;
