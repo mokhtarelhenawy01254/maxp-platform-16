@@ -150,8 +150,16 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     // slot ميتا بيعرض الربط القديم على القالب العادي (توافق قديم)
     await user.click(within(metaSlot()).getByRole("button", { name: /تعديل الربط/ }));
 
-    expect(await screen.findByText(/حالياً مربوط بـ/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /إرسال للمراجعة من جديد/ })).toBeInTheDocument();
+    expect(await screen.findByText(/الربط الحالي/)).toBeInTheDocument();
+    // resubmit button should NOT show yet — content hasn't changed
+    expect(screen.queryByRole("button", { name: /إرسال للمراجعة من جديد/ })).not.toBeInTheDocument();
+
+    // edit the content to trigger resubmit button
+    const textarea = screen.getByRole("textbox", { name: /محتوى القالب المحلي/ });
+    await user.clear(textarea);
+    await user.type(textarea, "تم تحديث طلبك بنجاح - شكراً لك");
+
+    expect(await screen.findByRole("button", { name: /إرسال للمراجعة من جديد/ })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /إرسال للمراجعة من جديد/ }));
 
@@ -163,7 +171,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     );
     expect(apiClient.put).toHaveBeenCalledWith(
       expect.stringContaining("/templates/t1"),
-      expect.objectContaining({ content: "مرحبا {{customerName}} أكد طلبك" })
+      expect.objectContaining({ content: "تم تحديث طلبك بنجاح - شكراً لك" })
     );
   });
 

@@ -392,6 +392,7 @@ export default function OrderStatusTemplatesPage() {
   const [availableMetaTemplates, setAvailableMetaTemplates] = useState<MetaAvailableTemplate[]>([]);
   const [loadingMetaTemplates, setLoadingMetaTemplates] = useState(false);
   const [bindingId, setBindingId] = useState<string | null>(null);
+  const [originalMetaTemplateName, setOriginalMetaTemplateName] = useState<string>("");
 
   const [settings, setSettings] = useState<SettingsForm | null>(null);
   const [settingsSessions, setSettingsSessions] = useState<{ id: string; name: string; phoneNumber?: string; status: string; provider?: string }[]>([]);
@@ -473,6 +474,7 @@ export default function OrderStatusTemplatesPage() {
     setSelectedStatus(status);
     setSelectedTemplate(null);
     setDialogSlot(slot);
+    setOriginalMetaTemplateName("");
     setTemplateForm({
       name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
       content: slot === "meta" && status.template?.content ? status.template.content : DEFAULT_TEMPLATE_CONTENT,
@@ -497,7 +499,7 @@ export default function OrderStatusTemplatesPage() {
     setSelectedTemplate(target);
     setDialogSlot(slot);
     const metaName = target?.metaTemplateName || "";
-    // لو قالب ميتا مربوط بالفعل، المرجع المحلي هو اللي بنعدّل بيه الرسالة (resubmit)
+    setOriginalMetaTemplateName(metaName);
     setShowLocalRef(slot === "meta" && !!metaName);
     setTemplateForm({
       name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
@@ -951,6 +953,20 @@ export default function OrderStatusTemplatesPage() {
     return body?.text || "";
   }, [templateForm.metaTemplateName, availableMetaTemplates]);
 
+  const metaBindingChanged = dialogSlot === "meta" && templateForm.metaTemplateName !== originalMetaTemplateName;
+  const metaContentChanged = dialogSlot === "meta" && !!selectedTemplate?.id && templateForm.content !== (selectedTemplate?.content || "");
+  const isMetaBound = dialogSlot === "meta" && !!originalMetaTemplateName;
+
+  const metaDialogTitle = (() => {
+    if (dialogSlot !== "meta") {
+      return `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`;
+    }
+    if (metaBindingChanged) return `تبديل قالب ميتا: ${selectedStatus?.name}`;
+    if (isMetaBound && metaContentChanged) return `تحديث محتوى قالب ميتا: ${selectedStatus?.name}`;
+    if (isMetaBound) return `تعديل قالب ميتا: ${selectedStatus?.name}`;
+    return `إنشاء قالب ميتا: ${selectedStatus?.name}`;
+  })();
+
   const statusesWithoutTemplate = visibleStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
 
@@ -1381,9 +1397,7 @@ export default function OrderStatusTemplatesPage() {
         >
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
-              {dialogSlot === "meta"
-                ? `${selectedTemplate?.id ? "تعديل قالب ميتا" : "إنشاء قالب ميتا"}: ${selectedStatus?.name}`
-                : `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`}
+              {metaDialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
               نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
@@ -1419,7 +1433,13 @@ export default function OrderStatusTemplatesPage() {
                   : "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
               }`}>
                 {dialogSlot === "meta" ? (
-                  <>☁️ <strong>قالب ميتا المعتمد هو اللي بيتابعت للعميل</strong> — النص اللي بتكتبه هنا مرجع للربط/النشر. بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
+                  isMetaBound && metaBindingChanged ? (
+                    <>🔄 <strong>تبديل قالب ميتا</strong> — هتغير الربط من <code>{originalMetaTemplateName}</code> لقالب جديد. اضغط «حفظ وربط بقالب ميتا» عشان التبديل يتسجّل.</>
+                  ) : isMetaBound ? (
+                    <>☁️ <strong>قالب ميتا مربوط حالياً</strong> — عدّل محتوى الرسالة هنا، بعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.</>
+                  ) : (
+                    <>☁️ <strong>اختار قالب ميتا معتمد</strong> — اختار القالب من القائمة وبعدين اضغط «حفظ وربط بقالب ميتا». بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
+                  )
                 ) : (
                   <>📱 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys). لو عملت كمان قالب ميتا لنفس الحالة، ميتا له الأسبقية لما الجلسة الأساسية تكون Meta Cloud.</>
                 )}
@@ -1439,7 +1459,9 @@ export default function OrderStatusTemplatesPage() {
                     اختر قالب ميتا المعتمد
                   </label>
                   <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
-                    اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده.
+                    {isMetaBound
+                      ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
+                      : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
                   </p>
                   {metaSessions.length > 0 ? (
                     <>
@@ -1560,10 +1582,15 @@ export default function OrderStatusTemplatesPage() {
                             );
                           })()}
 
-                          {selectedTemplate?.metaTemplateName && (
+                          {selectedTemplate?.metaTemplateName && !metaBindingChanged && (
                             <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                              حالياً مربوط بـ: {selectedTemplate.metaTemplateName}
+                              الربط الحالي: {selectedTemplate.metaTemplateName}
                               {selectedTemplate.metaTemplateStatus ? ` (${selectedTemplate.metaTemplateStatus})` : ""}
+                            </div>
+                          )}
+                          {metaBindingChanged && (
+                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                              التبديل: من «{originalMetaTemplateName}» إلى «{templateForm.metaTemplateName}» — اضغط «حفظ وربط بقالب ميتا» للتأكيد.
                             </div>
                           )}
                         </>
@@ -1590,7 +1617,7 @@ export default function OrderStatusTemplatesPage() {
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        {selectedTemplate?.metaTemplateName ? "نص رسالة قالب ميتا" : "المرجع المحلي (لتطابق المتغيرات)"}
+                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : "المرجع المحلي (لتطابق المتغيرات)"}
                       </span>
                       <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
                         {showLocalRef ? "إخفاء" : "عرض"}
@@ -1598,7 +1625,7 @@ export default function OrderStatusTemplatesPage() {
                     </button>
                     {selectedTemplate?.metaTemplateName ? (
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        النص ده هو رسالة قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).
+                        النص ده هو محتوى الرسالة اللي هتتبعت للعميل عبر قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.
                       </p>
                     ) : (
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
@@ -1705,7 +1732,7 @@ export default function OrderStatusTemplatesPage() {
               {dialogSlot === "meta" && templateForm.metaTemplateName ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    ℹ️ الأزرار بتاعة الرسالة بتتاخد من قالب ميتا المعتمد نفسه — الأزرار المحلية مش هتتأثر.
+                    ℹ️ الأزرار التفاعلية بتتاخذ من قالب ميتا المعتمد — الأزرار اللي هنا بتتستخدم بس في المعاينة المحلية.
                   </p>
                 </div>
               ) : (
@@ -1802,7 +1829,7 @@ export default function OrderStatusTemplatesPage() {
               >
                 إلغاء
               </button>
-              {dialogSlot === "meta" && selectedTemplate?.metaTemplateName && (
+              {dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged && (
                 <button
                   onClick={handleResubmitMeta}
                   disabled={saving || resubmittingMeta || !!bindingId}
@@ -1813,23 +1840,39 @@ export default function OrderStatusTemplatesPage() {
                   إرسال للمراجعة من جديد
                 </button>
               )}
+              {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={handleSave}
                 disabled={saving || resubmittingMeta || !!bindingId || (dialogSlot === "regular" && !templateForm.content.trim())}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
+                  dialogSlot === "meta" && metaBindingChanged
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
               >
                 {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {dialogSlot === "meta"
-                  ? templateForm.metaTemplateName
+                  ? metaBindingChanged
                     ? "حفظ وربط بقالب ميتا"
-                    : "حفظ قالب ميتا"
+                    : isMetaBound
+                      ? "حفظ"
+                      : templateForm.metaTemplateName
+                        ? "حفظ وربط بقالب ميتا"
+                        : "حفظ قالب ميتا"
                   : "حفظ"}
               </button>
+              )}
             </div>
 
             {dialogSlot === "meta" && (
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-                أي تعديل على المحتوى أو الأزرار وبعدين "إرسال للمراجعة من جديد" هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.
+                {metaBindingChanged ? (
+                  <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
+                ) : isMetaBound && metaContentChanged ? (
+                  <>عدّلت محتوى الرسالة — اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).</>
+                ) : (
+                  <>أي تعديل على المحتوى أو الأزرار وبعدين «إرسال للمراجعة من جديد» هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.</>
+                )}
               </p>
             )}
             </div>
