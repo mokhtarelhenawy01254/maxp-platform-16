@@ -9,6 +9,8 @@ model Company {
   currency                        String                           @default("EGP")
   isActive                        Boolean                          @default(true)
   settings                        String?
+  loyaltySystem                   String                           @default("TIERS")
+  loyaltySettings                 String?
   createdAt                       DateTime                         @default(now())
   updatedAt                       DateTime                         @updatedAt
   slug                            String?                          @unique
@@ -92,6 +94,7 @@ model Company {
   customerLoyaltyPrograms         CustomerLoyaltyProgram[]
   customerLoyaltyRecords          CustomerLoyaltyRecord[]
   customerLoyaltyTiers            CustomerLoyaltyTier[]
+  customerLoyaltyVouchers         CustomerLoyaltyVoucher[]
   customerNotificationPreferences CustomerNotificationPreference[]
   customerNotificationSchedules   CustomerNotificationSchedule[]
   customerWallets                 CustomerWallet[]

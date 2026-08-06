@@ -1,0 +1,133 @@
+import React, { useState, useEffect } from "react";
+import { apiClient } from "../../services/apiClient";
+import { Save, Loader2, Zap } from "lucide-react";
+
+/**
+ * إعدادات نظام "الخصم التلقائي":
+ * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
+ * + معدل النقاط وقيمة الاستبدال.
+ */
+const AutoDiscountSettings: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [cfg, setCfg] = useState({
+    system: "AUTO_DISCOUNT",
+    enabled: true,
+    discountPercent: 10,
+    validityDays: 3,
+    convertExpiredToCashback: true,
+    pointsPerAmount: 5,
+    pointsRedemptionValue: 1,
+    redeemPointsEnabled: true,
+  });
+
+  const load = async () => {
+    try {
+      const res = await apiClient.get("/hr/customer-loyalty/system-settings");
+      setCfg((prev) => ({ ...prev, ...(res.data?.data || {}) }));
+    } catch (e: any) {
+      setErrorMsg(e?.response?.data?.error || "فشل تحميل الإعدادات");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setSavedMsg("");
+    setErrorMsg("");
+    try {
+      await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
+      setSavedMsg("تم حفظ إعدادات الخصم التلقائي ✓");
+    } catch (e: any) {
+      setErrorMsg(e?.response?.data?.error || "فشل الحفظ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const set = (k: string, v: any) => setCfg((prev) => ({ ...prev, [k]: v }));
+
+  const inputCls =
+    "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <Zap className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">الخصم التلقائي</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            بعد كل أوردر مسلّم العميل بياخد خصم % على الأوردر الجاي، ولو خلصت المدة من غير استخدام بيتحول كاش باك في محفظته.
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
+      ) : (
+        <>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <input type="checkbox" checked={Boolean(cfg.enabled)} onChange={(e) => set("enabled", e.target.checked)} className="h-4 w-4 accent-amber-500" />
+              تفعيل نظام الخصم التلقائي
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-gray-500">نسبة الخصم %</label>
+                <input type="number" min="0" max="100" value={cfg.discountPercent} onChange={(e) => set("discountPercent", Number(e.target.value))} className={inputCls + " mt-1"} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">مدة الصلاحية (أيام)</label>
+                <input type="number" min="1" value={cfg.validityDays} onChange={(e) => set("validityDays", Number(e.target.value))} className={inputCls + " mt-1"} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">معدل النقاط (ج.م لكل نقطة)</label>
+                <input type="number" min="0.01" step="0.01" value={cfg.pointsPerAmount} onChange={(e) => set("pointsPerAmount", Number(e.target.value))} className={inputCls + " mt-1"} />
+                <p className="text-[10px] text-gray-400 mt-1">مثال: 5 = كل 100ج → 20 نقطة</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500">قيمة النقطة عند الاستبدال (ج.م لكل نقطة)</label>
+                <input type="number" min="0.01" step="0.01" value={cfg.pointsRedemptionValue} onChange={(e) => set("pointsRedemptionValue", Number(e.target.value))} className={inputCls + " mt-1"} />
+                <p className="text-[10px] text-gray-400 mt-1">مثال: 1 = كل نقطة بجنية — 500 نقطة = 500ج أوردر</p>
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={Boolean(cfg.convertExpiredToCashback)} onChange={(e) => set("convertExpiredToCashback", e.target.checked)} className="h-4 w-4 accent-amber-500" />
+                  تحويل الكوبون المنتهي لكاش باك
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              {savedMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{savedMsg}</span>}
+              {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
+              <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 disabled:opacity-50 whitespace-nowrap">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-semibold">ملاحظة:</p>
+            <p>تفعيل هذا النظام يوقف نظام المستويات تلقائياً — لو رجعنا لنظام المستويات، بيوقف الخصم التلقائي.</p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default AutoDiscountSettings;

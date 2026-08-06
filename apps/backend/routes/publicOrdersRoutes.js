@@ -857,7 +857,8 @@ router.post('/', async (req, res) => {
       fbc,
       fbp,
       useWallet,
-      walletAmount
+      walletAmount,
+      redeemPoints
     } = req.body;
 
     const headerFbc = req.headers['x-fbc'];
@@ -1413,35 +1414,55 @@ router.post('/', async (req, res) => {
       discountAmount += promoDiscount;
     }
 
-    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) / أو كوبون الخصم التلقائي
     let loyaltyDiscount = 0;
     let loyaltyRewards = null;
     let loyaltyTierInfo = null;
+    let autoDiscountVoucherId = null;
+    let loyaltyCustomer = null;
     try {
-      const loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
+      loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
       if (loyaltyCustomer) {
-        loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
-        const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
-        loyaltyTierInfo = progress?.tier || null;
+        const autoDiscountService = require('../services/autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(company.id);
 
-        if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
-          freeShippingAdjustment = {
-            source: 'loyalty_tier',
-            originalShippingCost: Number(shippingCost),
-            discountAmount: Number(shippingCost),
-            appliedShippingCost: 0,
-          };
-          shippingCost = 0;
-        }
+        if (autoActive) {
+          // نظام "الخصم التلقائي": نطبق كوبون 10% على الأوردر الجاي (لو موجود نشط)
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: company.id,
+            customerId: loyaltyCustomer.id,
+            cartTotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            loyaltyDiscount = voucherRes.discount;
+            discountAmount += loyaltyDiscount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+          }
+        } else {
+          loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
+          const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
+          loyaltyTierInfo = progress?.tier || null;
 
-        const lp = Number(loyaltyRewards?.discountPercent || 0);
-        if (lp > 0) {
-          loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
-          discountAmount += loyaltyDiscount;
+          if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
+            freeShippingAdjustment = {
+              source: 'loyalty_tier',
+              originalShippingCost: Number(shippingCost),
+              discountAmount: Number(shippingCost),
+              appliedShippingCost: 0,
+            };
+            shippingCost = 0;
+          }
+
+          const lp = Number(loyaltyRewards?.discountPercent || 0);
+          if (lp > 0) {
+            loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
+            discountAmount += loyaltyDiscount;
+          }
         }
       }
     } catch (loyaltyError) {
-      console.error('⚠️ [LOYALTY] Failed to apply tier rewards at checkout:', loyaltyError?.message);
+      console.error('⚠️ [LOYALTY] Failed to apply rewards at checkout:', loyaltyError?.message);
     }
 
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
@@ -1624,6 +1645,9 @@ router.post('/', async (req, res) => {
 
     // Create order and update stock in a transaction to ensure data consistency
     // ✅ FIX: Increased timeout to 30 seconds to prevent "Transaction already closed" errors
+    let pointsApplied = 0;
+    let pointsUsed = 0;
+    let pointsProgramId = null;
     const order = await prisma.$transaction(async (tx) => {
       let walletApplied = 0;
       let walletBalanceBefore = null;
@@ -1676,6 +1700,45 @@ router.post('/', async (req, res) => {
 
       const finalTotalAfterWallet = Math.max(0, (Number(finalTotal) || 0) - walletApplied);
 
+      // استبدال النقاط كدفع (نظام الخصم التلقائي): نقطة = pointsRedemptionValue ج
+      if (redeemPoints === true || redeemPoints === 'true') {
+        try {
+          const autoDiscountService = require('../services/autoDiscountService');
+          const autoSettings = await autoDiscountService.getSettings(company.id);
+          if (autoSettings.loyaltySystem === 'AUTO_DISCOUNT' && autoSettings.redeemPointsEnabled !== false) {
+            const program = await tx.customerLoyaltyProgram.findFirst({
+              where: { companyId: company.id, type: 'POINTS', status: 'ACTIVE' },
+              orderBy: { createdAt: 'asc' }
+            });
+            if (program && loyaltyCustomer) {
+              const record = await tx.customerLoyaltyRecord.findUnique({
+                where: { customerId_programId: { customerId: loyaltyCustomer.id, programId: program.id } }
+              });
+              if (record && parseFloat(record.currentPoints) > 0) {
+                const valuePer = Number(autoSettings.pointsRedemptionValue || 1);
+                const maxUsable = Math.floor(finalTotalAfterWallet / valuePer);
+                pointsUsed = Math.min(Math.floor(parseFloat(record.currentPoints)), maxUsable);
+                if (pointsUsed > 0) {
+                  pointsApplied = pointsUsed * valuePer;
+                  await tx.customerLoyaltyRecord.update({
+                    where: { id: record.id },
+                    data: {
+                      currentPoints: Math.max(0, parseFloat(record.currentPoints) - pointsUsed),
+                      totalRedeemed: (parseFloat(record.totalRedeemed) || 0) + pointsUsed,
+                      lastPointsRedeemed: new Date()
+                    }
+                  });
+                  pointsProgramId = program.id;
+                }
+              }
+            }
+          }
+        } catch (pointsError) {
+          console.error('⚠️ [POINTS-REDEEM] Failed to redeem points at checkout:', pointsError?.message);
+        }
+      }
+      const finalTotalAfterPoints = Math.max(0, finalTotalAfterWallet - pointsApplied);
+
       // Create order
       // Note: items and shippingAddress must be JSON strings for Prisma
       const orderMetadata = {};
@@ -1719,6 +1782,23 @@ router.post('/', async (req, res) => {
         };
       }
 
+      if (autoDiscountVoucherId) {
+        orderMetadata.autoDiscount = {
+          usedVoucherId: autoDiscountVoucherId,
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          appliedAt: new Date().toISOString()
+        };
+      }
+
+      if (pointsApplied > 0) {
+        orderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
+
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
       }
@@ -1733,7 +1813,7 @@ router.post('/', async (req, res) => {
           total: cartTotal,
           shippingCost,
           discountAmount,
-          finalTotal: finalTotalAfterWallet,
+          finalTotal: finalTotalAfterPoints,
           shippingAddress: JSON.stringify(shippingAddress),
           paymentMethod,
           status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
@@ -2463,6 +2543,11 @@ router.post('/', async (req, res) => {
         loyaltyDiscount,
         loyaltyFreeShipping: Boolean(loyaltyRewards?.freeShipping),
         loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
+        autoDiscountApplied: Boolean(autoDiscountVoucherId),
+        autoDiscountVoucherId,
+        pointsRedemptionApplied: pointsApplied > 0,
+        pointsUsed,
+        pointsValue: pointsApplied,
       },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'

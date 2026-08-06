@@ -122,7 +122,7 @@ function ProductsSkeleton() {
         </div>
         <Skeleton className="h-10 w-64" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[1, 2, 3, 4, 5].map((i) => (
           <Skeleton key={i} className="h-28 w-full" />
         ))}
@@ -169,36 +169,36 @@ function CompositionBar({
 }) {
   if (total <= 0) {
     return (
-      <div className="w-full h-2.5 rounded-full bg-gray-100 dark:bg-gray-800" />
+      <div className="w-full h-2.5 rounded-full bg-gray-100 dark:bg-gray-700" />
     );
   }
   const seg = (v: number) => (total > 0 ? Math.max((v / total) * 100, v > 0 ? 1.5 : 0) : 0);
   return (
-    <div className="w-full h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 flex overflow-hidden">
+    <div className="group/comp w-full h-2.5 rounded-full bg-gray-100 dark:bg-gray-700 flex overflow-hidden cursor-default">
       {delivered > 0 && (
         <div
-          className="h-full bg-emerald-500"
+          className="h-full bg-emerald-500 transition-all duration-200 group-hover/comp:brightness-110"
           style={{ width: `${seg(delivered)}%` }}
           title={`${delivered}`}
         />
       )}
       {cancelled > 0 && (
         <div
-          className="h-full bg-red-500"
+          className="h-full bg-red-500 transition-all duration-200 group-hover/comp:brightness-110"
           style={{ width: `${seg(cancelled)}%` }}
           title={`${cancelled}`}
         />
       )}
       {returned > 0 && (
         <div
-          className="h-full bg-amber-500"
+          className="h-full bg-amber-500 transition-all duration-200 group-hover/comp:brightness-110"
           style={{ width: `${seg(returned)}%` }}
           title={`${returned}`}
         />
       )}
       {other > 0 && (
         <div
-          className="h-full bg-slate-400 dark:bg-slate-500"
+          className="h-full bg-slate-400 dark:bg-slate-500 transition-all duration-200 group-hover/comp:brightness-110"
           style={{ width: `${seg(other)}%` }}
           title={`${other}`}
         />
@@ -213,15 +213,17 @@ function KpiCard({
   label,
   value,
   hint,
+  accent,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   label: string;
   value: React.ReactNode;
   hint?: React.ReactNode;
+  accent: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700/60 transition-shadow hover:shadow-md">
+    <div className={`bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 border-t-2 ${accent} transition-shadow hover:shadow-md`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
@@ -379,7 +381,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
         </p>
         <button
           onClick={() => query.refetch()}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
         >
           {t("fulfillmentReport.retry")}
         </button>
@@ -425,7 +427,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t("fulfillmentReport.title")}
@@ -440,7 +442,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
             name="fulfillmentPeriod"
             value={period}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+            className="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
           >
             {PERIOD_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -455,7 +457,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                 name="fulfillmentStartDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
                 aria-label={t("fulfillmentReport.from") as string}
               />
               <span className="text-gray-400 text-sm">
@@ -466,7 +468,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                 name="fulfillmentEndDate"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
                 aria-label={t("fulfillmentReport.to") as string}
               />
             </div>
@@ -497,13 +499,14 @@ const ProductFulfillmentAnalytics: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <KpiCard
           icon={<CheckCircleIcon className="h-5 w-5 text-white" />}
           iconBg="bg-gradient-to-br from-emerald-500 to-emerald-600"
           label={t("fulfillmentReport.deliveryRate")}
           value={`${summary?.deliveryRate ?? 0}%`}
           hint={`${summary?.deliveredItems ?? 0} ${t("fulfillmentReport.items")}`}
+          accent="border-t-emerald-500"
         />
         <KpiCard
           icon={<XCircleIcon className="h-5 w-5 text-white" />}
@@ -511,6 +514,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           label={t("fulfillmentReport.cancellationRate")}
           value={`${summary?.cancellationRate ?? 0}%`}
           hint={`${summary?.cancelledItems ?? 0} ${t("fulfillmentReport.items")}`}
+          accent="border-t-red-500"
         />
         <KpiCard
           icon={<ArrowUturnLeftIcon className="h-5 w-5 text-white" />}
@@ -518,6 +522,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           label={t("fulfillmentReport.returnRate")}
           value={`${summary?.returnRate ?? 0}%`}
           hint={`${summary?.returnedItems ?? 0} ${t("fulfillmentReport.items")}`}
+          accent="border-t-amber-500"
         />
         <KpiCard
           icon={<ShoppingBagIcon className="h-5 w-5 text-white" />}
@@ -525,6 +530,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           label={t("fulfillmentReport.totalOrders")}
           value={summary?.totalOrders?.toLocaleString() ?? "0"}
           hint={`${summary?.totalProducts ?? 0} ${t("fulfillmentReport.totalProducts")}`}
+          accent="border-t-blue-500"
         />
         <KpiCard
           icon={<BanknotesIcon className="h-5 w-5 text-white" />}
@@ -532,13 +538,14 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           label={t("fulfillmentReport.lostRevenue")}
           value={formatPrice(summary?.lostRevenue ?? 0)}
           hint={`${t("fulfillmentReport.deliveredRevenue")}: ${formatPrice(summary?.deliveredRevenue ?? 0)}`}
+          accent="border-t-rose-500"
         />
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Donut */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700/60">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
             {t("fulfillmentReport.composition")}
           </h3>
@@ -601,7 +608,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
         </div>
 
         {/* Composition legend + top products summary */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700/60">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
             {t("fulfillmentReport.byProduct")}
           </h3>
@@ -609,7 +616,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
             {t("fulfillmentReport.subtitle")}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40 p-4">
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/40 p-4">
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
                 <CheckCircleIcon className="h-4 w-4" />
                 {t("fulfillmentReport.deliveredItems")}
@@ -627,7 +634,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                 </p>
               )}
             </div>
-            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 p-4">
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 p-4">
               <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-3 flex items-center gap-1.5">
                 <XCircleIcon className="h-4 w-4" />
                 {t("fulfillmentReport.cancelledItems")}
@@ -645,7 +652,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                 </p>
               )}
             </div>
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-4">
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 p-4">
               <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-1.5">
                 <ArrowUturnLeftIcon className="h-4 w-4" />
                 {t("fulfillmentReport.returnedItems")}
@@ -692,7 +699,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="px-6 pt-6 pb-4 flex items-center justify-between flex-wrap gap-3">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">
             {t("fulfillmentReport.byProduct")}
@@ -721,7 +728,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 group">
                   <SortHeader column="productName" label={t("fulfillmentReport.product")} />
@@ -742,7 +749,7 @@ const ProductFulfillmentAnalytics: React.FC = () => {
                 {filteredProducts.map((p) => (
                   <tr
                     key={p.productId || p.productName}
-                    className="border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
                   >
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-3 max-w-[240px]">

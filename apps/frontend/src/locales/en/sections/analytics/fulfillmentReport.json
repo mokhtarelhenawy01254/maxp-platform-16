@@ -1,5 +1,5 @@
 {
-  "title": "Order Fulfillment Performance",
+  "title": "Product Fulfillment Performance",
   "subtitle": "Delivery, cancellation and return rates for each product ordered in the period",
   "fetchError": "Error fetching data",
   "retry": "Retry",
