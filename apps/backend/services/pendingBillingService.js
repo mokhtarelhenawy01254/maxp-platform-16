@@ -156,4 +156,102 @@ async function processPendingUsageCharges(companyId, opts = {}) {
   }
 }
 
-module.exports = { processPendingUsageCharges };
+/**
+ * تعليق طلب يدوي جديد بسبب انتهاء اشتراك الطلبات اليدوية.
+ * الطلب يبقى موجود لكنه مخفي من قائمة الطلبات (billingHoldAt) ويظهر ماسكًا
+ * في "مزيد المعلومات" حتى يتجدد الاشتراك.
+ */
+async function holdOrderForExpiredSubscription({ companyId, orderId, orderNumber }) {
+  const prisma = getSharedPrismaClient();
+  const heldAt = new Date();
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({ where: { id: orderId }, select: { metadata: true } });
+    const meta = parseOrderMetadata(existing?.metadata);
+    meta.billingHold = {
+      reason: 'subscription_expired',
+      heldAt: heldAt.toISOString(),
+      appSlug: 'manual-orders-pro',
+    };
+    await tx.order.update({
+      where: { id: orderId },
+      data: { billingHoldAt: heldAt, metadata: JSON.stringify(meta) },
+    });
+    return orderId;
+  });
+
+  try {
+    const admins = await prisma.user.findMany({
+      where: { companyId, role: { in: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'] }, isActive: true },
+      select: { id: true },
+    });
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          companyId,
+          userId: admin.id,
+          type: 'order_subscription_hold',
+          title: '⏸️ طلب يدوي معلّق بسبب انتهاء الاشتراك',
+          message: `الطلب اليدوي #${orderNumber} مخفي من قائمة الطلبات لأن اشتراك الطلبات اليدوية منتهي. جدّد اشتراكك ليظهر الطلب تلقائياً.`,
+          data: { orderId, orderNumber },
+        },
+      });
+    }
+  } catch (notifyError) {
+    console.error('⚠️ [SUB-HOLD] Failed to notify admins:', notifyError.message);
+  }
+
+  console.warn(`⏸️ [SUB-HOLD] Manual order #${orderNumber} held for company ${companyId} (subscription expired)`);
+  return updated;
+}
+
+/**
+ * تحرير الطلبات اليدوية المعلّقة بسبب انتهاء الاشتراك عند عودة الاشتراك
+ * إلى حالة ACTIVE/TRIAL (تجديد/ترقية/تفعيل).
+ */
+async function releaseSubscriptionHeldOrders(companyId) {
+  const prisma = getSharedPrismaClient();
+
+  const heldOrders = await prisma.order.findMany({
+    where: { companyId, billingHoldAt: { not: null } },
+    select: { id: true, metadata: true },
+    take: 500,
+  });
+
+  const subscriptionHeld = heldOrders.filter(
+    (order) => parseOrderMetadata(order.metadata)?.billingHold?.reason === 'subscription_expired',
+  );
+
+  if (subscriptionHeld.length === 0) {
+    return { released: 0, subscriptionActive: null };
+  }
+
+  const installed = await prisma.companyApp.findMany({
+    where: { companyId, app: { slug: { in: ['manual-orders-pro', 'store-pro'] } } },
+    select: { status: true },
+  });
+
+  const subscriptionActive = installed.some((r) => ['TRIAL', 'ACTIVE'].includes(r.status));
+  if (!subscriptionActive) {
+    return { released: 0, subscriptionActive: false };
+  }
+
+  let released = 0;
+  for (const order of subscriptionHeld) {
+    const meta = parseOrderMetadata(order.metadata);
+    delete meta.billingHold;
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { billingHoldAt: null, metadata: JSON.stringify(meta) },
+    });
+    released += 1;
+  }
+
+  if (released > 0) {
+    console.log(`✅ [SUB-RELEASE] Released ${released} subscription-held order(s) for company ${companyId}`);
+  }
+
+  return { released, subscriptionActive: true };
+}
+
+module.exports = { processPendingUsageCharges, holdOrderForExpiredSubscription, releaseSubscriptionHeldOrders };

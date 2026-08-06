@@ -223,3 +223,32 @@
 ### اختبار التحقق (قاعدة بيانات محلية)
 - ✅ الطلب المعلّق يظهر، رقم الطلب كامل، المبلغ المستحق 2
 - ✅ الاسم `م***`، الموبايل `010***78` (لا تسريب للبيانات الكاملة)
+
+---
+
+## ١١. ميزة: الطلبات اليدوية عند انتهاء اشتراك الأداة (تعليق + إخفاء + تحرير عند التجديد)
+
+> الخيار 2: فقط الشركات اللي عندها سجل اشتراك `manual-orders-pro`/`store-pro` هي اللي تكمل؛ اللي معندهاش أصلًا مقفول.
+
+### السلوك
+- **اشتراك الطلبات اليدوية منتهي (EXPIRED/SUSPENDED/CANCELLED)** → المتجر لسه **يقدر يفتح الصفحة ويعمل أوردرات عادي جدًا**.
+- الطلب الجديد بيتوسم `billingHold.reason = 'subscription_expired'` + `billingHoldAt` → **مخفي من صفحة الطلبات** (نفس ميكانيزم طلبات المتجر المعلّقة) + إشعار للمديرين.
+- المودال الماسك (مزيد المعلومات) يعرضه بشارة **"اشتراك الطلبات اليدوية"** من غير رسوم (مفيش مبلغ لكل طلب).
+- **لما الاشتراك يتفعّل/يتجدد** → كل الطلبات المعلّقة بسبب الاشتراك **تظهر كاملة تلقائيًا** (تحرير فوري عند الترقية/التثبيت + سكان يومي).
+- **معندوش سجل اشتراك أصلًا** → الصفحة مقفولة (403 + شاشة AccessDenied) — نفس السلوك القديم.
+
+### الملفات
+- `apps/backend/routes/enhancedOrders.js` — middleware `manualOrderAccess` (بدل `checkAppAccess`) + `GET /orders-enhanced/manual-access` + تعليق الطلب بعد الإنشاء.
+- `apps/backend/services/pendingBillingService.js` — `holdOrderForExpiredSubscription` + `releaseSubscriptionHeldOrders`.
+- `apps/backend/controller/companyAppsController.js` — تحرير فوري عند ترقية `manual-orders-pro`/`store-pro`.
+- `apps/backend/services/billingNotificationService.js` — سكان يومي للتحرير.
+- `apps/backend/routes/orders.js` + `apps/backend/controller/walletController.js` — تمييز السبب في `billing-holds` و`billing/summary`.
+- `apps/frontend/src/pages/admin/ManualOrder/ManualOrderPage.tsx` — فحص ذاتي للاشتراك + بانر تحذير/شاشة ممنوع.
+- `apps/frontend/src/App.tsx` — إزالة AppAccessRoute من `/orders/manual`.
+- `apps/frontend/src/pages/orders/Orders.tsx` — بانر + مودال يدعمان تعليق الاشتراك.
+
+### اختبار التحقق (قاعدة بيانات محلية) — 11/11
+- ✅ تعليق `subscription_expired` + `billingHoldAmount = null` + إشعار
+- ✅ مخفي من قائمة الطلبات لكن موجود في DB
+- ✅ لا تحرير والاشتراك منتهي / تحرير كامل بعد التفعيل + مسح metadata
+- ✅ شركة بدون سجل → NONE (مقفول)

@@ -3962,24 +3962,49 @@ router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => 
       },
     });
 
-    const data = heldOrders.map((order) => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      createdAt: order.createdAt,
-      status: order.status,
-      itemCount: order._count.orderItems,
-      billingHoldAmount: Number(order.billingHoldAmount || 0),
-      customerName: maskName(order.customerName),
-      customerPhone: maskPhone(order.customerPhone),
-    }));
+    const data = heldOrders.map((order) => {
+      const parsedMeta = (() => {
+        if (!order.metadata) return {};
+        try {
+          const parsed = JSON.parse(order.metadata);
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      })();
+      const holdReason =
+        parsedMeta?.billingHold?.reason === 'subscription_expired'
+          ? 'subscription_expired'
+          : 'insufficient_balance';
 
-    const totalAmount = data.reduce((sum, o) => sum + o.billingHoldAmount, 0);
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        status: order.status,
+        itemCount: order._count.orderItems,
+        billingHoldAmount: order.billingHoldAmount !== null && order.billingHoldAmount !== undefined
+          ? Number(order.billingHoldAmount)
+          : null,
+        holdReason,
+        heldAt: parsedMeta?.billingHold?.heldAt || order.billingHoldAt,
+        customerName: maskName(order.customerName),
+        customerPhone: maskPhone(order.customerPhone),
+      };
+    });
+
+    const totalAmount = data.reduce(
+      (sum, o) => sum + (o.holdReason === 'insufficient_balance' ? o.billingHoldAmount || 0 : 0),
+      0,
+    );
+    const subscriptionCount = data.filter((o) => o.holdReason === 'subscription_expired').length;
 
     res.json({
       success: true,
       data: {
         count: data.length,
         totalAmount,
+        subscriptionCount,
         orders: data,
       },
     });

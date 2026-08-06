@@ -840,14 +840,24 @@ interface BillingHoldOrder {
   orderNumber: string;
   createdAt: string;
   itemCount: number;
-  billingHoldAmount: number;
+  billingHoldAmount: number | null;
+  holdReason: "insufficient_balance" | "subscription_expired";
   customerName: string;
   customerPhone: string;
 }
 
+const HELD_REASON_LABEL: Record<string, string> = {
+  insufficient_balance: "رصيد المحفظة",
+  subscription_expired: "اشتراك الطلبات اليدوية",
+};
+
 const HeldOrdersBanner: React.FC = () => {
   const { user } = useAuth();
-  const [held, setHeld] = useState<{ count: number; amount: number } | null>(null);
+  const [held, setHeld] = useState<{
+    count: number;
+    amount: number;
+    subscriptionCount: number;
+  } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [heldOrders, setHeldOrders] = useState<BillingHoldOrder[]>([]);
   const [heldTotal, setHeldTotal] = useState(0);
@@ -860,13 +870,25 @@ const HeldOrdersBanner: React.FC = () => {
     if (!isAdmin) return;
     apiClient
       .get("/wallet/billing/summary")
-      .then((res: { data?: { data?: { heldOrders?: { count?: number; amount?: number } } } }) => {
-        const data = res?.data?.data;
-        const count = Number(data?.heldOrders?.count || 0);
-        if (count > 0) {
-          setHeld({ count, amount: Number(data?.heldOrders?.amount || 0) });
-        }
-      })
+      .then(
+        (res: {
+          data?: {
+            data?: {
+              heldOrders?: { count?: number; amount?: number; subscriptionCount?: number };
+            };
+          };
+        }) => {
+          const data = res?.data?.data;
+          const count = Number(data?.heldOrders?.count || 0);
+          if (count > 0) {
+            setHeld({
+              count,
+              amount: Number(data?.heldOrders?.amount || 0),
+              subscriptionCount: Number(data?.heldOrders?.subscriptionCount || 0),
+            });
+          }
+        },
+      )
       .catch(() => {
         /* تجاهل - البانر اختياري */
       });
@@ -877,8 +899,15 @@ const HeldOrdersBanner: React.FC = () => {
     setLoadingHeld(true);
     try {
       const res = await apiClient.get("/orders-new/billing-holds");
-      const data = (res as { data?: { data?: { orders?: BillingHoldOrder[]; totalAmount?: number } } })
-        ?.data?.data;
+      const data = (res as {
+        data?: {
+          data?: {
+            orders?: BillingHoldOrder[];
+            totalAmount?: number;
+            subscriptionCount?: number;
+          };
+        };
+      })?.data?.data;
       setHeldOrders(data?.orders || []);
       setHeldTotal(Number(data?.totalAmount || 0));
     } catch {
@@ -894,10 +923,19 @@ const HeldOrdersBanner: React.FC = () => {
     <>
       <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
         <span className="font-semibold">
-          لديك {held.count} طلب معلّق بسبب انخفاض رصيد المحفظة.
+          لديك {held.count} طلب معلّق
+          {held.subscriptionCount > 0 && held.subscriptionCount === held.count
+            ? " بسبب انتهاء اشتراك الطلبات اليدوية"
+            : held.subscriptionCount > 0
+              ? " (رصيد + اشتراك)"
+              : " بسبب انخفاض رصيد المحفظة"}
+          .
         </span>
         <span className="text-sm">
-          المبلغ المستحق {(held.amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — اشحن رصيدك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
+          {held.amount > 0
+            ? `المبلغ المستحق ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — `
+            : ""}
+          اشحن رصيدك أو جدّد اشتراكك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
         </span>
         <button
           onClick={openMoreInfo}
@@ -945,10 +983,16 @@ const HeldOrdersBanner: React.FC = () => {
             ) : (
               <>
                 <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  المبلغ المستحق الإجمالي:{" "}
-                  <b className="font-semibold">
-                    {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
-                  </b>
+                  {heldTotal > 0 ? (
+                    <>
+                      المبلغ المستحق الإجمالي:{" "}
+                      <b className="font-semibold">
+                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
+                      </b>
+                    </>
+                  ) : (
+                    "لا توجد رسوم مستحقة — الطلبات معلّقة بسبب انتهاء الاشتراك."
+                  )}
                 </div>
                 <div className="max-h-96 space-y-2 overflow-y-auto">
                   {heldOrders.map((o) => (
@@ -960,8 +1004,14 @@ const HeldOrdersBanner: React.FC = () => {
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {o.orderNumber}
                         </span>
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                          معلّق
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            o.holdReason === "subscription_expired"
+                              ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                          }`}
+                        >
+                          {HELD_REASON_LABEL[o.holdReason] || "معلّق"}
                         </span>
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -973,8 +1023,9 @@ const HeldOrdersBanner: React.FC = () => {
                         <span>الهاتف: {o.customerPhone || "-"}</span>
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        رسوم الاستخدام المستحقة:{" "}
-                        {o.billingHoldAmount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
+                        {o.holdReason === "subscription_expired"
+                          ? "معلّق حتى تجديد اشتراك الطلبات اليدوية"
+                          : `رسوم الاستخدام المستحقة: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م`}
                       </div>
                     </div>
                   ))}
@@ -984,7 +1035,7 @@ const HeldOrdersBanner: React.FC = () => {
                     to="/payments"
                     className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
                   >
-                    شحن الرصيد لإظهار الطلبات
+                    شحن الرصيد / تجديد الاشتراك لإظهار الطلبات
                   </Link>
                 </div>
               </>

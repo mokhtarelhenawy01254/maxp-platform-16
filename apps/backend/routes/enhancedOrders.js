@@ -14,6 +14,52 @@ const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
 
+// تطبيقات صفحة الطلب اليدوي (اشتراك): وجود سجل لأي منها يسمح بالإنشاء حتى لو منتهي
+const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro', 'store-pro'];
+const MANUAL_ORDER_ACTIVE_STATUSES = ['TRIAL', 'ACTIVE'];
+
+/**
+ * فحص وصول إنشاء الطلب اليدوي (الخيار 2):
+ * - لا يوجد سجل اشتراك للأداة أصلًا → 403 (مقفول).
+ * - يوجد سجل بحالة TRIAL/ACTIVE → يسمح ويُكمل عادي.
+ * - يوجد سجل لكن منتهي/معلّق/ملغي → يسمح بالإنشاء ويضع علامة
+ *   req.manualSubscriptionExpired لتُعلَّق الأوردرات الجديدة (مخفية + ماسكة).
+ */
+const manualOrderAccess = async (req, res, next) => {
+  try {
+    if (req.user?.role === 'SUPER_ADMIN') return next();
+
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    const installed = await getSharedPrismaClient().companyApp.findMany({
+      where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
+      select: { status: true },
+    });
+
+    if (installed.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'هذه الميزة تتطلب تفعيل: الطلبات اليدوية',
+        needsActivation: true,
+        app: { slug: 'manual-orders-pro', name: 'الطلبات اليدوية' },
+      });
+    }
+
+    const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+    if (!active) {
+      req.manualSubscriptionExpired = true;
+    }
+
+    next();
+  } catch (error) {
+    console.error('❌ [MANUAL-ACCESS] Error:', error.message);
+    res.status(500).json({ success: false, message: 'خطأ في التحقق من صلاحيات الطلب اليدوي' });
+  }
+};
+
 // Apply authentication to all routes
 router.use(verifyToken.authenticateToken);
 router.use((req, res, next) => {
@@ -41,6 +87,49 @@ function mapPaymentMethod(method) {
   };
   return mapping[method?.toLowerCase()] || 'CASH';
 }
+
+/**
+ * حالة اشتراك الطلب اليدوي للشركة
+ * GET /api/v1/orders-enhanced/manual-access
+ * - NONE    → مفيش سجل اشتراك → مقفول
+ * - ACTIVE  → TRIAL/ACTIVE → عادي
+ * - EXPIRED → موجود لكن منتهي → يكتب أوردرات لكنها بتتعلق
+ */
+router.get('/manual-access', async (req, res) => {
+  try {
+    if (req.user?.role === 'SUPER_ADMIN') {
+      return res.json({ success: true, data: { subscription: 'ACTIVE', installed: true } });
+    }
+
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    const installed = await getSharedPrismaClient().companyApp.findMany({
+      where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
+      select: { status: true, app: { select: { slug: true, name: true } } },
+    });
+
+    if (installed.length === 0) {
+      return res.json({ success: true, data: { subscription: 'NONE', installed: false } });
+    }
+
+    const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+    res.json({
+      success: true,
+      data: {
+        subscription: active ? 'ACTIVE' : 'EXPIRED',
+        installed: true,
+        status: active ? 'ACTIVE' : installed[0].status,
+        app: installed[0].app,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [MANUAL-ACCESS] Error:', error.message);
+    res.status(500).json({ success: false, message: 'خطأ في التحقق من وصول الطلب اليدوي' });
+  }
+});
 
 /**
  * جلب الطلبات المحسنة
@@ -417,7 +506,7 @@ router.get('/stats', async (req, res) => {
  * POST /api/v1/orders-enhanced
  */
 console.log('🚧 [ENHANCED-ORDERS] Route initialization');
-router.post('/', checkAppAccess('manual-orders-pro'), async (req, res) => {
+router.post('/', manualOrderAccess, async (req, res) => {
   try {
     console.log('📝 [ENHANCED-ORDERS] Received POST / request');
     // Auth check handled by middleware
@@ -644,6 +733,24 @@ router.post('/', checkAppAccess('manual-orders-pro'), async (req, res) => {
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     if (result.success) {
+      // 🚧 لو اشتراك الطلبات اليدوية منتهي → تعليق الطلب الجديد (مخفي + ماسك)
+      // حتى يتجدد الاشتراك، بنفس ميكانيزم طلبات المتجر المعلّقة.
+      if (req.manualSubscriptionExpired && result.order?.id) {
+        try {
+          const { holdOrderForExpiredSubscription } = require('../services/pendingBillingService');
+          await holdOrderForExpiredSubscription({
+            companyId: req.user.companyId,
+            orderId: result.order.id,
+            orderNumber: result.order.orderNumber,
+          });
+          result.held = true;
+          result.holdReason = 'subscription_expired';
+          result.message = `${result.message || 'تم إنشاء الطلب بنجاح'}. اشتراك الطلبات اليدوية منتهي، الطلب معلّق وسيظهر في صفحة الطلبات بعد تجديد الاشتراك.`;
+        } catch (holdError) {
+          console.error('❌ [ENHANCED-ORDERS] Failed to hold order for expired subscription:', holdError.message);
+        }
+      }
+
       // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
       try {
         const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');

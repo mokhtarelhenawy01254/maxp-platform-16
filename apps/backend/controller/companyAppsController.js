@@ -346,6 +346,19 @@ exports.upgradeApp = async (req, res) => {
       });
     });
 
+    // 🚧 عند تفعيل أداة الطلبات اليدوية → تحرير الطلبات المعلّقة بسبب انتهاء الاشتراك
+    if (['manual-orders-pro', 'store-pro'].includes(companyApp.app?.slug)) {
+      try {
+        const { releaseSubscriptionHeldOrders } = require('../services/pendingBillingService');
+        const releaseResult = await releaseSubscriptionHeldOrders(companyId);
+        if (releaseResult.released > 0) {
+          console.log(`✅ [UPGRADE-APP] Released ${releaseResult.released} subscription-held order(s) for ${companyApp.app.slug}`);
+        }
+      } catch (releaseError) {
+        console.error('⚠️ [UPGRADE-APP] Failed to release subscription-held orders:', releaseError.message);
+      }
+    }
+
     res.json({
       success: true,
       message: `تم ترقية ${companyApp.app.name} بنجاح! 🎉`,
