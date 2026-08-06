@@ -642,6 +642,9 @@ const DeliveryRateAnalytics = React.lazy(
 const ProductFulfillmentAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/ProductFulfillmentAnalytics"),
 );
+const DeliveryReturnsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/DeliveryReturnsAnalytics"),
+);
 const RegionAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/RegionAnalytics"),
 );
@@ -4608,6 +4611,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProductFulfillmentAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/delivery-returns"
+                  element={
+                    <Layout>
+                      <DeliveryReturnsAnalytics />
                     </Layout>
                   }
                 />

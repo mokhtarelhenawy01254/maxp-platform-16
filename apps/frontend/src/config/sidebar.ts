@@ -594,6 +594,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/cancellations', icon: XCircle, label: t('sidebar.cancellationAnalytics') },
                 { to: '/analytics/orders/delivery-rate', icon: Truck, label: t('sidebar.deliveryRate') },
                 { to: '/analytics/orders/fulfillment', icon: PackageCheck, label: t('sidebar.productFulfillment') },
+                { to: '/analytics/orders/delivery-returns', icon: Undo2, label: t('sidebar.deliveryReturnsAnalytics') },
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
                 { to: '/analytics/orders/funnel', icon: Filter, label: t('sidebar.conversionFunnel') },
