@@ -96,7 +96,10 @@ interface MetaTemplateOption {
   name: string;
   status: string;
   language?: string;
+  category?: string;
   boundToLocalTemplateId?: string | null;
+  boundToEventType?: string | null;
+  components?: Array<{ type: string; text?: string; example?: string }>;
 }
 
 // ── Event groups for the template tabs ─────────────
@@ -194,6 +197,18 @@ const CustomerNotifications: React.FC = () => {
     setExpandedPreviews((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  // ── Meta flows state ──────────────────────────────
+  const [selectedMetaSession, setSelectedMetaSession] = useState("");
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [resubmittingMeta, setResubmittingMeta] = useState(false);
+  const [syncingStatus, setSyncingStatus] = useState(false);
+  const [showVariables, setShowVariables] = useState(false);
+
+  const metaSessions = useMemo(
+    () => sessions.filter((s) => String(s.provider || "").toUpperCase() === "META_CLOUD"),
+    [sessions],
+  );
+
   const eventsByType = useMemo(() => {
     const map: Record<string, ScheduleRow | undefined> = {};
     for (const s of schedules) map[s.eventType] = s;
@@ -284,7 +299,8 @@ const CustomerNotifications: React.FC = () => {
 
     // جلب قوالب ميتا المتاحة للربط عند فتح قالب ميتا
     if (slot === "META_CLOUD") {
-      const metaId = metaSessionId || sessions.find((s) => String(s.provider || "").toUpperCase() === "META_CLOUD")?.id;
+      const metaId = selectedMetaSession || metaSessionId || sessions.find((s) => String(s.provider || "").toUpperCase() === "META_CLOUD")?.id;
+      if (metaId && !selectedMetaSession) setSelectedMetaSession(metaId);
       if (metaId) {
         try {
           setTemplateDialog((d) => (d ? { ...d, metaLoading: true } : d));
@@ -303,6 +319,137 @@ const CustomerNotifications: React.FC = () => {
           );
         }
       }
+    }
+  };
+
+  // حفظ القالب المحلي الحالي في الديالوج وإرجاع id
+  const persistLocalTemplate = async (): Promise<string | null> => {
+    if (!templateDialog) return null;
+    const { eventType, slot, template } = templateDialog;
+    if (!template.content.trim()) {
+      toast.error("محتوى القالب مطلوب");
+      return null;
+    }
+
+    const payload = {
+      name: template.name.trim() || (slot === "META_CLOUD" ? "قالب ميتا" : "قالب واتساب"),
+      category: "MARKETING",
+      eventType,
+      content: template.content,
+      channel: slot,
+      variables: extractVariables(template.content),
+      isActive: template.isActive,
+    };
+
+    try {
+      if (template.id) {
+        await apiClient.put<SimpleResponse>(`/whatsapp-notifications/templates/${template.id}`, payload);
+        return template.id;
+      }
+      const res = await apiClient.post<{ success: boolean; template?: { id?: string } }>(
+        "/whatsapp-notifications/templates",
+        payload,
+      );
+      const newId = res.data?.template?.id;
+      if (!newId) {
+        toast.error("فشل إنشاء القالب");
+        return null;
+      }
+      setTemplateDialog((d) => (d ? { ...d, template: { ...d.template, id: newId } } : d));
+      return newId;
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "فشل حفظ القالب");
+      return null;
+    }
+  };
+
+  const publishToMeta = async (templateId: string) => {
+    const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
+    if (!metaId) {
+      toast.error("اختر جلسة ميتا أولاً");
+      return;
+    }
+    setPublishingId(templateId);
+    try {
+      await apiClient.post<SimpleResponse>(`/whatsapp-notifications/templates/${templateId}/publish`, {
+        sessionId: metaId,
+      });
+      toast.success("تم إرسال القالب إلى ميتا للمراجعة");
+      // إعادة جلب القوالب المتاحة لتحديث حالة الربط
+      await openTemplateDialog(templateDialog?.eventType || "", "META_CLOUD");
+      await fetchAll();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "فشل النشر على ميتا");
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const createMetaTemplate = async () => {
+    if (!templateDialog) return;
+    if (!selectedMetaSession && !metaSessionId) {
+      toast.error("اختر جلسة ميتا أولاً");
+      return;
+    }
+    if (!templateDialog.template.content.trim()) {
+      toast.error("محتوى القالب مطلوب");
+      return;
+    }
+    const templateId = await persistLocalTemplate();
+    if (!templateId) return;
+    await publishToMeta(templateId);
+  };
+
+  const handleResubmitMeta = async () => {
+    if (!templateDialog?.template.id) return;
+    const metaId = selectedMetaSession || metaSessionId;
+    if (!metaId) {
+      toast.error("اختر جلسة ميتا أولاً");
+      return;
+    }
+    const saved = await persistLocalTemplate();
+    if (!saved) return;
+    setResubmittingMeta(true);
+    try {
+      const res = await apiClient.post<{ success?: boolean; applied?: boolean; message?: string; metaTemplateName?: string; applyReason?: string }>(
+        `/whatsapp-notifications/templates/${saved}/resubmit-meta`,
+        { sessionId: metaId },
+      );
+      const data = res.data;
+      if (data?.applied && data?.success) {
+        toast.success(data.message || "تم تحديث القالب على ميتا — الحالة قيد المراجعة");
+      } else if (data?.success && data?.metaTemplateName) {
+        toast.success(data.message || "تم تحديث القالب على ميتا — سيتم تفعيله بعد الموافقة");
+      } else if (data?.applied === false) {
+        toast.warning(data.applyReason || "ميتا لسه شايلة المحتوى القديم — جرب تاني بعد شوية");
+      } else {
+        toast.warning(data?.applyReason || "تم إرسال القالب للمراجعة مرة أخرى");
+      }
+      await fetchAll();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "فشل تحديث القالب على ميتا");
+    } finally {
+      setResubmittingMeta(false);
+    }
+  };
+
+  const syncMetaStatuses = async () => {
+    const metaId = selectedMetaSession || metaSessionId;
+    if (!metaId) {
+      toast.error("اختر جلسة ميتا أولاً");
+      return;
+    }
+    setSyncingStatus(true);
+    try {
+      const res = await apiClient.post<SimpleResponse>("/whatsapp-notifications/templates/sync-status", {
+        sessionId: metaId,
+      });
+      toast.success(res.data?.success ? "تمت مزامنة حالات قوالب ميتا" : "تعذرت المزامنة");
+      await fetchAll();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "فشل مزامنة حالات ميتا");
+    } finally {
+      setSyncingStatus(false);
     }
   };
 
@@ -353,20 +500,28 @@ const CustomerNotifications: React.FC = () => {
   };
 
   const bindMetaTemplate = async (metaName: string) => {
-    if (!templateDialog || !templateDialog.template.id) return;
-    const metaId = metaSessionId || sessions.find((s) => String(s.provider || "").toUpperCase() === "META_CLOUD")?.id;
+    if (!templateDialog) return;
+    const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
     if (!metaId) {
-      toast.error("لا توجد جلسة ميتا متصلة — اربط جلسة ميتا أولاً");
+      toast.error("اختر جلسة ميتا أولاً");
       return;
     }
+    // لو القالب المحلي لسه مفيش id، نحفظه الأول
+    let templateId = templateDialog.template.id;
+    if (!templateId) {
+      templateId = await persistLocalTemplate();
+      if (!templateId) return;
+    }
     try {
-      await apiClient.post<SimpleResponse>(`/whatsapp-notifications/templates/${templateDialog.template.id}/bind-meta`, {
+      await apiClient.post<SimpleResponse>(`/whatsapp-notifications/templates/${templateId}/bind-meta`, {
         sessionId: metaId,
         metaTemplateName: metaName,
         metaTemplateLanguage: "ar",
       });
       toast.success("تم ربط القالب بقالب ميتا");
-      setTemplateDialog(null);
+      setTemplateDialog((d) =>
+        d ? { ...d, template: { ...d.template, id: templateId, metaTemplateName: metaName } } : d,
+      );
       await fetchAll();
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "فشل ربط قالب ميتا");
@@ -799,6 +954,35 @@ const CustomerNotifications: React.FC = () => {
                 <p className="text-xs text-gray-400">
                   المتغيرات: <code>{extractVariables(templateDialog.template.content).map((v) => `{${v}}`).join(" ")}</code>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowVariables(!showVariables)}
+                  className="text-[11px] text-indigo-600 hover:text-indigo-700"
+                >
+                  {showVariables ? "إخفاء المتغيرات المتاحة" : "عرض كل المتغيرات المتاحة"}
+                </button>
+                {showVariables && (
+                  <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="bg-gray-50 text-right dark:bg-gray-800">
+                          <th className="px-2 py-1 font-medium text-gray-500">المتغير</th>
+                          <th className="px-2 py-1 font-medium text-gray-500">الوصف</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {Object.entries(VARIABLE_DESCRIPTIONS).map(([v, desc]) => (
+                          <tr key={v} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
+                              {`{${v}}`}
+                            </td>
+                            <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{desc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
@@ -820,40 +1004,137 @@ const CustomerNotifications: React.FC = () => {
                 )}
               </div>
 
-              {templateDialog.slot === "META_CLOUD" && templateDialog.template.id && (
-                <div className="border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Link2 className="h-4 w-4 text-blue-600" />
-                    ربط بقالب ميتا معتمد
+              {templateDialog.slot === "META_CLOUD" && (
+                <div className="space-y-3">
+                  {/* توضيح سلوك القناة */}
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-[11px] leading-relaxed text-blue-800 dark:border-blue-800/40 dark:bg-blue-900/20 dark:text-blue-300">
+                    ☁️ <strong>قالب ميتا المعتمد (APPROVED) هو اللي بيتبعت للعميل</strong> عندما تكون الجلسة
+                    الأساسية Meta Cloud والقناة النشطة في الجدول "ميتا فقط" أو "تلقائي".
+                    النص اللي بتكتبه هنا هو المرجع للربط/النشر على ميتا.
                   </div>
-                  {templateDialog.metaLoading ? (
-                    <p className="text-xs text-gray-400">جارٍ جلب قوالب ميتا...</p>
-                  ) : templateDialog.metaOptions && templateDialog.metaOptions.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {templateDialog.metaOptions.map((m) => (
-                        <Button
-                          key={m.name}
-                          size="sm"
-                          variant="outline"
-                          disabled={!!m.boundToLocalTemplateId && m.boundToLocalTemplateId !== templateDialog.template.id}
-                          onClick={() => bindMetaTemplate(m.name)}
-                        >
-                          {m.name}
-                          {m.boundToLocalTemplateId === templateDialog.template.id ? " (مربوط)" : ""}
-                        </Button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-amber-600">
-                      لا توجد قوالب ميتا معتمدة متاحة — تأكد من اتصال جلسة ميتا وإنشاء قالب معتمد
-                    </p>
+
+                  {/* جلسة ميتا */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">جلسة ميتا للربط/النشر</Label>
+                    <Select
+                      value={selectedMetaSession || metaSessionId}
+                      onValueChange={(v) => v && setSelectedMetaSession(v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر جلسة ميتا" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {metaSessions.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name || s.phoneNumber || s.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* مزامنة الحالات مع ميتا */}
+                  {templateDialog.template.metaTemplateName && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-blue-600"
+                      disabled={syncingStatus}
+                      onClick={syncMetaStatuses}
+                    >
+                      {syncingStatus ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      مزامنة حالة القالب مع ميتا
+                    </Button>
                   )}
+
+                  {/* إنشاء قالب ميتا جديد */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    disabled={!!publishingId}
+                    onClick={createMetaTemplate}
+                  >
+                    {publishingId ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    {publishingId ? "جارٍ النشر على ميتا..." : "إنشاء قالب ميتا جديد ونشره"}
+                  </Button>
+
+                  {/* ربط بقالب ميتا معتمد موجود */}
+                  <div className="border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <Link2 className="h-4 w-4 text-blue-600" />
+                      ربط بقالب ميتا معتمد موجود
+                    </div>
+                    {templateDialog.metaLoading ? (
+                      <p className="text-xs text-gray-400">جارٍ جلب قوالب ميتا...</p>
+                    ) : templateDialog.metaOptions && templateDialog.metaOptions.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <select
+                          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                          value={templateDialog.template.metaTemplateName || ""}
+                          onChange={(e) => {
+                            const opt = templateDialog.metaOptions?.find((m) => m.name === e.target.value);
+                            setTemplateDialog((d) =>
+                              d
+                                ? {
+                                    ...d,
+                                    template: {
+                                      ...d.template,
+                                      metaTemplateName: e.target.value || null,
+                                      metaTemplateId: opt?.name || null,
+                                    },
+                                  }
+                                : d,
+                            );
+                          }}
+                        >
+                          <option value="">اختر قالب ميتا...</option>
+                          {templateDialog.metaOptions
+                            .filter(
+                              (m) =>
+                                !m.boundToLocalTemplateId ||
+                                m.boundToLocalTemplateId === templateDialog.template.id,
+                            )
+                            .map((m) => (
+                              <option key={m.name} value={m.name}>
+                                {m.name} {m.category ? `(${m.category})` : ""}
+                                {m.boundToEventType ? ` - مربوط بـ ${m.boundToEventType}` : ""}
+                              </option>
+                            ))}
+                        </select>
+                        {templateDialog.template.metaTemplateName && (
+                          <Button size="sm" className="w-full" onClick={() => bindMetaTemplate(templateDialog.template.metaTemplateName!)}>
+                            <Link2 className="h-3.5 w-3.5" />
+                            حفظ الربط
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-600">
+                        لا توجد قوالب ميتا معتمدة متاحة — أنشئ قالباً من الزر أعلاه أو تأكد من اتصال جلسة ميتا
+                      </p>
+                    )}
+                  </div>
+
+                  {/* تطابق المتغيرات: {{1}} ← المتغير المحلي */}
+                  <VariableMappingTable template={templateDialog.template} metaOptions={templateDialog.metaOptions || []} />
                 </div>
               )}
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
+            {templateDialog?.slot === "META_CLOUD" && templateDialog.template.metaTemplateName && (
+              <Button
+                variant="outline"
+                className="text-blue-700 border-blue-300"
+                disabled={resubmittingMeta}
+                onClick={handleResubmitMeta}
+              >
+                {resubmittingMeta ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                إرسال للمراجعة من جديد
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setTemplateDialog(null)}>
               إلغاء
             </Button>
@@ -893,6 +1174,40 @@ const PREVIEW_VARIABLES: Record<string, string> = {
 function resolveVariablesForPreview(content: string): string {
   return content.replace(/\{(\w+)\}/g, (_, name) => PREVIEW_VARIABLES[name] || name);
 }
+
+// استخراج أسماء المتغيرات المحلية بالترتيب الذي تظهر به في المحتوى
+// يُستخدم لربط كل متغير محلي {customerName} برقم ميتا {{1}}، {{2}}... بصرياً
+function extractLocalVariableOrder(content: string): string[] {
+  const seen = new Set<string>();
+  const order: string[] = [];
+  const re = /\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    const name = m[1];
+    if (!name) continue;
+    if (!seen.has(name)) {
+      seen.add(name);
+      order.push(name);
+    }
+  }
+  return order;
+}
+
+const VARIABLE_DESCRIPTIONS: Record<string, string> = {
+  customerName: "اسم العميل",
+  points: "عدد النقاط المكتسبة/المستبدلة",
+  currentPoints: "رصيد النقاط الحالي",
+  reason: "سبب الإضافة/الخصم",
+  tierName: "اسم المستوى الجديد",
+  expiryDate: "تاريخ انتهاء الصلاحية",
+  programName: "اسم برنامج الولاء",
+  cashAmount: "قيمة الكاش باك/الاستبدال",
+  currency: "العملة (ج.م)",
+  orderNumber: "رقم الطلب",
+  balance: "رصيد المحفظة الحالي",
+  qualityTier: "تصنيف الجودة (VIP/عالي/متوسط/منخفض)",
+  score: "درجة الجودة من 100",
+};
 
 // ── Template slot card (نفس تقسيمة صفحة حالات الطلبات) ──
 interface TemplateSlotCardProps {
@@ -1043,6 +1358,117 @@ function TemplateSlotCard({
             {resolveVariablesForPreview(template!.content)}
           </p>
         </div>
+      )}
+    </div>
+  );
+}
+
+// جدول تطابق المتغيرات: {{1}} في قالب ميتا ← المتغير المحلي في القالب
+const META_BODY_CHAR_LIMIT = 1024;
+
+function VariableMappingTable({
+  template,
+  metaOptions,
+}: {
+  template: TemplateItem;
+  metaOptions: MetaTemplateOption[];
+}) {
+  const selectedMeta = metaOptions.find((m) => m.name === template.metaTemplateName);
+  const metaBody = selectedMeta?.components?.find((c) => c.type === "BODY")?.text || "";
+  const localVars = extractLocalVariableOrder(template.content);
+  const metaNums = [...metaBody.matchAll(/\{\{\s*(\d+)\s*\}\}/g)].map((m) => m[1]);
+  const isOverLimit = template.content.length > META_BODY_CHAR_LIMIT;
+
+  return (
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+      {/* عداد حروف ميتا */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          حد حروف ميتا
+        </span>
+        <span
+          className={`text-[10px] font-medium tabular-nums ${
+            isOverLimit ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
+          }`}
+        >
+          {template.content.length} / {META_BODY_CHAR_LIMIT}
+        </span>
+      </div>
+      {isOverLimit && (
+        <p className="text-[11px] text-red-600 dark:text-red-400" role="alert">
+          ⚠️ النص أطول من حد ميتا ({META_BODY_CHAR_LIMIT} حرف) — القالب هيترفض عند النشر على Meta Cloud API.
+        </p>
+      )}
+
+      {selectedMeta ? (
+        <>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            محتوى قالب ميتا المحدد ({selectedMeta.name})
+          </p>
+          <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">{metaBody}</p>
+
+          {metaNums.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                تطابق المتغيرات
+              </p>
+              {metaNums.map((n, i) => {
+                const local = localVars[i];
+                const matched = !!local;
+                const numLabel = n ?? String(i + 1);
+                return (
+                  <div key={`${numLabel}-${i}`} className="flex items-center gap-2 text-[11px]">
+                    <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      {`{{${numLabel}}}`}
+                    </span>
+                    <span className="text-slate-400">←</span>
+                    <span
+                      className={`rounded px-1.5 py-0.5 font-mono ${
+                        matched
+                          ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      }`}
+                    >
+                      {local ? `{${local}}` : "—"}
+                    </span>
+                    {local && (
+                      <span className="text-slate-500">{VARIABLE_DESCRIPTIONS[local] || ""}</span>
+                    )}
+                    {!matched && (
+                      <span className="text-red-500">
+                        ناقص — رتب المتغيرات في المحتوى حسب ترتيب {`{{${numLabel}}}`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {localVars.length > metaNums.length && (
+                <p className="text-[11px] text-amber-600">
+                  ⚠️ عندك متغيرات محلية زيادة ({localVars.slice(metaNums.length).map((v) => `{${v}}`).join(", ")}) —
+                  ميتا مش هتعرضهم (المتغيرات بتترتب بالترتيب بس).
+                </p>
+              )}
+              {localVars.length < metaNums.length && (
+                <p className="text-[11px] text-red-600">
+                  ❌ عدد المتغيرات أقل من المطلوب — أضف {metaNums.length - localVars.length} متغير إضافي للمحتوى قبل الحفظ.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              قالب ميتا ده من غير متغيرات — المتناسق تماماً. لو عايز متغيرات، اكتبها في المحتوى المحلي
+              (زي <code>{`{customerName}`}</code>) وسيب ميتا يبنيها بترتيب ظهورها.
+            </p>
+          )}
+        </>
+      ) : template.metaTemplateName && metaOptions.length === 0 ? (
+        <p className="text-xs text-slate-500">القالب مربوط بقالب ميتا — حدّث القوالب المتاحة لمشاهدة التطابق.</p>
+      ) : (
+        <p className="text-xs text-slate-500">
+          💡 <strong>إزاي تعرف متغيرات قالب ميتا؟</strong> ميتا بتستخدم أرقام ({`{{1}}, {{2}}`}...) مش أسماء.
+          الترتيب بيتحدد من <strong>ترتيب ظهور المتغيرات في محتوى القالب المحلي</strong>: أول{" "}
+          <code>{`{customerName}`}</code> = {`{{1}}`}، التاني = {`{{2}}`} وهكذا. اختار قالب ميتا من فوق وشوف التطابق هنا.
+        </p>
       )}
     </div>
   );
