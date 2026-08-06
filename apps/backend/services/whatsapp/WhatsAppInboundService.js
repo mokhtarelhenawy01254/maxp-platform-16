@@ -45,6 +45,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
   const updatePayload = {
     pushName: pushName || undefined,
     lastMessageAt: new Date(),
+    lastMessageIsFromMe: isOutgoing,
     lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: { increment: 1 },
     unreadCount: isOutgoing ? undefined : { increment: 1 },
@@ -59,6 +60,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
     phoneNumber,
     pushName,
     lastMessageAt: new Date(),
+    lastMessageIsFromMe: isOutgoing,
     lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: 1,
     unreadCount: isOutgoing ? 0 : 1,

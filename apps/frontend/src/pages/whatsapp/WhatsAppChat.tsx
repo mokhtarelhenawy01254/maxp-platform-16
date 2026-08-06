@@ -35,6 +35,7 @@ import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/apiClient';
 import { indexedDBStorage } from '../../services/indexedDBStorage';
 import useSocket from '../../hooks/useSocket';
+import useDebounce from '../../hooks/useDebounce';
 import CreateGroupDialog from '../../components/whatsapp/CreateGroupDialog';
 import GroupInfoDrawer from '../../components/whatsapp/GroupInfoDrawer';
 import ProfileDialog from '../../components/whatsapp/ProfileDialog';
@@ -65,7 +66,9 @@ import {
   type Session,
   type Contact,
   type Message,
-  type QuickReply
+  type QuickReply,
+  type WhatsAppSidebarFilter,
+  type WhatsAppConversationCounts,
 } from '../../hooks/useWhatsAppQueries';
 import {
   formatContactPhoneNumber,
@@ -405,7 +408,11 @@ const WhatsAppChatContent: React.FC = () => {
     notificationSound: true,
     browserNotifications: true
   });
-  // const [chatFilter, setChatFilter] = useState('all'); // Moved to ChatSidebar
+  // Chat list filters — server-side على كل المحادثات
+  const [chatFilter, setChatFilter] = useState<WhatsAppSidebarFilter>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<{ name: string; status: string; profilePicUrl: string } | null>(null);
 
@@ -437,11 +444,20 @@ const WhatsAppChatContent: React.FC = () => {
     hasNextPage: hasMoreConversations,
     isError: conversationsError,
     refetch: refetchConversations,
-  } = useWhatsAppConversations(selectedSession || 'all', 30);
+  } = useWhatsAppConversations(selectedSession || 'all', 30, {
+    filter: chatFilter,
+    search: debouncedSearch,
+    archived: showArchived,
+  });
 
   const conversations = useMemo(() => {
     if (!conversationsData) return [];
     return conversationsData.pages.flatMap(page => page.conversations || []);
+  }, [conversationsData]);
+
+  const conversationCounts = useMemo<WhatsAppConversationCounts>(() => {
+    const counts = conversationsData?.pages?.[0]?.counts;
+    return counts || { all: 0, unread: 0, groups: 0, unreplied: 0, archived: 0 };
   }, [conversationsData]);
 
   const targetSessionId = useMemo(() => {
@@ -757,6 +773,17 @@ const WhatsAppChatContent: React.FC = () => {
     // Helper to normalize JID for comparison
     const normalizeJid = normalizeContactJid;
 
+    // Find any cached conversation list for a session (any filter variant)
+    const findConversationsCache = (sessionKey: string): ConversationsCache | null => {
+      const entries = queryClient.getQueriesData<ConversationsCache>({
+        queryKey: ['whatsapp', 'conversations', sessionKey],
+      });
+      for (const [, data] of entries) {
+        if (data?.pages?.length) return data;
+      }
+      return null;
+    };
+
     const handleNewMessage = (data: IncomingMessageEvent) => {
       // console.log('🔔 [FRONTEND] Received whatsapp:message:new:', data);
       const { sessionId, message } = data;
@@ -810,7 +837,7 @@ const WhatsAppChatContent: React.FC = () => {
         if (currentSession === 'all' || sessionId === currentSession) {
           // Get contact name from cache
           const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-          const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+          const conversationsQuery = findConversationsCache(sessionKey);
           const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
           const contactName = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid)?.name ||
             currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid)?.pushName ||
@@ -829,7 +856,7 @@ const WhatsAppChatContent: React.FC = () => {
               label: 'فتح المحادثة',
               onClick: () => {
                 const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-                const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+                const conversationsQuery = findConversationsCache(sessionKey);
                 const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
                 const contact = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid);
                 if (contact) {
@@ -853,9 +880,9 @@ const WhatsAppChatContent: React.FC = () => {
           }
         }
       }
-      // Update conversations cache immediately
+      // Update conversations cache immediately (all filter variants)
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      queryClient.setQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30], old => {
+      queryClient.setQueriesData<ConversationsCache>({ queryKey: ['whatsapp', 'conversations', sessionKey] }, old => {
         if (!old || !old.pages || old.pages.length === 0) return old;
         // Update first page (most recent conversations)
         const firstPage = old.pages[0];
@@ -908,7 +935,7 @@ const WhatsAppChatContent: React.FC = () => {
       const { contactName, message, messageType, soundEnabled, notificationsEnabled, sessionId } = data;
       const currentSession = selectedSessionRef.current;
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+      const conversationsQuery = findConversationsCache(sessionKey);
       const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
       const currentNotificationSettings = notificationSettingsRef.current;
 
@@ -1014,9 +1041,9 @@ const WhatsAppChatContent: React.FC = () => {
         });
       }
 
-      // Update conversations cache
+      // Update conversations cache (all filter variants)
       const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-      queryClient.setQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30], old => {
+      queryClient.setQueriesData<ConversationsCache>({ queryKey: ['whatsapp', 'conversations', sessionKey] }, old => {
         if (!old || !old.pages || old.pages.length === 0) return old;
         // Update first page (most recent conversations)
         const firstPage = old.pages[0];
@@ -2048,6 +2075,13 @@ const WhatsAppChatContent: React.FC = () => {
         onBulkDelete={handleBulkDeleteChats}
         onDeleteAll={handleDeleteAllChats}
         labels={labels}
+        filterType={chatFilter}
+        onFilterTypeChange={setChatFilter}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        showArchived={showArchived}
+        onToggleArchived={(archived) => setShowArchived(archived)}
+        counts={conversationCounts}
       />
 
       <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">

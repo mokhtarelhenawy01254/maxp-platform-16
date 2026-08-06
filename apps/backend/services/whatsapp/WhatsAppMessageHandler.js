@@ -46,6 +46,7 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
             },
             update: {
                 lastMessageAt: new Date(),
+                lastMessageIsFromMe: isOutgoing,
                 totalMessages: { increment: 1 },
                 unreadCount: isOutgoing ? undefined : { increment: 1 },
                 updatedAt: new Date()
@@ -54,6 +55,7 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
                 jid: normalizedJid,
                 phoneNumber,
                 lastMessageAt: new Date(),
+                lastMessageIsFromMe: isOutgoing,
                 totalMessages: 1,
                 unreadCount: isOutgoing ? 0 : 1,
                 isGroup: false,

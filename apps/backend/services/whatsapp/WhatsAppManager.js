@@ -3344,12 +3344,14 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
                     updateData.lastMessageAt = existing.lastMessageAt;
                 } else {
                     updateData.lastMessageAt = lastMessageAt;
+                    updateData.lastMessageIsFromMe = isOutgoing;
                     if (lastMessagePreview !== undefined) {
                         updateData.lastMessagePreview = lastMessagePreview;
                     }
                 }
             } else {
                 updateData.lastMessageAt = new Date();
+                updateData.lastMessageIsFromMe = isOutgoing;
             }
             if (incrementCounters) {
                 updateData.totalMessages = { increment: 1 };
@@ -3367,6 +3369,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName: pushName || null,
             profilePicUrl,
             lastMessageAt: lastMessageAt || new Date(),
+            lastMessageIsFromMe: isOutgoing,
             unreadCount: (!isOutgoing && !isGroupParticipant && !suppressUnread) ? 1 : 0,
             totalMessages: incrementCounters ? 1 : 0,
             isGroup
