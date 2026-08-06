@@ -1937,10 +1937,8 @@ declare module 'react-i18next' {
         byProduct: string;
         searchNoResults: string;
         clearSearch: string;
-        productDetails: string;
         total: string;
         of: string;
-        updated: string;
       };
       funnelAnalytics: {
         title: string;
@@ -10061,6 +10059,7 @@ declare module 'react-i18next' {
         readyToShip: string;
         outForDelivery: string;
         lost: string;
+        incomplete: string;
         pendingPreparation: string;
         preparing: string;
         ready: string;
@@ -13675,6 +13674,8 @@ declare module 'react-i18next' {
         devLeaderboard: string;
         devTeam: string;
         developmentPlan: string;
+        profitLoss: string;
+        statusAnalysis: string;
         done: string;
         ecommerceSection: string;
         employeeStats: string;

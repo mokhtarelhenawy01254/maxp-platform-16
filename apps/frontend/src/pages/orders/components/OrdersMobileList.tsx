@@ -165,7 +165,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
                     </div>
 
-                    {canSelectOrders && (
+                    {canSelectOrders && !order.metadata?.isIncompleteCart && (
                       <input
                         type="checkbox"
                         aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
@@ -251,7 +251,9 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     </button>
 
                     <Link
-                      to={`/orders/${order.orderNumber}`}
+                      to={order.metadata?.isIncompleteCart
+                        ? `/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`
+                        : `/orders/${order.orderNumber}`}
                       onClick={() => {
                         if (!order.isViewed) {
                           onMarkAsViewed(order.orderNumber);

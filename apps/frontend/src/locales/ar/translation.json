@@ -1944,10 +1944,8 @@
     "byProduct": "الأداء حسب المنتج",
     "searchNoResults": "لا توجد نتائج مطابقة للبحث",
     "clearSearch": "مسح البحث",
-    "productDetails": "تفاصيل المنتج",
     "total": "الإجمالي",
-    "of": "من",
-    "updated": "آخر تحديث"
+    "of": "من"
   },
   "funnelAnalytics": {
     "title": "تحليلات مسار التحويل (Funnel)",
@@ -10068,6 +10066,7 @@
     "readyToShip": "جاهز للشحن",
     "outForDelivery": "خرج للتسليم",
     "lost": "مفقود",
+    "incomplete": "غير مكتمل",
     "pendingPreparation": "بانتظار التجهيز",
     "preparing": "قيد التجهيز",
     "ready": "جاهز للشحن",
@@ -13682,6 +13681,8 @@
     "devLeaderboard": "لوحة المتصدرين للمطورين",
     "devTeam": "فريق التطوير",
     "developmentPlan": "خطة التطوير",
+    "profitLoss": "الأرباح والخسائر",
+    "statusAnalysis": "تحليل الحالات",
     "done": "تم",
     "ecommerceSection": "التجارة الإلكترونية",
     "employeeStats": "تقارير أداء الموظفين",

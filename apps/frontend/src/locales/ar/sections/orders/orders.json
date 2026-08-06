@@ -445,6 +445,7 @@
   "readyToShip": "جاهز للشحن",
   "outForDelivery": "خرج للتسليم",
   "lost": "مفقود",
+  "incomplete": "غير مكتمل",
   "pendingPreparation": "بانتظار التجهيز",
   "preparing": "قيد التجهيز",
   "ready": "جاهز للشحن",

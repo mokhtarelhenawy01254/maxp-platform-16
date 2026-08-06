@@ -209,7 +209,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                         : ""
                       }`}
                   >
-                    {canSelectOrders && (
+                    {canSelectOrders && !order.metadata?.isIncompleteCart && (
                       <td
                         className="px-3 py-2.5 lg:px-4"
                         onClick={(e) => e.stopPropagation()}
@@ -404,7 +404,9 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             <EyeIcon className="w-4 h-4 lg:w-5 lg:h-5" />
                           </button>
                           <Link
-                            to={`/orders/${order.orderNumber}`}
+                            to={order.metadata?.isIncompleteCart
+                              ? `/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`
+                              : `/orders/${order.orderNumber}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!order.isViewed) {

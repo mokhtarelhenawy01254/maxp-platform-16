@@ -1944,10 +1944,8 @@
     "byProduct": "Performance by product",
     "searchNoResults": "No results matching your search",
     "clearSearch": "Clear search",
-    "productDetails": "Product details",
     "total": "Total",
-    "of": "of",
-    "updated": "Last updated"
+    "of": "of"
   },
   "funnelAnalytics": {
     "title": "Funnel Analytics",
@@ -10068,6 +10066,7 @@
     "readyToShip": "Ready to Ship",
     "outForDelivery": "Out for Delivery",
     "lost": "Lost",
+    "incomplete": "Incomplete",
     "pendingPreparation": "Pending Preparation",
     "preparing": "Preparing",
     "ready": "Ready",
@@ -13682,6 +13681,8 @@
     "devLeaderboard": "Dev Leaderboard",
     "devTeam": "Development Team Management",
     "developmentPlan": "Development Plan",
+    "profitLoss": "Profit & Loss",
+    "statusAnalysis": "Status Analysis",
     "done": "Done",
     "ecommerceSection": "E-commerce",
     "employeeStats": "Employee Performance Reports",

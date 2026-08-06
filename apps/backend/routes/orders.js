@@ -726,6 +726,107 @@ const resolveGuestOrderAmounts = (guestOrder, shippingZones = []) => {
   };
 };
 
+// تنسيق سلة غير مكتملة (guestCart) لتناسب شكل صف الطلب في صفحة الطلبات
+const formatIncompleteCartRow = (cart, lostThreshold) => {
+  let items = [];
+  try {
+    items = typeof cart.items === 'string' ? JSON.parse(cart.items) : (Array.isArray(cart.items) ? cart.items : []);
+  } catch (e) {
+    items = [];
+  }
+
+  let checkoutData = {};
+  try {
+    checkoutData = typeof cart.checkoutData === 'string'
+      ? JSON.parse(cart.checkoutData)
+      : (cart.checkoutData && typeof cart.checkoutData === 'object' ? cart.checkoutData : {});
+  } catch (e) {
+    checkoutData = {};
+  }
+
+  const total = typeof cart.total === 'string'
+    ? parseFloat(cart.total) || 0
+    : Number(cart.total || 0);
+
+  const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt || cart.createdAt;
+  const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
+
+  const customerName = checkoutData.guestName
+    || checkoutData.fullName
+    || checkoutData.customerName
+    || checkoutData.customerFullName
+    || checkoutData.name
+    || '';
+  const customerPhone = checkoutData.guestPhone
+    || checkoutData.customerPhone
+    || checkoutData.phoneNumber
+    || checkoutData.mobileNumber
+    || checkoutData.phone
+    || checkoutData.mobile
+    || '';
+  const customerEmail = checkoutData.guestEmail
+    || checkoutData.customerEmail
+    || checkoutData.emailAddress
+    || checkoutData.email
+    || '';
+  const governorate = checkoutData.governorate || checkoutData.gov || '';
+  const city = checkoutData.city || '';
+
+  return {
+    id: cart.cartId,
+    orderNumber: cart.cartId,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerAddress: checkoutData.address || '',
+    city,
+    governorate,
+    total,
+    subtotal: total,
+    tax: 0,
+    shipping: 0,
+    status: isLost ? 'lost' : 'incomplete',
+    paymentStatus: 'unavailable',
+    paymentMethod: 'cash_on_delivery',
+    shippingAddress: { city, governorate, country: '' },
+    items: Array.isArray(items) ? items.map((item) => {
+      const price = typeof item.price === 'string' ? parseFloat(item.price) || 0 : Number(item.price || 0);
+      const quantity = item.quantity || 1;
+      return {
+        id: item.id || item.productId || '',
+        productId: item.productId || item.id || '',
+        name: item.name || item.productName || item.title || '',
+        productName: item.name || item.productName || item.title || '',
+        price,
+        quantity,
+        total: typeof item.total === 'string' ? parseFloat(item.total) || 0 : Number(item.total || price * quantity),
+        sku: item.sku || item.productSku || '',
+        color: item.color || item.productColor || '',
+        size: item.size || item.productSize || '',
+        image: item.image || item.productImage || '',
+        metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
+      };
+    }) : [],
+    trackingNumber: null,
+    notes: checkoutData.notes || '',
+    createdAt: lastActivity,
+    updatedAt: cart.updatedAt || cart.createdAt,
+    isViewed: true,
+    sourceType: 'storefront',
+    extractionMethod: 'storefront',
+    orderSource: 'GUEST_CART',
+    conversationId: null,
+    conversation: null,
+    affiliateId: null,
+    metadata: {
+      source: 'storefront',
+      isGuestOrder: true,
+      isIncompleteCart: true,
+      cartId: cart.cartId
+    }
+  };
+};
+
 const HIDDEN_REGULAR_ORDER_STATUSES = ['TRASH'];
 const HIDDEN_REGULAR_ORDER_STATUSES_WITH_DUPLICATES = [
   ...HIDDEN_REGULAR_ORDER_STATUSES,
@@ -1936,6 +2037,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
+    // إعدادات الطلبات: عرض السلال غير المكتملة داخل صفحة الطلبات
+    let showIncompleteCarts = false;
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      showIncompleteCarts = Boolean(settings?.showIncompleteCartsInOrders);
+      const parsedLost = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsedLost) && parsedLost > 0) {
+        lostAfterHours = parsedLost;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] /simple failed to load order settings:', settingsError.message);
+    }
+    if (req.query.includeIncomplete === 'true') showIncompleteCarts = true;
+
+    const nowSimple = new Date();
+    const lostThreshold = new Date(nowSimple.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const cartActiveClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const cartLostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
     // استخراج معاملات الفلترة والصفحات
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -2146,6 +2279,25 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
+    }
+
+    // فلترة خاصة بحالة "غير مكتمل / مفقود" للسلال غير المكتملة
+    const incompleteFilterStatus = ['incomplete', 'lost'].includes(String(status || '').trim().toLowerCase())
+      ? String(status).trim().toLowerCase()
+      : null;
+    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
+    if (incompleteOnlyView) {
+      // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
+      whereClause.id = '__incomplete_carts_only__';
+      guestWhereClause.id = '__incomplete_carts_only__';
+    }
+    if (incompleteFilterStatus === 'incomplete' && !showIncompleteCarts) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { total: 0, page, limit, pages: 0 },
+        meta: { showIncompleteCartsInOrders: false }
+      });
     }
 
     // 2. Filter by Payment Status
@@ -2394,6 +2546,46 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       appendAnd(guestWhereClause, guestSourceCondition);
     }
 
+    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد
+    const includeIncompleteCarts =
+      showIncompleteCarts &&
+      !onlyUnseen &&
+      (!status || String(status).toLowerCase() === 'all' || Boolean(incompleteFilterStatus));
+    let cartQueryWhere = null;
+    if (includeIncompleteCarts) {
+      cartQueryWhere = { companyId };
+      const cartAnd = [];
+      if (incompleteFilterStatus === 'incomplete') {
+        cartAnd.push(cartActiveClause);
+      } else if (incompleteFilterStatus === 'lost') {
+        cartAnd.push(cartLostClause);
+      }
+      if (search) {
+        const searchTerms = String(search).trim();
+        if (searchTerms) {
+          cartAnd.push({
+            OR: [
+              { cartId: { contains: searchTerms } },
+              { checkoutData: { contains: searchTerms } }
+            ]
+          });
+        }
+      }
+      if (startDate || endDate) {
+        const createdAtFilter = {};
+        if (startDate) createdAtFilter.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          createdAtFilter.lte = end;
+        }
+        cartAnd.push({ createdAt: createdAtFilter });
+      }
+      if (cartAnd.length > 0) {
+        cartQueryWhere.AND = cartAnd;
+      }
+    }
+
     // تنفيذ الاستعلامات (Top N)
     // Debug: Log query structure before execution (development only)
     if (process.env.NODE_ENV !== 'production') {
@@ -2515,6 +2707,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
+
+    // ── السلال غير المكتملة (guestCart) ─────────────────────────────
+    let formattedIncompleteCarts = [];
+    let totalIncomplete = 0;
+    if (cartQueryWhere) {
+      const [carts, cartCount] = await Promise.all([
+        getSharedPrismaClient().guestCart.findMany({
+          where: cartQueryWhere,
+          take: fetchLimit,
+          orderBy: { updatedAt: 'desc' }
+        }),
+        getSharedPrismaClient().guestCart.count({ where: cartQueryWhere })
+      ]);
+      totalIncomplete = cartCount || 0;
+      formattedIncompleteCarts = carts.map((cart) => formatIncompleteCartRow(cart, lostThreshold));
+    }
 
     let shadowedGuestOrderNumberSet = new Set();
     let shadowedGuestTotal = 0;
@@ -2797,7 +3005,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
 
     // دمج وترتيب (Merge & Sort)
-    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders]
+    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders, ...formattedIncompleteCarts]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // تطبيق Pagination (Slice)
@@ -2808,7 +3016,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const endIndex = startIndex + limit;
     const paginatedOrders = allFetchedOrders.slice(startIndex, endIndex);
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal, 0);
+    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -2820,6 +3028,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         page: page,
         limit: limit,
         pages: Math.ceil(totalOrders / limit)
+      },
+      meta: {
+        showIncompleteCartsInOrders: Boolean(showIncompleteCarts)
       }
     });
 

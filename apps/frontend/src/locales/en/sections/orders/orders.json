@@ -445,6 +445,7 @@
   "readyToShip": "Ready to Ship",
   "outForDelivery": "Out for Delivery",
   "lost": "Lost",
+  "incomplete": "Incomplete",
   "pendingPreparation": "Pending Preparation",
   "preparing": "Preparing",
   "ready": "Ready",

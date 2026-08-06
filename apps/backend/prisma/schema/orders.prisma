@@ -646,6 +646,7 @@ model OrderInvoiceSettings {
   duplicateOrderAction   String   @default("filter")
   duplicateOrderWindowMinutes Int @default(60)
   incompleteOrderLostAfterHours Int @default(24)
+  showIncompleteCartsInOrders Boolean @default(false)
   minimumOrderEnabled    Boolean  @default(false)
   minimumOrderAmount     Decimal  @default(0.00) @db.Decimal(10, 2)
   minimumOrderMessage    String?  @db.Text

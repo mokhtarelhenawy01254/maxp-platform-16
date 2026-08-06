@@ -116,6 +116,8 @@ export interface Order {
   metadata?: {
     source?: string;
     isGuestOrder?: boolean;
+    isIncompleteCart?: boolean;
+    cartId?: string;
     confidence?: number;
     extractionMethod?: string;
     [key: string]: unknown;
@@ -888,6 +890,7 @@ const Orders: React.FC = () => {
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
   );
+  const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -1483,6 +1486,10 @@ const Orders: React.FC = () => {
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
           setOrdersLoadError(null);
+          const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
+          if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
+            setShowIncompleteInOrders(metaFlag.showIncompleteCartsInOrders);
+          }
         } else {
           console.error("Failed to fetch orders:", data.message);
           setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
@@ -1692,6 +1699,8 @@ const Orders: React.FC = () => {
   };
 
   const toggleOrderSelection = (orderNumber: string) => {
+    const order = orders.find((o) => o.orderNumber === orderNumber);
+    if (order?.metadata?.isIncompleteCart) return;
     setSelectedOrders((prev) =>
       prev.includes(orderNumber)
         ? prev.filter((id) => id !== orderNumber)
@@ -1700,10 +1709,11 @@ const Orders: React.FC = () => {
   };
 
   const toggleAllSelection = () => {
-    if (orders.every((o) => selectedOrders.includes(o.orderNumber))) {
+    const selectable = orders.filter((o) => !o.metadata?.isIncompleteCart);
+    if (selectable.every((o) => selectedOrders.includes(o.orderNumber))) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((o) => o.orderNumber));
+      setSelectedOrders(selectable.map((o) => o.orderNumber));
     }
   };
 
@@ -2061,6 +2071,21 @@ const Orders: React.FC = () => {
 
   const filterableOrderStatuses = useMemo(() => {
     const list = orderStatuses.filter((s) => normalizeStatusCode(s.code) !== "TRASH");
+    if (showIncompleteInOrders) {
+      const existingCodes = new Set(list.map((s) => normalizeStatusCode(s.code)));
+      if (!existingCodes.has("INCOMPLETE")) {
+        list.push({
+          code: "INCOMPLETE",
+          name: getStatusDisplay("INCOMPLETE").label,
+        });
+      }
+      if (!existingCodes.has("LOST")) {
+        list.push({
+          code: "LOST",
+          name: getStatusDisplay("LOST").label,
+        });
+      }
+    }
     const activeFilter = normalizeStatusCode(filters.status);
     if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
@@ -2072,7 +2097,7 @@ const Orders: React.FC = () => {
       }
     }
     return list;
-  }, [orderStatuses, filters.status]);
+  }, [orderStatuses, filters.status, showIncompleteInOrders]);
 
   const filterablePaymentStatuses = useMemo(() => {
     const list = [...paymentStatuses];
@@ -2243,6 +2268,10 @@ const Orders: React.FC = () => {
   };
 
   const handleOpenOrder = (order: Order) => {
+    if (order.metadata?.isIncompleteCart) {
+      navigate(`/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`);
+      return;
+    }
     setSelectedOrder(order);
     setShowOrderModal(true);
     if (!order.isViewed) {
