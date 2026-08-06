@@ -716,5 +716,14 @@ module.exports = {
       console.error('❌ Error updating loyalty system settings:', error);
       res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات النظام' });
     }
+  },
+  processExpiredVouchers: async (req, res) => {
+    try {
+      const result = await autoDiscountService.convertExpiredVouchers();
+      res.json({ success: true, data: result, message: `تم تحويل ${result.converted} كوبون منتهي` });
+    } catch (error) {
+      console.error('❌ Error processing expired vouchers:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء معالجة الكوبونات' });
+    }
   }
 };
