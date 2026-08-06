@@ -63,6 +63,11 @@ const historySyncQueues = new Map(); // sessionId -> Promise
 const historyMediaSyncJobs = new Map(); // sessionId -> Promise
 const historySyncCompletionRequested = new Set();
 
+// Cache لصور البروفايل: كانت `sock.profilePictureUrl()` (نداء شبكة لواتساب) بتتنفذ
+// على كل رسالة واردة — صورة البروفايل نادراً ما تتغير، فـ TTL طويل (ساعة) آمن.
+const profilePicCache = new Map(); // `${sessionId}:${jid}` -> { url, expiresAt }
+const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
@@ -2426,8 +2431,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
-            // DEBUG: Log incoming message key (نمنعها أثناء history import عشان ما نضيعش performance)
-            if (!importHistory) {
+            // DEBUG: Log incoming message key — opt-in عبر env flag بس.
+            // كان بيـ INSERT row في whatsAppEventLog على كل رسالة (حمل على الـ DB في البرودكشن).
+            // فعّله فقط عند الحاجة للـ debugging: WHATSAPP_DEBUG_INCOMING_EVENTS=true
+            if (!importHistory && toBooleanOption(process.env.WHATSAPP_DEBUG_INCOMING_EVENTS)) {
                 await logEvent(sessionId, companyId, 'debug_incoming_msg', {
                     key: msg.key,
                     pushName: msg.pushName
@@ -3272,13 +3279,29 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName = undefined;
         }
 
-        // محاولة الحصول على صورة البروفايل
+        // محاولة الحصول على صورة البروفايل — مع cache (كانت بتنفذ لكل رسالة)
         let profilePicUrl = null;
         if (!skipProfilePic) {
-            try {
-                profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
-            } catch (e) {
-                // تجاهل الخطأ إذا لم تكن الصورة متاحة
+            const profileCacheKey = `${sessionId}:${remoteJid}`;
+            const cachedPic = profilePicCache.get(profileCacheKey);
+            if (cachedPic && cachedPic.expiresAt > Date.now()) {
+                profilePicUrl = cachedPic.url;
+            } else {
+                try {
+                    profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
+                    if (profilePicCache.size > 10000) {
+                        const picNow = Date.now();
+                        for (const [key, entry] of profilePicCache) {
+                            if (entry.expiresAt <= picNow) profilePicCache.delete(key);
+                        }
+                    }
+                    profilePicCache.set(profileCacheKey, {
+                        url: profilePicUrl,
+                        expiresAt: Date.now() + PROFILE_PIC_CACHE_TTL_MS
+                    });
+                } catch (e) {
+                    // تجاهل الخطأ إذا لم تكن الصورة متاحة
+                }
             }
         }
 

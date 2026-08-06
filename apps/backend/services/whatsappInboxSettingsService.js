@@ -226,7 +226,22 @@ function serializeSettingsPayload(payload = {}) {
   return serialized;
 }
 
+// Cache للإعدادات: `getNormalizedSettings` بتتستدعى على كل رسالة واردة
+// (في findOrCreateConversation والـ inbox) لكن الإعدادات نادراً ما تتغير.
+// TTL قصير (30 ثانية) — الأسوأ لو عدّل المستخدم إعداداته: ياخد 30s يظهر.
+const SETTINGS_CACHE_TTL_MS = Number(process.env.WHATSAPP_SETTINGS_CACHE_TTL_MS || 30000);
+const settingsCache = new Map(); // companyId -> { record, expiresAt }
+
+function clearSettingsCache() {
+  settingsCache.clear();
+}
+
 async function getOrCreateSettings(companyId, prisma = getSharedPrismaClient()) {
+  const cached = settingsCache.get(companyId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.record;
+  }
+
   let record = await prisma.inboxSettings.findUnique({
     where: { companyId }
   });
@@ -236,6 +251,14 @@ async function getOrCreateSettings(companyId, prisma = getSharedPrismaClient()) 
       data: { companyId }
     });
   }
+
+  if (settingsCache.size > 5000) {
+    const now = Date.now();
+    for (const [key, entry] of settingsCache) {
+      if (entry.expiresAt <= now) settingsCache.delete(key);
+    }
+  }
+  settingsCache.set(companyId, { record, expiresAt: Date.now() + SETTINGS_CACHE_TTL_MS });
 
   return record;
 }
@@ -257,5 +280,6 @@ module.exports = {
   getOrCreateSettings,
   getNormalizedSettings,
   normalizeSettingsRecord,
-  serializeSettingsPayload
+  serializeSettingsPayload,
+  clearSettingsCache
 };
