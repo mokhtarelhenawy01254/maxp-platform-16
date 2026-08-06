@@ -122,12 +122,6 @@ const CHANNEL_LABELS: Record<Channel, string> = {
   META_CLOUD: "ميتا (قالب معتمد)",
 };
 
-const TEMPLATE_SLOT_LABELS: Record<string, string> = {
-  BAILEYS: "قالب واتساب عادي",
-  META_CLOUD: "قالب ميتا",
-  AUTO: "قالب (تلقائي)",
-};
-
 const CHANNEL_COLORS: Record<string, string> = {
   AUTO: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
   BAILEYS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -910,12 +904,25 @@ const CustomerNotifications: React.FC = () => {
         open={!!templateDialog}
         onOpenChange={(open) => !open && setTemplateDialog(null)}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {templateDialog ? TEMPLATE_SLOT_LABELS[templateDialog.slot] : ""} —{" "}
-              {templateDialog && eventsByType[templateDialog.eventType]?.label}
-            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {templateDialog && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    templateDialog.slot === "META_CLOUD"
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                  }`}
+                >
+                  {templateDialog.slot === "META_CLOUD" ? <Globe className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                  {templateDialog.slot === "META_CLOUD" ? "قالب ميتا" : "واتساب عادي"}
+                </span>
+              )}
+              <DialogTitle className="text-base">
+                {templateDialog && eventsByType[templateDialog.eventType]?.label}
+              </DialogTitle>
+            </div>
             <DialogDescription>
               {templateDialog && (
                 <span className="font-mono" dir="ltr">
@@ -936,54 +943,77 @@ const CustomerNotifications: React.FC = () => {
                       d ? { ...d, template: { ...d.template, name: e.target.value } } : d,
                     )
                   }
+                  placeholder={templateDialog.slot === "META_CLOUD" ? "مثال: كسب نقاط ولاء" : "مثال: إشعار كسب نقاط"}
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label>محتوى القالب</Label>
-                <Textarea
-                  rows={6}
-                  className="font-mono text-sm"
-                  value={templateDialog.template.content}
-                  onChange={(e) =>
-                    setTemplateDialog((d) =>
-                      d ? { ...d, template: { ...d.template, content: e.target.value } } : d,
-                    )
-                  }
-                />
-                <p className="text-xs text-gray-400">
-                  المتغيرات: <code>{extractVariables(templateDialog.template.content).map((v) => `{${v}}`).join(" ")}</code>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowVariables(!showVariables)}
-                  className="text-[11px] text-indigo-600 hover:text-indigo-700"
-                >
-                  {showVariables ? "إخفاء المتغيرات المتاحة" : "عرض كل المتغيرات المتاحة"}
-                </button>
-                {showVariables && (
-                  <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                    <table className="w-full text-[11px]">
-                      <thead>
-                        <tr className="bg-gray-50 text-right dark:bg-gray-800">
-                          <th className="px-2 py-1 font-medium text-gray-500">المتغير</th>
-                          <th className="px-2 py-1 font-medium text-gray-500">الوصف</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {Object.entries(VARIABLE_DESCRIPTIONS).map(([v, desc]) => (
-                          <tr key={v} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                            <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
-                              {`{${v}}`}
-                            </td>
-                            <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{desc}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              {/* المحرر + المعاينة جنب بعض */}
+              <div className="grid gap-3 lg:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>محتوى القالب</Label>
+                    <span
+                      className={`text-[10px] font-medium tabular-nums ${
+                        templateDialog.slot === "META_CLOUD" &&
+                        templateDialog.template.content.length > 1024
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {templateDialog.template.content.length} / {templateDialog.slot === "META_CLOUD" ? 1024 : "∞"}
+                    </span>
                   </div>
-                )}
+                  <Textarea
+                    rows={7}
+                    className="font-mono text-sm"
+                    value={templateDialog.template.content}
+                    onChange={(e) =>
+                      setTemplateDialog((d) =>
+                        d ? { ...d, template: { ...d.template, content: e.target.value } } : d,
+                      )
+                    }
+                    placeholder="اكتب الرسالة هنا... استخدم {المتغير} للمتغيرات"
+                  />
+                  <p className="text-xs text-gray-400">
+                    المتغيرات: <code>{extractVariables(templateDialog.template.content).map((v) => `{${v}}`).join(" ")}</code>
+                  </p>
+                </div>
+
+                <WhatsAppBubblePreview
+                  content={resolveVariablesForPreview(templateDialog.template.content)}
+                  isMeta={templateDialog.slot === "META_CLOUD"}
+                />
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowVariables(!showVariables)}
+                className="text-[11px] text-indigo-600 hover:text-indigo-700"
+              >
+                {showVariables ? "إخفاء المتغيرات المتاحة" : "عرض كل المتغيرات المتاحة"}
+              </button>
+              {showVariables && (
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="bg-gray-50 text-right dark:bg-gray-800">
+                        <th className="px-2 py-1 font-medium text-gray-500">المتغير</th>
+                        <th className="px-2 py-1 font-medium text-gray-500">الوصف</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {Object.entries(VARIABLE_DESCRIPTIONS).map(([v, desc]) => (
+                        <tr key={v} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                          <td className="whitespace-nowrap px-2 py-1 font-mono text-indigo-600 dark:text-indigo-400">
+                            {`{${v}}`}
+                          </td>
+                          <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{desc}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1208,6 +1238,35 @@ const VARIABLE_DESCRIPTIONS: Record<string, string> = {
   qualityTier: "تصنيف الجودة (VIP/عالي/متوسط/منخفض)",
   score: "درجة الجودة من 100",
 };
+
+// معاينة مباشرة على شكل فقاعة واتساب
+function WhatsAppBubblePreview({ content, isMeta }: { content: string; isMeta?: boolean }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-[#e5ddd5] p-3 dark:border-gray-700 dark:bg-slate-900/70">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          معاينة مباشرة
+        </p>
+        <span className="text-[9px] text-gray-400">متجرك</span>
+      </div>
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#d9fdd3] px-3 py-2 shadow-sm dark:bg-green-900/40">
+          <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-gray-800 dark:text-gray-100">
+            {content.trim() ? content : "اكتب المحتوى لترى المعاينة هنا..."}
+          </p>
+          <p className="mt-1 text-right text-[9px] text-gray-500 dark:text-gray-400" dir="ltr">
+            {new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })} ✓✓
+          </p>
+        </div>
+      </div>
+      {isMeta && (
+        <p className="mt-2 rounded bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+          ☁️ سيُرسل عبر قالب ميتا المعتمد
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Template slot card (نفس تقسيمة صفحة حالات الطلبات) ──
 interface TemplateSlotCardProps {

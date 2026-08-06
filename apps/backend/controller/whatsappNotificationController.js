@@ -126,12 +126,19 @@ async function getTemplates(req, res) {
     }));
 
     const defaultTemplates = WhatsAppNotificationService.DEFAULT_TEMPLATES;
-    const existingEvents = templates.map(t => t.eventType);
+    // نتخطى القالب الافتراضي فقط لو فيه قالب "عادي" فعلي (BAILEYS/AUTO) للحدث.
+    // قالب ميتا فقط (META_CLOUD) لا يمنع ظهور القالب الافتراضي في الكارد العادي.
+    const hasRegularForEvent = (evtType) =>
+      templates.some(
+        (t) =>
+          t.eventType === evtType &&
+          (!t.channel || ['BAILEYS', 'AUTO'].includes(String(t.channel).toUpperCase())),
+      );
 
     const allTemplates = [...templates];
 
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
-      if (existingEvents.includes(evtType)) continue;
+      if (hasRegularForEvent(evtType)) continue;
       if (eventType && evtType !== eventType) continue;
       if (!eventType && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
       const templateCategory = getCategoryForEvent(evtType);
@@ -1214,7 +1221,7 @@ async function listAvailableMetaTemplates(req, res) {
 
     const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: { companyId },
-      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true }
+      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true, content: true }
     });
 
     const available = (metaTemplates || [])
@@ -1222,6 +1229,9 @@ async function listAvailableMetaTemplates(req, res) {
       .map(t => {
         // قالب ميتا واحد ممكن يتربط باكتر من حالة/قالب محلي — نرجع كل الربطات
         const bound = (localTemplates || []).filter(l => l.metaTemplateName === t.name);
+        // محتوى أول قالب محلي مربوط — لتمكين auto-fill في الفرونت عند اختيار قالب ميتا
+        // (بيخلي المستخدم يختار قالب ميتا بس والمحتوى يتبني تلقائياً بدل ما يكتب المتغيرات يدوياً)
+        const boundContent = bound[0]?.content || null;
         return {
           name: t.name,
           status: t.status,
@@ -1230,6 +1240,7 @@ async function listAvailableMetaTemplates(req, res) {
           components: t.components || null,
           boundToLocalTemplateIds: bound.map(b => b.id),
           boundToEventTypes: bound.map(b => b.eventType),
+          boundLocalContent: boundContent,
           // للتوافق مع الفرونت القديم: أول ربط بس (كان الحقل السابق)
           boundToLocalTemplateId: bound[0] ? bound[0].id : null,
           boundToEventType: bound[0] ? bound[0].eventType : null
