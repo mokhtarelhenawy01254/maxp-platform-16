@@ -1147,16 +1147,20 @@ class OrderService {
             });
           }
 
-          // 💸 عند إلغاء طلب اتسلم — رجّع النقاط والكاش باك اللي اتحسبوا
+          // 💸 عند إلغاء طلب اتسلم — رجّع النقاط والكاش باك اللي اتحسبوا + كوبونات الخصم التلقائي
           if (status === 'CANCELLED') {
             const cashbackService = require('./cashbackService');
             const loyaltyService = require('./hr/customerLoyaltyService');
+            const autoDiscountService = require('./autoDiscountService');
             const cancelReason = notes || `إلغاء الطلب ${orderNumber}`;
             await cashbackService.reverseCashbackForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [CASHBACK-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
             await loyaltyService.reverseLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId, reason: cancelReason }).catch(error => {
               console.error(`❌ [LOYALTY-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
+            await autoDiscountService.reverseVoucherForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
+              console.error(`❌ [AUTO-DISCOUNT-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
           }
 
@@ -1191,9 +1195,19 @@ class OrderService {
           if (status === 'DELIVERED') {
             const cashbackService = require('./cashbackService');
             const loyaltyService = require('./hr/customerLoyaltyService');
-            await cashbackService.applyCashbackForPaidOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
-              console.error(`❌ [CASHBACK-BG-ERROR] Failed for ${orderNumber}:`, error.message);
-            });
+            const autoDiscountService = require('./autoDiscountService');
+
+            // نظام "الخصم التلقائي": بدل الكاش باك الفوري نُصدر كوبون 10% للأوردر الجاي
+            const autoActive = await autoDiscountService.isAutoDiscountActive(order.companyId).catch(() => false);
+            if (!autoActive) {
+              await cashbackService.applyCashbackForPaidOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
+                console.error(`❌ [CASHBACK-BG-ERROR] Failed for ${orderNumber}:`, error.message);
+              });
+            } else {
+              await autoDiscountService.issueVoucherForDeliveredOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
+                console.error(`❌ [AUTO-DISCOUNT-BG-ERROR] Voucher issue failed for ${orderNumber}:`, error.message);
+              });
+            }
 
             await loyaltyService.applyLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);

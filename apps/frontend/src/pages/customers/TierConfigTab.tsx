@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
+import AutoDiscountSettings from "./AutoDiscountSettings";
 import {
   Settings,
   Save,
@@ -130,6 +131,7 @@ const validateRangeConflicts = (tier: TierItem, allTiers: TierItem[]): string =>
 };
 
 const TierConfigTab: React.FC = () => {
+  const [system, setSystem] = useState<string>("TIERS");
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programId, setProgramId] = useState<string>("");
   const [defaultMethod, setDefaultMethod] = useState<string>("POINTS");
@@ -178,6 +180,13 @@ const TierConfigTab: React.FC = () => {
 
   useEffect(() => { loadPrograms(); }, [loadPrograms]);
   useEffect(() => { if (programId) loadConfig(programId); }, [programId, loadConfig]);
+
+  // تحميل نظام الولاء الحالي (المستويات أو الخصم التلقائي)
+  useEffect(() => {
+    apiClient.get("/hr/customer-loyalty/system-settings")
+      .then((res) => setSystem(res.data?.data?.loyaltySystem || "TIERS"))
+      .catch(() => setSystem("TIERS"));
+  }, []);
 
   const saveDefaultMethod = async () => {
     if (!programId) return;
@@ -350,6 +359,30 @@ const TierConfigTab: React.FC = () => {
         {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
       </div>
 
+      {/* محدد نظام الولاء */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">نظام الولاء</label>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => setSystem("TIERS")}
+            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "TIERS" ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+          >
+            نظام المستويات
+          </button>
+          <button
+            onClick={() => setSystem("AUTO_DISCOUNT")}
+            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "AUTO_DISCOUNT" ? "bg-amber-500 text-white border-amber-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+          >
+            الخصم التلقائي
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">تفعيل أحد النظامين يوقف الآخر تلقائياً</p>
+      </div>
+
+      {system === "AUTO_DISCOUNT" ? (
+        <AutoDiscountSettings />
+      ) : (
+      <>
       {/* طريقة الحساب الافتراضية */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">طريقة الحساب الافتراضية للشركة</label>
@@ -539,6 +572,8 @@ const TierConfigTab: React.FC = () => {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

@@ -1122,6 +1122,14 @@ try {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
 }
 
+// Start Auto-Discount voucher expiry conversion cron
+try {
+  const { startAutoDiscountVoucherCron } = require("./cron/autoDiscountVoucherCron");
+  startAutoDiscountVoucherCron();
+} catch (error) {
+  console.error("❌ [AUTO-DISCOUNT-CRON] Failed to start voucher conversion cron:", error);
+}
+
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
 // (BullMQ إن توفر Redis، وإلا fallback polling كل 60 ثانية)
 try {

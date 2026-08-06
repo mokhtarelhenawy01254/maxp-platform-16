@@ -1413,35 +1413,54 @@ router.post('/', async (req, res) => {
       discountAmount += promoDiscount;
     }
 
-    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) / أو كوبون الخصم التلقائي
     let loyaltyDiscount = 0;
     let loyaltyRewards = null;
     let loyaltyTierInfo = null;
+    let autoDiscountVoucherId = null;
     try {
       const loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
       if (loyaltyCustomer) {
-        loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
-        const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
-        loyaltyTierInfo = progress?.tier || null;
+        const autoDiscountService = require('../services/autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(company.id);
 
-        if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
-          freeShippingAdjustment = {
-            source: 'loyalty_tier',
-            originalShippingCost: Number(shippingCost),
-            discountAmount: Number(shippingCost),
-            appliedShippingCost: 0,
-          };
-          shippingCost = 0;
-        }
+        if (autoActive) {
+          // نظام "الخصم التلقائي": نطبق كوبون 10% على الأوردر الجاي (لو موجود نشط)
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: company.id,
+            customerId: loyaltyCustomer.id,
+            cartTotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            loyaltyDiscount = voucherRes.discount;
+            discountAmount += loyaltyDiscount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+          }
+        } else {
+          loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
+          const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
+          loyaltyTierInfo = progress?.tier || null;
 
-        const lp = Number(loyaltyRewards?.discountPercent || 0);
-        if (lp > 0) {
-          loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
-          discountAmount += loyaltyDiscount;
+          if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
+            freeShippingAdjustment = {
+              source: 'loyalty_tier',
+              originalShippingCost: Number(shippingCost),
+              discountAmount: Number(shippingCost),
+              appliedShippingCost: 0,
+            };
+            shippingCost = 0;
+          }
+
+          const lp = Number(loyaltyRewards?.discountPercent || 0);
+          if (lp > 0) {
+            loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
+            discountAmount += loyaltyDiscount;
+          }
         }
       }
     } catch (loyaltyError) {
-      console.error('⚠️ [LOYALTY] Failed to apply tier rewards at checkout:', loyaltyError?.message);
+      console.error('⚠️ [LOYALTY] Failed to apply rewards at checkout:', loyaltyError?.message);
     }
 
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
@@ -1716,6 +1735,14 @@ router.post('/', async (req, res) => {
           discountPercent: Number(loyaltyRewards?.discountPercent || 0),
           discountAmount: Number(loyaltyDiscount.toFixed(2)),
           freeShipping: Boolean(loyaltyRewards?.freeShipping),
+        };
+      }
+
+      if (autoDiscountVoucherId) {
+        orderMetadata.autoDiscount = {
+          usedVoucherId: autoDiscountVoucherId,
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          appliedAt: new Date().toISOString()
         };
       }
 
@@ -2463,6 +2490,8 @@ router.post('/', async (req, res) => {
         loyaltyDiscount,
         loyaltyFreeShipping: Boolean(loyaltyRewards?.freeShipping),
         loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
+        autoDiscountApplied: Boolean(autoDiscountVoucherId),
+        autoDiscountVoucherId,
       },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'
