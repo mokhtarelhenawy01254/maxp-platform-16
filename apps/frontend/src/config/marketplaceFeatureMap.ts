@@ -521,7 +521,6 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "procurement-pro",
     appLabel: "Procurement Pro",
     currentGate: "procurement-pro",
-    legacyGate: "ecommerce-pro",
     routes: [
       { path: "/procurement/dashboard", label: "لوحة المشتريات" },
       { path: "/procurement/suppliers", label: "الموردون" },
@@ -529,7 +528,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/procurement/purchase-invoices", label: "فواتير الشراء" },
       { path: "/procurement/supplier-payments", label: "مدفوعات الموردين" },
     ],
-    action: "تم تجهيز procurement-pro وربطه مع fallback مؤقت على ecommerce-pro.",
+    action: "تم تجهيز procurement-pro كتطبيق مستقل للمشتريات والموردين.",
   },
   {
     id: "affiliate",
@@ -597,11 +596,11 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "pos-pro",
     appLabel: "نظام POS",
     currentGate: "pos-pro",
-    legacyGate: "ecommerce-pro",
+    legacyGate: "store-pro",
     routes: [
       { path: "/pos", label: "نقطة البيع" },
     ],
-    action: "فصل نظام POS عن ecommerce-pro إلى تطبيق مستقل pos-pro.",
+    action: "فصل نظام POS إلى تطبيق مستقل pos-pro مع grandfathering عبر store-pro.",
   },
   {
     id: "coupons",
@@ -612,13 +611,13 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "coupons-pro",
     appLabel: "الكوبونات والعروض",
     currentGate: "coupons-pro",
-    legacyGate: "ecommerce-pro",
+    legacyGate: "store-pro",
     routes: [
       { path: "/coupons", label: "الكوبونات" },
       { path: "/settings/promotion", label: "عروض الشحن المجاني" },
       { path: "/settings/store-promotion", label: "عروض المتجر" },
     ],
-    action: "فصل الكوبونات والعروض عن ecommerce-pro إلى تطبيق مستقل coupons-pro.",
+    action: "فصل الكوبونات والعروض إلى تطبيق مستقل coupons-pro مع grandfathering عبر store-pro.",
   },
   {
     id: "woocommerce",
@@ -629,11 +628,11 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "woocommerce-pro",
     appLabel: "تكامل WooCommerce",
     currentGate: "woocommerce-pro",
-    legacyGate: "ecommerce-pro",
+    legacyGate: "store-pro",
     routes: [
       { path: "/orders/woocommerce-sync", label: "مزامنة WooCommerce" },
     ],
-    action: "فصل تكامل WooCommerce عن ecommerce-pro إلى تطبيق مستقل woocommerce-pro.",
+    action: "فصل تكامل WooCommerce إلى تطبيق مستقل woocommerce-pro مع grandfathering عبر store-pro.",
   },
   {
     id: "multi-warehouse",
@@ -644,12 +643,12 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "multi-warehouse-pro",
     appLabel: "المخزون المتعدد",
     currentGate: "multi-warehouse-pro",
-    legacyGate: "ecommerce-pro",
+    legacyGate: "store-pro",
     routes: [
       { path: "/inventory/warehouses", label: "المستودعات" },
       { path: "/inventory", label: "المخزون" },
     ],
-    action: "فصل إدارة المخزون المتعدد عن ecommerce-pro إلى تطبيق مستقل multi-warehouse-pro.",
+    action: "فصل إدارة المخزون المتعدد إلى تطبيق مستقل multi-warehouse-pro مع grandfathering عبر store-pro.",
   },
   {
     id: "order-sources-accounting",

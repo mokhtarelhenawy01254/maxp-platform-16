@@ -4282,7 +4282,7 @@ const AppContent = () => {
                   path="/orders/manual"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['manual-orders-pro', 'ecommerce-pro', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['manual-orders-pro', 'store-pro']}>
                         <ManualOrderPage />
                       </AppAccessRoute>
                     </Layout>

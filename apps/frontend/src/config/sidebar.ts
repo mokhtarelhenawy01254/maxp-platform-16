@@ -353,7 +353,7 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                     { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                    { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'ecommerce-pro', 'store-pro']) },
+                    { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                     { to: '/shipping-companies', icon: Truck, label: t('sidebar.shippingCompanies') },
                 ],
             },
@@ -375,7 +375,7 @@ export const getSidebarConfig = (
                 icon: Archive,
                 items: [
                     { to: '/orders', icon: Archive, label: t('sidebar.orders') },
-                    { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), hidden: !isAnyAppActive(['manual-orders-pro', 'ecommerce-pro', 'store-pro']) },
+                    { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), hidden: !isAnyAppActive(['manual-orders-pro', 'store-pro']) },
                     { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 ],
             },
@@ -542,10 +542,10 @@ export const getSidebarConfig = (
                 { to: '/orders/preparation', icon: FlaskConical, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
                 { to: '/orders/automation', icon: Zap, label: t('sidebar.orderAutomation'), requiredPermissions: ['orders.automation.view'] },
                 { to: '/orders/incomplete', icon: AlertTriangle, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },
-                { to: '/pos', icon: CreditCard, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'], hidden: !isAnyAppActive(['pos-pro', 'ecommerce-pro', 'store-pro']) },
+                { to: '/pos', icon: CreditCard, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'], hidden: !isAnyAppActive(['pos-pro', 'store-pro']) },
                 { to: '/orders/invoices', icon: FileText, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/settings/order-invoice', icon: Cog, label: t('sidebar.orderInvoiceSettings'), requiredPermissions: ['orders.invoices.view'] },
-                { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'], hidden: !isAnyAppActive(['manual-orders-pro', 'ecommerce-pro', 'store-pro']) },
+                { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'], hidden: !isAnyAppActive(['manual-orders-pro', 'store-pro']) },
                 { to: '/bulk-search', icon: ListOrdered, label: t('sidebar.bulkSearch'), requiredPermissions: ['orders.bulk-search.view'] },
                 { to: '/products/reviews', icon: Star, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'] },
                 { to: '/settings/orders', icon: Cog, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
@@ -646,7 +646,7 @@ export const getSidebarConfig = (
                 { to: '/admin/policies', icon: ClipboardCheck, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: BarChart3, label: t('sidebar.microsoftClarity') },
                 { to: '/offers-review', icon: ClipboardList, label: t('sidebar.offersReview') },
-                { to: '/coupons', icon: Ticket, label: t('sidebar.coupons'), hidden: !isAnyAppActive(['coupons-pro', 'ecommerce-pro', 'store-pro']) },
+                { to: '/coupons', icon: Ticket, label: t('sidebar.coupons'), hidden: !isAnyAppActive(['coupons-pro', 'store-pro']) },
                 {
                     to: '/analytics/orders/coupons',
                     icon: Ticket,
@@ -713,7 +713,7 @@ export const getSidebarConfig = (
                 { to: '/procurement/supplier-payments', icon: Banknote, label: t('sidebar.supplierPayments') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro', 'ecommerce-pro'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro'])
         },
 
         // 4️⃣.4 البيع بالجملة
@@ -774,7 +774,7 @@ export const getSidebarConfig = (
             icon: ClipboardList,
             items: [
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'ecommerce-pro', 'store-pro']) },
+                { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                 { to: '/inventory/audits', icon: ClipboardList, label: t('sidebar.inventoryAudits') },
                 { to: '/inventory/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
