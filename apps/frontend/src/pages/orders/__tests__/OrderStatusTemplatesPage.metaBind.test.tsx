@@ -246,4 +246,55 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
       expect.objectContaining({ channel: "META_CLOUD" })
     );
   });
+
+  test("قالب ميتا مربوط بحالة تانية لسه بيظهر للاختيار (multi-bind) + توضيح الربط", async () => {
+    mockApi(makeStatus({}));
+    apiClient.get.mockImplementation((url: string) => {
+      if (url === "/order-status/with-templates") {
+        return Promise.resolve({ data: { success: true, data: [makeStatus({})] } });
+      }
+      if (url === "/whatsapp/notifications/settings") {
+        return Promise.resolve({ data: { success: true, settings: { defaultSessionId: "ms1" }, sessions: [] } });
+      }
+      if (url === "/whatsapp-notifications/templates/delivery-preview") {
+        return Promise.resolve({
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
+        });
+      }
+      if (url === "/whatsapp/sessions") {
+        return Promise.resolve({ data: { sessions: META_SESSIONS } });
+      }
+      if (url.startsWith("/whatsapp-notifications/templates/meta-available")) {
+        return Promise.resolve({
+          data: {
+            templates: [
+              {
+                name: "order_confirm_ar",
+                status: "APPROVED",
+                language: "ar",
+                category: "UTILITY",
+                components: [{ type: "BODY", text: "مرحباً {{1}}، طلبك {{2}} في الطريق" }],
+                boundToLocalTemplateIds: ["t-other"],
+                boundToEventTypes: ["SHIPPED"],
+                boundToLocalTemplateId: "t-other",
+                boundToEventType: "SHIPPED",
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
+    expect(within(select).getByText(/مربوط بـ SHIPPED/)).toBeInTheDocument();
+
+    await user.selectOptions(select, "order_confirm_ar");
+    expect(await screen.findByText(/القالب ده مربوط حالياً بكمان: SHIPPED/)).toBeInTheDocument();
+  });
 });

@@ -1220,15 +1220,19 @@ async function listAvailableMetaTemplates(req, res) {
     const available = (metaTemplates || [])
       .filter(t => String(t.status).toUpperCase() === 'APPROVED')
       .map(t => {
-        const bound = localTemplates.find(l => l.metaTemplateName === t.name);
+        // قالب ميتا واحد ممكن يتربط باكتر من حالة/قالب محلي — نرجع كل الربطات
+        const bound = (localTemplates || []).filter(l => l.metaTemplateName === t.name);
         return {
           name: t.name,
           status: t.status,
           language: t.language || 'ar',
           category: t.category || 'UTILITY',
           components: t.components || null,
-          boundToLocalTemplateId: bound ? bound.id : null,
-          boundToEventType: bound ? bound.eventType : null
+          boundToLocalTemplateIds: bound.map(b => b.id),
+          boundToEventTypes: bound.map(b => b.eventType),
+          // للتوافق مع الفرونت القديم: أول ربط بس (كان الحقل السابق)
+          boundToLocalTemplateId: bound[0] ? bound[0].id : null,
+          boundToEventType: bound[0] ? bound[0].eventType : null
         };
       });
 
