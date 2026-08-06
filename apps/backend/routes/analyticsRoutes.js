@@ -70,6 +70,9 @@ router.get('/product-health', authenticateToken, analyticsController.getProductH
 // تحليل المرتجعات
 router.get('/returns', authenticateToken, analyticsController.getReturnAnalytics);
 
+// تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج
+router.get('/product-fulfillment', authenticateToken, analyticsController.getProductFulfillmentAnalytics);
+
 // تحليل أداء الفريق
 router.get('/team-performance', authenticateToken, analyticsController.getTeamPerformanceAnalytics);
 

@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -593,6 +593,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/today-ops', icon: Sparkles, label: t('sidebar.todayOps') },
                 { to: '/analytics/orders/cancellations', icon: XCircle, label: t('sidebar.cancellationAnalytics') },
                 { to: '/analytics/orders/delivery-rate', icon: Truck, label: t('sidebar.deliveryRate') },
+                { to: '/analytics/orders/fulfillment', icon: PackageCheck, label: t('sidebar.productFulfillment') },
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
                 { to: '/analytics/orders/funnel', icon: Filter, label: t('sidebar.conversionFunnel') },
@@ -600,6 +601,8 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/team-performance', icon: Users, label: t('sidebar.teamPerformance') },
                 { to: '/analytics/orders/abandoned-cart', icon: ShoppingCart, label: t('sidebar.abandonedCart') },
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
+                { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss', 'الأرباح والخسائر') },
+                { to: '/reports/status-analysis', icon: FileBarChart, label: t('sidebar.statusAnalysis', 'تحليل الحالات') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
@@ -1021,19 +1024,6 @@ export const getSidebarConfig = (
                     ],
                 },
             ]
-        },
-
-        // 9️⃣ التقارير والتحليلات
-        {
-            id: 'analytics',
-            title: t('sidebar.analyticsSection'),
-            icon: LineChart,
-            items: [
-                { to: '/reports', icon: BarChart3, label: t('sidebar.reports') },
-                { to: '/analytics', icon: LineChart, label: t('sidebar.advancedAnalytics') },
-            ],
-            // 🔒 إخفاء إذا كان غير مفعل
-            hidden: !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
         },
 
         // 1️⃣1️⃣ التطبيقات والفواتير

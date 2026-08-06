@@ -2825,6 +2825,199 @@ const getReturnAnalytics = async (req, res) => {
   }
 };
 
+// تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج اتطلب في الفترة
+const getProductFulfillmentAnalytics = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period } = req.query;
+    const prisma = getSharedPrismaClient();
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
+
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          is: {
+            companyId: String(companyId),
+            createdAt: { gte: start, lte: end }
+          }
+        }
+      },
+      select: {
+        quantity: true,
+        price: true,
+        total: true,
+        productId: true,
+        productName: true,
+        productSku: true,
+        productImage: true,
+        order: {
+          select: {
+            id: true,
+            status: true
+          }
+        },
+        product: {
+          select: {
+            name: true,
+            sku: true,
+            image: true
+          }
+        }
+      }
+    });
+
+    const productMap = {};
+    const distinctOrders = new Set();
+
+    orderItems.forEach(item => {
+      const orderId = item.order?.id;
+      if (orderId) distinctOrders.add(orderId);
+      const status = (item.order?.status || 'PENDING').toUpperCase().trim();
+
+      const key = item.productId || item.product?.name || item.productName || item.productSku || 'unknown';
+      const name = item.product?.name || item.productName || 'منتج غير معروف';
+      const sku = item.product?.sku || item.productSku || null;
+      const image = item.product?.image || item.productImage || null;
+
+      if (!productMap[key]) {
+        productMap[key] = {
+          productId: item.productId || null,
+          productName: name,
+          productSku: sku,
+          productImage: image,
+          totalItems: 0,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          deliveredItems: 0,
+          deliveredQuantity: 0,
+          deliveredRevenue: 0,
+          cancelledItems: 0,
+          cancelledQuantity: 0,
+          cancelledRevenue: 0,
+          returnedItems: 0,
+          returnedQuantity: 0,
+          returnedRevenue: 0,
+          otherItems: 0,
+          deliveredOrders: new Set(),
+          cancelledOrders: new Set(),
+          returnedOrders: new Set()
+        };
+      }
+
+      const row = productMap[key];
+      const quantity = item.quantity || 0;
+      const revenue = parseFloat(item.total) || (parseFloat(item.price) || 0) * quantity || 0;
+
+      row.totalItems += 1;
+      row.totalQuantity += quantity;
+      row.totalRevenue += revenue;
+
+      if (DELIVERED_ORDER_STATUSES.has(status)) {
+        row.deliveredItems += 1;
+        row.deliveredQuantity += quantity;
+        row.deliveredRevenue += revenue;
+        if (orderId) row.deliveredOrders.add(orderId);
+      } else if (CANCELLED_ORDER_STATUSES.has(status)) {
+        row.cancelledItems += 1;
+        row.cancelledQuantity += quantity;
+        row.cancelledRevenue += revenue;
+        if (orderId) row.cancelledOrders.add(orderId);
+      } else if (RETURNED_ORDER_STATUSES.has(status) || ['PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'RETURNED_TO_COMPANY'].includes(status)) {
+        row.returnedItems += 1;
+        row.returnedQuantity += quantity;
+        row.returnedRevenue += revenue;
+        if (orderId) row.returnedOrders.add(orderId);
+      } else {
+        row.otherItems += 1;
+      }
+    });
+
+    const products = Object.values(productMap)
+      .map(row => {
+        const total = row.totalItems;
+        const delivered = row.deliveredItems;
+        const cancelled = row.cancelledItems;
+        const returned = row.returnedItems;
+        const lostRevenue = row.cancelledRevenue + row.returnedRevenue;
+
+        return {
+          productId: row.productId,
+          productName: row.productName,
+          productSku: row.productSku,
+          productImage: row.productImage,
+          totalItems: row.totalItems,
+          totalQuantity: row.totalQuantity,
+          totalRevenue: round2(row.totalRevenue),
+          deliveredItems: delivered,
+          deliveredQuantity: row.deliveredQuantity,
+          deliveredRevenue: round2(row.deliveredRevenue),
+          cancelledItems: cancelled,
+          cancelledQuantity: row.cancelledQuantity,
+          returnedItems: returned,
+          returnedQuantity: row.returnedQuantity,
+          otherItems: row.otherItems,
+          deliveredOrders: row.deliveredOrders.size,
+          cancelledOrders: row.cancelledOrders.size,
+          returnedOrders: row.returnedOrders.size,
+          deliveryRate: pct(delivered, total),
+          cancellationRate: pct(cancelled, total),
+          returnRate: pct(returned, total),
+          lostRevenue: round2(lostRevenue)
+        };
+      })
+      .filter(p => p.totalItems > 0)
+      .sort((a, b) => b.totalItems - a.totalItems);
+
+    const totalItems = products.reduce((sum, p) => sum + p.totalItems, 0);
+    const deliveredItems = products.reduce((sum, p) => sum + p.deliveredItems, 0);
+    const cancelledItems = products.reduce((sum, p) => sum + p.cancelledItems, 0);
+    const returnedItems = products.reduce((sum, p) => sum + p.returnedItems, 0);
+    const totalRevenue = products.reduce((sum, p) => sum + p.totalRevenue, 0);
+    const deliveredRevenue = products.reduce((sum, p) => sum + p.deliveredRevenue, 0);
+    const lostRevenue = products.reduce((sum, p) => sum + p.lostRevenue, 0);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalProducts: products.length,
+          totalOrders: distinctOrders.size,
+          totalItems,
+          totalQuantity: products.reduce((sum, p) => sum + p.totalQuantity, 0),
+          deliveredItems,
+          cancelledItems,
+          returnedItems,
+          pendingItems: totalItems - deliveredItems - cancelledItems - returnedItems,
+          deliveryRate: pct(deliveredItems, totalItems),
+          cancellationRate: pct(cancelledItems, totalItems),
+          returnRate: pct(returnedItems, totalItems),
+          totalRevenue: round2(totalRevenue),
+          deliveredRevenue: round2(deliveredRevenue),
+          lostRevenue: round2(lostRevenue)
+        },
+        products
+      }
+    });
+  } catch (error) {
+    console.error('Error in getProductFulfillmentAnalytics:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تحليل تنفيذ المنتجات', error: error.message });
+  }
+};
+
+const round2 = (value) => {
+  const num = Number(value) || 0;
+  return Math.round(num * 100) / 100;
+};
+
+const pct = (part, total) => {
+  if (!total || !part) return 0;
+  return Math.round((part / total) * 1000) / 10;
+};
+
 // Get Team Performance Analytics
 const getTeamPerformanceAnalytics = async (req, res) => {
   try {
@@ -4405,6 +4598,7 @@ module.exports = {
   getOrderStatusTimeAnalytics,
   getProductHealthScore,
   getReturnAnalytics,
+  getProductFulfillmentAnalytics,
   getTeamPerformanceAnalytics,
   getFunnelAnalytics,
   getStockForecastAnalytics,

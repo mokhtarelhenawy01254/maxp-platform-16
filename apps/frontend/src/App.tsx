@@ -281,7 +281,6 @@ const CompetitorSettingsPage = React.lazy(() => import("./pages/competitors/sett
 const SocialOverview = React.lazy(() => import("./pages/competitors/social/SocialOverview"));
 const AdIntelligence = React.lazy(() => import("./pages/competitors/social/AdIntelligence"));
 const PlatformOverview = React.lazy(() => import("./pages/competitors/social/PlatformOverview"));
-const Reports = React.lazy(() => import("./pages/reports/Reports"));
 const StatusAnalysisReport = React.lazy(() => import("./pages/reports/StatusAnalysisReport"));
 const ShippingReport = React.lazy(
   () => import("./pages/reports/ShippingReport"),
@@ -640,6 +639,9 @@ const CancellationAnalytics = React.lazy(
 const DeliveryRateAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/DeliveryRateAnalytics"),
 );
+const ProductFulfillmentAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ProductFulfillmentAnalytics"),
+);
 const RegionAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/RegionAnalytics"),
 );
@@ -698,9 +700,6 @@ const TaskNotifications = React.lazy(
 const CalendarView = React.lazy(() => import("./pages/tasks/CalendarView"));
 const TimeReports = React.lazy(() => import("./pages/tasks/TimeReports"));
 const TaskTemplates = React.lazy(() => import("./pages/tasks/TaskTemplates"));
-const AdvancedReports = React.lazy(
-  () => import("./pages/reports/AdvancedReports"),
-);
 const ProfitLossReport = React.lazy(
   () => import("./pages/reports/ProfitLossReport"),
 );
@@ -1500,7 +1499,6 @@ if (typeof window !== "undefined") {
   p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
   p["/tasks"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
-  p["/reports"] = () => import("./pages/reports/Reports");
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
@@ -3157,14 +3155,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/pos"
                   element={
                     <Layout>
@@ -4616,6 +4606,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/analytics/orders/fulfillment"
+                  element={
+                    <Layout>
+                      <ProductFulfillmentAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/analytics/orders/regions"
                   element={
                     <Layout>
@@ -4784,14 +4782,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/reports"
-                  element={
-                    <Layout>
-                      <Reports />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/reports/profit-loss"
                   element={
                     <Layout>
@@ -4808,14 +4798,6 @@ const AppContent = () => {
                   }
                 />
                 {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
-                <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/analytics/store"
                   element={
@@ -5002,14 +4984,6 @@ const AppContent = () => {
                   }
                 />
                 {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
-                <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/pos"
                   element={

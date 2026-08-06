@@ -969,6 +969,36 @@ class AnalyticsService {
     }
   }
 
+  async getProductFulfillmentAnalytics(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams =
+        period && !startDate
+          ? {
+              startDate: (() => {
+                const start = new Date();
+                start.setDate(start.getDate() - (parseInt(period) || 30));
+                return start.toISOString().split("T")[0];
+              })(),
+              endDate: new Date().toISOString().split("T")[0],
+            }
+          : {
+              ...(startDate ? { startDate } : {}),
+              ...(endDate ? { endDate } : {}),
+            };
+      const response = await apiClient.get("/analytics/product-fulfillment", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching product fulfillment analytics:", error);
+      throw error;
+    }
+  }
+
   async getTeamPerformanceAnalytics(
     period?: string,
     startDate?: string,

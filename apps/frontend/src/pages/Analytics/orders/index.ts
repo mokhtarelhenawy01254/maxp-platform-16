@@ -20,6 +20,7 @@ export { default as ProfitAnalytics } from "./ProfitAnalytics";
 export { default as CODPerformanceAnalytics } from "./CODPerformanceAnalytics";
 export { default as CancellationAnalytics } from "./CancellationAnalytics";
 export { default as DeliveryRateAnalytics } from "./DeliveryRateAnalytics";
+export { default as ProductFulfillmentAnalytics } from "./ProductFulfillmentAnalytics";
 export { default as RegionAnalytics } from "./RegionAnalytics";
 export { default as ReturnsAnalytics } from "./ReturnsAnalytics";
 export { default as FunnelAnalytics } from "./FunnelAnalytics";
