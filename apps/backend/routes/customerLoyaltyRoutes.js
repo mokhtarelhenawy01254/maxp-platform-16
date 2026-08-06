@@ -116,6 +116,23 @@ router.put('/tier-config',
   customerLoyaltyController.updateTierConfig
 );
 
+// نظام الولاء (اختيار: المستويات أو الخصم التلقائي)
+router.get('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getSystemSettings
+);
+
+router.put('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateSystemSettings
+);
+
+// معالجة الكوبونات المنتهية (تحويلها لكاش باك) — يدوي
+router.post('/vouchers/process-expired',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.processExpiredVouchers
+);
+
 // تجاوز عميل (طريقة الحساب + المزايا المخصصة)
 router.get('/customers/:customerId/tier-override',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
