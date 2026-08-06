@@ -12,7 +12,7 @@ import {
   ChevronDownIcon,
   FunnelIcon,
   TruckIcon,
-  PackageIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import {
   PieChart,
@@ -512,7 +512,7 @@ const DeliveryReturnsAnalytics: React.FC = () => {
           accent="border-t-blue-500"
         />
         <KpiCard
-          icon={<PackageIcon className="h-5 w-5 text-white" />}
+          icon={<ArchiveBoxIcon className="h-5 w-5 text-white" />}
           iconBg="bg-gradient-to-br from-teal-500 to-emerald-600"
           label={t("deliveryReturnsReport.deliveredItems")}
           value={summary?.deliveredItems?.toLocaleString() ?? "0"}
@@ -675,7 +675,7 @@ const DeliveryReturnsAnalytics: React.FC = () => {
         </div>
         {filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <PackageIcon className="h-14 w-14 text-gray-300 dark:text-gray-600 mb-4" />
+            <ArchiveBoxIcon className="h-14 w-14 text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400 font-medium">
               {search ? t("deliveryReturnsReport.searchNoResults") : t("deliveryReturnsReport.noData")}
             </p>
