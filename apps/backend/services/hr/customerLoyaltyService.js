@@ -842,11 +842,12 @@ class CustomerLoyaltyService {
     const prisma = getSharedPrismaClient();
 
     if (method === 'SPENT') {
+      // الـ Order.total هو المبلغ المدفوع فعلاً (بعد الخصومات) — الحقل اسمه total مش finalTotal
       const agg = await prisma.order.aggregate({
         where: { customerId, companyId, status: 'DELIVERED' },
-        _sum: { finalTotal: true }
+        _sum: { total: true }
       });
-      return parseFloat(agg._sum?.finalTotal || 0);
+      return parseFloat(agg._sum?.total || 0);
     }
 
     if (method === 'ITEMS') {
