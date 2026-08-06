@@ -486,6 +486,7 @@ export default function OrderStatusTemplatesPage() {
       metaTemplateName: "",
       metaTemplateLanguage: "ar",
     });
+    setShowLocalRef(false);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -496,6 +497,8 @@ export default function OrderStatusTemplatesPage() {
     setSelectedTemplate(target);
     setDialogSlot(slot);
     const metaName = target?.metaTemplateName || "";
+    // لو قالب ميتا مربوط بالفعل، المرجع المحلي هو اللي بنعدّل بيه الرسالة (resubmit)
+    setShowLocalRef(slot === "meta" && !!metaName);
     setTemplateForm({
       name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
       content: target?.content || DEFAULT_TEMPLATE_CONTENT,
@@ -1587,15 +1590,21 @@ export default function OrderStatusTemplatesPage() {
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        المرجع المحلي (لتطابق المتغيرات)
+                        {selectedTemplate?.metaTemplateName ? "نص رسالة قالب ميتا" : "المرجع المحلي (لتطابق المتغيرات)"}
                       </span>
                       <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
                         {showLocalRef ? "إخفاء" : "عرض"}
                       </span>
                     </button>
-                    <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      القالب المحلي ده مش اللي هيتتبعت — بيستخدم بس عشان نربط متغيرات الطلب بأرقام قالب ميتا ({"{{1}}"} ← {"{{customerName}}"}) .
-                    </p>
+                    {selectedTemplate?.metaTemplateName ? (
+                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                        النص ده هو رسالة قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                        القالب المحلي ده مش اللي هيتتبعت — بيستخدم بس عشان نربط متغيرات الطلب بأرقام قالب ميتا ({"{{1}}"} ← {"{{customerName}}"}) .
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="mb-1 flex items-center justify-between">
