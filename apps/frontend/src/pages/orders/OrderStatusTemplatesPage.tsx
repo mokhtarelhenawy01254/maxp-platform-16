@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -27,8 +27,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const IncompleteCartMessagingPanel = lazy(() => import("./IncompleteCartMessagingPanel"));
-
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
 
@@ -40,6 +38,7 @@ interface Template {
   isActive: boolean;
   buttons?: string;
   hasButtons?: boolean;
+  channel?: string;
   metaTemplateName?: string | null;
   metaTemplateStatus?: string | null;
   metaTemplateLanguage?: string | null;
@@ -55,7 +54,9 @@ interface StatusWithTemplate {
   notifyCustomer: boolean;
   isSystemStatus: boolean;
   template: Template | null;
+  metaTemplate?: Template | null;
   hasTemplate: boolean;
+  hasMetaTemplate?: boolean;
   isNonNotifiable?: boolean;
   updatedAt?: string;
 }
@@ -160,6 +161,7 @@ const TABS = [
   { key: "payment", label: "الدفع" },
   { key: "preparation", label: "التجهيز" },
   { key: "shipping", label: "الشحن" },
+  { key: "incomplete", label: "رسائل الأوردر غير المكتمل" },
 ];
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
@@ -258,6 +260,29 @@ function isCustomContent(status: StatusWithTemplate): boolean {
   return !!status.template?.content && !GENERIC_PATTERN.test(status.template.content);
 }
 
+type TemplateSlot = "regular" | "meta";
+
+/**
+ * القالب المعروض في slot ميتا:
+ * قالب قناة META_CLOUD (النموذج الجديد) أو توافق قديم:
+ * القالب العادي اللي عليه ربط ميتا (channel قديم بدون META_CLOUD).
+ */
+function getMetaSlotTemplate(status: StatusWithTemplate): Template | null {
+  if (status.metaTemplate) return status.metaTemplate;
+  if (status.template?.metaTemplateName && String(status.template.channel || "").toUpperCase() !== "META_CLOUD") {
+    return status.template;
+  }
+  return null;
+}
+
+function metaSlotIsLegacy(status: StatusWithTemplate): boolean {
+  return !status.metaTemplate && !!status.template?.metaTemplateName;
+}
+
+function isMetaTemplateBound(tpl?: Template | null): boolean {
+  return !!tpl?.metaTemplateName;
+}
+
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia(query).matches : false
@@ -336,7 +361,8 @@ export default function OrderStatusTemplatesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogTab, setDialogTab] = useState<"local" | "meta">("local");
+  const [dialogSlot, setDialogSlot] = useState<TemplateSlot>("regular");
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [showVariables, setShowVariables] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
 
@@ -424,41 +450,43 @@ export default function OrderStatusTemplatesPage() {
     if (dialogOpen === false) fetchDeliveryPreview();
   }, [dialogOpen, fetchDeliveryPreview]);
 
-  const openCreateDialog = (status: StatusWithTemplate) => {
+  const openCreateDialog = (status: StatusWithTemplate, slot: TemplateSlot) => {
     setSelectedStatus(status);
+    setSelectedTemplate(null);
+    setDialogSlot(slot);
     setTemplateForm({
-      name: `قالب ${status.name}`,
-      content: DEFAULT_TEMPLATE_CONTENT,
+      name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
+      content: slot === "meta" && status.template?.content ? status.template.content : DEFAULT_TEMPLATE_CONTENT,
       isActive: true,
       hasButtons: true,
       buttons: [
         { id: "confirm", text: "تأكيد الأوردر", action: "CONFIRMED" },
         { id: "cancel", text: "إلغاء الأوردر", action: "CANCELLED" }
       ],
-      sendMode: "direct",
+      sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: "",
       metaTemplateLanguage: "ar",
     });
-    setDialogTab("local");
     setDialogOpen(true);
     fetchMetaSessions();
   };
 
-  const openEditDialog = (status: StatusWithTemplate, initialSendMode?: "direct" | "bind_meta") => {
+  const openEditDialog = (status: StatusWithTemplate, slot: TemplateSlot = "regular") => {
     setSelectedStatus(status);
-    const hasBoundMeta = !!(status.template?.metaTemplateName && status.template.metaTemplateStatus === "APPROVED");
-    const resolvedSendMode = initialSendMode || (hasBoundMeta ? "bind_meta" : "direct");
+    const target = slot === "meta" ? getMetaSlotTemplate(status) : status.template;
+    setSelectedTemplate(target);
+    setDialogSlot(slot);
+    const metaName = target?.metaTemplateName || "";
     setTemplateForm({
-      name: status.template?.name || `قالب ${status.name}`,
-      content: status.template?.content || DEFAULT_TEMPLATE_CONTENT,
-      isActive: status.template?.isActive ?? true,
-      hasButtons: status.template?.hasButtons ?? true,
-      buttons: parseTemplateButtons(status.template?.buttons),
-      sendMode: resolvedSendMode,
-      metaTemplateName: status.template?.metaTemplateName || "",
-      metaTemplateLanguage: status.template?.metaTemplateLanguage || "ar",
+      name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
+      content: target?.content || DEFAULT_TEMPLATE_CONTENT,
+      isActive: target?.isActive ?? true,
+      hasButtons: target?.hasButtons ?? true,
+      buttons: parseTemplateButtons(target?.buttons),
+      sendMode: slot === "meta" ? "bind_meta" : "direct",
+      metaTemplateName: metaName,
+      metaTemplateLanguage: target?.metaTemplateLanguage || "ar",
     });
-    setDialogTab(resolvedSendMode === "bind_meta" ? "meta" : "local");
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -476,8 +504,17 @@ export default function OrderStatusTemplatesPage() {
       : [];
     setSaving(true);
     try {
-      const isEdit = !!selectedStatus.template?.id;
-      const payload = {
+      const isEdit = !!selectedTemplate?.id;
+      const payload: {
+        category: string;
+        eventType: string;
+        name: string;
+        content: string;
+        isActive: boolean;
+        hasButtons: boolean;
+        buttons: { id: string; text: string; action: string }[];
+        channel?: string;
+      } = {
         category: "ORDERS",
         eventType: selectedStatus.code,
         name: templateForm.name,
@@ -486,10 +523,13 @@ export default function OrderStatusTemplatesPage() {
         hasButtons: saveButtons.length > 0,
         buttons: saveButtons,
       };
+      if (!isEdit) {
+        payload.channel = dialogSlot === "meta" ? "META_CLOUD" : "AUTO";
+      }
       if (isEdit) {
-        await apiClient.put(`/whatsapp/notifications/templates/${selectedStatus.template!.id}`, payload);
+        await apiClient.put(`/whatsapp/notifications/templates/${selectedTemplate!.id}`, payload);
         toast.success(t("orders.templateUpdated", "تم تحديث القالب بنجاح"));
-        return selectedStatus.template!.id;
+        return selectedTemplate!.id;
       } else {
         const res = await apiClient.post("/whatsapp/notifications/templates", payload);
         const created = (res?.data as { template?: { id?: string } })?.template;
@@ -499,21 +539,28 @@ export default function OrderStatusTemplatesPage() {
           return null;
         }
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
-        setSelectedStatus((prev) =>
-          prev
-            ? {
-                ...prev,
-                template: {
-                  id: newTemplateId,
-                  name: templateForm.name,
-                  content: templateForm.content,
-                  eventType: prev.code,
-                  isActive: templateForm.isActive,
-                  hasButtons: saveButtons.length > 0,
-                  buttons: saveButtons.length > 0 ? JSON.stringify(saveButtons) : undefined,
-                },
-              }
-            : prev
+        setSelectedStatus((prev) => {
+          if (!prev) return prev;
+          const newTpl = {
+            id: newTemplateId,
+            name: templateForm.name,
+            content: templateForm.content,
+            eventType: prev.code,
+            isActive: templateForm.isActive,
+            hasButtons: saveButtons.length > 0,
+            buttons: saveButtons.length > 0 ? JSON.stringify(saveButtons) : undefined,
+            channel: dialogSlot === "meta" ? "META_CLOUD" : "AUTO",
+          };
+          return {
+            ...prev,
+            template: dialogSlot === "meta" ? prev.template : newTpl,
+            metaTemplate: dialogSlot === "meta" ? newTpl : prev.metaTemplate,
+            hasTemplate: true,
+            hasMetaTemplate: dialogSlot === "meta" ? true : !!prev.metaTemplate,
+          };
+        });
+        setSelectedTemplate((prev) =>
+          dialogSlot === "meta" || prev ? { id: newTemplateId, name: templateForm.name, content: templateForm.content, eventType: selectedStatus.code, isActive: templateForm.isActive } : null
         );
         return newTemplateId;
       }
@@ -523,18 +570,19 @@ export default function OrderStatusTemplatesPage() {
     } finally {
       setSaving(false);
     }
-  }, [selectedStatus, templateForm, t]);
+  }, [selectedStatus, selectedTemplate, templateForm, dialogSlot, t]);
 
   const handleSave = async () => {
     if (!selectedStatus) return;
-    if (templateForm.sendMode === "bind_meta") {
-      if (!templateForm.metaTemplateName) {
-        toast.error(t("orders.selectMetaTemplate", "اختر قالب ميتا للربط"));
-        return;
-      }
+    if (dialogSlot === "meta") {
       const templateId = await persistLocalTemplate();
       if (!templateId) return;
-      await bindMetaTemplate(templateId, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
+      if (templateForm.metaTemplateName) {
+        await bindMetaTemplate(templateId, templateForm.metaTemplateName, templateForm.metaTemplateLanguage);
+      } else {
+        setDialogOpen(false);
+        fetchData();
+      }
       return;
     }
     const templateId = await persistLocalTemplate();
@@ -544,7 +592,7 @@ export default function OrderStatusTemplatesPage() {
   };
 
   const handleResubmitMeta = async () => {
-    if (!selectedStatus?.template?.id) return;
+    if (!selectedTemplate?.id) return;
     if (!templateForm.content.trim()) {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
       return;
@@ -553,7 +601,7 @@ export default function OrderStatusTemplatesPage() {
     if (!saved) return;
     setResubmittingMeta(true);
     try {
-      const res = await apiClient.post(`/whatsapp-notifications/templates/${selectedStatus.template.id}/resubmit-meta`, {
+      const res = await apiClient.post(`/whatsapp-notifications/templates/${selectedTemplate.id}/resubmit-meta`, {
         sessionId: selectedMetaSession,
       });
       const data = res.data;
@@ -595,9 +643,15 @@ export default function OrderStatusTemplatesPage() {
   const toggleNotify = async (status: StatusWithTemplate) => {
     setTogglingId(status.id);
     try {
-      await apiClient.put(`/order-status/${status.id}`, {
-        notifyCustomer: !status.notifyCustomer,
-      });
+      if (status.code === INCOMPLETE_CART_EVENT_TYPE) {
+        await apiClient.put("/whatsapp/notifications/settings", {
+          incompleteCartImmediateMessage: !status.notifyCustomer,
+        });
+      } else {
+        await apiClient.put(`/order-status/${status.id}`, {
+          notifyCustomer: !status.notifyCustomer,
+        });
+      }
       setStatuses((prev) =>
         prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: !s.notifyCustomer } : s))
       );
@@ -690,6 +744,24 @@ export default function OrderStatusTemplatesPage() {
       toast.error(err?.response?.data?.error || t("orders.bindFailed", "فشل ربط القالب بميتا"));
     } finally {
       setBindingId(null);
+    }
+  };
+
+  const unbindMeta = async (status: StatusWithTemplate) => {
+    const target = status.metaTemplate || (status.template?.metaTemplateName ? status.template : null);
+    if (!target?.id) return;
+    if (!window.confirm("هل تريد فك ربط هذا القالب بقالب ميتا؟")) return;
+    try {
+      await apiClient.put(`/whatsapp/notifications/templates/${target.id}`, {
+        metaTemplateName: null,
+        metaTemplateId: null,
+        metaTemplateStatus: null,
+      });
+      toast.success("تم فك ربط القالب بقالب ميتا");
+      fetchData();
+      fetchDeliveryPreview();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.bindFailed", "فشل ربط القالب بميتا"));
     }
   };
 
@@ -795,11 +867,12 @@ export default function OrderStatusTemplatesPage() {
 
     if (activeChip === "custom") {
       result = result.filter((s) => {
-        if (!s.template?.content) return false;
-        return /\{\{|\}\}/.test(s.template.content) || isCustomContent(s);
+        if (!s.template?.content && !s.metaTemplate?.content) return false;
+        const content = s.template?.content || s.metaTemplate?.content || "";
+        return /\{\{|\}\}/.test(content) || isCustomContent(s);
       });
     } else if (activeChip === "meta_bound") {
-      result = result.filter((s) => !!s.template?.metaTemplateName);
+      result = result.filter((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
     } else if (activeChip === "no_template") {
       result = result.filter((s) => !s.hasTemplate);
     } else if (activeChip === "disabled") {
@@ -833,7 +906,7 @@ export default function OrderStatusTemplatesPage() {
   const { groupedStatuses, groupKeys } = useMemo(() => {
     const groups = new Map<string, StatusWithTemplate[]>();
     for (const s of filteredByChipAndSearch) {
-      const key = s.template?.content?.trim() || "__no-template__";
+      const key = s.template?.content?.trim() || s.metaTemplate?.content?.trim() || "__no-template__";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(s);
     }
@@ -859,7 +932,9 @@ export default function OrderStatusTemplatesPage() {
   const statusesWithoutTemplate = visibleStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
 
-  const boundMetaCount = visibleStatuses.filter((s) => s.template?.metaTemplateName).length;
+  const boundMetaCount = visibleStatuses.filter(
+    (s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate)
+  ).length;
   const defaultSession = settingsSessions.find((s) => s.id === settings?.defaultSessionId);
   const defaultSessionIsMeta = defaultSession?.provider === "META_CLOUD" || !!metaSessions.find((s) => s.id === settings?.defaultSessionId);
 
@@ -913,24 +988,9 @@ export default function OrderStatusTemplatesPage() {
           <Cog6ToothIcon className="h-4 w-4" />
           الإعدادات
         </button>
-        <button
-          onClick={() => setActiveTab("incomplete")}
-          className={`flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
-            activeTab === "incomplete"
-              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-          }`}
-        >
-          <DocumentTextIcon className="h-4 w-4" />
-          رسائل الأوردر غير المكتمل
-        </button>
       </div>
 
-      {activeTab === "incomplete" ? (
-        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
-          <IncompleteCartMessagingPanel />
-        </Suspense>
-      ) : activeTab === "settings" ? (
+      {activeTab === "settings" ? (
         /* ⚙️ Settings Panel */
         <div className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
@@ -1273,13 +1333,15 @@ export default function OrderStatusTemplatesPage() {
                     key={status.id}
                     status={status}
                     deliveryPreview={deliveryPreview}
-                    isPreviewExpanded={expandedPreviews.has(status.id)}
+                    isRegularPreviewExpanded={expandedPreviews.has(`regular-${status.id}`)}
+                    isMetaPreviewExpanded={expandedPreviews.has(`meta-${status.id}`)}
                     isMobile={isMobile}
                     togglingId={togglingId}
-                    onTogglePreview={togglePreview}
+                    onTogglePreview={(slot) => togglePreview(`${slot}-${status.id}`)}
                     onToggleNotify={toggleNotify}
                     onOpenEdit={openEditDialog}
                     onOpenCreate={openCreateDialog}
+                    onUnbindMeta={unbindMeta}
                   />
                 ));
               })}
@@ -1297,9 +1359,9 @@ export default function OrderStatusTemplatesPage() {
         >
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
-              {selectedStatus?.template?.id
-                ? `تعديل قالب: ${selectedStatus?.name}`
-                : `إنشاء قالب: ${selectedStatus?.name}`}
+              {dialogSlot === "meta"
+                ? `${selectedTemplate?.id ? "تعديل قالب ميتا" : "إنشاء قالب ميتا"}: ${selectedStatus?.name}`
+                : `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`}
             </DialogTitle>
             <DialogDescription className="sr-only">
               نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
@@ -1328,59 +1390,29 @@ export default function OrderStatusTemplatesPage() {
                 />
               </div>
 
-              {/* Tabs: local template vs Meta binding */}
-              <div role="tablist" aria-label="طريقة الإرسال" className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={dialogTab === "local"}
-                  onClick={() => { setDialogTab("local"); setTemplateForm((p) => ({ ...p, sendMode: "direct" })); }}
-                  className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
-                    dialogTab === "local"
-                      ? "bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-300"
-                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                  }`}
-                >
-                  📝 القالب المحلي
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={dialogTab === "meta"}
-                  onClick={() => { setDialogTab("meta"); setTemplateForm((p) => ({ ...p, sendMode: "bind_meta" })); }}
-                  className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
-                    dialogTab === "meta"
-                      ? "bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300"
-                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                  }`}
-                >
-                  ☁️ ربط قالب ميتا
-                </button>
-              </div>
-
-              {/* Contextual explainer — يوضح أنهي اللي بيتابعت للعميل فعلياً */}
+              {/* Slot indicator + contextual explainer */}
               <div className={`rounded-lg p-2.5 text-[11px] leading-relaxed ${
-                dialogTab === "meta"
-                  ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
-                  : "bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300"
+                dialogSlot === "meta"
+                  ? "bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                  : "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
               }`}>
-                {dialogTab === "meta" ? (
-                  <>☁️ <strong>قالب ميتا المعتمد هو اللي بيتابعت للعميل</strong> — النص المحلي مجرد مرجع للربط. بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
+                {dialogSlot === "meta" ? (
+                  <>☁️ <strong>قالب ميتا المعتمد هو اللي بيتابعت للعميل</strong> — النص اللي بتكتبه هنا مرجع للربط/النشر. بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
                 ) : (
-                  <>📝 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys أو Meta).</>
+                  <>📱 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys). لو عملت كمان قالب ميتا لنفس الحالة، ميتا له الأسبقية لما الجلسة الأساسية تكون Meta Cloud.</>
                 )}
               </div>
 
-              {dialogTab === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
+              {dialogSlot === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
                   ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
                   القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
                 </div>
               )}
 
-              {/* ===== META TAB CONTENT ===== */}
-              {dialogTab === "meta" && (
-                <div className="space-y-3 rounded-lg border border-emerald-200 p-3 dark:border-emerald-800/40">
+              {/* ===== META SLOT CONTENT ===== */}
+              {dialogSlot === "meta" && (
+                <div className="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                     اختر قالب ميتا المعتمد
                   </label>
@@ -1390,7 +1422,7 @@ export default function OrderStatusTemplatesPage() {
                         type="button"
                         onClick={createMetaTemplate}
                         disabled={!!publishingId || saving}
-                        className="flex w-full items-center justify-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                        className="flex w-full items-center justify-center gap-1 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 dark:border-blue-700/40 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
                       >
                         {publishingId ? (
                           <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1423,7 +1455,7 @@ export default function OrderStatusTemplatesPage() {
                           >
                             <option value="">اختر قالب...</option>
                             {availableMetaTemplates
-                              .filter((mt) => !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedStatus?.template?.id)
+                              .filter((mt) => !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplate?.id)
                               .map((mt) => (
                                 <option key={mt.name} value={mt.name}>
                                   {mt.name} {mt.category ? `(${mt.category})` : ""}
@@ -1479,10 +1511,10 @@ export default function OrderStatusTemplatesPage() {
                             );
                           })()}
 
-                          {selectedStatus?.template?.metaTemplateName && (
+                          {selectedTemplate?.metaTemplateName && (
                             <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                              حالياً مربوط بـ: {selectedStatus.template.metaTemplateName}
-                              {selectedStatus.template.metaTemplateStatus ? ` (${selectedStatus.template.metaTemplateStatus})` : ""}
+                              حالياً مربوط بـ: {selectedTemplate.metaTemplateName}
+                              {selectedTemplate.metaTemplateStatus ? ` (${selectedTemplate.metaTemplateStatus})` : ""}
                             </div>
                           )}
                         </>
@@ -1498,11 +1530,11 @@ export default function OrderStatusTemplatesPage() {
                 </div>
               )}
 
-              {/* ===== LOCAL CONTENT (shared: visible in both tabs) ===== */}
+              {/* ===== LOCAL CONTENT (shared: visible in both slots) ===== */}
               <div>
                 <div className="mb-1 flex items-center justify-between">
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    {templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"} <span className="text-red-500">*</span>
+                    {dialogSlot === "meta" ? "محتوى القالب المحلي (مرجع الربط)" : "محتوى الرسالة"} <span className="text-red-500">*</span>
                   </label>
                   <span
                     className={`text-[10px] font-medium tabular-nums ${
@@ -1524,7 +1556,7 @@ export default function OrderStatusTemplatesPage() {
                     value={templateForm.content}
                     onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) }))}
                     rows={7}
-                    aria-label={templateForm.sendMode === "bind_meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"}
+                    aria-label={dialogSlot === "meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"}
                     className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       templateForm.content.length > META_BODY_CHAR_LIMIT
                         ? "border-red-400 dark:border-red-500"
@@ -1584,7 +1616,7 @@ export default function OrderStatusTemplatesPage() {
                   </div>
                 )}
 
-                {templateForm.sendMode === "bind_meta" && (
+                {dialogSlot === "meta" && (
                   <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
                     عدّل المحتوى وضغط "ربط" عشان يتسجّل — أو "إرسال للمراجعة من جديد" عشان ميتا تراجعه وتفعّله تاني.
                   </p>
@@ -1683,7 +1715,7 @@ export default function OrderStatusTemplatesPage() {
               >
                 إلغاء
               </button>
-              {templateForm.sendMode === "bind_meta" && selectedStatus?.template?.metaTemplateName && (
+              {dialogSlot === "meta" && selectedTemplate?.metaTemplateName && (
                 <button
                   onClick={handleResubmitMeta}
                   disabled={saving || resubmittingMeta || !!bindingId}
@@ -1696,15 +1728,19 @@ export default function OrderStatusTemplatesPage() {
               )}
               <button
                 onClick={handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || (templateForm.sendMode === "direct" && !templateForm.content.trim())}
+                disabled={saving || resubmittingMeta || !!bindingId || (dialogSlot === "regular" && !templateForm.content.trim())}
                 className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
               >
                 {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
-                {templateForm.sendMode === "bind_meta" ? "ربط بقالب ميتا" : "حفظ"}
+                {dialogSlot === "meta"
+                  ? templateForm.metaTemplateName
+                    ? "ربط بقالب ميتا"
+                    : "حفظ القالب الميتا"
+                  : "حفظ"}
               </button>
             </div>
 
-            {dialogTab === "meta" && (
+            {dialogSlot === "meta" && (
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                 أي تعديل على المحتوى أو الأزرار وبعدين "إرسال للمراجعة من جديد" هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.
               </p>
@@ -1720,31 +1756,35 @@ export default function OrderStatusTemplatesPage() {
 interface StatusRowProps {
   status: StatusWithTemplate;
   deliveryPreview: Record<string, DeliveryPreviewItem>;
-  isPreviewExpanded: boolean;
+  isRegularPreviewExpanded: boolean;
+  isMetaPreviewExpanded: boolean;
   isMobile: boolean;
   togglingId: string | null;
-  onTogglePreview: (id: string) => void;
+  onTogglePreview: (slot: TemplateSlot) => void;
   onToggleNotify: (status: StatusWithTemplate) => void;
-  onOpenEdit: (status: StatusWithTemplate, initialSendMode?: "direct" | "bind_meta") => void;
-  onOpenCreate: (status: StatusWithTemplate) => void;
+  onOpenEdit: (status: StatusWithTemplate, slot?: TemplateSlot) => void;
+  onOpenCreate: (status: StatusWithTemplate, slot: TemplateSlot) => void;
+  onUnbindMeta: (status: StatusWithTemplate) => void;
 }
 
 function StatusRow({
   status,
   deliveryPreview,
-  isPreviewExpanded,
+  isRegularPreviewExpanded,
+  isMetaPreviewExpanded,
   isMobile,
   togglingId,
   onTogglePreview,
   onToggleNotify,
   onOpenEdit,
   onOpenCreate,
+  onUnbindMeta,
 }: StatusRowProps) {
   const { t } = useTranslation();
-  const hasTemplate = status.hasTemplate;
-  const hasTemplateContent = hasTemplate && !!status.template?.content;
-  const previewContent = hasTemplateContent && status.template?.content ? status.template.content : "";
-  const p = status.template?.eventType ? deliveryPreview[status.template.eventType] : undefined;
+  const regular = status.template;
+  const meta = getMetaSlotTemplate(status);
+  const previewEventType = status.template?.eventType || status.metaTemplate?.eventType;
+  const p = previewEventType ? deliveryPreview[previewEventType] : undefined;
   const deliveryColors = {
     none: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
     warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
@@ -1805,104 +1845,221 @@ function StatusRow({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-          {p && (p.riskLevel === "warning" || p.riskLevel === "danger") ? (
-            <button
-              onClick={() => onOpenEdit(status, "bind_meta")}
-              title={p.message}
-              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:opacity-80 ${deliveryColors[p.riskLevel]}`}
-            >
-              {deliveryIcons[p.riskLevel]} 🔗 اربط بقالب ميتا
-            </button>
-          ) : p ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium ${deliveryColors[p.riskLevel]}`}
-              title={p.message}
-            >
-              {deliveryIcons[p.riskLevel]}
-              {!isMobile && (p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message)}
-            </span>
-          ) : null}
-
-          {hasTemplate ? (
-            <>
-              <span className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                <CheckCircleIcon className="h-3 w-3" />
-                يوجد قالب
-              </span>
-              {status.template?.metaTemplateName && (
-                <span
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                    status.template.metaTemplateStatus === "APPROVED"
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-                      : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                  }`}
-                  title={`Meta template: ${status.template.metaTemplateName} (${status.template.metaTemplateStatus})`}
-                >
-                  <GlobeAltIcon className="h-3 w-3" />
-                  {status.template.metaTemplateStatus === "APPROVED" ? "ميتا معتمد" : status.template.metaTemplateStatus || "ميتا"}
-                </span>
-              )}
-              {hasTemplateContent && (
-                <button
-                  onClick={() => onTogglePreview(status.id)}
-                  className="flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  <DocumentTextIcon className="h-3 w-3" />
-                  {isPreviewExpanded ? "إخفاء" : "معاينة"}
-                </button>
-              )}
-              <button
-                onClick={() => onOpenEdit(status)}
-                className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
-              >
-                <PencilSquareIcon className="h-3 w-3" />
-                تعديل
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-                <XCircleIcon className="h-3 w-3" />
-                بدون قالب
-              </span>
-              <button
-                onClick={() => onOpenCreate(status)}
-                disabled={!status.notifyCustomer}
-                title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-                  status.notifyCustomer
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-                }`}
-              >
-                <PlusIcon className="h-3 w-3" />
-                إضافة
-              </button>
-            </>
-          )}
-        </div>
+        {p && (p.riskLevel === "warning" || p.riskLevel === "danger") ? (
+          <button
+            onClick={() => onOpenEdit(status, "meta")}
+            title={p.message}
+            className={`inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:opacity-80 ${deliveryColors[p.riskLevel]}`}
+          >
+            {deliveryIcons[p.riskLevel]} 🔗 اربط بقالب ميتا
+          </button>
+        ) : p ? (
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[11px] font-medium ${deliveryColors[p.riskLevel]}`}
+            title={p.message}
+          >
+            {deliveryIcons[p.riskLevel]}
+            {!isMobile && (p.message.length > 40 ? `${p.message.substring(0, 40)}…` : p.message)}
+          </span>
+        ) : null}
       </div>
 
-      {hasTemplateContent && isPreviewExpanded && (
-        <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
-          <div className="mb-1 flex items-center justify-between">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              معاينة القالب
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <StatusTemplateSlot
+          slot="regular"
+          template={regular}
+          status={status}
+          isPreviewExpanded={isRegularPreviewExpanded}
+          onTogglePreview={() => onTogglePreview("regular")}
+          onEdit={() => onOpenEdit(status, "regular")}
+          onCreate={() => onOpenCreate(status, "regular")}
+        />
+        <StatusTemplateSlot
+          slot="meta"
+          template={meta}
+          status={status}
+          isLegacy={metaSlotIsLegacy(status)}
+          isPreviewExpanded={isMetaPreviewExpanded}
+          onTogglePreview={() => onTogglePreview("meta")}
+          onEdit={() => onOpenEdit(status, "meta")}
+          onCreate={() => onOpenCreate(status, "meta")}
+          onUnbind={meta ? () => onUnbindMeta(status) : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface StatusTemplateSlotProps {
+  slot: TemplateSlot;
+  template: Template | null;
+  status: StatusWithTemplate;
+  isLegacy?: boolean;
+  isPreviewExpanded: boolean;
+  onTogglePreview: () => void;
+  onEdit: () => void;
+  onCreate: () => void;
+  onUnbind?: () => void;
+}
+
+function StatusTemplateSlot({
+  slot,
+  template,
+  status,
+  isLegacy,
+  isPreviewExpanded,
+  onTogglePreview,
+  onEdit,
+  onCreate,
+  onUnbind,
+}: StatusTemplateSlotProps) {
+  const isMeta = slot === "meta";
+  const bound = isMetaTemplateBound(template);
+  const metaStatus = String(template?.metaTemplateStatus || "").toUpperCase();
+  const hasContent = !!template?.content;
+  const previewContent = hasContent ? template!.content : "";
+
+  const colors = isMeta
+    ? {
+        border: "border-blue-200 dark:border-blue-800/40",
+        badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        bg: "bg-blue-50/40 dark:bg-blue-900/10",
+        accent: "text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30",
+      }
+    : {
+        border: "border-emerald-200 dark:border-emerald-800/40",
+        badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        bg: "bg-emerald-50/40 dark:bg-emerald-900/10",
+        accent: "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30",
+      };
+
+  const statusBadge = isMeta
+    ? bound
+      ? metaStatus === "APPROVED"
+        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+        : metaStatus === "REJECTED"
+          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+      : template
+        ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+    : template
+      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+
+  const statusLabel = isMeta
+    ? bound
+      ? metaStatus === "APPROVED"
+        ? "✅ معتمد"
+        : metaStatus === "REJECTED"
+          ? "❌ مرفوض"
+          : metaStatus
+            ? `⏳ ${metaStatus}`
+            : "قيد المراجعة"
+      : template
+        ? "محفوظ (بدون ربط)"
+        : "بدون قالب"
+    : template
+      ? "يوجد قالب"
+      : "بدون قالب";
+
+  return (
+    <div
+      data-testid={`${slot}-slot-${status.id}`}
+      className={`rounded-lg border p-3 ${colors.border} ${colors.bg}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${colors.badge}`}>
+          {isMeta ? <GlobeAltIcon className="h-3 w-3" /> : <DocumentTextIcon className="h-3 w-3" />}
+          {isMeta ? "قالب ميتا" : "واتساب عادي"}
+        </span>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadge}`}>
+          {isMeta && bound ? <CheckCircleIcon className="h-3 w-3" /> : null}
+          {statusLabel}
+        </span>
+      </div>
+
+      {isMeta && bound && template?.metaTemplateName && (
+        <p className="mt-1.5 truncate font-mono text-[11px] text-blue-700 dark:text-blue-300" dir="ltr">
+          {template.metaTemplateName}
+          {isLegacy ? " (توصيف قديم)" : ""}
+        </p>
+      )}
+
+      <div className="mt-1.5 min-h-[2.75rem]">
+        {template ? (
+          <>
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {template.name || "قالب غير مسمّى"}
             </p>
-            <button
-              onClick={() => onTogglePreview(status.id)}
-              className="text-[11px] text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-            >
-              إخفاء
-            </button>
-          </div>
-          <p className="line-clamp-3 whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
+            {hasContent && (
+              <p className="mt-0.5 line-clamp-2 whitespace-pre-wrap break-words text-xs text-slate-600 dark:text-slate-400">
+                {resolveVariablesForPreview(previewContent)}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {isMeta ? "لا يوجد قالب ميتا لهذه الحالة" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {hasContent && (
+          <button
+            onClick={onTogglePreview}
+            className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-white dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
+          >
+            <DocumentTextIcon className="h-3 w-3" />
+            {isPreviewExpanded ? "إخفاء" : "معاينة"}
+          </button>
+        )}
+        {template ? (
+          <button
+            onClick={onEdit}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${colors.accent}`}
+          >
+            <PencilSquareIcon className="h-3 w-3" />
+            {isMeta && isLegacy ? "تعديل الربط" : "تعديل"}
+          </button>
+        ) : (
+          <button
+            onClick={onCreate}
+            disabled={!status.notifyCustomer}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
+              status.notifyCustomer
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+            }`}
+          >
+            <PlusIcon className="h-3 w-3" />
+            إنشاء
+          </button>
+        )}
+        {isMeta && bound && onUnbind && (
+          <button
+            onClick={onUnbind}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          >
+            <XCircleIcon className="h-3 w-3" />
+            فك الربط
+          </button>
+        )}
+      </div>
+
+      {hasContent && isPreviewExpanded && (
+        <div className="mt-2 rounded-md bg-white/70 p-2 dark:bg-white/5">
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            المعاينة الكاملة
+          </p>
+          <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
             {resolveVariablesForPreview(previewContent)}
           </p>
-          {status.template?.hasButtons && (
+          {template?.hasButtons && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {parseTemplateButtons(status.template?.buttons).map((b, i) => (
+              {parseTemplateButtons(template?.buttons).map((b, i) => (
                 <span
                   key={i}
                   className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-400"
@@ -1949,9 +2106,9 @@ function GroupHeader({ members, isNoTemplate, onExpand }: GroupHeaderProps) {
           {members.length > 5 ? "…" : ""}
         </span>
       </div>
-      {!isNoTemplate && members[0]?.template?.content && (
+      {!isNoTemplate && (members[0]?.template?.content || members[0]?.metaTemplate?.content) && (
         <p className="mt-2 line-clamp-1 text-xs italic text-slate-500 dark:text-slate-500">
-          "{members[0].template.content.substring(0, 80)}…"
+          "{(members[0].template?.content || members[0].metaTemplate?.content || "").substring(0, 80)}…"
         </p>
       )}
     </div>

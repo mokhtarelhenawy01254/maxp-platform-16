@@ -35,6 +35,45 @@ function replaceVariables(template, variables) {
 }
 
 /**
+ * اختيار قالب الحدث حسب قناة الإرسال الفعلية (Baileys أم Meta Cloud).
+ *
+ * الحالة الواحدة تقدر يكون ليها قالبان مستقلان (من صفحة قوالب الحالات):
+ *  - template عادي (channel != META_CLOUD) يُرسل نصاً حراً.
+ *  - metaTemplate (channel == META_CLOUD) مربوط بقالب ميتا معتمد.
+ *
+ * القاعدة:
+ *  1) جلسة META_CLOUD → نفضّل قالب META_CLOUD المرتبط بقالب معتمد؛
+ *     لو مش موجود/معتمد → ننزل للقالب العادي.
+ *  2) جلسة BAILEYS → نفضّل القالب العادي.
+ *  3) لو مفيش قالب مطابق للقناة → أي قالب للحدث (توافق مع بيانات قديمة
+ *     مالهاش channel، واللي كان فيها الربط على نفس القالب).
+ */
+async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
+  const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
+
+  if (isMetaSession) {
+    const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return metaTemplate;
+    }
+  }
+
+  const regularTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
+    orderBy: { isDefault: 'desc' }
+  });
+  if (regularTemplate) return regularTemplate;
+
+  return prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true },
+    orderBy: { isDefault: 'desc' }
+  });
+}
+
+/**
  * بناء ID وظيفي لزر تغيير حالة الطلب من إعدادات الزر
  * @param {object} btn - { id, text, action }
  * @param {object} variables - متغيرات الإرسال (يجب أن تحتوي orderId)
@@ -1015,25 +1054,21 @@ async function sendNotification(options) {
         // محاولة العثور على القالب برمز الحالة مباشرة أولاً
         // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
         if (fallbackEventType && fallbackEventType !== eventType) {
-          template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-            where: {
-              companyId,
-              eventType: fallbackEventType,
-              isActive: true
-            },
-            orderBy: { isDefault: 'desc' }
-          }));
+          template = await safeQuery(() => findNotificationTemplateForEvent(
+            companyId,
+            fallbackEventType,
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
         }
 
         if (!template) {
-          template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-            where: {
-              companyId,
-              eventType,
-              isActive: true
-            },
-            orderBy: { isDefault: 'desc' }
-          }));
+          template = await safeQuery(() => findNotificationTemplateForEvent(
+            companyId,
+            eventType,
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
         }
 
         // استخدام القالب الافتراضي إذا لم يوجد

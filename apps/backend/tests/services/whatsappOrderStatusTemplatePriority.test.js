@@ -167,3 +167,101 @@ describe('whatsapp order status template priority', () => {
     expect(result).toEqual(expect.objectContaining({ success: false, reason: 'no_template' }));
   });
 });
+
+describe('whatsapp channel-aware template selection (two slots per status)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockSettings.whatsAppNotificationSettings.findUnique.mockResolvedValue({
+      isEnabled: true,
+      orderNotificationsEnabled: true,
+      orderCreatedEnabled: true,
+      orderConfirmedEnabled: true,
+      orderProcessingEnabled: true,
+      orderShippedEnabled: true,
+      orderDeliveredEnabled: true,
+      orderCancelledEnabled: true,
+      quietHoursEnabled: false,
+      defaultSessionId: null,
+    });
+
+    mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue(null);
+    mockSettings.whatsAppNotificationLog.create.mockResolvedValue({ id: 'log-1' });
+    mockSettings.whatsAppNotificationLog.update.mockResolvedValue({});
+  });
+
+  const order = {
+    id: 'order-c1',
+    orderNumber: 'ORD-C1',
+    companyId: 'company-1',
+    customerPhone: '+201000000000',
+    customer: { firstName: 'Ali', phone: '+201000000000' },
+    items: [],
+    total: '100',
+    currency: 'EGP',
+  };
+
+  // mockImplementation يحاكي Prisma: يرد بقوالب حسب (eventType + channel)
+  function mockFindFirst(rows) {
+    mockSettings.whatsAppNotificationTemplate.findFirst.mockImplementation(({ where }) => {
+      const evt = where.eventType;
+      const metaOnly = where.channel === 'META_CLOUD';
+      const notMeta = where.channel && typeof where.channel === 'object' && where.channel.not === 'META_CLOUD';
+      let candidates = rows.filter((r) => r.eventType === evt);
+      if (metaOnly) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() === 'META_CLOUD');
+      if (notMeta) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() !== 'META_CLOUD');
+      return Promise.resolve(candidates[0] || null);
+    });
+  }
+
+  it('Meta session + approved META_CLOUD template → يفضّل قالب ميتا', async () => {
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([]) },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const used = calls.find((c) => c[0].where.channel === 'META_CLOUD');
+    expect(used).toBeTruthy();
+    expect(res).toBeDefined();
+  });
+
+  it('Meta session + META_CLOUD غير معتمد → بينزل للقالب العادي', async () => {
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'PENDING' },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const usedRegular = calls.some((c) => c[0].where.channel && c[0].where.channel.not === 'META_CLOUD');
+    expect(usedRegular).toBeTruthy();
+    expect(res).toBeDefined();
+  });
+
+  it('Baileys session + القالبين موجودين → يفضّل القالب العادي', async () => {
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-b', status: 'CONNECTED', provider: 'BAILEYS' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-b', status: 'CONNECTED', provider: 'BAILEYS' });
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED' },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const usedRegular = calls.some((c) => c[0].where.channel && c[0].where.channel.not === 'META_CLOUD');
+    expect(usedRegular).toBeTruthy();
+    expect(res).toBeDefined();
+  });
+});

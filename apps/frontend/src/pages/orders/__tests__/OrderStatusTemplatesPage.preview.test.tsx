@@ -112,8 +112,8 @@ describe("OrderStatusTemplatesPage preview UI", () => {
     await screen.findByTestId("status-row-st1");
     await user.click(screen.getByRole("button", { name: /^معاينة/ }));
 
-    expect(screen.getByText(/أحمد محمد/)).toBeInTheDocument();
-    expect(screen.getByText(/ORD-12345/)).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ORD-12345/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/customerName/)).not.toBeInTheDocument();
   });
 });
