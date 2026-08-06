@@ -1043,6 +1043,16 @@ h6 {
   -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
+/* Base UI menus: the positioner is kept at inline `opacity: 0` until
+   floating-ui reports it as positioned. Under `prefers-reduced-motion`
+   (or when autoUpdate cannot complete) that step never fires, leaving the
+   dropdown invisible. Force the positioner visible whenever its menu is open. */
+[role="presentation"][data-open]:has(> [data-slot="dropdown-menu-content"]),
+[role="presentation"][data-open]:has(> [data-slot="select-content"]),
+[role="presentation"][data-open]:has(> [data-slot="combobox-content"]) {
+  opacity: 1 !important;
+}
+
 [data-slot="select-item"],
 [data-slot="dropdown-menu-item"],
 [data-slot="dropdown-menu-checkbox-item"],
