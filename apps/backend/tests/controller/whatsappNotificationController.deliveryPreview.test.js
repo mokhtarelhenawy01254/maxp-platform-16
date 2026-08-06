@@ -94,4 +94,41 @@ describe('GET /templates/delivery-preview', () => {
     expect(body.hasBaileysBackup).toBe(false);
     expect(body.preview.every(p => p.deliveryStatus === 'no_session' && p.riskLevel === 'danger')).toBe(true);
   });
+
+  test('حدث ليه قالبان (عادي + ميتا معتمد) على جلسة ميتا → يرجع قالب ميتا بس (dedup)', async () => {
+    const prisma = buildPrisma({
+      templates: [
+        { id: 'r1', eventType: 'CONFIRMED', category: 'ORDER', channel: 'AUTO', metaTemplateName: null, metaTemplateStatus: null, metaTemplateLanguage: 'ar' },
+        { id: 'm1', eventType: 'CONFIRMED', category: 'ORDER', channel: 'META_CLOUD', metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', metaTemplateLanguage: 'ar' },
+      ],
+      sessions: [{ id: 's2', name: 'جلسة ميتا', provider: 'META_CLOUD', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      defaultSessionId: 's2',
+    });
+    const { req, res } = makeReqRes(prisma);
+    await getTemplatesDeliveryPreview(req, res);
+    const body = res.json.mock.calls[0][0];
+    const confirmedItems = body.preview.filter(p => p.eventType === 'CONFIRMED');
+    expect(confirmedItems).toHaveLength(1);
+    expect(confirmedItems[0].templateId).toBe('m1');
+    expect(confirmedItems[0].deliveryStatus).toBe('meta_approved');
+    expect(confirmedItems[0].riskLevel).toBe('none');
+  });
+
+  test('حدث ليه قالبان على جلسة Baileys → يرجع القالب العادي بس (dedup)', async () => {
+    const prisma = buildPrisma({
+      templates: [
+        { id: 'm1', eventType: 'SHIPPED', category: 'ORDER', channel: 'META_CLOUD', metaTemplateName: 'ship_ar', metaTemplateStatus: 'APPROVED', metaTemplateLanguage: 'ar' },
+        { id: 'r1', eventType: 'SHIPPED', category: 'ORDER', channel: 'AUTO', metaTemplateName: null, metaTemplateStatus: null, metaTemplateLanguage: 'ar' },
+      ],
+      sessions: [{ id: 's1', name: 'جلسة بايلز', provider: 'BAILEYS', phoneNumber: '201000000000', status: 'CONNECTED' }],
+      defaultSessionId: 's1',
+    });
+    const { req, res } = makeReqRes(prisma);
+    await getTemplatesDeliveryPreview(req, res);
+    const body = res.json.mock.calls[0][0];
+    const shippedItems = body.preview.filter(p => p.eventType === 'SHIPPED');
+    expect(shippedItems).toHaveLength(1);
+    expect(shippedItems[0].templateId).toBe('r1');
+    expect(shippedItems[0].deliveryStatus).toBe('baileys_free_text');
+  });
 });

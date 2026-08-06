@@ -1340,7 +1340,7 @@ async function getTemplatesDeliveryPreview(req, res) {
     const templates = await prisma.whatsAppNotificationTemplate.findMany({
       where: { companyId, isActive: true },
       select: {
-        id: true, eventType: true, category: true,
+        id: true, eventType: true, category: true, channel: true,
         metaTemplateName: true, metaTemplateStatus: true, metaTemplateLanguage: true,
       },
     });
@@ -1394,6 +1394,7 @@ async function getTemplatesDeliveryPreview(req, res) {
       return {
         templateId: t.id,
         eventType: t.eventType,
+        channel: t.channel || 'AUTO',
         provider,
         deliveryStatus,
         riskLevel,
@@ -1403,6 +1404,31 @@ async function getTemplatesDeliveryPreview(req, res) {
       };
     });
 
+    // 5. لو الحدث الواحد ليه قالبان (عادي + ميتا)، نحتفظ بالقالب اللي مسار الإرسال
+    //    هيستخدمه فعلًا (نفس قاعدة findNotificationTemplateForEvent) عشان المؤشر
+    //    يعكس المصير الحقيقي مش آخر قالب اعتباطي.
+    const isMetaDefault = defaultSession?.provider === 'META_CLOUD';
+    const isMetaApproved = (item) =>
+      String(item.channel).toUpperCase() === 'META_CLOUD' &&
+      String(item.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
+
+    const perEvent = new Map();
+    for (const item of preview) {
+      const prev = perEvent.get(item.eventType);
+      if (!prev) {
+        perEvent.set(item.eventType, item);
+        continue;
+      }
+      if (isMetaDefault) {
+        if (isMetaApproved(item) && !isMetaApproved(prev)) perEvent.set(item.eventType, item);
+      } else {
+        const itemIsMeta = String(item.channel).toUpperCase() === 'META_CLOUD';
+        const prevIsMeta = String(prev.channel).toUpperCase() === 'META_CLOUD';
+        if (!itemIsMeta && prevIsMeta) perEvent.set(item.eventType, item);
+      }
+    }
+    const finalPreview = Array.from(perEvent.values());
+
     res.json({
       success: true,
       defaultSession: defaultSession ? {
@@ -1411,7 +1437,7 @@ async function getTemplatesDeliveryPreview(req, res) {
       } : null,
       connectedSessionsCount: sessions.length,
       hasBaileysBackup: sessions.some(s => s.provider === 'BAILEYS'),
-      preview,
+      preview: finalPreview,
     });
   } catch (error) {
     console.error('❌ Error in getTemplatesDeliveryPreview:', error);
