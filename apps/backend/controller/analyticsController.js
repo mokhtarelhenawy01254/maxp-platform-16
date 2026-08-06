@@ -2864,7 +2864,7 @@ const getProductFulfillmentAnalytics = async (req, res) => {
           select: {
             name: true,
             sku: true,
-            image: true
+            mainImage: true
           }
         }
       }
@@ -2881,7 +2881,7 @@ const getProductFulfillmentAnalytics = async (req, res) => {
       const key = item.productId || item.product?.name || item.productName || item.productSku || 'unknown';
       const name = item.product?.name || item.productName || 'منتج غير معروف';
       const sku = item.product?.sku || item.productSku || null;
-      const image = item.product?.image || item.productImage || null;
+      const image = item.product?.mainImage || item.productImage || null;
 
       if (!productMap[key]) {
         productMap[key] = {

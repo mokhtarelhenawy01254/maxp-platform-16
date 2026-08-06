@@ -33,7 +33,7 @@ const makeItem = (overrides) => ({
   productSku: 'SKU-1',
   productImage: null,
   order: { id: 'order-1', status: 'DELIVERED' },
-  product: { name: 'منتج تجريبي', sku: 'SKU-1', image: null },
+  product: { name: 'منتج تجريبي', sku: 'SKU-1', mainImage: null },
   ...overrides
 });
 
