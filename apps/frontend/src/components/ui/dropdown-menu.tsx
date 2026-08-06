@@ -57,9 +57,62 @@ function DropdownMenuContent({
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
   >) {
+  const positionerRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const positioner = positionerRef.current;
+    const menu = positioner?.querySelector(
+      '[data-slot="dropdown-menu-content"]',
+    );
+    if (!positioner || !menu) return;
+
+    // Safety net: floating-ui can fail to position the popup, leaving the
+    // positioner at its initial (0, 0) placeholder. When that happens, anchor
+    // the menu to its trigger so it always opens in the right place.
+    const applyFallback = () => {
+      const inline = positioner.getAttribute("style") || "";
+      const rect = positioner.getBoundingClientRect();
+      const unpositioned =
+        inline.includes("opacity: 0") || (rect.left === 0 && rect.top === 0);
+      if (!unpositioned) return;
+
+      const trigger = document.querySelector(
+        `[aria-controls="${menu.id}"]`,
+      );
+      if (!trigger) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const isRtl = document.documentElement.dir === "rtl";
+      const left = isRtl
+        ? triggerRect.right - menuRect.width
+        : triggerRect.left;
+      const offset = typeof sideOffset === "number" ? sideOffset : 4;
+      const top =
+        side === "top"
+          ? triggerRect.top - menuRect.height - offset
+          : triggerRect.bottom + offset;
+
+      positioner.style.position = "fixed";
+      positioner.style.left = `${left}px`;
+      positioner.style.top = `${top}px`;
+      positioner.style.transform = "none";
+    };
+
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(applyFallback),
+    );
+    window.addEventListener("resize", applyFallback);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", applyFallback);
+    };
+  }, [side, sideOffset]);
+
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
+        ref={positionerRef}
         className="isolate z-50 outline-none"
         align={align}
         alignOffset={alignOffset}

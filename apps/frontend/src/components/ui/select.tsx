@@ -70,9 +70,61 @@ function SelectContent({
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
   >) {
+  const positionerRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const positioner = positionerRef.current;
+    const content = positioner?.querySelector(
+      '[data-slot="select-content"]',
+    );
+    if (!positioner || !content) return;
+
+    // Safety net: floating-ui can fail to position the popup, leaving the
+    // positioner at its initial (0, 0) placeholder. Anchor it to its trigger.
+    const applyFallback = () => {
+      const inline = positioner.getAttribute("style") || "";
+      const rect = positioner.getBoundingClientRect();
+      const unpositioned =
+        inline.includes("opacity: 0") || (rect.left === 0 && rect.top === 0);
+      if (!unpositioned) return;
+
+      const trigger = document.querySelector(
+        `[aria-controls="${content.id}"]`,
+      );
+      if (!trigger) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const isRtl = document.documentElement.dir === "rtl";
+      const left = isRtl
+        ? triggerRect.right - contentRect.width
+        : triggerRect.left;
+      const offset = typeof sideOffset === "number" ? sideOffset : 4;
+      const top =
+        side === "top"
+          ? triggerRect.top - contentRect.height - offset
+          : triggerRect.bottom + offset;
+
+      positioner.style.position = "fixed";
+      positioner.style.left = `${left}px`;
+      positioner.style.top = `${top}px`;
+      positioner.style.transform = "none";
+    };
+
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(applyFallback),
+    );
+    window.addEventListener("resize", applyFallback);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", applyFallback);
+    };
+  }, [side, sideOffset]);
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
+        ref={positionerRef}
         side={side}
         sideOffset={sideOffset}
         align={align}
