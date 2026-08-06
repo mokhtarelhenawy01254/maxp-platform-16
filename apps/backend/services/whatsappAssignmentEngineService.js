@@ -16,6 +16,7 @@ const {
 } = require('./whatsappInboxSettingsService');
 const { normalizeRole } = require('../middleware/rbacMiddleware');
 const { parseRoutingUserIds, normalizeRoutingMode, ROUTING_MODES } = require('./whatsappConversationRoutingService');
+const { clearConversationAudienceCache } = require('./whatsappRealtimeAudienceService');
 
 const ROUTING_STRATEGIES = {
   ROUND_ROBIN: 'ROUND_ROBIN',
@@ -264,6 +265,9 @@ class WhatsAppAssignmentEngineService {
 
     for (const event of postCommitEvents) {
       if (event.type === 'conversation:assignment') {
+        // 🧹 Invalidate audience cache: الإسناد غيّر الـ audience بتاع المحادثة
+        // (round-robin: من كل الـ pool → للـ agent المعين بس) — لازم الـ emit الجاي يقرا الجديد.
+        clearConversationAudienceCache();
         socketService.emitToCompany(event.companyId, 'conversation:assignment', event.payload);
       }
 

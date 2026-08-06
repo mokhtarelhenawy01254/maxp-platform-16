@@ -20,6 +20,7 @@ const {
 const {
   getNormalizedSettings
 } = require('./whatsappInboxSettingsService');
+const { clearConversationAudienceCache } = require('./whatsappRealtimeAudienceService');
 const { sendText } = require('./whatsapp/WhatsAppMessageHandler');
 const { computeWindowStatus } = require('./whatsapp/WhatsAppWindowService');
 
@@ -1033,6 +1034,8 @@ class WhatsAppInboxService {
       return nextConversation;
     });
 
+    // 🧹 Invalidate audience cache: الإسناد اليدوي غيّر الـ audience بتاع المحادثة
+    clearConversationAudienceCache();
     socketService.emitToCompany(companyId, 'conversation:assignment', {
       conversationId,
       assignedUserId: newUserId,

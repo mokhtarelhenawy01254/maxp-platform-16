@@ -66,7 +66,8 @@ const historySyncCompletionRequested = new Set();
 // Cache لصور البروفايل: كانت `sock.profilePictureUrl()` (نداء شبكة لواتساب) بتتنفذ
 // على كل رسالة واردة — صورة البروفايل نادراً ما تتغير، فـ TTL طويل (ساعة) آمن.
 const profilePicCache = new Map(); // `${sessionId}:${jid}` -> { url, expiresAt }
-const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour (نجاح)
+const PROFILE_PIC_MISS_TTL_MS = 10 * 60 * 1000; // 10 min (مفيش صورة — retry دوري)
 
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
@@ -3295,9 +3296,14 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
                             if (entry.expiresAt <= picNow) profilePicCache.delete(key);
                         }
                     }
+                    // مفيش صورة (null) → cache قصير (10 دقايق) عشان نعيد المحاولة بشكل دوري
+                    // من غير ما ننفذ نداء الشبكة على كل رسالة. صورة ناجحة → ساعة.
+                    const ttl = profilePicUrl
+                        ? PROFILE_PIC_CACHE_TTL_MS
+                        : PROFILE_PIC_MISS_TTL_MS;
                     profilePicCache.set(profileCacheKey, {
                         url: profilePicUrl,
-                        expiresAt: Date.now() + PROFILE_PIC_CACHE_TTL_MS
+                        expiresAt: Date.now() + ttl
                     });
                 } catch (e) {
                     // تجاهل الخطأ إذا لم تكن الصورة متاحة
