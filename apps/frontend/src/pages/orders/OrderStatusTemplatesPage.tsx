@@ -30,6 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
 
+const INCOMPLETE_CART_EVENT_TYPE = "INCOMPLETE_CART_FIRST_APPEARANCE";
+
 interface Template {
   id: string;
   name: string;
@@ -69,6 +71,8 @@ interface MetaAvailableTemplate {
   components?: Array<{ type: string; text?: string }> | null;
   boundToLocalTemplateId?: string | null;
   boundToEventType?: string | null;
+  boundToLocalTemplateIds?: string[];
+  boundToEventTypes?: string[];
 }
 
 interface DeliveryPreviewItem {
@@ -515,7 +519,7 @@ export default function OrderStatusTemplatesPage() {
         buttons: { id: string; text: string; action: string }[];
         channel?: string;
       } = {
-        category: "ORDERS",
+        category: selectedStatus.code === INCOMPLETE_CART_EVENT_TYPE ? "ABANDONED_CART" : "ORDERS",
         eventType: selectedStatus.code,
         name: templateForm.name,
         content: templateForm.content,
@@ -1454,14 +1458,17 @@ export default function OrderStatusTemplatesPage() {
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
                             <option value="">اختر قالب...</option>
-                            {availableMetaTemplates
-                              .filter((mt) => !mt.boundToLocalTemplateId || mt.boundToLocalTemplateId === selectedTemplate?.id)
-                              .map((mt) => (
+                            {availableMetaTemplates.map((mt) => {
+                              const boundEvents = mt.boundToEventTypes?.length
+                                ? mt.boundToEventTypes.join("، ")
+                                : (mt.boundToEventType || "");
+                              return (
                                 <option key={mt.name} value={mt.name}>
                                   {mt.name} {mt.category ? `(${mt.category})` : ""}
-                                  {mt.boundToEventType ? ` - مربوط بـ ${mt.boundToEventType}` : ""}
+                                  {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
                                 </option>
-                              ))}
+                              );
+                            })}
                           </select>
 
                           {selectedMetaBody && (
@@ -1474,6 +1481,18 @@ export default function OrderStatusTemplatesPage() {
                               </p>
                             </div>
                           )}
+
+                          {(() => {
+                            const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
+                            const otherBoundEvents = (selectedMt?.boundToEventTypes || [])
+                              .filter((ev) => ev !== selectedTemplate?.eventType);
+                            if (!selectedMt || otherBoundEvents.length === 0) return null;
+                            return (
+                              <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
+                                ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
+                              </div>
+                            );
+                          })()}
 
                           {/* Variable mapping {{1}} → customerName — بصري وواضح */}
                           {selectedMetaBody && (() => {
@@ -1817,7 +1836,7 @@ function StatusRow({
               )}
               {status.statusType && status.statusType !== "order" && (
                 <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                  {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType}
+                  {status.statusType === "preparation" ? "تجهيز" : status.statusType === "shipping" ? "شحن" : status.statusType === "payment" ? "دفع" : status.statusType === "incomplete" ? "غير مكتمل" : status.statusType}
                 </span>
               )}
             </div>
