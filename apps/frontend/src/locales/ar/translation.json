@@ -3515,6 +3515,7 @@
   "whatsapp": {
     "sidebar": {
       "all": "الكل",
+      "unreplied": "بانتظار الرد",
       "unread": "غير مقروء",
       "groups": "مجموعات",
       "statuses": "حالات",

@@ -3508,6 +3508,7 @@ declare module 'react-i18next' {
       whatsapp: {
         sidebar: {
           all: string;
+          unreplied: string;
           unread: string;
           groups: string;
           statuses: string;

@@ -114,7 +114,7 @@ interface ChatSidebarProps {
   labels?: { id: string; name: string; color: string }[];
 }
 
-type SidebarFilter = "all" | "unread" | "groups" | "statuses";
+type SidebarFilter = "all" | "unreplied" | "unread" | "groups" | "statuses";
 
 function getContactName(contact: Contact) {
   return getBestContactDisplayName(contact);
@@ -390,6 +390,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       filtered = filtered.filter((contact) => contact.unreadCount > 0);
     } else if (filterType === "groups") {
       filtered = filtered.filter((contact) => contact.isGroup);
+    } else if (filterType === "unreplied") {
+      filtered = filtered.filter(
+        (contact) => !!contact.lastMessage && !contact.lastMessage.fromMe,
+      );
     }
 
     return [...filtered].sort((first, second) => {
@@ -405,6 +409,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const unreadCount = useMemo(
     () => conversations.filter((contact) => contact.unreadCount > 0).length,
+    [conversations],
+  );
+
+  const unrepliedCount = useMemo(
+    () =>
+      conversations.filter(
+        (contact) => !!contact.lastMessage && !contact.lastMessage.fromMe,
+      ).length,
     [conversations],
   );
 
@@ -741,6 +753,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             label={t("whatsapp.sidebar.all")}
             count={conversations.length}
             onClick={() => { setFilterType("all"); setShowArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "unreplied"}
+            label={t("whatsapp.sidebar.unreplied")}
+            count={unrepliedCount}
+            onClick={() => { setFilterType("unreplied"); setShowArchived(false); }}
           />
           <FilterPill
             active={filterType === "unread"}
