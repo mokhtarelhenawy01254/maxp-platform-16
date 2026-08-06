@@ -225,6 +225,8 @@
   "incompleteReports": "التقارير",
   "incompletePeriodLabel": "الفترة الزمنية",
   "incompleteCustomPeriod": "فترة مخصصة",
+  "incompleteToday": "اليوم",
+  "incompleteYesterday": "أمس",
   "incompleteFrom": "من",
   "incompleteTo": "إلى",
   "incompleteSettings": "الإعدادات",

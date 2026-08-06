@@ -225,6 +225,8 @@
   "incompleteReports": "Reports",
   "incompletePeriodLabel": "Period",
   "incompleteCustomPeriod": "Custom period",
+  "incompleteToday": "Today",
+  "incompleteYesterday": "Yesterday",
   "incompleteFrom": "From",
   "incompleteTo": "To",
   "incompleteSettings": "Settings",
