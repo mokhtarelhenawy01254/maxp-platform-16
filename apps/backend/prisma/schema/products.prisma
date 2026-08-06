@@ -590,7 +590,8 @@ model CustomerNotificationPreference {
   id            String    @id @default(cuid())
   companyId     String
   customerId    String    @unique
-  phone         String  orderUpdates  Boolean   @default(true)
+  phone         String
+  orderUpdates  Boolean   @default(true)
   promotions    Boolean   @default(false)
   backInStock   Boolean   @default(true)
   priceDrops    Boolean   @default(true)
