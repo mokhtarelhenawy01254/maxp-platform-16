@@ -62,6 +62,9 @@ Per delivered order → one voucher (`percent`, `amount`, `expiresAt`,
 
 ## Follow-up (not in this change)
 
-- Points redemption at checkout (1 point = `pointsRedemptionValue` EGP as a
-  payment option) — service `redeemPoints` exists; storefront checkout UI not yet
-  wired.
+- ~~Points redemption at checkout~~ → **Done**: storefront `redeemPoints` flag;
+  backend (public order) deducts `min(points, floor(total/value))` and applies
+  `pointsUsed × pointsRedemptionValue` to the final total; stamped in
+  `metadata.pointsRedemption` and echoed in the response
+  (`pointsRedemptionApplied`, `pointsUsed`, `pointsValue`). UI toggle shown in
+  `PaymentSection` when the customer has points.

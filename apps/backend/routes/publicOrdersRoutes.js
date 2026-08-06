@@ -857,7 +857,8 @@ router.post('/', async (req, res) => {
       fbc,
       fbp,
       useWallet,
-      walletAmount
+      walletAmount,
+      redeemPoints
     } = req.body;
 
     const headerFbc = req.headers['x-fbc'];
@@ -1418,8 +1419,9 @@ router.post('/', async (req, res) => {
     let loyaltyRewards = null;
     let loyaltyTierInfo = null;
     let autoDiscountVoucherId = null;
+    let loyaltyCustomer = null;
     try {
-      const loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
+      loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
       if (loyaltyCustomer) {
         const autoDiscountService = require('../services/autoDiscountService');
         const autoActive = await autoDiscountService.isAutoDiscountActive(company.id);
@@ -1695,6 +1697,48 @@ router.post('/', async (req, res) => {
 
       const finalTotalAfterWallet = Math.max(0, (Number(finalTotal) || 0) - walletApplied);
 
+      // استبدال النقاط كدفع (نظام الخصم التلقائي): نقطة = pointsRedemptionValue ج
+      let pointsApplied = 0;
+      let pointsUsed = 0;
+      let pointsProgramId = null;
+      if (redeemPoints === true || redeemPoints === 'true') {
+        try {
+          const autoDiscountService = require('../services/autoDiscountService');
+          const autoSettings = await autoDiscountService.getSettings(company.id);
+          if (autoSettings.loyaltySystem === 'AUTO_DISCOUNT' && autoSettings.redeemPointsEnabled !== false) {
+            const program = await tx.customerLoyaltyProgram.findFirst({
+              where: { companyId: company.id, type: 'POINTS', status: 'ACTIVE' },
+              orderBy: { createdAt: 'asc' }
+            });
+            if (program && loyaltyCustomer) {
+              const record = await tx.customerLoyaltyRecord.findUnique({
+                where: { customerId_programId: { customerId: loyaltyCustomer.id, programId: program.id } }
+              });
+              if (record && parseFloat(record.currentPoints) > 0) {
+                const valuePer = Number(autoSettings.pointsRedemptionValue || 1);
+                const maxUsable = Math.floor(finalTotalAfterWallet / valuePer);
+                pointsUsed = Math.min(Math.floor(parseFloat(record.currentPoints)), maxUsable);
+                if (pointsUsed > 0) {
+                  pointsApplied = pointsUsed * valuePer;
+                  await tx.customerLoyaltyRecord.update({
+                    where: { id: record.id },
+                    data: {
+                      currentPoints: Math.max(0, parseFloat(record.currentPoints) - pointsUsed),
+                      totalRedeemed: (parseFloat(record.totalRedeemed) || 0) + pointsUsed,
+                      lastPointsRedeemed: new Date()
+                    }
+                  });
+                  pointsProgramId = program.id;
+                }
+              }
+            }
+          }
+        } catch (pointsError) {
+          console.error('⚠️ [POINTS-REDEEM] Failed to redeem points at checkout:', pointsError?.message);
+        }
+      }
+      const finalTotalAfterPoints = Math.max(0, finalTotalAfterWallet - pointsApplied);
+
       // Create order
       // Note: items and shippingAddress must be JSON strings for Prisma
       const orderMetadata = {};
@@ -1746,6 +1790,15 @@ router.post('/', async (req, res) => {
         };
       }
 
+      if (pointsApplied > 0) {
+        orderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
+
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
       }
@@ -1760,7 +1813,7 @@ router.post('/', async (req, res) => {
           total: cartTotal,
           shippingCost,
           discountAmount,
-          finalTotal: finalTotalAfterWallet,
+          finalTotal: finalTotalAfterPoints,
           shippingAddress: JSON.stringify(shippingAddress),
           paymentMethod,
           status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
@@ -2492,6 +2545,9 @@ router.post('/', async (req, res) => {
         loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
         autoDiscountApplied: Boolean(autoDiscountVoucherId),
         autoDiscountVoucherId,
+        pointsRedemptionApplied: pointsApplied > 0,
+        pointsUsed,
+        pointsValue: pointsApplied,
       },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'

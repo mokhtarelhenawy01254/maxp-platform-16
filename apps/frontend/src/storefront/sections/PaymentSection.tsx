@@ -187,7 +187,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   section,
   settings: sectionSettings,
 }) => {
-  const { paymentMethod, setPaymentMethod, formData, appliedCoupon } = useCheckoutStore();
+  const { paymentMethod, setPaymentMethod, formData, appliedCoupon, tierProgress } = useCheckoutStore();
   const { placeOrder, isSubmitting, orderSuccess } = useCheckout();
   const { items, getSubtotal } = useCartStore();
   const { settings: storefrontSettings } = useStorefrontSettings();
@@ -200,6 +200,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [usePoints, setUsePoints] = useState(false);
   const trackedCheckoutFingerprintRef = useRef('');
   const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -774,6 +775,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       shippingCost: effectiveShipping,
       subtotal,
       total,
+      redeemPoints: usePoints,
     });
   };
 
@@ -980,6 +982,21 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
             </button>
           ))}
         </div>
+
+        {tierProgress?.method === 'POINTS' && Number(tierProgress.currentMetric) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              استخدم نقاطي في خصم الطلب
+            </span>
+            <span className="font-bold text-amber-700 dark:text-amber-300">{tierProgress.currentMetric} نقطة</span>
+          </label>
+        ) : null}
 
         {showSummaryCard ? (
           <div className={summaryWrapperClassName}>
