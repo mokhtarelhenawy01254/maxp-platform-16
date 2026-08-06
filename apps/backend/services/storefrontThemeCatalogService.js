@@ -1375,6 +1375,7 @@ class StorefrontThemeCatalogService {
           where: { companyId },
           data: {
             balance: { decrement: purchaseAmount },
+            totalSpent: { increment: purchaseAmount },
           },
         });
 

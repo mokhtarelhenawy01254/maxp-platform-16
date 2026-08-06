@@ -2005,7 +2005,8 @@ exports.subscribeToBundle = async (req, res) => {
         await tx.companyWallet.update({
           where: { companyId },
           data: {
-            balance: { decrement: Number(bundle.monthlyPrice) }
+            balance: { decrement: Number(bundle.monthlyPrice) },
+            totalSpent: { increment: Number(bundle.monthlyPrice) }
           }
         });
 

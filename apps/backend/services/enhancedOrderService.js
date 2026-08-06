@@ -1651,6 +1651,11 @@ class EnhancedOrderService {
         companyId: companyId
       };
 
+      // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية افتراضياً
+      if (options.includeHeld !== true) {
+        where.billingHoldAt = null;
+      }
+
       // فلاتر إضافية
       if (status && status !== 'all') {
         where.status = status;

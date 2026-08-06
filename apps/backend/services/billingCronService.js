@@ -164,15 +164,15 @@ class BillingCronService {
             }
           });
 
-          // تسجيل الحركة
-          await tx.walletTransaction.create({
+          // تسجيل الحركة في سجل محفظة الشركة (transactions)
+          await tx.transaction.create({
             data: {
               walletId: wallet.id,
               type: 'DEDUCT',
               amount: fee,
-              balanceAfter: newBalance,
+              status: 'COMPLETED',
               description: `رسوم المنصة الشهرية`,
-              metadata: JSON.stringify({ subscriptionId: subscription.id })
+              referenceId: subscription.id
             }
           });
 
@@ -340,15 +340,15 @@ class BillingCronService {
             }
           });
 
-          // تسجيل الحركة
-          await tx.walletTransaction.create({
+          // تسجيل الحركة في سجل محفظة الشركة (transactions)
+          await tx.transaction.create({
             data: {
               walletId: wallet.id,
               type: 'DEDUCT',
               amount: monthlyPrice,
-              balanceAfter: newBalance,
+              status: 'COMPLETED',
               description: `اشتراك شهري - ${app.name}`,
-              metadata: JSON.stringify({ appId: companyApp.id })
+              referenceId: companyApp.id
             }
           });
 

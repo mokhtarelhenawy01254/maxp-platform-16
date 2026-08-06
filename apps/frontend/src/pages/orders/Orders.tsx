@@ -835,6 +835,49 @@ const getInitialOrdersListViewState = (
   );
 };
 
+const HeldOrdersBanner: React.FC = () => {
+  const { user } = useAuth();
+  const [held, setHeld] = useState<{ count: number; amount: number } | null>(null);
+  const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
+    user?.role || "",
+  );
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    apiClient
+      .get("/wallet/billing/summary")
+      .then((res: { data?: { data?: { heldOrders?: { count?: number; amount?: number } } } }) => {
+        const data = res?.data?.data;
+        const count = Number(data?.heldOrders?.count || 0);
+        if (count > 0) {
+          setHeld({ count, amount: Number(data?.heldOrders?.amount || 0) });
+        }
+      })
+      .catch(() => {
+        /* تجاهل - البانر اختياري */
+      });
+  }, [isAdmin]);
+
+  if (!held) return null;
+
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+      <span className="font-semibold">
+        لديك {held.count} طلب معلّق بسبب انخفاض رصيد المحفظة.
+      </span>
+      <span className="text-sm">
+        المبلغ المستحق {(held.amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — اشحن رصيدك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
+      </span>
+      <Link
+        to="/payments"
+        className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+      >
+        شحن الرصيد
+      </Link>
+    </div>
+  );
+};
+
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2336,6 +2379,8 @@ const Orders: React.FC = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
+        <HeldOrdersBanner />
+
         <OrdersToolbar
         filters={filters}
         loading={loading}
