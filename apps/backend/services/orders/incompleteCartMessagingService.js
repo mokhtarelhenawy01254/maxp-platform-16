@@ -86,6 +86,14 @@ async function handleCartCreated(cart) {
     const name = pickFirst(checkoutData, NAME_KEYS);
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
 
+    const template = await safeQuery(() =>
+      prisma.whatsAppNotificationTemplate.findFirst({
+        where: { companyId: cart.companyId, eventType: EVENT_TYPE, isActive: true },
+        orderBy: { isDefault: 'desc' },
+        select: { channel: true },
+      }),
+    );
+
     return sendNotification({
       companyId: cart.companyId,
       recipientPhone: phone,
@@ -93,6 +101,7 @@ async function handleCartCreated(cart) {
       recipientType: 'CUSTOMER',
       category: 'ABANDONED_CART',
       eventType: EVENT_TYPE,
+      channel: template?.channel || 'AUTO',
       variables: {
         customerName: name || 'عميلنا العزيز',
         itemCount: (Array.isArray(items) ? items.length : 0).toString(),

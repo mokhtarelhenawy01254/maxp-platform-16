@@ -5,6 +5,7 @@ jest.mock('../../../services/whatsapp/WhatsAppNotificationService', () => ({
 
 const mockPrisma = {
   whatsAppNotificationSettings: { findUnique: jest.fn() },
+  whatsAppNotificationTemplate: { findFirst: jest.fn() },
   cartConversionLog: { findFirst: jest.fn() },
 };
 
@@ -35,6 +36,7 @@ describe('incompleteCartMessagingService.handleCartCreated', () => {
       incompleteCartImmediateMessage: true,
     });
     mockPrisma.cartConversionLog.findFirst.mockResolvedValue(null);
+    mockPrisma.whatsAppNotificationTemplate.findFirst.mockResolvedValue({ channel: 'AUTO' });
     isDuplicateNotification.mockResolvedValue(false);
     sendNotification.mockResolvedValue({ success: true });
   });
@@ -93,6 +95,18 @@ describe('incompleteCartMessagingService.handleCartCreated', () => {
     expect(args.cartId).toBe('cart-123');
     expect(args.variables.itemCount).toBe('1');
     expect(args.variables.total).toBe('500');
+  });
+
+  test('passes the template channel so the merchant choice reaches sendNotification', async () => {
+    mockPrisma.whatsAppNotificationTemplate.findFirst.mockResolvedValue({ channel: 'META_CLOUD' });
+    await handleCartCreated(baseCart);
+    expect(sendNotification.mock.calls[0][0].channel).toBe('META_CLOUD');
+  });
+
+  test('defaults the channel to AUTO when no template row exists', async () => {
+    mockPrisma.whatsAppNotificationTemplate.findFirst.mockResolvedValue(null);
+    await handleCartCreated(baseCart);
+    expect(sendNotification.mock.calls[0][0].channel).toBe('AUTO');
   });
 
   test('returns error result instead of throwing when a DB call fails', async () => {

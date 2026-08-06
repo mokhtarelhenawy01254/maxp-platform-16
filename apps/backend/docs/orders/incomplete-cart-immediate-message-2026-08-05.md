@@ -29,8 +29,15 @@
 ## الواجهة
 - تبويب "رسائل الأوردر غير المكتمل" في `/orders/status-templates` (`OrderStatusTemplatesPage.tsx` + `IncompleteCartMessagingPanel.tsx`):
   - مفتاح تفعيل الرسالة الفورية.
+  - **طريقة الإرسال (قناة)**: `AUTO` / `BAILEYS` / `META_CLOUD` — التاجر يختار، وتُحفظ على `whatsAppNotificationTemplate.channel` (نفس نموذج قوالب الحالات).
   - محرر نص القالب (create/update عبر `/api/v1/whatsapp-notifications/templates`) + معاينة WhatsApp.
+  - **الربط بميتا**: نشر قالب لميتا (`/templates/:id/publish`)، ربط بقالب معتمد (`/bind-meta`)، إعادة مراجعة (`/resubmit-meta`)، وعرض حالة القالب (معتمد / قيد المراجعة / محلي).
 - أُزيل تبويب "العربة المتروكة" من صفحة الإشعارات العامة (`WhatsAppNotifications.tsx`)، و`getTemplates` يستبعد `CART_ABANDONED_*` + الحدث الجديد من القائمة العامة (يبقى يجيبه عندما يُرسل `eventType` في الـ query).
+
+## الإرسال حسب القناة (في `sendNotification`)
+- `BAILEYS` → نص حر دائماً من رقم الواتساب المتصل.
+- `META_CLOUD` → فقط عبر قالب ميتا معتمد (`metaTemplateName` + `APPROVED`)؛ غيابه → `{ success:false, reason:'meta_template_not_ready' }`.
+- `AUTO` → يحاول قالب ميتا المعتمد إن كان مربوطاً، وإلا نص حر (مع fallback بايليز عند فشل ميتا).
 
 ## Migration
 - الترحيل يتم تلقائياً عبر `prisma db push` في الـ deploy (العمود + قيم الـ enum).
