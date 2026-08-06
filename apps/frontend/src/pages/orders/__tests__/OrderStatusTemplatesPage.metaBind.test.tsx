@@ -307,4 +307,119 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     await user.selectOptions(select, "order_confirm_ar");
     expect(await screen.findByText(/القالب ده مربوط حالياً بكمان: SHIPPED/)).toBeInTheDocument();
   });
+
+  test("اختيار قالب ميتا بيبني المحتوى المحلي تلقائياً لو القالب مربوط بحالة تانية (auto-fill)", async () => {
+    mockApi(makeStatus({}));
+    apiClient.get.mockImplementation((url: string) => {
+      if (url === "/order-status/with-templates") {
+        return Promise.resolve({ data: { success: true, data: [makeStatus({})] } });
+      }
+      if (url === "/whatsapp/notifications/settings") {
+        return Promise.resolve({ data: { success: true, settings: { defaultSessionId: "ms1" }, sessions: [] } });
+      }
+      if (url === "/whatsapp-notifications/templates/delivery-preview") {
+        return Promise.resolve({
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
+        });
+      }
+      if (url === "/whatsapp/sessions") {
+        return Promise.resolve({ data: { sessions: META_SESSIONS } });
+      }
+      if (url.startsWith("/whatsapp-notifications/templates/meta-available")) {
+        return Promise.resolve({
+          data: {
+            templates: [
+              {
+                name: "order_confirm_ar",
+                status: "APPROVED",
+                language: "ar",
+                category: "UTILITY",
+                components: [{ type: "BODY", text: "مرحباً {{1}}، طلبك {{2}} في الطريق" }],
+                boundToLocalTemplateIds: ["t-other"],
+                boundToEventTypes: ["SHIPPED"],
+                boundToLocalTemplateId: "t-other",
+                boundToEventType: "SHIPPED",
+                boundLocalContent: "مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق",
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+
+    // توسيع المرجع المحلي عشان نشوف الـ textarea
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = await screen.findByRole("textbox", { name: /محتوى القالب المحلي/ });
+    expect(textarea).toHaveValue("مرحبا {{customerName}} أكد طلبك");
+
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
+    await user.selectOptions(select, "order_confirm_ar");
+
+    // المحتوى اتبنى تلقائياً من محتوى القالب المربوط
+    expect(textarea).toHaveValue("مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق");
+    expect(await screen.findByText(/اتبنى المحتوى المحلي تلقائياً/)).toBeInTheDocument();
+  });
+
+  test("اختيار قالب ميتا بدون ربط بيبني محتوى افتراضي من نص قالب ميتا", async () => {
+    mockApi(makeStatus({}));
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = await screen.findByRole("textbox", { name: /محتوى القالب المحلي/ });
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
+    await user.selectOptions(select, "order_confirm_ar");
+
+    expect(textarea).toHaveValue("مرحباً {{customerName}}، طلبك {{orderNumber}} في الطريق");
+  });
+
+  test("بيمنع الحفظ لما المتغيرات المحلية أقل من قالب ميتا ويعرض رسالة", async () => {
+    mockApi(makeStatus({}));
+    apiClient.get.mockImplementation((url: string) => {
+      if (url === "/order-status/with-templates") {
+        return Promise.resolve({ data: { success: true, data: [makeStatus({})] } });
+      }
+      if (url === "/whatsapp/notifications/settings") {
+        return Promise.resolve({ data: { success: true, settings: { defaultSessionId: "ms1" }, sessions: [] } });
+      }
+      if (url === "/whatsapp-notifications/templates/delivery-preview") {
+        return Promise.resolve({
+          data: { success: true, defaultSession: { id: "ms1", name: "جلسة ميتا", provider: "META_CLOUD" }, preview: [] },
+        });
+      }
+      if (url === "/whatsapp/sessions") {
+        return Promise.resolve({ data: { sessions: META_SESSIONS } });
+      }
+      if (url.startsWith("/whatsapp-notifications/templates/meta-available")) {
+        return Promise.resolve({ data: { templates: META_TEMPLATES } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+
+    const select = await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ });
+    await user.selectOptions(select, "order_confirm_ar");
+
+    // المحتوى اتبنى تلقائياً بمتغيرين — نمسح المتغيرات نعكس الـ mismatch
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
+    const textarea = screen.getByRole("textbox", { name: /محتوى القالب المحلي/ });
+    await user.clear(textarea);
+    await user.type(textarea, "نص من غير متغيرات");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/محتاج/);
+    expect(screen.getByRole("button", { name: /حفظ وربط بقالب ميتا/ })).toBeDisabled();
+  });
 });
