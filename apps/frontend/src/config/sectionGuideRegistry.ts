@@ -190,7 +190,7 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
     ],
   },
   {
-    pathPrefix: "/reports",
+    pathPrefix: "/analytics/orders",
     titleKey: "guides.reports.title",
     descriptionKey: "guides.reports.description",
     stepKeys: [

@@ -601,8 +601,8 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/team-performance', icon: Users, label: t('sidebar.teamPerformance') },
                 { to: '/analytics/orders/abandoned-cart', icon: ShoppingCart, label: t('sidebar.abandonedCart') },
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
-                { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss', 'الأرباح والخسائر') },
-                { to: '/reports/status-analysis', icon: FileBarChart, label: t('sidebar.statusAnalysis', 'تحليل الحالات') },
+                { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
+                { to: '/reports/status-analysis', icon: FileBarChart, label: t('sidebar.statusAnalysis') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])

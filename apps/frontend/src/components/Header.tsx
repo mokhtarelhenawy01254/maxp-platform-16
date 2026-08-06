@@ -216,7 +216,7 @@ const Header: React.FC = () => {
     { name: t("header.conversations"), href: "/conversations" },
     { name: t("header.products"), href: "/products" },
     { name: t("header.orders"), href: "/orders" },
-    { name: t("header.reports"), href: "/reports" },
+    { name: t("header.reports"), href: "/analytics/orders" },
   ];
 
   return (
