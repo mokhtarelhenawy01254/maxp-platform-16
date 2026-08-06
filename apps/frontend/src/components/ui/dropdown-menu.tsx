@@ -57,10 +57,18 @@ function DropdownMenuContent({
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
   >) {
-  const positionerRef = React.useRef<HTMLDivElement | null>(null);
+  const [positionerEl, setPositionerEl] = React.useState<HTMLDivElement | null>(
+    null,
+  );
+  const positionerRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setPositionerEl(node);
+    },
+    [],
+  );
 
   React.useEffect(() => {
-    const positioner = positionerRef.current;
+    const positioner = positionerEl;
     const menu = positioner?.querySelector(
       '[data-slot="dropdown-menu-content"]',
     );
@@ -70,12 +78,7 @@ function DropdownMenuContent({
     // positioner at its initial (0, 0) placeholder. When that happens, anchor
     // the menu to its trigger so it always opens in the right place.
     const applyFallback = () => {
-      const inline = positioner.getAttribute("style") || "";
-      const rect = positioner.getBoundingClientRect();
-      const unpositioned =
-        inline.includes("opacity: 0") || (rect.left === 0 && rect.top === 0);
-      if (!unpositioned) return;
-
+      if (positioner.getAttribute("data-open") == null) return;
       const trigger = document.querySelector(
         `[aria-controls="${menu.id}"]`,
       );
@@ -93,11 +96,25 @@ function DropdownMenuContent({
           ? triggerRect.top - menuRect.height - offset
           : triggerRect.bottom + offset;
 
-      positioner.style.position = "fixed";
-      positioner.style.left = `${left}px`;
-      positioner.style.top = `${top}px`;
-      positioner.style.transform = "none";
+      if (positioner.style.position !== "fixed") {
+        positioner.style.position = "fixed";
+      }
+      if (positioner.style.left !== `${left}px`) {
+        positioner.style.left = `${left}px`;
+      }
+      if (positioner.style.top !== `${top}px`) {
+        positioner.style.top = `${top}px`;
+      }
+      if (positioner.style.transform !== "none") {
+        positioner.style.transform = "none";
+      }
     };
+
+    const observer = new MutationObserver(applyFallback);
+    observer.observe(positioner, {
+      attributes: true,
+      attributeFilter: ["style", "data-open"],
+    });
 
     const raf = requestAnimationFrame(() =>
       requestAnimationFrame(applyFallback),
@@ -105,9 +122,10 @@ function DropdownMenuContent({
     window.addEventListener("resize", applyFallback);
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
       window.removeEventListener("resize", applyFallback);
     };
-  }, [side, sideOffset]);
+  }, [positionerEl, side, sideOffset]);
 
   return (
     <MenuPrimitive.Portal>
