@@ -1645,6 +1645,9 @@ router.post('/', async (req, res) => {
 
     // Create order and update stock in a transaction to ensure data consistency
     // ✅ FIX: Increased timeout to 30 seconds to prevent "Transaction already closed" errors
+    let pointsApplied = 0;
+    let pointsUsed = 0;
+    let pointsProgramId = null;
     const order = await prisma.$transaction(async (tx) => {
       let walletApplied = 0;
       let walletBalanceBefore = null;
@@ -1698,9 +1701,6 @@ router.post('/', async (req, res) => {
       const finalTotalAfterWallet = Math.max(0, (Number(finalTotal) || 0) - walletApplied);
 
       // استبدال النقاط كدفع (نظام الخصم التلقائي): نقطة = pointsRedemptionValue ج
-      let pointsApplied = 0;
-      let pointsUsed = 0;
-      let pointsProgramId = null;
       if (redeemPoints === true || redeemPoints === 'true') {
         try {
           const autoDiscountService = require('../services/autoDiscountService');
