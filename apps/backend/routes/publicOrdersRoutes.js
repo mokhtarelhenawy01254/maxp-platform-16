@@ -2522,7 +2522,7 @@ router.get('/track', async (req, res) => {
               { orderNumber: order.orderNumber }
             ]
           },
-          select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
         });
         if (primaryOrder) {
           const guestMeta = (() => {
@@ -2533,10 +2533,14 @@ router.get('/track', async (req, res) => {
           })();
           order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
           if (primaryOrder.status) order.status = primaryOrder.status;
-          if (primaryOrder.discountAmount !== null && primaryOrder.discountAmount !== undefined) order.discountAmount = primaryOrder.discountAmount;
-          if (primaryOrder.finalTotal !== null && primaryOrder.finalTotal !== undefined) order.finalTotal = primaryOrder.finalTotal;
-          if (primaryOrder.shippingCost !== null && primaryOrder.shippingCost !== undefined) order.shippingCost = primaryOrder.shippingCost;
-          if (primaryOrder.total !== null && primaryOrder.total !== undefined) order.total = primaryOrder.total;
+          // GuestOrder total/finalTotal/discountAmount/shippingCost تقابل Order total/discount/shipping
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
         }
       } catch (mergeError) {
         console.error('⚠️ [TRACK-ORDER] Failed to merge primary order data:', mergeError.message);
@@ -2725,17 +2729,20 @@ router.get('/:orderNumber/track', async (req, res) => {
               { orderNumber }
             ]
           },
-          select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
         });
         if (primaryOrder) {
           const guestMeta = (() => { try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; } })();
           const primaryMeta = (() => { try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; } })();
           order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
           if (primaryOrder.status) order.status = primaryOrder.status;
-          if (primaryOrder.discountAmount !== null && primaryOrder.discountAmount !== undefined) order.discountAmount = primaryOrder.discountAmount;
-          if (primaryOrder.finalTotal !== null && primaryOrder.finalTotal !== undefined) order.finalTotal = primaryOrder.finalTotal;
-          if (primaryOrder.shippingCost !== null && primaryOrder.shippingCost !== undefined) order.shippingCost = primaryOrder.shippingCost;
-          if (primaryOrder.total !== null && primaryOrder.total !== undefined) order.total = primaryOrder.total;
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
         }
       } catch (mergeError) {
         console.error('⚠️ [TRACK-ORDER-LEGACY] Failed to merge primary order data:', mergeError.message);
