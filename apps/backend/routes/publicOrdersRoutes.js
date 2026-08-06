@@ -2508,6 +2508,34 @@ router.get('/track', async (req, res) => {
       order.items = coerceCartItemsToArray(order.items).map(buildTrackedOrderItem);
     }
 
+    // دمج بيانات الطلب الأساسي (Order) مع GuestOrder:
+    // الـ GuestOrder لقطة وقت الإنشاء وبتفضل متجمدة، بينما مكافآت الولاء
+    // (النقاط والكاش باك) والحالة الحقيقية بتتكتب على الـ Order الأساسي بعد التسليم.
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: { orderNumber: order.orderNumber, companyId: company.id },
+          select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => {
+            try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; }
+          })();
+          const primaryMeta = (() => {
+            try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; }
+          })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          if (primaryOrder.discountAmount !== null && primaryOrder.discountAmount !== undefined) order.discountAmount = primaryOrder.discountAmount;
+          if (primaryOrder.finalTotal !== null && primaryOrder.finalTotal !== undefined) order.finalTotal = primaryOrder.finalTotal;
+          if (primaryOrder.shippingCost !== null && primaryOrder.shippingCost !== undefined) order.shippingCost = primaryOrder.shippingCost;
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) order.total = primaryOrder.total;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER] Failed to merge primary order data:', mergeError.message);
+      }
+    }
+
     // إذا لم يتم العثور عليه في GuestOrder، ابحث في Order العادي
     if (!order) {
       order = await prisma.order.findFirst({
@@ -2679,6 +2707,27 @@ router.get('/:orderNumber/track', async (req, res) => {
         companyId: company.id
       }
     });
+
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: { orderNumber, companyId: company.id },
+          select: { metadata: true, status: true, discountAmount: true, finalTotal: true, shippingCost: true, total: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => { try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; } })();
+          const primaryMeta = (() => { try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; } })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          if (primaryOrder.discountAmount !== null && primaryOrder.discountAmount !== undefined) order.discountAmount = primaryOrder.discountAmount;
+          if (primaryOrder.finalTotal !== null && primaryOrder.finalTotal !== undefined) order.finalTotal = primaryOrder.finalTotal;
+          if (primaryOrder.shippingCost !== null && primaryOrder.shippingCost !== undefined) order.shippingCost = primaryOrder.shippingCost;
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) order.total = primaryOrder.total;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER-LEGACY] Failed to merge primary order data:', mergeError.message);
+      }
+    }
 
     if (!order) {
       return res.status(404).json({
