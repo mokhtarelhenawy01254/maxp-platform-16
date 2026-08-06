@@ -214,7 +214,42 @@ function resolveMetaBodyPreview(metaBody: string, localContent: string): string 
   });
 }
 
-export { resolveVariablesForPreview };
+/**
+ * ترتيب المتغيرات الافتراضي لبناء محتوى محلي من نص قالب ميتا
+ * ({{1}} → {{customerName}}، {{2}} → {{orderNumber}}...)
+ * مبيتسوّىش مع أي قالب — المستخدم يقدر يعدّله، بس بيغطي الحالة الشائعة.
+ */
+const META_TO_LOCAL_DEFAULT_ORDER: string[] = [
+  "customerName",
+  "orderNumber",
+  "orderItems",
+  "total",
+  "currency",
+  "customerPhone",
+  "orderDate",
+  "subtotal",
+  "shipping",
+  "trackingNumber",
+  "trackingLink",
+  "estimatedDays",
+  "reason",
+];
+
+/**
+ * بناء محتوى محلي تلقائي من نص قالب ميتا:
+ * بيحوّل كل {{N}} في نص قالب ميتا إلى {{variable}} محلي حسب ترتيب افتراضي،
+ * وبيقفل على {{N}} اللي عددها أكتر من المتغيرات المتاحة (مش بيحذف النص).
+ */
+function buildLocalContentFromMetaBody(metaBody: string): string {
+  if (!metaBody) return "";
+  return metaBody.replace(/\{\{\s*(\d+)\s*\}\}/g, (_, n: string) => {
+    const idx = parseInt(n, 10) - 1;
+    const name = META_TO_LOCAL_DEFAULT_ORDER[idx];
+    return name ? `{{${name}}}` : `{{${n}}}`;
+  });
+}
+
+export { resolveVariablesForPreview, buildLocalContentFromMetaBody };
 
 /**
  * WhatsAppBubblePreview — معاينة مباشرة لشكل الرسالة في محادثة واتساب.
@@ -393,6 +428,7 @@ export default function OrderStatusTemplatesPage() {
   const [loadingMetaTemplates, setLoadingMetaTemplates] = useState(false);
   const [bindingId, setBindingId] = useState<string | null>(null);
   const [originalMetaTemplateName, setOriginalMetaTemplateName] = useState<string>("");
+  const [metaAutoFilled, setMetaAutoFilled] = useState(false);
 
   const [settings, setSettings] = useState<SettingsForm | null>(null);
   const [settingsSessions, setSettingsSessions] = useState<{ id: string; name: string; phoneNumber?: string; status: string; provider?: string }[]>([]);
@@ -475,6 +511,7 @@ export default function OrderStatusTemplatesPage() {
     setSelectedTemplate(null);
     setDialogSlot(slot);
     setOriginalMetaTemplateName("");
+    setMetaAutoFilled(false);
     setTemplateForm({
       name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
       content: slot === "meta" && status.template?.content ? status.template.content : DEFAULT_TEMPLATE_CONTENT,
@@ -500,6 +537,7 @@ export default function OrderStatusTemplatesPage() {
     setDialogSlot(slot);
     const metaName = target?.metaTemplateName || "";
     setOriginalMetaTemplateName(metaName);
+    setMetaAutoFilled(false);
     setShowLocalRef(slot === "meta" && !!metaName);
     setTemplateForm({
       name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
@@ -957,6 +995,20 @@ export default function OrderStatusTemplatesPage() {
   const metaContentChanged = dialogSlot === "meta" && !!selectedTemplate?.id && templateForm.content !== (selectedTemplate?.content || "");
   const isMetaBound = dialogSlot === "meta" && !!originalMetaTemplateName;
 
+  // فاليديشن قبل الحفظ: عدد المتغيرات المحلية لازم يطابق قالب ميتا المختار
+  const metaVariableMismatch = (() => {
+    if (dialogSlot !== "meta" || !templateForm.metaTemplateName) return null;
+    const metaBody = (() => {
+      const sel = availableMetaTemplates.find((m) => m.name === templateForm.metaTemplateName);
+      return (sel?.components || []).find((c) => c.type === "BODY")?.text || "";
+    })();
+    const metaCount = (metaBody.match(/\{\{\s*\d+\s*\}\}/g) || []).length;
+    if (metaCount === 0) return null;
+    const localCount = extractLocalVariableOrder(templateForm.content).length;
+    if (localCount >= metaCount) return null;
+    return { metaCount, localCount, missing: metaCount - localCount };
+  })();
+
   const metaDialogTitle = (() => {
     if (dialogSlot !== "meta") {
       return `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`;
@@ -966,6 +1018,31 @@ export default function OrderStatusTemplatesPage() {
     if (isMetaBound) return `تعديل قالب ميتا: ${selectedStatus?.name}`;
     return `إنشاء قالب ميتا: ${selectedStatus?.name}`;
   })();
+
+  /**
+   * اختيار قالب ميتا → تحديث المحتوى المحلي تلقائياً (auto-fill):
+   * - لو القالب مربوط بحالة تانية (boundLocalContent) → ننسخ محتواها الصح (أفضل مصدر للمتغيرات).
+   * - غير كده → نبني محتوى من نص قالب ميتا ({{N}} → متغير محلي افتراضي).
+   * - مش بنلغي محتوى المستخدم لو هو كتبه ومتطابق بالفعل (فيه متغيرات كفاية).
+   */
+  const handleMetaTemplateSelect = (name: string) => {
+    const selected = availableMetaTemplates.find((m) => m.name === name);
+    const metaBody = (selected?.components || []).find((c) => c.type === "BODY")?.text || "";
+
+    setTemplateForm((p) => {
+      const existingVars = extractLocalVariableOrder(p.content);
+      const metaVarCount = (metaBody.match(/\{\{\s*\d+\s*\}\}/g) || []).length;
+      const needsFill = metaVarCount > 0 && existingVars.length < metaVarCount;
+      if (needsFill) {
+        const filled = selected?.boundLocalContent || buildLocalContentFromMetaBody(metaBody);
+        if (filled && filled !== p.content) {
+          setMetaAutoFilled(true);
+          return { ...p, metaTemplateName: name, content: filled };
+        }
+      }
+      return { ...p, metaTemplateName: name };
+    });
+  };
 
   const statusesWithoutTemplate = visibleStatuses.filter((s) => !s.hasTemplate);
   const hasGaps = statusesWithoutTemplate.length > 0;
@@ -1496,7 +1573,7 @@ export default function OrderStatusTemplatesPage() {
                         <>
                           <select
                             value={templateForm.metaTemplateName}
-                            onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
+                            onChange={(e) => handleMetaTemplateSelect(e.target.value)}
                             aria-label="قالب ميتا المعتمد"
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
@@ -1591,6 +1668,11 @@ export default function OrderStatusTemplatesPage() {
                           {metaBindingChanged && (
                             <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
                               التبديل: من «{originalMetaTemplateName}» إلى «{templateForm.metaTemplateName}» — اضغط «حفظ وربط بقالب ميتا» للتأكيد.
+                            </div>
+                          )}
+                          {metaAutoFilled && (
+                            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                              ✅ اتبنى المحتوى المحلي تلقائياً من قالب ميتا المختار — راجع المتغيرات فوق وعدّل لو محتاج.
                             </div>
                           )}
                         </>
@@ -1843,7 +1925,8 @@ export default function OrderStatusTemplatesPage() {
               {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || (dialogSlot === "regular" && !templateForm.content.trim())}
+                disabled={saving || resubmittingMeta || !!bindingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
+                title={metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
                   dialogSlot === "meta" && metaBindingChanged
                     ? "bg-blue-600 hover:bg-blue-700"
@@ -1864,7 +1947,13 @@ export default function OrderStatusTemplatesPage() {
               )}
             </div>
 
-            {dialogSlot === "meta" && (
+            {metaVariableMismatch && (
+              <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
+                ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن المحتوى المحلي فيه <strong>{metaVariableMismatch.localCount} فقط</strong> — أضف <strong>{metaVariableMismatch.missing}</strong> متغيرات ({ORDER_VARIABLES.slice(0, 4).map((v) => v.var).join("، ")}) عشان تقدر تحفظ وتربط.
+              </p>
+            )}
+
+            {dialogSlot === "meta" && !metaVariableMismatch && (
               <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
                 {metaBindingChanged ? (
                   <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
