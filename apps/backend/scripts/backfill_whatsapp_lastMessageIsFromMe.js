@@ -49,12 +49,12 @@ async function main() {
 
   const result = await prisma.$executeRawUnsafe(`
     UPDATE ${q('whatsapp_contacts')} wc
-    SET wc.${q('lastMessageIsFromMe')} = COALESCE((
+    SET ${q('lastMessageIsFromMe')} = COALESCE((
           SELECT wm.${q('fromMe')} FROM ${q('whatsapp_messages')} wm
           WHERE wm.${q('sessionId')} = wc.${q('sessionId')} AND wm.${q('remoteJid')} = wc.${q('jid')}
           ORDER BY wm.${q('timestamp')} DESC, wm.${q('createdAt')} DESC
           LIMIT 1
-        ), wc.${q('lastMessageIsFromMe')})
+        ), ${q('lastMessageIsFromMe')})
     WHERE wc.${q('totalMessages')} > 0
       ${companyId ? `AND wc.${q('sessionId')} IN (SELECT ${q('id')} FROM ${q('whatsapp_sessions')} WHERE ${q('companyId')} = '${companyId}')` : ''}
   `);
