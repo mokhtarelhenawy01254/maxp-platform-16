@@ -48,6 +48,10 @@ import {
   Link2,
   Unlink,
   Plus,
+  FileText,
+  Globe,
+  CheckCircle2,
+  Pencil,
 } from "lucide-react";
 
 // ── Shared Types ────────────────────────────────────
@@ -183,6 +187,12 @@ const CustomerNotifications: React.FC = () => {
   const [testPhone, setTestPhone] = useState("");
   const [testEvent, setTestEvent] = useState("");
   const [testing, setTesting] = useState(false);
+
+  const [expandedPreviews, setExpandedPreviews] = useState<Record<string, boolean>>({});
+
+  const togglePreview = useCallback((key: string) => {
+    setExpandedPreviews((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   const eventsByType = useMemo(() => {
     const map: Record<string, ScheduleRow | undefined> = {};
@@ -712,70 +722,24 @@ const CustomerNotifications: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {["BAILEYS", "META_CLOUD"].map((slot) => {
-                          const tpl = slotTemplate(eventType, slot);
-                          return (
-                            <div
-                              key={slot}
-                              className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 flex flex-col gap-2"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className={CHANNEL_COLORS[slot]}>
-                                    {TEMPLATE_SLOT_LABELS[slot]}
-                                  </Badge>
-                                  {tpl?.isActive === false && (
-                                    <Badge variant="secondary">معطّل</Badge>
-                                  )}
-                                </div>
-                                {slot === "META_CLOUD" && tpl?.metaTemplateStatus && (
-                                  <Badge
-                                    className={
-                                      String(tpl.metaTemplateStatus).toUpperCase() === "APPROVED"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-amber-100 text-amber-700"
-                                    }
-                                  >
-                                    {String(tpl.metaTemplateStatus).toUpperCase()}
-                                  </Badge>
-                                )}
-                              </div>
-
-                              {tpl ? (
-                                <>
-                                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                    {tpl.name || "قالب غير مسمّى"}
-                                    {tpl.isDefault ? " (افتراضي)" : ""}
-                                  </p>
-                                  <p className="text-xs text-gray-500 line-clamp-3 whitespace-pre-line">
-                                    {tpl.content || "بدون محتوى"}
-                                  </p>
-                                </>
-                              ) : (
-                                <p className="text-xs text-gray-400">لا يوجد قالب مخصص — سيُستخدم القالب الافتراضي</p>
-                              )}
-
-                              <div className="flex items-center gap-1 flex-wrap mt-auto">
-                                <Button size="sm" variant="outline" onClick={() => openTemplateDialog(eventType, slot)} className="gap-1">
-                                  <Plus className="h-3.5 w-3.5" />
-                                  {tpl ? "تعديل" : "إنشاء"}
-                                </Button>
-                                {slot === "META_CLOUD" && tpl?.metaTemplateName && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-600"
-                                    onClick={() => confirmUnbind(tpl)}
-                                  >
-                                    <Unlink className="h-3.5 w-3.5" />
-                                    فك الربط
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        <TemplateSlotCard
+                          slot="BAILEYS"
+                          eventType={eventType}
+                          template={slotTemplate(eventType, "BAILEYS")}
+                          isPreviewExpanded={!!expandedPreviews[`BAILEYS-${eventType}`]}
+                          onTogglePreview={() => togglePreview(`BAILEYS-${eventType}`)}
+                          onOpen={() => openTemplateDialog(eventType, "BAILEYS")}
+                        />
+                        <TemplateSlotCard
+                          slot="META_CLOUD"
+                          eventType={eventType}
+                          template={slotTemplate(eventType, "META_CLOUD")}
+                          isPreviewExpanded={!!expandedPreviews[`META_CLOUD-${eventType}`]}
+                          onTogglePreview={() => togglePreview(`META_CLOUD-${eventType}`)}
+                          onOpen={() => openTemplateDialog(eventType, "META_CLOUD")}
+                          onUnbind={(tpl) => confirmUnbind(tpl)}
+                        />
                       </div>
                     </div>
                   );
@@ -908,5 +872,180 @@ const extractVariables = (content: string): string[] => {
   const matches = content.match(/\{(\w+)\}/g) || [];
   return Array.from(new Set(matches.map((m) => m.slice(1, -1))));
 };
+
+// قيم نموذجية لمعاينة المتغيرات في كروت القوالب
+const PREVIEW_VARIABLES: Record<string, string> = {
+  customerName: "عميلنا الكريم",
+  points: "50",
+  currentPoints: "120",
+  reason: "طلب #10025",
+  tierName: "ذهبي",
+  expiryDate: "2026-09-01",
+  programName: "برنامج الولاء",
+  cashAmount: "25.00",
+  currency: "ج.م",
+  orderNumber: "10025",
+  balance: "75.00",
+  qualityTier: "VIP",
+  score: "85",
+};
+
+function resolveVariablesForPreview(content: string): string {
+  return content.replace(/\{(\w+)\}/g, (_, name) => PREVIEW_VARIABLES[name] || name);
+}
+
+// ── Template slot card (نفس تقسيمة صفحة حالات الطلبات) ──
+interface TemplateSlotCardProps {
+  slot: "BAILEYS" | "META_CLOUD";
+  eventType: string;
+  template: TemplateItem | undefined;
+  isPreviewExpanded: boolean;
+  onTogglePreview: () => void;
+  onOpen: () => void;
+  onUnbind?: (template: TemplateItem) => void;
+}
+
+function TemplateSlotCard({
+  slot,
+  eventType,
+  template,
+  isPreviewExpanded,
+  onTogglePreview,
+  onOpen,
+  onUnbind,
+}: TemplateSlotCardProps) {
+  const isMeta = slot === "META_CLOUD";
+  const bound = !!template?.metaTemplateName;
+  const metaStatus = String(template?.metaTemplateStatus || "").toUpperCase();
+  const hasContent = !!template?.content;
+
+  const colors = isMeta
+    ? {
+        border: "border-blue-200 dark:border-blue-800/40",
+        badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        bg: "bg-blue-50/40 dark:bg-blue-900/10",
+        accent: "text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30",
+      }
+    : {
+        border: "border-emerald-200 dark:border-emerald-800/40",
+        badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        bg: "bg-emerald-50/40 dark:bg-emerald-900/10",
+        accent: "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30",
+      };
+
+  const statusBadge = isMeta
+    ? bound
+      ? metaStatus === "APPROVED"
+        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+        : metaStatus === "REJECTED"
+          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+      : template
+        ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+    : template
+      ? template.isActive === false
+        ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+
+  const statusLabel = isMeta
+    ? bound
+      ? metaStatus === "APPROVED"
+        ? "✅ معتمد"
+        : metaStatus === "REJECTED"
+          ? "❌ مرفوض"
+          : metaStatus
+            ? `⏳ ${metaStatus}`
+            : "قيد المراجعة"
+      : template
+        ? "محفوظ (بدون ربط)"
+        : "بدون قالب"
+    : template
+      ? template.isActive === false
+        ? "⏸ متوقف"
+        : "يوجد قالب"
+      : "بدون قالب";
+
+  return (
+    <div data-testid={`${slot}-slot-${eventType}`} className={`rounded-lg border p-3 ${colors.border} ${colors.bg}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${colors.badge}`}>
+          {isMeta ? <Globe className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+          {isMeta ? "قالب ميتا" : "واتساب عادي"}
+        </span>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadge}`}>
+          {isMeta && bound ? <CheckCircle2 className="h-3 w-3" /> : null}
+          {statusLabel}
+        </span>
+      </div>
+
+      {isMeta && bound && template?.metaTemplateName && (
+        <p className="mt-1.5 truncate font-mono text-[11px] text-blue-700 dark:text-blue-300" dir="ltr">
+          {template.metaTemplateName}
+        </p>
+      )}
+
+      <div className="mt-1.5 min-h-[2.75rem]">
+        {template ? (
+          <>
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {template.name || "قالب غير مسمّى"}
+              {template.isDefault ? " (افتراضي)" : ""}
+            </p>
+            {hasContent && (
+              <p className="mt-0.5 line-clamp-2 whitespace-pre-wrap break-words text-xs text-slate-600 dark:text-slate-400">
+                {resolveVariablesForPreview(template.content)}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {isMeta ? "لا يوجد قالب ميتا لهذا الحدث" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {hasContent && (
+          <button
+            onClick={onTogglePreview}
+            className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-white dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
+          >
+            <FileText className="h-3 w-3" />
+            {isPreviewExpanded ? "إخفاء" : "معاينة"}
+          </button>
+        )}
+        <button
+          onClick={onOpen}
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${colors.accent}`}
+        >
+          {template ? <Pencil className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+          {template ? (isMeta ? "تعديل الربط" : "تعديل") : "إنشاء"}
+        </button>
+        {isMeta && bound && onUnbind && template && (
+          <button
+            onClick={() => onUnbind(template)}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          >
+            <Unlink className="h-3 w-3" />
+            فك الربط
+          </button>
+        )}
+      </div>
+
+      {hasContent && isPreviewExpanded && (
+        <div className="mt-2 rounded-md bg-white/70 p-2 dark:bg-white/5">
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            المعاينة الكاملة
+          </p>
+          <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
+            {resolveVariablesForPreview(template!.content)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default CustomerNotifications;
