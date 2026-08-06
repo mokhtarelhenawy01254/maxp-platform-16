@@ -112,7 +112,8 @@ router.get('/', async (req, res) => {
       extractionMethod,
       sourceType,
       onlyUnseen: onlyUnseen === 'true',
-      search
+      search,
+      includeHeld: req.query.includeHeld === 'true',
     });
 
     await enhancedOrderService.disconnect();

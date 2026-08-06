@@ -1967,6 +1967,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // بناء شروط البحث (Where Clause)
     const whereClause = { companyId };
     const guestWhereClause = { companyId };
+
+    // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
+    // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
+    const includeHeldOrders = req.query.includeHeld === 'true';
+    if (!includeHeldOrders) {
+      whereClause.billingHoldAt = null;
+    }
+
     const appendAnd = (clause, condition) => {
       if (!condition) return;
       if (!clause.AND) clause.AND = [];

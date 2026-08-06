@@ -2373,6 +2373,7 @@ router.post('/', async (req, res) => {
         orderTotal: trackedTotal,
         itemsCount,
         metadata: { paymentMethod },
+        orderId: createdOrder?.id || order?.id || null,
       });
     } catch (ppuError) {
       console.error('❌ [PPU-BILLING] Error billing PPU apps:', ppuError.message);
