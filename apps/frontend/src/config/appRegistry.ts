@@ -188,7 +188,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-cyan-500 to-cyan-600',
     sectionIds: ['procurement'],
     category: 'operations',
-    requiredApps: ['procurement-pro', 'ecommerce-pro'],
+    requiredApps: ['procurement-pro'],
   },
   {
     id: 'affiliate',

@@ -206,6 +206,17 @@ router.post('/kashier/webhook', async (req, res) => {
           },
         });
 
+        // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد شحن الرصيد
+        try {
+          const pendingBillingService = require('../services/pendingBillingService');
+          const pendingResult = await pendingBillingService.processPendingUsageCharges(walletCompanyId);
+          if (pendingResult.processed > 0) {
+            console.log(`✅ [KASHIER-WEBHOOK] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s) for company ${walletCompanyId}`);
+          }
+        } catch (pendingError) {
+          console.error('⚠️ [KASHIER-WEBHOOK] Error processing pending charges:', pendingError.message);
+        }
+
         console.log(`[KASHIER-WEBHOOK] Wallet recharge completed for company ${walletCompanyId}: ${rechargeAmount} EGP`);
       }
 

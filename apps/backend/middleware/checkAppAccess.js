@@ -4,15 +4,15 @@ const LEGACY_APP_SLUG_ALIASES = {
   'order-core': ['ecommerce-basic'],
   'order-invoicing': ['ecommerce-basic'],
   // Grandfathering: companies with old monolithic store apps keep access to new granular apps
-  'pos-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
-  'coupons-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
-  'woocommerce-pro': ['ecommerce-pro', 'store-pro', 'ecommerce-basic', 'store-basic'],
-  'multi-warehouse-pro': ['ecommerce-pro', 'store-pro', 'inventory-pro'],
-  'order-accounting-sources': ['ecommerce-pro', 'store-pro', 'order-source-tracking'],
+  'pos-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
+  'coupons-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
+  'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic'],
+  'multi-warehouse-pro': ['store-pro', 'inventory-pro'],
+  'order-accounting-sources': ['store-pro', 'order-source-tracking'],
   // Grandfathering only for monolithic apps that historically included manual orders.
   // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
   // manual-orders-pro is now a standalone paid app.
-  'manual-orders-pro': ['ecommerce-pro', 'store-pro']
+  'manual-orders-pro': ['store-pro']
 };
 
 const getCandidateAppSlugs = (appSlug) => {

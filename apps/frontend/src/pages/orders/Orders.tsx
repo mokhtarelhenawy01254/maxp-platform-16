@@ -835,6 +835,167 @@ const getInitialOrdersListViewState = (
   );
 };
 
+interface BillingHoldOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  itemCount: number;
+  billingHoldAmount: number;
+  customerName: string;
+  customerPhone: string;
+}
+
+const HeldOrdersBanner: React.FC = () => {
+  const { user } = useAuth();
+  const [held, setHeld] = useState<{ count: number; amount: number } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [heldOrders, setHeldOrders] = useState<BillingHoldOrder[]>([]);
+  const [heldTotal, setHeldTotal] = useState(0);
+  const [loadingHeld, setLoadingHeld] = useState(false);
+  const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
+    user?.role || "",
+  );
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    apiClient
+      .get("/wallet/billing/summary")
+      .then((res: { data?: { data?: { heldOrders?: { count?: number; amount?: number } } } }) => {
+        const data = res?.data?.data;
+        const count = Number(data?.heldOrders?.count || 0);
+        if (count > 0) {
+          setHeld({ count, amount: Number(data?.heldOrders?.amount || 0) });
+        }
+      })
+      .catch(() => {
+        /* تجاهل - البانر اختياري */
+      });
+  }, [isAdmin]);
+
+  const openMoreInfo = async () => {
+    setModalOpen(true);
+    setLoadingHeld(true);
+    try {
+      const res = await apiClient.get("/orders-new/billing-holds");
+      const data = (res as { data?: { data?: { orders?: BillingHoldOrder[]; totalAmount?: number } } })
+        ?.data?.data;
+      setHeldOrders(data?.orders || []);
+      setHeldTotal(Number(data?.totalAmount || 0));
+    } catch {
+      setHeldOrders([]);
+    } finally {
+      setLoadingHeld(false);
+    }
+  };
+
+  if (!held) return null;
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+        <span className="font-semibold">
+          لديك {held.count} طلب معلّق بسبب انخفاض رصيد المحفظة.
+        </span>
+        <span className="text-sm">
+          المبلغ المستحق {(held.amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — اشحن رصيدك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
+        </span>
+        <button
+          onClick={openMoreInfo}
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          مزيد المعلومات
+        </button>
+        <Link
+          to="/payments"
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          شحن الرصيد
+        </Link>
+      </div>
+
+      {modalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                الطلبات المعلّقة ({heldOrders.length})
+              </h3>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                إغلاق
+              </button>
+            </div>
+
+            {loadingHeld ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                جاري التحميل...
+              </div>
+            ) : heldOrders.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                لا توجد طلبات معلّقة.
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  المبلغ المستحق الإجمالي:{" "}
+                  <b className="font-semibold">
+                    {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
+                  </b>
+                </div>
+                <div className="max-h-96 space-y-2 overflow-y-auto">
+                  {heldOrders.map((o) => (
+                    <div
+                      key={o.id}
+                      className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {o.orderNumber}
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          معلّق
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} • عدد القطع:{" "}
+                        {o.itemCount}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-200">
+                        <span>العميل: {o.customerName || "-"}</span>
+                        <span>الهاتف: {o.customerPhone || "-"}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        رسوم الاستخدام المستحقة:{" "}
+                        {o.billingHoldAmount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <Link
+                    to="/payments"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    شحن الرصيد لإظهار الطلبات
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2336,6 +2497,8 @@ const Orders: React.FC = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-4 sm:py-3 lg:px-3">
       <div className="w-full max-w-none">
+        <HeldOrdersBanner />
+
         <OrdersToolbar
         filters={filters}
         loading={loading}

@@ -557,7 +557,6 @@ const detectVerticalFromCompany = (company: any | null): Vertical => {
   if (appSet.has("services-app") || appSet.has("consulting-app")) return "services";
   if (
     appSet.has("ecommerce-basic") ||
-    appSet.has("ecommerce-pro") ||
     appSet.has("ecommerce-plus") ||
     appSet.has("inventory-pro") ||
     appSet.has("marketplace")

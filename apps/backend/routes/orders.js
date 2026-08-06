@@ -2100,6 +2100,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // بناء شروط البحث (Where Clause)
     const whereClause = { companyId };
     const guestWhereClause = { companyId };
+
+    // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
+    // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
+    const includeHeldOrders = req.query.includeHeld === 'true';
+    if (!includeHeldOrders) {
+      whereClause.billingHoldAt = null;
+    }
+
     const appendAnd = (clause, condition) => {
       if (!condition) return;
       if (!clause.AND) clause.AND = [];
@@ -3921,13 +3929,75 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
   }
 });
 
+/**
+ * 🚧 الطلبات المعلّقة بانتظار شحن الرصيد (billing hold) — ببيانات مقنّعة
+ * GET /api/v1/orders-new/billing-holds
+ */
+router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const maskName = (name) => {
+      const s = String(name || '').trim();
+      if (!s) return '';
+      return `${s.charAt(0)}***`;
+    };
+
+    const maskPhone = (phone) => {
+      const s = String(phone || '').trim();
+      if (s.length <= 5) return s;
+      return `${s.slice(0, 3)}***${s.slice(-2)}`;
+    };
+
+    const heldOrders = await getSharedPrismaClient().order.findMany({
+      where: { companyId, billingHoldAt: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        _count: { select: { orderItems: true } },
+      },
+    });
+
+    const data = heldOrders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      status: order.status,
+      itemCount: order._count.orderItems,
+      billingHoldAmount: Number(order.billingHoldAmount || 0),
+      customerName: maskName(order.customerName),
+      customerPhone: maskPhone(order.customerPhone),
+    }));
+
+    const totalAmount = data.reduce((sum, o) => sum + o.billingHoldAmount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        count: data.length,
+        totalAmount,
+        orders: data,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [BILLING-HOLDS] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الطلبات المعلّقة',
+      error: error.message,
+    });
+  }
+});
+
 // الحصول على جميع الطلبات
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, customerId } = req.query;
     const skip = (page - 1) * limit;
-
-    // التأكد من وجود companyId من المستخدم المصادق عليه
     const companyId = req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({

@@ -330,6 +330,8 @@ model Order {
   sourceType              String?                   @default("ai_conversation")
   extractionTimestamp     DateTime?
   metadata                String?
+  billingHoldAt           DateTime?
+  billingHoldAmount       Decimal?                  @db.Decimal(10, 2)
   companyId               String
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt

@@ -81,6 +81,17 @@ router.post('/add-funds', authenticateToken, requireSuperAdmin, async (req, res)
             });
         });
 
+        // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد إضافة الرصيد
+        try {
+            const pendingBillingService = require('../services/pendingBillingService');
+            const pendingResult = await pendingBillingService.processPendingUsageCharges(companyId);
+            if (pendingResult.processed > 0) {
+                console.log(`✅ [ADMIN-WALLET] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s) for company ${companyId}`);
+            }
+        } catch (pendingError) {
+            console.error('⚠️ [ADMIN-WALLET] Error processing pending charges:', pendingError.message);
+        }
+
         return res.json({
             success: true,
             message: 'Funds added successfully',

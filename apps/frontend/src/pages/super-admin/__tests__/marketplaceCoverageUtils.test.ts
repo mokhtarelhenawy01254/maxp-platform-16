@@ -20,7 +20,7 @@ const featureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "procurement-pro",
     appLabel: "Procurement Pro",
     currentGate: "procurement-pro",
-    legacyGate: "ecommerce-pro",
+    legacyGate: "store-pro",
     routes: [],
     action: "Install exact app",
   },
