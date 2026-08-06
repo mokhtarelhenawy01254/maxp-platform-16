@@ -200,6 +200,20 @@ function resolveVariablesForPreview(content: string): string {
   });
 }
 
+/**
+ * عرض نص قالب ميتا (اللي فيه {{1}}، {{2}}...) بقيم نموذجية —
+ * بيربط كل رقم ميتا بالمتغير المحلي المطابق حسب ترتيب الظهور.
+ */
+function resolveMetaBodyPreview(metaBody: string, localContent: string): string {
+  if (!metaBody) return "";
+  const localVars = extractLocalVariableOrder(localContent);
+  return metaBody.replace(/\{\{(\d+)\}\}/g, (_, n) => {
+    const idx = parseInt(n, 10) - 1;
+    const v = localVars[idx];
+    return v ? (SAMPLE_VARIABLES[v] || `[${v}]`) : `[${n}]`;
+  });
+}
+
 export { resolveVariablesForPreview };
 
 /**
@@ -368,6 +382,7 @@ export default function OrderStatusTemplatesPage() {
   const [dialogSlot, setDialogSlot] = useState<TemplateSlot>("regular");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [showVariables, setShowVariables] = useState(false);
+  const [showLocalRef, setShowLocalRef] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
@@ -1420,6 +1435,9 @@ export default function OrderStatusTemplatesPage() {
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                     اختر قالب ميتا المعتمد
                   </label>
+                  <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
+                    اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده.
+                  </p>
                   {metaSessions.length > 0 ? (
                     <>
                       <button
@@ -1472,12 +1490,21 @@ export default function OrderStatusTemplatesPage() {
                           </select>
 
                           {selectedMetaBody && (
-                            <div className="mt-2 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/30">
-                              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                محتوى قالب ميتا المحدد
+                            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
+                              <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                                <GlobeAltIcon className="h-3 w-3" />
+                                الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
                               </p>
-                              <p className="whitespace-pre-wrap break-words text-xs text-slate-700 dark:text-slate-300">
-                                {selectedMetaBody}
+                              <div
+                                dir="auto"
+                                className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+                              >
+                                <p className="whitespace-pre-wrap break-words">
+                                  {resolveMetaBodyPreview(selectedMetaBody, templateForm.content)}
+                                </p>
+                              </div>
+                              <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                                المتغيرات بتتقري تلقائيًا من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
                               </p>
                             </div>
                           )}
@@ -1549,28 +1576,50 @@ export default function OrderStatusTemplatesPage() {
                 </div>
               )}
 
-              {/* ===== LOCAL CONTENT (shared: visible in both slots) ===== */}
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    {dialogSlot === "meta" ? "محتوى القالب المحلي (مرجع الربط)" : "محتوى الرسالة"} <span className="text-red-500">*</span>
-                  </label>
-                  <span
-                    className={`text-[10px] font-medium tabular-nums ${
-                      templateForm.content.length > META_BODY_CHAR_LIMIT
-                        ? "text-red-600 dark:text-red-400"
-                        : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
-                          ? "text-amber-600 dark:text-amber-400"
-                          : "text-slate-400 dark:text-slate-500"
-                    }`}
-                    aria-live="polite"
-                  >
-                    {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
-                  </span>
-                </div>
+              {/* ===== LOCAL CONTENT ===== */}
+              <div className={dialogSlot === "meta" ? "rounded-lg border border-slate-200 p-3 dark:border-slate-700" : ""}>
+                {dialogSlot === "meta" ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowLocalRef((s) => !s)}
+                      className="flex w-full items-center justify-between gap-2"
+                    >
+                      <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
+                        المرجع المحلي (لتطابق المتغيرات)
+                      </span>
+                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
+                        {showLocalRef ? "إخفاء" : "عرض"}
+                      </span>
+                    </button>
+                    <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      القالب المحلي ده مش اللي هيتتبعت — بيستخدم بس عشان نربط متغيرات الطلب بأرقام قالب ميتا ({"{{1}}"} ← {"{{customerName}}"}) .
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                      محتوى الرسالة <span className="text-red-500">*</span>
+                    </label>
+                    <span
+                      className={`text-[10px] font-medium tabular-nums ${
+                        templateForm.content.length > META_BODY_CHAR_LIMIT
+                          ? "text-red-600 dark:text-red-400"
+                          : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-slate-400 dark:text-slate-500"
+                      }`}
+                      aria-live="polite"
+                    >
+                      {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
+                    </span>
+                  </div>
+                )}
 
-                {/* Editor + live WhatsApp preview side-by-side (lg+) */}
-                <div className="grid gap-3 lg:grid-cols-2">
+                {dialogSlot !== "meta" || showLocalRef ? (
+                <>
+                <div className={dialogSlot === "meta" ? "mt-3 grid gap-3 lg:grid-cols-2" : "grid gap-3 lg:grid-cols-2"}>
                   <textarea
                     value={templateForm.content}
                     onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) }))}
@@ -1635,13 +1684,22 @@ export default function OrderStatusTemplatesPage() {
                   </div>
                 )}
 
-                {dialogSlot === "meta" && (
+                {dialogSlot === "meta" && showLocalRef && (
                   <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                    عدّل المحتوى وضغط "ربط" عشان يتسجّل — أو "إرسال للمراجعة من جديد" عشان ميتا تراجعه وتفعّله تاني.
+                    لو غيّرت المرجع المحلي وضغطت "حفظ وربط بقالب ميتا" يتسجّل — أو "إرسال للمراجعة من جديد" عشان ميتا تراجعه.
                   </p>
                 )}
+                </>
+                ) : null}
               </div>
 
+              {dialogSlot === "meta" && templateForm.metaTemplateName ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    ℹ️ الأزرار بتاعة الرسالة بتتاخد من قالب ميتا المعتمد نفسه — الأزرار المحلية مش هتتأثر.
+                  </p>
+                </div>
+              ) : (
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1713,6 +1771,7 @@ export default function OrderStatusTemplatesPage() {
                   </div>
                 )}
               </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <input
@@ -1727,7 +1786,7 @@ export default function OrderStatusTemplatesPage() {
                 </label>
               </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
               <button
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -1753,8 +1812,8 @@ export default function OrderStatusTemplatesPage() {
                 {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
                 {dialogSlot === "meta"
                   ? templateForm.metaTemplateName
-                    ? "ربط بقالب ميتا"
-                    : "حفظ القالب الميتا"
+                    ? "حفظ وربط بقالب ميتا"
+                    : "حفظ قالب ميتا"
                   : "حفظ"}
               </button>
             </div>

@@ -114,7 +114,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     jest.clearAllMocks();
   });
 
-  test("slot ميتا بيفتح الديالوج في وضع ميتا ويعرض محتوى قالب ميتا المختار", async () => {
+  test("slot ميتا بيفتح الديالوج في وضع ميتا ويعرض رسالة قالب ميتا المختار", async () => {
     mockApi(makeStatus({}));
     renderPage();
     const user = userEvent.setup();
@@ -124,8 +124,8 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
 
     await user.selectOptions(await screen.findByRole("combobox", { name: /قالب ميتا المعتمد/ }), "order_confirm_ar");
 
-    expect(await screen.findByText(/مرحباً \{\{1\}\}، طلبك \{\{2\}\} في الطريق/)).toBeInTheDocument();
-    expect(screen.getByText(/محتوى قالب ميتا المحدد/)).toBeInTheDocument();
+    expect(await screen.findByText(/الرسالة اللي هتتبعت للعميل/)).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
   });
 
   test("بيظهر مؤشر الحالة المربوطة والزر إرسال للمراجعة من جديد لما يكون القالب مربوط", async () => {
@@ -167,13 +167,15 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     );
   });
 
-  test("محتوى القالب المحلي بيظهر في وضع ربط ميتا للتعديل", async () => {
+  test("المرجع المحلي بيظهر بالتوسيع في وضع ربط ميتا للتعديل", async () => {
     mockApi(makeStatus({}));
     renderPage();
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
     await user.click(within(metaSlot()).getByRole("button", { name: /إنشاء/ }));
+
+    await user.click(screen.getByRole("button", { name: /المرجع المحلي/ }));
 
     const contentArea = screen.getByPlaceholderText(/اكتب رسالتك هنا/);
     expect(contentArea).toBeInTheDocument();
