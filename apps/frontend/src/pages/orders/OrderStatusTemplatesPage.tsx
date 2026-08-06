@@ -415,6 +415,7 @@ export default function OrderStatusTemplatesPage() {
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogSlot, setDialogSlot] = useState<TemplateSlot>("regular");
+  const [dialogMode, setDialogMode] = useState<"create" | "edit" | "switch">("create");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [showVariables, setShowVariables] = useState(false);
   const [showLocalRef, setShowLocalRef] = useState(false);
@@ -510,6 +511,7 @@ export default function OrderStatusTemplatesPage() {
     setSelectedStatus(status);
     setSelectedTemplate(null);
     setDialogSlot(slot);
+    setDialogMode("create");
     setOriginalMetaTemplateName("");
     setMetaAutoFilled(false);
     setTemplateForm({
@@ -535,6 +537,7 @@ export default function OrderStatusTemplatesPage() {
     const target = slot === "meta" ? getMetaSlotTemplate(status) : status.template;
     setSelectedTemplate(target);
     setDialogSlot(slot);
+    setDialogMode(slot === "meta" ? "edit" : "edit");
     const metaName = target?.metaTemplateName || "";
     setOriginalMetaTemplateName(metaName);
     setMetaAutoFilled(false);
@@ -548,6 +551,34 @@ export default function OrderStatusTemplatesPage() {
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: metaName,
       metaTemplateLanguage: target?.metaTemplateLanguage || "ar",
+    });
+    setDialogOpen(true);
+    fetchMetaSessions();
+  };
+
+  /**
+   * وضع "تغيير القالب": شاشة بسيطة لربط قالب ميتا معتمد مختلف.
+   * مش بيعدّل محتوى الرسالة الحالية — بس بيدور على قالب معتمد تاني ويربطه.
+   */
+  const openSwitchDialog = (status: StatusWithTemplate) => {
+    const current = getMetaSlotTemplate(status);
+    setSelectedStatus(status);
+    setSelectedTemplate(current);
+    setDialogSlot("meta");
+    setDialogMode("switch");
+    const metaName = current?.metaTemplateName || "";
+    setOriginalMetaTemplateName(metaName);
+    setMetaAutoFilled(false);
+    setShowLocalRef(false);
+    setTemplateForm({
+      name: current?.name || `قالب ميتا ${status.name}`,
+      content: current?.content || DEFAULT_TEMPLATE_CONTENT,
+      isActive: current?.isActive ?? true,
+      hasButtons: current?.hasButtons ?? true,
+      buttons: parseTemplateButtons(current?.buttons),
+      sendMode: "bind_meta",
+      metaTemplateName: metaName,
+      metaTemplateLanguage: current?.metaTemplateLanguage || "ar",
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -1010,13 +1041,13 @@ export default function OrderStatusTemplatesPage() {
   })();
 
   const metaDialogTitle = (() => {
+    if (dialogMode === "switch") return `تغيير قالب ميتا: ${selectedStatus?.name}`;
     if (dialogSlot !== "meta") {
       return `${selectedTemplate?.id ? "تعديل قالب واتساب" : "إنشاء قالب واتساب"}: ${selectedStatus?.name}`;
     }
-    if (metaBindingChanged) return `تبديل قالب ميتا: ${selectedStatus?.name}`;
+    if (dialogMode === "create") return `إنشاء قالب ميتا: ${selectedStatus?.name}`;
     if (isMetaBound && metaContentChanged) return `تحديث محتوى قالب ميتا: ${selectedStatus?.name}`;
-    if (isMetaBound) return `تعديل قالب ميتا: ${selectedStatus?.name}`;
-    return `إنشاء قالب ميتا: ${selectedStatus?.name}`;
+    return `تعديل قالب ميتا: ${selectedStatus?.name}`;
   })();
 
   /**
@@ -1456,6 +1487,7 @@ export default function OrderStatusTemplatesPage() {
                     onToggleNotify={toggleNotify}
                     onOpenEdit={openEditDialog}
                     onOpenCreate={openCreateDialog}
+                    onOpenSwitch={openSwitchDialog}
                     onUnbindMeta={unbindMeta}
                   />
                 ));
@@ -1480,7 +1512,120 @@ export default function OrderStatusTemplatesPage() {
               نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
             </DialogDescription>
           </DialogHeader>
-          {dialogOpen && selectedStatus && (
+          {dialogOpen && selectedStatus && dialogMode === "switch" && (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
+                <input
+                  type="text"
+                  value={selectedStatus.code}
+                  disabled
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                />
+              </div>
+
+              <div className="rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
+                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  اختر قالب ميتا المعتمد
+                </label>
+                <p className="-mt-0.5 mb-2 text-[10px] text-slate-400 dark:text-slate-500">
+                  {isMetaBound
+                    ? `الربط الحالي: ${originalMetaTemplateName} — اختار قالب تاني عشان تغيّره (مش بيغيّر محتوى الرسالة).`
+                    : "اختار قالب معتمد وربطه بالحالة — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه."}
+                </p>
+                {metaSessions.length > 0 ? (
+                  <>
+                    <select
+                      value={selectedMetaSession}
+                      onChange={(e) => { setSelectedMetaSession(e.target.value); }}
+                      aria-label="جلسة ميتا للربط"
+                      className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    >
+                      {metaSessions.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} {s.metaDisplayPhoneNumber ? `(${s.metaDisplayPhoneNumber})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingMetaTemplates ? (
+                      <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
+                    ) : availableMetaTemplates.length > 0 ? (
+                      <select
+                        value={templateForm.metaTemplateName}
+                        onChange={(e) => setTemplateForm((p) => ({ ...p, metaTemplateName: e.target.value }))}
+                        aria-label="قالب ميتا المعتمد"
+                        className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      >
+                        <option value="">اختر قالب...</option>
+                        {availableMetaTemplates.map((mt) => {
+                          const boundEvents = mt.boundToEventTypes?.length
+                            ? mt.boundToEventTypes.join("، ")
+                            : (mt.boundToEventType || "");
+                          return (
+                            <option key={mt.name} value={mt.name}>
+                              {mt.name} {mt.category ? `(${mt.category})` : ""}
+                              {boundEvents ? ` - مربوط بـ ${boundEvents}` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    ) : (
+                      <p className="text-xs text-slate-400">
+                        لا توجد قوالب ميتا معتمدة — اعمل قالب جديد من «انشاء قالب» في الكارت.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>
+                )}
+              </div>
+
+              {selectedMetaBody && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
+                  <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                    <GlobeAltIcon className="h-3 w-3" />
+                    الرسالة اللي هتتبعت للعميل (نص قالب ميتا)
+                  </p>
+                  <div
+                    dir="auto"
+                    className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+                  >
+                    <p className="whitespace-pre-wrap break-words">
+                      {resolveMetaBodyPreview(selectedMetaBody, templateForm.content)}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                    المتغيرات بتتقري تلقائياً من الطلب — النص ده هو اللي هيوصلك للعميل بالظبط.
+                  </p>
+                </div>
+              )}
+
+              {metaVariableMismatch && (
+                <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
+                  ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن محتوى الرسالة الحالية فيه <strong>{metaVariableMismatch.localCount} فقط</strong>. بدّل من وضع «تعديل» عشان تعدّل الرسالة وتضيف المتغيرات الناقصة.
+                </p>
+              )}
+
+              <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+                <button
+                  onClick={() => setDialogOpen(false)}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || resubmittingMeta || !!bindingId || !templateForm.metaTemplateName || !!metaVariableMismatch}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saving || bindingId ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
+                  {isMetaBound ? "حفظ التغيير" : "اربط القالب"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {dialogOpen && selectedStatus && dialogMode !== "switch" && (
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
@@ -1983,6 +2128,7 @@ interface StatusRowProps {
   onToggleNotify: (status: StatusWithTemplate) => void;
   onOpenEdit: (status: StatusWithTemplate, slot?: TemplateSlot) => void;
   onOpenCreate: (status: StatusWithTemplate, slot: TemplateSlot) => void;
+  onOpenSwitch: (status: StatusWithTemplate) => void;
   onUnbindMeta: (status: StatusWithTemplate) => void;
 }
 
@@ -1997,6 +2143,7 @@ function StatusRow({
   onToggleNotify,
   onOpenEdit,
   onOpenCreate,
+  onOpenSwitch,
   onUnbindMeta,
 }: StatusRowProps) {
   const { t } = useTranslation();
@@ -2102,6 +2249,7 @@ function StatusRow({
           onTogglePreview={() => onTogglePreview("meta")}
           onEdit={() => onOpenEdit(status, "meta")}
           onCreate={() => onOpenCreate(status, "meta")}
+          onSwitch={() => onOpenSwitch(status)}
           onUnbind={meta ? () => onUnbindMeta(status) : undefined}
         />
       </div>
@@ -2118,6 +2266,7 @@ interface StatusTemplateSlotProps {
   onTogglePreview: () => void;
   onEdit: () => void;
   onCreate: () => void;
+  onSwitch: () => void;
   onUnbind?: () => void;
 }
 
@@ -2130,6 +2279,7 @@ function StatusTemplateSlot({
   onTogglePreview,
   onEdit,
   onCreate,
+  onSwitch,
   onUnbind,
 }: StatusTemplateSlotProps) {
   const isMeta = slot === "meta";
@@ -2234,13 +2384,38 @@ function StatusTemplateSlot({
             {isPreviewExpanded ? "إخفاء" : "معاينة"}
           </button>
         )}
+        {isMeta && (
+          <button
+            onClick={onSwitch}
+            disabled={!status.notifyCustomer}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
+            className="flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-medium text-blue-600 transition hover:bg-white dark:bg-white/10 dark:text-blue-400 dark:hover:bg-white/20 disabled:opacity-50"
+          >
+            <GlobeAltIcon className="h-3 w-3" />
+            {bound ? "تغيير القالب" : "اختيار قالب معتمد"}
+          </button>
+        )}
         {template ? (
           <button
             onClick={onEdit}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${colors.accent}`}
           >
             <PencilSquareIcon className="h-3 w-3" />
-            {isMeta && isLegacy ? "تعديل الربط" : "تعديل"}
+            {isMeta ? "تعديل المحتوى" : "تعديل"}
+          </button>
+        ) : !isMeta ? (
+          <button
+            onClick={onCreate}
+            disabled={!status.notifyCustomer}
+            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
+              status.notifyCustomer
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+            }`}
+          >
+            <PlusIcon className="h-3 w-3" />
+            إنشاء
           </button>
         ) : (
           <button
@@ -2254,7 +2429,7 @@ function StatusTemplateSlot({
             }`}
           >
             <PlusIcon className="h-3 w-3" />
-            إنشاء
+            إنشاء قالب
           </button>
         )}
         {isMeta && bound && onUnbind && (

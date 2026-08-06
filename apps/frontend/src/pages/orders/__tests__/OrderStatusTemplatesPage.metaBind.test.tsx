@@ -147,8 +147,8 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st1");
-    // slot ميتا بيعرض الربط القديم على القالب العادي (توافق قديم)
-    await user.click(within(metaSlot()).getByRole("button", { name: /تعديل الربط/ }));
+    // slot ميتا بيعرض الربط القديم على القالب العادي (توافق قديم) — فتح وضع تعديل المحتوى
+    await user.click(within(metaSlot()).getByRole("button", { name: /تعديل المحتوى/ }));
 
     expect(await screen.findByText(/الربط الحالي/)).toBeInTheDocument();
     // resubmit button should NOT show yet — content hasn't changed
@@ -421,5 +421,61 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/محتاج/);
     expect(screen.getByRole("button", { name: /حفظ وربط بقالب ميتا/ })).toBeDisabled();
+  });
+
+  test("تغيير القالب بيفتح وضع بسيط (switch) بدون محرر محتوى ويربط القالب المختار", async () => {
+    mockApi(
+      makeStatus({
+        metaTemplate: {
+          id: "mt1",
+          name: "قالب طلب جديد",
+          content: "مرحبا {{customerName}} أكد طلبك",
+          eventType: "CONFIRMED",
+          isActive: true,
+          channel: "META_CLOUD",
+          metaTemplateName: "order_confirm_ar",
+          metaTemplateStatus: "APPROVED",
+        },
+      })
+    );
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    await user.click(within(metaSlot()).getByRole("button", { name: /تغيير القالب/ }));
+
+    expect(await screen.findByText(/تغيير قالب ميتا: مؤكد/)).toBeInTheDocument();
+    // وضع switch مفيش محرر محتوى
+    expect(screen.queryByRole("textbox", { name: /محتوى القالب المحلي/ })).not.toBeInTheDocument();
+    // في زر ربط/حفظ بسيط
+    expect(screen.getByRole("button", { name: /حفظ التغيير/ })).toBeInTheDocument();
+  });
+
+  test("الموت لا تظهر زر انشاء قالب في slot ميتا المربوط — الأزرار الأربعة منفصلة", async () => {
+    mockApi(
+      makeStatus({
+        metaTemplate: {
+          id: "mt1",
+          name: "قالب طلب جديد",
+          content: "مرحبا {{customerName}} أكد طلبك",
+          eventType: "CONFIRMED",
+          isActive: true,
+          channel: "META_CLOUD",
+          metaTemplateName: "order_confirm_ar",
+          metaTemplateStatus: "APPROVED",
+        },
+      })
+    );
+    renderPage();
+    const user = userEvent.setup();
+
+    await screen.findByTestId("status-row-st1");
+    const slot = metaSlot();
+    // أربعة أفعال مميزة: تغيير القالب + تعديل المحتوى + فك الربط (+ معاينة)
+    expect(within(slot).getByRole("button", { name: /تغيير القالب/ })).toBeInTheDocument();
+    expect(within(slot).getByRole("button", { name: /تعديل المحتوى/ })).toBeInTheDocument();
+    expect(within(slot).getByRole("button", { name: /فك الربط/ })).toBeInTheDocument();
+    // لا يوجد زر إنشاء في slot المربوط
+    expect(within(slot).queryByRole("button", { name: /إنشاء قالب/ })).not.toBeInTheDocument();
   });
 });

@@ -52,12 +52,29 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
   const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
 
   if (isMetaSession) {
+    // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
     const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
       where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
       orderBy: { isDefault: 'desc' }
     });
     if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
       return metaTemplate;
+    }
+
+    // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
+    //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
+    const legacyMeta = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: {
+        companyId,
+        eventType,
+        isActive: true,
+        channel: { not: 'META_CLOUD' },
+        metaTemplateName: { not: null },
+      },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (legacyMeta && legacyMeta.metaTemplateName && String(legacyMeta.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return legacyMeta;
     }
   }
 
