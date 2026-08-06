@@ -176,7 +176,23 @@ async function reverseVoucherForOrder({ orderId, companyId }) {
       where: { companyId, sourceOrderId: orderId, status: { in: ['ACTIVE', 'EXPIRED'] } },
       data: { status: 'CANCELLED' }
     });
-    // 2) لو الأوردر استخدم كوبون، نرجّع الكوبون نشط (إن لسه في نافذة صلاحيته)
+    // 2) لو كوبون من هذا الأوردر اتحوّل لكاش باك، نخصمه من المحفظة
+    const converted = await prisma.customerLoyaltyVoucher.findMany({
+      where: { companyId, sourceOrderId: orderId, status: 'CONVERTED' }
+    });
+    for (const v of converted) {
+      try {
+        const WalletService = require('./walletService');
+        const wallet = await prisma.customerWallet.findFirst({ where: { customerId: v.customerId } });
+        if (wallet && Number(wallet.balance) >= Number(v.amount)) {
+          await WalletService.deductFromWallet(v.customerId, Number(v.amount), `ترجيع كوبون منتهي للأوردر ${v.orderNumber}`);
+        }
+        await prisma.customerLoyaltyVoucher.update({ where: { id: v.id }, data: { status: 'CANCELLED' } });
+      } catch (error) {
+        console.error(`❌ [AUTO-DISCOUNT] Converted-voucher wallet reversal failed for ${v.id}:`, error.message);
+      }
+    }
+    // 3) لو الأوردر استخدم كوبون، نرجّع الكوبون نشط (إن لسه في نافذة صلاحيته)
     const order = await prisma.order.findFirst({ where: { id: orderId, companyId }, select: { metadata: true } });
     if (order?.metadata) {
       try {
