@@ -28,7 +28,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Run Diagnostics on Server
+      - name: Run WhatsApp Test on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -37,26 +37,17 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== PM2 Status & Update ==="
-            pm2 update
-            pm2 list
-            echo "=== Restarting AI Service ==="
-            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
-            
-            echo "=== Recent Failed Provider Logs ==="
             cd /var/www/backend2
+            echo "=== Running WhatsApp Test Script (correct company) ==="
+            node scripts/test-direct.js 2>&1 | grep -E "Settings:|Company|Default|Session:|Result:|success|reason|No session|ERROR|Error|WHATSAPP-DEBUG|No session available|META_CLOUD|treated"
+            
+            echo "=== Checking latest notification logs ==="
             node -e "
-              const path = require('path');
-              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
-              const prisma = new PrismaClient();
+              const { getSharedPrismaClient } = require('./services/sharedDatabase');
+              const prisma = getSharedPrismaClient();
               async function run() {
-                const logs = await prisma.\$queryRaw\`
-                  SELECT id, status, reply_preview, reason, violations, created_at 
-                  FROM ai.self_review_log 
-                  ORDER BY created_at DESC 
-                  LIMIT 15
-                \`;
-                console.log(JSON.stringify(logs, null, 2));
+                const logs = await prisma.\$queryRawUnsafe('SELECT status, \"eventType\", \"recipientPhone\", \"failureReason\", \"createdAt\" FROM whatsapp_notification_logs ORDER BY \"createdAt\" DESC LIMIT 5');
+                console.log('LOGS:', JSON.stringify(logs));
               }
-              run().catch(console.error).finally(() => prisma.\$disconnect());
-            "
+              run().catch(e => console.error(e.message)).finally(() => prisma.\$disconnect());
+            " 2>&1 | grep "LOGS:"
