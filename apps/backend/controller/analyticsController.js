@@ -1011,6 +1011,33 @@ const getProductAnalytics = async (req, res) => {
   }
 };
 
+const getProductSalesPerformance = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period } = req.query;
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
+
+    const data = await analyticsService.getProductSalesPerformance(companyId, start, end);
+
+    res.json({
+      success: true,
+      data,
+      period: { start, end }
+    });
+  } catch (error) {
+    console.error('Error in getProductSalesPerformance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب تقرير مبيعات المنتجات',
+      error: error.message
+    });
+  }
+};
+
 // Get Variations Analytics
 const getVariationsAnalytics = async (req, res) => {
   try {
@@ -4599,6 +4626,7 @@ module.exports = {
   getProductHealthScore,
   getReturnAnalytics,
   getProductFulfillmentAnalytics,
+  getProductSalesPerformance,
   getTeamPerformanceAnalytics,
   getFunnelAnalytics,
   getStockForecastAnalytics,

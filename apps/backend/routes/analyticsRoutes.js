@@ -25,6 +25,9 @@ router.get('/daily', authenticateToken, cacheMiddleware(60000), analyticsControl
 // إحصائيات المنتجات المجمعة
 router.get('/products/analytics', authenticateToken, analyticsController.getProductAnalytics);
 
+// تقرير مبيعات المنتجات (كمية/أوردرات/متوسط سعر)
+router.get('/products/sales-performance', authenticateToken, analyticsController.getProductSalesPerformance);
+
 // تحليل المقاسات والألوان
 router.get('/variations', authenticateToken, analyticsController.getVariationsAnalytics);
 
