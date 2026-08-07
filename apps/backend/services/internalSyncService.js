@@ -369,6 +369,8 @@ class InternalSyncService {
                         }
 
                         let providerCustomerId = null;
+                        let providerCustomerPhone = order.customer?.phone || null;
+                        let providerCustomerName = null;
                         if (order.customer) {
                             const customer = await this.prisma.customer.upsert({
                                 where: {
@@ -393,6 +395,9 @@ class InternalSyncService {
                                 }
                             });
                             providerCustomerId = customer.id;
+                            providerCustomerPhone = order.customer.phone || providerCustomerPhone;
+                            providerCustomerName = [order.customer.firstName, order.customer.lastName]
+                                .filter(Boolean).join(' ') || null;
                         }
 
                         const subtotal = items.reduce((acc, curr) => acc + Number(curr.total), 0);
@@ -417,6 +422,8 @@ class InternalSyncService {
                             data: {
                                 orderNumber: `${orderNumber}-AFF-${consumerId.slice(-4)}`,
                                 customerId: providerCustomerId,
+                                customerPhone: providerCustomerPhone,
+                                customerName: providerCustomerName,
                                 companyId: providerId,
                                 affiliateId: affiliate.id,
                                 orderSource: 'AFFILIATE_DIRECT',
@@ -452,6 +459,42 @@ class InternalSyncService {
                         await commissionService.calculateCommissions(providerOrder.id);
 
                         console.log(`✅ [INTERNAL-SYNC] Successfully pushed order segment to provider ${providerId}. Provider Order: ${providerOrder.orderNumber}`);
+
+                        // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد (طلبات الأفليت)
+                        // 🚨 كان مفقوداً بالكامل — طلبات internal_push وصلت بدون أي إشعار للعميل
+                        try {
+                            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+
+                            const orderForNotification = {
+                                id: providerOrder.id,
+                                orderNumber: providerOrder.orderNumber,
+                                companyId: providerId,
+                                customerPhone: providerCustomerPhone,
+                                customerName: providerCustomerName,
+                                customer: {
+                                    firstName: providerCustomerName?.split(' ')[0] || providerCustomerName,
+                                    phone: providerCustomerPhone
+                                },
+                                customerId: providerCustomerId,
+                                total: parseFloat(providerOrder.total),
+                                shipping: parseFloat(providerOrder.shipping || 0),
+                                currency: 'EGP',
+                                items: (items || []).map(it => ({
+                                    productName: it.originalProduct?.name || it.name,
+                                    quantity: it.quantity || 1,
+                                    price: it.price,
+                                    total: it.total,
+                                    productSku: it.originalProduct?.sku || it.sku
+                                })),
+                                createdAt: providerOrder.createdAt
+                            };
+
+                            await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+                            console.log(`✅ [WHATSAPP] Order notification sent for affiliate order: ${providerOrder.orderNumber}`);
+                        } catch (whatsappError) {
+                            // لا نوقف العملية إذا فشل WhatsApp
+                            console.log(`⚠️ [WHATSAPP] Failed to send affiliate order notification: ${whatsappError.message}`);
+                        }
 
                         // 🛒 Auto-export to WooCommerce for the provider company
                         try {

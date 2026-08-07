@@ -2349,35 +2349,47 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (createdOrder && !isDuplicateOrder) {
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    if (!isDuplicateOrder) {
+    // عناصر الطلب — متاحة دائماً من الـ guest order
+    let guestItems = [];
     try {
-      console.log('📱 [WHATSAPP] Preparing to send notification for order:', createdOrder.orderNumber);
+      guestItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+    } catch (parseErr) {
+      guestItems = cartItems || [];
+    }
+
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    // ملاحظة: نعتمد على بيانات الـ guest order (المتوفرة دائماً) بدلاً من createdOrder —
+    // لو فشل تحويل الزائر لطلب عادي (customer.create/order.create) يبقى الإشعار يشتغل عادي.
+    try {
+      console.log('📱 [WHATSAPP] Preparing to send notification for order:', order.orderNumber);
       console.log('📱 [WHATSAPP] Order data:', {
-        id: createdOrder.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        id: order.id,
+        customerPhone: order.guestPhone,
+        customerName: order.guestName,
         companyId: company.id,
-        total: createdOrder.total
+        total: order.finalTotal
       });
 
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
       // تجهيز بيانات الطلب للإشعار
       const orderForNotification = {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
+        id: createdOrder?.id || order.id,
+        orderNumber: order.orderNumber,
         companyId: company.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        customerPhone: order.guestPhone || createdOrder?.customerPhone,
+        customerName: order.guestName || createdOrder?.customerName,
         customer: {
-          firstName: createdOrder.customerName?.split(' ')[0] || createdOrder.customerName,
-          phone: createdOrder.customerPhone
+          firstName: (order.guestName || createdOrder?.customerName || '').split(' ')[0] || order.guestName,
+          phone: order.guestPhone || createdOrder?.customerPhone
         },
-        total: parseFloat(createdOrder.total),
-        shipping: parseFloat(createdOrder.shipping),
+        customerId: createdOrder?.customerId || null,
+        total: parseFloat(order.finalTotal ?? order.total ?? createdOrder?.total ?? 0),
+        shipping: parseFloat(order.shippingCost ?? createdOrder?.shipping ?? 0),
         currency: 'EGP',
-        items: createdOrder.orderItems || [] // ✅ Include items for WhatsApp notification
+        items: (createdOrder?.orderItems && createdOrder.orderItems.length > 0) ? createdOrder.orderItems : guestItems,
+        createdAt: order.createdAt || createdOrder?.createdAt
       };
 
       console.log('📱 [WHATSAPP] Calling sendOrderCreatedNotification with:', orderForNotification);
@@ -2401,7 +2413,7 @@ router.post('/', async (req, res) => {
           console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
         }
       } else {
-        console.log('✅ [WHATSAPP] Order notification sent successfully for:', createdOrder.orderNumber);
+        console.log('✅ [WHATSAPP] Order notification sent successfully for:', order.orderNumber);
       }
     } catch (whatsappError) {
       // لا نوقف العملية إذا فشل WhatsApp
@@ -2411,25 +2423,29 @@ router.post('/', async (req, res) => {
 
     // 📧 إرسال إشعار البريد الإلكتروني تلقائياً
     try {
-      if (createdOrder.customerEmail) {
-        console.log('📧 [EMAIL] Preparing to send confirmation to:', createdOrder.customerEmail);
+      const emailRecipient = createdOrder?.customerEmail || order.guestEmail;
+      if (emailRecipient) {
+        console.log('📧 [EMAIL] Preparing to send confirmation to:', emailRecipient);
 
-        const emailItems = (Array.isArray(createdOrder.items) ? createdOrder.items : []).map(item => ({
-          productName: item.product?.name || item.productName,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
+        const emailItems = ((createdOrder?.orderItems && createdOrder.orderItems.length > 0)
+          ? createdOrder.orderItems
+          : guestItems
+        ).map(item => ({
+          productName: item.product?.name || item.productName || item.name,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || 0),
           productColor: item.productColor,
           productSize: item.productSize
         }));
 
         await EmailService.sendOrderConfirmation({
-          customerEmail: createdOrder.customerEmail,
-          customerName: createdOrder.customerName,
-          orderNumber: createdOrder.orderNumber,
+          customerEmail: emailRecipient,
+          customerName: createdOrder?.customerName || order.guestName,
+          orderNumber: order.orderNumber,
           items: emailItems,
-          total: parseFloat(createdOrder.total),
-          status: createdOrder.status,
-          customerPhone: createdOrder.customerPhone
+          total: parseFloat(order.finalTotal ?? createdOrder?.total ?? 0),
+          status: createdOrder?.status || order.status || 'PENDING',
+          customerPhone: order.guestPhone || createdOrder?.customerPhone
         });
         console.log('✅ [EMAIL] Order confirmation sent successfully');
       }
