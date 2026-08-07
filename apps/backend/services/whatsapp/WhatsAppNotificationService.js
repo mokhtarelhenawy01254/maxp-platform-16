@@ -1264,6 +1264,9 @@ async function sendNotification(options) {
           })() : null;
           const bodyParams = buildMetaBodyParams(variablesOrder, safeTemplate?.content, variables);
 
+          console.log(`☁️ [META-CLOUD] DEBUG bodyParams count=${bodyParams.length}`, JSON.stringify(bodyParams.map(p => p.text?.substring(0, 30))));
+          console.log(`☁️ [META-CLOUD] DEBUG variables keys:`, JSON.stringify(Object.keys(variables || {})));
+
           const components = [{ type: 'BODY', parameters: bodyParams }];
 
           result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
@@ -1275,7 +1278,7 @@ async function sendNotification(options) {
             senderId: null
           });
 
-          console.log(`☁️ [META-CLOUD] Template message result:`, result);
+          console.log(`☁️ [META-CLOUD] Template message result:`, JSON.stringify(result));
         } catch (metaError) {
           // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
           console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
