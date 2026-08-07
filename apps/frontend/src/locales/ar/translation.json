@@ -4022,33 +4022,6 @@
       "usersLoad": "تعذر تحميل المستخدمين الآن."
     }
   },
-  "whatsappNotificationLogs": {
-    "title": "سجل رسائل الواتساب",
-    "description": "تفاصيل كل رسالة واتساب تم إرسالها — نوعها، حالتها، والرقم المرسل منه",
-    "searchPlaceholder": "ابحث برقم الهاتف أو الاسم أو المحتوى...",
-    "statusFilter": "الحالة",
-    "typeFilter": "نوع الرسالة",
-    "eventFilter": "الحدث",
-    "sessionFilter": "الرقم المرسل منه",
-    "recipient": "المستلم",
-    "session": "الرقم المرسل منه",
-    "type": "النوع",
-    "event": "الحدث",
-    "status": "الحالة",
-    "failureReason": "سبب الفشل",
-    "date": "التاريخ",
-    "unknownRecipient": "مستلم غير معروف",
-    "noLogs": "لا توجد سجلات",
-    "noLogsHint": "جرّب تغيير الفلاتر أو أرسل رسالة واتساب جديدة",
-    "detailsTitle": "تفاصيل الرسالة",
-    "template": "القالب",
-    "messageContent": "محتوى الرسالة",
-    "order": "الطلب",
-    "messageId": "معرّف الرسالة",
-    "common": {
-      "refresh": "تحديث"
-    }
-  },
   "whatsappJourney": {
     "title": "سلاسل رسائل ما بعد الاستلام",
     "subtitle": "قم بأتمتة التواصل مع عملائك لزيادة الولاء والمبيعات",
@@ -4235,6 +4208,30 @@
       "tip2": "اسأل عن احتياجاتهم أو اعرض المساعدة لبدء محادثة.",
       "tip3": "استخدم {firstName} لتخصيص الرسالة."
     }
+  },
+  "whatsappNotificationLogs": {
+    "title": "سجل رسائل الواتساب",
+    "description": "تفاصيل كل رسالة واتساب تم إرسالها — نوعها، حالتها، والرقم المرسل منه",
+    "searchPlaceholder": "ابحث برقم الهاتف أو الاسم أو المحتوى...",
+    "statusFilter": "الحالة",
+    "typeFilter": "نوع الرسالة",
+    "eventFilter": "الحدث",
+    "sessionFilter": "الرقم المرسل منه",
+    "recipient": "المستلم",
+    "session": "الرقم المرسل منه",
+    "type": "النوع",
+    "event": "الحدث",
+    "status": "الحالة",
+    "failureReason": "سبب الفشل",
+    "date": "التاريخ",
+    "unknownRecipient": "مستلم غير معروف",
+    "noLogs": "لا توجد سجلات",
+    "noLogsHint": "جرّب تغيير الفلاتر أو أرسل رسالة واتساب جديدة",
+    "detailsTitle": "تفاصيل الرسالة",
+    "template": "القالب",
+    "messageContent": "محتوى الرسالة",
+    "order": "الطلب",
+    "messageId": "معرّف الرسالة"
   },
   "whatsappNotifications": {
     "title": "إشعارات واتساب التلقائية",

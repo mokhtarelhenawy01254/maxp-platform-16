@@ -4015,33 +4015,6 @@ declare module 'react-i18next' {
           usersLoad: string;
         };
       };
-      whatsappNotificationLogs: {
-        title: string;
-        description: string;
-        searchPlaceholder: string;
-        statusFilter: string;
-        typeFilter: string;
-        eventFilter: string;
-        sessionFilter: string;
-        recipient: string;
-        session: string;
-        type: string;
-        event: string;
-        status: string;
-        failureReason: string;
-        date: string;
-        unknownRecipient: string;
-        noLogs: string;
-        noLogsHint: string;
-        detailsTitle: string;
-        template: string;
-        messageContent: string;
-        order: string;
-        messageId: string;
-        common: {
-          refresh: string;
-        };
-      };
       whatsappJourney: {
         title: string;
         subtitle: string;
@@ -4228,6 +4201,30 @@ declare module 'react-i18next' {
           tip2: string;
           tip3: string;
         };
+      };
+      whatsappNotificationLogs: {
+        title: string;
+        description: string;
+        searchPlaceholder: string;
+        statusFilter: string;
+        typeFilter: string;
+        eventFilter: string;
+        sessionFilter: string;
+        recipient: string;
+        session: string;
+        type: string;
+        event: string;
+        status: string;
+        failureReason: string;
+        date: string;
+        unknownRecipient: string;
+        noLogs: string;
+        noLogsHint: string;
+        detailsTitle: string;
+        template: string;
+        messageContent: string;
+        order: string;
+        messageId: string;
       };
       whatsappNotifications: {
         title: string;
