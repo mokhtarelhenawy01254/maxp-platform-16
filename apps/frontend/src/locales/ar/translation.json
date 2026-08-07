@@ -10543,7 +10543,35 @@
     "partialDeliverySize": "المقاس",
     "partialDeliveryPieces": "قطعة",
     "bulkActionsBar": "إجراءات جماعية",
-    "bulkActionsHint": "إجراءات جماعية على الطلبات المحددة"
+    "bulkActionsHint": "إجراءات جماعية على الطلبات المحددة",
+    "palette": {
+      "title": "لوحة الأوامر",
+      "description": "ابحث عن أمر أو انتقل لصفحة",
+      "placeholder": "اكتب أمراً أو ابحث...",
+      "noResults": "لا توجد نتائج",
+      "quickSearch": "بحث سريع",
+      "openPalette": "فتح لوحة الأوامر",
+      "groupNavigation": "التنقل",
+      "groupCreate": "إنشاء",
+      "groupBulk": "إجراءات جماعية",
+      "groupView": "عرض",
+      "navOrders": "الطلبات",
+      "navOrdersKeywords": "orders الطلبات",
+      "navOrdersWorkspace": "مركز التأكيد والمتابعة",
+      "navOrdersPrep": "تجهيز الطلبات",
+      "navAnalytics": "تحليلات الطلبات",
+      "navProducts": "المنتجات",
+      "navCustomers": "العملاء",
+      "navReturns": "مراجعة المرتجعات",
+      "navSettings": "الإعدادات",
+      "createManualOrder": "إنشاء طلب يدوي",
+      "createBulkOrder": "استيراد طلبات جماعية",
+      "viewSearch": "البحث المجمع",
+      "viewInvoices": "فواتير الطلبات",
+      "navigate": "تنقل",
+      "open": "فتح",
+      "close": "إغلاق"
+    }
   },
   "preparation": {
     "page": {

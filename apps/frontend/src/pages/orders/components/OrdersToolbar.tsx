@@ -9,6 +9,7 @@ import {
   FunnelIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { CommandPalette } from "../../../components/common/CommandPalette";
 import type {
   OrdersFilters,
   OrderStatusDefinition,
@@ -174,6 +175,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+              <CommandPalette />
               <button
                 type="button"
                 onClick={onToggleAdvancedFilters}

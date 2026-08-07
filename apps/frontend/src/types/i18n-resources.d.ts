@@ -10536,6 +10536,34 @@ declare module 'react-i18next' {
         partialDeliveryPieces: string;
         bulkActionsBar: string;
         bulkActionsHint: string;
+        palette: {
+          title: string;
+          description: string;
+          placeholder: string;
+          noResults: string;
+          quickSearch: string;
+          openPalette: string;
+          groupNavigation: string;
+          groupCreate: string;
+          groupBulk: string;
+          groupView: string;
+          navOrders: string;
+          navOrdersKeywords: string;
+          navOrdersWorkspace: string;
+          navOrdersPrep: string;
+          navAnalytics: string;
+          navProducts: string;
+          navCustomers: string;
+          navReturns: string;
+          navSettings: string;
+          createManualOrder: string;
+          createBulkOrder: string;
+          viewSearch: string;
+          viewInvoices: string;
+          navigate: string;
+          open: string;
+          close: string;
+        };
       };
       preparation: {
         page: {
