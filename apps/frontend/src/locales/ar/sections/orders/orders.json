@@ -851,5 +851,8 @@
   "partialDeliveryProcessing": "جاري التنفيذ...",
   "partialDeliveryColor": "اللون",
   "partialDeliverySize": "المقاس",
-  "partialDeliveryPieces": "قطعة"
+  "partialDeliveryPieces": "قطعة",
+  "bulkActionsBar": "إجراءات جماعية",
+  "bulkActionsHint": "إجراءات جماعية على الطلبات المحددة",
+  "deselect": "إلغاء التحديد"
 }
