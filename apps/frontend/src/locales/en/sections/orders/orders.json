@@ -892,5 +892,8 @@
   "partialDeliveryProcessing": "Processing...",
   "partialDeliveryColor": "Color",
   "partialDeliverySize": "Size",
-  "partialDeliveryPieces": "pcs"
+  "partialDeliveryPieces": "pcs",
+  "bulkActionsBar": "Bulk actions",
+  "bulkActionsHint": "Bulk actions on selected orders",
+  "deselect": "Clear selection"
 }

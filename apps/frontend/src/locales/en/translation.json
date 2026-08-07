@@ -10399,7 +10399,7 @@
     "noDistributions": "No distributions in the selected period.",
     "selectAll": "Select All",
     "selectedCount": "{{selectedCount}} order(s) selected",
-    "deselect": "Deselect",
+    "deselect": "Clear selection",
     "bulkAssign": "Bulk Assign",
     "bulkConfirm": "Bulk Confirm",
     "everythingUnderControl": "Everything is under control",
@@ -10540,7 +10540,9 @@
     "partialDeliveryProcessing": "Processing...",
     "partialDeliveryColor": "Color",
     "partialDeliverySize": "Size",
-    "partialDeliveryPieces": "pcs"
+    "partialDeliveryPieces": "pcs",
+    "bulkActionsBar": "Bulk actions",
+    "bulkActionsHint": "Bulk actions on selected orders"
   },
   "preparation": {
     "page": {

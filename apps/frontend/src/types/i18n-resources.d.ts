@@ -10534,6 +10534,8 @@ declare module 'react-i18next' {
         partialDeliveryColor: string;
         partialDeliverySize: string;
         partialDeliveryPieces: string;
+        bulkActionsBar: string;
+        bulkActionsHint: string;
       };
       preparation: {
         page: {
