@@ -44,7 +44,7 @@ jobs:
               const { getSharedPrismaClient } = require('./services/sharedDatabase');
               const prisma = getSharedPrismaClient();
               async function run() {
-                const rows = await prisma.\$queryRawUnsafe('SELECT id FROM \"WhatsAppSession\" WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
+                const rows = await prisma.\$queryRawUnsafe('SELECT id FROM whatsapp_sessions WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
                 console.log(rows.length > 0 ? rows[0].id : 'NONE');
               }
               run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
@@ -57,7 +57,7 @@ jobs:
                 const { getSharedPrismaClient } = require('./services/sharedDatabase');
                 const prisma = getSharedPrismaClient();
                 async function run() {
-                  await prisma.\$executeRawUnsafe(\"INSERT INTO \\\"WhatsAppSession\\\" (id, name, status, \\\"phoneNumber\\\", \\\"companyId\\\", provider, \\\"sessionProvider\\\", \\\"createdAt\\\", \\\"updatedAt\\\") VALUES (gen_random_uuid()::text, 'Meta Cloud Test', 'CONNECTED', '201123087745', 'cmlcbycma0000ju8l8tcbrbby', 'cloud_api', 'META_CLOUD', NOW(), NOW())\");
+                  await prisma.\$executeRawUnsafe(\"INSERT INTO whatsapp_sessions (id, name, status, \\\"phoneNumber\\\", \\\"companyId\\\", provider, \\\"sessionProvider\\\", \\\"createdAt\\\", \\\"updatedAt\\\") VALUES (gen_random_uuid()::text, 'Meta Cloud Test', 'CONNECTED', '201123087745', 'cmlcbycma0000ju8l8tcbrbby', 'cloud_api', 'META_CLOUD', NOW(), NOW())\");
                   console.log('Session created');
                 }
                 run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
@@ -68,7 +68,7 @@ jobs:
                 const { getSharedPrismaClient } = require('./services/sharedDatabase');
                 const prisma = getSharedPrismaClient();
                 async function run() {
-                  await prisma.\$executeRawUnsafe(\"UPDATE \\\"WhatsAppSession\\\" SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\$SESSION_ID'\");
+                  await prisma.\$executeRawUnsafe(\"UPDATE whatsapp_sessions SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\$SESSION_ID'\");
                   console.log('Session updated');
                 }
                 run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
