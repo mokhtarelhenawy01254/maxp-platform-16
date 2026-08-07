@@ -38,6 +38,10 @@ jobs:
           debug: true
           script: |
             cd /var/www/backend2
+            echo "=== Backend logs around ORDER_CREATED send (08:52) ==="
+            tail -n 400 logs/out.log 2>/dev/null | grep -E "META-CLOUD|FALLBACK|ORDER_CREATED|swan_pending|sendTemplate|Template message result|sendTemplateMessage|08:52" | tail -n 40
+            echo "=== err.log ==="
+            tail -n 200 logs/err.log 2>/dev/null | grep -E "META|template|Template|swan_pending|fallback|Fallback" | tail -n 20
             echo "=== Checking notification log for real order ORD-741511-339 ==="
             node -e "
               const { getSharedPrismaClient } = require('./services/sharedDatabase');
