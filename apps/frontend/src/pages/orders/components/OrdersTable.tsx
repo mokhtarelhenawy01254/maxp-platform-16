@@ -227,6 +227,12 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                         />
                       </td>
                     )}
+                    {canSelectOrders && order.metadata?.isIncompleteCart && (
+                      <td
+                        className="w-10 px-3 py-2.5 lg:px-4"
+                        aria-hidden="true"
+                      />
+                    )}
                     {columns.includes("orderNumber") && (
                       <td className="px-3 py-2.5 lg:px-4">
                         <div className="flex flex-col gap-1.5">
