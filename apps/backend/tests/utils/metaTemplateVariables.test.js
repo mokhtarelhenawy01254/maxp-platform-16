@@ -94,4 +94,22 @@ describe('buildMetaBodyParams', () => {
   test('يرجّع مصفوفة فارغة لو مفيش ترتيب ولا نص', () => {
     expect(buildMetaBodyParams(null, null, {})).toEqual([]);
   });
+
+  test('يزيل الأسطر الجديدة من قيم المتغيرات (Meta ترفض newline في body params)', () => {
+    const variablesOrder = [{ position: 1, name: 'customerName' }, { position: 2, name: 'orderItems' }];
+    const values = {
+      customerName: 'منى',
+      orderItems: '\n📋 تفاصيل الطلب:\n1. swan edge | اللون: أبيض كامل | المقاس: 37 | الكمية: 1\n',
+    };
+    const result = buildMetaBodyParams(variablesOrder, null, values);
+    expect(result[1]).toEqual({ type: 'text', text: '📋 تفاصيل الطلب: 1. swan edge | اللون: أبيض كامل | المقاس: 37 | الكمية: 1' });
+    // لا يوجد أي \n في القيم
+    result.forEach(p => expect(p.text).not.toContain('\n'));
+  });
+
+  test('يضغط المسافات المتكررة بعد إزالة الأسطر الجديدة', () => {
+    const variablesOrder = [{ position: 1, name: 'body' }];
+    const result = buildMetaBodyParams(variablesOrder, null, { body: 'سطر  اول\n\n  سطر تاني  ' });
+    expect(result[0].text).toBe('سطر اول سطر تاني');
+  });
 });

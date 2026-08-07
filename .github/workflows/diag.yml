@@ -28,7 +28,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Run WhatsApp Order Test on Server
+      - name: Run Diagnostics on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -37,30 +37,26 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
+            echo "=== PM2 Status & Update ==="
+            pm2 update
+            pm2 list
+            echo "=== Restarting AI Service ==="
+            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
+            
+            echo "=== Recent Failed Provider Logs ==="
             cd /var/www/backend2
-            echo "=== Backend logs around ORDER_CREATED send (08:52) ==="
-            tail -n 400 logs/out.log 2>/dev/null | grep -E "META-CLOUD|FALLBACK|ORDER_CREATED|swan_pending|sendTemplate|Template message result|sendTemplateMessage|08:52" | tail -n 40
-            echo "=== err.log ==="
-            tail -n 200 logs/err.log 2>/dev/null | grep -E "META|template|Template|swan_pending|fallback|Fallback" | tail -n 20
-            echo "=== Checking notification log for real order ORD-741511-339 ==="
             node -e "
-              const { getSharedPrismaClient } = require('./services/sharedDatabase');
-              const prisma = getSharedPrismaClient();
+              const path = require('path');
+              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
+              const prisma = new PrismaClient();
               async function run() {
-                const order = await prisma.order.findFirst({ where: { orderNumber: 'ORD-741511-339' } });
-                console.log('ORDER:', JSON.stringify({ id: order?.id, orderNumber: order?.orderNumber, customerPhone: order?.customerPhone, status: order?.status }));
-                if (order) {
-                  const logs = await prisma.\$queryRawUnsafe('SELECT status, \"eventType\", \"recipientPhone\", \"templateId\", \"sessionId\", \"failureReason\", \"content\", \"createdAt\" FROM whatsapp_notification_logs WHERE \"orderId\" = \$1 ORDER BY \"createdAt\" DESC', order.id);
-                  console.log('LOGS:', JSON.stringify(logs));
-                  if (logs.length > 0) {
-                    const tpl = logs[0].templateId ? await prisma.\$queryRawUnsafe('SELECT id, name, \"metaTemplateName\", \"metaTemplateStatus\", channel, \"eventType\" FROM whatsapp_notification_templates WHERE id = \$1', logs[0].templateId) : [];
-                    console.log('TEMPLATE:', JSON.stringify(tpl));
-                    const sess = await prisma.\$queryRawUnsafe('SELECT id, name, provider, status FROM whatsapp_sessions WHERE id = \$1', logs[0].sessionId);
-                    console.log('SESSION:', JSON.stringify(sess));
-                }
-                const msgs = await prisma.\$queryRawUnsafe('SELECT id, "messageId", "messageType", content, "interactiveData", "fromMe", "remoteJid", status, "createdAt" FROM whatsapp_messages WHERE "remoteJid" LIKE \$1 ORDER BY "createdAt" DESC LIMIT 5', '%1123087745%');
-                console.log('WHATSAPP_MESSAGES:', JSON.stringify(msgs));
-                }
+                const logs = await prisma.\$queryRaw\`
+                  SELECT id, status, reply_preview, reason, violations, created_at 
+                  FROM ai.self_review_log 
+                  ORDER BY created_at DESC 
+                  LIMIT 15
+                \`;
+                console.log(JSON.stringify(logs, null, 2));
               }
-              run().catch(e => { console.error('ERROR:', e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+              run().catch(console.error).finally(() => prisma.\$disconnect());
             "
