@@ -38,5 +38,19 @@ jobs:
           debug: true
           script: |
             cd /var/www/backend2
-            echo "=== Creating real order and sending WhatsApp notification ==="
-            node scripts/create-test-order-and-notify.js
+            echo "=== Checking notification log for real order ORD-741511-339 ==="
+            node -e "
+              const { getSharedPrismaClient } = require('./services/sharedDatabase');
+              const prisma = getSharedPrismaClient();
+              async function run() {
+                const order = await prisma.order.findFirst({ where: { orderNumber: 'ORD-741511-339' } });
+                console.log('ORDER:', JSON.stringify({ id: order?.id, orderNumber: order?.orderNumber, customerPhone: order?.customerPhone, status: order?.status }));
+                if (order) {
+                  const logs = await prisma.\$queryRawUnsafe('SELECT status, \"eventType\", \"recipientPhone\", \"failureReason\", \"createdAt\" FROM whatsapp_notification_logs WHERE \"orderId\" = \$1 ORDER BY \"createdAt\" DESC', order.id);
+                  console.log('LOGS:', JSON.stringify(logs));
+                }
+                const msgs = await prisma.\$queryRawUnsafe('SELECT id, remote_jid, content, status, \"createdAt\" FROM whatsapp_messages WHERE remote_jid LIKE \$1 ORDER BY \"createdAt\" DESC LIMIT 5', '%1123087745%');
+                console.log('WHATSAPP_MESSAGES:', JSON.stringify(msgs));
+              }
+              run().catch(e => { console.error('ERROR:', e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+            "
