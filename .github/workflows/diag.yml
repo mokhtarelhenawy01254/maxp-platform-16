@@ -40,7 +40,25 @@ jobs:
             echo "=== PM2 Status ==="
             pm2 list
             
-            echo "=== Running WhatsApp Test Script ==="
+            echo "=== Checking WhatsApp Sessions ==="
             cd /var/www/backend2
+            node -e "
+              const { getSharedPrismaClient } = require('./services/sharedDatabase');
+              const prisma = getSharedPrismaClient();
+              async function run() {
+                const sessions = await prisma.whatsAppSession.findMany({
+                  select: { id: true, name: true, status: true, phoneNumber: true, companyId: true, provider: true, sessionProvider: true },
+                  orderBy: { createdAt: 'desc' }
+                });
+                console.log('Sessions:', JSON.stringify(sessions, null, 2));
+                const settings = await prisma.whatsAppNotificationSettings.findFirst({
+                  select: { companyId: true, defaultSessionId: true, isEnabled: true }
+                });
+                console.log('Settings:', JSON.stringify(settings, null, 2));
+              }
+              run().catch(console.error).finally(() => prisma.\$disconnect());
+            "
+            
+            echo "=== Running WhatsApp Test Script ==="
             node scripts/test-direct.js
 
