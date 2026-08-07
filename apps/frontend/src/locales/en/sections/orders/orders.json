@@ -835,5 +835,37 @@
     "emailError": "Failed to email invoice",
     "fetchError": "Failed to load invoice",
     "errorOrderRequired": "An order is required to generate an invoice"
-  }
+  },
+  "statusTabs": {
+    "all": "All",
+    "orders": "Orders",
+    "payment": "Payment",
+    "preparation": "Preparation",
+    "shipping": "Shipping",
+    "incomplete": "Incomplete Order Messages"
+  },
+  "statusChips": {
+    "all": "All",
+    "custom": "Custom",
+    "metaBound": "Bound to Meta",
+    "noTemplate": "No Template",
+    "disabled": "Disabled"
+  },
+  "sortByTab": "By Tab",
+  "sortAlphabetical": "Alphabetical",
+  "sortRecent": "Recent",
+  "settingsTab": "Settings",
+  "settingsNone": "No settings",
+  "saveSettings": "Save Settings",
+  "settingsEnableNotifications": "Enable WhatsApp Notifications",
+  "settingsStickySession": "Sticky Session",
+  "settingsRateInvalid": "Max messages per minute must be between 1 and 60",
+  "settingsQuietHoursInvalid": "Quiet hours format is invalid",
+  "settingsQuietHoursSame": "Quiet hours start and end cannot be identical",
+  "buttonsMaxHint": "Maximum 3 buttons per message",
+  "unboundToMeta": "Template unbound from Meta",
+  "unbindConfirmTitle": "Unbind template from Meta",
+  "unbindConfirmContent": "Are you sure you want to unbind this template from Meta? After unbinding, the message will be sent as regular WhatsApp.",
+  "unbindConfirmYes": "Yes, unbind",
+  "unbindConfirmCancel": "Cancel"
 }

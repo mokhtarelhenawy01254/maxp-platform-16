@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
@@ -113,7 +114,7 @@ interface TemplateFormState {
 interface SettingsForm {
   isEnabled: boolean;
   orderNotificationsEnabled: boolean;
-  defaultSessionId: string;
+  defaultSessionId: string | null;
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;
@@ -160,12 +161,12 @@ const ORDER_VARIABLES = [
 ];
 
 const TABS = [
-  { key: "all", label: "الكل" },
-  { key: "order", label: "الطلبات" },
-  { key: "payment", label: "الدفع" },
-  { key: "preparation", label: "التجهيز" },
-  { key: "shipping", label: "الشحن" },
-  { key: "incomplete", label: "رسائل الأوردر غير المكتمل" },
+  { key: "all", labelKey: "orders.statusTabs.all", label: "الكل" },
+  { key: "order", labelKey: "orders.statusTabs.orders", label: "الطلبات" },
+  { key: "payment", labelKey: "orders.statusTabs.payment", label: "الدفع" },
+  { key: "preparation", labelKey: "orders.statusTabs.preparation", label: "التجهيز" },
+  { key: "shipping", labelKey: "orders.statusTabs.shipping", label: "الشحن" },
+  { key: "incomplete", labelKey: "orders.statusTabs.incomplete", label: "رسائل الأوردر غير المكتمل" },
 ];
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
@@ -360,11 +361,23 @@ function inferButtonAction(id?: string): string {
   return "CONFIRMED";
 }
 
+function timeToMinutes(value: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value || "");
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
 function parseTemplateButtons(raw?: string): TemplateButton[] {
   if (!raw) return [];
   try {
     const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return [];
+    if (!Array.isArray(arr)) {
+      console.warn("[TEMPLATE-BUTTONS] buttons data is not an array:", raw);
+      return [];
+    }
     return arr
       .map((b: any) => ({
         id: String(b?.id || ""),
@@ -372,7 +385,9 @@ function parseTemplateButtons(raw?: string): TemplateButton[] {
         action: b?.action ? String(b.action).toUpperCase() : inferButtonAction(b?.id),
       }))
       .filter((b) => b.id || b.text);
-  } catch {
+  } catch (e) {
+    // 🔎 نُسجّل الخطأ عشان بيانات الأزرار الفاسدة ما تختفيش بصمت أثناء التطوير
+    console.warn("[TEMPLATE-BUTTONS] Failed to parse buttons JSON:", (e as Error)?.message);
     return [];
   }
 }
@@ -430,6 +445,12 @@ export default function OrderStatusTemplatesPage() {
   const [bindingId, setBindingId] = useState<string | null>(null);
   const [originalMetaTemplateName, setOriginalMetaTemplateName] = useState<string>("");
   const [metaAutoFilled, setMetaAutoFilled] = useState(false);
+  const [unbindTarget, setUnbindTarget] = useState<StatusWithTemplate | null>(null);
+
+  // ⚡ Cache جلسات الميتا (TTL 30 ثانية) — منع refetch عند فتح dialogs متتالية
+  const metaSessionsCacheRef = useRef<{ data: typeof metaSessions; at: number } | null>(null);
+  // ⚡ نعيد جلب الـ preview بعد إغلاق الديالوج فقط لو حصل تعديل فعلي
+  const dialogDirtyRef = useRef(false);
 
   const [settings, setSettings] = useState<SettingsForm | null>(null);
   const [settingsSessions, setSettingsSessions] = useState<{ id: string; name: string; phoneNumber?: string; status: string; provider?: string }[]>([]);
@@ -498,13 +519,18 @@ export default function OrderStatusTemplatesPage() {
 
   useEffect(() => {
     document.title = `${t("orders.statusTemplatesTitle", "قوالب الواتساب للحالات")} | MaxP`;
-    fetchData();
-    fetchSettings();
-    fetchDeliveryPreview();
+    // ⚡ Promise.allSettled: نجمع الطلبات المستقلة لتجنب waterfall وإخفاء الـ loading خاطئ
+    Promise.allSettled([fetchData(), fetchSettings(), fetchDeliveryPreview()]);
   }, [fetchData, fetchSettings, fetchDeliveryPreview, t]);
 
+  // نعيد جلب الـ preview بعد إغلاق الديالوج فقط لو حصل تعديل فعلي (وليس "إلغاء" بدون تغيير)
   useEffect(() => {
-    if (dialogOpen === false) fetchDeliveryPreview();
+    if (dialogOpen === false) {
+      if (dialogDirtyRef.current) {
+        fetchDeliveryPreview();
+        dialogDirtyRef.current = false;
+      }
+    }
   }, [dialogOpen, fetchDeliveryPreview]);
 
   const openCreateDialog = (status: StatusWithTemplate, slot: TemplateSlot) => {
@@ -537,7 +563,7 @@ export default function OrderStatusTemplatesPage() {
     const target = slot === "meta" ? getMetaSlotTemplate(status) : status.template;
     setSelectedTemplate(target);
     setDialogSlot(slot);
-    setDialogMode(slot === "meta" ? "edit" : "edit");
+    setDialogMode("edit");
     const metaName = target?.metaTemplateName || "";
     setOriginalMetaTemplateName(metaName);
     setMetaAutoFilled(false);
@@ -622,6 +648,7 @@ export default function OrderStatusTemplatesPage() {
       if (isEdit) {
         await apiClient.put(`/whatsapp/notifications/templates/${selectedTemplate!.id}`, payload);
         toast.success(t("orders.templateUpdated", "تم تحديث القالب بنجاح"));
+        dialogDirtyRef.current = true;
         return selectedTemplate!.id;
       } else {
         const res = await apiClient.post("/whatsapp/notifications/templates", payload);
@@ -632,6 +659,7 @@ export default function OrderStatusTemplatesPage() {
           return null;
         }
         toast.success(t("orders.templateCreated", "تم إنشاء القالب بنجاح"));
+        dialogDirtyRef.current = true;
         setSelectedStatus((prev) => {
           if (!prev) return prev;
           const newTpl = {
@@ -734,37 +762,51 @@ export default function OrderStatusTemplatesPage() {
   };
 
   const toggleNotify = async (status: StatusWithTemplate) => {
+    if (togglingId) return; // منع الضغط المتكرر (double-click guard)
+    const nextValue = !status.notifyCustomer;
     setTogglingId(status.id);
+    // Optimistic update + rollback على الفشل
+    const prevStatuses = statuses;
+    setStatuses((prev) =>
+      prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: nextValue } : s))
+    );
     try {
       if (status.code === INCOMPLETE_CART_EVENT_TYPE) {
         await apiClient.put("/whatsapp/notifications/settings", {
-          incompleteCartImmediateMessage: !status.notifyCustomer,
+          incompleteCartImmediateMessage: nextValue,
         });
       } else {
         await apiClient.put(`/order-status/${status.id}`, {
-          notifyCustomer: !status.notifyCustomer,
+          notifyCustomer: nextValue,
         });
       }
-      setStatuses((prev) =>
-        prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: !s.notifyCustomer } : s))
-      );
       toast.success(
-        status.notifyCustomer
-          ? t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة")
-          : t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
+        nextValue
+          ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
+          : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة")
       );
     } catch (err: any) {
+      // Rollback: نعيد الحالة الأصلية لو فشل الـ API
+      setStatuses(prevStatuses);
       toast.error(err?.response?.data?.message || t("orders.toggleError", "حدث خطأ"));
     } finally {
       setTogglingId(null);
     }
   };
 
-  const fetchMetaSessions = useCallback(async () => {
+  const fetchMetaSessions = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && metaSessionsCacheRef.current && now - metaSessionsCacheRef.current.at < 30_000) {
+      const cached = metaSessionsCacheRef.current.data;
+      setMetaSessions(cached);
+      if (cached.length > 0 && !selectedMetaSession) setSelectedMetaSession(cached[0].id);
+      return;
+    }
     try {
       const res = await apiClient.get("/whatsapp/sessions");
       const list: { id: string; name: string; provider: string; metaDisplayPhoneNumber?: string }[] = res.data?.sessions || [];
       const cloud = list.filter((s) => s.provider === "META_CLOUD");
+      metaSessionsCacheRef.current = { data: cloud, at: now };
       setMetaSessions(cloud);
       if (cloud.length > 0 && !selectedMetaSession) {
         setSelectedMetaSession(cloud[0].id);
@@ -840,21 +882,29 @@ export default function OrderStatusTemplatesPage() {
     }
   };
 
+  const requestUnbindMeta = (status: StatusWithTemplate) => {
+    const target = status.metaTemplate || (status.template?.metaTemplateName ? status.template : null);
+    if (!target?.id) return;
+    setUnbindTarget(status);
+  };
+
   const unbindMeta = async (status: StatusWithTemplate) => {
     const target = status.metaTemplate || (status.template?.metaTemplateName ? status.template : null);
     if (!target?.id) return;
-    if (!window.confirm("هل تريد فك ربط هذا القالب بقالب ميتا؟")) return;
     try {
       await apiClient.put(`/whatsapp/notifications/templates/${target.id}`, {
         metaTemplateName: null,
         metaTemplateId: null,
         metaTemplateStatus: null,
       });
-      toast.success("تم فك ربط القالب بقالب ميتا");
+      toast.success(t("orders.unboundToMeta", "تم فك ربط القالب بقالب ميتا"));
+      setUnbindTarget(null);
+      dialogDirtyRef.current = true;
       fetchData();
       fetchDeliveryPreview();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || t("orders.bindFailed", "فشل ربط القالب بميتا"));
+      setUnbindTarget(null);
     }
   };
 
@@ -897,11 +947,32 @@ export default function OrderStatusTemplatesPage() {
 
   const handleSaveSettings = async () => {
     if (!settings) return;
+
+    // 🧪 Validation قبل الحفظ
+    const rate = Number(settings.rateLimitPerMinute);
+    if (!Number.isFinite(rate) || rate <= 0 || rate > 60) {
+      toast.error(t("orders.settingsRateInvalid", "الحد الأقصى للرسائل في الدقيقة يجب أن يكون بين 1 و 60"));
+      return;
+    }
+    if (settings.quietHoursEnabled) {
+      const startMin = timeToMinutes(settings.quietHoursStart || "");
+      const endMin = timeToMinutes(settings.quietHoursEnd || "");
+      if (startMin == null || endMin == null) {
+        toast.error(t("orders.settingsQuietHoursInvalid", "صيغة ساعات الهدوء غير صحيحة"));
+        return;
+      }
+      if (startMin === endMin) {
+        toast.error(t("orders.settingsQuietHoursSame", "بداية ونهاية ساعات الهدوء لا يمكن أن تتطابقا"));
+        return;
+      }
+    }
+
     setSettingsSaving(true);
     try {
       const res = await apiClient.put("/whatsapp/notifications/settings", settings);
       if (res.data?.success) {
         toast.success(t("orders.settingsSaved", "تم حفظ الإعدادات"));
+        dialogDirtyRef.current = true;
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.error || t("orders.settingsError", "فشل حفظ الإعدادات"));
@@ -1116,7 +1187,7 @@ export default function OrderStatusTemplatesPage() {
                   : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey, tab.label)}
               <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
                 {count}
               </span>
@@ -1132,13 +1203,13 @@ export default function OrderStatusTemplatesPage() {
           }`}
         >
           <Cog6ToothIcon className="h-4 w-4" />
-          الإعدادات
+          {t("orders.settingsTab", "الإعدادات")}
         </button>
       </div>
 
       {activeTab === "settings" ? (
         /* ⚙️ Settings Panel */
-        <div className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
+        <div data-testid="settings-panel" className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
             <Cog6ToothIcon className="ml-1.5 inline h-5 w-5" />
             إعدادات إشعارات واتساب للطلبات
@@ -1149,13 +1220,13 @@ export default function OrderStatusTemplatesPage() {
               <span className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
             </div>
           ) : !settings ? (
-            <p className="text-sm text-slate-400">لا توجد إعدادات</p>
+            <p className="text-sm text-slate-400">{t("orders.settingsNone", "لا توجد إعدادات")}</p>
           ) : (
             <div className="space-y-5 max-w-xl">
               {/* General toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">تفعيل إشعارات واتساب</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsEnableNotifications", "تفعيل إشعارات واتساب")}</p>
                   <p className="text-xs text-slate-500">تشغيل أو إيقاف جميع إشعارات الواتساب</p>
                 </div>
                 <Switch
@@ -1233,7 +1304,7 @@ export default function OrderStatusTemplatesPage() {
               {/* Sticky session */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">تثبيت الجلسة (Sticky Session)</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{t("orders.settingsStickySession", "تثبيت الجلسة (Sticky Session)")}</p>
                   <p className="text-xs text-slate-500">نفس العميل يستخدم نفس الجلسة دايمًا</p>
                 </div>
                 <Switch
@@ -1314,7 +1385,7 @@ export default function OrderStatusTemplatesPage() {
                 {settingsSaving && (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 )}
-                حفظ الإعدادات
+                {t("orders.saveSettings", "حفظ الإعدادات")}
               </button>
             </div>
           )}
@@ -1371,11 +1442,11 @@ export default function OrderStatusTemplatesPage() {
 
             <div className="flex flex-wrap items-center gap-1">
               {([
-                { key: "all", label: "الكل" },
-                { key: "custom", label: "مخصصة" },
-                { key: "meta_bound", label: "مربوطة بميتا" },
-                { key: "no_template", label: "بدون قالب" },
-                { key: "disabled", label: "متوقفة" },
+                { key: "all", labelKey: "orders.statusChips.all", label: "الكل" },
+                { key: "custom", labelKey: "orders.statusChips.custom", label: "مخصصة" },
+                { key: "meta_bound", labelKey: "orders.statusChips.metaBound", label: "مربوطة بميتا" },
+                { key: "no_template", labelKey: "orders.statusChips.noTemplate", label: "بدون قالب" },
+                { key: "disabled", labelKey: "orders.statusChips.disabled", label: "متوقفة" },
               ] as const).map((chip) => (
                 <button
                   key={chip.key}
@@ -1386,7 +1457,7 @@ export default function OrderStatusTemplatesPage() {
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                   }`}
                 >
-                  {chip.label}
+                  {t(chip.labelKey, chip.label)}
                 </button>
               ))}
             </div>
@@ -1488,7 +1559,7 @@ export default function OrderStatusTemplatesPage() {
                     onOpenEdit={openEditDialog}
                     onOpenCreate={openCreateDialog}
                     onOpenSwitch={openSwitchDialog}
-                    onUnbindMeta={unbindMeta}
+                    onUnbindMeta={requestUnbindMeta}
                   />
                 ));
               })}
@@ -1500,9 +1571,10 @@ export default function OrderStatusTemplatesPage() {
       {/* Template dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
         <DialogContent
+          data-testid="template-dialog"
           showCloseButton
-          closeLabel="إغلاق"
-          className="max-w-2xl overflow-y-auto p-5 sm:max-h-[90vh] sm:max-w-2xl"
+          closeLabel={t("orders.close", "إغلاق") as string}
+          className="max-h-[90vh] max-w-2xl overflow-y-auto p-5 sm:max-w-2xl"
         >
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
@@ -2030,7 +2102,7 @@ export default function OrderStatusTemplatesPage() {
                         إضافة زر
                       </button>
                     )}
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">الحد الأقصى 3 أزرار لكل رسالة</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{t("orders.buttonsMaxHint", "الحد الأقصى 3 أزرار لكل رسالة")}</p>
                   </div>
                 )}
               </div>
@@ -2113,6 +2185,17 @@ export default function OrderStatusTemplatesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!unbindTarget}
+        title={t("orders.unbindConfirmTitle", "فك ربط القالب بقالب ميتا")}
+        content={t("orders.unbindConfirmContent", "هل تريد فك ربط هذا القالب بقالب ميتا؟ بعد الفك، الرسالة هتتبعت كـ واتساب عادي.")}
+        confirmLabel={t("orders.unbindConfirmYes", "نعم، فك الربط") as string}
+        cancelLabel={t("orders.unbindConfirmCancel", "إلغاء") as string}
+        confirmColor="error"
+        onConfirm={() => unbindTarget && unbindMeta(unbindTarget)}
+        onCancel={() => setUnbindTarget(null)}
+      />
     </div>
   );
 }

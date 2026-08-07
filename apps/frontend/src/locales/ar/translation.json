@@ -10484,7 +10484,39 @@
     "orderInvoices_pendingInvoicesSub": "حالات تحتاج مراجعة أو متابعة في السداد.",
     "orderInvoices_totalAmount": "إجمالي المبلغ",
     "orderInvoices_totalAmountSub": "القيمة الإجمالية للفواتير ضمن النتائج الحالية.",
-    "sidebarOrderAutomation": "[AR] Order Automation"
+    "sidebarOrderAutomation": "[AR] Order Automation",
+    "statusTabs": {
+      "all": "الكل",
+      "orders": "الطلبات",
+      "payment": "الدفع",
+      "preparation": "التجهيز",
+      "shipping": "الشحن",
+      "incomplete": "رسائل الأوردر غير المكتمل"
+    },
+    "statusChips": {
+      "all": "الكل",
+      "custom": "مخصصة",
+      "metaBound": "مربوطة بميتا",
+      "noTemplate": "بدون قالب",
+      "disabled": "متوقفة"
+    },
+    "sortByTab": "حسب التبويب",
+    "sortAlphabetical": "أبجدي",
+    "sortRecent": "آخر تعديل",
+    "settingsTab": "الإعدادات",
+    "settingsNone": "لا توجد إعدادات",
+    "saveSettings": "حفظ الإعدادات",
+    "settingsEnableNotifications": "تفعيل إشعارات واتساب",
+    "settingsStickySession": "تثبيت الجلسة (Sticky Session)",
+    "settingsRateInvalid": "الحد الأقصى للرسائل في الدقيقة يجب أن يكون بين 1 و 60",
+    "settingsQuietHoursInvalid": "صيغة ساعات الهدوء غير صحيحة",
+    "settingsQuietHoursSame": "بداية ونهاية ساعات الهدوء لا يمكن أن تتطابقا",
+    "buttonsMaxHint": "الحد الأقصى 3 أزرار لكل رسالة",
+    "unboundToMeta": "تم فك ربط القالب بقالب ميتا",
+    "unbindConfirmTitle": "فك ربط القالب بقالب ميتا",
+    "unbindConfirmContent": "هل تريد فك ربط هذا القالب بقالب ميتا؟ بعد الفك، الرسالة هتتبعت كـ واتساب عادي.",
+    "unbindConfirmYes": "نعم، فك الربط",
+    "unbindConfirmCancel": "إلغاء"
   },
   "preparation": {
     "page": {

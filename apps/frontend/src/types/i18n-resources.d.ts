@@ -10477,6 +10477,38 @@ declare module 'react-i18next' {
         orderInvoices_pendingInvoicesSub: string;
         orderInvoices_totalAmount: string;
         orderInvoices_totalAmountSub: string;
+        statusTabs: {
+          all: string;
+          orders: string;
+          payment: string;
+          preparation: string;
+          shipping: string;
+          incomplete: string;
+        };
+        statusChips: {
+          all: string;
+          custom: string;
+          metaBound: string;
+          noTemplate: string;
+          disabled: string;
+        };
+        sortByTab: string;
+        sortAlphabetical: string;
+        sortRecent: string;
+        settingsTab: string;
+        settingsNone: string;
+        saveSettings: string;
+        settingsEnableNotifications: string;
+        settingsStickySession: string;
+        settingsRateInvalid: string;
+        settingsQuietHoursInvalid: string;
+        settingsQuietHoursSame: string;
+        buttonsMaxHint: string;
+        unboundToMeta: string;
+        unbindConfirmTitle: string;
+        unbindConfirmContent: string;
+        unbindConfirmYes: string;
+        unbindConfirmCancel: string;
       };
       preparation: {
         page: {

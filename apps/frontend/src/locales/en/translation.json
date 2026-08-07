@@ -10483,7 +10483,39 @@
     "orderInvoices_pendingInvoices": "Pending Invoices",
     "orderInvoices_pendingInvoicesSub": "Cases that need review or follow-up on payment.",
     "orderInvoices_totalAmount": "Total Amount",
-    "orderInvoices_totalAmountSub": "Total value of invoices within the current results."
+    "orderInvoices_totalAmountSub": "Total value of invoices within the current results.",
+    "statusTabs": {
+      "all": "All",
+      "orders": "Orders",
+      "payment": "Payment",
+      "preparation": "Preparation",
+      "shipping": "Shipping",
+      "incomplete": "Incomplete Order Messages"
+    },
+    "statusChips": {
+      "all": "All",
+      "custom": "Custom",
+      "metaBound": "Bound to Meta",
+      "noTemplate": "No Template",
+      "disabled": "Disabled"
+    },
+    "sortByTab": "By Tab",
+    "sortAlphabetical": "Alphabetical",
+    "sortRecent": "Recent",
+    "settingsTab": "Settings",
+    "settingsNone": "No settings",
+    "saveSettings": "Save Settings",
+    "settingsEnableNotifications": "Enable WhatsApp Notifications",
+    "settingsStickySession": "Sticky Session",
+    "settingsRateInvalid": "Max messages per minute must be between 1 and 60",
+    "settingsQuietHoursInvalid": "Quiet hours format is invalid",
+    "settingsQuietHoursSame": "Quiet hours start and end cannot be identical",
+    "buttonsMaxHint": "Maximum 3 buttons per message",
+    "unboundToMeta": "Template unbound from Meta",
+    "unbindConfirmTitle": "Unbind template from Meta",
+    "unbindConfirmContent": "Are you sure you want to unbind this template from Meta? After unbinding, the message will be sent as regular WhatsApp.",
+    "unbindConfirmYes": "Yes, unbind",
+    "unbindConfirmCancel": "Cancel"
   },
   "preparation": {
     "page": {
