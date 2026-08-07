@@ -49,7 +49,7 @@ jobs:
                   const logs = await prisma.\$queryRawUnsafe('SELECT status, \"eventType\", \"recipientPhone\", \"templateId\", \"sessionId\", \"failureReason\", \"content\", \"createdAt\" FROM whatsapp_notification_logs WHERE \"orderId\" = \$1 ORDER BY \"createdAt\" DESC', order.id);
                   console.log('LOGS:', JSON.stringify(logs));
                   if (logs.length > 0) {
-                    const tpl = logs[0].templateId ? await prisma.\$queryRawUnsafe('SELECT id, name, \"metaTemplateName\", channel, \"eventType\" FROM whatsapp_notification_templates WHERE id = \$1', logs[0].templateId) : [];
+                    const tpl = logs[0].templateId ? await prisma.\$queryRawUnsafe('SELECT id, name, \"metaTemplateName\", \"metaTemplateStatus\", channel, \"eventType\" FROM whatsapp_notification_templates WHERE id = \$1', logs[0].templateId) : [];
                     console.log('TEMPLATE:', JSON.stringify(tpl));
                     const sess = await prisma.\$queryRawUnsafe('SELECT id, name, provider, status FROM whatsapp_sessions WHERE id = \$1', logs[0].sessionId);
                     console.log('SESSION:', JSON.stringify(sess));
