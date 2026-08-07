@@ -398,19 +398,57 @@ async function getNotificationLogs(req, res) {
           skip: (parseInt(page) - 1) * parseInt(limit),
           take: parseInt(limit),
           include: {
-            whatsapp_notification_templates: { select: { name: true } },
-            order: { select: { orderNumber: true } },
+            whatsapp_notification_templates: {
+              select: { name: true, metaTemplateName: true, channel: true }
+            },
+            order: { select: { orderNumber: true, total: true } },
             customer: { select: { firstName: true, lastName: true } }
           }
         })),
         safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.count({ where }))
       ]);
 
+      // جلب أسماء الجلسات للـ sessionIds الموجودة في اللوج
+      const sessionIds = [...new Set((logs || []).map((l) => l.sessionId).filter(Boolean))];
+      let sessionsMap = {};
+      if (sessionIds.length > 0) {
+        try {
+          const sessions = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findMany({
+            where: { id: { in: sessionIds } },
+            select: { id: true, name: true, phoneNumber: true, provider: true }
+          }));
+          sessionsMap = Object.fromEntries((sessions || []).map((s) => [s.id, s]));
+        } catch (e) {
+          console.error('⚠️ [NOTIFICATION-LOGS] Failed to load session names:', e.message);
+        }
+      }
+
+      // إضافة اسم القالب من حقل الربط (القالب الذي يستخدمه الإشعار)
+      const enrichedLogs = (logs || []).map((log) => {
+        const session = sessionsMap[log.sessionId] || {};
+        return {
+          ...log,
+          templateName: log.whatsapp_notification_templates?.name || null,
+          metaTemplateName: log.whatsapp_notification_templates?.metaTemplateName || null,
+          templateChannel: log.whatsapp_notification_templates?.channel || null,
+          orderNumber: log.order?.orderNumber || null,
+          orderTotal: log.order?.total != null ? String(log.order.total) : null,
+          sessionName: session?.name || null,
+          sessionPhone: session?.phoneNumber || null,
+          sessionProvider: session?.provider || null,
+          customerFirstName: log.customer?.firstName || null,
+          customerLastName: log.customer?.lastName || null,
+          whatsapp_notification_templates: undefined,
+          order: undefined,
+          customer: undefined
+        };
+      });
+
       console.log('✅ [NOTIFICATION-LOGS] Found', total, 'logs');
 
       res.json({
         success: true,
-        logs: logs || [],
+        logs: enrichedLogs || [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),

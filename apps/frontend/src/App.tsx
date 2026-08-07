@@ -1262,6 +1262,9 @@ const WhatsAppEmployeeAnalytics = React.lazy(() =>
 const WhatsAppConversationAnalytics = React.lazy(() =>
   import("./pages/whatsapp/WhatsAppConversationAnalytics"),
 );
+const WhatsAppNotificationLogs = React.lazy(() =>
+  import("./pages/whatsapp/WhatsAppNotificationLogs"),
+);
 
 // HR Module
 const HRDashboard = React.lazy(() =>
@@ -5905,6 +5908,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppConversationAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/notification-logs"
+                  element={
+                    <Layout>
+                      <WhatsAppNotificationLogs />
                     </Layout>
                   }
                 />

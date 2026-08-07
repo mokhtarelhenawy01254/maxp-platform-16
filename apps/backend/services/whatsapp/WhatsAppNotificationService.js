@@ -1241,6 +1241,7 @@ async function sendNotification(options) {
       const jid = `${formattedPhone}@s.whatsapp.net`;
 
       let result;
+      let usedMessageType = 'TEXT'; // TEMPLATE | BUTTONS | TEXT
 
       // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
       // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
@@ -1276,6 +1277,7 @@ async function sendNotification(options) {
           });
 
           console.log(`☁️ [META-CLOUD] Template message result:`, result);
+          if (result) usedMessageType = 'TEMPLATE';
         } catch (metaError) {
           // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
           console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
@@ -1293,6 +1295,7 @@ async function sendNotification(options) {
               try {
                 result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
                 console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
+                if (result) usedMessageType = 'TEXT';
               } catch (fallbackErr) {
                 console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
                 result = null;
@@ -1381,9 +1384,11 @@ async function sendNotification(options) {
           result = await WhatsAppMessageHandler.sendButtons(sessionId, jid, content, finalButtons, {
             footer: footerStr
           });
+          if (result) usedMessageType = 'BUTTONS';
         } catch (error) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
           result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          if (result) usedMessageType = 'TEXT';
         }
       } else if (!result && safeTemplate.hasList && safeTemplate.listData) {
         try {
@@ -1397,6 +1402,7 @@ async function sendNotification(options) {
       } else if (!result) {
         console.log(`[WHATSAPP-DEBUG] Sending text message:`, content?.substring(0, 50));
         result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+        if (result) usedMessageType = 'TEXT';
       }
 
       console.log(`[WHATSAPP-DEBUG] Send result:`, result);
@@ -1413,6 +1419,7 @@ async function sendNotification(options) {
         where: { id: notificationLog.id },
         data: {
           status: 'SENT',
+          messageType: usedMessageType || result?.messageType || 'TEXT',
           sentAt: new Date(),
           whatsappMessageId: result?.messageId || result?.key?.id || null
         }
