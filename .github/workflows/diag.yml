@@ -1,4 +1,4 @@
-name: Remote Diagnosis (WhatsApp test)
+name: Remote Diagnosis
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
   diagnose:
     name: Run Remote Diagnostics
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -38,35 +38,5 @@ jobs:
           debug: true
           script: |
             cd /var/www/backend2
-            echo "=== Running WhatsApp test with correct company ==="
-            cat > /tmp/wa-test.js <<'EOF'
-const { getSharedPrismaClient } = require('/var/www/backend2/services/sharedDatabase');
-const prisma = getSharedPrismaClient();
-const COMPANY_ID = 'cmleybpf70028juo2wwpmp8rt';
-const SESSION_ID = 'cms1o1o9u00imjucwqdih3lpj';
-async function run() {
-  const settings = await prisma.whatsAppNotificationSettings.findUnique({ where: { companyId: COMPANY_ID } });
-  console.log('SETTINGS:', JSON.stringify({ companyId: settings?.companyId, defaultSessionId: settings?.defaultSessionId, isEnabled: settings?.isEnabled, orderCreatedEnabled: settings?.orderCreatedEnabled }));
-  const session = await prisma.whatsAppSession.findUnique({ where: { id: SESSION_ID } });
-  console.log('SESSION:', JSON.stringify({ id: session?.id, name: session?.name, status: session?.status, provider: session?.provider, phoneNumber: session?.phoneNumber }));
-  const WhatsAppNotificationService = require('/var/www/backend2/services/whatsapp/WhatsAppNotificationService');
-  const testOrder = {
-    id: 'test-' + Date.now(),
-    orderNumber: 'TEST-' + Date.now(),
-    companyId: COMPANY_ID,
-    customerPhone: '01123087745',
-    customerName: 'مختار الحناوي',
-    customer: { firstName: 'مختار', phone: '01123087745' },
-    total: 500,
-    currency: 'EGP',
-    items: [{ productName: 'تيشيرت', quantity: 2, productColor: 'أحمر', productSize: 'XL' }]
-  };
-  const result = await WhatsAppNotificationService.sendOrderCreatedNotification(testOrder);
-  console.log('RESULT:', JSON.stringify(result));
-  await new Promise(r => setTimeout(r, 3000));
-  const logs = await prisma.$queryRawUnsafe('SELECT status, "eventType", "recipientPhone", "failureReason", "createdAt" FROM whatsapp_notification_logs ORDER BY "createdAt" DESC LIMIT 3');
-  console.log('LOGS:', JSON.stringify(logs));
-}
-run().catch(e => { console.error('ERROR:', e.message); process.exit(1); }).finally(() => prisma.$disconnect());
-EOF
-            node /tmp/wa-test.js 2>&1 | grep -E "SETTINGS:|SESSION:|RESULT:|LOGS:|ERROR:|No session|treated|META_CLOUD|success"
+            echo "=== Running WhatsApp test script ==="
+            node scripts/test-direct.js
