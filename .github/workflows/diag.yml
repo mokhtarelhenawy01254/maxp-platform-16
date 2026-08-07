@@ -57,7 +57,9 @@ jobs:
                     console.log('TEMPLATE:', JSON.stringify(tpl));
                     const sess = await prisma.\$queryRawUnsafe('SELECT id, name, provider, status FROM whatsapp_sessions WHERE id = \$1', logs[0].sessionId);
                     console.log('SESSION:', JSON.stringify(sess));
-                  }
+                }
+                const msgs = await prisma.\$queryRawUnsafe('SELECT id, \"messageId\", type, content, \"interactiveData\", status, \"createdAt\" FROM whatsapp_messages WHERE \"recipientPhone\" = \$1 OR content LIKE \$2 ORDER BY \"createdAt\" DESC LIMIT 5', '201123087745', '%مختار%');
+                console.log('WHATSAPP_MESSAGES:', JSON.stringify(msgs));
                 }
               }
               run().catch(e => { console.error('ERROR:', e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
