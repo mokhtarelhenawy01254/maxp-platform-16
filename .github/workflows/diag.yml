@@ -40,15 +40,26 @@ jobs:
             echo "=== PM2 Status ==="
             pm2 list
             
-            echo "=== Checking WhatsApp Sessions via psql ==="
+            echo "=== Checking WhatsApp Sessions ==="
             cd /var/www/backend2
-            DB_URL=$(grep '^DATABASE_URL' .env.production 2>/dev/null | head -1 | cut -d'=' -f2-)
-            if [ -z "$DB_URL" ]; then
-              DB_URL=$(grep '^DATABASE_URL' .env 2>/dev/null | head -1 | cut -d'=' -f2-)
-            fi
-            echo "DB URL found: $([ -n "$DB_URL" ] && echo 'YES' || echo 'NO')"
-            
-            psql "$DB_URL" -c "SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" ORDER BY \"createdAt\" DESC LIMIT 10;" 2>&1 || echo "psql failed, trying node..."
+            node -e "
+              const { getSharedPrismaClient } = require('./services/sharedDatabase');
+              const prisma = getSharedPrismaClient();
+              async function run() {
+                // All sessions
+                const all = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" ORDER BY \"createdAt\" DESC LIMIT 10');
+                console.log('ALL_SESSIONS:', JSON.stringify(all));
+                
+                // Connected sessions for target company
+                const target = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" WHERE status = \$1 AND \"companyId\" = \$2', 'CONNECTED', 'cmlcbycma0000ju8l8tcbrbby');
+                console.log('TARGET_CONNECTED:', JSON.stringify(target));
+                
+                // All connected sessions
+                const connected = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" WHERE status = \$1', 'CONNECTED');
+                console.log('ALL_CONNECTED:', JSON.stringify(connected));
+              }
+              run().catch(e => { console.error('QUERY_ERROR:', e.message); }).finally(() => prisma.\$disconnect());
+            "
             
             echo "=== Running WhatsApp Test Script ==="
             node scripts/test-direct.js
