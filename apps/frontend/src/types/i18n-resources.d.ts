@@ -10509,6 +10509,31 @@ declare module 'react-i18next' {
         unbindConfirmContent: string;
         unbindConfirmYes: string;
         unbindConfirmCancel: string;
+        cancel: string;
+        deleteItemConfirmTitle: string;
+        deleteItemConfirmDescription: string;
+        deleteItemConfirmAction: string;
+        deleteItemConfirmWarning: string;
+        postponeOrderTitle: string;
+        postponeOrderDescription: string;
+        postponeOrderAction: string;
+        postponeOrderPostponing: string;
+        postponeOrderDeliveryDate: string;
+        postponeOrderDeliveryTime: string;
+        postponeOrderNotes: string;
+        postponeOrderNotesPlaceholder: string;
+        postponeOrderAutoTransition: string;
+        partialDeliveryTitle: string;
+        partialDeliveryDescription: string;
+        partialDeliveryDelivered: string;
+        partialDeliveryReturned: string;
+        partialDeliveryComplete: string;
+        partialDeliveryWarning: string;
+        partialDeliveryAction: string;
+        partialDeliveryProcessing: string;
+        partialDeliveryColor: string;
+        partialDeliverySize: string;
+        partialDeliveryPieces: string;
       };
       preparation: {
         page: {
