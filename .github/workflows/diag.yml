@@ -39,41 +39,37 @@ jobs:
           script: |
             cd /var/www/backend2
             
-            echo "=== Step 1: Find session for company ==="
-            SESSION_ID=$(node -e "
+            echo "=== Step 1: Fix session ==="
+            node -e "
               const { getSharedPrismaClient } = require('./services/sharedDatabase');
               const prisma = getSharedPrismaClient();
               async function run() {
-                const rows = await prisma.\$queryRawUnsafe('SELECT id FROM whatsapp_sessions WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
-                console.log(rows.length > 0 ? rows[0].id : 'NONE');
-              }
-              run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
-            ")
-            echo "Found session: $SESSION_ID"
-            
-            if [ "$SESSION_ID" = "NONE" ] || [ -z "$SESSION_ID" ]; then
-              echo "=== Creating new session ==="
-              node -e "
-                const { getSharedPrismaClient } = require('./services/sharedDatabase');
-                const prisma = getSharedPrismaClient();
-                async function run() {
+                // Find session for company
+                const rows = await prisma.\$queryRawUnsafe('SELECT id, status FROM whatsapp_sessions WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
+                
+                if (rows.length > 0) {
+                  // Update existing session
+                  await prisma.\$executeRawUnsafe(\"UPDATE whatsapp_sessions SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\${rows[0].id}'\");
+                  console.log('SESSION_FIXED: updated ' + rows[0].id + ' from ' + rows[0].status + ' to CONNECTED');
+                } else {
+                  // Create new session
                   await prisma.\$executeRawUnsafe(\"INSERT INTO whatsapp_sessions (id, name, status, \\\"phoneNumber\\\", \\\"companyId\\\", provider, \\\"sessionProvider\\\", \\\"createdAt\\\", \\\"updatedAt\\\") VALUES (gen_random_uuid()::text, 'Meta Cloud Test', 'CONNECTED', '201123087745', 'cmlcbycma0000ju8l8tcbrbby', 'cloud_api', 'META_CLOUD', NOW(), NOW())\");
-                  console.log('Session created');
+                  console.log('SESSION_FIXED: created new session');
                 }
-                run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
-              "
-            else
-              echo "=== Updating session to CONNECTED ==="
-              node -e "
-                const { getSharedPrismaClient } = require('./services/sharedDatabase');
-                const prisma = getSharedPrismaClient();
-                async function run() {
-                  await prisma.\$executeRawUnsafe(\"UPDATE whatsapp_sessions SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\$SESSION_ID'\");
-                  console.log('Session updated');
-                }
-                run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
-              "
-            fi
+              }
+              run().catch(e => { console.error('SESSION_ERROR: ' + e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+            " 2>&1 | grep "SESSION_FIXED\|SESSION_ERROR"
             
             echo "=== Step 2: Run test ==="
-            node scripts/test-direct.js
+            node scripts/test-direct.js 2>&1 | grep -E "Result:|success|reason|No session|WHATSAPP-DEBUG.*sent|ERROR"
+            
+            echo "=== Step 3: Check notification logs ==="
+            node -e "
+              const { getSharedPrismaClient } = require('./services/sharedDatabase');
+              const prisma = getSharedPrismaClient();
+              async function run() {
+                const logs = await prisma.\$queryRawUnsafe('SELECT id, status, \"eventType\", \"recipientPhone\", \"failureReason\" FROM whatsapp_notification_logs ORDER BY \"createdAt\" DESC LIMIT 3');
+                console.log('LOGS:', JSON.stringify(logs));
+              }
+              run().catch(e => console.error(e.message)).finally(() => prisma.\$disconnect());
+            " 2>&1 | grep "LOGS:"
