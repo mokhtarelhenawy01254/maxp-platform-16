@@ -28,7 +28,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Run WhatsApp Test on Server
+      - name: Run Diagnostics on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -37,39 +37,26 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
+            echo "=== PM2 Status & Update ==="
+            pm2 update
+            pm2 list
+            echo "=== Restarting AI Service ==="
+            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
+            
+            echo "=== Recent Failed Provider Logs ==="
             cd /var/www/backend2
-            
-            echo "=== Step 1: Fix session ==="
             node -e "
-              const { getSharedPrismaClient } = require('./services/sharedDatabase');
-              const prisma = getSharedPrismaClient();
+              const path = require('path');
+              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
+              const prisma = new PrismaClient();
               async function run() {
-                // Find session for company
-                const rows = await prisma.\$queryRawUnsafe('SELECT id, status FROM whatsapp_sessions WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
-                
-                if (rows.length > 0) {
-                  // Update existing session
-                  await prisma.\$executeRawUnsafe(\"UPDATE whatsapp_sessions SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\${rows[0].id}'\");
-                  console.log('SESSION_FIXED: updated ' + rows[0].id + ' from ' + rows[0].status + ' to CONNECTED');
-                } else {
-                  // Create new session
-                  await prisma.\$executeRawUnsafe(\"INSERT INTO whatsapp_sessions (id, name, status, \\\"phoneNumber\\\", \\\"companyId\\\", provider, \\\"sessionProvider\\\", \\\"createdAt\\\", \\\"updatedAt\\\") VALUES (gen_random_uuid()::text, 'Meta Cloud Test', 'CONNECTED', '201123087745', 'cmlcbycma0000ju8l8tcbrbby', 'cloud_api', 'META_CLOUD', NOW(), NOW())\");
-                  console.log('SESSION_FIXED: created new session');
-                }
+                const logs = await prisma.\$queryRaw\`
+                  SELECT id, status, reply_preview, reason, violations, created_at 
+                  FROM ai.self_review_log 
+                  ORDER BY created_at DESC 
+                  LIMIT 15
+                \`;
+                console.log(JSON.stringify(logs, null, 2));
               }
-              run().catch(e => { console.error('SESSION_ERROR: ' + e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
-            " 2>&1 | grep "SESSION_FIXED\|SESSION_ERROR"
-            
-            echo "=== Step 2: Run test ==="
-            node scripts/test-direct.js 2>&1 | grep -E "Result:|success|reason|No session|WHATSAPP-DEBUG.*sent|ERROR"
-            
-            echo "=== Step 3: Check notification logs ==="
-            node -e "
-              const { getSharedPrismaClient } = require('./services/sharedDatabase');
-              const prisma = getSharedPrismaClient();
-              async function run() {
-                const logs = await prisma.\$queryRawUnsafe('SELECT id, status, \"eventType\", \"recipientPhone\", \"failureReason\" FROM whatsapp_notification_logs ORDER BY \"createdAt\" DESC LIMIT 3');
-                console.log('LOGS:', JSON.stringify(logs));
-              }
-              run().catch(e => console.error(e.message)).finally(() => prisma.\$disconnect());
-            " 2>&1 | grep "LOGS:"
+              run().catch(console.error).finally(() => prisma.\$disconnect());
+            "
