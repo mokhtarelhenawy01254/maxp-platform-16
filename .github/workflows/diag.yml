@@ -50,7 +50,14 @@ jobs:
                   select: { id: true, name: true, status: true, phoneNumber: true, companyId: true, provider: true, sessionProvider: true },
                   orderBy: { createdAt: 'desc' }
                 });
-                console.log('Sessions:', JSON.stringify(sessions, null, 2));
+                console.log('ALL Sessions:', JSON.stringify(sessions, null, 2));
+                
+                const connected = await prisma.whatsAppSession.findMany({
+                  where: { status: 'CONNECTED' },
+                  select: { id: true, name: true, status: true, phoneNumber: true, companyId: true, provider: true }
+                });
+                console.log('CONNECTED Sessions:', JSON.stringify(connected, null, 2));
+                
                 const settings = await prisma.whatsAppNotificationSettings.findFirst({
                   select: { companyId: true, defaultSessionId: true, isEnabled: true }
                 });
