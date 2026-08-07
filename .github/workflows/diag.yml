@@ -1,4 +1,4 @@
-name: Remote Diagnosis
+name: Remote Diagnosis (WhatsApp test)
 
 on:
   push:
