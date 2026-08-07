@@ -28,7 +28,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Run Diagnostics on Server
+      - name: Run WhatsApp Order Test on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -37,26 +37,6 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== PM2 Status & Update ==="
-            pm2 update
-            pm2 list
-            echo "=== Restarting AI Service ==="
-            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
-            
-            echo "=== Recent Failed Provider Logs ==="
             cd /var/www/backend2
-            node -e "
-              const path = require('path');
-              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
-              const prisma = new PrismaClient();
-              async function run() {
-                const logs = await prisma.\$queryRaw\`
-                  SELECT id, status, reply_preview, reason, violations, created_at 
-                  FROM ai.self_review_log 
-                  ORDER BY created_at DESC 
-                  LIMIT 15
-                \`;
-                console.log(JSON.stringify(logs, null, 2));
-              }
-              run().catch(console.error).finally(() => prisma.\$disconnect());
-            "
+            echo "=== Creating real order and sending WhatsApp notification ==="
+            node scripts/create-test-order-and-notify.js
