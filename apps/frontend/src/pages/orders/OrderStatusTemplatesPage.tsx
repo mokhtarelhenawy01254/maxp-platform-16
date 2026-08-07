@@ -2417,7 +2417,8 @@ function StatusTemplateSlot({
             <PlusIcon className="h-3 w-3" />
             إنشاء
           </button>
-        ) : (
+        ) : null}
+        {isMeta && (
           <button
             onClick={onCreate}
             disabled={!status.notifyCustomer}

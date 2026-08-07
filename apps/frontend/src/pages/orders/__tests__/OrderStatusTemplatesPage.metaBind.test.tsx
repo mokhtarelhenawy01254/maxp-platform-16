@@ -475,7 +475,7 @@ describe("OrderStatusTemplatesPage Meta template binding (two slots)", () => {
     expect(within(slot).getByRole("button", { name: /تغيير القالب/ })).toBeInTheDocument();
     expect(within(slot).getByRole("button", { name: /تعديل المحتوى/ })).toBeInTheDocument();
     expect(within(slot).getByRole("button", { name: /فك الربط/ })).toBeInTheDocument();
-    // لا يوجد زر إنشاء في slot المربوط
-    expect(within(slot).queryByRole("button", { name: /إنشاء قالب/ })).not.toBeInTheDocument();
+    // زر إنشاء قالب متاح دائماً في slot المربوط (للإنشاء من جديد)
+    expect(within(slot).getByRole("button", { name: /إنشاء قالب/ })).toBeInTheDocument();
   });
 });
