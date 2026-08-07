@@ -37,30 +37,43 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== PM2 Status ==="
-            pm2 list
-            
-            echo "=== Checking WhatsApp Sessions ==="
             cd /var/www/backend2
-            node -e "
+            
+            echo "=== Step 1: Find session for company ==="
+            SESSION_ID=$(node -e "
               const { getSharedPrismaClient } = require('./services/sharedDatabase');
               const prisma = getSharedPrismaClient();
               async function run() {
-                // All sessions
-                const all = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" ORDER BY \"createdAt\" DESC LIMIT 10');
-                console.log('ALL_SESSIONS:', JSON.stringify(all));
-                
-                // Connected sessions for target company
-                const target = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" WHERE status = \$1 AND \"companyId\" = \$2', 'CONNECTED', 'cmlcbycma0000ju8l8tcbrbby');
-                console.log('TARGET_CONNECTED:', JSON.stringify(target));
-                
-                // All connected sessions
-                const connected = await prisma.\$queryRawUnsafe('SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" WHERE status = \$1', 'CONNECTED');
-                console.log('ALL_CONNECTED:', JSON.stringify(connected));
+                const rows = await prisma.\$queryRawUnsafe('SELECT id FROM \"WhatsAppSession\" WHERE \"companyId\" = \$1 ORDER BY \"createdAt\" DESC LIMIT 1', 'cmlcbycma0000ju8l8tcbrbby');
+                console.log(rows.length > 0 ? rows[0].id : 'NONE');
               }
-              run().catch(e => { console.error('QUERY_ERROR:', e.message); }).finally(() => prisma.\$disconnect());
-            "
+              run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+            ")
+            echo "Found session: $SESSION_ID"
             
-            echo "=== Running WhatsApp Test Script ==="
+            if [ "$SESSION_ID" = "NONE" ] || [ -z "$SESSION_ID" ]; then
+              echo "=== Creating new session ==="
+              node -e "
+                const { getSharedPrismaClient } = require('./services/sharedDatabase');
+                const prisma = getSharedPrismaClient();
+                async function run() {
+                  await prisma.\$executeRawUnsafe(\"INSERT INTO \\\"WhatsAppSession\\\" (id, name, status, \\\"phoneNumber\\\", \\\"companyId\\\", provider, \\\"sessionProvider\\\", \\\"createdAt\\\", \\\"updatedAt\\\") VALUES (gen_random_uuid()::text, 'Meta Cloud Test', 'CONNECTED', '201123087745', 'cmlcbycma0000ju8l8tcbrbby', 'cloud_api', 'META_CLOUD', NOW(), NOW())\");
+                  console.log('Session created');
+                }
+                run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+              "
+            else
+              echo "=== Updating session to CONNECTED ==="
+              node -e "
+                const { getSharedPrismaClient } = require('./services/sharedDatabase');
+                const prisma = getSharedPrismaClient();
+                async function run() {
+                  await prisma.\$executeRawUnsafe(\"UPDATE \\\"WhatsAppSession\\\" SET status = 'CONNECTED', \\\"sessionProvider\\\" = 'META_CLOUD' WHERE id = '\$SESSION_ID'\");
+                  console.log('Session updated');
+                }
+                run().catch(e => { console.error(e.message); process.exit(1); }).finally(() => prisma.\$disconnect());
+              "
+            fi
+            
+            echo "=== Step 2: Run test ==="
             node scripts/test-direct.js
-
