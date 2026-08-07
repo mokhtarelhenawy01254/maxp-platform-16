@@ -43,24 +43,16 @@ jobs:
             echo "=== Checking WhatsApp Sessions ==="
             cd /var/www/backend2
             node -e "
-              const { getSharedPrismaClient } = require('./services/sharedDatabase');
-              const prisma = getSharedPrismaClient();
+              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
+              const prisma = new PrismaClient();
               async function run() {
-                const sessions = await prisma.whatsAppSession.findMany({
-                  select: { id: true, name: true, status: true, phoneNumber: true, companyId: true, provider: true, sessionProvider: true },
-                  orderBy: { createdAt: 'desc' }
-                });
+                const sessions = await prisma.\$queryRaw\`SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" ORDER BY \"createdAt\" DESC LIMIT 10\`;
                 console.log('ALL Sessions:', JSON.stringify(sessions, null, 2));
                 
-                const connected = await prisma.whatsAppSession.findMany({
-                  where: { status: 'CONNECTED' },
-                  select: { id: true, name: true, status: true, phoneNumber: true, companyId: true, provider: true }
-                });
+                const connected = await prisma.\$queryRaw\`SELECT id, name, status, \"phoneNumber\", \"companyId\", provider FROM \"WhatsAppSession\" WHERE status = 'CONNECTED'\`;
                 console.log('CONNECTED Sessions:', JSON.stringify(connected, null, 2));
                 
-                const settings = await prisma.whatsAppNotificationSettings.findFirst({
-                  select: { companyId: true, defaultSessionId: true, isEnabled: true }
-                });
+                const settings = await prisma.\$queryRaw\`SELECT \"companyId\", \"defaultSessionId\", \"isEnabled\" FROM \"WhatsAppNotificationSettings\" LIMIT 1\`;
                 console.log('Settings:', JSON.stringify(settings, null, 2));
               }
               run().catch(console.error).finally(() => prisma.\$disconnect());
