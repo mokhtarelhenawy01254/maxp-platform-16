@@ -767,6 +767,7 @@ router.post('/', manualOrderAccess, async (req, res) => {
           id: result.order.id,
           orderNumber: result.order.orderNumber,
           companyId: req.user.companyId,
+          status: result.order.status,
           customerPhone: result.order.customerPhone,
           customerName: result.order.customerName,
           customer: {
@@ -778,7 +779,7 @@ router.post('/', manualOrderAccess, async (req, res) => {
           items: result.order.items || [] // ✅ Include items for WhatsApp notification
         };
 
-        await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+        await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
         console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
       } catch (whatsappError) {
         console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);

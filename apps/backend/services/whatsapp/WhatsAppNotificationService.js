@@ -1991,6 +1991,33 @@ async function sendOrderCreationNotification(order) {
     status === 'SCHEDULED' ||
     isNonNotifiableStatus(status);
 
+  // نفس الـ eventType اللي بيتخزّن فعلاً في whatsAppNotificationLog
+  // (sendOrderStatusNotification بيرشّحه بـ getPersistedNotificationEventType).
+  const eventType = useNewOrderTemplate
+    ? 'ORDER_CREATED'
+    : getPersistedNotificationEventType(status);
+
+  // 🛡️ Dedup موحّد: createEnhancedOrder والـ route بينادوها الاتنين عند الإنشاء
+  // اليدوي — منع إرسال رسالة "طلب جديد" أو "حالة الطلب" مرتين لنفس الطلب
+  // (مسار ORDER_CREATED كان محمي بالداخل قبل التعديل، والحالات بقا لازم تتحمي برضه).
+  const { trackedOrderId, isGuestOrder } = getOrderNotificationTracking(order);
+  const hasDedupKey =
+    trackedOrderId ||
+    (isGuestOrder && (order.customerPhone || order.customer?.phone));
+  if (hasDedupKey) {
+    const isDup = await isDuplicateNotification({
+      companyId: order.companyId,
+      ...(trackedOrderId
+        ? { orderId: trackedOrderId }
+        : { recipientPhone: order.customerPhone || order.customer?.phone }),
+      eventType,
+    });
+    if (isDup) {
+      console.log(`⚠️ [WHATSAPP] Duplicate ${eventType} blocked for order ${order.orderNumber}`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+  }
+
   if (useNewOrderTemplate) {
     return sendOrderCreatedNotification(order);
   }

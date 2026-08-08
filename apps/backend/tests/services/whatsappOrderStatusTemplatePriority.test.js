@@ -304,3 +304,101 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     expect(res).toBeDefined();
   });
 });
+
+describe('whatsapp order-creation dispatch (sendOrderCreationNotification)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockSettings.whatsAppNotificationSettings.findUnique.mockResolvedValue({
+      isEnabled: true,
+      orderNotificationsEnabled: true,
+      orderCreatedEnabled: true,
+      orderConfirmedEnabled: true,
+      orderProcessingEnabled: true,
+      orderShippedEnabled: true,
+      orderDeliveredEnabled: true,
+      orderCancelledEnabled: true,
+      quietHoursEnabled: false,
+      defaultSessionId: null,
+    });
+
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess1', status: 'CONNECTED', provider: 'BAILEYS' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess1', status: 'CONNECTED', provider: 'BAILEYS' });
+    mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue(null);
+    mockSettings.whatsAppNotificationLog.create.mockResolvedValue({ id: 'log-1' });
+    mockSettings.whatsAppNotificationLog.update.mockResolvedValue({});
+  });
+
+  const baseOrder = (status) => ({
+    id: 'order-created-1',
+    orderNumber: 'ORD-CREATED-1',
+    companyId: 'company-1',
+    status,
+    customerPhone: '+201000000000',
+    customerName: 'Ali',
+    customer: { firstName: 'Ali', phone: '+201000000000' },
+    items: [],
+    total: '100',
+    currency: 'EGP',
+  });
+
+  it('routes an order created directly as CONFIRMED to the status template, NOT ORDER_CREATED', async () => {
+    mockSettings.whatsAppNotificationTemplate.findFirst.mockImplementation(({ where }) => {
+      if (where.eventType === 'CONFIRMED') {
+        return Promise.resolve({ id: 't-confirmed', content: 'confirmed', isActive: true });
+      }
+      if (where.eventType === 'ORDER_CONFIRMED') {
+        return Promise.resolve({ id: 't-order-confirmed', content: 'order confirmed', isActive: true });
+      }
+      return Promise.resolve(null);
+    });
+
+    const { sendOrderCreationNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderCreationNotification(baseOrder('CONFIRMED'));
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const eventTypesQueried = calls.map((c) => c[0] && c[0].where && c[0].where.eventType).filter(Boolean);
+    expect(eventTypesQueried).not.toContain('ORDER_CREATED');
+    expect(eventTypesQueried[0]).toBe('CONFIRMED');
+    expect(res).toBeDefined();
+  });
+
+  it('routes an order created as PENDING to the ORDER_CREATED new-order template', async () => {
+    mockSettings.whatsAppNotificationTemplate.findFirst.mockResolvedValue({
+      id: 't-created', eventType: 'ORDER_CREATED', content: 'new order', isActive: true,
+    });
+
+    const { sendOrderCreationNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderCreationNotification(baseOrder('PENDING'));
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const eventTypesQueried = calls.map((c) => c[0] && c[0].where && c[0].where.eventType).filter(Boolean);
+    expect(eventTypesQueried).toContain('ORDER_CREATED');
+    expect(res).toBeDefined();
+  });
+
+  it('routes an order with no status to the ORDER_CREATED new-order template', async () => {
+    mockSettings.whatsAppNotificationTemplate.findFirst.mockResolvedValue({
+      id: 't-created', eventType: 'ORDER_CREATED', content: 'new order', isActive: true,
+    });
+
+    const { sendOrderCreationNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderCreationNotification(baseOrder(null));
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const eventTypesQueried = calls.map((c) => c[0] && c[0].where && c[0].where.eventType).filter(Boolean);
+    expect(eventTypesQueried).toContain('ORDER_CREATED');
+    expect(res).toBeDefined();
+  });
+
+  it('blocks a duplicate status notification within the dedup window (service + route double call)', async () => {
+    // recent notification log → الدفعة التانية (من الـ route) تتبلوك
+    mockSettings.whatsAppNotificationLog.findFirst.mockResolvedValue({ id: 'recent-log' });
+
+    const { sendOrderCreationNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderCreationNotification(baseOrder('CONFIRMED'));
+
+    expect(res).toEqual(expect.objectContaining({ success: false, reason: 'duplicate_blocked' }));
+    expect(mockSettings.whatsAppNotificationTemplate.findFirst).not.toHaveBeenCalled();
+  });
+});

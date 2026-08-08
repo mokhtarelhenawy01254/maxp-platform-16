@@ -331,6 +331,7 @@ class EnhancedOrderService {
             id: order.id,
             orderNumber: order.orderNumber,
             companyId: order.companyId,
+            status: order.status,
             customerPhone: order.customerPhone,
             customerName: order.customerName,
             customer: order.customer,
@@ -342,7 +343,7 @@ class EnhancedOrderService {
             items: order.orderItems || order.items || []
           };
 
-          await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+          await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
           console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
         } catch (whatsappError) {
           // لا نوقف العملية إذا فشل WhatsApp
