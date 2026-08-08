@@ -3,7 +3,7 @@ import { buildApiUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
 ;
 
-import { BarChart4, Building2, CalendarDays, Users, Wrench, Tag, ListChecks, Printer, ShieldCheck, Percent } from 'lucide-react'
+import { BarChart4, Building2, CalendarDays, Users, Wrench, Tag, ListChecks, Printer, ShieldCheck, BadgePercent } from 'lucide-react'
 export const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
 };
@@ -260,7 +260,7 @@ export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
   { id: "reports", label: "التقارير", icon: BarChart4 },
   { id: "operations", label: "العمليات", icon: Printer },
   { id: "insurance-companies", label: "شركات التأمين", icon: ShieldCheck },
-  { id: "member-types", label: "أنواع الأعضاء", icon: Percent },
+  { id: "member-types", label: "أنواع الأعضاء", icon: BadgePercent },
 ];
 
 export interface BookingInvoice {
