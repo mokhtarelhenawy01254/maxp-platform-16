@@ -10,7 +10,8 @@
  *   orderStatus (status + days), returnRequest (status + days),
  *   latest (limit), oldest (limit), minTotalSpent (amount),
  *   minOrdersCount (count), paymentStatus (status + days),
- *   city, customerRating, combo (AND of conditions)
+ *   city, customerRating, combo (AND of conditions),
+ *   preset (champions | atRisk | loyal | new) — RFM-ready smart templates
  */
 
 const ORDER_STATUSES = [
@@ -30,6 +31,57 @@ const PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'R
 const CUSTOMER_RATINGS = ['EXCELLENT', 'GOOD', 'AVERAGE', 'POOR', 'UNKNOWN'];
 
 const CUSTOMER_STATUSES = ['LEAD', 'ACTIVE', 'INACTIVE', 'BLOCKED'];
+
+const ORDER_EXCLUDED_STATUSES = ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'];
+
+const PRESETS = {
+  champions: {
+    label: 'أفضل العملاء',
+    description: 'عملاء نشطون، كثر الطلبات، وأنفاقهم مرتفع — استهدفهم بعروض الولاء',
+    icon: 'crown',
+    criteria: {
+      type: 'combo',
+      conditions: [
+        { type: 'all' },
+        { type: 'minTotalSpent', amount: 2000 },
+        { type: 'minOrdersCount', count: 3 },
+      ],
+    },
+  },
+  loyal: {
+    label: 'العملاء الأوفياء',
+    description: 'عملاء يطلبون بانتظام (5 طلبات أو أكثر) — رشّحهم لبرنامج الولاء',
+    icon: 'heart',
+    criteria: {
+      type: 'combo',
+      conditions: [
+        { type: 'all' },
+        { type: 'minOrdersCount', count: 5 },
+      ],
+    },
+  },
+  atRisk: {
+    label: 'عملاء معرضون للفقدان',
+    description: 'كانوا مشترين لكن لم يتواصلوا منذ 30 يوم — أرسل حملة إعادة تنشيط',
+    icon: 'alert',
+    criteria: {
+      type: 'combo',
+      conditions: [
+        { type: 'inactive', days: 30 },
+        { type: 'orderStatus', status: 'DELIVERED' },
+      ],
+    },
+  },
+  new: {
+    label: 'عملاء جدد',
+    description: 'أحدث 100 عميل — رحّب بهم وعرّفهم على منتجاتك',
+    icon: 'sparkle',
+    criteria: {
+      type: 'latest',
+      limit: 100,
+    },
+  },
+};
 
 function parseCriteria(criteria) {
   if (!criteria) return { type: 'all' };
@@ -218,8 +270,35 @@ function buildCustomerListWhere(companyId, rawCriteria) {
       const conditions = Array.isArray(criteria.conditions) ? criteria.conditions : [];
       if (conditions.length === 0) return { where: { ...base, status: 'ACTIVE' } };
       const parts = conditions.map((c) => buildCustomerListWhere(companyId, c));
-      const where = { AND: parts.map((p) => p.where) };
-      return { where };
+
+      // اجمع الـ where الأساسية بـ AND، مع تمرير علامات الـ aggregation
+      const simpleWheres = parts.filter((p) => !p._minTotalSpent && !p._minOrdersCount).map((p) => p.where);
+      const aggregateFlags = parts.filter((p) => p._minTotalSpent || p._minOrdersCount);
+
+      const where = simpleWheres.length === 1
+        ? simpleWheres[0]
+        : simpleWheres.length > 1
+          ? { AND: simpleWheres }
+          : base;
+
+      if (aggregateFlags.length === 0) return { where };
+
+      // شروط الـ aggregation داخل combo
+      const minSpent = aggregateFlags.find((p) => p._minTotalSpent != null)?._minTotalSpent;
+      const minCount = aggregateFlags.find((p) => p._minOrdersCount != null)?._minOrdersCount;
+      const out = { where };
+      if (minSpent != null) out._minTotalSpent = minSpent;
+      if (minCount != null) out._minOrdersCount = minCount;
+      return out;
+    }
+
+    case 'preset': {
+      const presetKey = criteria.preset || criteria.name;
+      const preset = PRESETS[presetKey];
+      if (!preset) return { where: { ...base, status: 'ACTIVE' } };
+      // وسّع الـ preset إلى بنيته الفعلية
+      const expanded = { ...preset.criteria };
+      return buildCustomerListWhere(companyId, expanded);
     }
 
     default:
@@ -228,50 +307,70 @@ function buildCustomerListWhere(companyId, rawCriteria) {
 }
 
 /**
- * Resolve customer IDs for criteria that require aggregation (minTotalSpent /
- * minOrdersCount). Returns null when the criteria type needs no aggregation.
+ * استخراج كل شروط الـ aggregation (minTotalSpent / minOrdersCount) من معايير
+ * قد تكون متداخلة (combo / preset). يعيد مصفوفة من
+ *   { type: 'minTotalSpent'|'minOrdersCount', value }
+ * بترتيب الظهور.
  */
-async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
+function extractAggregates(rawCriteria, acc = []) {
   const criteria = parseCriteria(rawCriteria);
   const type = criteria.type || 'all';
 
   if (type === 'minTotalSpent') {
     const amount = parseFloat(criteria.amount);
-    if (!Number.isFinite(amount) || amount < 0) return null;
-
-    const rows = await prisma.order.groupBy({
-      by: ['customerId'],
-      where: {
-        companyId,
-        status: { notIn: ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'] },
-      },
-      _sum: { total: true },
-    });
-
-    return rows
-      .filter((r) => r.customerId && Number(r._sum?.total ?? 0) >= amount)
-      .map((r) => r.customerId);
+    if (Number.isFinite(amount) && amount >= 0) acc.push({ type, value: amount });
+    return acc;
   }
-
   if (type === 'minOrdersCount') {
     const count = toPositiveInt(criteria.count, null);
-    if (!count) return null;
-
-    const rows = await prisma.order.groupBy({
-      by: ['customerId'],
-      where: {
-        companyId,
-        status: { notIn: ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'] },
-      },
-      _count: { customerId: true },
-    });
-
-    return rows
-      .filter((r) => r.customerId && (r._count?.customerId ?? 0) >= count)
-      .map((r) => r.customerId);
+    if (count) acc.push({ type, value: count });
+    return acc;
   }
+  if (type === 'combo' && Array.isArray(criteria.conditions)) {
+    for (const c of criteria.conditions) extractAggregates(c, acc);
+    return acc;
+  }
+  if (type === 'preset') {
+    const preset = PRESETS[criteria.preset || criteria.name];
+    if (preset) return extractAggregates(preset.criteria, acc);
+  }
+  return acc;
+}
 
-  return null;
+/**
+ * حل شروط الـ aggregation وإرجاع العملاء المطابقين لكل شرط (AND).
+ * القيمة النهائية: قائمة معرفات تمر عبر كل الشروط، أو null إن لم توجد aggregations.
+ */
+async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
+  const aggregates = extractAggregates(rawCriteria);
+  if (aggregates.length === 0) return null;
+
+  const baseOrderFilter = {
+    companyId,
+    status: { notIn: ORDER_EXCLUDED_STATUSES },
+  };
+
+  const rows = await prisma.order.groupBy({
+    by: ['customerId'],
+    where: baseOrderFilter,
+    _sum: { total: true },
+    _count: { customerId: true },
+  });
+
+  const valid = rows.filter((r) => r.customerId);
+
+  // لكل شرط، مجموعة معرفات (Set) مطابقة
+  const candidateSets = aggregates.map((agg) => {
+    if (agg.type === 'minTotalSpent') {
+      return new Set(valid.filter((r) => Number(r._sum?.total ?? 0) >= agg.value).map((r) => r.customerId));
+    }
+    return new Set(valid.filter((r) => (r._count?.customerId ?? 0) >= agg.value).map((r) => r.customerId));
+  });
+
+  // تقاطع كل المجموعات (AND)
+  if (candidateSets.length === 0) return [];
+  const intersection = [...candidateSets[0]].filter((id) => candidateSets.every((s) => s.has(id)));
+  return intersection;
 }
 
 /**
@@ -329,6 +428,10 @@ function criteriaToSummary(criteria) {
       return `عدد طلبات ≥ ${c.count}`;
     case 'combo':
       return 'قائمة مخصّصة (شروط متعددة)';
+    case 'preset': {
+      const preset = PRESETS[c.preset || c.name];
+      return preset ? preset.label : 'قائمة جاهزة';
+    }
     default:
       return 'جميع العملاء النشطين';
   }
@@ -340,9 +443,11 @@ module.exports = {
   PAYMENT_STATUSES,
   CUSTOMER_RATINGS,
   CUSTOMER_STATUSES,
+  PRESETS,
   parseCriteria,
   buildCustomerListWhere,
   buildEffectiveCustomerListWhere,
   resolveAggregateCustomerIds,
+  extractAggregates,
   criteriaToSummary,
 };

@@ -924,6 +924,7 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'PACKAGED',
   'READY_TO_SHIP',
   'STOCK_SHORTAGE',
+  'SHORTAGE_FAILED',
   'PENDING_STOCK',
   'ON_HOLD_STOCK',
   'ON_HOLD_PREP'
@@ -936,6 +937,7 @@ const PREPARATION_ONLY_STATUSES = new Set([
 const getMappedRegularOrderStatus = (preparationStatus) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+  if (preparationStatus === 'SHORTAGE_FAILED') return 'SHORTAGE_FAILED';
   if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
   return 'PROCESSING';
 };
