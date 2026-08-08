@@ -140,10 +140,11 @@ const TurboStatusMapping: React.FC = () => {
 
   const getStatusName = (code: string | null) => {
     if (!code) return "";
+    const found = orderStatuses.find((s) => s.code === code);
+    if (found?.name) return found.name;
     const statusKey = `orders.${code.toLowerCase()}`;
     const translated = t(statusKey);
-    const found = orderStatuses.find((s) => s.code === code);
-    return translated !== statusKey ? translated : found?.name || code;
+    return translated !== statusKey ? translated : code;
   };
 
   if (loading) {
