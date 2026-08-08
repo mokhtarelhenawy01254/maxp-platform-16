@@ -27,6 +27,13 @@ describe('isMetaWindowError', () => {
     expect(isMetaWindowError({ message: 'outside the 24-hour messaging window' })).toBe(true);
     expect(isMetaWindowError({ code: 'RECIPIENT_CANNOT_SEND' })).toBe(true);
     expect(isMetaWindowError({ code: 'TEMPLATE_NOT_APPROVED' })).toBe(true);
+    // كودات ميتا الرقمية للرسائل المرفوضة خارج النافذة
+    expect(isMetaWindowError({ code: 131047 })).toBe(true);
+    expect(isMetaWindowError({ code: '131047' })).toBe(true);
+    expect(isMetaWindowError({ code: 131026 })).toBe(true);
+    expect(isMetaWindowError({ code: '131026' })).toBe(true);
+    // الرسالة الحرفية لـ 131047 (re_engagement_needed)
+    expect(isMetaWindowError({ message: 'Message failed to send because more than 24 hours have passed since the customer last replied to this number.' })).toBe(true);
     expect(isMetaWindowError({ message: 'invalid phone number' })).toBe(false);
     expect(isMetaWindowError({ code: 'SOMETHING_ELSE', message: 'rate limited' })).toBe(false);
     expect(isMetaWindowError(null)).toBe(false);

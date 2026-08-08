@@ -221,7 +221,13 @@ async function sendText(sessionId, to, text, options = {}) {
                 metadata: options.metadata
             }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى "فشل".
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
@@ -745,7 +751,13 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
                 isAIResponse: options.isAIResponse || false
             }, { companyId: dbSession?.companyId });
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى "فشل".
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
@@ -1657,7 +1669,14 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
                 metadata: meta
             }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
-            await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            try {
+                await ensureMetaContact(sessionId, jid, { isOutgoing: true });
+            } catch (contactErr) {
+                // 🚨 PRODUCTION-FIX: فشل تحديث بيانات الـ contact (مثل upsert فشل)
+                // لا يجب أبداً أن يحوّل إرسالَ قالبٍ نجح فعلاً إلى "فشل" —
+                // كان بيسبب fallback خاطئ لـ BUTTONS رغم نجاح الـ TEMPLATE.
+                console.warn(`⚠️ [WhatsAppMessageHandler] ensureMetaContact failed (non-critical): ${contactErr.message}`);
+            }
             return savedMessage;
         }
 
