@@ -2152,8 +2152,10 @@ router.post('/', async (req, res) => {
           price: parseFloat(item.price || 0),
           total: parseFloat((item.price || 0) * (item.quantity || 1)),
           productSku: item.productSku || item.sku || null,
-          productColor,
-          productSize,
+          // productColor/productSize مقبولان في OrderItem كـ String فقط؛
+          // خصائص الفاريانت (سايز) قد تكون Int (37) فيخفق إنشاء الـ primary order.
+          productColor: productColor == null ? null : String(productColor),
+          productSize: productSize == null ? null : String(productSize),
           productId: item.productId || null,
           variantId: item.variantId || null,
           productImage,
@@ -2344,21 +2346,6 @@ router.post('/', async (req, res) => {
       // لا نوقف العملية إذا فشل التصدير
       console.log('⚠️ [GUEST-ORDER] WooCommerce auto-export skipped:', wooError.message);
       console.error('❌ [ORDER-CREATE] Full error:', wooError);
-      // ❌ [PRIMARY-ORDER-FAILURE] تشخيص: نسجّل خطأ إنشاء الـ primary order في
-      // metadata الـ guest order حتى نقرأه من API التتبع بدون الحاجة للوجات السيرفر
-      try {
-        const prismaDiag = await getPrisma();
-        const curGuest = await prismaDiag.guestOrder.findFirst({ where: { orderNumber: order?.orderNumber } });
-        if (curGuest) {
-          const curMeta = (() => { try { return typeof curGuest.metadata === 'string' ? JSON.parse(curGuest.metadata) : (curGuest.metadata || {}); } catch (e) { return {}; } })();
-          await prismaDiag.guestOrder.update({
-            where: { id: curGuest.id },
-            data: { metadata: JSON.stringify({ ...curMeta, primaryOrderError: String(wooError?.message || wooError || 'unknown').slice(0, 3000), primaryOrderStack: String(wooError?.stack || '').slice(0, 1500) }) }
-          });
-        }
-      } catch (diagErr) {
-        console.error('❌ [PRIMARY-ORDER-FAILURE] diag write failed:', diagErr.message);
-      }
     }
 
     if (dropshippingRoutingError) {
