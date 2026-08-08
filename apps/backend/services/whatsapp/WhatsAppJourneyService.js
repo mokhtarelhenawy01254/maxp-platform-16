@@ -181,7 +181,6 @@ class WhatsAppJourneyService {
             console.error('❌ [JOURNEY-ERROR] Enrollment failed:', error.message, '| stack:', error?.stack?.split('\n').slice(0, 3).join(' '));
         }
     }
-    }
 
     /**
      * معالجة جميع الرحلات التي حان موعد رسالتها
