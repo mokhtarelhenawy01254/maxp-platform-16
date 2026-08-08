@@ -157,6 +157,42 @@ router.get(
 );
 
 /**
+ * @route   PUT /api/v1/broadcast/customer-lists/:listId
+ * @desc    تحديث قائمة عملاء
+ * @access  Private (Company Access)
+ */
+router.put(
+  '/customer-lists/:listId',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  broadcastController.updateCustomerList
+);
+
+/**
+ * @route   POST /api/v1/broadcast/customer-lists/preview-count
+ * @desc    معاينة عدد العملاء لمعايير قائمة (بدون حفظ)
+ * @access  Private (Company Access)
+ */
+router.post(
+  '/customer-lists/preview-count',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  broadcastController.previewCustomerListCount
+);
+
+/**
+ * @route   POST /api/v1/broadcast/customer-lists/:listId/refresh-count
+ * @desc    إعادة حساب عدد العملاء في قائمة محددة
+ * @access  Private (Company Access)
+ */
+router.post(
+  '/customer-lists/:listId/refresh-count',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  broadcastController.refreshCustomerListCount
+);
+
+/**
  * @route   GET /api/v1/broadcast/customer-lists/:listId/customers
  * @desc    الحصول على العملاء في قائمة محددة
  * @access  Private (Company Access)

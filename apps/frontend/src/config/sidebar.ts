@@ -698,6 +698,7 @@ export const getSidebarConfig = (
                 { to: '/customers/loyalty-members', icon: Users, label: t('sidebar.loyaltyMembers') },
                 { to: '/customers/loyalty-analytics', icon: BarChart3, label: t('sidebar.loyaltyAnalytics') },
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
+                { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/cashback', icon: DollarSign, label: t('sidebar.cashbackSettings') },
                 { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },

@@ -10618,6 +10618,9 @@ declare module 'react-i18next' {
         statusSearch: string;
         statusSelectAll: string;
         statusNoResults: string;
+        filterSearch: string;
+        filterSelectAll: string;
+        filterNoResults: string;
         refreshOrders: string;
         lastUpdatedAt: string;
         liveUpdates: string;
@@ -13877,6 +13880,7 @@ declare module 'react-i18next' {
         customerLoyalty: string;
         customerPointsCenter: string;
         customerSegments: string;
+        customerLists: string;
         customerNotifications: string;
         customers: string;
         customersBirthday: string;
