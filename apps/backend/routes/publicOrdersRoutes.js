@@ -2353,7 +2353,7 @@ router.post('/', async (req, res) => {
           const curMeta = (() => { try { return typeof curGuest.metadata === 'string' ? JSON.parse(curGuest.metadata) : (curGuest.metadata || {}); } catch (e) { return {}; } })();
           await prismaDiag.guestOrder.update({
             where: { id: curGuest.id },
-            data: { metadata: JSON.stringify({ ...curMeta, primaryOrderError: String(wooError?.message || wooError || 'unknown').slice(0, 400) }) }
+            data: { metadata: JSON.stringify({ ...curMeta, primaryOrderError: String(wooError?.message || wooError || 'unknown').slice(0, 3000), primaryOrderStack: String(wooError?.stack || '').slice(0, 1500) }) }
           });
         }
       } catch (diagErr) {
