@@ -1042,6 +1042,18 @@ const ParentWalletPage = React.lazy(
 const ParentBuyPackagePage = React.lazy(
   () => import("./pages/parent/ParentBuyPackagePage"),
 );
+const CustomerPortalLayout = React.lazy(
+  () => import("./pages/account/CustomerPortalLayout"),
+);
+const CustomerAccountHome = React.lazy(
+  () => import("./pages/account/CustomerAccountHome"),
+);
+const CustomerWalletPage = React.lazy(
+  () => import("./pages/account/CustomerWalletPage"),
+);
+const CustomerProfilePage = React.lazy(
+  () => import("./pages/account/CustomerProfilePage"),
+);
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
@@ -1836,6 +1848,10 @@ const AppContent = () => {
             <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
             <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
             <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
+            {/* Customer Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/account" element={<CustomerPortalLayout><CustomerAccountHome /></CustomerPortalLayout>} />
+            <Route path="/account/cashback" element={<CustomerPortalLayout><CustomerWalletPage /></CustomerPortalLayout>} />
+            <Route path="/account/profile" element={<CustomerPortalLayout><CustomerProfilePage /></CustomerPortalLayout>} />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             

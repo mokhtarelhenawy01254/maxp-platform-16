@@ -86,7 +86,7 @@ const CustomerRegister: React.FC = () => {
       if (response.data?.success && response.data?.data?.token) {
         tokenManager.setAccessToken(response.data.data.token);
         setSuccessMessage("تم تسجيل الدخول بنجاح");
-        navigate("/account/whatsapp");
+        navigate("/account");
         return;
       }
 

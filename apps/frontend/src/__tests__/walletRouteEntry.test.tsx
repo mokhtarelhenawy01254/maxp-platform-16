@@ -17,7 +17,7 @@ vi.mock("../pages/wallet/CustomerWallet", () => ({
 import CustomerWalletRouteEntry from "../pages/wallet/WalletRouteEntry";
 
 describe("wallet route split", () => {
-  it("renders customer wallet on /wallet for customer users", () => {
+  it("redirects customer users from /wallet to the customer portal cashback page", () => {
     mockUseAuth.mockReturnValue({
       isLoading: false,
       user: { role: "CUSTOMER" },
@@ -27,12 +27,16 @@ describe("wallet route split", () => {
       <MemoryRouter initialEntries={["/wallet"]}>
         <Routes>
           <Route path="/wallet" element={<CustomerWalletRouteEntry />} />
+          <Route
+            path="/account/cashback"
+            element={<div>Customer Cashback Page</div>}
+          />
           <Route path="/payments" element={<div>Payments Page</div>} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Customer Wallet Screen")).toBeTruthy();
+    expect(screen.getByText("Customer Cashback Page")).toBeTruthy();
   });
 
   it("redirects non-customer users away from /wallet to /payments", () => {
