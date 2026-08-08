@@ -100,7 +100,7 @@ class OrderRepository(BaseRepository):
             guest_params[f"g{i}"] = p
 
         guest_sql = text(f"""
-            SELECT g.id, g."orderNumber", g.status, g."paymentStatus", g.total,
+            SELECT g.id, g."orderNumber", g.status, g.total,
                    g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
                    g."createdAt"
             FROM guest_orders g
