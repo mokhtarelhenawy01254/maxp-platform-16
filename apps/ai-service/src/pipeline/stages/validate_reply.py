@@ -74,6 +74,39 @@ def _has_hallucinated_success_claim(text: str, executed_tools: list[dict[str, An
     return True
 
 
+def _build_hallucination_correction(
+    ctx: PipelineContext, hallucinated_reply: str
+) -> list[dict[str, Any]]:
+    """Build a correction message that pushes the LLM to actually call the
+    state-changing tool instead of claiming success in plain text.
+
+    This is the SOTA 2026 pattern: when the agent hallucinates a success
+    claim, we don't lie to the customer with a fake "system error" — we
+    give the model another chance to do the real work and verify the
+    tool's success before responding.
+    """
+    evidence_text = _summarize_evidence(ctx.tool_evidence)
+    return [
+        {
+            "role": "user",
+            "content": (
+                f"ردك السابق كان: \n"
+                f"\"{hallucinated_reply[:400]}\"\n\n"
+                "⚠️ لكنك قلت للعميل إن العملية نجحت من غير ما تستدعي أي أداة "
+                "state-changing فعلاً. ده hallucination ومش مسموح — ممنوع تقول "
+                "\"اتأكد\" / \"confirmed\" / \"shipped\" / \"تم\" لحد ما الأداة ترجع success فعلاً.\n\n"
+                f"الأدوات اللي اتنادت في الـ turn ده: "
+                f"{[item.get('tool', '') for item in (ctx.executed_tools or []) if isinstance(item, dict)]}\n"
+                f"نتائج الأدوات (tool evidence): {evidence_text or '(لا توجد)'}\n\n"
+                "اعمل call للأداة الصح (order_confirm / order_update_details / "
+                "order_cancel / order_refund) دلوقتي، استنى نتيجتها، وبعدين اتكلم "
+                "مع العميل بناءً على النتيجة الفعلية. لو الأداة رجعت success → قول "
+                "العميل. لو رجعت error → قول الحقيقة واطلب تاني."
+            ),
+        }
+    ]
+
+
 def _try_parse_json_object(text: str) -> dict[str, Any] | None:
     """Try multiple strategies to extract a JSON object from text."""
     if not text:
@@ -121,6 +154,66 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> str:
         )
     response = await client.generate(messages=messages, tools=None, temperature=0.3)
     return response.text or ""
+
+
+async def _raw_llm_call_with_tools(ctx: PipelineContext, messages: list[dict]) -> str:
+    """LLM call WITH tools enabled — used by the hallucination re-prompt so the
+    model can actually call the state-changing tool and verify the result.
+
+    Returns the final text after tool calls are resolved (via the main pipeline's
+    tool execution path). Falls back to text-only if the model still doesn't act.
+    """
+    from src.tools.registry import get_tool_names_for_role
+    from src.tools.definitions._helpers import _execute_registry_tool
+    from src.pipeline.stages.skills_pipeline import (
+        _execute_one_tool,
+        _build_skill_tool_dicts,
+    )
+
+    client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
+    if not client:
+        from src.llm.model_manager import model_manager
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
+        routing = await model_manager.get_next_key(agent_model, ctx.company_id)
+        client = LLMClient(
+            provider=routing.provider,
+            model=routing.model,
+            api_key=routing.api_key,
+            base_url=routing.base_url,
+        )
+
+    # Resolve tool dicts from the agent's allowed tools
+    from src.pipeline.stages.skills_pipeline import _get_skills_for_agent
+    skills = await _get_skills_for_agent(ctx)
+    tool_dicts = _build_skill_tool_dicts(skills, ctx) if skills else None
+
+    from src.tools.registry import ToolRegistry
+    registry = ToolRegistry()
+
+    # Single LLM call with tools; if the model emits a tool call, execute it
+    # via the same path the main pipeline uses, then make a follow-up call.
+    response = await client.generate(messages=messages, tools=tool_dicts, temperature=0.2)
+    if not response.tool_calls:
+        return response.text or ""
+
+    # Execute the model's tool calls
+    import asyncio
+    executed = list(await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in response.tool_calls]))
+    # Persist executed_tools so the follow-up check sees the fresh call
+    ctx.executed_tools = (ctx.executed_tools or []) + executed
+
+    # Follow-up call to get the model's final text response, now that tools ran
+    followup = list(messages) + [
+        {"role": "assistant", "content": response.text or "", "tool_calls": response.tool_calls},
+    ]
+    for item in executed:
+        followup.append({
+            "role": "tool",
+            "tool_call_id": item.get("tool_call_id", ""),
+            "content": json.dumps(item.get("result", {}), ensure_ascii=False)[:2000],
+        })
+    final = await client.generate(messages=followup, tools=None, temperature=0.2)
+    return final.text or ""
 
 
 def _strip_internal_tags(text: str) -> str:
@@ -563,8 +656,10 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     reply = _strip_internal_tags(reply)
 
     # If no LLM response and a final_reply is already set (e.g., from skills_pipeline error),
-    # still run the hallucination guard before returning — the raw tool output fallback
-    # at skills_pipeline.py:228 can leak "success" claims that never had a real tool behind them.
+    # the raw tool output fallback at skills_pipeline.py:228 can leak "success" claims
+    # that never had a real tool behind them. We can't easily re-prompt here because
+    # the LLM was bypassed — fall back to a one-shot prompt that asks the main model
+    # to call the right tool and respond honestly based on the actual result.
     if not reply and ctx.final_reply:
         if _has_hallucinated_success_claim(
             ctx.final_reply or "", ctx.executed_tools or []
@@ -580,12 +675,32 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 if isinstance(item, dict)
             ]
             logger.warning(
-                "hallucination_blocked_final_reply",
+                "hallucination_reprompt_final_reply",
                 agent_slug=agent_slug,
                 original_reply=(ctx.final_reply or "")[:200],
                 executed_tools=executed_names,
             )
-            ctx.final_reply = _HALLUCINATION_FALLBACK
+            # Re-prompt the LLM with tools enabled so it can actually call
+            # the state-changing tool and verify success.
+            correction_messages = _build_hallucination_correction(ctx, ctx.final_reply or "")
+            corrected = await _raw_llm_call_with_tools(ctx, correction_messages)
+            if corrected and corrected.strip():
+                ctx.final_reply = _strip_internal_tags(corrected)
+                logger.info(
+                    "hallucination_reprompt_succeeded",
+                    agent_slug=agent_slug,
+                    new_reply_preview=ctx.final_reply[:200],
+                )
+                return ctx
+            # Re-prompt failed — silent escalation (no lying fallback)
+            ctx.escalation_requested = True
+            ctx.escalation_reason = "hallucination_reprompt_failed"
+            ctx.final_reply = None
+            logger.warning(
+                "hallucination_reprompt_failed_escalating",
+                agent_slug=agent_slug,
+            )
+            return ctx
         return ctx
 
     validated = None
@@ -671,8 +786,9 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
 
             # ── Anti-hallucination guard (runs BEFORE self-review) ──
             # If the LLM claims a state-changing action succeeded but no
-            # such tool was actually executed, replace with a transparent
-            # fallback so the customer is not told a lie.
+            # such tool was actually executed, re-prompt the LLM with
+            # tools enabled so it can actually do the work and verify
+            # the tool result before responding. No lying fallback.
             if _has_hallucinated_success_claim(
                 ctx.final_reply or "", ctx.executed_tools or []
             ):
@@ -687,12 +803,47 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                     if isinstance(item, dict)
                 ]
                 logger.warning(
-                    "hallucination_blocked",
+                    "hallucination_reprompt_main",
                     agent_slug=agent_slug,
                     original_reply=(ctx.final_reply or "")[:200],
                     executed_tools=executed_names,
+                    attempt=attempt,
                 )
-                ctx.final_reply = _HALLUCINATION_FALLBACK
+                if attempt < MAX_OUTPUT_RETRIES:
+                    # Re-prompt: give the LLM another chance to actually
+                    # call the tool. Build correction context and reset
+                    # reply so the next LLM call uses the correction.
+                    correction_messages = _build_hallucination_correction(
+                        ctx, ctx.final_reply or ""
+                    )
+                    corrected = await _raw_llm_call_with_tools(
+                        ctx, correction_messages
+                    )
+                    if corrected and corrected.strip():
+                        # Re-run the guard on the new reply; if it's
+                        # clean, fall through. If still hallucinated, the
+                        # loop will catch it on the next iteration or
+                        # we'll hit MAX_OUTPUT_RETRIES and escalate.
+                        reply = _strip_internal_tags(corrected)
+                        ctx.final_reply = None
+                        continue
+                    # Re-prompt failed; let the loop's next iteration try
+                    # again or fall through to escalation.
+                    logger.warning(
+                        "hallucination_reprompt_no_text",
+                        agent_slug=agent_slug,
+                    )
+                    continue
+                # Out of retries — silent escalation
+                ctx.escalation_requested = True
+                ctx.escalation_reason = "hallucination_repeated"
+                ctx.final_reply = None
+                logger.warning(
+                    "hallucination_repeated_escalating",
+                    agent_slug=agent_slug,
+                    original_reply=ctx.final_reply[:200] if ctx.final_reply else "",
+                )
+                return ctx
             # Merge LLM-provided attachments on top of auto-populated ones (e.g. landmarkImage)
             if validated.attachments:
                 existing = {a.get("url"): a for a in (ctx.response_attachments or []) if a.get("url")}
