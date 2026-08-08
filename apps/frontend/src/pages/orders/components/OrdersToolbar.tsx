@@ -215,7 +215,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
             </div>
           </div>
 
-          {!showAdvancedFilters && advancedFilterCount > 0 && (
+          {!showAdvancedFilters && (advancedFilterCount > 0 || filters.onlyUnseen) && (
             <FilterChips
               filters={filters}
               filterableOrderStatuses={filterableOrderStatuses}

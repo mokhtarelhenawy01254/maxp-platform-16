@@ -2630,19 +2630,19 @@ const Orders: React.FC = () => {
           {
             id: "bulk-print",
             group: "bulk",
-            label: t("palette.bulkPrintAll"),
+            label: t("orders.palette.bulkPrintAll"),
             onSelect: () => handleBulkPrintInvoices(),
           },
           {
             id: "bulk-turbo",
             group: "bulk",
-            label: t("palette.bulkCreateTurboAll"),
+            label: t("orders.palette.bulkCreateTurboAll"),
             onSelect: () => handleBulkCreateTurboShipments(),
           },
           {
             id: "bulk-delete",
             group: "bulk",
-            label: t("palette.bulkDeleteAll"),
+            label: t("orders.palette.bulkDeleteAll"),
             onSelect: () => handleBulkDelete(),
           },
         ]}
