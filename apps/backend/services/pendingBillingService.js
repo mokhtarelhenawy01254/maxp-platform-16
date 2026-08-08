@@ -227,7 +227,7 @@ async function releaseSubscriptionHeldOrders(companyId) {
   }
 
   const installed = await prisma.companyApp.findMany({
-    where: { companyId, app: { slug: { in: ['manual-orders-pro', 'store-pro'] } } },
+    where: { companyId, app: { slug: { in: ['manual-orders-pro'] } } },
     select: { status: true },
   });
 

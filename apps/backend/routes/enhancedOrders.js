@@ -14,8 +14,8 @@ const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
 
-// تطبيقات صفحة الطلب اليدوي (اشتراك): وجود سجل لأي منها يسمح بالإنشاء حتى لو منتهي
-const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro', 'store-pro'];
+// أداة الطلب اليدوي (اشتراك): هي الوحيدة اللي تحدد انتهاء الاشتراك والتعليق
+const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro'];
 const MANUAL_ORDER_ACTIVE_STATUSES = ['TRIAL', 'ACTIVE'];
 
 /**

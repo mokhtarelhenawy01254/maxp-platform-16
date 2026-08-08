@@ -347,7 +347,7 @@ exports.upgradeApp = async (req, res) => {
     });
 
     // 🚧 عند تفعيل أداة الطلبات اليدوية → تحرير الطلبات المعلّقة بسبب انتهاء الاشتراك
-    if (['manual-orders-pro', 'store-pro'].includes(companyApp.app?.slug)) {
+    if (['manual-orders-pro'].includes(companyApp.app?.slug)) {
       try {
         const { releaseSubscriptionHeldOrders } = require('../services/pendingBillingService');
         const releaseResult = await releaseSubscriptionHeldOrders(companyId);
