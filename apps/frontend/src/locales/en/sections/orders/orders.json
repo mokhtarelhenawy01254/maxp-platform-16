@@ -327,6 +327,7 @@
     "update": "Update",
     "history": "History"
   },
+  "noHistoryItems": "No history items yet",
   "detailSectionIcons": {
     "customer": "Customer",
     "products": "Products",

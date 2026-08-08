@@ -327,6 +327,7 @@
     "update": "التحديث",
     "history": "السجل"
   },
+  "noHistoryItems": "لا توجد سجلات بعد",
   "detailSectionIcons": {
     "customer": "العميل",
     "products": "المنتجات",

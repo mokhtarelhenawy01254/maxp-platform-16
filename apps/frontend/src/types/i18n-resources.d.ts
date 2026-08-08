@@ -10010,6 +10010,7 @@ declare module 'react-i18next' {
           update: string;
           history: string;
         };
+        noHistoryItems: string;
         detailSectionIcons: {
           customer: string;
           products: string;

@@ -55,6 +55,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"details" | "update" | "history">(
+    "details",
+  );
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,6 +181,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       setPendingCancellationStatus(null);
       setCancellationReason("");
       setError(null);
+      setActiveTab("details");
     }
   }, [isOpen, order?.orderNumber]);
 
@@ -388,11 +392,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   };
 
   const getConfidenceColor = (confidence?: number) => {
-    if (!confidence) return "text-gray-500";
+    if (!confidence) return "text-muted-foreground";
 
-    if (confidence >= 0.8) return "text-green-600";
-    if (confidence >= 0.6) return "text-yellow-600";
-    return "text-red-600";
+    if (confidence >= 0.8) return "text-success";
+    if (confidence >= 0.6) return "text-warning";
+    return "text-destructive";
   };
 
   const [governments, setGovernments] = useState<any[]>([]);
@@ -462,23 +466,64 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         <div className="px-4 pb-5 pt-3 sm:px-5 flex-1 overflow-y-auto">
           <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between pb-3">
             <div className="flex items-center gap-3">
-              <ShoppingBagIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <h3
-                id="modal-title"
-                className="text-xl font-semibold text-gray-900 dark:text-gray-100"
-              >
-                {t("orders.orderDetails")} #{order.orderNumber}
-              </h3>
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <ShoppingBagIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <h3
+                  id="modal-title"
+                  className="text-lg font-black text-foreground"
+                >
+                  {t("orders.orderDetails")}
+                </h3>
+                <p className="text-xs font-medium text-muted-foreground" dir="ltr">
+                  #{order.orderNumber}
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={String(t("orders.close"))}
             >
-              <XMarkIcon className="h-6 w-6" />
+              <XMarkIcon className="h-5 w-5" />
             </button>
+          </div>
+
+          {/* Tabs */}
+          <div
+            role="tablist"
+            aria-label={t("orders.detailTabs.update")}
+            className="flex items-center gap-1 rounded-2xl border border-border/60 bg-card/40 p-1 backdrop-blur-sm"
+          >
+            {(
+              [
+                { key: "details", icon: UserCircleIcon },
+                { key: "update", icon: PencilSquareIcon },
+                { key: "history", icon: ClipboardDocumentListIcon },
+              ] as const
+            ).map(({ key, icon: Icon }) => {
+              const isActive = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`tab-panel-${key}`}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {t(`orders.detailTabs.${key}`)}
+                </button>
+              );
+            })}
           </div>
 
           {/* Error Message */}
@@ -499,6 +544,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             </div>
           )}
 
+          {/* Tab: Details */}
+          {activeTab === "details" && (
+            <>
           {/* Customer Info */}
           <div>
             {renderSectionHeader(
@@ -508,20 +556,20 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                  <span className="text-sm text-muted-foreground block mb-1">
                     {t("orders.name")}
                   </span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  <span className="text-foreground font-medium">
                     {getCustomerDisplayName()}
                   </span>
                 </div>
                 {order.customerPhone && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-sm text-muted-foreground block mb-1">
                       {t("orders.phone")}
                     </span>
                     <span
-                      className="text-gray-900 dark:text-gray-100 font-medium"
+                      className="text-foreground font-medium"
                       dir="ltr"
                     >
                       {order.customerPhone}
@@ -530,10 +578,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.governorate || order.shippingAddress?.governorate) && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-sm text-muted-foreground block mb-1">
                       {t("orders.governorate")}
                     </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    <span className="text-foreground font-medium">
                       {getLocationDisplayName(
                         order.governorate || order.shippingAddress?.governorate,
                       )}
@@ -542,10 +590,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.city || order.shippingAddress?.city) && (
                   <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-sm text-muted-foreground block mb-1">
                       {t("orders.city")}
                     </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    <span className="text-foreground font-medium">
                       {getLocationDisplayName(
                         order.city || order.shippingAddress?.city,
                       )}
@@ -564,7 +612,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             )}
             <div className="bg-card/60 border border-border/60 rounded-2xl overflow-hidden max-h-60 overflow-y-auto backdrop-blur-sm">
               {!displayItems || displayItems.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-4 text-center text-muted-foreground">
                   {t("orders.noProducts")}
                 </div>
               ) : (
@@ -576,19 +624,19 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                     >
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                          <p className="font-medium text-foreground mb-1">
                             {item.productName ||
                               item.name ||
                               t("orders.productNotSpecified")}
                           </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {t("orders.quantity")}: {item.quantity}
                           </p>
                           {(item.productColor ||
                             item.productSize ||
                             item.metadata?.color ||
                             item.metadata?.size) && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex gap-3">
+                            <div className="text-xs text-muted-foreground mt-1 flex gap-3">
                               {(item.productColor || item.metadata?.color) && (
                                 <span>
                                   🎨 {item.productColor || item.metadata?.color}
@@ -620,7 +668,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                          <p className="font-semibold text-foreground text-lg">
                             {formatPrice(
                               item.total || item.price * item.quantity,
                             )}
@@ -652,45 +700,52 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             )}
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3 backdrop-blur-sm">
               <div className="space-y-2">
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="flex justify-between text-foreground">
                   <span>{t("orders.subtotal")}:</span>
                   <span className="font-medium">
                     {formatPrice(order.subtotal || 0)}
                   </span>
                 </div>
                 {order.tax > 0 && (
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-foreground">
                     <span>{t("orders.tax")}:</span>
                     <span className="font-medium">
                       {formatPrice(order.tax)}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="flex justify-between text-foreground">
                   <span>{t("orders.shipping")}:</span>
                   <span className="font-medium">
                     {formatPrice(order.shipping || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-3 border-t-2 border-blue-300 dark:border-blue-700 text-lg font-bold text-gray-900 dark:text-gray-100">
+                <div className="flex justify-between pt-3 border-t-2 border-primary/30 text-lg font-bold text-foreground">
                   <span>{t("orders.total")}:</span>
-                  <span className="text-blue-600 dark:text-blue-400">
+                  <span className="text-primary">
                     {formatPrice(order.total || 0)}
                   </span>
                 </div>
               </div>
             </div>
           </div>
+            </>
+          )}
 
-          {/* Update Status Section */}
+          {/* Tab: Update */}
+          {activeTab === "update" && (
           <div>
+            {renderSectionHeader(
+              <PencilSquareIcon className="h-4 w-4" />,
+              t("orders.updateOrder"),
+            )}
             {renderSectionHeader(
               <PencilSquareIcon className="h-4 w-4" />,
               t("orders.updateOrder"),
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t("orders.orderStatus")}
                 </label>
                 <select
@@ -726,7 +781,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   {t("orders.paymentStatus")}
                 </label>
                 {isGuestOrder || !canManagePaymentStatus ? (
@@ -838,7 +893,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
               )}
             </div>
           </div>
+          )}
 
+          {/* Tab: History */}
+          {activeTab === "history" && (
+          <>
           {/* Conversation Link */}
           {order.conversationId && (
             <div>
@@ -880,6 +939,18 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Empty state when no history items */}
+          {!order.conversationId && !order.notes && (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-card/30 py-10 text-center">
+              <ClipboardDocumentListIcon className="h-8 w-8 text-muted-foreground/60" />
+              <p className="text-sm text-muted-foreground">
+                {t("orders.noHistoryItems") || "لا توجد سجلات بعد"}
+              </p>
+            </div>
+          )}
+          </>
           )}
 
           {/* Action Buttons removed — moved to sticky footer below */}
