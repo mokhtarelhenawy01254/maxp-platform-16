@@ -415,7 +415,9 @@ class ApiClient {
       currentPath.startsWith("/register/") ||
       currentPath.startsWith("/affiliate-register") ||
       currentPath.startsWith("/apply/") ||
-      currentPath.startsWith("/payment/");
+      currentPath.startsWith("/payment/") ||
+      currentPath.startsWith("/account/") ||
+      currentPath.startsWith("/account");
 
     if (isPublicRoute) {
       return;
