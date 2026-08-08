@@ -18,13 +18,13 @@ export interface FilterChipsProps {
   /** Current filter state. */
   filters: {
     status: string[];
-    paymentStatus: string;
-    sourceType: string;
-    merchantId: string;
-    affiliateId: string;
-    fulfillmentSource: string;
-    merchantOperationStatus: string;
-    merchantSettlementStatus: string;
+    paymentStatus: string[];
+    sourceType: string[];
+    merchantId: string[];
+    affiliateId: string[];
+    fulfillmentSource: string[];
+    merchantOperationStatus: string[];
+    merchantSettlementStatus: string[];
     extractionMethod: string;
     minConfidence: string;
     onlyUnseen: boolean;
@@ -143,69 +143,97 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
         });
       });
     }
-    if (filters.paymentStatus) {
+    filters.paymentStatus.forEach((value) => {
       const match = filterablePaymentStatuses.find(
-        (s) => s.code.toLowerCase() === filters.paymentStatus.toLowerCase(),
+        (s) => s.code.toLowerCase() === value.toLowerCase(),
       );
       list.push({
         key: t("orders.payment"),
-        value: match?.name ?? filters.paymentStatus,
+        value: match?.name ?? value,
         tone: "info",
-        remove: () => onFilterChange("paymentStatus", ""),
+        remove: () =>
+          onFilterChange(
+            "paymentStatus",
+            filters.paymentStatus.filter((v) => v.toLowerCase() !== value.toLowerCase()),
+          ),
       });
-    }
-    if (filters.sourceType) {
+    });
+    filters.sourceType.forEach((value) => {
       list.push({
         key: t("orders.source"),
-        value: translateLookup(t, sourceTypeLabels, filters.sourceType),
+        value: translateLookup(t, sourceTypeLabels, value),
         tone: "neutral",
-        remove: () => onFilterChange("sourceType", ""),
+        remove: () =>
+          onFilterChange(
+            "sourceType",
+            filters.sourceType.filter((v) => v !== value),
+          ),
       });
-    }
-    if (filters.merchantId) {
-      const match = merchantOptions.find((m) => m.id === filters.merchantId);
+    });
+    filters.merchantId.forEach((value) => {
+      const match = merchantOptions.find((m) => m.id === value);
       list.push({
         key: t("orders.merchantLabel", { defaultValue: "التاجر" }),
-        value: match?.name || match?.email || filters.merchantId,
+        value: match?.name || match?.email || value,
         tone: "warning",
-        remove: () => onFilterChange("merchantId", ""),
+        remove: () =>
+          onFilterChange(
+            "merchantId",
+            filters.merchantId.filter((v) => v !== value),
+          ),
       });
-    }
-    if (filters.affiliateId) {
-      const match = affiliateOptions.find((a) => a.id === filters.affiliateId);
+    });
+    filters.affiliateId.forEach((value) => {
+      const match = affiliateOptions.find((a) => a.id === value);
       list.push({
         key: t("orders.affiliateLabel", { defaultValue: "المسوق" }),
         value: match?.user?.firstName
           ? `${match.user.firstName} ${match.user.lastName ?? ""}`.trim()
-          : (match as any)?.affiliateCode || filters.affiliateId,
+          : (match as any)?.affiliateCode || value,
         tone: "warning",
-        remove: () => onFilterChange("affiliateId", ""),
+        remove: () =>
+          onFilterChange(
+            "affiliateId",
+            filters.affiliateId.filter((v) => v !== value),
+          ),
       });
-    }
-    if (filters.fulfillmentSource) {
+    });
+    filters.fulfillmentSource.forEach((value) => {
       list.push({
         key: t("orders.fulfillmentSource"),
-        value: translateLookup(t, fulfillmentLabels, filters.fulfillmentSource),
+        value: translateLookup(t, fulfillmentLabels, value),
         tone: "neutral",
-        remove: () => onFilterChange("fulfillmentSource", ""),
+        remove: () =>
+          onFilterChange(
+            "fulfillmentSource",
+            filters.fulfillmentSource.filter((v) => v !== value),
+          ),
       });
-    }
-    if (filters.merchantOperationStatus) {
+    });
+    filters.merchantOperationStatus.forEach((value) => {
       list.push({
         key: t("orders.merchantOperationStatus"),
-        value: translateLookup(t, merchantOperationLabels, filters.merchantOperationStatus),
+        value: translateLookup(t, merchantOperationLabels, value),
         tone: "info",
-        remove: () => onFilterChange("merchantOperationStatus", ""),
+        remove: () =>
+          onFilterChange(
+            "merchantOperationStatus",
+            filters.merchantOperationStatus.filter((v) => v !== value),
+          ),
       });
-    }
-    if (filters.merchantSettlementStatus) {
+    });
+    filters.merchantSettlementStatus.forEach((value) => {
       list.push({
         key: t("orders.merchantSettlements"),
-        value: translateLookup(t, settlementLabels, filters.merchantSettlementStatus),
+        value: translateLookup(t, settlementLabels, value),
         tone: "success",
-        remove: () => onFilterChange("merchantSettlementStatus", ""),
+        remove: () =>
+          onFilterChange(
+            "merchantSettlementStatus",
+            filters.merchantSettlementStatus.filter((v) => v !== value),
+          ),
       });
-    }
+    });
     if (filters.extractionMethod) {
       list.push({
         key: t("orders.extractionMethod"),

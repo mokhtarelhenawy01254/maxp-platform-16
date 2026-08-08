@@ -8,13 +8,13 @@ jest.mock("react-i18next", () => ({
 
 const baseFilters = {
   status: [] as string[],
-  paymentStatus: "",
-  sourceType: "",
-  merchantId: "",
-  affiliateId: "",
-  fulfillmentSource: "",
-  merchantOperationStatus: "",
-  merchantSettlementStatus: "",
+  paymentStatus: [] as string[],
+  sourceType: [] as string[],
+  merchantId: [] as string[],
+  affiliateId: [] as string[],
+  fulfillmentSource: [] as string[],
+  merchantOperationStatus: [] as string[],
+  merchantSettlementStatus: [] as string[],
   extractionMethod: "",
   minConfidence: "",
   onlyUnseen: false,
@@ -58,5 +58,39 @@ describe("FilterChips", () => {
 
     fireEvent.click(screen.getAllByRole("button")[0]);
     expect(onFilterChange).toHaveBeenCalledWith("status", ["shipped"]);
+  });
+
+  it("renders one chip per payment status and removes only the clicked one", () => {
+    const onFilterChange = jest.fn();
+    render(
+      <FilterChips
+        filters={{ ...baseFilters, paymentStatus: ["completed", "failed"] }}
+        filterablePaymentStatuses={[
+          { code: "COMPLETED", name: "مدفوع" },
+          { code: "FAILED", name: "فشل الدفع" },
+        ]}
+        onFilterChange={onFilterChange}
+        onClearAdvancedFilters={jest.fn()}
+      />,
+    );
+
+    expect(screen.getAllByText("مدفوع").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("فشل الدفع").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("button")[0]);
+    expect(onFilterChange).toHaveBeenCalledWith("paymentStatus", ["failed"]);
+  });
+
+  it("renders one chip per merchant operation status", () => {
+    render(
+      <FilterChips
+        filters={{ ...baseFilters, merchantOperationStatus: ["PREPARATION", "DELIVERED"] }}
+        onFilterChange={jest.fn()}
+        onClearAdvancedFilters={jest.fn()}
+      />,
+    );
+
+    expect(screen.getAllByText("orders.preparation").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("orders.delivered").length).toBeGreaterThan(0);
   });
 });

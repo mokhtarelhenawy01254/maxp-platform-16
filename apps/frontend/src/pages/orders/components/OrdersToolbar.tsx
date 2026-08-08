@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ShoppingBagIcon,
@@ -8,12 +8,10 @@ import {
   EyeIcon,
   FunnelIcon,
   ExclamationTriangleIcon,
-  ChevronDownIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { CommandPalette } from "../../../components/common/CommandPalette";
-import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
-import { Checkbox } from "../../../components/ui/checkbox";
+import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 import { FilterChips } from "./FilterChips";
 import type {
   OrdersFilters,
@@ -57,163 +55,6 @@ interface OrdersToolbarProps {
   onRefresh: () => void;
 }
 
-interface StatusMultiSelectProps {
-  ariaLabel: string;
-  placeholder: string;
-  searchPlaceholder: string;
-  selectAllLabel: string;
-  noResultsLabel: string;
-  clearAllLabel: string;
-  trashLabel?: string;
-  options: OrderStatusDefinition[];
-  value: string[];
-  onChange: (next: string[]) => void;
-  fieldClassName: string;
-}
-
-const StatusMultiSelect: React.FC<StatusMultiSelectProps> = ({
-  ariaLabel,
-  placeholder,
-  searchPlaceholder,
-  selectAllLabel,
-  noResultsLabel,
-  clearAllLabel,
-  trashLabel,
-  options,
-  value,
-  onChange,
-  fieldClassName,
-}) => {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  const normalized = useMemo(() => {
-    const rows = options.map((option) => ({
-      code: option.code.toLowerCase(),
-      name: option.name,
-    }));
-    if (trashLabel) {
-      rows.push({ code: "trash", name: trashLabel });
-    }
-    return rows;
-  }, [options, trashLabel]);
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return normalized;
-    return normalized.filter(
-      (option) =>
-        option.name.toLowerCase().includes(q) || option.code.includes(q),
-    );
-  }, [normalized, query]);
-
-  const selectedMap = useMemo(
-    () => new Set(value.map((v) => v.toLowerCase())),
-    [value],
-  );
-
-  const toggle = (code: string, checked: boolean) => {
-    if (checked) {
-      if (!selectedMap.has(code)) onChange([...value, code]);
-    } else {
-      onChange(value.filter((v) => v.toLowerCase() !== code));
-    }
-  };
-
-  const selectedNames = value
-    .map((v) => normalized.find((option) => option.code === v.toLowerCase())?.name)
-    .filter((name): name is string => Boolean(name));
-
-  const triggerText =
-    selectedNames.length === 0
-      ? placeholder
-      : selectedNames.length <= 2
-        ? selectedNames.join("، ")
-        : `${selectedNames.slice(0, 2).join("، ")} +${selectedNames.length - 2}`;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        type="button"
-        aria-label={ariaLabel}
-        aria-expanded={open}
-        className={`${fieldClassName} flex items-center justify-between gap-1.5 text-start`}
-      >
-        <span
-          className={`truncate ${value.length === 0 ? "text-slate-400 dark:text-slate-500" : ""}`}
-        >
-          {triggerText}
-        </span>
-        <span className="flex shrink-0 items-center gap-1">
-          {value.length > 0 && (
-            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
-              {value.length}
-            </span>
-          )}
-          <ChevronDownIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-        </span>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-2">
-        <div className="flex flex-col gap-2">
-          <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <input
-              type="text"
-              aria-label={searchPlaceholder}
-              placeholder={searchPlaceholder}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="theme-native-control w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-1.5 pr-8 text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => onChange(normalized.map((option) => option.code))}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-500/10"
-            >
-              {selectAllLabel}
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
-            >
-              {clearAllLabel}
-            </button>
-          </div>
-          <div className="max-h-64 overflow-y-auto">
-            {visible.length === 0 ? (
-              <div className="px-2 py-4 text-center text-xs text-slate-400 dark:text-slate-500">
-                {noResultsLabel}
-              </div>
-            ) : (
-              visible.map((option) => {
-                const isChecked = selectedMap.has(option.code);
-                return (
-                  <label
-                    key={option.code}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    <Checkbox
-                      checked={isChecked}
-                      onCheckedChange={(checked) => toggle(option.code, Boolean(checked))}
-                      className="rounded"
-                    />
-                    <span className="truncate text-xs font-medium text-slate-700 dark:text-slate-200">
-                      {option.name}
-                    </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
 export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   filters,
   loading,
@@ -249,6 +90,94 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   onRefresh,
 }) => {
   const { t } = useTranslation();
+
+  const statusOptions = useMemo<MultiSelectOption[]>(
+    () => [
+      ...filterableOrderStatuses.map((status) => ({
+        code: status.code.toLowerCase(),
+        name: status.name,
+        color: status.color,
+      })),
+      { code: "trash", name: t("orders.trash") },
+    ],
+    [filterableOrderStatuses, t],
+  );
+
+  const paymentStatusOptions = useMemo<MultiSelectOption[]>(
+    () =>
+      filterablePaymentStatuses.map((status) => ({
+        code: status.code.toLowerCase(),
+        name: status.name,
+      })),
+    [filterablePaymentStatuses],
+  );
+
+  const sourceOptions = useMemo<MultiSelectOption[]>(
+    () => [
+      { code: "ai_conversation", name: t("orders.sourceAutoConversation") },
+      { code: "manual", name: t("orders.sourceManual") },
+      { code: "storefront", name: t("orders.sourceStorefront") },
+      { code: "woocommerce", name: t("orders.sourceWooCommerce") },
+      { code: "pos", name: t("orders.sourcePOS") },
+      { code: "api", name: t("orders.sourceAPI") },
+      { code: "import", name: t("orders.sourceImport") },
+      { code: "unknown", name: t("orders.sourceUnknown") },
+    ],
+    [t],
+  );
+
+  const fulfillmentOptions = useMemo<MultiSelectOption[]>(
+    () => [
+      { code: "MERCHANT", name: t("orders.fromMerchant") },
+      { code: "COMPANY_WAREHOUSE", name: t("orders.fromCompanyWarehouse") },
+    ],
+    [t],
+  );
+
+  const operationOptions = useMemo<MultiSelectOption[]>(
+    () => [
+      { code: "PREPARATION", name: t("orders.preparation") },
+      { code: "IN_SHIPPING", name: t("orders.inShipping") },
+      { code: "DELIVERED", name: t("orders.delivered") },
+      { code: "NOT_DELIVERED", name: t("orders.returnedOrNotDelivered") },
+    ],
+    [t],
+  );
+
+  const settlementOptions = useMemo<MultiSelectOption[]>(
+    () => [
+      { code: "PAYABLE", name: t("orders.settlementPayable") },
+      { code: "PAID", name: t("orders.settlementPaid") },
+      { code: "NOT_PAYABLE", name: t("orders.settlementNotPayable") },
+    ],
+    [t],
+  );
+
+  const merchantOptionsList = useMemo<MultiSelectOption[]>(
+    () =>
+      merchantOptions.map((merchantOption) => ({
+        code: merchantOption.id,
+        name: merchantOption.name || merchantOption.email || merchantOption.id,
+      })),
+    [merchantOptions],
+  );
+
+  const affiliateOptionsList = useMemo<MultiSelectOption[]>(
+    () =>
+      affiliateOptions.map((affiliateOption) => ({
+        code: affiliateOption.id,
+        name: getAffiliateDisplayName(affiliateOption),
+      })),
+    [affiliateOptions, getAffiliateDisplayName],
+  );
+
+  const multiSelectCommon = {
+    searchPlaceholder: String(t("orders.filterSearch")),
+    selectAllLabel: String(t("orders.filterSelectAll")),
+    noResultsLabel: String(t("orders.filterNoResults")),
+    clearAllLabel: String(t("orders.clearAll")),
+    fieldClassName,
+  };
 
   return (
     <div className="mb-3 space-y-2.5">
@@ -447,68 +376,37 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 </div>
 
                 <div className="min-w-[130px] sm:flex-1 lg:min-w-0">
-                  <StatusMultiSelect
+                  <MultiSelectFilter
                     ariaLabel={String(t("orders.allStatuses"))}
                     placeholder={String(t("orders.allStatuses"))}
-                    searchPlaceholder={String(t("orders.statusSearch"))}
-                    selectAllLabel={String(t("orders.statusSelectAll"))}
-                    noResultsLabel={String(t("orders.statusNoResults"))}
-                    clearAllLabel={String(t("orders.clearAll"))}
-                    trashLabel={String(t("orders.trash"))}
-                    options={filterableOrderStatuses}
+                    options={statusOptions}
                     value={filters.status}
                     onChange={(next) => onFilterChange("status", next)}
-                    fieldClassName={fieldClassName}
+                    {...multiSelectCommon}
                   />
                 </div>
 
-                <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                  <select
-                    aria-label={String(t("orders.allPaymentStatuses"))}
+                <div className="min-w-[130px] sm:flex-1 lg:min-w-0">
+                  <MultiSelectFilter
+                    ariaLabel={String(t("orders.allPaymentStatuses"))}
+                    placeholder={String(t("orders.allPaymentStatuses"))}
+                    options={paymentStatusOptions}
                     value={filters.paymentStatus}
-                    onChange={(e) =>
-                      onFilterChange("paymentStatus", e.target.value)
-                    }
-                    className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                  >
-                    <option value="">{t("orders.allPaymentStatuses")}</option>
-                    {filterablePaymentStatuses.map((status) => (
-                      <option
-                        key={status.code}
-                        value={status.code.toLowerCase()}
-                      >
-                        {status.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(next) => onFilterChange("paymentStatus", next)}
+                    {...multiSelectCommon}
+                  />
                 </div>
 
                 {showOrderSourceFilter && (
-                  <div className="relative min-w-[140px] sm:flex-1 lg:min-w-0">
-                    <select
-                      aria-label={String(t("orders.allSources"))}
+                  <div className="min-w-[140px] sm:flex-1 lg:min-w-0">
+                    <MultiSelectFilter
+                      ariaLabel={String(t("orders.allSources"))}
+                      placeholder={String(t("orders.allSources"))}
+                      options={sourceOptions}
                       value={filters.sourceType}
-                      onChange={(e) =>
-                        onFilterChange("sourceType", e.target.value)
-                      }
-                      className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                    >
-                      <option value="">{t("orders.allSources")}</option>
-                      <option value="ai_conversation">
-                        {t("orders.sourceAutoConversation")}
-                      </option>
-                      <option value="manual">{t("orders.sourceManual")}</option>
-                      <option value="storefront">
-                        {t("orders.sourceStorefront")}
-                      </option>
-                      <option value="woocommerce">
-                        {t("orders.sourceWooCommerce")}
-                      </option>
-                      <option value="pos">{t("orders.sourcePOS")}</option>
-                      <option value="api">{t("orders.sourceAPI")}</option>
-                      <option value="import">{t("orders.sourceImport")}</option>
-                      <option value="unknown">{t("orders.sourceUnknown")}</option>
-                    </select>
+                      onChange={(next) => onFilterChange("sourceType", next)}
+                      {...multiSelectCommon}
+                    />
                   </div>
                 )}
               </div>
@@ -516,99 +414,64 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               {showUnifiedOperationFilters && (
                 <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-5">
                   {showMerchantOperationFilters && (
-                    <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allMerchants"))}
+                    <div className="min-w-[150px] sm:flex-1 lg:min-w-0">
+                      <MultiSelectFilter
+                        ariaLabel={String(t("orders.allMerchants"))}
+                        placeholder={String(t("orders.allMerchants"))}
+                        options={merchantOptionsList}
                         value={filters.merchantId}
-                        onChange={(e) =>
-                          onFilterChange("merchantId", e.target.value)
-                        }
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allMerchants")}</option>
-                        {merchantOptions.map((merchantOption) => (
-                          <option key={merchantOption.id} value={merchantOption.id}>
-                            {merchantOption.name || merchantOption.email || merchantOption.id}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(next) => onFilterChange("merchantId", next)}
+                        {...multiSelectCommon}
+                      />
                     </div>
                   )}
 
                   {showAffiliateOperationFilter && (
-                    <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                      <select
-                        aria-label={String(t("orders.allAffiliates"))}
+                    <div className="min-w-[150px] sm:flex-1 lg:min-w-0">
+                      <MultiSelectFilter
+                        ariaLabel={String(t("orders.allAffiliates"))}
+                        placeholder={String(t("orders.allAffiliates"))}
+                        options={affiliateOptionsList}
                         value={filters.affiliateId}
-                        onChange={(e) =>
-                          onFilterChange("affiliateId", e.target.value)
-                        }
-                        className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                      >
-                        <option value="">{t("orders.allAffiliates")}</option>
-                        {affiliateOptions.map((affiliateOption) => (
-                          <option key={affiliateOption.id} value={affiliateOption.id}>
-                            {getAffiliateDisplayName(affiliateOption)}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(next) => onFilterChange("affiliateId", next)}
+                        {...multiSelectCommon}
+                      />
                     </div>
                   )}
 
                   {showMerchantOperationFilters && (
                     <>
-                      <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                        <select
-                          aria-label={String(t("orders.fulfillmentSource"))}
+                      <div className="min-w-[150px] sm:flex-1 lg:min-w-0">
+                        <MultiSelectFilter
+                          ariaLabel={String(t("orders.fulfillmentSource"))}
+                          placeholder={String(t("orders.allFulfillmentSources"))}
+                          options={fulfillmentOptions}
                           value={filters.fulfillmentSource}
-                          onChange={(e) =>
-                            onFilterChange("fulfillmentSource", e.target.value)
-                          }
-                          className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                        >
-                          <option value="">{t("orders.allFulfillmentSources")}</option>
-                          <option value="MERCHANT">{t("orders.fromMerchant")}</option>
-                          <option value="COMPANY_WAREHOUSE">{t("orders.fromCompanyWarehouse")}</option>
-                        </select>
+                          onChange={(next) => onFilterChange("fulfillmentSource", next)}
+                          {...multiSelectCommon}
+                        />
                       </div>
 
-                      <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                        <select
-                          aria-label={String(t("orders.merchantOperationStatus"))}
+                      <div className="min-w-[150px] sm:flex-1 lg:min-w-0">
+                        <MultiSelectFilter
+                          ariaLabel={String(t("orders.merchantOperationStatus"))}
+                          placeholder={String(t("orders.allMerchantOperationStatuses"))}
+                          options={operationOptions}
                           value={filters.merchantOperationStatus}
-                          onChange={(e) =>
-                            onFilterChange(
-                              "merchantOperationStatus",
-                              e.target.value,
-                            )
-                          }
-                          className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                        >
-                          <option value="">{t("orders.allMerchantOperationStatuses")}</option>
-                          <option value="PREPARATION">{t("orders.preparation")}</option>
-                          <option value="IN_SHIPPING">{t("orders.inShipping")}</option>
-                          <option value="DELIVERED">{t("orders.delivered")}</option>
-                          <option value="NOT_DELIVERED">{t("orders.returnedOrNotDelivered")}</option>
-                        </select>
+                          onChange={(next) => onFilterChange("merchantOperationStatus", next)}
+                          {...multiSelectCommon}
+                        />
                       </div>
 
-                      <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
-                        <select
-                          aria-label={String(t("orders.merchantSettlements"))}
+                      <div className="min-w-[150px] sm:flex-1 lg:min-w-0">
+                        <MultiSelectFilter
+                          ariaLabel={String(t("orders.merchantSettlements"))}
+                          placeholder={String(t("orders.allSettlements"))}
+                          options={settlementOptions}
                           value={filters.merchantSettlementStatus}
-                          onChange={(e) =>
-                            onFilterChange(
-                              "merchantSettlementStatus",
-                              e.target.value,
-                            )
-                          }
-                          className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                        >
-                          <option value="">{t("orders.allSettlements")}</option>
-                          <option value="PAYABLE">{t("orders.settlementPayable")}</option>
-                          <option value="PAID">{t("orders.settlementPaid")}</option>
-                          <option value="NOT_PAYABLE">{t("orders.settlementNotPayable")}</option>
-                        </select>
+                          onChange={(next) => onFilterChange("merchantSettlementStatus", next)}
+                          {...multiSelectCommon}
+                        />
                       </div>
                     </>
                   )}
