@@ -172,6 +172,10 @@ class AgentManagerService:
                 "session_id": thread_id or f"task_{agent_id}",
                 "user_id": "",
                 "channel": "a2a",
+                # SDK agent runtime does not loop correctly with DeepSeek
+                # (returns after first turn without executing tool calls).
+                # Force the 3-stage pipeline for proper tool execution.
+                "force_pipeline": True,
             }
             response = await agent.process_task(task)
             return {

@@ -3,16 +3,36 @@ from __future__ import annotations
 from typing import Any
 
 from agent_framework import FunctionTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 import src.db.session as _db_mod
 from src.tools.definitions._helpers import _executed_result, _write_result
 from src.tools.repositories.order_repository import OrderRepository
 
 
+def _accept_order_id_aliases(cls, data):
+    """Accept order_id / orderNumber as aliases for order_number.
+
+    Why: agent_framework calls `input_model(**arguments)` with field
+    NAMES, not validation aliases. The LLM sometimes uses `order_id`
+    instead of `order_number` so we translate at validation time.
+    """
+    if isinstance(data, dict):
+        for alias in ("order_id", "orderNumber"):
+            if alias in data and "order_number" not in data:
+                data["order_number"] = data[alias]
+                break
+    return data
+
+
 class OrderLookupInput(BaseModel):
     order_number: str = Field(description="Order number to look up")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
 
 
 class OrderLookupByPhoneInput(BaseModel):
@@ -69,6 +89,11 @@ class OrderConfirmInput(BaseModel):
     notes: str | None = Field(default=None, description="Optional confirmation note")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
 
 class OrderUpdateDetailsInput(BaseModel):
     order_number: str = Field(description="Order number or ID to update")
@@ -83,11 +108,21 @@ class OrderUpdateDetailsInput(BaseModel):
     notes: str | None = Field(default=None, description="Order notes")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
 
 class OrderCancelInput(BaseModel):
     order_number: str = Field(description="Order number to cancel")
     reason: str = Field(description="Reason for cancellation")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
 
 
 class OrderRefundInput(BaseModel):
@@ -95,6 +130,11 @@ class OrderRefundInput(BaseModel):
     amount: float | None = Field(default=None, description="Refund amount (full if omitted)")
     reason: str = Field(description="Reason for refund")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
 
 
 async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
