@@ -1995,13 +1995,21 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
   // Format order items with color and size (Always include if available)
+  // 🚨 PRODUCTION-FIX: الطلب قد يأتي بــ order.orderItems (Prisma relation من
+  // updateOrderStatus) أو order.items (من مسارات أخرى). كان الكود يقرأ order.items
+  // فقط → الـ orderItemsText يبقى فاضي → قوالب بvariable إلزامي (orderItems) تفشل
+  // بـ Meta 131008 "Required parameter is missing".
+  const orderItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+
   let orderItemsText = '';
-  if (order.items && order.items.length > 0) {
+  if (orderItemsSource.length > 0) {
     orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    order.items.forEach((item, index) => {
+    orderItemsSource.forEach((item, index) => {
       const color = item.productColor || item.color || item.attributes?.color;
       const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name}`;
+      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
       if (color) itemDetails += ` | اللون: ${color}`;
       if (size) itemDetails += ` | المقاس: ${size}`;
       itemDetails += ` | الكمية: ${item.quantity || 1}`;
