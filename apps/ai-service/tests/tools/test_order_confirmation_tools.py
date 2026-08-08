@@ -4,8 +4,10 @@ import pytest
 
 from src.tools.definitions.order import (
     OrderConfirmInput,
+    OrderLookupByPhoneInput,
     OrderUpdateDetailsInput,
     order_confirm,
+    order_lookup_by_phone,
     order_update_details,
 )
 from src.tools.definitions.shipping import (
@@ -149,3 +151,47 @@ async def test_shipping_company_areas_calls_backend(monkeypatch):
     ))
     assert result["found"] is True
     assert result["areas"][0]["name"] == "مدينة نصر"
+
+
+@pytest.mark.asyncio
+async def test_order_lookup_by_phone_missing_params():
+    result = await order_lookup_by_phone(OrderLookupByPhoneInput(phone="", company_id=""))
+    assert result["found"] is False
+    assert "MISSING_PARAMS" in result["code"]
+
+
+@pytest.mark.asyncio
+async def test_order_lookup_by_phone_calls_backend(monkeypatch):
+    async def fake_search(self, company_id, phone, limit=10, status=None):
+        assert company_id == "comp1"
+        assert phone == "01012345678"
+        return [
+            {"orderNumber": "ORD-1001", "status": "PENDING", "total": 1500, "createdAt": "2026-08-08"},
+            {"orderNumber": "ORD-1002", "status": "CONFIRMED", "total": 800, "createdAt": "2026-08-07"},
+        ]
+
+    monkeypatch.setattr(
+        "src.tools.backend_client.BackendClient.search_orders_by_phone",
+        fake_search,
+    )
+
+    result = await order_lookup_by_phone(OrderLookupByPhoneInput(phone="01012345678", company_id="comp1"))
+    assert result["found"] is True
+    assert result["count"] == 2
+    assert result["orders"][0]["orderNumber"] == "ORD-1001"
+    assert result["orders"][1]["status"] == "CONFIRMED"
+
+
+@pytest.mark.asyncio
+async def test_order_lookup_by_phone_empty(monkeypatch):
+    async def fake_search(self, company_id, phone, limit=10, status=None):
+        return []
+
+    monkeypatch.setattr(
+        "src.tools.backend_client.BackendClient.search_orders_by_phone",
+        fake_search,
+    )
+
+    result = await order_lookup_by_phone(OrderLookupByPhoneInput(phone="01000000000", company_id="comp1"))
+    assert result["found"] is False
+    assert result["orders"] == []

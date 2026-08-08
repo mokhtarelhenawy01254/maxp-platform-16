@@ -162,6 +162,28 @@ class BackendClient:
         result = await self._request("GET", "/api/v1/orders-v2/simple", params=params)
         return result.get("data", result.get("orders", []))
 
+    async def search_orders_by_phone(
+        self,
+        company_id: str,
+        phone: str,
+        limit: int = 10,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Search orders by customer phone number via the backend /simple endpoint.
+
+        The backend matches customerPhone / customer.phone (including Egyptian
+        phone-format variations like 010 vs +20), so passing a raw number works.
+        """
+        params: dict[str, Any] = {
+            "search": phone,
+            "limit": limit,
+            "companyId": company_id,
+        }
+        if status:
+            params["status"] = status
+        result = await self._request("GET", "/api/v1/orders-v2/simple", params=params)
+        return result.get("data", result.get("orders", []))
+
     async def get_order_summary(
         self, company_id: str, period: str = "today"
     ) -> dict[str, Any]:

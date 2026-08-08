@@ -21,6 +21,7 @@ roles:
     - category_list
     - customer_info
     - order_lookup
+    - order_lookup_by_phone
     - order_summary
     - order_recent_list
     - order_create_draft
@@ -33,6 +34,7 @@ roles:
 
   ORDER_CONFIRMATION:
     - order_lookup
+    - order_lookup_by_phone
     - order_confirm
     - order_update_details
     - order_cancel

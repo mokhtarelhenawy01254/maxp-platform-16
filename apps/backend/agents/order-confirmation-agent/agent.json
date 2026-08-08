@@ -31,6 +31,7 @@
   },
   "allowedTools": [
     "order_lookup",
+    "order_lookup_by_phone",
     "order_confirm",
     "order_update_details",
     "order_cancel",

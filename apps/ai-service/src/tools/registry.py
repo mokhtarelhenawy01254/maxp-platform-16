@@ -96,6 +96,7 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "coupon_validate",
     "shipping_company_governorates",
     "shipping_company_areas",
+    "order_lookup_by_phone",
 }
 
 WRITE_TOOL_NAMES: set[str] = {
@@ -169,6 +170,7 @@ product_update_price_tool = _registry.resolve("product_update_price")
 product_performance_tool = _registry.resolve("product_performance")
 category_list_tool = _registry.resolve("category_list")
 order_lookup_tool = _registry.resolve("order_lookup")
+order_lookup_by_phone_tool = _registry.resolve("order_lookup_by_phone")
 order_create_draft_tool = _registry.resolve("order_create_draft")
 order_create_confirmed_tool = _registry.resolve("order_create_confirmed")
 order_summary_tool = _registry.resolve("order_summary")
@@ -228,6 +230,7 @@ from src.tools.definitions.product import (  # noqa: E402 F401
 )
 from src.tools.definitions.order import (  # noqa: E402 F401
     OrderLookupInput,
+    OrderLookupByPhoneInput,
     OrderCreateDraftInput,
     OrderCreateConfirmedInput,
     OrderSummaryInput,
