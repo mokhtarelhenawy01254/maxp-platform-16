@@ -135,45 +135,45 @@ async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
 
 
 async def order_lookup_by_phone(input_data: OrderLookupByPhoneInput) -> dict[str, Any]:
-    """Search orders for a customer by phone number via the backend.
+    """Search orders for a customer by phone number.
 
-    The customer usually doesn't remember their order number — this lets the
-    agent find all orders for the number they provide.
+    Queries the orders table directly (same pattern as order_lookup), matching
+    customerPhone for regular orders and guestPhone for storefront guest
+    orders. The customer usually doesn't remember their order number — this
+    lets the agent find all orders for the number they provide.
     """
     company_id = input_data.company_id or ""
     phone = (input_data.phone or "").strip()
     if not company_id or not phone:
         return {"found": False, "code": "MISSING_PARAMS", "phone": phone}
 
-    from src.tools.backend_client import get_backend_client
-
-    client = get_backend_client()
+    sf = _db_mod.async_session
     limit = max(1, min(input_data.limit, 50))
-    try:
-        orders = await client.search_orders_by_phone(
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        orders = await repo.get_orders_by_phone(
             company_id,
             phone,
             limit=limit,
             status=input_data.status,
         )
-        return {
-            "found": bool(orders),
-            "phone": phone,
-            "count": len(orders),
-            "orders": [
-                {
-                    "orderNumber": o.get("orderNumber") or o.get("order_number") or "",
-                    "status": o.get("status", ""),
-                    "paymentStatus": o.get("paymentStatus", ""),
-                    "total": str(o.get("total", 0)),
-                    "customerName": o.get("customerName") or o.get("customer_name") or "",
-                    "createdAt": str(o.get("createdAt") or o.get("created_at") or ""),
-                }
-                for o in orders
-            ],
-        }
-    except Exception as exc:
-        return {"found": False, "error": str(exc), "phone": phone, "orders": []}
+
+    return {
+        "found": bool(orders),
+        "phone": phone,
+        "count": len(orders),
+        "orders": [
+            {
+                "orderNumber": o.get("orderNumber") or o.get("order_number") or "",
+                "status": o.get("status", ""),
+                "paymentStatus": o.get("paymentStatus", ""),
+                "total": str(o.get("total", 0)),
+                "customerName": o.get("customerName") or o.get("customer_name") or o.get("guestName") or "",
+                "createdAt": str(o.get("createdAt") or o.get("created_at") or ""),
+            }
+            for o in orders
+        ],
+    }
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:

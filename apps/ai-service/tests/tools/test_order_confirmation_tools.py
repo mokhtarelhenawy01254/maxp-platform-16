@@ -161,19 +161,25 @@ async def test_order_lookup_by_phone_missing_params():
 
 
 @pytest.mark.asyncio
-async def test_order_lookup_by_phone_calls_backend(monkeypatch):
-    async def fake_search(self, company_id, phone, limit=10, status=None):
+async def test_order_lookup_by_phone_calls_repo(monkeypatch):
+    async def fake_get_orders(company_id, phone, limit=10, status=None):
         assert company_id == "comp1"
         assert phone == "01012345678"
         return [
-            {"orderNumber": "ORD-1001", "status": "PENDING", "total": 1500, "createdAt": "2026-08-08"},
-            {"orderNumber": "ORD-1002", "status": "CONFIRMED", "total": 800, "createdAt": "2026-08-07"},
+            {"orderNumber": "ORD-1001", "status": "PENDING", "paymentStatus": "PENDING", "total": 1500, "createdAt": "2026-08-08"},
+            {"orderNumber": "ORD-1002", "status": "CONFIRMED", "paymentStatus": "PENDING", "total": 800, "createdAt": "2026-08-07"},
         ]
 
-    monkeypatch.setattr(
-        "src.tools.backend_client.BackendClient.search_orders_by_phone",
-        fake_search,
-    )
+    class _MockSession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr("src.db.session.async_session", lambda: _MockSession())
+    from src.tools.repositories.order_repository import OrderRepository
+    monkeypatch.setattr(OrderRepository, "get_orders_by_phone", fake_get_orders)
 
     result = await order_lookup_by_phone(OrderLookupByPhoneInput(phone="01012345678", company_id="comp1"))
     assert result["found"] is True
@@ -184,13 +190,19 @@ async def test_order_lookup_by_phone_calls_backend(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_order_lookup_by_phone_empty(monkeypatch):
-    async def fake_search(self, company_id, phone, limit=10, status=None):
+    async def fake_get_orders(company_id, phone, limit=10, status=None):
         return []
 
-    monkeypatch.setattr(
-        "src.tools.backend_client.BackendClient.search_orders_by_phone",
-        fake_search,
-    )
+    class _MockSession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr("src.db.session.async_session", lambda: _MockSession())
+    from src.tools.repositories.order_repository import OrderRepository
+    monkeypatch.setattr(OrderRepository, "get_orders_by_phone", fake_get_orders)
 
     result = await order_lookup_by_phone(OrderLookupByPhoneInput(phone="01000000000", company_id="comp1"))
     assert result["found"] is False
