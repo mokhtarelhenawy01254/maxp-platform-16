@@ -207,9 +207,11 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
       const evt = where.eventType;
       const metaOnly = where.channel === 'META_CLOUD';
       const notMeta = where.channel && typeof where.channel === 'object' && where.channel.not === 'META_CLOUD';
+      const legacyMeta = where.metaTemplateName && typeof where.metaTemplateName === 'object' && where.metaTemplateName.not === null;
       let candidates = rows.filter((r) => r.eventType === evt);
       if (metaOnly) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() === 'META_CLOUD');
-      if (notMeta) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() !== 'META_CLOUD');
+      if (notMeta && !legacyMeta) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() !== 'META_CLOUD');
+      if (notMeta && legacyMeta) candidates = candidates.filter((r) => String(r.channel || '').toUpperCase() !== 'META_CLOUD' && !!r.metaTemplateName);
       return Promise.resolve(candidates[0] || null);
     });
   }
@@ -262,6 +264,43 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
     const usedRegular = calls.some((c) => c[0].where.channel && c[0].where.channel.not === 'META_CLOUD');
     expect(usedRegular).toBeTruthy();
+    expect(res).toBeDefined();
+  });
+
+  it('Meta session + سجل عادي قديم عليه ربط ميتا معتمد (legacy) → بيبعت عبر قالب ميتا مش نص حر', async () => {
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    // سجل legacy واحد بس: channel AUTO + metaTemplateName معتمد (النموذج القديم)
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-1', content: 'مرجع المتغيرات', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    // لازم يكون استُعلم عن السجل الـ legacy المرتبط بميتا (metaTemplateName not null)
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const queriedLegacyMeta = calls.some((c) => c[0].where.metaTemplateName && c[0].where.metaTemplateName.not === null);
+    expect(queriedLegacyMeta).toBeTruthy();
+    expect(res).toBeDefined();
+  });
+
+  it('Meta session + سجلين عاديين: واحد عليه ربط ميتا معتمد وواحد عادي صريح → بيبعت عبر اللي عليه الربط', async () => {
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    // سجل عادي صريح (بدون ربط) + سجل legacy عليه ربط ميتا معتمد
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'plain-1', content: 'نص عادي', isActive: true },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'legacy-meta', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([{ position: 1, name: 'customerName' }]) },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    const res = await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    // الـ legacy (metaTemplateName not null) لازم يكون اتسأل عنه وبيرجع القالب المربوط
+    const legacyIdx = calls.findIndex((c) => c[0].where.metaTemplateName && c[0].where.metaTemplateName.not === null);
+    expect(legacyIdx).toBeGreaterThanOrEqual(0);
     expect(res).toBeDefined();
   });
 });

@@ -46,7 +46,10 @@ Per delivered order → one voucher (`percent`, `amount`, `expiresAt`,
   `expiresAt` → credit `amount` to wallet (`CONVERTED`) or mark `EXPIRED` if
   conversion disabled.
 - **Cancel / return**: `reverseVoucherForOrder` cancels vouchers issued by the
-  order and restores an ACTIVE voucher that this order consumed.
+  order, reverses a converted voucher's wallet cashback, restores an ACTIVE
+  voucher that this order consumed, and `restoreRedeemedPointsForOrder` returns
+  the points the customer paid with (stored in `metadata.pointsRedemption` on
+  both the guest order and the primary order).
 
 ## API
 

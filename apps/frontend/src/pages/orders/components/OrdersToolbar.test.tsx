@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { OrdersToolbar } from "./OrdersToolbar";
 
 jest.mock("react-i18next", () => ({
@@ -59,7 +60,11 @@ const makeProps = (overrides: Partial<ToolbarProps> = {}): ToolbarProps => ({
 
 describe("OrdersToolbar", () => {
   it("renders the search input and filter toggle", () => {
-    render(<OrdersToolbar {...makeProps()} />);
+    render(
+      <MemoryRouter>
+        <OrdersToolbar {...makeProps()} />
+      </MemoryRouter>,
+    );
 
     expect(
       screen.getByPlaceholderText("orders.searchPlaceholder"),
@@ -70,9 +75,11 @@ describe("OrdersToolbar", () => {
   it("triggers the advanced-filters toggle", () => {
     const onToggleAdvancedFilters = jest.fn();
     render(
-      <OrdersToolbar
-        {...makeProps({ onToggleAdvancedFilters })}
-      />,
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({ onToggleAdvancedFilters })}
+        />
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText("orders.filters"));
@@ -80,7 +87,11 @@ describe("OrdersToolbar", () => {
   });
 
   it("renders the advanced status filter when open", () => {
-    render(<OrdersToolbar {...makeProps({ showAdvancedFilters: true })} />);
+    render(
+      <MemoryRouter>
+        <OrdersToolbar {...makeProps({ showAdvancedFilters: true })} />
+      </MemoryRouter>,
+    );
 
     expect(screen.getByLabelText("orders.allStatuses")).toBeInTheDocument();
     expect(screen.getByLabelText("orders.allPaymentStatuses")).toBeInTheDocument();

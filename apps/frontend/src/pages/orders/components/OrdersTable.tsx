@@ -107,7 +107,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
     >
       <div className="overflow-x-auto">
         <table className="w-full text-right">
-          <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
+          <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/80 dark:bg-slate-900/90 dark:border-slate-700/80">
             <tr>
               {canSelectOrders && (
                 <th className="w-10 px-3 py-2.5 lg:px-4">
@@ -202,7 +202,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     }}
                     tabIndex={0}
                     aria-label={`${t("orders.viewDetails")} ${order.orderNumber}`}
-                    className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
+                    className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/15 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
                       ? "bg-blue-50/60 dark:bg-blue-900/30"
                       : !order.isViewed
                         ? "bg-blue-50 dark:bg-blue-900/20"
@@ -226,6 +226,12 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           }}
                         />
                       </td>
+                    )}
+                    {canSelectOrders && order.metadata?.isIncompleteCart && (
+                      <td
+                        className="w-10 px-3 py-2.5 lg:px-4"
+                        aria-hidden="true"
+                      />
                     )}
                     {columns.includes("orderNumber") && (
                       <td className="px-3 py-2.5 lg:px-4">

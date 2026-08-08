@@ -905,6 +905,7 @@ model WhatsAppNotificationLog {
   employeeId                      String?
   cartId                          String?
   status                          WhatsAppNotificationLogsStatus        @default(PENDING)
+  messageType                     String                                @default("TEXT")
   sentAt                          DateTime?
   deliveredAt                     DateTime?
   readAt                          DateTime?

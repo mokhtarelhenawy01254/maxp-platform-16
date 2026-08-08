@@ -303,7 +303,14 @@ async function postWebhook(req, res) {
             failed: 'FAILED'
           };
           const mappedStatus = statusMap[status.status] || 'SENT';
-          await updateMessageStatus(companyId, status.id, mappedStatus);
+          const errors = Array.isArray(status.errors) ? status.errors : [];
+          const recipientId = status.recipient_id || null;
+          const timestamp = status.timestamp ? Number(status.timestamp) * 1000 : Date.now();
+          await updateMessageStatus(companyId, status.id, mappedStatus, {
+            errors,
+            recipientId,
+            timestamp
+          });
         }
       }
     }

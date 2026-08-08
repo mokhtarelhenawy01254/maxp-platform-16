@@ -551,11 +551,19 @@ exports.updateReturnRequest = async (req, res) => {
                     changedBy: req.user.id
                 });
             } catch (e) {
-                console.error('❌ [LOYALTY] Failed to reverse loyalty points for return:', {
-                    returnRequestId: updatedRequest.id,
+                console.error('❌ [LOYALTY] Failed to reverse loyalty points for return:', {                    returnRequestId: updatedRequest.id,
                     companyId: req.user.effectiveCompanyId || req.user.companyId,
                     error: e?.message
                 });
+            }
+            try {
+                const autoDiscountService = require('../services/autoDiscountService');
+                await autoDiscountService.restoreRedeemedPointsForOrder({
+                    orderId: updatedRequest.orderId,
+                    companyId: req.user.effectiveCompanyId || req.user.companyId
+                });
+            } catch (e) {
+                console.error('❌ [AUTO-DISCOUNT] Failed to restore redeemed points for return:', e?.message);
             }
         }
 
@@ -741,6 +749,17 @@ async function tryAutoApprove(prismaClient, returnRequest, companyId) {
                 });
             } catch (e) {
                 console.error('❌ [LOYALTY] Failed to reverse loyalty points for auto-approved return:', e.message);
+            }
+
+            // Restore points used as payment for auto-approved return
+            try {
+                const autoDiscountService = require('../services/autoDiscountService');
+                await autoDiscountService.restoreRedeemedPointsForOrder({
+                    orderId: updated.orderId,
+                    companyId
+                });
+            } catch (e) {
+                console.error('❌ [AUTO-DISCOUNT] Failed to restore redeemed points for auto-approved return:', e.message);
             }
 
             return updated;

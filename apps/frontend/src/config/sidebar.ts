@@ -503,6 +503,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/cloud-connect', icon: Globe, label: t('sidebar.whatsappCloudConnect'), requiredPermissions: ['whatsapp.sessions'] },
                 { to: '/whatsapp/employee-analytics', icon: BarChart3, label: t('sidebar.whatsappEmployeeAnalytics'), requiredPermissions: ['whatsapp.analytics.view'] },
                 { to: '/whatsapp/conversation-analytics', icon: BarChart3, label: t('sidebar.whatsappConversationAnalytics'), requiredPermissions: ['whatsapp.analytics.view'] },
+                { to: '/whatsapp/notification-logs', icon: FileBarChart, label: t('sidebar.whatsappNotificationLogs'), requiredPermissions: ['whatsapp.analytics.view'] },
                 { to: '/whatsapp/meta-templates', icon: Globe, label: t('sidebar.whatsappMetaTemplates'), requiredPermissions: ['whatsapp.templates'] },
                 { to: '/whatsapp/template-broadcast', icon: Megaphone, label: t('sidebar.whatsappTemplateBroadcast'), requiredPermissions: ['whatsapp.broadcast'] },
                 { to: '/whatsapp/lead-followup', icon: Zap, label: t('sidebar.whatsappLeadFollowup'), requiredPermissions: ['inbox.view'] },

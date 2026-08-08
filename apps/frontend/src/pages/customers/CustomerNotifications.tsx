@@ -177,6 +177,7 @@ const CustomerNotifications: React.FC = () => {
     eventType: string;
     slot: string;
     template: TemplateItem;
+    category: string;
     metaOptions?: MetaTemplateOption[];
     metaLoading?: boolean;
   } | null>(null);
@@ -289,7 +290,9 @@ const CustomerNotifications: React.FC = () => {
 
   const openTemplateDialog = async (eventType: string, slot: string) => {
     const existing = slotTemplate(eventType, slot) || emptyTemplate(eventType, slot);
-    setTemplateDialog({ eventType, slot, template: { ...existing } });
+    // افتراضياً فئة CUSTOMER (تترجم لـ UTILITY على ميتا = أسهل في الموافقة)
+    const defaultCategory = slot === "META_CLOUD" ? "CUSTOMER" : "CUSTOMER";
+    setTemplateDialog({ eventType, slot, template: { ...existing }, category: defaultCategory });
 
     // جلب قوالب ميتا المتاحة للربط عند فتح قالب ميتا
     if (slot === "META_CLOUD") {
@@ -319,7 +322,7 @@ const CustomerNotifications: React.FC = () => {
   // حفظ القالب المحلي الحالي في الديالوج وإرجاع id
   const persistLocalTemplate = async (): Promise<string | null> => {
     if (!templateDialog) return null;
-    const { eventType, slot, template } = templateDialog;
+    const { eventType, slot, template, category } = templateDialog;
     if (!template.content.trim()) {
       toast.error("محتوى القالب مطلوب");
       return null;
@@ -327,7 +330,7 @@ const CustomerNotifications: React.FC = () => {
 
     const payload = {
       name: template.name.trim() || (slot === "META_CLOUD" ? "قالب ميتا" : "قالب واتساب"),
-      category: "MARKETING",
+      category: category || "CUSTOMER",
       eventType,
       content: template.content,
       channel: slot,
@@ -449,7 +452,7 @@ const CustomerNotifications: React.FC = () => {
 
   const saveTemplate = async () => {
     if (!templateDialog) return;
-    const { eventType, slot, template } = templateDialog;
+    const { eventType, slot, template, category } = templateDialog;
     if (!template.name.trim() || !template.content.trim()) {
       toast.error("اسم القالب والمحتوى مطلوبان");
       return;
@@ -457,7 +460,7 @@ const CustomerNotifications: React.FC = () => {
 
     const payload = {
       name: template.name.trim(),
-      category: "MARKETING",
+      category: category || "CUSTOMER",
       eventType,
       content: template.content,
       channel: slot,
@@ -945,6 +948,35 @@ const CustomerNotifications: React.FC = () => {
                   }
                   placeholder={templateDialog.slot === "META_CLOUD" ? "مثال: كسب نقاط ولاء" : "مثال: إشعار كسب نقاط"}
                 />
+              </div>
+
+              {/* فئة القالب — تحدد تصنيف ميتا عند النشر */}
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">
+                  نوع/فئة الرسالة — بتحدد تصنيف قالب ميتا عند النشر
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={templateDialog.category}
+                    onValueChange={(v) =>
+                      setTemplateDialog((d) => (d ? { ...d, category: v || "CUSTOMER" } : d))
+                    }
+                  >
+                    <SelectTrigger className="w-52">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CUSTOMER">UTILITY (مُوصى به للولاء)</SelectItem>
+                      <SelectItem value="SYSTEM">UTILITY (نظامي)</SelectItem>
+                      <SelectItem value="MARKETING">MARKETING (ترويجي)</SelectItem>
+                      <SelectItem value="GENERAL">UTILITY (عام)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] leading-relaxed text-gray-400">
+                    <strong>UTILITY</strong> يترجم لـ UTILITY على ميتا = موافقة أسرع.
+                    <strong> MARKETING</strong> محتاج opt-in من العميل ومراجعة أشد.
+                  </p>
+                </div>
               </div>
 
               {/* المحرر + المعاينة جنب بعض */}

@@ -25,6 +25,8 @@ import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
 import { OrdersPagination } from "./components/OrdersPagination";
+import { BulkActionBar } from "./components/BulkActionBar";
+import { CommandPalette } from "../../components/common/CommandPalette";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import type { OrderDetailsType } from "./types";
 
@@ -2603,69 +2605,48 @@ const Orders: React.FC = () => {
       />
 
       {/* Bulk Toolbar */}
-      {canSelectOrders && selectedOrders.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircleIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <span className="font-medium text-blue-900 dark:text-blue-100">
-              {t("orders.ordersSelected", { count: selectedOrders.length })}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <select
-              aria-label={String(t("orders.updateStatus"))}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) {
-                  handleBulkStatusUpdate(val);
-                  e.target.value = ""; // Reset
-                }
-              }}
-              className="theme-native-control px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100"
-              disabled={bulkProcessing}
-            >
-              <option value="">{t("orders.updateStatus")}</option>
-              {bulkUpdatableStatuses.map((status) => (
-                <option
-                  key={status.code}
-                  value={status.code.toLowerCase()}
-                >
-                  {status.name}
-                </option>
-              ))}
-              <option value="trash">{t("orders.moveToTrash")}</option>
-              <option value="restore">{t("orders.restoreFromTrash")}</option>
-            </select>
-            <button
-              onClick={handleBulkPrintInvoices}
-              disabled={printingInvoices}
-              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg text-sm hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
-            >
-              <PrinterIcon className="w-4 h-4 ml-2" />
-              {printingInvoices ? t("orders.printing") : t("orders.printInvoices")}
-            </button>
-            <button
-              onClick={handleBulkCreateTurboShipments}
-              disabled={bulkProcessing}
-              className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-            >
-              <RocketLaunchIcon className="w-4 h-4 ml-2" />
-              {bulkProcessing
-                ? t("orders.creating")
-                : t("orders.createTurboShipments")}
-            </button>
-            <button
-              onClick={handleBulkDelete}
-              disabled={bulkProcessing}
-              className="px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors border border-red-200 dark:border-red-800"
-            >
-              {bulkProcessing
-                ? t("orders.processing2")
-                : t(isTrashView ? "orders.deleteSelectedPermanently" : "orders.deleteSelected")}
-            </button>
-          </div>
-        </div>
+      {canSelectOrders && (
+        <BulkActionBar
+          count={selectedOrders.length}
+          statuses={bulkUpdatableStatuses}
+          isTrashView={isTrashView}
+          busy={bulkProcessing}
+          printing={printingInvoices}
+          onClearSelection={() => setSelectedOrders([])}
+          onStatusChange={handleBulkStatusUpdate}
+          onPrintInvoices={handleBulkPrintInvoices}
+          onCreateTurboShipments={handleBulkCreateTurboShipments}
+          onDelete={handleBulkDelete}
+        />
       )}
+
+      {/* Hidden command palette that registers the page-level bulk actions.
+          The toolbar already has its own palette trigger; this one is mount-only
+          (no trigger button) and just contributes commands to the same global
+          keyboard shortcut handler. */}
+      <CommandPalette
+        showTrigger={false}
+        extraCommands={[
+          {
+            id: "bulk-print",
+            group: "bulk",
+            label: t("palette.bulkPrintAll"),
+            onSelect: () => handleBulkPrintInvoices(),
+          },
+          {
+            id: "bulk-turbo",
+            group: "bulk",
+            label: t("palette.bulkCreateTurboAll"),
+            onSelect: () => handleBulkCreateTurboShipments(),
+          },
+          {
+            id: "bulk-delete",
+            group: "bulk",
+            label: t("palette.bulkDeleteAll"),
+            onSelect: () => handleBulkDelete(),
+          },
+        ]}
+      />
 
             <OrdersMobileList
         orders={orders}

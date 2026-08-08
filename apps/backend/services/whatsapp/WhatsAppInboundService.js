@@ -463,8 +463,10 @@ async function saveIncomingMessage(payload) {
   return savedMessage;
 }
 
-async function updateMessageStatus(companyId, messageId, status) {
+async function updateMessageStatus(companyId, messageId, status, options = {}) {
   const prisma = getSharedPrismaClient();
+  const { errors = [], recipientId = null, timestamp } = options;
+
   const existingMessages = await prisma.whatsAppMessage.findMany({
     where: { messageId },
     select: {
@@ -525,6 +527,59 @@ async function updateMessageStatus(companyId, messageId, status) {
       data: { status: 'failed', failureReason: 'Delivery failed' }
     });
     if (count > 0) updateBroadcastCampaignCount(messageId, 'failedCount');
+  }
+
+  // 🆕 SYNC-NOTIFICATION-LOG: تحديث whatsapp_notification_logs بالحالة الحقيقية
+  // من Meta (delivered/read/failed). الـ messageId من الـ webhook (wamid) يطابق
+  // whatsappMessageId المحفوظ وقت الإرسال — فنربط الاثنين للحصول على الحالة الفعلية.
+  try {
+    const logMatch = await prisma.whatsAppNotificationLog.findFirst({
+      where: { whatsappMessageId: messageId },
+      select: { id: true, status: true }
+    });
+
+    if (logMatch) {
+      const logUpdate = { updatedAt: new Date() };
+      let hasStatusChange = false;
+      if (status === 'FAILED') {
+        const firstError = errors[0] || {};
+        logUpdate.status = 'FAILED';
+        logUpdate.failedAt = timestamp ? new Date(timestamp) : new Date();
+        logUpdate.errorCode = firstError.code != null ? String(firstError.code) : null;
+        logUpdate.failureReason =
+          firstError.error_data?.details ||
+          firstError.message ||
+          firstError.title ||
+          `Meta delivery failed (code: ${firstError.code ?? 'unknown'})`;
+        hasStatusChange = true;
+      } else if (status === 'DELIVERED') {
+        // نُرقّي من SENT إلى DELIVERED فقط (ممنوع التراجع من READ/FAILED)
+        if (logMatch.status === 'SENT' || logMatch.status === 'PENDING') {
+          logUpdate.status = 'DELIVERED';
+          logUpdate.deliveredAt = timestamp ? new Date(timestamp) : new Date();
+          hasStatusChange = true;
+        }
+      } else if (status === 'READ') {
+        // READ يتضمن DELIVERED — نُرقّي أي حالة سابقة
+        if (logMatch.status !== 'FAILED') {
+          logUpdate.status = 'READ';
+          logUpdate.readAt = timestamp ? new Date(timestamp) : new Date();
+          if (!logUpdate.deliveredAt) logUpdate.deliveredAt = logUpdate.readAt;
+          hasStatusChange = true;
+        }
+      }
+      // SENT: لا نغيّر شيئاً — الإرسال مسجّل بالفعل وقت الإنشاء
+
+      // نتخطّى الـ update لو مفيش تغيير فعلي في الحالة (مثل FAILED ثم DELIVERED لاحقاً)
+      if (hasStatusChange) {
+        await prisma.whatsAppNotificationLog.updateMany({
+          where: { id: logMatch.id },
+          data: logUpdate
+        });
+      }
+    }
+  } catch (logSyncErr) {
+    console.error('❌ [UPDATE-MSG-STATUS] Failed to sync notification log:', logSyncErr.message);
   }
 
   const io = getIO();

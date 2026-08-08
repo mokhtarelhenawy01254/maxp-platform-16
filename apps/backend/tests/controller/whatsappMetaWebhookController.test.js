@@ -13,7 +13,7 @@ jest.mock('../../utils/webhookSignature', () => ({
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const { saveIncomingMessage } = require('../../services/whatsapp/WhatsAppInboundService');
+const { saveIncomingMessage, updateMessageStatus } = require('../../services/whatsapp/WhatsAppInboundService');
 const { verifyMetaWebhookSignature, shouldStrictlyEnforceMetaWebhookSignature } = require('../../utils/webhookSignature');
 const { buildMetaSessionLookup, getWebhook, postWebhook } = require('../../controller/whatsappMetaWebhookController');
 
@@ -58,6 +58,7 @@ describe('whatsappMetaWebhookController', () => {
     })).toEqual({
       where: {
         provider: 'META_CLOUD',
+        status: 'CONNECTED',
         OR: [
           { metaPhoneNumberId: '1165821659950962' },
           { metaDisplayPhoneNumber: '+201033316739' }
@@ -77,7 +78,6 @@ describe('whatsappMetaWebhookController', () => {
         ]
       },
       orderBy: [
-        { isDefault: 'desc' },
         { updatedAt: 'desc' }
       ]
     });
@@ -186,6 +186,60 @@ describe('whatsappMetaWebhookController', () => {
     await postWebhook(req, res);
 
     expect(saveIncomingMessage).toHaveBeenCalled();
+    expect(res.sendStatus).toHaveBeenCalledWith(200);
+  });
+
+  test('forwards status errors + recipient_id + timestamp to updateMessageStatus for delivery sync', async () => {
+    shouldStrictlyEnforceMetaWebhookSignature.mockReturnValue(false);
+    const req = {
+      body: {
+        object: 'whatsapp_business_account',
+        entry: [{
+          changes: [{
+            field: 'messages',
+            value: {
+              metadata: { phone_number_id: '1165821659950962', display_phone_number: '+201033316739' },
+              statuses: [{
+                id: 'wamid.delivery1',
+                status: 'failed',
+                timestamp: '1782165000',
+                recipient_id: '201123087745',
+                errors: [{
+                  code: 131050,
+                  title: 'Message not delivered',
+                  message: 'This message was not delivered to maintain healthy ecosystem engagement.',
+                  error_data: { details: 'In order to maintain a healthy ecosystem engagement, the message failed to be delivered.' }
+                }]
+              }]
+            }
+          }]
+        }]
+      }
+    };
+    const res = {
+      sendStatus: jest.fn(),
+      status: jest.fn(function status() { return this; }),
+      json: jest.fn()
+    };
+
+    await postWebhook(req, res);
+
+    expect(updateMessageStatus).toHaveBeenCalledWith(
+      'company-1',
+      'wamid.delivery1',
+      'FAILED',
+      expect.objectContaining({
+        recipientId: '201123087745',
+        errors: [
+          expect.objectContaining({
+            code: 131050,
+            error_data: expect.objectContaining({ details: expect.any(String) })
+          })
+        ],
+        timestamp: expect.any(Number)
+      })
+    );
+    expect(saveIncomingMessage).not.toHaveBeenCalled();
     expect(res.sendStatus).toHaveBeenCalledWith(200);
   });
 

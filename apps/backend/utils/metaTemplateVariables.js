@@ -58,6 +58,12 @@ function extractLocalVariableOrder(content) {
  * لو غير متوفر — من نص القالب المحلي بنفس منطق mapVariablesByOrder.
  * المتغير الناقص في values يُساب نص فاضي (مش undefined).
  *
+ * ⚠️ قيود Meta Cloud API على معاملات الـ template body:
+ *  - ممنوع الأسطر الجديدة (\n) داخل قيمة المعامل.
+ *  - الطول يختلف حسب اللغة/القالب (غالباً بحدود صارمة على الـ BODY params).
+ *  نستبدل الأسطر الجديدة بمسافة/فاصلة حتى لا يرفض ميتا المعاملات
+ *  بـ (#132018) / (#131008).
+ *
  * @param {{position: number, name: string}[]|null} variablesOrder - ترتيب متغيرات القالب (JSON من DB)
  * @param {string|null} localContent - نص القالب المحلي (fallback)
  * @param {Object} values - قيم المتغيرات
@@ -70,10 +76,12 @@ function buildMetaBodyParams(variablesOrder, localContent, values = {}) {
     orderedVars = localNames.map((name, idx) => ({ position: idx + 1, name }));
   }
 
-  return orderedVars.map(v => ({
-    type: 'text',
-    text: values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '',
-  }));
+  return orderedVars.map(v => {
+    let text = values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '';
+    // ميتا ترفض الـ newlines داخل معاملات body القالب — نستبدلها بمسافة.
+    text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+    return { type: 'text', text };
+  });
 }
 
 module.exports = {
