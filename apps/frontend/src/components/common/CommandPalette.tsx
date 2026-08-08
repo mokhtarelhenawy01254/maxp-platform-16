@@ -50,6 +50,12 @@ export interface CommandPaletteProps {
    * set is provided.
    */
   commands?: PaletteCommand[];
+  /**
+   * Extra commands to append AFTER the default commands. Useful for adding
+   * page-specific actions like bulk operations without losing the built-in
+   * navigation shortcuts.
+   */
+  extraCommands?: PaletteCommand[];
 }
 
 /**
@@ -60,6 +66,7 @@ export interface CommandPaletteProps {
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   showTrigger = true,
   commands,
+  extraCommands,
 }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -200,7 +207,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     [navigate, runAndClose, t],
   );
 
-  const items = commands ?? defaultCommands;
+  const items = useMemo(
+    () => [...(commands ?? defaultCommands), ...(extraCommands ?? [])],
+    [commands, defaultCommands, extraCommands],
+  );
   const grouped = useMemo(() => {
     const map = new Map<PaletteCommand["group"], PaletteCommand[]>();
     for (const cmd of items) {

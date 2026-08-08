@@ -26,6 +26,7 @@ import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
+import { CommandPalette } from "../../components/common/CommandPalette";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import type { OrderDetailsType } from "./types";
 
@@ -2618,6 +2619,34 @@ const Orders: React.FC = () => {
           onDelete={handleBulkDelete}
         />
       )}
+
+      {/* Hidden command palette that registers the page-level bulk actions.
+          The toolbar already has its own palette trigger; this one is mount-only
+          (no trigger button) and just contributes commands to the same global
+          keyboard shortcut handler. */}
+      <CommandPalette
+        showTrigger={false}
+        extraCommands={[
+          {
+            id: "bulk-print",
+            group: "bulk",
+            label: t("palette.bulkPrintAll"),
+            onSelect: () => handleBulkPrintInvoices(),
+          },
+          {
+            id: "bulk-turbo",
+            group: "bulk",
+            label: t("palette.bulkCreateTurboAll"),
+            onSelect: () => handleBulkCreateTurboShipments(),
+          },
+          {
+            id: "bulk-delete",
+            group: "bulk",
+            label: t("palette.bulkDeleteAll"),
+            onSelect: () => handleBulkDelete(),
+          },
+        ]}
+      />
 
             <OrdersMobileList
         orders={orders}

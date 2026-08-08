@@ -10570,8 +10570,21 @@
       "viewInvoices": "فواتير الطلبات",
       "navigate": "تنقل",
       "open": "فتح",
-      "close": "إغلاق"
-    }
+      "close": "إغلاق",
+      "bulkMarkAllPending": "غيّر كل الطلبات لـ: قيد الانتظار",
+      "bulkMarkAllConfirmed": "غيّر كل الطلبات لـ: تم التأكيد",
+      "bulkMarkAllShipped": "غيّر كل الطلبات لـ: تم الشحن",
+      "bulkMarkAllDelivered": "غيّر كل الطلبات لـ: تم التوصيل",
+      "bulkPrintAll": "اطبع فواتير كل الطلبات",
+      "bulkCreateTurboAll": "أنشئ شحنات تربو للكل",
+      "bulkDeleteAll": "احذف كل الطلبات المحددة"
+    },
+    "activeFilters": "فلاتر نشطة",
+    "removeFilter": "إزالة فلتر",
+    "clearAll": "مسح الكل",
+    "merchantLabel": "التاجر",
+    "affiliateLabel": "المسوق",
+    "period": "الفترة"
   },
   "preparation": {
     "page": {

@@ -10563,7 +10563,20 @@ declare module 'react-i18next' {
           navigate: string;
           open: string;
           close: string;
+          bulkMarkAllPending: string;
+          bulkMarkAllConfirmed: string;
+          bulkMarkAllShipped: string;
+          bulkMarkAllDelivered: string;
+          bulkPrintAll: string;
+          bulkCreateTurboAll: string;
+          bulkDeleteAll: string;
         };
+        activeFilters: string;
+        removeFilter: string;
+        clearAll: string;
+        merchantLabel: string;
+        affiliateLabel: string;
+        period: string;
       };
       preparation: {
         page: {
@@ -13904,6 +13917,10 @@ declare module 'react-i18next' {
         bookingServices: string;
         bookingPatients: string;
         bookingInvoices: string;
+        bookingPriceLists: string;
+        bookingWorkflow: string;
+        bookingReports: string;
+        bookingOperations: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;

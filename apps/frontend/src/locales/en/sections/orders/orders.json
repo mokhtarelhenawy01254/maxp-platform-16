@@ -922,6 +922,20 @@
     "viewInvoices": "Order invoices",
     "navigate": "navigate",
     "open": "open",
-    "close": "close"
-  }
+    "close": "close",
+    "bulkMarkAllPending": "Mark all orders as: Pending",
+    "bulkMarkAllConfirmed": "Mark all orders as: Confirmed",
+    "bulkMarkAllShipped": "Mark all orders as: Shipped",
+    "bulkMarkAllDelivered": "Mark all orders as: Delivered",
+    "bulkPrintAll": "Print invoices for all orders",
+    "bulkCreateTurboAll": "Create Turbo shipments for all",
+    "bulkDeleteAll": "Delete all selected orders"
+  },
+  "activeFilters": "Active filters",
+  "removeFilter": "Remove filter",
+  "clearAll": "Clear all",
+  "merchantLabel": "Merchant",
+  "affiliateLabel": "Affiliate",
+  "period": "Period",
+  "search": "Search"
 }
