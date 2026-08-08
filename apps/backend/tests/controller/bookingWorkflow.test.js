@@ -237,6 +237,36 @@ describe('updateBookingStatus', () => {
     expect(data.ticketNumber).toBe('0003');
   });
 
+  test('counts only previously-ticketed appointments when allocating a ticket number', async () => {
+    prisma.appointment.findFirst.mockResolvedValue(makeAppointment({
+      bookingStatus: 'CONFIRMED',
+      status: 'confirmed',
+      accessionNumber: null,
+      ticketNumber: null,
+    }));
+    prisma.appointment.count.mockResolvedValue(4);
+    prisma.appointment.update.mockImplementation(({ where, data }) =>
+      Promise.resolve(makeAppointment({ ...data, id: where.id })));
+
+    const res = createResponse();
+    await updateBookingStatus(
+      { user: { companyId: 'company-1' }, params: { id: 'apt-1' }, body: { status: 'CHECKED_IN' } },
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.appointment.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        companyId: 'company-1',
+        id: { not: 'apt-1' },
+        ticketNumber: { not: null },
+        branchId: 'branch-1',
+        appointmentDate: new Date('2026-08-07'),
+      }),
+    });
+    expect(prisma.appointment.update.mock.calls[0][0].data.ticketNumber).toBe('0005');
+  });
+
   test('keeps existing accession and ticket numbers', async () => {
     prisma.appointment.findFirst.mockResolvedValue(makeAppointment({
       bookingStatus: 'CONFIRMED',
@@ -527,6 +557,10 @@ describe('receptionQueue', () => {
     getSharedPrismaClient.mockReturnValue(prisma);
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('returns 403 without companyId', async () => {
     const res = createResponse();
     await receptionQueue({ user: {}, query: {} }, res);
@@ -581,6 +615,21 @@ describe('receptionQueue', () => {
     expect(inList).not.toContain('CANCELLED');
     expect(inList).not.toContain('MISSED');
     expect(inList).not.toContain('CHECKED_OUT');
+  });
+
+  test('defaults to the Cairo day (not the UTC day) between midnight and 02:00', async () => {
+    jest.useFakeTimers({ now: new Date('2026-08-01T22:30:00.000Z') });
+    prisma.appointment.findMany.mockResolvedValue([]);
+
+    const res = createResponse();
+    await receptionQueue({ user: { companyId: 'company-1' }, query: {} }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ appointmentDate: new Date('2026-08-02') }),
+      }),
+    );
   });
 });
 

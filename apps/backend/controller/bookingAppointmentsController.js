@@ -332,7 +332,6 @@ const createAppointment = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body;
-    console.log('[BOOKING-DEBUG] createAppointment body:', JSON.stringify(body));
     let customerName = body.customerName || 'مريض';
     let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
     let startTime = body.startTime || '00:00';
@@ -504,13 +503,27 @@ const updateAppointment = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
     const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status', 'patientId', 'diagnosis', 'treatmentPlan', 'prescription', 'vitals', 'followUpDate', 'room', 'preparationNote', 'bookingStatus', 'reportStatus'];
+    const fkFields = new Set(['branchId', 'doctorId', 'serviceId', 'patientId']);
     const data = {};
     for (const field of allowedFields) {
-      if (req.body[field] !== undefined) data[field] = req.body[field];
+      const value = req.body[field];
+      if (value === undefined) continue;
+      if (fkFields.has(field) && value === '') continue;
+      data[field] = value;
     }
     if (data.appointmentDate) data.appointmentDate = new Date(data.appointmentDate);
     if (data.followUpDate) data.followUpDate = new Date(data.followUpDate);
     if (data.status === 'confirmed') data.confirmedAt = new Date();
+
+    const rescheduled = (data.appointmentDate instanceof Date
+      && existing.appointmentDate instanceof Date
+      && data.appointmentDate.getTime() !== existing.appointmentDate.getTime())
+      || (data.startTime !== undefined && existing.startTime !== undefined && data.startTime !== existing.startTime);
+    if (rescheduled) {
+      data.labelPrinted = false;
+      data.resultDelivered = false;
+      data.deliveredWithoutReport = false;
+    }
 
     const prisma = getSharedPrismaClient();
     const assertInCompany = async (model, id, error) => {
@@ -529,6 +542,13 @@ const updateAppointment = async (req, res) => {
       data,
       include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
     });
+
+    if (rescheduled) {
+      await prisma.reportDelivery.updateMany({
+        where: { appointmentId: id, companyId },
+        data: { status: 'NOT_READY', deliveredAt: null, deliveredBy: null },
+      });
+    }
 
     const formatted = {
       id: appointment.id, customerName: appointment.customerName,

@@ -104,6 +104,29 @@ describe("PatientsTab", () => {
     expect(refreshed).toBe(true);
   });
 
+  test("merge confirm double-click fires only one merge POST", async () => {
+    const user = userEvent.setup();
+    let resolveMerge!: () => void;
+    const fetchMock = jest.fn(() => new Promise((resolve) => {
+      resolveMerge = () => resolve({ json: async () => ({ success: true, data: [] }) });
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { container } = render(<PatientsTab {...makeProps()} />);
+    await user.click(screen.getAllByTitle("دمج")[0]);
+
+    const selects = container.querySelectorAll<HTMLSelectElement>("select");
+    const targetSelect = selects[selects.length - 1];
+    await user.selectOptions(targetSelect, "2");
+    const confirmBtn = screen.getByText("تأكيد الدمج");
+    await user.click(confirmBtn);
+    await user.click(confirmBtn);
+
+    const mergeCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes("/merge")).length;
+    expect(mergeCalls).toBe(1);
+    resolveMerge();
+  });
+
   test("shows PatientModal when modalPatient is set", () => {
     render(<PatientsTab {...makeProps({ modalPatient: {} })} />);
     expect(screen.getByTestId("patient-modal")).toBeInTheDocument();

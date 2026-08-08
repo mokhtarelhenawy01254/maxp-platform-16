@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getDateStringInTimezone, getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 
 const LABEL_TYPES = ['EXAM', 'ENVELOPE'];
 const ENTITY_TYPES = ['PATIENT', 'INVOICE', 'PAYMENT', 'PAYBACK', 'APPOINTMENT'];
@@ -8,8 +9,8 @@ const PAID_STATUSES = ['PAID', 'PARTIAL', 'UNPAID'];
 
 const userName = (req) => [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ') || null;
 
-const startOfDay = (s) => new Date(`${s}T00:00:00.000Z`);
-const endOfDay = (s) => new Date(`${s}T23:59:59.999Z`);
+const startOfDay = (s) => getStartOfDayInTimezone(new Date(`${s}T00:00:00.000Z`));
+const endOfDay = (s) => getEndOfDayInTimezone(new Date(`${s}T00:00:00.000Z`));
 
 const buildDateRange = (req) => {
   const { date, dateFrom, dateTo } = req.query;
@@ -20,7 +21,7 @@ const buildDateRange = (req) => {
     if (dateTo) range.lte = endOfDay(dateTo);
     return range;
   }
-  const today = new Date().toISOString().split('T')[0];
+  const today = getDateStringInTimezone(new Date());
   return { gte: startOfDay(today), lte: endOfDay(today) };
 };
 
@@ -390,8 +391,8 @@ const getTransactions = async (req, res) => {
     const where = { companyId };
     if (from || to) {
       where.createdAt = {};
-      if (from) where.createdAt.gte = new Date(from);
-      if (to) where.createdAt.lte = new Date(to);
+      if (from) where.createdAt.gte = startOfDay(from);
+      if (to) where.createdAt.lte = endOfDay(to);
     }
     if (entityType && ENTITY_TYPES.includes(entityType)) where.entityType = entityType;
     if (search) {

@@ -31,6 +31,7 @@ export default function PatientsTab({
   const [sourceFilter, setSourceFilter] = useState("");
   const [mergeSource, setMergeSource] = useState<BookingPatient | null>(null);
   const [mergeTargetId, setMergeTargetId] = useState("");
+  const [merging, setMerging] = useState(false);
   const [localPatients, setLocalPatients] = useState<BookingPatient[] | null>(null);
 
   useEffect(() => { setLocalPatients(null); }, [patients]);
@@ -59,7 +60,8 @@ export default function PatientsTab({
   const candidates = list.filter(p => p.id !== mergeSource?.id && p.isActive !== false && p.status !== "INACTIVE");
 
   const confirmMerge = async () => {
-    if (!mergeSource || !mergeTargetId) return;
+    if (!mergeSource || !mergeTargetId || merging) return;
+    setMerging(true);
     try {
       await fetchJson(api(`patients/${mergeSource.id}/merge`), {
         method: "POST",
@@ -71,6 +73,8 @@ export default function PatientsTab({
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل دمج المرضى");
+    } finally {
+      setMerging(false);
     }
   };
 
@@ -157,7 +161,7 @@ export default function PatientsTab({
             </select>
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setMergeSource(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={confirmMerge} disabled={!mergeTargetId} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">تأكيد الدمج</button>
+              <button onClick={confirmMerge} disabled={!mergeTargetId || merging} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">تأكيد الدمج</button>
             </div>
           </div>
         </div>

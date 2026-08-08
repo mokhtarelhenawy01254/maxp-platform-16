@@ -32,7 +32,7 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
     jest.clearAllMocks();
     prisma = {
       patient: { findFirst: jest.fn() },
-      medicalInvoice: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
+      medicalInvoice: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
       medicalPayment: { findFirst: jest.fn(), create: jest.fn(), findMany: jest.fn() },
       cashierShift: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       appointment: { update: jest.fn() },
@@ -204,6 +204,30 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
         })
       );
     });
+
+    test('retries invoice creation when the invoice number collides under concurrency (P2002)', async () => {
+      prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1' });
+      prisma.medicalInvoice.count.mockResolvedValue(0);
+      const attempts = [];
+      prisma.medicalInvoice.create.mockImplementation(async ({ data }) => {
+        attempts.push(data.invoiceNumber);
+        if (attempts.length < 3) {
+          const err = new Error('Unique constraint failed on the fields');
+          err.code = 'P2002';
+          throw err;
+        }
+        return { id: 'inv-1', ...data };
+      });
+
+      const req = { ...baseReq, body: { patientId: 'patient-1', total: 100 } };
+      const res = createResponse();
+      await controller.createInvoice(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.medicalInvoice.create).toHaveBeenCalledTimes(3);
+      expect(prisma.medicalInvoice.count).toHaveBeenCalledTimes(3);
+      expect(res.payload.data.invoiceNumber).toBe(attempts[2]);
+    });
   });
 
   describe('updateInvoice', () => {
@@ -264,6 +288,73 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       });
       expect(prisma.medicalInvoice.update).not.toHaveBeenCalled();
     });
+
+    test('rejects lowering net below the already-paid amount', async () => {
+      prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 80, status: 'PARTIAL' });
+      prisma.medicalInvoice.update.mockResolvedValue({});
+
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { discount: 50, discountReason: 'تخفيض' } };
+      const res = createResponse();
+      await controller.updateInvoice(req, res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('لا يمكن خفض الصافي إلى أقل من المبلغ المسدد');
+      expect(prisma.medicalInvoice.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteInvoice', () => {
+    test('rejects deleting an invoice with recorded payments', async () => {
+      prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', amountPaid: 100, appointmentId: 'appt-1' });
+      prisma.medicalInvoice.delete = jest.fn();
+
+      const req = { ...baseReq, params: { id: 'inv-1' } };
+      const res = createResponse();
+      await controller.deleteInvoice(req, res);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.error).toBe('لا يمكن حذف فاتورة عليها دفعات مسجلة');
+      expect(prisma.medicalInvoice.delete).not.toHaveBeenCalled();
+    });
+
+    test('resets appointment paymentStatus to pending after deleting the only invoice', async () => {
+      prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', amountPaid: 0, appointmentId: 'appt-1' });
+      prisma.medicalInvoice.delete = jest.fn().mockResolvedValue({ id: 'inv-1' });
+      prisma.medicalInvoice.findMany = jest.fn().mockResolvedValue([]);
+      prisma.appointment.update.mockResolvedValue({});
+
+      const req = { ...baseReq, params: { id: 'inv-1' } };
+      const res = createResponse();
+      await controller.deleteInvoice(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.medicalInvoice.delete).toHaveBeenCalledWith({ where: { id: 'inv-1' } });
+      expect(prisma.appointment.update).toHaveBeenCalledWith({
+        where: { id: 'appt-1' },
+        data: { paymentStatus: 'pending' },
+      });
+    });
+
+    test('keeps appointment paymentStatus from remaining invoices after delete', async () => {
+      prisma.medicalInvoice.findFirst.mockResolvedValue({ id: 'inv-1', companyId: 'company-1', amountPaid: 0, appointmentId: 'appt-1' });
+      prisma.medicalInvoice.delete = jest.fn().mockResolvedValue({ id: 'inv-1' });
+      prisma.medicalInvoice.findMany = jest.fn().mockResolvedValue([{ status: 'PARTIAL' }]);
+      prisma.appointment.update.mockResolvedValue({});
+
+      const req = { ...baseReq, params: { id: 'inv-1' } };
+      const res = createResponse();
+      await controller.deleteInvoice(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.medicalInvoice.findMany).toHaveBeenCalledWith({
+        where: { companyId: 'company-1', appointmentId: 'appt-1', id: { not: 'inv-1' } },
+        select: { status: true },
+      });
+      expect(prisma.appointment.update).toHaveBeenCalledWith({
+        where: { id: 'appt-1' },
+        data: { paymentStatus: 'partial' },
+      });
+    });
   });
 
   describe('addPayment', () => {
@@ -297,7 +388,7 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       const invoice = { id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 0, status: 'UNPAID', appointmentId: null };
       prisma.medicalInvoice.findFirst.mockResolvedValue(invoice);
       prisma.medicalPayment.create.mockResolvedValue({});
-      prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ ...invoice, ...data }));
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
       const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'INSTAPAY' } };
@@ -308,9 +399,10 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       expect(prisma.medicalPayment.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ amount: 40, method: 'INSTAPAY' }) })
       );
-      expect(prisma.medicalInvoice.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ amountPaid: 40, status: 'PARTIAL' }) })
-      );
+      expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-1', amountPaid: 0 },
+        data: expect.objectContaining({ amountPaid: 40, status: 'PARTIAL' }),
+      });
       expect(res.payload.data.amountPaid).toBe(40);
     });
 
@@ -331,7 +423,7 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       const invoice = { id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 0, status: 'UNPAID', appointmentId: null };
       prisma.medicalInvoice.findFirst.mockResolvedValue(invoice);
       prisma.medicalPayment.create.mockResolvedValue({});
-      prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ ...invoice, ...data }));
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
       const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'FAWRY' } };
@@ -344,6 +436,26 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
           data: expect.objectContaining({ entityType: 'PAYMENT', entityId: 'inv-1', action: 'PAYMENT', amount: 40 }),
         })
       );
+    });
+
+    test('rejects a concurrent overpayment via CAS when amountPaid changed under us', async () => {
+      const invoice = { id: 'inv-1', companyId: 'company-1', total: 100, discount: 0, additionAmount: 0, amountPaid: 0, status: 'UNPAID', appointmentId: null };
+      prisma.medicalInvoice.findFirst.mockResolvedValue(invoice);
+      prisma.medicalPayment.create.mockResolvedValue({});
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 0 });
+      prisma.appointment.update.mockResolvedValue({});
+
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH' } };
+      const res = createResponse();
+      await controller.addPayment(req, res);
+
+      expect(res.statusCode).toBe(409);
+      expect(res.payload.error).toBe('تغيّر رصيد الفاتورة، أعد المحاولة');
+      expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-1', amountPaid: 0 },
+        data: expect.objectContaining({ amountPaid: 100, status: 'PAID' }),
+      });
+      expect(prisma.appointment.update).not.toHaveBeenCalled();
     });
   });
 
@@ -386,7 +498,7 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
       prisma.medicalPayment.findFirst.mockResolvedValue({ id: 'pay-1' });
       prisma.medicalPayment.create.mockResolvedValue({});
-      prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ ...paidInvoice, ...data }));
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
       const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: 'إلغاء الحجز' } };
@@ -404,9 +516,10 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
           }),
         })
       );
-      expect(prisma.medicalInvoice.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ amountPaid: 0, status: 'REFUNDED' }) })
-      );
+      expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-1', amountPaid: 100 },
+        data: expect.objectContaining({ amountPaid: 0, status: 'REFUNDED' }),
+      });
       expect(res.payload.data.status).toBe('REFUNDED');
     });
 
@@ -414,7 +527,7 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
       prisma.medicalPayment.findFirst.mockResolvedValue({ id: 'pay-1' });
       prisma.medicalPayment.create.mockResolvedValue({});
-      prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ ...paidInvoice, ...data }));
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
       const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: 'استرداد جزئي' } };
@@ -422,16 +535,33 @@ describe('bookingInvoicesController — clinic cashier & payments', () => {
       await controller.paybackPayment(req, res);
 
       expect(res.statusCode).toBe(200);
-      expect(prisma.medicalInvoice.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ amountPaid: 60, status: 'PARTIAL' }) })
-      );
+      expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({
+        where: { id: 'inv-1', amountPaid: 100 },
+        data: expect.objectContaining({ amountPaid: 60, status: 'PARTIAL' }),
+      });
+    });
+
+    test('rejects a concurrent double-payback via CAS when amountPaid changed under us', async () => {
+      prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
+      prisma.medicalPayment.findFirst.mockResolvedValue({ id: 'pay-1' });
+      prisma.medicalPayment.create.mockResolvedValue({});
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 0 });
+      prisma.appointment.update.mockResolvedValue({});
+
+      const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 100, method: 'CASH', reason: 'استرداد' } };
+      const res = createResponse();
+      await controller.paybackPayment(req, res);
+
+      expect(res.statusCode).toBe(409);
+      expect(res.payload.error).toBe('تغيّر رصيد الفاتورة، أعد المحاولة');
+      expect(prisma.appointment.update).not.toHaveBeenCalled();
     });
 
     test('writes a PAYBACK audit log', async () => {
       prisma.medicalInvoice.findFirst.mockResolvedValue(paidInvoice);
       prisma.medicalPayment.findFirst.mockResolvedValue({ id: 'pay-1' });
       prisma.medicalPayment.create.mockResolvedValue({});
-      prisma.medicalInvoice.update.mockImplementation(async ({ data }) => ({ ...paidInvoice, ...data }));
+      prisma.medicalInvoice.updateMany.mockResolvedValue({ count: 1 });
       prisma.appointment.update.mockResolvedValue({});
 
       const req = { ...baseReq, params: { id: 'inv-1' }, body: { amount: 40, method: 'CASH', reason: 'استرداد جزئي' } };

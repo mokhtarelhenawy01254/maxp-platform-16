@@ -47,6 +47,11 @@ const createDoctor = async (req, res) => {
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
 
+    if (Array.isArray(serviceIds) && serviceIds.length > 0) {
+      const found = await getSharedPrismaClient().bookingService.count({ where: { companyId, id: { in: serviceIds } } });
+      if (found !== serviceIds.length) return res.status(400).json({ success: false, error: 'أحد الخدمات غير موجود' });
+    }
+
     const doctor = await getSharedPrismaClient().bookingDoctor.create({
       data: {
         companyId, branchId, title: title.trim(), name, specialty, phone, gender,
@@ -78,6 +83,15 @@ const updateDoctor = async (req, res) => {
 
     const existing = await getSharedPrismaClient().bookingDoctor.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الدكتور غير موجود' });
+
+    if (branchId !== undefined && branchId) {
+      const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId }, select: { id: true } });
+      if (!branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
+    }
+    if (Array.isArray(serviceIds) && serviceIds.length > 0) {
+      const found = await getSharedPrismaClient().bookingService.count({ where: { companyId, id: { in: serviceIds } } });
+      if (found !== serviceIds.length) return res.status(400).json({ success: false, error: 'أحد الخدمات غير موجود' });
+    }
 
     const data = {};
     if (branchId !== undefined) data.branchId = branchId;

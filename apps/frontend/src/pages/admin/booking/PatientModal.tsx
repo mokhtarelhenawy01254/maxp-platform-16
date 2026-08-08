@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BookingPatient, ReferringPhysician, PriceList, PATIENT_STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, tryParseJSON, api, fetchJson } from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
+import { toast } from "sonner";
 
 import { X } from 'lucide-react'
 interface Props {
@@ -90,6 +91,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
 
   const [referringPhysicians, setReferringPhysicians] = useState<ReferringPhysician[]>([]);
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([
@@ -109,36 +111,44 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    onSave({
-      ...patient,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      email: form.email.trim() || undefined,
-      gender: form.gender || undefined,
-      birthDate: form.birthDate || undefined,
-      bloodType: form.bloodType || undefined,
-      nationalId: form.nationalId.trim() || undefined,
-      nationalIdImage: form.nationalIdImage || undefined,
-      address: form.address.trim() || undefined,
-      allergies: fromList(form.allergies),
-      chronicDiseases: fromList(form.chronicDiseases),
-      medications: fromList(form.medications),
-      notes: form.notes.trim() || undefined,
-      isActive: form.isActive,
-      password: form.password || undefined,
-      status: form.status || undefined,
-      source: form.source || undefined,
-      maritalStatus: form.maritalStatus || undefined,
-      occupation: form.occupation.trim() || undefined,
-      city: form.city.trim() || undefined,
-      referringPhysicianId: form.referringPhysicianId || undefined,
-      priceListId: form.priceListId || undefined,
-      medicalHistory: form.medicalHistory
-        ? { conditions: form.medicalHistory.conditions, allergies: form.medicalHistory.allergies }
-        : undefined,
-    });
+  const handleSave = async () => {
+    if (saving || !valid) return;
+    setSaving(true);
+    try {
+      await onSave({
+        ...patient,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
+        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
+        bloodType: form.bloodType || undefined,
+        nationalId: form.nationalId.trim() || undefined,
+        nationalIdImage: form.nationalIdImage || undefined,
+        address: form.address.trim() || undefined,
+        allergies: fromList(form.allergies),
+        chronicDiseases: fromList(form.chronicDiseases),
+        medications: fromList(form.medications),
+        notes: form.notes.trim() || undefined,
+        isActive: form.isActive,
+        password: form.password || undefined,
+        status: form.status || undefined,
+        source: form.source || undefined,
+        maritalStatus: form.maritalStatus || undefined,
+        occupation: form.occupation.trim() || undefined,
+        city: form.city.trim() || undefined,
+        referringPhysicianId: form.referringPhysicianId || undefined,
+        priceListId: form.priceListId || undefined,
+        medicalHistory: form.medicalHistory
+          ? { conditions: form.medicalHistory.conditions, allergies: form.medicalHistory.allergies }
+          : undefined,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل حفظ المريض");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -243,7 +253,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={handleSave} disabled={!valid} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+          <button onClick={handleSave} disabled={!valid || saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>

@@ -67,7 +67,7 @@ export default function WorkflowPage() {
       .catch(() => {});
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
     setLoading(true);
     setError("");
     try {
@@ -88,6 +88,7 @@ export default function WorkflowPage() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "فشل تحميل البيانات";
+      if (opts?.quiet) { console.error("refresh workflow queue", e); return; }
       setError(msg);
       toast.error(msg);
     } finally {
@@ -99,17 +100,24 @@ export default function WorkflowPage() {
     load();
   }, [load]);
 
+  const [busyId, setBusyId] = useState<string | null>(null);
+
   const action = useCallback(
-    async (path: string, body: Record<string, unknown>, successMsg: string) => {
+    async (path: string, body: Record<string, unknown>, successMsg: string, rowId: string) => {
+      if (busyId === rowId) return;
+      setBusyId(rowId);
       try {
         await fetchJson(api(path), { method: "PUT", body: JSON.stringify(body) });
         toast.success(successMsg);
-        await load();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "فشلت العملية");
+        setBusyId(null);
+        return;
       }
+      await load({ quiet: true });
+      setBusyId(null);
     },
-    [load],
+    [load, busyId],
   );
 
   const effectiveBooking = (row: WorkflowRow) => row.bookingStatus || LEGACY_TO_BOOKING[row.status] || "UNCONFIRMED";
@@ -123,27 +131,27 @@ export default function WorkflowPage() {
 
   const assignDoctor = (row: WorkflowRow, docId: string) => {
     if (!docId) return;
-    void action(`workflow/appointments/${row.id}/assign-doctor`, { doctorId: docId }, "تم تعيين الطبيب");
+    void action(`workflow/appointments/${row.id}/assign-doctor`, { doctorId: docId }, "تم تعيين الطبيب", row.id);
   };
 
   const advanceBooking = (row: WorkflowRow) => {
     const next = nextBooking(row);
     if (!next) return;
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: next }, `تم الانتقال إلى ${bookingLabel(next) || next}`);
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: next }, `تم الانتقال إلى ${bookingLabel(next) || next}`, row.id);
   };
 
   const cancelBooking = (row: WorkflowRow) => {
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: "CANCELLED" }, "تم إلغاء الموعد");
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: "CANCELLED" }, "تم إلغاء الموعد", row.id);
   };
 
   const missBooking = (row: WorkflowRow) => {
-    void action(`workflow/appointments/${row.id}/booking-status`, { status: "MISSED" }, "تم تسجيل عدم الحضور");
+    void action(`workflow/appointments/${row.id}/booking-status`, { status: "MISSED" }, "تم تسجيل عدم الحضور", row.id);
   };
 
   const advanceReport = (row: WorkflowRow) => {
     const next = nextReport(row);
     if (!next) return;
-    void action(`workflow/appointments/${row.id}/report-status`, { status: next }, `تم الانتقال إلى ${reportLabel(next) || next}`);
+    void action(`workflow/appointments/${row.id}/report-status`, { status: next }, `تم الانتقال إلى ${reportLabel(next) || next}`, row.id);
   };
 
   const toggleDeliveredWithoutReport = (row: WorkflowRow) => {
@@ -151,6 +159,7 @@ export default function WorkflowPage() {
       `workflow/appointments/${row.id}/delivered-without-report`,
       { value: !row.deliveredWithoutReport },
       "تم تحديث التسليم بدون تقرير",
+      row.id,
     );
   };
 
@@ -159,6 +168,7 @@ export default function WorkflowPage() {
       `workflow/appointments/${row.id}/result-delivered`,
       { value: !row.resultDelivered },
       "تم تحديث تسليم النتيجة",
+      row.id,
     );
   };
 
@@ -276,8 +286,9 @@ export default function WorkflowPage() {
                     <div className="flex flex-wrap items-center gap-1.5 justify-end">
                       {activeTab === "reception" && doctors.length > 0 && (
                         <select
-                          className="w-36 border rounded-lg px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                          className="w-36 border rounded-lg px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 disabled:opacity-40"
                           value={row.assignedDoctorId || row.doctorId || ""}
+                          disabled={busyId === row.id}
                           onChange={(e) => assignDoctor(row, e.target.value)}
                         >
                           <option value="">تعيين طبيب...</option>
@@ -289,6 +300,7 @@ export default function WorkflowPage() {
                       {nextBooking(row) && (
                         <button
                           onClick={() => advanceBooking(row)}
+                          disabled={busyId === row.id}
                           title={`الخطوة التالية: ${bookingLabel(nextBooking(row)) || nextBooking(row)}`}
                           className={`${actionBtn} bg-blue-600 hover:bg-blue-700`}
                         >
@@ -298,6 +310,7 @@ export default function WorkflowPage() {
                       {activeTab !== "reception" && nextReport(row) && (
                         <button
                           onClick={() => advanceReport(row)}
+                          disabled={busyId === row.id}
                           title={`التقرير التالي: ${reportLabel(nextReport(row)) || nextReport(row)}`}
                           className={`${actionBtn} bg-indigo-600 hover:bg-indigo-700`}
                         >
@@ -307,6 +320,7 @@ export default function WorkflowPage() {
                       {activeTab === "reception" && (
                         <button
                           onClick={() => toggleDeliveredWithoutReport(row)}
+                          disabled={busyId === row.id}
                           title={row.deliveredWithoutReport ? "إلغاء التسليم بدون تقرير" : "تسليم بدون تقرير"}
                           className={`${actionBtn} ${row.deliveredWithoutReport ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-500 hover:bg-gray-600"}`}
                         >
@@ -316,6 +330,7 @@ export default function WorkflowPage() {
                       {activeTab !== "doctor" && (
                         <button
                           onClick={() => toggleResultDelivered(row)}
+                          disabled={busyId === row.id}
                           title={row.resultDelivered ? "إلغاء تسليم النتيجة" : "تسليم النتيجة"}
                           className={`${actionBtn} ${row.resultDelivered ? "bg-teal-600 hover:bg-teal-700" : "bg-gray-500 hover:bg-gray-600"}`}
                         >
@@ -324,6 +339,7 @@ export default function WorkflowPage() {
                       )}
                       <button
                         onClick={() => missBooking(row)}
+                        disabled={busyId === row.id}
                         title="لم يحضر"
                         className={`${actionBtn} bg-orange-500 hover:bg-orange-600`}
                       >
@@ -331,6 +347,7 @@ export default function WorkflowPage() {
                       </button>
                       <button
                         onClick={() => cancelBooking(row)}
+                        disabled={busyId === row.id}
                         title="إلغاء"
                         className={`${actionBtn} bg-red-500 hover:bg-red-600`}
                       >

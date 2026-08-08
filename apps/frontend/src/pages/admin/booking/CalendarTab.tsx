@@ -117,7 +117,7 @@ export default function CalendarTab(_props: Props) {
     setLoading(true);
     fetchJson<TimelineData>(api(`appointments/timeline?${params}`))
       .then((data) => { if (active) setTimeline(data); })
-      .catch((e) => { if (active) { console.error("timeline", e); setTimeline((prev) => prev); } })
+      .catch((e) => { if (active) { console.error("timeline", e); toast.error("فشل تحميل الجدول الزمني"); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [timelineDate, branchId, serviceId, refreshKey]);

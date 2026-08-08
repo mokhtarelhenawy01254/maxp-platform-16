@@ -54,7 +54,23 @@ const createService = async (req, res) => {
     let { name, description, requiresConsultation, durationMinutes, basePrice, imageUrl, categoryId, branches, doctorIds } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الخدمة مطلوب' });
 
-    const service = await getSharedPrismaClient().bookingService.create({
+    const prisma = getSharedPrismaClient();
+    if (categoryId) {
+      const category = await prisma.bookingServiceCategory.findFirst({ where: { id: categoryId, companyId }, select: { id: true } });
+      if (!category) return res.status(400).json({ success: false, error: 'القسم غير موجود' });
+    }
+    if (Array.isArray(branches) && branches.length > 0) {
+      const branchIds = branches.map((b) => b.branchId || b);
+      const found = await prisma.bookingBranch.count({ where: { companyId, id: { in: branchIds } } });
+      if (found !== branchIds.length) return res.status(400).json({ success: false, error: 'أحد الفروع غير موجود' });
+    }
+    if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+      const doctorIdList = doctorIds.map((d) => (typeof d === 'string' ? d : d.doctorId));
+      const found = await prisma.bookingDoctor.count({ where: { companyId, id: { in: doctorIdList } } });
+      if (found !== doctorIdList.length) return res.status(400).json({ success: false, error: 'أحد الأطباء غير موجود' });
+    }
+
+    const service = await prisma.bookingService.create({
       data: {
         companyId,
         name: name.trim(),
@@ -112,6 +128,17 @@ const updateService = async (req, res) => {
 
     const existing = await getSharedPrismaClient().bookingService.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
+
+    const prisma = getSharedPrismaClient();
+    if (categoryId !== undefined && categoryId) {
+      const category = await prisma.bookingServiceCategory.findFirst({ where: { id: categoryId, companyId }, select: { id: true } });
+      if (!category) return res.status(400).json({ success: false, error: 'القسم غير موجود' });
+    }
+    if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+      const doctorIdList = doctorIds.map((d) => (typeof d === 'string' ? d : d.doctorId));
+      const found = await prisma.bookingDoctor.count({ where: { companyId, id: { in: doctorIdList } } });
+      if (found !== doctorIdList.length) return res.status(400).json({ success: false, error: 'أحد الأطباء غير موجود' });
+    }
 
     const data = {
       ...(name !== undefined ? { name } : {}),
