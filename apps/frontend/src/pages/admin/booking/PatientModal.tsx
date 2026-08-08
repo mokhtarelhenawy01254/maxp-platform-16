@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookingPatient, ReferringPhysician, PriceList, PATIENT_STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, tryParseJSON, api, fetchJson } from "./shared";
+import { BookingPatient, ReferringPhysician, PriceList, InsuranceCompany, InsuranceMemberType, PATIENT_STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, tryParseJSON, api, fetchJson } from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
 import { toast } from "sonner";
 
@@ -61,6 +61,8 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     status: string; source: string; maritalStatus: string; occupation: string; city: string;
     referringPhysicianId: string;
     priceListId: string;
+    title: string; insuranceNumber: string; insuranceCompanyId: string; memberTypeId: string;
+    homePhone: string; workPhone: string; fax: string; postalCode: string;
     medicalHistory: MedicalHistoryValue | null;
   }>({
     firstName: patient?.firstName || "",
@@ -86,20 +88,34 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     city: patient?.city || "",
     referringPhysicianId: patient?.referringPhysicianId || "",
     priceListId: patient?.priceListId || "",
+    title: patient?.title || "",
+    insuranceNumber: patient?.insuranceNumber || "",
+    insuranceCompanyId: patient?.insuranceCompanyId || "",
+    memberTypeId: patient?.memberTypeId || "",
+    homePhone: patient?.homePhone || "",
+    workPhone: patient?.workPhone || "",
+    fax: patient?.fax || "",
+    postalCode: patient?.postalCode || "",
     medicalHistory: parseMedicalHistory(patient?.medicalHistory),
   });
 
   const [referringPhysicians, setReferringPhysicians] = useState<ReferringPhysician[]>([]);
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
+  const [insuranceCompanies, setInsuranceCompanies] = useState<InsuranceCompany[]>([]);
+  const [memberTypes, setMemberTypes] = useState<InsuranceMemberType[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([
       fetchJson<ReferringPhysician[]>(api("referring-physicians")),
       fetchJson<PriceList[]>(api("price-lists")),
-    ]).then(([physicians, lists]) => {
+      fetchJson<InsuranceCompany[]>(api("insurance-companies")),
+      fetchJson<InsuranceMemberType[]>(api("insurance-member-types")),
+    ]).then(([physicians, lists, companies, types]) => {
       if (physicians.status === "fulfilled") setReferringPhysicians(physicians.value);
       if (lists.status === "fulfilled") setPriceLists(lists.value);
+      if (companies.status === "fulfilled") setInsuranceCompanies(companies.value);
+      if (types.status === "fulfilled") setMemberTypes(types.value);
     }).catch(() => { /* keep empty lists */ });
   }, []);
 
@@ -140,6 +156,14 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
         city: form.city.trim() || undefined,
         referringPhysicianId: form.referringPhysicianId || undefined,
         priceListId: form.priceListId || undefined,
+        title: form.title.trim() || undefined,
+        insuranceNumber: form.insuranceNumber.trim() || undefined,
+        insuranceCompanyId: form.insuranceCompanyId || undefined,
+        memberTypeId: form.memberTypeId || undefined,
+        homePhone: form.homePhone.trim() || undefined,
+        workPhone: form.workPhone.trim() || undefined,
+        fax: form.fax.trim() || undefined,
+        postalCode: form.postalCode.trim() || undefined,
         medicalHistory: form.medicalHistory
           ? { conditions: form.medicalHistory.conditions, allergies: form.medicalHistory.allergies }
           : undefined,
@@ -234,6 +258,32 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
               <option value="">الافتراضية</option>
               {priceLists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اللقب (دكتور، مهندس...)</label><input className={MODAL_INPUT_CLS} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم التأمين</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.insuranceNumber} onChange={e => setForm({ ...form, insuranceNumber: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">شركة التأمين</label>
+              <select className={MODAL_INPUT_CLS} value={form.insuranceCompanyId} onChange={e => setForm({ ...form, insuranceCompanyId: e.target.value })}>
+                <option value="">بدون</option>
+                {insuranceCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع العضوية</label>
+              <select className={MODAL_INPUT_CLS} value={form.memberTypeId} onChange={e => setForm({ ...form, memberTypeId: e.target.value })}>
+                <option value="">بدون</option>
+                {memberTypes.map(m => <option key={m.id} value={m.id}>{m.name}{m.coveragePercent ? ` (تغطية ${m.coveragePercent}٪)` : ""}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">هاتف المنزل</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.homePhone} onChange={e => setForm({ ...form, homePhone: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">هاتف العمل</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.workPhone} onChange={e => setForm({ ...form, workPhone: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">فاكس</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.fax} onChange={e => setForm({ ...form, fax: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرمز البريدي</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.postalCode} onChange={e => setForm({ ...form, postalCode: e.target.value })} /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحساسية (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.allergies} onChange={e => setForm({ ...form, allergies: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أمراض مزمنة (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.chronicDiseases} onChange={e => setForm({ ...form, chronicDiseases: e.target.value })} /></div>

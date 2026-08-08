@@ -25,13 +25,15 @@ import PriceListsTab from "./booking/PriceListsTab";
 import WorkflowPage from "./booking/WorkflowPage";
 import BookingReportsTab from "./booking/BookingReportsTab";
 import OperationsPage from "./booking/OperationsPage";
+import InsuranceCompaniesTab from "./booking/InsuranceCompaniesTab";
+import MemberTypesTab from "./booking/MemberTypesTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices", "price-lists", "workflow", "reports", "operations"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices", "price-lists", "workflow", "reports", "operations", "insurance-companies", "member-types"].includes(urlTab) ? urlTab : "dashboard") as TabId;
   const patientUrlId = urlTab === "patients" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
   const doctorUrlId = urlTab === "doctors" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
 
@@ -534,6 +536,16 @@ export default function BookingManagementPage() {
           {activeTab === "operations" && (
             <TabErrorBoundary tabLabel="العمليات">
               <OperationsPage />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "insurance-companies" && (
+            <TabErrorBoundary tabLabel="شركات التأمين">
+              <InsuranceCompaniesTab />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "member-types" && (
+            <TabErrorBoundary tabLabel="أنواع الأعضاء">
+              <MemberTypesTab />
             </TabErrorBoundary>
           )}
         </>

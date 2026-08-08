@@ -212,14 +212,26 @@ model Patient {
   referringPhysicianId String?
   priceListId          String?
   mergedIntoId         String?
+  /// Insurance & contact enhancements (adapted from external RIS)
+  title                String?
+  insuranceNumber      String?
+  insuranceCompanyId   String?
+  memberTypeId         String?
+  homePhone            String?
+  workPhone            String?
+  fax                  String?
+  postalCode           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   referringPhysician ReferringPhysician? @relation(fields: [referringPhysicianId], references: [id], onDelete: SetNull)
   priceList       PriceList?  @relation(fields: [priceListId], references: [id], onDelete: SetNull)
+  insuranceCompany InsuranceCompany? @relation(fields: [insuranceCompanyId], references: [id], onDelete: SetNull)
+  memberType      InsuranceMemberType? @relation(fields: [memberTypeId], references: [id], onDelete: SetNull)
   mergedInto      Patient?    @relation("PatientMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
   mergedPatients  Patient[]   @relation("PatientMerge")
+  documents       PatientDocument[]
   appointments    Appointment[]
   invoices        MedicalInvoice[]
 
@@ -228,6 +240,8 @@ model Patient {
   @@index([phone])
   @@index([referringPhysicianId])
   @@index([priceListId])
+  @@index([insuranceCompanyId])
+  @@index([memberTypeId])
   @@map("patients")
 }
 
@@ -325,6 +339,7 @@ model PriceList {
   derivedLists PriceList[] @relation("BasePriceList")
   items       PriceListItem[]
   patients    Patient[]
+  insuranceCompanies InsuranceCompany[]
 
   @@index([companyId])
   @@map("price_lists")
@@ -419,4 +434,63 @@ model TransactionLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("transaction_logs")
+}
+
+/// Insurance companies (managed entities, each bound to a price list)
+model InsuranceCompany {
+  id            String   @id @default(cuid())
+  companyId     String
+  name          String
+  priceListId   String?
+  phone1        String?
+  fax           String?
+  contactName   String?
+  contactPhone  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  priceList     PriceList? @relation(fields: [priceListId], references: [id], onDelete: SetNull)
+  patients      Patient[]
+
+  @@index([companyId])
+  @@index([priceListId])
+  @@map("insurance_companies")
+}
+
+/// Insurance member types (family roles + coverage %)
+model InsuranceMemberType {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String   /// Member|Husband|Wife|Children|10%...
+  coveragePercent Float    @default(0) /// 0-100 insurance coverage
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patients        Patient[]
+
+  @@index([companyId])
+  @@map("insurance_member_types")
+}
+
+/// Patient documents (prescriptions, images, videos, insurance, others)
+model PatientDocument {
+  id           String   @id @default(cuid())
+  companyId    String
+  patientId    String
+  documentType String   @default("OTHER") /// DRIVING_LICENSE|INSURANCE|PRESCRIPTION|IMAGE|VIDEO|OTHER
+  name         String?
+  fileData     String?  /// base64 data URL or URL
+  mimeType     String?
+  notes        String?
+  uploadedBy   String?
+  uploadedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([patientId])
+  @@map("patient_documents")
 }

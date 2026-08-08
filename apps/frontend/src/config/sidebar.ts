@@ -950,6 +950,8 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/workflow', icon: ListChecks, label: t('sidebar.bookingWorkflow') },
                 { to: '/admin/booking/reports', icon: BarChart3, label: t('sidebar.bookingReports') },
                 { to: '/admin/booking/operations', icon: Printer, label: t('sidebar.bookingOperations') },
+                { to: '/admin/booking/insurance-companies', icon: ShieldCheck, label: t('sidebar.bookingInsuranceCompanies') },
+                { to: '/admin/booking/member-types', icon: Percent, label: t('sidebar.bookingMemberTypes') },
             ]
         },
 

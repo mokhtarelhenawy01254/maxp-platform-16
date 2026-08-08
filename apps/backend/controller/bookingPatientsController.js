@@ -33,14 +33,16 @@ const getAllPatients = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { search, page, limit, includeInactive } = req.query;
+    const { search, page, limit, includeInactive, insuranceCompanyId } = req.query;
     const where = { companyId };
     if (includeInactive !== 'true') where.isActive = true;
+    if (insuranceCompanyId) where.insuranceCompanyId = insuranceCompanyId;
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
+        { insuranceNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -53,6 +55,8 @@ const getAllPatients = async (req, res) => {
         where,
         include: {
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          insuranceCompany: { select: { id: true, name: true } },
+          memberType: { select: { id: true, name: true, coveragePercent: true } },
           _count: { select: { appointments: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -83,6 +87,8 @@ const getPatientById = async (req, res) => {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
         referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
         priceList: { select: { id: true, name: true } },
+        insuranceCompany: { select: { id: true, name: true } },
+        memberType: { select: { id: true, name: true, coveragePercent: true } },
         appointments: {
           orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
           include: {
@@ -125,7 +131,7 @@ const createPatient = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId } = req.body;
+    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId, title, insuranceNumber, insuranceCompanyId, memberTypeId, homePhone, workPhone, fax, postalCode } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     let medicalHistoryData;
@@ -157,6 +163,14 @@ const createPatient = async (req, res) => {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: priceListId, companyId }, select: { id: true } });
       if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
     }
+    if (insuranceCompanyId) {
+      const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: insuranceCompanyId, companyId }, select: { id: true } });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
+    }
+    if (memberTypeId) {
+      const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: memberTypeId, companyId }, select: { id: true } });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
+    }
 
     const patient = await getSharedPrismaClient().patient.create({
       data: {
@@ -185,6 +199,14 @@ const createPatient = async (req, res) => {
         medicalHistory: medicalHistoryData,
         referringPhysicianId: referringPhysicianId || null,
         priceListId: priceListId || null,
+        title: title || null,
+        insuranceNumber: insuranceNumber || null,
+        insuranceCompanyId: insuranceCompanyId || null,
+        memberTypeId: memberTypeId || null,
+        homePhone: homePhone || null,
+        workPhone: workPhone || null,
+        fax: fax || null,
+        postalCode: postalCode || null,
       },
     });
     res.json({ success: true, data: formatPatient(patient) });
@@ -203,7 +225,7 @@ const updatePatient = async (req, res) => {
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId'];
+    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId', 'title', 'insuranceNumber', 'insuranceCompanyId', 'memberTypeId', 'homePhone', 'workPhone', 'fax', 'postalCode'];
     const data = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) data[field] = req.body[field];
@@ -229,6 +251,14 @@ const updatePatient = async (req, res) => {
     if (data.priceListId) {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: data.priceListId, companyId }, select: { id: true } });
       if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
+    }
+    if (data.insuranceCompanyId) {
+      const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: data.insuranceCompanyId, companyId }, select: { id: true } });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
+    }
+    if (data.memberTypeId) {
+      const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: data.memberTypeId, companyId }, select: { id: true } });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
     }
 
     const patient = await getSharedPrismaClient().patient.update({ where: { id }, data });
@@ -312,6 +342,8 @@ const getPatientFull = async (req, res) => {
       include: {
         referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
         priceList: { select: { id: true, name: true } },
+        insuranceCompany: { select: { id: true, name: true } },
+        memberType: { select: { id: true, name: true, coveragePercent: true } },
         appointments: {
           orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
           take: 10,

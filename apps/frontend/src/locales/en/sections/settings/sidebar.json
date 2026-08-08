@@ -192,6 +192,8 @@
   "bookingWorkflow": "Workflow",
   "bookingReports": "Reports",
   "bookingOperations": "Operations",
+  "bookingInsuranceCompanies": "Insurance Companies",
+  "bookingMemberTypes": "Member Types",
   "marketplace": "Marketplace",
   "marketplaceManagement": "Marketplace Management",
   "merchantCommissions": "My Commissions",

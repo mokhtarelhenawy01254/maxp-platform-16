@@ -8,6 +8,32 @@ const EXPENSE_SPLITS = ['PATIENT', 'INSURANCE', 'BOTH'];
 const netOf = (total, discount, additionAmount) =>
   Math.max(0, (Number(total) || 0) - (Number(discount) || 0) + (Number(additionAmount) || 0));
 
+const computeInsuranceShare = (net, coveragePercent) => {
+  const coverage = Number(coveragePercent);
+  if (Number.isNaN(coverage) || !Number.isFinite(coverage) || coverage <= 0) return 0;
+  return Math.round(Math.max(0, Number(net) || 0) * Math.min(100, coverage) / 100);
+};
+
+const resolveAutoInsurance = (req, net, patient) => {
+  const body = req.body || {};
+  const explicitInsurance = body.insuranceAmount !== undefined && body.insuranceAmount !== null;
+  const explicitSplit = body.expenseSplit !== undefined && body.expenseSplit !== null;
+  const coverage = Number(patient?.memberType?.coveragePercent) || 0;
+  const canAuto = !!patient?.memberTypeId && coverage > 0 && !explicitInsurance && !explicitSplit;
+  if (!canAuto) {
+    return {
+      insuranceAmount: explicitInsurance ? Math.max(0, Number(body.insuranceAmount) || 0) : 0,
+      expenseSplit: body.expenseSplit || 'PATIENT',
+      insuranceCompanyId: body.insuranceCompanyId || null,
+    };
+  }
+  return {
+    insuranceAmount: computeInsuranceShare(net, coverage),
+    expenseSplit: 'BOTH',
+    insuranceCompanyId: body.insuranceCompanyId || patient.insuranceCompanyId || null,
+  };
+};
+
 const computeStatus = (total, discount, additionAmount = 0, amountPaid) => {
   const net = netOf(total, discount, additionAmount);
   if (amountPaid <= 0) return 'UNPAID';
@@ -195,7 +221,10 @@ const createInvoice = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const patient = await prisma.patient.findFirst({ where: { id: patientId, companyId } });
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, companyId },
+      include: { memberType: true },
+    });
     if (!patient) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
 
     const resolvedAppointmentId = appointmentId || null;
@@ -204,6 +233,7 @@ const createInvoice = async (req, res) => {
       if (!appointmentExists) return res.status(400).json({ success: false, error: 'الموعد غير موجود' });
     }
 
+    const resolvedInsurance = resolveAutoInsurance(req, net, patient);
     const cashierNameFinal = cashierNameOf(req, cashierName);
 
     const invoice = await createInvoiceWithRetry(prisma, companyId, (invoiceNumber) =>
@@ -216,9 +246,9 @@ const createInvoice = async (req, res) => {
             discountReason: disc > 0 ? String(discountReason).trim() : null,
             additionAmount: add,
             additionReason: add > 0 ? String(additionReason).trim() : null,
-            insuranceAmount: rawInsurance,
-            expenseSplit: expenseSplit || 'PATIENT',
-            insuranceCompanyId: insuranceCompanyId || null,
+            insuranceAmount: resolvedInsurance.insuranceAmount,
+            expenseSplit: resolvedInsurance.expenseSplit,
+            insuranceCompanyId: resolvedInsurance.insuranceCompanyId,
             ticketNumber: ticketNumber || null,
             cashierId: cashierId || req.user.id || null,
             cashierName: cashierNameFinal,
@@ -617,6 +647,11 @@ const createInvoiceFromAppointment = async (req, res) => {
     });
     if (!appointment) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
+    const patient = await prisma.patient.findFirst({
+      where: { id: appointment.patientId, companyId },
+      include: { memberType: true },
+    });
+
     // Reject if an invoice already exists for this appointment
     const existing = await prisma.medicalInvoice.findFirst({ where: { appointmentId, companyId } });
     if (existing) return res.status(400).json({ success: false, error: 'يوجد فاتورة لهذا الموعد بالفعل' });
@@ -654,6 +689,7 @@ const createInvoiceFromAppointment = async (req, res) => {
     }
 
     const cashierNameFinal = cashierNameOf(req, cashierName);
+    const resolvedInsurance = resolveAutoInsurance(req, net, patient);
 
     const invoice = await createInvoiceWithRetry(prisma, companyId, (invoiceNumber) =>
       prisma.$transaction(async (tx) => {
@@ -665,9 +701,9 @@ const createInvoiceFromAppointment = async (req, res) => {
             discountReason: disc > 0 ? String(discountReason).trim() : null,
             additionAmount: add,
             additionReason: add > 0 ? String(additionReason).trim() : null,
-            insuranceAmount: rawInsurance,
-            expenseSplit: expenseSplit || 'PATIENT',
-            insuranceCompanyId: insuranceCompanyId || null,
+            insuranceAmount: resolvedInsurance.insuranceAmount,
+            expenseSplit: resolvedInsurance.expenseSplit,
+            insuranceCompanyId: resolvedInsurance.insuranceCompanyId,
             ticketNumber: ticketNumber || null,
             cashierId: cashierId || req.user.id || null,
             cashierName: cashierNameFinal,
@@ -892,4 +928,5 @@ module.exports = {
   closeCashierShift,
   getCurrentCashierShift,
   getCashierShiftBalance,
+  computeInsuranceShare,
 };
