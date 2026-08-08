@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import {
   XMarkIcon,
   ChatBubbleLeftRightIcon,
@@ -75,15 +75,15 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fallbackStatuses: StatusOption[] = [
-    { code: "PENDING", name: "قيد الانتظار" },
-    { code: "CONFIRMED", name: "مؤكد" },
-    { code: "ON_HOLD", name: "معلق" },
-    { code: "PROCESSING", name: "قيد التجهيز" },
-    { code: "SHIPPED", name: "تم الشحن" },
-    { code: "DELIVERED", name: "تم التسليم" },
-    { code: "CANCELLED", name: "ملغي" },
-    { code: "REFUNDED", name: "مسترد" },
-    { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً" },
+    { code: "PENDING", name: "Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±" },
+    { code: "CONFIRMED", name: "Ù…Ø¤ÙƒØ¯" },
+    { code: "ON_HOLD", name: "Ù…Ø¹Ù„Ù‚" },
+    { code: "PROCESSING", name: "Ù‚ÙŠØ¯ Ø§Ù„ØªØ¬Ù‡ÙŠØ²" },
+    { code: "SHIPPED", name: "ØªÙ… Ø§Ù„Ø´Ø­Ù†" },
+    { code: "DELIVERED", name: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…" },
+    { code: "CANCELLED", name: "Ù…Ù„ØºÙŠ" },
+    { code: "REFUNDED", name: "Ù…Ø³ØªØ±Ø¯" },
+    { code: "PARTIALLY_REFUNDED", name: "Ù…Ø³ØªØ±Ø¯ Ø¬Ø²Ø¦ÙŠØ§Ù‹" },
   ];
 
   const normalizeItems = (rawItems: any): any[] => {
@@ -110,12 +110,12 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           item.productName ||
           item.name ||
           item.product?.name ||
-          "منتج غير محدد",
+          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
         name:
           item.name ||
           item.productName ||
           item.product?.name ||
-          "منتج غير محدد",
+          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
         price: safePrice,
         quantity: safeQuantity,
         total:
@@ -320,7 +320,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
     try {
       setIsPrinting(true);
       setError(null);
-      // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
+      // ÙØªØ­ Ù†Ø§ÙØ°Ø© Ø§Ù„Ø·Ø¨Ø§Ø¹Ø© ÙÙˆØ±Ø§Ù‹ Ø¶Ù…Ù† ØªÙØ§Ø¹Ù„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù„ØªØ¬Ù†Ø¨ Ø­Ø¬Ø¨Ù‡Ø§ Ø¨ÙˆØ§Ø³Ø·Ø© Ù…Ø§Ù†Ø¹ Ø§Ù„Ù†ÙˆØ§ÙØ° Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø©
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         setError(
@@ -337,7 +337,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         const invoice = response.data.data.invoices[0];
         printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
       } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
-        // طلب ضيف فردي: اعرضه في صفحة print-multiple الموحّدة (نفس شريط التقسيم والأكواد)
+        // Ø·Ù„Ø¨ Ø¶ÙŠÙ ÙØ±Ø¯ÙŠ: Ø§Ø¹Ø±Ø¶Ù‡ ÙÙŠ ØµÙØ­Ø© print-multiple Ø§Ù„Ù…ÙˆØ­Ù‘Ø¯Ø© (Ù†ÙØ³ Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ‚Ø³ÙŠÙ… ÙˆØ§Ù„Ø£ÙƒÙˆØ§Ø¯)
         const { storeGuestPrintPayload } = await import("../../pages/orders/PrintMultipleInvoices");
         const guestKey = storeGuestPrintPayload({
           company: {
@@ -420,8 +420,8 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   if (!isOpen || !order) return null;
 
   const renderSectionHeader = (icon: React.ReactNode, title: string) => (
-    <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2 text-sm">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <h4 className="font-semibold text-foreground mb-1.5 flex items-center gap-1.5 text-xs">
+      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
         {icon}
       </span>
       {title}
@@ -460,35 +460,35 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col rounded-t-[30px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:rounded-[28px] md:w-3/5 lg:w-1/2 xl:w-2/5 max-w-3xl"
+        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[28px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-[min(92vw,520px)] sm:rounded-[24px] md:w-[min(86vw,560px)] lg:w-[min(70vw,580px)] xl:w-[min(54vw,580px)]"
       >
-        <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
-        <div className="px-4 pb-5 pt-3 sm:px-5 flex-1 overflow-y-auto">
-          <div className="space-y-6">
+        <div className="mx-auto mt-2.5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
+        <div className="flex-1 overflow-y-auto px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3">
+          <div className="space-y-3">
           {/* Header */}
-          <div className="flex items-center justify-between pb-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <ShoppingBagIcon className="h-5 w-5" />
+          <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingBagIcon className="h-4 w-4" />
               </span>
               <div>
                 <h3
                   id="modal-title"
-                  className="text-lg font-black text-foreground"
+                  className="text-base font-black text-foreground leading-tight"
                 >
                   {t("orders.orderDetails")}
                 </h3>
-                <p className="text-xs font-medium text-muted-foreground" dir="ltr">
+                <p className="text-[11px] font-medium text-muted-foreground leading-tight" dir="ltr">
                   #{order.orderNumber}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={String(t("orders.close"))}
             >
-              <XMarkIcon className="h-5 w-5" />
+              <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
 
@@ -496,7 +496,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           <div
             role="tablist"
             aria-label={t("orders.detailTabs.update")}
-            className="flex items-center gap-1 rounded-2xl border border-border/60 bg-card/40 p-1 backdrop-blur-sm"
+            className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-card/40 p-0.5 backdrop-blur-sm"
           >
             {(
               [
@@ -513,13 +513,13 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   aria-selected={isActive}
                   aria-controls={`tab-panel-${key}`}
                   onClick={() => setActiveTab(key)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     isActive
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:bg-background hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-3 w-3" />
                   {t(`orders.detailTabs.${key}`)}
                 </button>
               );
@@ -550,26 +550,26 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Customer Info */}
           <div>
             {renderSectionHeader(
-              <UserCircleIcon className="h-4 w-4" />,
+              <UserCircleIcon className="h-3.5 w-3.5" />,
               t("orders.customerInfo"),
             )}
-            <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-card/60 border border-border/60 rounded-xl p-2.5 backdrop-blur-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5">
                 <div>
-                  <span className="text-sm text-muted-foreground block mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                     {t("orders.name")}
                   </span>
-                  <span className="text-foreground font-medium">
+                  <span className="text-sm text-foreground font-semibold leading-tight">
                     {getCustomerDisplayName()}
                   </span>
                 </div>
                 {order.customerPhone && (
                   <div>
-                    <span className="text-sm text-muted-foreground block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.phone")}
                     </span>
                     <span
-                      className="text-foreground font-medium"
+                      className="text-sm text-foreground font-semibold leading-tight"
                       dir="ltr"
                     >
                       {order.customerPhone}
@@ -578,10 +578,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.governorate || order.shippingAddress?.governorate) && (
                   <div>
-                    <span className="text-sm text-muted-foreground block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.governorate")}
                     </span>
-                    <span className="text-foreground font-medium">
+                    <span className="text-sm text-foreground font-semibold leading-tight">
                       {getLocationDisplayName(
                         order.governorate || order.shippingAddress?.governorate,
                       )}
@@ -590,10 +590,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
                 {(order.city || order.shippingAddress?.city) && (
                   <div>
-                    <span className="text-sm text-muted-foreground block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
                       {t("orders.city")}
                     </span>
-                    <span className="text-foreground font-medium">
+                    <span className="text-sm text-foreground font-semibold leading-tight">
                       {getLocationDisplayName(
                         order.city || order.shippingAddress?.city,
                       )}
@@ -607,10 +607,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Order Items */}
           <div>
             {renderSectionHeader(
-              <ClipboardDocumentListIcon className="h-4 w-4" />,
+              <ClipboardDocumentListIcon className="h-3.5 w-3.5" />,
               t("orders.products"),
             )}
-            <div className="bg-card/60 border border-border/60 rounded-2xl overflow-hidden max-h-60 overflow-y-auto backdrop-blur-sm">
+            <div className="bg-card/60 border border-border/60 rounded-xl overflow-hidden max-h-48 overflow-y-auto backdrop-blur-sm">
               {!displayItems || displayItems.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   {t("orders.noProducts")}
@@ -620,11 +620,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   {displayItems.map((item: any, index: number) => (
                     <div
                       key={index}
-                      className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="p-2 hover:bg-muted/40 transition-colors"
                     >
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <p className="font-medium text-foreground mb-1">
+                          <p className="font-medium text-foreground text-sm leading-tight mb-0.5">
                             {item.productName ||
                               item.name ||
                               t("orders.productNotSpecified")}
@@ -639,12 +639,12 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                             <div className="text-xs text-muted-foreground mt-1 flex gap-3">
                               {(item.productColor || item.metadata?.color) && (
                                 <span>
-                                  🎨 {item.productColor || item.metadata?.color}
+                                  ðŸŽ¨ {item.productColor || item.metadata?.color}
                                 </span>
                               )}
                               {(item.productSize || item.metadata?.size) && (
                                 <span>
-                                  📏 {item.productSize || item.metadata?.size}
+                                  ðŸ“ {item.productSize || item.metadata?.size}
                                 </span>
                               )}
                             </div>
@@ -668,7 +668,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-foreground text-lg">
+                          <p className="font-semibold text-foreground text-sm">
                             {formatPrice(
                               item.total || item.price * item.quantity,
                             )}
@@ -695,10 +695,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Order Summary */}
           <div>
             {renderSectionHeader(
-              <CalculatorIcon className="h-4 w-4" />,
+              <CalculatorIcon className="h-3.5 w-3.5" />,
               t("orders.orderSummary"),
             )}
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3 backdrop-blur-sm">
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 backdrop-blur-sm">
               <div className="space-y-2">
                 <div className="flex justify-between text-foreground">
                   <span>{t("orders.subtotal")}:</span>
@@ -720,7 +720,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                     {formatPrice(order.shipping || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-3 border-t-2 border-primary/30 text-lg font-bold text-foreground">
+                <div className="flex justify-between pt-2 border-t-2 border-primary/30 text-base font-bold text-foreground">
                   <span>{t("orders.total")}:</span>
                   <span className="text-primary">
                     {formatPrice(order.total || 0)}
@@ -736,14 +736,14 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {activeTab === "update" && (
           <div>
             {renderSectionHeader(
-              <PencilSquareIcon className="h-4 w-4" />,
+              <PencilSquareIcon className="h-3.5 w-3.5" />,
               t("orders.updateOrder"),
             )}
             {renderSectionHeader(
-              <PencilSquareIcon className="h-4 w-4" />,
+              <PencilSquareIcon className="h-3.5 w-3.5" />,
               t("orders.updateOrder"),
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-card/60 border border-border/60 rounded-xl p-2.5 backdrop-blur-sm">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   {t("orders.orderStatus")}
@@ -802,7 +802,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
               </div>
               {pendingCancellationStatus && (
-                <div className="md:col-span-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                <div className="sm:col-span-2 rounded-xl border border-destructive/30 bg-destructive/5 p-2.5">
                   <label className="block text-sm font-medium text-destructive mb-2">
                     {t("orders.cancelReasonTitle")} <span className="text-destructive">*</span>
                   </label>
@@ -887,7 +887,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 </div>
               )}
               {!canManageOrderStatus && (
-                <div className="md:col-span-2 rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm font-medium text-warning-foreground">
+                <div className="sm:col-span-2 rounded-xl border border-warning/30 bg-warning/5 p-2.5 text-xs font-medium text-warning-foreground">
                   {t("orders.merchantFulfillmentNotice")}
                 </div>
               )}
@@ -902,7 +902,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {order.conversationId && (
             <div>
               {renderSectionHeader(
-                <ChatBubbleLeftRightIcon className="h-4 w-4" />,
+                <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" />,
                 t("orders.conversation"),
               )}
               <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
@@ -930,7 +930,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {order.notes && (
             <div>
               {renderSectionHeader(
-                <DocumentTextIcon className="h-4 w-4" />,
+                <DocumentTextIcon className="h-3.5 w-3.5" />,
                 t("orders.notes"),
               )}
               <div className="bg-warning/5 border border-warning/20 rounded-2xl p-3 backdrop-blur-sm">
@@ -946,30 +946,30 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-card/30 py-10 text-center">
               <ClipboardDocumentListIcon className="h-8 w-8 text-muted-foreground/60" />
               <p className="text-sm text-muted-foreground">
-                {t("orders.noHistoryItems") || "لا توجد سجلات بعد"}
+                {t("orders.noHistoryItems") || "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ø¨Ø¹Ø¯"}
               </p>
             </div>
           )}
           </>
           )}
 
-          {/* Action Buttons removed — moved to sticky footer below */}
+          {/* Action Buttons removed â€” moved to sticky footer below */}
         </div>
       </div>
         {/* Sticky Bottom Action Bar */}
-        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-border/60 bg-background/90 px-4 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-1.5 border-t border-border/60 bg-background/90 px-3 py-2 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               onClick={handlePrintInvoice}
               disabled={isPrinting}
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:opacity-50"
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:opacity-50"
             >
               <PrinterIcon className="h-4 w-4" />
               {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
             </button>
             <Link
               to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <ShoppingBagIcon className="h-4 w-4" />
               {t("orders.viewFullDetails")}
@@ -977,7 +977,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-border bg-background px-6 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+            className="inline-flex min-h-[36px] w-full items-center justify-center rounded-lg border border-border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
           >
             {t("orders.close")}
           </button>
@@ -988,3 +988,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 };
 
 export default EnhancedOrderModal;
+
+
+
