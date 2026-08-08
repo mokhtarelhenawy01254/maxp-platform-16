@@ -460,7 +460,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[28px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-[min(92vw,520px)] sm:rounded-[24px] md:w-[min(86vw,560px)] lg:w-[min(70vw,580px)] xl:w-[min(54vw,580px)]"
+        className="relative flex max-h-[calc(100vh-0.5rem)] flex-col overflow-hidden rounded-t-[28px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:rounded-[24px] modal-panel"
       >
         <div className="mx-auto mt-2.5 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
         <div className="flex-1 overflow-y-auto px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3">
