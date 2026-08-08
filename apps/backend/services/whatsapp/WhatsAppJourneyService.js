@@ -223,7 +223,7 @@ class WhatsAppJourneyService {
         // Category-triggered journeys: lookup WhatsApp contact
         try {
             const contact = await this.prisma.whatsAppContact.findFirst({
-                where: { customerId: journey.customerId, companyId: journey.companyId },
+                where: { customerId: journey.customerId },
                 select: { phoneNumber: true }
             });
             return contact?.phoneNumber || '';
