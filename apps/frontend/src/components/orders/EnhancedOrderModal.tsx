@@ -7,6 +7,12 @@ import {
   InformationCircleIcon,
   PrinterIcon,
   ShoppingBagIcon,
+  UserCircleIcon,
+  ClipboardDocumentListIcon,
+  CalculatorIcon,
+  PencilSquareIcon,
+  DocumentTextIcon,
+  CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTranslation } from "react-i18next";
@@ -148,7 +154,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       order?.metadata?.merchantScope?.fulfillmentSource ||
       "",
   ).toUpperCase();
-  const canManageOrderStatus =
+  const canManageOrderStatus = !isMerchantScopedOrder;
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -252,7 +258,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
   const handleStatusSelect = (newStatus: string) => {
     if (!canManageOrderStatus) {
-      setError("الشركة مسؤولة عن تجهيز هذا الطلب، ويمكنك متابعته فقط من هنا");
+      setError(t("orders.merchantFulfillmentReadOnly"));
       return;
     }
 
@@ -409,6 +415,15 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
   if (!isOpen || !order) return null;
 
+  const renderSectionHeader = (icon: React.ReactNode, title: string) => (
+    <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2 text-sm">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        {icon}
+      </span>
+      {title}
+    </h4>
+  );
+
   const getConfidenceIcon = (confidence?: number) => {
     if (!confidence) return <InformationCircleIcon className="h-4 w-4" />;
 
@@ -441,10 +456,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col overflow-y-auto rounded-t-[30px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:rounded-[28px] md:w-3/5 lg:w-1/2 xl:w-2/5 max-w-3xl"
+        className="relative flex max-h-[calc(100vh-0.5rem)] w-full flex-col rounded-t-[30px] border border-slate-200/70 bg-white/96 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900/96 sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:rounded-[28px] md:w-3/5 lg:w-1/2 xl:w-2/5 max-w-3xl"
       >
-        <div className="px-4 pb-5 pt-3 sm:px-5">
-          <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
+        <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden" />
+        <div className="px-4 pb-5 pt-3 sm:px-5 flex-1 overflow-y-auto">
           <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
@@ -486,11 +501,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Customer Info */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.customerInfo")}
-            </h4>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+            {renderSectionHeader(
+              <UserCircleIcon className="h-4 w-4" />,
+              t("orders.customerInfo"),
+            )}
+            <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
@@ -543,11 +558,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Order Items */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.products")}
-            </h4>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-h-60 overflow-y-auto">
+            {renderSectionHeader(
+              <ClipboardDocumentListIcon className="h-4 w-4" />,
+              t("orders.products"),
+            )}
+            <div className="bg-card/60 border border-border/60 rounded-2xl overflow-hidden max-h-60 overflow-y-auto backdrop-blur-sm">
               {!displayItems || displayItems.length === 0 ? (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   {t("orders.noProducts")}
@@ -631,11 +646,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Order Summary */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.orderSummary")}
-            </h4>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+            {renderSectionHeader(
+              <CalculatorIcon className="h-4 w-4" />,
+              t("orders.orderSummary"),
+            )}
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3 backdrop-blur-sm">
               <div className="space-y-2">
                 <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>{t("orders.subtotal")}:</span>
@@ -669,11 +684,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Update Status Section */}
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400">●</span>
-              {t("orders.updateOrder")}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderSectionHeader(
+              <PencilSquareIcon className="h-4 w-4" />,
+              t("orders.updateOrder"),
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t("orders.orderStatus")}
@@ -700,13 +715,13 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                     type="checkbox"
                     checked={isOverride}
                     onChange={(e) => setIsOverride(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    className="h-4 w-4 rounded border-input text-warning focus:ring-warning"
                   />
                   <label
                     htmlFor="override-checkbox-modal"
-                    className="text-sm text-gray-600 dark:text-gray-400"
+                    className="text-sm text-muted-foreground"
                   >
-                    تجاوز قواعد المسار (Override)
+                    {t("orders.overridePathRules")}
                   </label>
                 </div>
               </div>
@@ -715,8 +730,8 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   {t("orders.paymentStatus")}
                 </label>
                 {isGuestOrder || !canManagePaymentStatus ? (
-                  <div className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    {isGuestOrder ? t("orders.notSpecified") : "تدار من صلاحيات الشركة"}
+                  <div className="w-full px-3 py-2 border border-input rounded-lg bg-muted/50 text-muted-foreground">
+                    {isGuestOrder ? t("orders.notSpecified") : t("orders.manageCompanyOnly")}
                   </div>
                 ) : (
                   <select
@@ -732,9 +747,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 )}
               </div>
               {pendingCancellationStatus && (
-                <div className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/20">
-                  <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-2">
-                    سبب الإلغاء <span className="text-red-500">*</span>
+                <div className="md:col-span-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                  <label className="block text-sm font-medium text-destructive mb-2">
+                    {t("orders.cancelReasonTitle")} <span className="text-destructive">*</span>
                   </label>
                   {cancellationReasonOptions.length > 0 ? (
                     <select
@@ -744,9 +759,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                         setError(null);
                       }}
                       disabled={isUpdating || cancellationReasonOptionsLoading}
-                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60 mb-3"
                     >
-                      <option value="">اختر سبب الإلغاء...</option>
+                      <option value="">{t("orders.cancelReasonSelect")}</option>
                       {cancellationReasonOptions.map((reason) => (
                         <option key={reason.id} value={reason.reason}>
                           {reason.reason}
@@ -759,25 +774,25 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       onChange={(e) => setCancellationReason(e.target.value)}
                       rows={2}
                       disabled={isUpdating}
-                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
-                      placeholder="سبب الإلغاء..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60 mb-3"
+                      placeholder={t("orders.cancelReasonPlaceholder")}
                     />
                   )}
                   {cancellationReasonOptionsLoading ? (
-                    <p className="mb-2 text-xs text-red-700/80 dark:text-red-200/80">
-                      جاري تحميل الأسباب الجاهزة...
+                    <p className="mb-2 text-xs text-destructive/80">
+                      {t("orders.cancelLoadingReasons")}
                     </p>
                   ) : null}
-                  <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-1">
-                    ملاحظة إضافية <span className="text-red-400">(اختياري)</span>
+                  <label className="block text-sm font-medium text-destructive mb-1">
+                    {t("orders.cancelAdditionalNotes")} <span className="text-destructive/60">({t("orders.cancelAdditionalNotesOptional")})</span>
                   </label>
                   <textarea
                     value={cancellationAdditionalNotes}
                     onChange={(e) => setCancellationAdditionalNotes(e.target.value)}
                     rows={2}
                     disabled={isUpdating}
-                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100"
-                    placeholder="أضف ملاحظة إضافية (اختياري)..."
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-60"
+                    placeholder={t("orders.cancelAdditionalNotesPlaceholder")}
                   />
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row-reverse">
                     <button
@@ -817,8 +832,8 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 </div>
               )}
               {!canManageOrderStatus && (
-                <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  الشركة مسؤولة عن تجهيز هذا الطلب من مخزنها؛ شاشة الطلبات هنا للمتابعة فقط.
+                <div className="md:col-span-2 rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm font-medium text-warning-foreground">
+                  {t("orders.merchantFulfillmentNotice")}
                 </div>
               )}
             </div>
@@ -827,11 +842,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Conversation Link */}
           {order.conversationId && (
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">●</span>
-                {t("orders.conversation")}
-              </h4>
-              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              {renderSectionHeader(
+                <ChatBubbleLeftRightIcon className="h-4 w-4" />,
+                t("orders.conversation"),
+              )}
+              <div className="bg-card/60 border border-border/60 rounded-2xl p-3 backdrop-blur-sm">
                 <button
                   onClick={() => {
                     const isWhatsApp =
@@ -843,7 +858,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       : `/facebook-inbox?conversation=${order.conversationId}`;
                     window.open(url, "_blank", "noopener,noreferrer");
                   }}
-                  className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   <ChatBubbleLeftRightIcon className="h-5 w-5" />
                   {t("orders.viewConversation")}
@@ -855,46 +870,47 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Notes */}
           {order.notes && (
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">●</span>
-                {t("orders.notes")}
-              </h4>
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              {renderSectionHeader(
+                <DocumentTextIcon className="h-4 w-4" />,
+                t("orders.notes"),
+              )}
+              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-3 backdrop-blur-sm">
+                <p className="text-sm text-foreground whitespace-pre-wrap">
                   {order.notes}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={handlePrintInvoice}
-                disabled={isPrinting}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                <PrinterIcon className="h-5 w-5" />
-                {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
-              </button>
-              <Link
-                to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-              >
-                <ShoppingBagIcon className="h-5 w-5" />
-                {t("orders.viewFullDetails")}
-              </Link>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-full rounded-lg bg-gray-200 px-6 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 sm:w-auto"
-            >
-              {t("orders.close")}
-            </button>
-          </div>
+          {/* Action Buttons removed — moved to sticky footer below */}
         </div>
       </div>
+        {/* Sticky Bottom Action Bar */}
+        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-border/60 bg-background/90 px-4 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={handlePrintInvoice}
+              disabled={isPrinting}
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:opacity-50"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
+            </button>
+            <Link
+              to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <ShoppingBagIcon className="h-4 w-4" />
+              {t("orders.viewFullDetails")}
+            </Link>
+          </div>
+          <button
+            onClick={onClose}
+            className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-border bg-background px-6 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+          >
+            {t("orders.close")}
+          </button>
+        </div>
       </div>
     </div>
   );
