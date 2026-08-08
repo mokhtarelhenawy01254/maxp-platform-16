@@ -4,7 +4,8 @@ import {
   Users, Layers, Plus, Search, RefreshCw, Pencil, Trash2, Eye,
   Send, ListFilter, Clock, ShoppingBag, TrendingUp,
   Loader2, FileDown, CheckCircle2, Ban, Tag, Wallet, Star,
-  Landmark, FileText, ArrowDownUp, Sparkles,
+  Landmark, FileText, ArrowDownUp, Sparkles, Crown, Heart,
+  AlertTriangle, Copy,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface CustomerList {
   count: number;
   criteria: any;
   isDefault?: boolean;
+  isStale?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -58,6 +60,21 @@ interface ListMember {
   status: string;
   rating: string;
   tags: string;
+  totalSpent?: number;
+  ordersCount?: number;
+  rfmScore?: number;
+  rfmTier?: "gold" | "silver" | "bronze" | "lead";
+}
+
+const RFM_TIER_META: Record<string, { label: string; cls: string }> = {
+  gold: { label: "ذهبي", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
+  silver: { label: "فضي", cls: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
+  bronze: { label: "برونزي", cls: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
+  lead: { label: "عادي", cls: "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]" },
+};
+
+function rfmTierMeta(tier?: string): { label: string; cls: string } {
+  return RFM_TIER_META[tier || "lead"] ?? RFM_TIER_META["lead"] ?? { label: "عادي", cls: "" };
 }
 
 const ORDER_STATUSES = [
@@ -125,6 +142,33 @@ const CRITERIA_TYPES = [
 
 type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];
 
+const SMART_PRESETS = [
+  {
+    value: "champions",
+    label: "أفضل العملاء",
+    icon: Crown,
+    hint: "نشطون + كثيرو الطلبات + إنفاق مرتفع — عرض ولاء",
+  },
+  {
+    value: "loyal",
+    label: "العملاء الأوفياء",
+    icon: Heart,
+    hint: "5 طلبات أو أكثر — رشّحهم لبرنامج الولاء",
+  },
+  {
+    value: "atRisk",
+    label: "معرضون للفقدان",
+    icon: AlertTriangle,
+    hint: "كانوا مشترين لكن غير نشطين 30 يوم — أعد التنشيط",
+  },
+  {
+    value: "new",
+    label: "عملاء جدد",
+    icon: Sparkles,
+    hint: "أحدث 100 عميل — رحّب بهم",
+  },
+] as const;
+
 function buildEmptyCriteria(type: CriteriaType): Record<string, any> {
   switch (type) {
     case "active": return { type, hours: 24 };
@@ -141,6 +185,10 @@ function buildEmptyCriteria(type: CriteriaType): Record<string, any> {
     case "tag": return { type, tag: "" };
     default: return { type };
   }
+}
+
+function buildPresetCriteria(preset: string): Record<string, any> {
+  return { type: "preset", preset };
 }
 
 function criteriaSummary(criteria: any): string {
@@ -160,6 +208,10 @@ function criteriaSummary(criteria: any): string {
     case "oldest": return `أقدم ${c.limit ?? 100} عميل`;
     case "minTotalSpent": return `إجمالي إنفاق ≥ ${c.amount}`;
     case "minOrdersCount": return `عدد طلبات ≥ ${c.count}`;
+    case "preset": {
+      const preset = SMART_PRESETS.find((p) => p.value === c.preset);
+      return preset ? preset.label : "قائمة جاهزة";
+    }
     default: return "جميع العملاء النشطين";
   }
 }
@@ -200,6 +252,7 @@ const CustomerLists: React.FC = () => {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadLists = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -271,12 +324,13 @@ const CustomerLists: React.FC = () => {
 
   const openEdit = (list: CustomerList) => {
     const c = typeof list.criteria === "string" ? (() => { try { return JSON.parse(list.criteria); } catch { return { type: "all" }; } })() : (list.criteria || { type: "all" });
+    const isPreset = c.type === "preset" && SMART_PRESETS.some((p) => p.value === c.preset);
     const type = (c.type && CRITERIA_TYPES.some((t) => t.value === c.type) ? c.type : "all") as CriteriaType;
     setEditingList(list);
     setFormName(list.name);
     setFormDescription(list.description || "");
     setFormCriteriaType(type);
-    setFormCriteria({ ...c, type });
+    setFormCriteria(isPreset ? { ...c, type: "preset" } : { ...c, type });
     setPreviewCount(null);
     setDialogOpen(true);
   };
@@ -359,23 +413,33 @@ const CustomerLists: React.FC = () => {
     }
   };
 
+  const handleDuplicate = async (list: CustomerList) => {
+    if (list.isDefault) return;
+    setSaving(true);
+    try {
+      const criteria = typeof list.criteria === "string" ? (() => { try { return JSON.parse(list.criteria); } catch { return {}; } })() : (list.criteria || {});
+      await broadcastService.createCustomerList({
+        name: `${list.name} (نسخة)`,
+        description: list.description || "",
+        criteria,
+      });
+      toast.success("تم إنشاء نسخة من القائمة");
+      void loadLists(true);
+    } catch (err: any) {
+      toast.error(err?.message || "فشل في نسخ القائمة");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openDetail = async (list: CustomerList, page = 1, search = memberSearch) => {
     setDetailList(list);
     setMembersPage(page);
     setMembersLoading(true);
     try {
-      const res = await broadcastService.getCustomersInListPaginated(list.id, page, PER_PAGE);
-      let data = res?.data || [];
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
-        data = data.filter((m: ListMember) =>
-          m.name.toLowerCase().includes(q) ||
-          m.phone.toLowerCase().includes(q) ||
-          m.email.toLowerCase().includes(q),
-        );
-      }
-      setMembers(data);
-      setMembersTotal(res?.total ?? data.length);
+      const res = await broadcastService.getCustomersInListPaginated(list.id, page, PER_PAGE, search);
+      setMembers(res?.data || []);
+      setMembersTotal(res?.total ?? (res?.data?.length || 0));
     } catch (err: any) {
       toast.error(err?.message || "فشل في تحميل العملاء");
       setMembers([]);
@@ -570,6 +634,11 @@ const CustomerLists: React.FC = () => {
                   {list.count.toLocaleString("ar-EG")}
                 </span>
                 <span className="text-sm text-[color:var(--color-muted-foreground)]">عميل</span>
+                {!list.isDefault && list.isStale ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="لم يتم تحديث هذا العدد منذ أكثر من 7 أيام">
+                    <Clock className="size-3" /> قديم
+                  </span>
+                ) : null}
               </div>
 
               <div className="mt-auto flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pt-3">
@@ -583,6 +652,9 @@ const CustomerLists: React.FC = () => {
                   <>
                     <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEdit(list)}>
                       <Pencil className="size-3.5" /> تعديل
+                    </Button>
+                    <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleDuplicate(list)} title="نسخ قائمة مشابهة">
+                      <Copy className="size-3.5" /> نسخ
                     </Button>
                     <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleRefreshCount(list)} disabled={refreshingId === list.id}>
                       {refreshingId === list.id ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
@@ -622,8 +694,41 @@ const CustomerLists: React.FC = () => {
 
             <Separator />
 
+            {/* Smart RFM presets */}
             <div className="space-y-1.5">
-              <Label>نوع المعيار</Label>
+              <Label>ابدأ من قالب جاهز</Label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {SMART_PRESETS.map((p) => {
+                  const active = formCriteria.type === "preset" && formCriteria.preset === p.value;
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => {
+                        setFormCriteriaType("all");
+                        setFormCriteria(buildPresetCriteria(p.value));
+                        setPreviewCount(null);
+                      }}
+                      className={cn(
+                        "flex items-start gap-2 rounded-xl border p-3 text-start transition-all",
+                        active
+                          ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-card))] ring-1 ring-[color:var(--color-primary)]/30"
+                          : "border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:border-[color:var(--color-primary)]/40",
+                      )}
+                    >
+                      <p.icon className={cn("mt-0.5 size-4 shrink-0", active ? "text-[color:var(--color-primary)]" : "text-[color:var(--color-muted-foreground)]")} />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-[color:var(--color-foreground)]">{p.label}</span>
+                        <span className="block text-[11px] leading-4 text-[color:var(--color-muted-foreground)]">{p.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>أو حدد معياراً يدوياً</Label>
               <Select value={formCriteriaType} onValueChange={(v) => changeCriteriaType((v ?? "all") as string)}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="اختر المعيار" />
@@ -645,6 +750,7 @@ const CustomerLists: React.FC = () => {
             </div>
 
             {/* Criteria specific fields */}
+            {formCriteria.type !== "preset" ? (
             <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
               {formCriteriaType === "active" && (
                 <div className="space-y-1.5">
@@ -735,6 +841,21 @@ const CustomerLists: React.FC = () => {
                 <p className="text-sm text-[color:var(--color-muted-foreground)]">ستشمل هذه القائمة جميع العملاء النشطين.</p>
               )}
             </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-primary)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))] px-4 py-3">
+                {(() => {
+                  const preset = SMART_PRESETS.find((p) => p.value === formCriteria.preset);
+                  return (
+                    <>
+                      {preset ? <preset.icon className="size-4 text-[color:var(--color-primary)]" /> : <Sparkles className="size-4 text-[color:var(--color-primary)]" />}
+                      <span className="text-sm font-medium text-[color:var(--color-foreground)]">
+                        {preset ? preset.label : "قالب جاهز"} — {preset ? preset.hint : "سيتم تطبيق المعايير الذكية تلقائياً"}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Live count preview */}
             <div className="flex items-center justify-between rounded-2xl border border-[color:color-mix(in_srgb,var(--color-primary)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))] px-4 py-3">
@@ -807,8 +928,12 @@ const CustomerLists: React.FC = () => {
                 <Input
                   value={memberSearch}
                   onChange={(e) => {
-                    setMemberSearch(e.target.value);
-                    if (detailList) void openDetail(detailList, 1, e.target.value);
+                    const v = e.target.value;
+                    setMemberSearch(v);
+                    if (debounceRef.current) clearTimeout(debounceRef.current);
+                    debounceRef.current = setTimeout(() => {
+                      if (detailList) void openDetail(detailList, 1, v);
+                    }, 350);
                   }}
                   placeholder="ابحث في الأعضاء..."
                   className="h-10 rounded-full border-[color:var(--shell-control-border)] pr-9"
@@ -837,6 +962,8 @@ const CustomerLists: React.FC = () => {
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="text-right">العميل</TableHead>
                       <TableHead className="text-right">الهاتف</TableHead>
+                      <TableHead className="text-right">الإنفاق</TableHead>
+                      <TableHead className="text-right">القيمة</TableHead>
                       <TableHead className="text-right">آخر نشاط</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                     </TableRow>
@@ -856,6 +983,32 @@ const CustomerLists: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell dir="ltr" className="text-sm">{m.phone || "—"}</TableCell>
+                        <TableCell dir="ltr" className="text-sm font-medium">
+                          {(m.totalSpent ?? 0).toLocaleString("ar-EG")}
+                          <span className="mr-1 text-xs text-[color:var(--color-muted-foreground)]">ج.م</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            {(() => {
+                              const tier = rfmTierMeta(m.rfmTier);
+                              return (
+                                <span className={cn(
+                                  "inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                                  tier.cls,
+                                )}>
+                                  <Star className="size-3" />
+                                  {tier.label}
+                                  {typeof m.rfmScore === "number" ? ` • ${m.rfmScore}` : ""}
+                                </span>
+                              );
+                            })()}
+                            {(m.ordersCount ?? 0) > 0 ? (
+                              <span className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                                {m.ordersCount} طلب
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-xs text-[color:var(--color-muted-foreground)]">{formatDate(m.lastActivity)}</TableCell>
                         <TableCell>
                           <span className={cn(

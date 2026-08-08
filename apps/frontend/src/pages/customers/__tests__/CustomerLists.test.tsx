@@ -185,8 +185,8 @@ describe('CustomerLists', () => {
     broadcastService.getCustomersInListPaginated.mockResolvedValue({
       success: true,
       data: [
-        { id: 'c1', name: 'محمد أحمد', phone: '201000', email: '', lastActivity: '2026-01-01', status: 'active', rating: 'EXCELLENT', tags: '' },
-        { id: 'c2', name: 'سارة علي', phone: '201001', email: '', lastActivity: '2026-01-02', status: 'inactive', rating: 'GOOD', tags: '' },
+        { id: 'c1', name: 'محمد أحمد', phone: '201000', email: '', lastActivity: '2026-01-01', status: 'active', rating: 'EXCELLENT', tags: '', totalSpent: 5000, ordersCount: 5, rfmScore: 76, rfmTier: 'gold' },
+        { id: 'c2', name: 'سارة علي', phone: '201001', email: '', lastActivity: '2026-01-02', status: 'inactive', rating: 'GOOD', tags: '', totalSpent: 100, ordersCount: 1, rfmScore: 10, rfmTier: 'lead' },
       ],
       total: 2,
       page: 1,
@@ -200,6 +200,53 @@ describe('CustomerLists', () => {
 
     expect(await screen.findByText('محمد أحمد')).toBeInTheDocument();
     expect(screen.getByText('سارة علي')).toBeInTheDocument();
-    expect(broadcastService.getCustomersInListPaginated).toHaveBeenCalledWith('list_vip', 1, 20);
+    expect(screen.getByText(/ذهبي/)).toBeInTheDocument();
+    expect(broadcastService.getCustomersInListPaginated).toHaveBeenCalledWith('list_vip', 1, 20, '');
+  });
+
+  test('ينسخ قائمة مخصصة (Duplicate)', async () => {
+    const user = userEvent.setup();
+    broadcastService.createCustomerList.mockResolvedValue({ success: true, data: { id: 'copy' } });
+    renderPage();
+    await screen.findByText('عملاء VIP');
+
+    await user.click(screen.getAllByRole('button', { name: /نسخ/ })[0]);
+
+    await waitFor(() => {
+      expect(broadcastService.createCustomerList).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'عملاء VIP (نسخة)' }),
+      );
+    });
+  });
+
+  test('يعرض قوالب RFM في نافذة الإنشاء', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('عملاء VIP');
+
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    await screen.findByText('إنشاء قائمة عملاء جديدة');
+
+    expect(screen.getByText('أفضل العملاء')).toBeInTheDocument();
+    expect(screen.getByText('العملاء الأوفياء')).toBeInTheDocument();
+    expect(screen.getByText('معرضون للفقدان')).toBeInTheDocument();
+    expect(screen.getByText('عملاء جدد')).toBeInTheDocument();
+  });
+
+  test('اختيار قالب RFM يضبط المعايير ويعاين العدد', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('عملاء VIP');
+
+    await user.click(screen.getByRole('button', { name: /قائمة جديدة/ }));
+    await screen.findByText('إنشاء قائمة عملاء جديدة');
+
+    await user.click(screen.getByText('أفضل العملاء'));
+
+    await waitFor(() => {
+      expect(broadcastService.previewCustomerListCount).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'preset', preset: 'champions' }),
+      );
+    });
   });
 });

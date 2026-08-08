@@ -1676,6 +1676,51 @@ async function computeCustomerListCount(prisma, companyId, criteria) {
   return prisma.customer.count({ where });
 }
 
+/**
+ * درجة RFM مبسطة (0–100) من الإنفاق والتكرار والحداثة.
+ * تقريب عملي لنماذج 2026 دون الحاجة لبيانات تاريخية ضخمة.
+ */
+function computeRfmScore(totalSpent, ordersCount, lastActivity) {
+  let score = 0;
+  // Monetary (0–40)
+  const m = Number(totalSpent) || 0;
+  if (m >= 20000) score += 40;
+  else if (m >= 10000) score += 34;
+  else if (m >= 5000) score += 28;
+  else if (m >= 2000) score += 22;
+  else if (m >= 1000) score += 16;
+  else if (m >= 500) score += 10;
+  else if (m > 0) score += 5;
+
+  // Frequency (0–30)
+  const f = Number(ordersCount) || 0;
+  if (f >= 20) score += 30;
+  else if (f >= 10) score += 24;
+  else if (f >= 5) score += 18;
+  else if (f >= 3) score += 12;
+  else if (f >= 1) score += 6;
+
+  // Recency (0–30)
+  const days = lastActivity
+    ? Math.max(0, (Date.now() - new Date(lastActivity).getTime()) / 86400000)
+    : 999;
+  if (days <= 3) score += 30;
+  else if (days <= 7) score += 26;
+  else if (days <= 14) score += 22;
+  else if (days <= 30) score += 16;
+  else if (days <= 60) score += 10;
+  else if (days <= 90) score += 5;
+
+  return Math.min(100, Math.round(score));
+}
+
+function rfmTierFor(score) {
+  if (score >= 70) return 'gold';
+  if (score >= 45) return 'silver';
+  if (score >= 25) return 'bronze';
+  return 'lead';
+}
+
 exports.createCustomerList = async (req, res) => {
   try {
     const companyId = req.user.companyId;
@@ -1883,6 +1928,14 @@ exports.getCustomerLists = async (req, res) => {
       }
     });
 
+    const staleAfterDays = 7;
+    const now = Date.now();
+    const listsWithStale = lists.map((l) => ({
+      ...l,
+      criteria: typeof l.criteria === 'string' ? JSON.parse(l.criteria) : l.criteria,
+      isStale: now - new Date(l.updatedAt).getTime() > staleAfterDays * 86400000,
+    }));
+
     console.log(`📝 [GET CUSTOMER LISTS] تم جلب ${lists.length} قائمة مخصصة`);
 
     // Add default lists
@@ -1909,7 +1962,7 @@ exports.getCustomerLists = async (req, res) => {
         createdAt: new Date(),
         updatedAt: new Date()
       },
-      ...lists
+      ...listsWithStale
     ];
 
     console.log(`✅ [GET CUSTOMER LISTS] تم إرجاع ${allLists.length} قائمة (شاملة القائمة الافتراضية)`);
@@ -1947,6 +2000,7 @@ exports.getCustomersInList = async (req, res) => {
     const { listId } = req.params;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 200);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const skip = (page - 1) * limit;
 
     const prisma = getSharedPrismaClient();
@@ -1969,14 +2023,24 @@ exports.getCustomersInList = async (req, res) => {
 
     const { where, orderBy, take } = await buildEffectiveCustomerListWhere(prisma, companyId, criteria);
 
+    const effectiveWhere = { ...where };
+    if (search) {
+      effectiveWhere.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     let effectiveOrderBy = orderBy || { updatedAt: 'desc' };
     let effectiveTake = take || undefined;
 
-    const total = await prisma.customer.count({ where });
+    const total = await prisma.customer.count({ where: effectiveWhere });
 
     const customers = await prisma.customer.findMany({
-      where,
-      skip: isDefault ? skip : skip,
+      where: effectiveWhere,
+      skip,
       take: effectiveTake ?? limit,
       orderBy: effectiveOrderBy,
       select: {
@@ -1993,19 +2057,48 @@ exports.getCustomersInList = async (req, res) => {
       }
     });
 
-    const data = customers.map((c) => ({
-      id: c.id,
-      name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'عميل بدون اسم',
-      email: c.email || '',
-      phone: c.phone || '',
-      lastActivity: c.updatedAt,
-      createdAt: c.createdAt,
-      totalSpent: 0,
-      location: 'غير محدد',
-      status: c.status === 'ACTIVE' ? 'active' : 'inactive',
-      rating: c.customerRating || 'UNKNOWN',
-      tags: c.tags || '',
-    }));
+    // إجمالي الإنفاق وعدد الطلبات الحقيقيين لكل عميل في هذه الصفحة
+    const ids = customers.map((c) => c.id);
+    let spendMap = new Map();
+    if (ids.length > 0) {
+      const orders = await prisma.order.groupBy({
+        by: ['customerId'],
+        where: {
+          companyId,
+          customerId: { in: ids },
+          status: { notIn: ['CANCELLED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'] },
+        },
+        _sum: { total: true },
+        _count: { customerId: true },
+      });
+      orders.forEach((o) => {
+        spendMap.set(o.customerId, {
+          totalSpent: Number(o._sum?.total ?? 0),
+          ordersCount: o._count?.customerId ?? 0,
+        });
+      });
+    }
+
+    const data = customers.map((c) => {
+      const spend = spendMap.get(c.id) || { totalSpent: 0, ordersCount: 0 };
+      const rfmScore = computeRfmScore(spend.totalSpent, spend.ordersCount, c.updatedAt);
+      return {
+        id: c.id,
+        name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'عميل بدون اسم',
+        email: c.email || '',
+        phone: c.phone || '',
+        lastActivity: c.updatedAt,
+        createdAt: c.createdAt,
+        totalSpent: spend.totalSpent,
+        ordersCount: spend.ordersCount,
+        rfmScore,
+        rfmTier: rfmTierFor(rfmScore),
+        location: 'غير محدد',
+        status: c.status === 'ACTIVE' ? 'active' : 'inactive',
+        rating: c.customerRating || 'UNKNOWN',
+        tags: c.tags || '',
+      };
+    });
 
     res.json({
       success: true,

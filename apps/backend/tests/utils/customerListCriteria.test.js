@@ -1,6 +1,9 @@
 const {
   buildCustomerListWhere,
   criteriaToSummary,
+  extractAggregates,
+  resolveAggregateCustomerIds,
+  PRESETS,
   ORDER_STATUSES,
   RETURN_STATUSES,
   PAYMENT_STATUSES,
@@ -157,5 +160,116 @@ describe('قوائم الثوابت', () => {
   });
   test('التقييمات', () => {
     expect(CUSTOMER_RATINGS).toContain('EXCELLENT');
+  });
+});
+
+describe('PRESETS — قوالب RFM الجاهزة', () => {
+  test('champions تحتوي الإنفاق + عدد الطلبات', () => {
+    expect(PRESETS.champions).toBeDefined();
+    const aggs = extractAggregates(PRESETS.champions.criteria);
+    expect(aggs).toEqual(expect.arrayContaining([
+      { type: 'minTotalSpent', value: 2000 },
+      { type: 'minOrdersCount', value: 3 },
+    ]));
+  });
+
+  test('loyal تحتوي حد عدد الطلبات', () => {
+    const aggs = extractAggregates(PRESETS.loyal.criteria);
+    expect(aggs).toContainEqual({ type: 'minOrdersCount', value: 5 });
+  });
+
+  test('atRisk تجمع غير نشط + طلبات تم تسليمها', () => {
+    const { where } = buildCustomerListWhere('comp_1', { type: 'preset', preset: 'atRisk' });
+    expect(where.AND).toBeDefined();
+  });
+
+  test('new → أحدث 100', () => {
+    const { orderBy, take } = buildCustomerListWhere('comp_1', { type: 'preset', preset: 'new' });
+    expect(orderBy.createdAt).toBe('desc');
+    expect(take).toBe(100);
+  });
+
+  test('preset غير معروف → جميع النشطين', () => {
+    const { where } = buildCustomerListWhere('comp_1', { type: 'preset', preset: 'nope' });
+    expect(where).toEqual({ companyId: 'comp_1', status: 'ACTIVE' });
+  });
+});
+
+describe('extractAggregates', () => {
+  test('يستخرج aggregation واحدة', () => {
+    expect(extractAggregates({ type: 'minTotalSpent', amount: 500 }))
+      .toEqual([{ type: 'minTotalSpent', value: 500 }]);
+  });
+
+  test('يستخرج aggregations متداخلة في combo', () => {
+    const aggs = extractAggregates({
+      type: 'combo',
+      conditions: [
+        { type: 'all' },
+        { type: 'minTotalSpent', amount: 1000 },
+        { type: 'minOrdersCount', count: 4 },
+      ],
+    });
+    expect(aggs).toEqual([
+      { type: 'minTotalSpent', value: 1000 },
+      { type: 'minOrdersCount', value: 4 },
+    ]);
+  });
+
+  test('يستخرج من preset عبر التوسيع', () => {
+    const aggs = extractAggregates({ type: 'preset', preset: 'champions' });
+    expect(aggs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('criteria بلا aggregation → مصفوفة فارغة', () => {
+    expect(extractAggregates({ type: 'all' })).toEqual([]);
+  });
+});
+
+describe('resolveAggregateCustomerIds', () => {
+  const prisma = {
+    order: {
+      groupBy: jest.fn(),
+    },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('يعيد تقاطع شروط aggregation (AND)', async () => {
+    prisma.order.groupBy.mockResolvedValue([
+      { customerId: 'c1', _sum: { total: 5000 }, _count: { customerId: 5 } },
+      { customerId: 'c2', _sum: { total: 1000 }, _count: { customerId: 2 } },
+      { customerId: 'c3', _sum: { total: 3000 }, _count: { customerId: 4 } },
+    ]);
+
+    const ids = await resolveAggregateCustomerIds(prisma, 'comp_1', {
+      type: 'combo',
+      conditions: [
+        { type: 'minTotalSpent', amount: 2000 },
+        { type: 'minOrdersCount', count: 3 },
+      ],
+    });
+
+    // c1 (5000 + 5) و c3 (3000 + 4) يمرّان، c2 لا
+    expect(ids).toEqual(['c1', 'c3']);
+  });
+
+  test('بلا aggregations → null', async () => {
+    const ids = await resolveAggregateCustomerIds(prisma, 'comp_1', { type: 'all' });
+    expect(ids).toBeNull();
+  });
+
+  test('لا يجري استعلام عند عدم وجود aggregations', async () => {
+    await resolveAggregateCustomerIds(prisma, 'comp_1', { type: 'tag', tag: 'VIP' });
+    expect(prisma.order.groupBy).not.toHaveBeenCalled();
+  });
+});
+
+describe('criteriaToSummary للقوالب', () => {
+  test('يترجم preset للاسم العربي', () => {
+    expect(criteriaToSummary({ type: 'preset', preset: 'champions' })).toBe('أفضل العملاء');
+    expect(criteriaToSummary({ type: 'preset', preset: 'loyal' })).toBe('العملاء الأوفياء');
   });
 });

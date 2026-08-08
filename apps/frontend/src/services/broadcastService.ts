@@ -361,6 +361,7 @@ class BroadcastService {
     listId: string,
     page = 1,
     limit = 25,
+    search = "",
   ): Promise<{
     success: boolean;
     data: any[];
@@ -369,8 +370,9 @@ class BroadcastService {
     limit: number;
     hasMore: boolean;
   }> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
     return this.makeRequest(
-      `/broadcast/customer-lists/${listId}/customers?page=${page}&limit=${limit}`,
+      `/broadcast/customer-lists/${listId}/customers?page=${page}&limit=${limit}${searchParam}`,
     );
   }
 

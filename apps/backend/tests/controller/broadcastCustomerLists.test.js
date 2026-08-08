@@ -56,6 +56,7 @@ describe('broadcastController — customer lists', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrisma.order.groupBy.mockResolvedValue([]);
   });
 
   describe('createCustomerList', () => {
