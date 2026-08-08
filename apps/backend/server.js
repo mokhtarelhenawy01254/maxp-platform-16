@@ -1130,6 +1130,22 @@ try {
   console.error("❌ [AUTO-DISCOUNT-CRON] Failed to start voucher conversion cron:", error);
 }
 
+// Start customer birthday automation cron
+try {
+  const { startCustomerBirthdayScheduler } = require("./cron/customerBirthdayCron");
+  startCustomerBirthdayScheduler();
+} catch (error) {
+  console.error("❌ [CUSTOMER-BIRTHDAY-CRON] Failed to start customer birthday cron:", error);
+}
+
+// Start scheduled occasion campaign cron
+try {
+  const { startOccasionCampaignScheduler } = require("./cron/occasionCampaignCron");
+  startOccasionCampaignScheduler();
+} catch (error) {
+  console.error("❌ [OCCASION-CRON] Failed to start occasion campaign cron:", error);
+}
+
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب
 // (BullMQ إن توفر Redis، وإلا fallback polling كل 60 ثانية)
 try {
