@@ -19,6 +19,61 @@ MAX_OUTPUT_RETRIES = 1
 REVIEW_MODEL_PRIORITY = ["deepseek-v4-flash", "gemini-2.5-flash", "gpt-5.4-nano"]
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Anti-hallucination guard for state-changing actions
+# ─────────────────────────────────────────────────────────────────────
+# When the agent's reply claims that a state-changing action succeeded
+# (e.g. "تم التأكيد ✅", "confirmed", "shipped"), the LLM must have actually
+# invoked the corresponding tool with a successful result. This guard runs
+# BEFORE self-review and replaces the reply with a transparent fallback
+# when the claim is unsupported by tool evidence. Fixes the "LLM says
+# confirmed but order stays PENDING" hallucination.
+_STATE_CHANGING_TOOLS = {
+    "order_confirm",
+    "order_update_details",
+    "order_cancel",
+    "order_refund",
+    "order_create_draft",
+    "order_create_confirmed",
+}
+
+_HALLUCINATION_PHRASES = [
+    # Arabic success claims
+    "اتأكد", "تم التأكيد", "اتنفذ", "اتعدل", "اتنقل للشحن",
+    "اتنقل", "اتحفظ", "اتلغي", "تم الإلغاء", "اتعمله",
+    "راح للشحن", "اتشحن", "اترد للعميل", "اترجع",
+    "confirmed", "updated", "shipped", "cancelled", "canceled",
+    "saved", "done", "refunded", "تم بنجاح",
+]
+
+_HALLUCINATION_FALLBACK = (
+    "حاولت أعمل الخطوة دي بس مفيش استجابة من النظام، "
+    "ممكن تجرب تاني بعد ثانية؟"
+)
+
+
+def _has_hallucinated_success_claim(text: str, executed_tools: list[dict[str, Any]]) -> bool:
+    """Return True if the reply claims a state-changing action succeeded,
+    but no such tool was actually executed with a successful result.
+
+    This is a string-based check (no LLM call) — fast and deterministic.
+    """
+    if not text or not executed_tools:
+        return False
+    text_lower = text.lower()
+    if not any(phrase in text_lower for phrase in _HALLUCINATION_PHRASES):
+        return False
+    # Did any state-changing tool succeed?
+    for item in executed_tools:
+        if not isinstance(item, dict):
+            continue
+        tool_name = item.get("tool", "")
+        status = item.get("status", "")
+        if tool_name in _STATE_CHANGING_TOOLS and status == "success":
+            return False
+    return True
+
+
 def _try_parse_json_object(text: str) -> dict[str, Any] | None:
     """Try multiple strategies to extract a JSON object from text."""
     if not text:
@@ -508,8 +563,29 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     reply = _strip_internal_tags(reply)
 
     # If no LLM response and a final_reply is already set (e.g., from skills_pipeline error),
-    # skip validation to avoid overwriting the error message
+    # still run the hallucination guard before returning — the raw tool output fallback
+    # at skills_pipeline.py:228 can leak "success" claims that never had a real tool behind them.
     if not reply and ctx.final_reply:
+        if _has_hallucinated_success_claim(
+            ctx.final_reply or "", ctx.executed_tools or []
+        ):
+            agent_slug = str(
+                getattr(ctx.agent, "template_slug", None)
+                or getattr(ctx.agent, "slug", None)
+                or ""
+            )
+            executed_names = [
+                item.get("tool", "")
+                for item in (ctx.executed_tools or [])
+                if isinstance(item, dict)
+            ]
+            logger.warning(
+                "hallucination_blocked_final_reply",
+                agent_slug=agent_slug,
+                original_reply=(ctx.final_reply or "")[:200],
+                executed_tools=executed_names,
+            )
+            ctx.final_reply = _HALLUCINATION_FALLBACK
         return ctx
 
     validated = None
@@ -592,6 +668,31 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             validated = AgentResponse(**response_data)
             ctx.response_contract = validated
             ctx.final_reply = validated.reply
+
+            # ── Anti-hallucination guard (runs BEFORE self-review) ──
+            # If the LLM claims a state-changing action succeeded but no
+            # such tool was actually executed, replace with a transparent
+            # fallback so the customer is not told a lie.
+            if _has_hallucinated_success_claim(
+                ctx.final_reply or "", ctx.executed_tools or []
+            ):
+                agent_slug = str(
+                    getattr(ctx.agent, "template_slug", None)
+                    or getattr(ctx.agent, "slug", None)
+                    or ""
+                )
+                executed_names = [
+                    item.get("tool", "")
+                    for item in (ctx.executed_tools or [])
+                    if isinstance(item, dict)
+                ]
+                logger.warning(
+                    "hallucination_blocked",
+                    agent_slug=agent_slug,
+                    original_reply=(ctx.final_reply or "")[:200],
+                    executed_tools=executed_names,
+                )
+                ctx.final_reply = _HALLUCINATION_FALLBACK
             # Merge LLM-provided attachments on top of auto-populated ones (e.g. landmarkImage)
             if validated.attachments:
                 existing = {a.get("url"): a for a in (ctx.response_attachments or []) if a.get("url")}
