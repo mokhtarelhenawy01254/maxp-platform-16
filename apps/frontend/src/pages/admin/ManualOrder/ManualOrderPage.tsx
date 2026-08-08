@@ -279,8 +279,8 @@ const ManualOrderPage = () => {
     >
       {access?.subscription === "EXPIRED" ? (
         <div className="mb-3 shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
-          اشتراك الطلبات اليدوية منتهي. يمكنك إنشاء أوردرات جديدة، لكنها ستكون{" "}
-          <b className="font-semibold">معلّقة (مخفية)</b> في صفحة الطلبات حتى تجدّد اشتراكك.
+          اشتراك الطلبات اليدوية منتهي. يمكنك إنشاء أوردرات جديدة، لكن لو رصيد المحفظة صفر
+          ستكون <b className="font-semibold">معلّقة (مخفية)</b> في صفحة الطلبات حتى تجدّد اشتراكك.
         </div>
       ) : null}
 

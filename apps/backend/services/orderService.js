@@ -1162,6 +1162,9 @@ class OrderService {
             await autoDiscountService.reverseVoucherForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
               console.error(`❌ [AUTO-DISCOUNT-REVERSE] Failed for cancelled order ${orderNumber}:`, error.message);
             });
+            await autoDiscountService.restoreRedeemedPointsForOrder({ orderId: order.id, companyId: order.companyId }).catch(error => {
+              console.error(`❌ [AUTO-DISCOUNT-RESTORE-POINTS] Failed for cancelled order ${orderNumber}:`, error.message);
+            });
           }
 
           if (status === 'CONFIRMED' || status === 'DELIVERED') {

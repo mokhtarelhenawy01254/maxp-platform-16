@@ -2203,6 +2203,14 @@ router.post('/', async (req, res) => {
       if (freeShippingMetadata) {
         regularOrderMetadata.freeShipping = freeShippingMetadata;
       }
+      if (pointsApplied > 0) {
+        regularOrderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
       if (promoDiscount > 0) {
         regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
       }

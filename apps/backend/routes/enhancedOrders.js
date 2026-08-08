@@ -733,19 +733,27 @@ router.post('/', manualOrderAccess, async (req, res) => {
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
     if (result.success) {
-      // 🚧 لو اشتراك الطلبات اليدوية منتهي → تعليق الطلب الجديد (مخفي + ماسك)
-      // حتى يتجدد الاشتراك، بنفس ميكانيزم طلبات المتجر المعلّقة.
+      // 🚧 تعليق الطلب اليدوي (مخفي + ماسك) فقط عندما:
+      // اشتراك الطلبات اليدوية منتهي + المحفظة بدون رصيد (مفيش فلوس للتجديد).
+      // الطلب مش بيتحاسب بفلوس (مجاني) — بيتحرر تلقائيًا لما الاشتراك يتفعّل.
       if (req.manualSubscriptionExpired && result.order?.id) {
         try {
-          const { holdOrderForExpiredSubscription } = require('../services/pendingBillingService');
-          await holdOrderForExpiredSubscription({
-            companyId: req.user.companyId,
-            orderId: result.order.id,
-            orderNumber: result.order.orderNumber,
+          const wallet = await getSharedPrismaClient().companyWallet.findUnique({
+            where: { companyId: req.user.companyId },
           });
-          result.held = true;
-          result.holdReason = 'subscription_expired';
-          result.message = `${result.message || 'تم إنشاء الطلب بنجاح'}. اشتراك الطلبات اليدوية منتهي، الطلب معلّق وسيظهر في صفحة الطلبات بعد تجديد الاشتراك.`;
+          const balance = wallet ? Number(wallet.balance) : 0;
+
+          if (balance <= 0) {
+            const { holdOrderForExpiredSubscription } = require('../services/pendingBillingService');
+            await holdOrderForExpiredSubscription({
+              companyId: req.user.companyId,
+              orderId: result.order.id,
+              orderNumber: result.order.orderNumber,
+            });
+            result.held = true;
+            result.holdReason = 'subscription_expired';
+            result.message = `${result.message || 'تم إنشاء الطلب بنجاح'}. اشتراك الطلبات اليدوية منتهي ورصيد المحفظة صفر، الطلب معلّق وسيظهر في صفحة الطلبات بعد تجديد الاشتراك.`;
+          }
         } catch (holdError) {
           console.error('❌ [ENHANCED-ORDERS] Failed to hold order for expired subscription:', holdError.message);
         }
