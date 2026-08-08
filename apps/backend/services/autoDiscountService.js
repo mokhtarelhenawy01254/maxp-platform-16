@@ -213,6 +213,41 @@ async function reverseVoucherForOrder({ orderId, companyId }) {
   }
 }
 
+/**
+ * استرجاع النقاط اللي استخدمها العميل كدفع (نقطة = value ج) عند إلغاء/رجوع الأوردر
+ */
+async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
+  const prisma = getSharedPrismaClient();
+  try {
+    const order = await prisma.order.findFirst({ where: { id: orderId, companyId }, select: { metadata: true, customerId: true } });
+    if (!order?.metadata || !order.customerId) return { restored: false, reason: 'no_metadata' };
+
+    let meta;
+    try { meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata; } catch (e) { return { restored: false, reason: 'bad_metadata' }; }
+
+    const pr = meta?.pointsRedemption;
+    if (!pr || !pr.pointsUsed || !pr.programId) return { restored: false, reason: 'no_points_redemption' };
+
+    const pointsUsed = Number(pr.pointsUsed);
+    const record = await prisma.customerLoyaltyRecord.findUnique({
+      where: { customerId_programId: { customerId: order.customerId, programId: pr.programId } }
+    });
+    if (!record) return { restored: false, reason: 'no_record' };
+
+    await prisma.customerLoyaltyRecord.update({
+      where: { id: record.id },
+      data: {
+        currentPoints: (parseFloat(record.currentPoints) || 0) + pointsUsed,
+        totalRedeemed: Math.max(0, (parseFloat(record.totalRedeemed) || 0) - pointsUsed)
+      }
+    });
+    return { restored: true, points: pointsUsed };
+  } catch (error) {
+    console.error('❌ [AUTO-DISCOUNT] Restore redeemed points failed:', error.message);
+    return { restored: false, reason: 'error' };
+  }
+}
+
 module.exports = {
   DEFAULT_SETTINGS,
   getSettings,
@@ -223,5 +258,6 @@ module.exports = {
   applyVoucherDiscount,
   markVoucherUsed,
   convertExpiredVouchers,
-  reverseVoucherForOrder
+  reverseVoucherForOrder,
+  restoreRedeemedPointsForOrder
 };
