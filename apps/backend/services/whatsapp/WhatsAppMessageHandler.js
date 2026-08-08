@@ -23,6 +23,19 @@ const { emitToAudience, getConversationAudience } = require('../whatsappRealtime
 const DEFAULT_BAILEYS_SEND_RECONNECT_WAIT_MS = 10000;
 const BAILEYS_SEND_RECONNECT_POLL_MS = 500;
 
+/**
+ * 🚨 PRODUCTION-FIX: تحديث بيانات الـ contact بعد إرسال ناجح.
+ * فشل هذا التحديث (DB/network) لا يجب أبداً أن يحوّل إرسالاً نجح فعلاً إلى
+ * "فشل" — كان يسبب fallback مكرر (رسالة مكررة للعميل) أو failureReason مضلل.
+ */
+async function safeUpdateContact(sessionId, jid, options = {}) {
+  try {
+    await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, options.sock, { isOutgoing: true });
+  } catch (contactErr) {
+    console.warn(`⚠️ [WhatsAppMessageHandler] updateContact failed (non-critical): ${contactErr.message}`);
+  }
+}
+
 async function getSessionProvider(sessionId) {
     const session = await getSharedPrismaClient().whatsAppSession.findUnique({
         where: { id: sessionId }
@@ -210,16 +223,28 @@ async function sendText(sessionId, to, text, options = {}) {
                 previewUrl: options.previewUrl
             });
 
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'TEXT',
-                content: text,
-                quotedMessageId: options.quotedMessageId,
-                interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
-                isAIResponse: options.isAIResponse || false,
-                aiConfidence: options.aiConfidence,
-                metadata: options.metadata
-            }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى "فشل".
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'TEXT',
+                    content: text,
+                    quotedMessageId: options.quotedMessageId,
+                    interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
+                    isAIResponse: options.isAIResponse || false,
+                    aiConfidence: options.aiConfidence,
+                    metadata: options.metadata
+                }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'TEXT',
+                    content: text
+                };
+            }
 
             try {
                 await ensureMetaContact(sessionId, jid, { isOutgoing: true });
@@ -306,7 +331,7 @@ async function sendText(sessionId, to, text, options = {}) {
         }, { companyId: session.companyId, senderId: options.senderId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -369,7 +394,7 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -424,7 +449,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -479,7 +504,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -540,7 +565,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -597,7 +622,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -666,7 +691,7 @@ END:VCARD`;
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -743,13 +768,25 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
 
             const result = await MetaCloudProvider.sendInteractive(sessionId, to, interactivePayload);
 
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'BUTTONS',
-                content: text,
-                interactiveData: JSON.stringify({ buttons: limitedButtons, footer }),
-                isAIResponse: options.isAIResponse || false
-            }, { companyId: dbSession?.companyId });
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى "فشل".
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'BUTTONS',
+                    content: text,
+                    interactiveData: JSON.stringify({ buttons: limitedButtons, footer }),
+                    isAIResponse: options.isAIResponse || false
+                }, { companyId: dbSession?.companyId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'BUTTONS',
+                    content: text
+                };
+            }
 
             try {
                 await ensureMetaContact(sessionId, jid, { isOutgoing: true });
@@ -790,7 +827,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
             isAIResponse: options.isAIResponse || false
         }, { companyId: session.companyId });
 
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -897,7 +934,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -975,7 +1012,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
 
 
         // تحديث جهة الاتصال
-        await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
 
         return savedMessage;
     } catch (error) {
@@ -1660,14 +1697,28 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
             const displayContent = templateBody ? `${templateName}\n${templateBody}` : `Template: ${templateName}`;
             let meta = serializeOutgoingMetadata(options.metadata);
-            const savedMessage = await saveOutgoingMessage(sessionId, jid, {
-                messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
-                type: 'TEMPLATE',
-                content: displayContent,
-                interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody }),
-                isAIResponse: options.isAIResponse || false,
-                metadata: meta
-            }, { companyId: dbSession?.companyId, senderId: options.senderId });
+
+            // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
+            // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى
+            // "فشل" — كان يسبب fallback مكرر (رسالة مكررة للعميل) أو failureReason مضلل.
+            let savedMessage;
+            try {
+                savedMessage = await saveOutgoingMessage(sessionId, jid, {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    type: 'TEMPLATE',
+                    content: displayContent,
+                    interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody }),
+                    isAIResponse: options.isAIResponse || false,
+                    metadata: meta
+                }, { companyId: dbSession?.companyId, senderId: options.senderId });
+            } catch (saveErr) {
+                console.warn(`⚠️ [WhatsAppMessageHandler] saveOutgoingMessage failed (non-critical, send already succeeded): ${saveErr.message}`);
+                savedMessage = {
+                    messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
+                    messageType: 'TEMPLATE',
+                    content: displayContent
+                };
+            }
 
             try {
                 await ensureMetaContact(sessionId, jid, { isOutgoing: true });

@@ -5,6 +5,13 @@ const verifyToken = require('../utils/verifyToken');
 const router = express.Router();
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 
+const {
+  PRISMA_ORDER_STATUS_ENUM,
+  PREP_FILTER_STATUSES,
+  TURBO_STATUS_ALIASES,
+  parseStatusFilter
+} = require('../utils/orderStatusFilter');
+
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
@@ -16,27 +23,6 @@ const preparationQueueService = require('../services/preparationQueueService');
 // ── Dynamic Status Code Cache ──────────────────────────────────────────
 // Loads ALL known status codes (system + custom) from orderStatusConfig
 // so custom statuses like BDONKODTERBO also work in the main page filter.
-const PRISMA_ORDER_STATUS_ENUM = new Set([
-  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
-  'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
-  'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'WOO_TAGHEZ', 'DRAFT',
-  'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-  'PENDING_PREPARATION', 'PREPARING', 'READY', 'QUALITY_CHECK', 'PACKAGED',
-  'ON_HOLD_PREP', 'PARTIALLY_DELIVERED', 'STOCK_SHORTAGE'
-]);
-
-// Statuses that are stored in order.status under a mapped value (e.g. PREPARING
-// is persisted as PROCESSING) while the real stage lives in
-// metadata.preparationStatus. When filtering /orders by one of these, the query
-// must match COALESCE(metadata.preparationStatus, status) — see the
-// _customStatusFilter SQL below.
-const PREP_FILTER_STATUSES = new Set([
-  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING',
-  'PENDING_PREPARATION', 'PREPARING', 'PROCESSING', 'QUALITY_CHECK', 'PACKAGED',
-  'READY', 'READY_TO_SHIP', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
-  'PENDING_CANCELLATION', 'ON_HOLD_PREP'
-]);
-
 let _knownStatusCodes = null;
 let _knownStatusCodesPromise = null;
 
@@ -2233,66 +2219,67 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestWhereClause.isViewed = false;
     }
 
-    // 1. Filter by Status (Safely handle Prisma OrderStatus enums and Turbo shipping aliases)
-    const TURBO_STATUS_ALIASES = {
-      'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
-      'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2'],
-      'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
-      'turbo_saved': ['turbo_saved', 'status_1', '1'],
-      'turbo_sent': ['turbo_sent', 'status_2', '2'],
-      'processing': ['processing', 'status_3', 'created', '3'],
-      'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
-      'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
-      'cancelled': ['cancelled', 'status_6', '6'],
-      'delivered': ['delivered', 'status_7', '7'],
-      'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
-      'archived': ['archived', 'status_9', '9'],
-      'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
-      'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
-      'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
-      'delayed': ['delayed', 'status_13', '13']
-    };
+    // 1. Filter by Status (Safely handle Prisma OrderStatus enums, prep metadata,
+    // and Turbo shipping aliases). `status` may be a comma-separated list so
+    // users can combine multiple statuses at once.
+    const knownCodes = getKnownStatusCodes();
+    const {
+      incompleteFilterStatus,
+      realStatusList,
+      plainEnumStatuses,
+      customStatuses,
+      turboAliasValues,
+      guestStatusValues,
+      ignored: ignoredStatuses
+    } = parseStatusFilter(status, knownCodes);
 
-    if (status && status !== 'all') {
-      const rawStatus = String(status).trim();
-      const upperStatus = rawStatus.toUpperCase();
-      const lowerStatus = rawStatus.toLowerCase();
+    for (const raw of ignoredStatuses) {
+      console.warn(`[ORDERS] Ignoring unrecognized status filter: "${raw}"`);
+    }
 
-      const knownCodes = getKnownStatusCodes();
-      const isKnownStatus = knownCodes.has(upperStatus);
+    if (realStatusList.length > 0) {
+      // Multiple statuses combine with OR semantics: an order matches if it has
+      // ANY of the selected statuses, across order.status / prep metadata / turbo.
+      const statusOrBranches = [];
+      if (plainEnumStatuses.length > 0) {
+        statusOrBranches.push({ status: { in: plainEnumStatuses } });
+      }
+      if (turboAliasValues.length > 0) {
+        statusOrBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (customStatuses.length > 0) {
+        // Prep/custom statuses are resolved to IDs via raw SQL later (they need
+        // COALESCE(preparationStatus, status) matching), then merged into the OR.
+        whereClause._customStatusFilter = customStatuses;
+      }
+      if (statusOrBranches.length === 1) {
+        Object.assign(whereClause, statusOrBranches[0]);
+      } else if (statusOrBranches.length > 1) {
+        whereClause.OR = statusOrBranches;
+      }
 
-      if (isKnownStatus) {
-        if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
-          // Preparation-queue statuses are stored in order.status as their
-          // mapped value (e.g. PROCESSING), while the real stage lives in
-          // metadata.preparationStatus. Route these through the custom filter
-          // so the SQL matches COALESCE(metadata.preparationStatus, status).
-          if (PREP_FILTER_STATUSES.has(upperStatus)) {
-            whereClause._customStatusFilter = upperStatus;
-          } else {
-            whereClause.status = upperStatus;
-          }
-        } else {
-          whereClause._customStatusFilter = upperStatus;
-        }
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
-      } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
-        const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
-        whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-        guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-      } else {
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
-        console.warn(`[ORDERS] Ignoring unrecognized status filter for regular orders, applied to guest orders only: "${rawStatus}"`);
+      // Guest orders carry statuses on a separate table — mirror the OR across
+      // order.status and turboShipmentStatus.
+      const guestStatusBranches = [];
+      if (guestStatusValues.length > 0) {
+        guestStatusBranches.push({ status: { in: [...new Set(guestStatusValues)] } });
+      }
+      if (turboAliasValues.length > 0) {
+        guestStatusBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (guestStatusBranches.length === 1) {
+        Object.assign(guestWhereClause, guestStatusBranches[0]);
+      } else if (guestStatusBranches.length > 1) {
+        guestWhereClause.OR = guestStatusBranches;
       }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
     }
-
-    // فلترة خاصة بحالة "غير مكتمل / مفقود" للسلال غير المكتملة
-    const incompleteFilterStatus = ['incomplete', 'lost'].includes(String(status || '').trim().toLowerCase())
-      ? String(status).trim().toLowerCase()
-      : null;
     const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
     if (incompleteOnlyView) {
       // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
@@ -2616,7 +2603,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     let customStatusOrderIds = null;
     let customStatusTotal = 0;
 
-    if (customStatusFilter) {
+    if (Array.isArray(customStatusFilter) && customStatusFilter.length > 0) {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
       // Prep statuses are stored under their mapped order.status while the real
@@ -2627,10 +2614,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // must not pull them back into a prep-stage filter.
       const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
-      const matchExpr = `(UPPER(${effectiveStatusExpr}) = $2 AND NOT (${statusIsTerminalExpr}))`;
+      const statusPlaceholders = customStatusFilter
+        .map((_, index) => `$${index + 2}`)
+        .join(', ');
+      const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
       let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
-      const params = [companyId, customStatusFilter];
+      const params = [companyId, ...customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;
         fetchSql += ` AND "createdAt" >= $3`;
@@ -2647,7 +2637,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
       const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
       customStatusOrderIds = rows.map(r => r.id);
-      whereClause.id = { in: customStatusOrderIds };
+
+      if (Array.isArray(whereClause.OR)) {
+        // The custom-status branch participates in the status OR (e.g. when the
+        // user also selected plain enum / turbo statuses).
+        whereClause.OR.push({ id: { in: customStatusOrderIds } });
+      } else {
+        whereClause.id = { in: customStatusOrderIds };
+      }
     }
 
     const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
@@ -2711,7 +2708,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' }
       }),
       // Count Total Regular (for pagination metadata)
-      customStatusFilter ? customStatusTotal : getSharedPrismaClient().order.count({ where: whereClause }),
+      customStatusFilter && !Array.isArray(whereClause.OR) && !whereClause.status && !whereClause.turboShipmentStatus
+        ? customStatusTotal
+        : getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);

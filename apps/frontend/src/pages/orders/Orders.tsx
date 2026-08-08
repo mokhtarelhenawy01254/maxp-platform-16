@@ -240,7 +240,7 @@ export interface OrderStatusDefinition {
 }
 
 export interface OrdersFilters {
-  status: string;
+  status: string[];
   paymentStatus: string;
   sourceType: string;
   merchantId: string;
@@ -651,7 +651,7 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
 
 const ORDERS_LIST_STORAGE_KEY = "orders:list:view-state:v1";
 const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
-  status: "",
+  status: [],
   paymentStatus: "",
   sourceType: "",
   merchantId: "",
@@ -734,8 +734,12 @@ export const getMerchantOperationsTotals = (
   ...(summary?.summary || {}),
 });
 
-const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => ({
-  status: searchParams.get("status") || "",
+const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => {
+  const rawStatus = searchParams.get("status") || "";
+  return {
+    status: rawStatus
+      ? rawStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
   paymentStatus: searchParams.get("paymentStatus") || "",
   sourceType: searchParams.get("sourceType") || "",
   merchantId: searchParams.get("merchantId") || "",
@@ -750,7 +754,8 @@ const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilter
   minConfidence: searchParams.get("minConfidence") || "",
   onlyUnseen: searchParams.get("onlyUnseen") === "true",
   timeRange: searchParams.get("timeRange") || "",
-});
+  };
+};
 
 const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
   const candidate =
@@ -759,7 +764,9 @@ const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       : {};
 
   return {
-    status: typeof candidate.status === "string" ? candidate.status : "",
+    status: Array.isArray(candidate.status)
+      ? candidate.status.filter((s): s is string => typeof s === "string")
+      : [],
     paymentStatus:
       typeof candidate.paymentStatus === "string" ? candidate.paymentStatus : "",
     sourceType: typeof candidate.sourceType === "string" ? candidate.sourceType : "",
@@ -1106,6 +1113,7 @@ const Orders: React.FC = () => {
     restoredListViewState.filters,
   );
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -1123,7 +1131,9 @@ const Orders: React.FC = () => {
     setLimit((prev) => (prev !== newLimit ? newLimit : prev));
   }, [searchParams]);
 
-  const isTrashView = filters.status.toLowerCase() === "trash";
+  const isTrashView =
+    Array.isArray(filters.status) &&
+    filters.status.some((s) => s.toLowerCase() === "trash");
 
   const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
     try {
@@ -1224,6 +1234,8 @@ const Orders: React.FC = () => {
 
       if (typeof value === "string" && value) {
         params[key] = value;
+      } else if (Array.isArray(value) && value.length > 0) {
+        params[key] = value.join(",");
       }
     });
 
@@ -1287,6 +1299,10 @@ const Orders: React.FC = () => {
           return count + (value ? 1 : 0);
         }
 
+        if (Array.isArray(value)) {
+          return count + value.length;
+        }
+
         if (!value) return count;
         return count + 1;
       }, 0),
@@ -1295,7 +1311,7 @@ const Orders: React.FC = () => {
   const advancedFilterCount = useMemo(() => {
     let count = 0;
 
-    if (filters.status) count += 1;
+    if (filters.status.length > 0) count += filters.status.length;
     if (filters.paymentStatus) count += 1;
     if (filters.sourceType) count += 1;
     if (filters.merchantId) count += 1;
@@ -1576,7 +1592,9 @@ const Orders: React.FC = () => {
         const queryParams = {
           page: page.toString(),
           limit: limit.toString(),
-          ...(filters.status && { status: filters.status.toUpperCase() }),
+          ...(filters.status.length > 0 && {
+            status: filters.status.map((s) => s.toUpperCase()).join(","),
+          }),
           ...(filters.paymentStatus && {
             paymentStatus: filters.paymentStatus.toUpperCase(),
           }),
@@ -1632,6 +1650,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch enhanced orders:", data.message);
@@ -1644,7 +1663,7 @@ const Orders: React.FC = () => {
           limit: limit.toString(),
         };
 
-        if (filters.status) queryParams.status = filters.status;
+        if (filters.status.length > 0) queryParams.status = filters.status.join(",");
         if (filters.paymentStatus)
           queryParams.paymentStatus = filters.paymentStatus;
         if (filters.sourceType) queryParams.sourceType = filters.sourceType;
@@ -1700,6 +1719,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
           const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
           if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
@@ -1871,7 +1891,7 @@ const Orders: React.FC = () => {
   const clearAdvancedFilters = () => {
     setFilters((prev) => ({
       ...prev,
-      status: "",
+      status: [],
       paymentStatus: "",
       sourceType: "",
       merchantId: "",
@@ -2301,8 +2321,11 @@ const Orders: React.FC = () => {
         });
       }
     }
-    const activeFilter = normalizeStatusCode(filters.status);
-    if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
+    filters.status.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter || activeFilter === "TRASH" || activeFilter === "TRASH_ORDER") {
+        return;
+      }
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -2310,7 +2333,7 @@ const Orders: React.FC = () => {
           name: getStatusDisplay(activeFilter).label,
         });
       }
-    }
+    });
     return list;
   }, [orderStatuses, filters.status, showIncompleteInOrders]);
 
@@ -2585,6 +2608,9 @@ const Orders: React.FC = () => {
         onSetQuickDate={setQuickDate}
         onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
+        onRefresh={fetchOrders}
+        lastUpdatedAt={lastUpdatedAt}
+        isConnected={isConnected}
       />
 
       <OrdersStatsBar

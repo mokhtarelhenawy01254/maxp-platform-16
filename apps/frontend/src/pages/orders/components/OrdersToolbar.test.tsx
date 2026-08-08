@@ -11,7 +11,7 @@ type ToolbarProps = React.ComponentProps<typeof OrdersToolbar>;
 
 const makeProps = (overrides: Partial<ToolbarProps> = {}): ToolbarProps => ({
   filters: {
-    status: "",
+    status: [],
     paymentStatus: "",
     sourceType: "",
     merchantId: "",
@@ -48,6 +48,8 @@ const makeProps = (overrides: Partial<ToolbarProps> = {}): ToolbarProps => ({
   showMerchantOperationFilters: false,
   showAffiliateOperationFilter: false,
   hasCustomDateFilters: false,
+  lastUpdatedAt: null,
+  isConnected: true,
   getAffiliateDisplayName: () => "",
   onFilterChange: jest.fn(),
   onClearAdvancedFilters: jest.fn(),
@@ -55,6 +57,7 @@ const makeProps = (overrides: Partial<ToolbarProps> = {}): ToolbarProps => ({
   onSetQuickDate: jest.fn(),
   onOpenWorkspace: jest.fn(),
   onRetry: jest.fn(),
+  onRefresh: jest.fn(),
   ...overrides,
 });
 
@@ -95,5 +98,79 @@ describe("OrdersToolbar", () => {
 
     expect(screen.getByLabelText("orders.allStatuses")).toBeInTheDocument();
     expect(screen.getByLabelText("orders.allPaymentStatuses")).toBeInTheDocument();
+  });
+
+  it("selects multiple statuses through the multi-select dropdown", () => {
+    const onFilterChange = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({
+            showAdvancedFilters: true,
+            onFilterChange,
+            filterableOrderStatuses: [
+              { code: "PENDING", name: "قيد الانتظار" },
+              { code: "SHIPPED", name: "تم الشحن" },
+            ],
+          })}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByLabelText("orders.allStatuses"));
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    expect(onFilterChange).toHaveBeenCalledWith("status", ["pending"]);
+  });
+
+  it("keeps previously selected statuses when adding another one", () => {
+    const onFilterChange = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({
+            showAdvancedFilters: true,
+            onFilterChange,
+            filters: { ...makeProps().filters, status: ["pending"] },
+            filterableOrderStatuses: [
+              { code: "PENDING", name: "قيد الانتظار" },
+              { code: "SHIPPED", name: "تم الشحن" },
+            ],
+          })}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByLabelText("orders.allStatuses"));
+    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    expect(onFilterChange).toHaveBeenCalledWith("status", ["pending", "shipped"]);
+  });
+
+  it("clears all statuses from the All Orders button", () => {
+    const onFilterChange = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({
+            onFilterChange,
+            filters: { ...makeProps().filters, status: ["pending", "shipped"] },
+          })}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByText("orders.allOrders"));
+    expect(onFilterChange).toHaveBeenCalledWith("status", []);
+  });
+
+  it("triggers a manual refresh from the toolbar button", () => {
+    const onRefresh = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar {...makeProps({ onRefresh })} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByLabelText("orders.refreshOrders"));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 });

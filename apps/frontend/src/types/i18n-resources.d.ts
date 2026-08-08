@@ -9993,8 +9993,36 @@ declare module 'react-i18next' {
         followUpScheduled: string;
         cancelReasonTitle: string;
         cancelReasonPlaceholder: string;
+        cancelReasonRequired: string;
+        cancelReasonSelect: string;
+        cancelAdditionalNotes: string;
+        cancelAdditionalNotesOptional: string;
+        cancelAdditionalNotesPlaceholder: string;
+        cancelLoadingReasons: string;
         cancelConfirm: string;
         cancelClose: string;
+        overridePathRules: string;
+        manageCompanyOnly: string;
+        merchantFulfillmentNotice: string;
+        merchantFulfillmentReadOnly: string;
+        detailTabs: {
+          details: string;
+          update: string;
+          history: string;
+        };
+        noHistoryItems: string;
+        detailSectionIcons: {
+          customer: string;
+          products: string;
+          summary: string;
+          update: string;
+          conversation: string;
+          notes: string;
+          partnerOps: string;
+        };
+        saveChanges: string;
+        discardChanges: string;
+        changesPending: string;
         workspaceSubtitle: string;
         bulkOrders: string;
         bulkOrdersSubtitle: string;
@@ -10587,6 +10615,13 @@ declare module 'react-i18next' {
         overviewOrdersTrendAria: string;
         overviewRevenueTrendAria: string;
         overviewAovTrendAria: string;
+        statusSearch: string;
+        statusSelectAll: string;
+        statusNoResults: string;
+        refreshOrders: string;
+        lastUpdatedAt: string;
+        liveUpdates: string;
+        offlineUpdates: string;
       };
       preparation: {
         page: {
