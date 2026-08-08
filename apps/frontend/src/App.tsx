@@ -1176,6 +1176,7 @@ const PartnerDashboard = React.lazy(
 
 const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
 const MessagingCheckout = React.lazy(() => import("./pages/payment/MessagingCheckout"));
+const SubscriptionSuccess = React.lazy(() => import("./pages/payment/SubscriptionSuccess"));
 const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
 const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
 const UnifiedCommentsManagement = React.lazy(
@@ -2602,6 +2603,14 @@ const AppContent = () => {
               element={
                 <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
                   <MessagingCheckout />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/subscription"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <SubscriptionSuccess />
                 </Suspense>
               }
             />
