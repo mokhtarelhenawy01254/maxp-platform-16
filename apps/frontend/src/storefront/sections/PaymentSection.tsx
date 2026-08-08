@@ -401,14 +401,19 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
   // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
   const tierProgress = useCheckoutStore((s) => s.tierProgress);
-  const loyaltyFreeShipping = Boolean(tierProgress?.rewards?.freeShipping);
-  const loyaltyDiscountPercent = Number(tierProgress?.rewards?.discountPercent || 0);
+  const isAutoDiscountMode = tierProgress?.loyaltySystem === 'AUTO_DISCOUNT';
+  const loyaltyFreeShipping = isAutoDiscountMode ? false : Boolean(tierProgress?.rewards?.freeShipping);
+  const loyaltyDiscountPercent = isAutoDiscountMode ? 0 : Number(tierProgress?.rewards?.discountPercent || 0);
   const loyaltyDiscount =
     loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  const voucherDiscount =
+    isAutoDiscountMode && tierProgress?.activeVoucher
+      ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
+      : 0;
   const effectiveShipping =
     loyaltyFreeShipping && Number(shipping) > 0 ? 0 : Number(shipping);
 
-  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount);
+  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount - voucherDiscount);
   const summaryShippingValueText = (() => {
     if (isShippingLoading) {
       return calculatingText;
@@ -1058,10 +1063,20 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
             {loyaltyDiscount > 0 ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  خصم مستوى {tierProgress?.tier?.nameAr || tierProgress?.tier?.name || ''} ({loyaltyDiscountPercent}%)
+                  {isAutoDiscountMode ? '' : 'خصم مستوى '}{loyaltyDiscountPercent}%
                 </span>
                 <span className="font-medium text-emerald-600">
                   -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
+            {voucherDiscount > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  خصم الكوبون ({tierProgress?.activeVoucher?.percent}%)
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(voucherDiscount, currency)}
                 </span>
               </div>
             ) : null}
