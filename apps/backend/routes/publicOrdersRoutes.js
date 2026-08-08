@@ -1475,14 +1475,14 @@ router.post('/', async (req, res) => {
       : 0;
 
     if (wantsWallet) {
-      if (!customerAuth) {
+      if (!customerAuth && !loyaltyCustomer) {
         return res.status(401).json({
           success: false,
           error: 'يجب تسجيل الدخول كعميل لاستخدام المحفظة'
         });
       }
 
-      if (customerAuth.companyId !== company.id) {
+      if (customerAuth && customerAuth.companyId !== company.id) {
         return res.status(403).json({
           success: false,
           error: 'رمز العميل لا يطابق شركة المتجر'
@@ -1654,11 +1654,12 @@ router.post('/', async (req, res) => {
       let walletBalanceAfter = null;
       let walletIdForTxn = null;
 
-      if (wantsWallet && customerAuth) {
+      const walletCustomerId = customerAuth?.customerId || loyaltyCustomer?.id || null;
+      if (wantsWallet && walletCustomerId) {
         // Ensure wallet exists
         let wallet = await tx.customerWallet.findFirst({
           where: {
-            customerId: customerAuth.customerId,
+            customerId: walletCustomerId,
             companyId: company.id,
             isActive: true
           }
@@ -1667,7 +1668,7 @@ router.post('/', async (req, res) => {
         if (!wallet) {
           wallet = await tx.customerWallet.create({
             data: {
-              customerId: customerAuth.customerId,
+              customerId: walletCustomerId,
               companyId: company.id,
               balance: 0,
               totalEarned: 0,
@@ -1754,7 +1755,7 @@ router.post('/', async (req, res) => {
 
       if (walletApplied > 0) {
         orderMetadata.walletApplied = walletApplied;
-        orderMetadata.walletCustomerId = customerAuth.customerId;
+        orderMetadata.walletCustomerId = walletCustomerId;
         orderMetadata.walletBalanceBefore = walletBalanceBefore;
         orderMetadata.walletBalanceAfter = walletBalanceAfter;
       }
