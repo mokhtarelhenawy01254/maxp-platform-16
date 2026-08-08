@@ -201,17 +201,6 @@ const appendMerchantOrderFilter = (whereClause, guestWhereClause, condition) => 
   blockGuestOrdersForMerchantFilters(guestWhereClause);
 };
 
-const appendCommissionFilter = (whereClause, guestWhereClause, condition) => {
-  if (!condition) return;
-  if (!whereClause.AND) whereClause.AND = [];
-  whereClause.AND.push({
-    commissions: {
-      some: condition
-    }
-  });
-  blockGuestOrdersForMerchantFilters(guestWhereClause);
-};
-
 const buildMerchantOperationWhere = (operationStatus) => {
   switch (operationStatus) {
     case 'PREPARATION':
@@ -244,6 +233,80 @@ const buildMerchantOperationWhere = (operationStatus) => {
       };
     default:
       return null;
+  }
+};
+
+const buildRegularSourceCondition = (source) => {
+  switch (String(source).toLowerCase()) {
+    case 'manual':
+      return {
+        OR: [
+          { extractionMethod: { startsWith: 'manual' } },
+          { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
+          { sourceType: 'manual' },
+          { createdBy: { not: null } },
+          { createdByName: { not: null } },
+          { conversationId: 'manual' }
+        ]
+      };
+    case 'ai_conversation':
+      return {
+        AND: [
+          { sourceType: 'ai_conversation' },
+          { NOT: { extractionMethod: { startsWith: 'manual' } } },
+          { NOT: { extractionMethod: 'manual_admin' } },
+          { NOT: { extractionMethod: 'manual_order_modal' } },
+          { NOT: { conversationId: 'manual' } }
+        ]
+      };
+    case 'storefront':
+      return {
+        OR: [
+          { sourceType: 'storefront' },
+          { metadata: { contains: '"source":"storefront"' } },
+          { metadata: { contains: 'storefront', mode: 'insensitive' } }
+        ]
+      };
+    case 'woocommerce':
+      return {
+        OR: [
+          { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
+          { wooCommerceId: { not: null } },
+          { syncedFromWoo: true }
+        ]
+      };
+    case 'pos':
+      return {
+        OR: [
+          { sourceType: 'pos' },
+          { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
+        ]
+      };
+    case 'api':
+      return {
+        OR: [
+          { sourceType: { in: ['api', 'public_api'] } },
+          { metadata: { contains: '"source":"api"' } },
+          { metadata: { contains: 'api', mode: 'insensitive' } }
+        ]
+      };
+    case 'import':
+      return {
+        OR: [
+          { extractionMethod: 'import' },
+          { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
+          { orderSource: 'INTERNAL_IMPORT' }
+        ]
+      };
+    case 'unknown':
+      return {
+        OR: [
+          { sourceType: null },
+          { sourceType: 'unknown' }
+        ]
+      };
+    default:
+      return { sourceType: String(source).toLowerCase() };
   }
 };
 
@@ -2065,12 +2128,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
     const onlyUnseen = req.query.onlyUnseen === 'true';
-    const requestedMerchantId = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
-      ? ''
-      : String(req.query.merchantId || '').trim();
-    const requestedFulfillmentSource = normalizeOrderRouteCode(req.query.fulfillmentSource);
-    const requestedMerchantOperationStatus = normalizeOrderRouteCode(req.query.merchantOperationStatus);
-    const requestedMerchantSettlementStatus = normalizeOrderRouteCode(req.query.merchantSettlementStatus);
+    const requestedMerchantIds = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
+      ? []
+      : String(req.query.merchantId || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const requestedFulfillmentSources = String(req.query.fulfillmentSource || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantOperationStatuses = String(req.query.merchantOperationStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantSettlementStatuses = String(req.query.merchantSettlementStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
 
     // "Fetch Top N" Strategy:
     // لجلب الصفحة رقم P، نحتاج لجلب أول (P * limit) عنصر من الجدولين
@@ -2105,8 +2171,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     addMerchantOrderScope(whereClause, merchant);
     disableGuestOrderScope(guestWhereClause, merchant);
 
-    // 🕵️ Affiliate Filtering Logic
-    let affiliateId = req.query.affiliateId;
+    // 🕵️ Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
+    let affiliateIds = String(req.query.affiliateId || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
 
     // 🔒 Security: If user is an AFFILIATE, enforce their own affiliateId
     if (req.user.role === 'AFFILIATE') {
@@ -2114,7 +2181,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         where: { userId: req.user.id }
       });
       if (affiliate) {
-        affiliateId = affiliate.id;
+        affiliateIds = [affiliate.id];
       } else {
         // If user is affiliate role but no affiliate profile, return empty
         return res.json({
@@ -2125,9 +2192,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    if (affiliateId) {
-      whereClause.affiliateId = affiliateId;
-      guestWhereClause.affiliateId = affiliateId;
+    if (affiliateIds.length > 0) {
+      const affiliateFilter = affiliateIds.length === 1
+        ? affiliateIds[0]
+        : { in: affiliateIds };
+      whereClause.affiliateId = affiliateFilter;
+      guestWhereClause.affiliateId = affiliateFilter;
     }
 
     // Filter by Creator (if specified)
@@ -2144,58 +2214,85 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       createdByArg: req.query.createdBy,
       resolvedAffiliateId: affiliateId,
       merchantId: merchant?.id || null,
-      requestedMerchantId,
-      requestedFulfillmentSource,
-      requestedMerchantOperationStatus,
-      requestedMerchantSettlementStatus,
+      requestedMerchantIds,
+      requestedFulfillmentSources,
+      requestedMerchantOperationStatuses,
+      requestedMerchantSettlementStatuses,
       whereClause
     });
 
     const merchantOrderFilterConditions = [];
-    const commissionFilterConditions = [];
+    const settlementFilterConditions = [];
     const queueMerchantOrderFilter = (condition) => {
       if (condition) merchantOrderFilterConditions.push(condition);
     };
-    const queueCommissionFilter = (condition) => {
-      if (condition) commissionFilterConditions.push(condition);
-    };
 
-    if (!merchant && requestedMerchantId) {
-      queueMerchantOrderFilter({ merchantId: requestedMerchantId });
+    const merchantIdList = requestedMerchantIds.length > 0 ? requestedMerchantIds : null;
+
+    if (!merchant && merchantIdList) {
+      queueMerchantOrderFilter({ merchantId: { in: merchantIdList } });
     }
 
-    if (MERCHANT_FULFILLMENT_SOURCES.has(requestedFulfillmentSource)) {
-      queueMerchantOrderFilter({ fulfillmentSource: requestedFulfillmentSource });
+    const fulfillmentSources = requestedFulfillmentSources.filter(
+      (s) => MERCHANT_FULFILLMENT_SOURCES.has(s)
+    );
+    if (fulfillmentSources.length > 0) {
+      queueMerchantOrderFilter({ fulfillmentSource: { in: fulfillmentSources } });
     }
 
-    if (MERCHANT_OPERATION_FILTERS.has(requestedMerchantOperationStatus)) {
-      queueMerchantOrderFilter(
-        buildMerchantOperationWhere(requestedMerchantOperationStatus)
-      );
+    const operationStatuses = requestedMerchantOperationStatuses.filter(
+      (s) => MERCHANT_OPERATION_FILTERS.has(s)
+    );
+    if (operationStatuses.length > 0) {
+      const operationWheres = operationStatuses
+        .map(buildMerchantOperationWhere)
+        .filter(Boolean);
+      if (operationWheres.length === 1) {
+        queueMerchantOrderFilter(operationWheres[0]);
+      } else if (operationWheres.length > 1) {
+        queueMerchantOrderFilter({ OR: operationWheres });
+      }
     }
 
-    if (MERCHANT_SETTLEMENT_FILTERS.has(requestedMerchantSettlementStatus)) {
-      switch (requestedMerchantSettlementStatus) {
+    // Settlement statuses combine with OR semantics across the underlying
+    // conditions (each maps to a different merchantOrder/commission shape).
+    const settlementStatuses = requestedMerchantSettlementStatuses.filter(
+      (s) => MERCHANT_SETTLEMENT_FILTERS.has(s)
+    );
+    for (const settlementStatus of settlementStatuses) {
+      switch (settlementStatus) {
         case 'PAID':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: 'PAID',
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: 'PAID',
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
         case 'PAYABLE':
         case 'PENDING':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: { in: ['CONFIRMED', 'PENDING'] },
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: { in: ['CONFIRMED', 'PENDING'] },
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
-        case 'NOT_PAYABLE':
-          queueMerchantOrderFilter(
-            buildMerchantOperationWhere('NOT_DELIVERED')
-          );
+        case 'NOT_PAYABLE': {
+          const notDeliveredWhere = buildMerchantOperationWhere('NOT_DELIVERED');
+          if (notDeliveredWhere) {
+            settlementFilterConditions.push({
+              merchantOrders: { some: notDeliveredWhere }
+            });
+          }
           break;
+        }
         default:
           break;
       }
@@ -2207,10 +2304,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    if (commissionFilterConditions.length > 0) {
-      appendCommissionFilter(whereClause, guestWhereClause, {
-        AND: commissionFilterConditions
-      });
+    if (settlementFilterConditions.length > 0) {
+      if (!whereClause.AND) whereClause.AND = [];
+      whereClause.AND.push({ OR: settlementFilterConditions });
+      blockGuestOrdersForMerchantFilters(guestWhereClause);
     }
 
     // 0. Filter by Viewed Status
@@ -2295,10 +2392,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    // 2. Filter by Payment Status
+    // 2. Filter by Payment Status (may be a comma-separated list)
     if (paymentStatus && paymentStatus !== 'all') {
-      const normalizedPaymentStatus = String(paymentStatus).toUpperCase();
-      whereClause.paymentStatus = normalizedPaymentStatus;
+      const paymentStatuses = String(paymentStatus)
+        .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      whereClause.paymentStatus = paymentStatuses.length === 1
+        ? paymentStatuses[0]
+        : { in: paymentStatuses };
       // Guest orders do not persist a payment-status field in the current Prisma client,
       // so including them in filtered payment views produces misleading results.
       appendAnd(guestWhereClause, {
@@ -2442,103 +2542,23 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       Object.assign(guestWhereClause, { OR: guestOrFields });
     }
 
-    // 5. Filter by Source Type (مصدر الطلب)
-    if (sourceType) {
-      const normalizedSource = String(sourceType).toLowerCase();
-      let regularSourceCondition = null;
-      let guestSourceCondition = null;
-
-      switch (normalizedSource) {
-        case 'manual':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: { startsWith: 'manual' } },
-              { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
-              { sourceType: 'manual' },
-              { createdBy: { not: null } },
-              { createdByName: { not: null } },
-              { conversationId: 'manual' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'ai_conversation':
-          regularSourceCondition = {
-            AND: [
-              { sourceType: 'ai_conversation' },
-              { NOT: { extractionMethod: { startsWith: 'manual' } } },
-              { NOT: { extractionMethod: 'manual_admin' } },
-              { NOT: { extractionMethod: 'manual_order_modal' } },
-              { NOT: { conversationId: 'manual' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'storefront':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'storefront' },
-              { metadata: { contains: '"source":"storefront"' } },
-              { metadata: { contains: 'storefront', mode: 'insensitive' } }
-            ]
-          };
-          // Guest orders are storefront by default
-          break;
-        case 'woocommerce':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
-              { wooCommerceId: { not: null } },
-              { syncedFromWoo: true }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'pos':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'pos' },
-              { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'api':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['api', 'public_api'] } },
-              { metadata: { contains: '"source":"api"' } },
-              { metadata: { contains: 'api', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'import':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: 'import' },
-              { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
-              { orderSource: 'INTERNAL_IMPORT' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'unknown':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: null },
-              { sourceType: 'unknown' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        default:
-          regularSourceCondition = { sourceType: normalizedSource };
-          guestSourceCondition = { id: '__none__' };
+    // 5. Filter by Source Type (مصدر الطلب) — may be a comma-separated list
+    const sourceTypes = String(sourceType || '')
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (sourceTypes.length > 0) {
+      const regularSourceConditions = sourceTypes
+        .map(buildRegularSourceCondition)
+        .filter(Boolean);
+      if (regularSourceConditions.length === 1) {
+        appendAnd(whereClause, regularSourceConditions[0]);
+      } else if (regularSourceConditions.length > 1) {
+        appendAnd(whereClause, { OR: regularSourceConditions });
       }
-
-      appendAnd(whereClause, regularSourceCondition);
-      appendAnd(guestWhereClause, guestSourceCondition);
+      // Guests are storefront by default; any non-storefront source excludes them.
+      const excludesGuests = sourceTypes.some((s) => s !== 'storefront');
+      if (excludesGuests) {
+        appendAnd(guestWhereClause, { id: '__none__' });
+      }
     }
 
     // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد
