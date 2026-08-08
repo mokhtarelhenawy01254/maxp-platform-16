@@ -201,6 +201,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const location = useLocation();
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [usePoints, setUsePoints] = useState(false);
+  const [useCashback, setUseCashback] = useState(false);
   const trackedCheckoutFingerprintRef = useRef('');
   const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -776,6 +777,8 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       subtotal,
       total,
       redeemPoints: usePoints,
+      useWallet: useCashback,
+      walletAmount: useCashback ? Math.min(Number(tierProgress?.walletBalance || 0), subtotal + effectiveShipping) : 0,
     });
   };
 
@@ -982,6 +985,31 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
             </button>
           ))}
         </div>
+
+        {tierProgress?.activeVoucher ? (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
+            <span className="text-xl">🎁</span>
+            <div className="text-sm text-emerald-800 dark:text-emerald-200">
+              <p className="font-bold">عندك خصم {tierProgress.activeVoucher.percent}% جاهز على طلبك</p>
+              <p className="text-emerald-700 dark:text-emerald-300">
+                بيتخصم تلقائياً ✓ · صالح حتى {new Date(tierProgress.activeVoucher.expiresAt).toLocaleDateString('ar-EG')}
+              </p>
+            </div>
+          </div>
+        ) : Number(tierProgress?.walletBalance) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <input
+                type="checkbox"
+                checked={useCashback}
+                onChange={(e) => setUseCashback(e.target.checked)}
+                className="h-4 w-4 accent-emerald-600"
+              />
+              استخدم كاش باكي في الدفع
+            </span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatStorefrontCurrency(Number(tierProgress.walletBalance), currency)}</span>
+          </label>
+        ) : null}
 
         {tierProgress?.method === 'POINTS' && Number(tierProgress.currentMetric) > 0 ? (
           <label className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">

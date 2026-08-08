@@ -1014,6 +1014,28 @@ class CustomerLoyaltyService {
 
       const rewards = await this.getCustomerActiveRewards(companyId, customerId);
 
+      // الخصم التلقائي: الكوبون النشط + رصيد المحفظة (الكاش باك)
+      let activeVoucher = null;
+      let walletBalance = 0;
+      try {
+        const autoDiscountService = require('../autoDiscountService');
+        if (await autoDiscountService.isAutoDiscountActive(companyId)) {
+          const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
+          if (voucher) {
+            activeVoucher = {
+              id: voucher.id,
+              percent: Number(voucher.percent),
+              amount: Number(voucher.amount),
+              expiresAt: voucher.expiresAt
+            };
+          }
+          const wallet = await prisma.customerWallet.findFirst({ where: { customerId, companyId, isActive: true } });
+          walletBalance = wallet ? Number(wallet.balance) : 0;
+        }
+      } catch (voucherError) {
+        console.error('⚠️ [TIER-PROGRESS] Failed to load voucher/wallet:', voucherError?.message);
+      }
+
       const parseBenefits = (tier) => {
         if (!tier || !tier.benefits) return null;
         try {
@@ -1045,7 +1067,9 @@ class CustomerLoyaltyService {
           remainingMetric: Math.max(0, sortKey(nextTier) - Number(metric)),
           benefits: parseBenefits(nextTier)
         } : null,
-        rewards: rewards || { freeShipping: false, discountPercent: 0 }
+        rewards: rewards || { freeShipping: false, discountPercent: 0 },
+        activeVoucher,
+        walletBalance
       };
     } catch (error) {
       console.error('❌ Error getting customer tier progress:', error);

@@ -45,6 +45,13 @@ export interface StorefrontTierProgress {
     freeShipping: boolean;
     discountPercent: number;
   };
+  activeVoucher: {
+    id: string;
+    percent: number;
+    amount: number;
+    expiresAt: string;
+  } | null;
+  walletBalance: number;
 }
 
 interface CheckoutStore {
