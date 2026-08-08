@@ -219,13 +219,23 @@ async function reverseVoucherForOrder({ orderId, companyId }) {
 async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
   const prisma = getSharedPrismaClient();
   try {
-    const order = await prisma.order.findFirst({ where: { id: orderId, companyId }, select: { metadata: true, customerId: true } });
+    const order = await prisma.order.findFirst({ where: { id: orderId, companyId }, select: { metadata: true, customerId: true, orderNumber: true } });
     if (!order?.metadata || !order.customerId) return { restored: false, reason: 'no_metadata' };
 
     let meta;
     try { meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata; } catch (e) { return { restored: false, reason: 'bad_metadata' }; }
 
-    const pr = meta?.pointsRedemption;
+    let pr = meta?.pointsRedemption;
+    // Fallback: بعض الأوردرات بتحط الـ pointsRedemption على الـ GuestOrder فقط
+    if (!pr || !pr.pointsUsed) {
+      const guestOrder = await prisma.guestOrder.findFirst({ where: { orderNumber: order.orderNumber || '', companyId }, select: { metadata: true } });
+      if (guestOrder?.metadata) {
+        try {
+          const gm = typeof guestOrder.metadata === 'string' ? JSON.parse(guestOrder.metadata) : guestOrder.metadata;
+          pr = gm?.pointsRedemption || pr;
+        } catch (e) { /* ignore */ }
+      }
+    }
     if (!pr || !pr.pointsUsed || !pr.programId) return { restored: false, reason: 'no_points_redemption' };
 
     const pointsUsed = Number(pr.pointsUsed);
