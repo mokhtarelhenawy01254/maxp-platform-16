@@ -4,8 +4,8 @@ import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary
 import CustomerAccountDashboard from "../account/CustomerAccountDashboard";
 
 export default function CustomerPortalView() {
-  const { customerId } = useParams<{ customerId: string }>();
-  const { data, loading, error } = useCustomerLoyaltySummary(customerId);
+  const { id } = useParams<{ id: string }>();
+  const { data, loading, error } = useCustomerLoyaltySummary(id);
 
   return (
     <CustomerAccountDashboard
