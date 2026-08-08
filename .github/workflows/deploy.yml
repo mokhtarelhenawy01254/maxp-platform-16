@@ -49,6 +49,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # 🛡️ RADICAL SAFETY GATE — full syntax check over all runtime backend files.
+      # Any commit with a SyntaxError in a runtime file blocks the deploy BEFORE
+      # it reaches the server (a broken commit previously crashed the backend → 502).
+      - name: Full Backend Syntax Gate
+        working-directory: ./apps/backend
+        run: node scripts/check_syntax.js
+        continue-on-error: false
+
       - name: Verify Secrets
         run: |
           if [ -z "${{ secrets.SERVER_HOST }}" ]; then echo "❌ SERVER_HOST missing"; exit 1; fi
