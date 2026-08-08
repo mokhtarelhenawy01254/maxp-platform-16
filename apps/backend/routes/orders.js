@@ -2212,7 +2212,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       userId: req.user.id,
       affiliateIdArg: req.query.affiliateId,
       createdByArg: req.query.createdBy,
-      resolvedAffiliateId: affiliateId,
+      resolvedAffiliateId: affiliateIds,
       merchantId: merchant?.id || null,
       requestedMerchantIds,
       requestedFulfillmentSources,
