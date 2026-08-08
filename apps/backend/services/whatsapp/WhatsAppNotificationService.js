@@ -1327,6 +1327,17 @@ async function sendNotification(options) {
               result = null;
             }
           } else {
+            // 🚨 PRODUCTION-FIX: فشل القالب المعتمد بخطأ غير نافذة (network/params/undeliverable...).
+            // بما أن canSendViaMetaTemplate كان متاحاً والجلسة META_CLOUD، النزول لـ BUTTONS/TEXT
+            // عبر نفس جلسة الميتا خارج نافذة 24 ساعة سيفشل حتماً (free-form مرفوض) ويضلل الـ failureReason.
+            // الأصح: نمنع مسار النص الحر ونُسجّل فشل القالب الحقيقي.
+            if (canSendViaMetaTemplate) {
+              console.error(`☁️ [META-CLOUD] Approved template "${metaTemplateName}" failed with non-window error ` +
+                `(${metaError?.code || metaError?.message}). Blocking free-text meta fallback.`);
+              blockFreeTextMetaFallback = true;
+              result = null;
+              throw metaError;
+            }
             console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
             result = null;
           }
@@ -1418,9 +1429,29 @@ async function sendNotification(options) {
           });
           if (result) usedMessageType = 'BUTTONS';
         } catch (error) {
-          console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
-          if (result) usedMessageType = 'TEXT';
+          // 🚨 PRODUCTION-FIX: لو فشلت الأزرار عبر META_CLOUD بخطأ نافذة (131047/131026) —
+          // sendText عبر نفس جلسة الميتا سيفشل حتماً خارج نافذة 24 ساعة.
+          // نحاول Baileys session بديلة أولاً؛ إن لم توجد نرمي الخطأ الأصلي (يحافظ على errorCode).
+          if (sessionProvider === 'META_CLOUD' && isMetaWindowError(error)) {
+            console.log(`🔄 [FALLBACK] Meta buttons rejected (window error). Searching for a Baileys session...`);
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [FALLBACK] Baileys text fallback also failed:`, baileysErr.message);
+                throw error; // نحتفظ بخطأ الميتا الأصلي (131047) للسبب الحقيقي
+              }
+            } else {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta buttons failed and no Baileys session available:`, error.message);
+              throw error; // نحتفظ بالكود الأصلي بدل 'Both Meta and Baileys send failed' (بلا code)
+            }
+          } else {
+            console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
       } else if (!result && safeTemplate.hasList && safeTemplate.listData) {
         try {
@@ -1429,12 +1460,59 @@ async function sendNotification(options) {
           result = await WhatsAppMessageHandler.sendList(sessionId, jid, listData);
         } catch (parseError) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to parse listData, falling back to text:`, parseError);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          // 🚨 PRODUCTION-FIX: لو META_CLOUD خارج النافذة، نفضل Baileys بدل sendText عبر ميتا.
+          if (sessionProvider === 'META_CLOUD') {
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+                result = null;
+              }
+            } else {
+              try {
+                result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (metaTextErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+                throw metaTextErr;
+              }
+            }
+          } else {
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
       } else if (!result) {
         console.log(`[WHATSAPP-DEBUG] Sending text message:`, content?.substring(0, 50));
-        result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
-        if (result) usedMessageType = 'TEXT';
+
+        // 🚨 PRODUCTION-FIX: لو الجلسة META_CLOUD وخارج نافذة 24 ساعة، sendText عبر الميتا
+        // سيفشل بـ 131047. نحاول Baileys session بديلة إن وجدت — نص Baileys يعمل دائماً.
+        if (sessionProvider === 'META_CLOUD') {
+          const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+          if (baileysSession) {
+            try {
+              result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (baileysErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+              result = null;
+            }
+          } else {
+            try {
+              result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (metaTextErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+              throw metaTextErr; // يحافظ على errorCode الحقيقي (مثل 131047)
+            }
+          }
+        } else {
+          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          if (result) usedMessageType = 'TEXT';
+        }
       }
 
       console.log(`[WHATSAPP-DEBUG] Send result:`, result);
