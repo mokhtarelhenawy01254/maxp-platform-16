@@ -62,8 +62,8 @@ router.get('/invoices', authenticatePatientToken, async (req, res) => {
     const formatted = data.map(inv => ({
       ...inv,
       dueDate: inv.dueDate ? inv.dueDate.toISOString().split('T')[0] : null,
-      net: Math.max(0, inv.total - inv.discount),
-      remaining: Math.max(0, Math.max(0, inv.total - inv.discount) - inv.amountPaid),
+      net: Math.max(0, inv.total - inv.discount + (inv.additionAmount || 0)),
+      remaining: Math.max(0, Math.max(0, inv.total - inv.discount + (inv.additionAmount || 0)) - inv.amountPaid),
     }));
     res.json({ success: true, data: formatted });
   } catch (error) {

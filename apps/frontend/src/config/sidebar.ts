@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Printer, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -945,6 +945,10 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/services', icon: Wrench, label: t('sidebar.bookingServices') },
                 { to: '/admin/booking/patients', icon: Users, label: t('sidebar.bookingPatients') },
                 { to: '/admin/booking/invoices', icon: BarChart3, label: t('sidebar.bookingInvoices') },
+                { to: '/admin/booking/price-lists', icon: Tag, label: t('sidebar.bookingPriceLists') },
+                { to: '/admin/booking/workflow', icon: ListChecks, label: t('sidebar.bookingWorkflow') },
+                { to: '/admin/booking/reports', icon: BarChart3, label: t('sidebar.bookingReports') },
+                { to: '/admin/booking/operations', icon: Printer, label: t('sidebar.bookingOperations') },
             ]
         },
 

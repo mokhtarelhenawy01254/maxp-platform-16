@@ -58,6 +58,13 @@ const findOrCreatePatient = async ({ companyId, customerName, customerPhone, cus
 
   // Resolve CRM customer link: explicit id, or by phone
   let resolvedCustomerId = customerId || null;
+  if (resolvedCustomerId) {
+    const customer = await prisma.customer.findFirst({
+      where: { id: resolvedCustomerId, companyId },
+      select: { id: true },
+    });
+    if (!customer) resolvedCustomerId = null;
+  }
   if (!resolvedCustomerId && phone) {
     const customer = await prisma.customer.findFirst({
       where: { companyId, OR: [{ phone }, { whatsappId: phone }] },
