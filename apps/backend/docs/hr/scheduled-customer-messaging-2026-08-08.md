@@ -57,3 +57,30 @@ quiet hours, dedup, session).
 All sends go through `WhatsAppNotificationService.sendNotification`, which requires
 the company WhatsApp settings `isEnabled` + the relevant module/event flags and a
 connected session; quiet hours apply.
+
+## Live verification (2026-08-08, AMA test company)
+
+- Created a general follow-up flow `cmskdk2ak001pjutk5ef3vsw5` with one step
+  (delayDays: 1, content "متابعة بعد الاستلام").
+- Delivered 5 orders for test customer `cmshk7nim00jzjuvqcqe7kygv`
+  (ORD-629952-811, ORD-855660-492, ORD-212047-085, ORD-639843-633, ORD-686423-696).
+- `GET /api/v1/whatsapp/automation/journeys?customerId=...` now returns 5 ACTIVE
+  `customerJourney` rows, each `nextSendAt = delivery time + 1 day` and
+  `flowId = cmskdk2ak001pjutk5ef3vsw5`. Enrollment on DELIVERED works end-to-end.
+- **Bug fixed while verifying**: `WhatsAppContact` has no `companyId` column, but
+  `whatsappAutomationController.getJourneys` and `WhatsAppJourneyService._resolvePhoneForJourney`
+  filtered on `companyId` — that made the journeys monitoring API 500 as soon as any
+  journey existed (the empty array we saw earlier was misleading). Removed the invalid
+  filter (resolve by `customerId` only).
+- **Diagnostics added**: `enrollCustomer` now logs `[JOURNEY]` lines (flow found,
+  steps count, journey created id) and `[JOURNEY-ERROR]` with a short stack — useful
+  in `pm2 logs maxp-backend` when debugging on the live server.
+- Occasion campaign scheduled on AMA (`cmskdnz75008sjutkbc4k03vv`, scheduledAt
+  2026-08-10) is picked up by the hourly `occasionCampaignCron`; it remains
+  `status: scheduled` until due.
+- All three schedulers are registered in `server.js`:
+  `startWhatsAppJourneyScheduler`, `startCustomerBirthdayScheduler`,
+  `startOccasionCampaignScheduler`.
+- Note: AMA has no connected WhatsApp session, so actual message sends will fail
+  with `no_session` (expected); the automation pipeline is proven by the
+  `customerJourney` rows and campaign scheduling.
