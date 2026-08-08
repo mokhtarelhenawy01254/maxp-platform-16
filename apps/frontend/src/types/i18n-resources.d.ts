@@ -10577,6 +10577,16 @@ declare module 'react-i18next' {
         merchantLabel: string;
         affiliateLabel: string;
         period: string;
+        overviewAriaLabel: string;
+        overviewTotalOrders: string;
+        overviewTotalRevenue: string;
+        overviewAvgOrderValue: string;
+        overviewTodayCount: string;
+        overviewTodayRevenue: string;
+        overviewPeriodLabel: string;
+        overviewOrdersTrendAria: string;
+        overviewRevenueTrendAria: string;
+        overviewAovTrendAria: string;
       };
       preparation: {
         page: {

@@ -896,5 +896,15 @@
   "merchantLabel": "التاجر",
   "affiliateLabel": "المسوق",
   "period": "الفترة",
-  "search": "بحث"
+  "search": "بحث",
+  "overviewAriaLabel": "نظرة عامة على آخر 14 يوم",
+  "overviewTotalOrders": "إجمالي الطلبات (14 يوم)",
+  "overviewTotalRevenue": "الإيرادات (14 يوم)",
+  "overviewAvgOrderValue": "متوسط قيمة الطلب",
+  "overviewTodayCount": "اليوم: {{count}} طلب",
+  "overviewTodayRevenue": "اليوم: {{amount}}",
+  "overviewPeriodLabel": "آخر {{count}} يوم",
+  "overviewOrdersTrendAria": "اتجاه عدد الطلبات آخر 14 يوم",
+  "overviewRevenueTrendAria": "اتجاه الإيرادات آخر 14 يوم",
+  "overviewAovTrendAria": "اتجاه متوسط قيمة الطلب آخر 14 يوم"
 }

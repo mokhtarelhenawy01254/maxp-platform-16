@@ -10583,7 +10583,17 @@
     "clearAll": "Clear all",
     "merchantLabel": "Merchant",
     "affiliateLabel": "Affiliate",
-    "period": "Period"
+    "period": "Period",
+    "overviewAriaLabel": "Last 14 days overview",
+    "overviewTotalOrders": "Total orders (14d)",
+    "overviewTotalRevenue": "Revenue (14d)",
+    "overviewAvgOrderValue": "Avg. order value",
+    "overviewTodayCount": "Today: {{count}} orders",
+    "overviewTodayRevenue": "Today: {{amount}}",
+    "overviewPeriodLabel": "Last {{count}} days",
+    "overviewOrdersTrendAria": "Order volume trend, last 14 days",
+    "overviewRevenueTrendAria": "Revenue trend, last 14 days",
+    "overviewAovTrendAria": "Average order value trend, last 14 days"
   },
   "preparation": {
     "page": {
