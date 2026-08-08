@@ -231,6 +231,8 @@ class BroadcastSchedulerService {
     const { sendFacebookMessage } = require('../utils/allFunctions');
     const socketService = require('./socketService');
     const WhatsAppMessageHandler = require('./whatsapp').WhatsAppMessageHandler;
+    const MetaCloudProvider = require('./whatsapp/providers/MetaCloudProvider');
+    const { buildBroadcastBodyParams } = require('../utils/broadcastTemplateParams');
 
     console.log(`📊 [BroadcastScheduler] Starting to send campaign ${campaign.id}`);
 
@@ -446,6 +448,21 @@ class BroadcastSchedulerService {
       }
     }
 
+    // Fetch template body text from Meta API so body params match the template's
+    // expected variable count (Meta rejects mismatches with #132000).
+    let templateBodyText = '';
+    if (isWhatsApp) {
+      try {
+        const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
+        const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
+        if (targetMetaTemplate) {
+          templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+        }
+      } catch (tmplErr) {
+        console.warn(`⚠️ [BroadcastScheduler] Could not fetch template body text: ${tmplErr.message}`);
+      }
+    }
+
     // إرسال الرسائل
     let sentCount = resuming ? existingRecipients.filter(r => r.status === 'sent').length : 0;
     let failedCount = resuming ? existingRecipients.filter(r => r.status === 'failed').length : 0;
@@ -516,14 +533,9 @@ class BroadcastSchedulerService {
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-          // Build template body parameters from customer data
-          const bodyParams = [];
-          if (conv.customer.firstName) {
-            bodyParams.push({ type: 'text', text: conv.customer.firstName });
-          }
-          if (conv.customer.lastName) {
-            bodyParams.push({ type: 'text', text: conv.customer.lastName });
-          }
+          // Build template body parameters to MATCH the template's expected variable count.
+          // Meta rejects with (#132000) if the count differs.
+          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer);
 
           const components = bodyParams.length > 0
             ? [{ type: 'body', parameters: bodyParams }]
@@ -534,19 +546,12 @@ class BroadcastSchedulerService {
             result = await WhatsAppMessageHandler.sendTemplateMessage(
               waSessionId, to, campaign.waTemplateName,
               { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-              { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
-            if (components.length > 0) {
-              console.log(`⚠️ [BroadcastScheduler] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
-              result = await WhatsAppMessageHandler.sendTemplateMessage(
-                waSessionId, to, campaign.waTemplateName,
-                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
-              );
-            } else {
-              throw sendErr;
-            }
+            // Parameters now always match the template's variable count, so no
+            // params-less retry: it would re-fail with (#132000) for variable templates.
+            throw sendErr;
           }
 
           sentCount++;

@@ -5,6 +5,7 @@ const WhatsAppMessageHandler = require('../services/whatsapp').WhatsAppMessageHa
 const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 const socketService = require('../services/socketService');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
+const { buildBroadcastBodyParams, countTemplateParams } = require('../utils/broadcastTemplateParams');
 
 console.log('🚀 [BROADCAST CONTROLLER] تم تحميل وحدة تحكم البرودكاست بنجاح');
 
@@ -958,14 +959,11 @@ exports.sendCampaign = async (req, res) => {
 
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
 
-          // Build template body parameters from customer data
-          const bodyParams = [];
-          if (conv.customer.firstName) {
-            bodyParams.push({ type: 'text', text: conv.customer.firstName });
-          }
-          if (conv.customer.lastName) {
-            bodyParams.push({ type: 'text', text: conv.customer.lastName });
-          }
+          // Build template body parameters to MATCH the template's expected variable count.
+          // Meta rejects with (#132000) if the count differs — e.g. a 4-var template sent
+          // with only firstName/lastName (2 params) always failed.
+          const templateParamCount = countTemplateParams(templateBodyText);
+          const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer);
 
           const components = bodyParams.length > 0
             ? [{ type: 'body', parameters: bodyParams }]
@@ -989,16 +987,9 @@ exports.sendCampaign = async (req, res) => {
               { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
-            if (components.length > 0) {
-              console.log(`⚠️ [SEND CAMPAIGN] Re-trying template ${campaign.waTemplateName} without body params for ${to}`);
-              result = await WhatsAppMessageHandler.sendTemplateMessage(
-                waSessionId, to, campaign.waTemplateName,
-                { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
-              );
-            } else {
-              throw sendErr;
-            }
+            // Parameters now always match the template's variable count, so no
+            // params-less retry: it would re-fail with (#132000) for variable templates.
+            throw sendErr;
           }
 
           sentCount++;
