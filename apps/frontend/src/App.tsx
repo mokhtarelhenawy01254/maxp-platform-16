@@ -50,6 +50,7 @@ const CustomerDetails = React.lazy(
   () => import("./pages/customers/CustomerDetails"),
 );
 const CustomerEdit = React.lazy(() => import("./pages/customers/CustomerEdit"));
+const CustomerPortalView = React.lazy(() => import("./pages/customers/CustomerPortalView"));
 const CustomerWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerWhatsAppNotify"),
 );
@@ -2844,6 +2845,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.edit']}>
                       <Layout>
                         <CustomerEdit />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customers/:id/portal"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerPortalView />
                       </Layout>
                     </PermissionProtectedRoute>
                   }

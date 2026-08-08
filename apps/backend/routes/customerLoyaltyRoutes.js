@@ -144,6 +144,12 @@ router.put('/customers/:customerId/tier-override',
   customerLoyaltyController.updateCustomerTierOverride
 );
 
+// ملخص بوابة العميل (نقاط / خصومات / كاش باك / بيانات)
+router.get('/customers/:customerId/portal-summary',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerPortalSummary
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔔 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
 // ═══════════════════════════════════════════════════════════════════════════════

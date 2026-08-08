@@ -72,7 +72,7 @@ export interface CustomerLoyaltySummary {
   };
 }
 
-export function useCustomerLoyaltySummary() {
+export function useCustomerLoyaltySummary(customerId?: string) {
   const [data, setData] = useState<CustomerLoyaltySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +81,10 @@ export function useCustomerLoyaltySummary() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get("/public/customers/loyalty-summary");
+      const url = customerId
+        ? `/hr/customer-loyalty/customers/${customerId}/portal-summary`
+        : "/public/customers/loyalty-summary";
+      const res = await apiClient.get(url);
       setData(res.data?.data || null);
     } catch (err) {
       const error = err as {
@@ -91,7 +94,7 @@ export function useCustomerLoyaltySummary() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [customerId]);
 
   useEffect(() => {
     void reload();
