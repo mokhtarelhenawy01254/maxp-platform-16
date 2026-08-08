@@ -451,7 +451,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-md dark:bg-slate-950/75 sm:items-center sm:p-4 overscroll-contain"
+      className="fixed inset-0 z-50 flex justify-center bg-slate-950/55 backdrop-blur-md dark:bg-slate-950/75 sm:p-4 overscroll-contain modal-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"

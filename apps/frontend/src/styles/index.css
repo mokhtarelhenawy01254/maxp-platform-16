@@ -6503,3 +6503,18 @@ select {
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
 }
+
+/* EnhancedOrderModal overlay — vertical centering on sm+ screens.
+   The sm:items-center utility isn't being picked up by Tailwind's JIT
+   scanner because this component is loaded via React.lazy, so the
+   class never reaches the generated stylesheet. We hand-roll the
+   media query here to guarantee the modal sits dead-center on
+   desktop while still anchoring to the bottom on mobile. */
+.modal-overlay {
+  align-items: flex-end;
+}
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
