@@ -768,6 +768,7 @@
       "channel": "Channel",
       "agent": "Responsible Agent",
       "autoReply": "Auto Reply",
+      "reply": "Reply",
       "toolStatus": "Tool Status",
       "selectPlaceholder": "Select agent...",
       "noRouting": "No Routing (CEO)",
@@ -10817,6 +10818,7 @@
       "PACKAGED": "Packaged",
       "READY_TO_SHIP": "Ready to Ship",
       "STOCK_SHORTAGE": "Stock Shortage",
+      "SHORTAGE_FAILED": "Shortage Failed",
       "PENDING_CANCELLATION": "Pending Cancellation"
     },
     "stageDescriptions": {
@@ -10826,6 +10828,7 @@
       "PACKAGED": "Order is packaged and awaiting delivery to shipping",
       "READY_TO_SHIP": "Ready to hand over to shipping company or create shipment",
       "STOCK_SHORTAGE": "Orders on hold due to stock shortage or awaiting transfer",
+      "SHORTAGE_FAILED": "Order failed due to permanent stock shortage — will not be fulfilled",
       "PENDING_CANCELLATION": "Orders the customer requested cancellation during preparation — must stop immediately"
     },
     "shortageReasons": {
@@ -10899,6 +10902,7 @@
       "pos": "POS",
       "unknown": "Unknown"
     },
+    "shortageFailedTab": "Shortage Failed",
     "actionLabels": {
       "viewOnlyDesc": "Merchant can see customer name and products only — preparation tools are disabled.",
       "viewOnly": "View Only",
@@ -10974,7 +10978,9 @@
       "tomorrowSuccess": "Follow-up set to tomorrow",
       "clearDateSuccess": "Follow-up date cleared",
       "customerNotifiedBadge": "Customer Notified",
-      "ownerBadge": "Assignee: {{name}}"
+      "ownerBadge": "Assignee: {{name}}",
+      "markAsShortageFailed": "Mark as Shortage Failed",
+      "confirmShortageFailed": "Are you sure you want to mark this order as shortage failed? The order will not be fulfilled."
     },
     "problemPanel": {
       "title": "On Hold — Problem Reason",
@@ -13977,6 +13983,8 @@
     "bookingWorkflow": "Workflow",
     "bookingReports": "Reports",
     "bookingOperations": "Operations",
+    "bookingInsuranceCompanies": "Insurance Companies",
+    "bookingMemberTypes": "Member Types",
     "marketplace": "Marketplace",
     "marketplaceManagement": "Marketplace Management",
     "merchantCommissions": "My Commissions",
