@@ -109,6 +109,10 @@ function isMetaWindowError(metaError) {
   return (
     code === 'RECIPIENT_CANNOT_SEND' ||
     code === 'TEMPLATE_NOT_APPROVED' ||
+    code === 131047 ||
+    code === '131047' ||
+    code === 131026 ||
+    code === '131026' ||
     /24\s*hour|outside.*window|template.*window/i.test(message)
   );
 }

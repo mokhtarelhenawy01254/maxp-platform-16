@@ -1243,6 +1243,13 @@ async function sendNotification(options) {
       let result;
       let usedMessageType = 'TEXT'; // TEMPLATE | BUTTONS | TEXT
 
+      // 🚨 PRODUCTION-FIX: منع مسار النص الحر (BUTTONS/TEXT) عبر META_CLOUD
+      // لما كان فيه قالب معتمد APPROVED متاح وفشل. خارج نافذة 24 ساعة،
+      // free-form (interactive/text) مرفوض من ميتا حتماً — النزول له = فشل مضمون
+      // يكتب failureReason مضلل (131047) بدل السبب الحقيقي لفشل القالب.
+      let blockFreeTextMetaFallback = false;
+      let lastMetaTemplateError = null;
+
       // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
       // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
       // القالب المعتمد (metaTemplateName مع APPROVED) عندما تكون الجلسة META_CLOUD.
@@ -1281,6 +1288,7 @@ async function sendNotification(options) {
         } catch (metaError) {
           // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
           console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+          lastMetaTemplateError = metaError;
 
           // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
           // لو الخطأ بسبب نافذة 24 ساعة أو قالب غير معتمد، دوّر على Baileys session
@@ -1301,6 +1309,20 @@ async function sendNotification(options) {
                 result = null;
               }
             } else {
+              // 🚨 PRODUCTION-FIX: لا يوجد Baileys متصل.
+              // لو كان القالب المعتمد متاحاً (canSendViaMetaTemplate)، ممنوع النزول
+              // لـ BUTTONS/TEXT عبر نفس جلسة META_CLOUD — free-form مرفوض خارج
+              // نافذة 24 ساعة وسيفشل حتماً بنفس الخطأ (131047) ويضلل الـ failureReason.
+              // الأصح: نوقف هنا ونُسجّل فشل القالب الحقيقي.
+              if (canSendViaMetaTemplate) {
+                console.warn(`⚠️ [FALLBACK] No connected Baileys session for company ${companyId}. ` +
+                  `Approved template "${metaTemplateName}" failed (${metaError?.code || metaError?.message}) ` +
+                  `and free-text via META_CLOUD is impossible outside 24h window. Failing notification.`);
+                blockFreeTextMetaFallback = true;
+                result = null;
+                metaError.code = metaError.code || (isWindowError ? 131047 : null);
+                throw metaError;
+              }
               console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
               result = null;
             }
@@ -1367,6 +1389,16 @@ async function sendNotification(options) {
           { id: replaceVariables("delay_order_{orderId}", variables), text: "تأجيل التسليم" },
           { id: replaceVariables("cancel_order_{orderId}", variables), text: "إلغاء الأوردر" }
         ];
+      }
+
+      if (blockFreeTextMetaFallback) {
+        // 🚨 PRODUCTION-FIX: القالب المعتمد APPROVED فشل ولا يوجد Baileys بديل.
+        // ممنوع تجربة free-text عبر META_CLOUD خارج نافذة 24 ساعة — ميتا سترفض حتماً.
+        // نرمي خطأ يحمل السبب الحقيقي لفشل القالب (بدل 131047 مضلل من buttons).
+        throw new Error(
+          `Approved Meta template failed and free-text is blocked outside 24h window` +
+          (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')
+        );
       }
 
       if (!result && finalButtons && finalButtons.length > 0) {
@@ -1940,6 +1972,31 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     console.log(`[WHATSAPP-STATUS] ==== END (with error) ====`);
     return { success: false, reason: 'error', error: error.message };
   }
+}
+
+/**
+ * إرسال إشعار إنشاء طلب متوافق مع حالة الطلب الفعلية.
+ * تُستخدم في مسارات إنشاء الطلب اليدوي (service + route) لتوحيد المنطق:
+ * - بدون حالة / PENDING / SCHEDULED / حالات داخلية → قالب "طلب جديد" (ORDER_CREATED).
+ * - أي حالة أخرى (CONFIRMED/PROCESSING/RETURNED/EXCHANGED/حالة مخصصة...) →
+ *   قالب حالة الطلب عبر sendOrderStatusNotification (ORDER_CONFIRMED... إلخ)
+ *   من صفحة /orders/status-templates — بدل إرسال "طلب جديد" دائماً.
+ */
+async function sendOrderCreationNotification(order) {
+  const status = String(order?.status || '').trim().toUpperCase();
+
+  const useNewOrderTemplate =
+    !status ||
+    status === 'PENDING' ||
+    status === 'SCHEDULED' ||
+    isNonNotifiableStatus(status);
+
+  if (useNewOrderTemplate) {
+    return sendOrderCreatedNotification(order);
+  }
+
+  console.log(`[WHATSAPP-ORDER] Order ${order?.orderNumber} created directly with status ${status} — using status template instead of ORDER_CREATED`);
+  return sendOrderStatusNotification(order, status, 'PENDING');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3353,6 +3410,7 @@ module.exports = {
   // إشعارات الطلبات
   sendOrderCreatedNotification,
   sendOrderStatusNotification,
+  sendOrderCreationNotification,
 
   // إشعارات العربة المتروكة
   sendAbandonedCartNotification,
