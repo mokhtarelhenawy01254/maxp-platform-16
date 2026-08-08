@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ShoppingBagIcon,
@@ -8,8 +8,12 @@ import {
   EyeIcon,
   FunnelIcon,
   ExclamationTriangleIcon,
+  ChevronDownIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { CommandPalette } from "../../../components/common/CommandPalette";
+import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
+import { Checkbox } from "../../../components/ui/checkbox";
 import { FilterChips } from "./FilterChips";
 import type {
   OrdersFilters,
@@ -41,6 +45,8 @@ interface OrdersToolbarProps {
   showMerchantOperationFilters: boolean;
   showAffiliateOperationFilter: boolean;
   hasCustomDateFilters: boolean;
+  lastUpdatedAt: Date | null;
+  isConnected: boolean;
   getAffiliateDisplayName: (affiliate: AffiliateFilterOption) => string;
   onFilterChange: (key: keyof OrdersFilters, value: OrdersFilters[keyof OrdersFilters]) => void;
   onClearAdvancedFilters: () => void;
@@ -48,7 +54,165 @@ interface OrdersToolbarProps {
   onSetQuickDate: (range: string) => void;
   onOpenWorkspace: () => void;
   onRetry: () => void;
+  onRefresh: () => void;
 }
+
+interface StatusMultiSelectProps {
+  ariaLabel: string;
+  placeholder: string;
+  searchPlaceholder: string;
+  selectAllLabel: string;
+  noResultsLabel: string;
+  clearAllLabel: string;
+  trashLabel?: string;
+  options: OrderStatusDefinition[];
+  value: string[];
+  onChange: (next: string[]) => void;
+  fieldClassName: string;
+}
+
+const StatusMultiSelect: React.FC<StatusMultiSelectProps> = ({
+  ariaLabel,
+  placeholder,
+  searchPlaceholder,
+  selectAllLabel,
+  noResultsLabel,
+  clearAllLabel,
+  trashLabel,
+  options,
+  value,
+  onChange,
+  fieldClassName,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const normalized = useMemo(() => {
+    const rows = options.map((option) => ({
+      code: option.code.toLowerCase(),
+      name: option.name,
+    }));
+    if (trashLabel) {
+      rows.push({ code: "trash", name: trashLabel });
+    }
+    return rows;
+  }, [options, trashLabel]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return normalized;
+    return normalized.filter(
+      (option) =>
+        option.name.toLowerCase().includes(q) || option.code.includes(q),
+    );
+  }, [normalized, query]);
+
+  const selectedMap = useMemo(
+    () => new Set(value.map((v) => v.toLowerCase())),
+    [value],
+  );
+
+  const toggle = (code: string, checked: boolean) => {
+    if (checked) {
+      if (!selectedMap.has(code)) onChange([...value, code]);
+    } else {
+      onChange(value.filter((v) => v.toLowerCase() !== code));
+    }
+  };
+
+  const selectedNames = value
+    .map((v) => normalized.find((option) => option.code === v.toLowerCase())?.name)
+    .filter((name): name is string => Boolean(name));
+
+  const triggerText =
+    selectedNames.length === 0
+      ? placeholder
+      : selectedNames.length <= 2
+        ? selectedNames.join("، ")
+        : `${selectedNames.slice(0, 2).join("، ")} +${selectedNames.length - 2}`;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        type="button"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        className={`${fieldClassName} flex items-center justify-between gap-1.5 text-start`}
+      >
+        <span
+          className={`truncate ${value.length === 0 ? "text-slate-400 dark:text-slate-500" : ""}`}
+        >
+          {triggerText}
+        </span>
+        <span className="flex shrink-0 items-center gap-1">
+          {value.length > 0 && (
+            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+              {value.length}
+            </span>
+          )}
+          <ChevronDownIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+        </span>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <input
+              type="text"
+              aria-label={searchPlaceholder}
+              placeholder={searchPlaceholder}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="theme-native-control w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-1.5 pr-8 text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => onChange(normalized.map((option) => option.code))}
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-500/10"
+            >
+              {selectAllLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+            >
+              {clearAllLabel}
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {visible.length === 0 ? (
+              <div className="px-2 py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                {noResultsLabel}
+              </div>
+            ) : (
+              visible.map((option) => {
+                const isChecked = selectedMap.has(option.code);
+                return (
+                  <label
+                    key={option.code}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(checked) => toggle(option.code, Boolean(checked))}
+                      className="rounded"
+                    />
+                    <span className="truncate text-xs font-medium text-slate-700 dark:text-slate-200">
+                      {option.name}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   filters,
@@ -73,6 +237,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   showMerchantOperationFilters,
   showAffiliateOperationFilter,
   hasCustomDateFilters,
+  lastUpdatedAt,
+  isConnected,
   getAffiliateDisplayName,
   onFilterChange,
   onClearAdvancedFilters,
@@ -80,6 +246,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   onSetQuickDate,
   onOpenWorkspace,
   onRetry,
+  onRefresh,
 }) => {
   const { t } = useTranslation();
 
@@ -109,8 +276,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <div className="flex w-full gap-1.5 sm:w-auto sm:gap-2">
             <button
-              onClick={() => onFilterChange("status", "")}
-              className={`relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status !== "trash"
+              onClick={() => onFilterChange("status", [])}
+              className={`relative inline-flex flex-1 sm:flex-none sm:min-w-[126px] items-center justify-center rounded-[16px] px-2 sm:px-4 py-2 text-sm font-semibold transition ${!filters.status || filters.status.length === 0
                 ? "bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300"
                 : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
                 }`}
@@ -140,6 +307,38 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 <span>{t("orders.of")} {totalOrders}</span>
               </div>
             )}
+          </div>
+
+          {/* Refresh + live indicator */}
+          <div className="flex items-center gap-1.5">
+            <span
+              title={isConnected ? String(t("orders.liveUpdates")) : String(t("orders.offlineUpdates"))}
+              className={`hidden h-2 w-2 rounded-full sm:inline-block ${isConnected
+                ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]"
+                : "bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]"
+                }`}
+            />
+            {lastUpdatedAt && (
+              <span className="hidden text-[11px] font-medium text-slate-400 dark:text-slate-500 md:inline">
+                {t("orders.lastUpdatedAt", {
+                  time: lastUpdatedAt.toLocaleTimeString("ar-EG", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }),
+                })}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={onRefresh}
+              title={String(t("orders.refreshOrders"))}
+              aria-label={String(t("orders.refreshOrders"))}
+              disabled={loading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 transition hover:bg-slate-50 hover:text-blue-600 disabled:opacity-60 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
           </div>
         </div>
       </div>
@@ -247,24 +446,20 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                   </select>
                 </div>
 
-                <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">
-                  <select
-                    aria-label={String(t("orders.allStatuses"))}
+                <div className="min-w-[130px] sm:flex-1 lg:min-w-0">
+                  <StatusMultiSelect
+                    ariaLabel={String(t("orders.allStatuses"))}
+                    placeholder={String(t("orders.allStatuses"))}
+                    searchPlaceholder={String(t("orders.statusSearch"))}
+                    selectAllLabel={String(t("orders.statusSelectAll"))}
+                    noResultsLabel={String(t("orders.statusNoResults"))}
+                    clearAllLabel={String(t("orders.clearAll"))}
+                    trashLabel={String(t("orders.trash"))}
+                    options={filterableOrderStatuses}
                     value={filters.status}
-                    onChange={(e) => onFilterChange("status", e.target.value)}
-                    className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
-                  >
-                    <option value="">{t("orders.allStatuses")}</option>
-                    {filterableOrderStatuses.map((status) => (
-                      <option
-                        key={status.code}
-                        value={status.code.toLowerCase()}
-                      >
-                        {status.name}
-                      </option>
-                    ))}
-                    <option value="trash">{t("orders.trash")}</option>
-                  </select>
+                    onChange={(next) => onFilterChange("status", next)}
+                    fieldClassName={fieldClassName}
+                  />
                 </div>
 
                 <div className="relative min-w-[130px] sm:flex-1 lg:min-w-0">

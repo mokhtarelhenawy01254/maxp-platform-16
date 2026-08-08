@@ -17,7 +17,7 @@ export interface MerchantFilterOption {
 export interface FilterChipsProps {
   /** Current filter state. */
   filters: {
-    status: string;
+    status: string[];
     paymentStatus: string;
     sourceType: string;
     merchantId: string;
@@ -39,7 +39,7 @@ export interface FilterChipsProps {
   merchantOptions?: MerchantFilterOption[];
   affiliateOptions?: MerchantFilterOption[];
   /** Apply a single filter change. */
-  onFilterChange: (key: string, value: string | boolean) => void;
+  onFilterChange: (key: string, value: string | boolean | string[]) => void;
   /** Clear the advanced filters (and the chip strip in one go). */
   onClearAdvancedFilters: () => void;
 }
@@ -124,15 +124,23 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
   const chips = useMemo<ChipDescriptor[]>(() => {
     const list: ChipDescriptor[] = [];
 
-    if (filters.status) {
-      const match = filterableOrderStatuses.find(
-        (s) => s.code.toLowerCase() === filters.status.toLowerCase(),
-      );
-      list.push({
-        key: t("orders.status"),
-        value: match?.name ?? filters.status,
-        tone: "primary",
-        remove: () => onFilterChange("status", ""),
+    if (filters.status.length > 0) {
+      filters.status.forEach((statusCode) => {
+        const match = filterableOrderStatuses.find(
+          (s) => s.code.toLowerCase() === statusCode.toLowerCase(),
+        );
+        list.push({
+          key: t("orders.status"),
+          value: match?.name ?? statusCode,
+          tone: "primary",
+          remove: () =>
+            onFilterChange(
+              "status",
+              filters.status.filter(
+                (s) => s.toLowerCase() !== statusCode.toLowerCase(),
+              ),
+            ),
+        });
       });
     }
     if (filters.paymentStatus) {

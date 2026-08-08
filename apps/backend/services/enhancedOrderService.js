@@ -1659,7 +1659,11 @@ class EnhancedOrderService {
 
       // فلاتر إضافية
       if (status && status !== 'all') {
-        where.status = status;
+        const statuses = String(status)
+          .split(',')
+          .map((s) => String(s).trim().toUpperCase())
+          .filter(Boolean);
+        where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
       } else {
         const hiddenStatuses = ['TRASH'];
         where.status = { notIn: hiddenStatuses };
