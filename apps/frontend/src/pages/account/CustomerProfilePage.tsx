@@ -1,11 +1,11 @@
 import {
   AlertCircle,
   CalendarDays,
-  IdCard,
   Mail,
   Phone,
   ShieldCheck,
   UserRound,
+  CreditCard,
 } from "lucide-react";
 
 import { useCustomerLoyaltySummary } from "../../hooks/useCustomerLoyaltySummary";
@@ -128,7 +128,7 @@ export default function CustomerProfilePage() {
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300">
-            <IdCard size={18} />
+            <CreditCard size={18} />
           </div>
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             رصيد المحفظة
@@ -150,7 +150,7 @@ export default function CustomerProfilePage() {
         </div>
         <div className="rounded-3xl border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-            <IdCard size={18} />
+            <CreditCard size={18} />
           </div>
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             إجمالي الكاش باك
