@@ -69,5 +69,7 @@ function TierProgressCard({ progress }: { progress: StorefrontTierProgress }) {
 export default function TierProgressBanner() {
   const tierProgress = useCheckoutStore((s) => s.tierProgress);
   if (!tierProgress) return null;
+  // في وضع الخصم التلقائي مفيش مستويات — نُخفي بانر المستوى
+  if (tierProgress.loyaltySystem === 'AUTO_DISCOUNT') return null;
   return <TierProgressCard progress={tierProgress} />;
 }
