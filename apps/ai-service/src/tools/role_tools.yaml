@@ -31,6 +31,18 @@ roles:
     - facebook_reply
     - agent_handoff_to
 
+  ORDER_CONFIRMATION:
+    - order_lookup
+    - order_confirm
+    - order_update_details
+    - order_cancel
+    - shipping_rates
+    - shipping_company_governorates
+    - shipping_company_areas
+    - customer_info
+    - whatsapp_send
+    - agent_handoff_to
+
   SALES:
     - product_search
     - product_top_selling

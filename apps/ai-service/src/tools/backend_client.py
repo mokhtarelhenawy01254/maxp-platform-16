@@ -193,6 +193,54 @@ class BackendClient:
             json_body={"status": status, "companyId": company_id},
         )
 
+    async def confirm_order(
+        self, company_id: str, order_number: str, notes: str | None = None
+    ) -> dict[str, Any]:
+        """Confirm an existing order (status -> CONFIRMED) through the backend.
+
+        Reuses the merchant order-status route so all side effects run:
+        confirmedAt/confirmedBy, ORDER_CONFIRMED WhatsApp notification, and
+        Turbo auto-shipment (passing the order to the shipping company).
+        """
+        body: dict[str, Any] = {"status": "CONFIRMED", "companyId": company_id}
+        if notes:
+            body["notes"] = notes
+        return await self._request(
+            "PATCH", f"/api/v1/orders-v2/{order_number}/status",
+            json_body=body,
+        )
+
+    async def update_order_details(
+        self,
+        company_id: str,
+        order_number: str,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Update order address/contact details via orderDetailsUpdateService."""
+        payload = {**data, "companyId": company_id}
+        return await self._request(
+            "PUT", f"/api/v1/orders-v2/simple/{order_number}",
+            json_body=payload,
+        )
+
+    async def get_shipping_company_governorates(
+        self, company_id: str
+    ) -> dict[str, Any]:
+        """Fetch the shipping company's governorate map (Turbo governments)."""
+        return await self._request(
+            "GET", "/api/v1/turbo/governments",
+            params={"companyId": company_id},
+        )
+
+    async def get_shipping_company_areas(
+        self, company_id: str, government_id: str
+    ) -> dict[str, Any]:
+        """Fetch the shipping company's areas for a governorate (Turbo areas)."""
+        return await self._request(
+            "GET", f"/api/v1/turbo/areas/{government_id}",
+            params={"companyId": company_id},
+        )
+
     async def cancel_order(
         self, company_id: str, order_number: str, reason: str | None = None
     ) -> dict[str, Any]:

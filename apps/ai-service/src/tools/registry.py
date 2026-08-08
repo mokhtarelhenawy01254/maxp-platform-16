@@ -94,6 +94,8 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "category_list",
     "offers_list_active",
     "coupon_validate",
+    "shipping_company_governorates",
+    "shipping_company_areas",
 }
 
 WRITE_TOOL_NAMES: set[str] = {
@@ -121,6 +123,8 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_create_confirmed",
     "discount_create_draft",
     "knowledge_create_faq",
+    "order_confirm",
+    "order_update_details",
 }
 
 
@@ -169,6 +173,8 @@ order_create_draft_tool = _registry.resolve("order_create_draft")
 order_create_confirmed_tool = _registry.resolve("order_create_confirmed")
 order_summary_tool = _registry.resolve("order_summary")
 order_recent_list_tool = _registry.resolve("order_recent_list")
+order_confirm_tool = _registry.resolve("order_confirm")
+order_update_details_tool = _registry.resolve("order_update_details")
 order_cancel_tool = _registry.resolve("order_cancel")
 order_refund_tool = _registry.resolve("order_refund")
 customer_info_tool = _registry.resolve("customer_info")
@@ -180,6 +186,8 @@ company_snapshot_tool = _registry.resolve("company_snapshot")
 discount_create_tool = _registry.resolve("discount_create")
 discount_create_draft_tool = _registry.resolve("discount_create_draft")
 whatsapp_send_tool = _registry.resolve("whatsapp_send")
+shipping_company_governorates_tool = _registry.resolve("shipping_company_governorates")
+shipping_company_areas_tool = _registry.resolve("shipping_company_areas")
 competitor_search_tool = _registry.resolve("competitor_search")
 competitor_get_products_tool = _registry.resolve("competitor_get_products")
 competitor_price_compare_tool = _registry.resolve("competitor_price_compare")
@@ -224,6 +232,8 @@ from src.tools.definitions.order import (  # noqa: E402 F401
     OrderCreateConfirmedInput,
     OrderSummaryInput,
     OrderRecentListInput,
+    OrderConfirmInput,
+    OrderUpdateDetailsInput,
     OrderCancelInput,
     OrderRefundInput,
 )
@@ -252,6 +262,8 @@ from src.tools.definitions.competitor import (  # noqa: E402 F401
 from src.tools.definitions.shipping import (  # noqa: E402 F401
     ShippingRatesInput,
     ShippingUpdateInput,
+    ShippingCompanyGovernoratesInput,
+    ShippingCompanyAreasInput,
 )
 from src.tools.definitions.governance import (  # noqa: E402 F401
     SchedulerCreateJobInput,

@@ -57,6 +57,26 @@ class OrderRecentListInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+class OrderConfirmInput(BaseModel):
+    order_number: str = Field(description="Order number to confirm")
+    notes: str | None = Field(default=None, description="Optional confirmation note")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class OrderUpdateDetailsInput(BaseModel):
+    order_number: str = Field(description="Order number or ID to update")
+    shipping_address: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured delivery address object with keys like governorate, city, area, address, phone",
+    )
+    customer_name: str | None = Field(default=None, description="Customer name")
+    customer_phone: str | None = Field(default=None, description="Customer phone number")
+    city: str | None = Field(default=None, description="City / area name")
+    governorate: str | None = Field(default=None, description="Governorate name")
+    notes: str | None = Field(default=None, description="Order notes")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
 class OrderCancelInput(BaseModel):
     order_number: str = Field(description="Order number to cancel")
     reason: str = Field(description="Reason for cancellation")
@@ -187,6 +207,102 @@ async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
     return _executed_result("ORDER_CANCELLED", result)
 
 
+async def order_confirm(input_data: OrderConfirmInput) -> dict[str, Any]:
+    """Confirm an existing order through the backend.
+
+    Reuses the merchant order-status route so all side effects run:
+    confirmedAt/confirmedBy, ORDER_CONFIRMED WhatsApp notification, and
+    Turbo auto-shipment (passing the order to the shipping company).
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.confirm_order(
+            company_id,
+            input_data.order_number,
+            notes=input_data.notes,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number,
+            "newStatus": "CONFIRMED",
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number,
+        }
+
+
+async def order_update_details(input_data: OrderUpdateDetailsInput) -> dict[str, Any]:
+    """Update order address/contact details through the backend.
+
+    Applies the address using the SHIPPING COMPANY's governorate/area names —
+    never invent locations that are not in the shipping map.
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+
+    data: dict[str, Any] = {}
+    if input_data.shipping_address is not None:
+        data["shippingAddress"] = input_data.shipping_address
+    if input_data.customer_name is not None:
+        data["customerName"] = input_data.customer_name
+    if input_data.customer_phone is not None:
+        data["customerPhone"] = input_data.customer_phone
+    if input_data.city is not None:
+        data["city"] = input_data.city
+    if input_data.governorate is not None:
+        data["governorate"] = input_data.governorate
+    if input_data.notes is not None:
+        data["notes"] = input_data.notes
+
+    if not data:
+        return {
+            "success": False,
+            "error": "Nothing to update",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.update_order_details(
+            company_id,
+            input_data.order_number,
+            data,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number,
+            "updatedFields": result.get("updatedFields", []),
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number,
+        }
+
+
 async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
     return _write_result("order.refund", {
         "orderNumber": input_data.order_number,
@@ -245,6 +361,20 @@ order_cancel_tool = FunctionTool(
     input_model=OrderCancelInput,
 )
 
+order_confirm_tool = FunctionTool(
+    name="order_confirm",
+    description="Confirm an existing order after the customer explicitly agrees on the order and the delivery address. This moves the order to CONFIRMED, notifies the customer, and hands it over to the shipping company. NEVER call this before the address is verified against the shipping company's map and the customer confirmed.",
+    func=order_confirm,
+    input_model=OrderConfirmInput,
+)
+
+order_update_details_tool = FunctionTool(
+    name="order_update_details",
+    description="Update an existing order's delivery address / customer contact details. Use after the customer provides a corrected address that matches the shipping company's governorate/area map. Pass structured shipping_address with keys: governorate, city/area, address, phone. NEVER invent locations not present in the shipping company map.",
+    func=order_update_details,
+    input_model=OrderUpdateDetailsInput,
+)
+
 order_refund_tool = FunctionTool(
     name="order_refund",
     description="Process a refund for an order. REQUIRES MERCHANT APPROVAL.",
@@ -258,6 +388,8 @@ __all_tools__ = [
     order_create_confirmed_tool,
     order_summary_tool,
     order_recent_list_tool,
+    order_confirm_tool,
+    order_update_details_tool,
     order_cancel_tool,
     order_refund_tool,
 ]
