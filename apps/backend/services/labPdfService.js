@@ -48,7 +48,6 @@ function generateOrderPdf(order, company) {
 
     doc.registerFont('Noto', FONT);
     doc.font('Noto');
-
     const pageWidth = doc.page.width - 80; // margins
 
     // ── Header ───────────────────────────────────────────────
@@ -184,4 +183,25 @@ function generateOrderPdf(order, company) {
   });
 }
 
-module.exports = { generateOrderPdf };
+function generateLabelPdf(order) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: [210, 100], margin: 12 });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    doc.registerFont('Noto', FONT);
+    doc.font('Noto');
+
+    doc.fontSize(26).fillColor('#111827').text(AR(order.orderNumber || ''), 12, 14, { align: 'center', width: 186 });
+    doc.fontSize(13).fillColor('#4b5563').text(AR(order.patientName), 12, 48, { align: 'center', width: 186 });
+    const info = [AR(order.patientGender || ''), AR(order.patientAge || '')].filter(Boolean).join(' - ');
+    if (info) doc.fontSize(10).fillColor('#6b7280').text(info, 12, 68, { align: 'center', width: 186 });
+    doc.moveTo(12, 88).lineTo(198, 88).strokeColor('#d1d5db').lineWidth(1).stroke();
+
+    doc.end();
+  });
+}
+
+module.exports = { generateOrderPdf, generateLabelPdf };

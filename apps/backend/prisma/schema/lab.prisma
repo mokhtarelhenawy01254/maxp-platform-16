@@ -60,6 +60,10 @@ model LabOrder {
   receiveDate    DateTime?
   status         String    @default("PENDING") /// PENDING|COLLECTED|IN_PROGRESS|REVIEWED|SIGNED|DELIVERED
   reportStatus   String    @default("PENDING") /// PENDING|RESULTS_ENTERED|REVIEWED|SIGNED|DELIVERED
+  sampleStatus   String    @default("ACCEPTED") /// ACCEPTED|REJECTED (lab QA)
+  rejectionReason String?
+  rejectedBy     String?
+  rejectedAt     DateTime?
   subtotal       Float     @default(0)
   discount       Float     @default(0)
   total          Float     @default(0)

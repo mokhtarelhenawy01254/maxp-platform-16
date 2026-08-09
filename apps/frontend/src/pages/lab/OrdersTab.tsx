@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, FileText, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { ClipboardList, Download, FileText, Loader2, RefreshCw, Search, Tag, X } from "lucide-react";
 import {
   api, fetchJson, getAuthHeaders, LabOrder, LabOrderTest, LabTest, LabTestParameter,
   LAB_STATUS_MAP, LAB_REPORT_STATUS_MAP, FLAG_OPTIONS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
@@ -312,6 +312,56 @@ export default function OrdersTab() {
     }
   };
 
+  const viewLabel = async (orderId: string) => {
+    try {
+      const res = await fetch(api(`orders/${orderId}/label`), { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("فشل تحميل اللاصقة");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تحميل اللاصقة");
+    }
+  };
+
+  const exportCsv = async () => {
+    try {
+      const url = new URL(api("orders/export"));
+      if (status) url.searchParams.set("status", status);
+      if (reportStatus) url.searchParams.set("reportStatus", reportStatus);
+      const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("فشل التصدير");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "lab-orders.csv";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل التصدير");
+    }
+  };
+
+  const runSampleAction = async (orderId: string, action: "reject-sample" | "accept-sample") => {
+    if (busyId === orderId) return;
+    const reason = action === "reject-sample" ? window.prompt("سبب رفض العينة:") : null;
+    if (action === "reject-sample" && !reason) return;
+    setBusyId(orderId);
+    try {
+      await fetchJson(api(`orders/${orderId}/${action}`), {
+        method: "PUT",
+        body: JSON.stringify(action === "reject-sample" ? { reason } : {}),
+      });
+      toast.success(action === "reject-sample" ? "تم رفض العينة" : "تم قبول العينة");
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تحديث العينة");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const handleSaved = () => {
     setDetailOrderId(null);
     refresh({ silent: true });
@@ -323,9 +373,14 @@ export default function OrdersTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">طلبات التحاليل</h2>
-        <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-          <RefreshCw className="w-4 h-4" />تحديث
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <Download className="w-4 h-4" />تصدير CSV
+          </button>
+          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <RefreshCw className="w-4 h-4" />تحديث
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -355,7 +410,7 @@ export default function OrdersTab() {
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
-                  {["رقم الطلب", "المريض", "الهاتف", "الاختبارات", "الحالة", "حالة التقرير", "الإجمالي / المدفوع / المتبقي", "التاريخ", "إجراءات"].map(h => (
+                  {["رقم الطلب", "المريض", "الهاتف", "الاختبارات", "الحالة", "حالة التقرير", "العينة", "الإجمالي / المدفوع / المتبقي", "التاريخ", "إجراءات"].map(h => (
                     <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -371,6 +426,13 @@ export default function OrdersTab() {
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{o.tests?.length ?? 0}</td>
                       <td className="py-3 px-4">{statusBadge(LAB_STATUS_MAP, o.status)}</td>
                       <td className="py-3 px-4">{statusBadge(LAB_REPORT_STATUS_MAP, o.reportStatus)}</td>
+                      <td className="py-3 px-4">
+                        {o.sampleStatus === "REJECTED" ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700" title={o.rejectionReason || ""}>مرفوضة</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">مقبولة</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                         <span dir="ltr">{fmtMoney(o.total)} / {fmtMoney(o.paid)} / {fmtMoney(o.remaining)}</span>
                       </td>
@@ -379,6 +441,24 @@ export default function OrdersTab() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button onClick={() => setDetailOrderId(o.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="إدخال النتائج"><ClipboardList className="w-4 h-4" /></button>
                           <button onClick={() => viewReport(o.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title="عرض التقرير PDF"><FileText className="w-4 h-4" /></button>
+                          <button onClick={() => viewLabel(o.id)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="طباعة لاصقة العينة"><Tag className="w-4 h-4" /></button>
+                          {o.sampleStatus === "REJECTED" ? (
+                            <button
+                              onClick={() => runSampleAction(o.id, "accept-sample")}
+                              disabled={busyId === o.id}
+                              className="px-2 py-1 text-xs rounded-lg border font-medium bg-green-50 text-green-700"
+                            >
+                              قبول العينة
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => runSampleAction(o.id, "reject-sample")}
+                              disabled={busyId === o.id}
+                              className="px-2 py-1 text-xs rounded-lg border font-medium bg-red-50 text-red-700"
+                            >
+                              رفض عينة
+                            </button>
+                          )}
                           {action && (
                             <button
                               onClick={() => setConfirmAction({ id: o.id, kind: action.kind })}

@@ -287,6 +287,32 @@ const getOrderPdf = async (req, res) => {
   }
 };
 
+const getOrderLabel = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.labOrder.findFirst({
+      where: { id, companyId },
+      include: ORDER_DETAIL_INCLUDE,
+    });
+    if (!order) return res.status(404).json({ success: false, error: 'طلب التحاليل غير موجود' });
+
+    const { generateLabelPdf } = require('../services/labPdfService');
+    const pdfBuffer = await generateLabelPdf(order);
+
+    const filename = `label-${(order.orderNumber || order.id).replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating lab label:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في توليد اللاصقة' });
+  }
+};
+
 const createOrder = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -733,6 +759,126 @@ const markDelivered = async (req, res) => {
   }
 };
 
+const rejectSample = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    if (!reason) return res.status(400).json({ success: false, error: 'سبب رفض العينة مطلوب' });
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.labOrder.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'طلب التحاليل غير موجود' });
+
+    if (existing.sampleStatus === 'REJECTED') {
+      return res.status(400).json({ success: false, error: 'العينة مرفوضة بالفعل' });
+    }
+    if (existing.reportStatus === 'SIGNED' || existing.reportStatus === 'DELIVERED') {
+      return res.status(400).json({ success: false, error: 'لا يمكن رفض العينة بعد توقيع التقرير' });
+    }
+
+    const order = await prisma.labOrder.update({
+      where: { id },
+      data: {
+        sampleStatus: 'REJECTED',
+        rejectionReason: reason,
+        rejectedBy: req.user?.name || req.user?.email || null,
+        rejectedAt: new Date(),
+        status: 'PENDING',
+        reportStatus: 'PENDING',
+      },
+      include: ORDER_DETAIL_INCLUDE,
+    });
+
+    res.json({ success: true, data: formatOrder(order) });
+  } catch (error) {
+    console.error('Error rejecting lab sample:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في رفض العينة' });
+  }
+};
+
+const acceptSample = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.labOrder.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'طلب التحاليل غير موجود' });
+
+    if (existing.sampleStatus !== 'REJECTED') {
+      return res.status(400).json({ success: false, error: 'العينة غير مرفوضة' });
+    }
+
+    const order = await prisma.labOrder.update({
+      where: { id },
+      data: { sampleStatus: 'ACCEPTED', rejectionReason: null, rejectedBy: null, rejectedAt: null },
+      include: ORDER_DETAIL_INCLUDE,
+    });
+
+    res.json({ success: true, data: formatOrder(order) });
+  } catch (error) {
+    console.error('Error accepting lab sample:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في قبول العينة' });
+  }
+};
+
+const exportOrders = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { status, reportStatus, sampleStatus, branchId, search, dateFrom, dateTo } = req.query;
+    const where = { companyId };
+    if (status) where.status = String(status).toUpperCase();
+    if (reportStatus) where.reportStatus = String(reportStatus).toUpperCase();
+    if (sampleStatus) where.sampleStatus = String(sampleStatus).toUpperCase();
+    if (branchId) where.branchId = branchId;
+    if (search) {
+      where.OR = [
+        { patientName: { contains: search, mode: 'insensitive' } },
+        { patientPhone: { contains: search, mode: 'insensitive' } },
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (dateFrom || dateTo) {
+      const filter = {};
+      if (dateFrom) filter.gte = getStartOfDayInTimezone(new Date(dateFrom));
+      if (dateTo) filter.lte = getEndOfDayInTimezone(new Date(dateTo));
+      where.createdAt = filter;
+    }
+
+    const orders = await getSharedPrismaClient().labOrder.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 2000,
+    });
+
+    const esc = (v) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = [
+      ['رقم الطلب', 'المريض', 'الهاتف', 'الحالة', 'حالة التقرير', 'حالة العينة', 'الإجمالي', 'المدفوع', 'المتبقي', 'التاريخ'],
+      ...orders.map(o => [
+        o.orderNumber || '', o.patientName, o.patientPhone || '', o.status, o.reportStatus, o.sampleStatus,
+        o.total, o.paid, o.remaining, o.createdAt ? o.createdAt.toISOString().slice(0, 19).replace('T', ' ') : '',
+      ]),
+    ];
+    const csv = rows.map(r => r.map(esc).join(',')).join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="lab-orders.csv"');
+    res.send('\uFEFF' + csv);
+  } catch (error) {
+    console.error('Error exporting lab orders:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تصدير الطلبات' });
+  }
+};
+
 module.exports = {
   LAB_ORDER_CHAIN,
   LAB_REPORT_CHAIN,
@@ -754,4 +900,8 @@ module.exports = {
   reviewOrder,
   signOrder,
   markDelivered,
+  rejectSample,
+  acceptSample,
+  exportOrders,
+  getOrderLabel,
 };

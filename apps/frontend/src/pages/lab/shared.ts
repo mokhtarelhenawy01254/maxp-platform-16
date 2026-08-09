@@ -78,6 +78,7 @@ export interface LabOrder {
   fastingHours?: number; externalSample: boolean;
   collectionDate?: string; receiveDate?: string;
   status: string; reportStatus: string;
+  sampleStatus?: string; rejectionReason?: string; rejectedBy?: string; rejectedAt?: string;
   subtotal: number; discount: number; total: number; paid: number; remaining: number;
   patientFlags?: string[] | Record<string, unknown> | string;
   notes?: string; signedBy?: string; signedAt?: string; createdAt: string;
