@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
+  ArrowUpRight,
   BarChart3,
   CheckCircle,
   Clock,
   Edit,
   Eye,
+  Flame,
+  GitBranch,
   Layout,
   MessageSquare,
   Minus,
@@ -20,9 +23,8 @@ import {
   Trash2,
   TrendingUp,
   Users,
+  Wand2,
   Zap,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -70,11 +72,7 @@ import { cn } from "@/lib/utils";
 
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
-import {
-  WhatsAppMetricCard,
-  WhatsAppPageShell,
-  WhatsAppSurfaceCard,
-} from "./components/WhatsAppPageShell";
+import { WhatsAppPageShell } from "./components/WhatsAppPageShell";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
@@ -129,13 +127,6 @@ type DeleteTarget =
 
 type TabId = "flows" | "monitoring";
 
-const flowStatusClasses = {
-  enabled:
-    "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200",
-  disabled:
-    "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:text-slate-200",
-} as const;
-
 const journeyStatusClasses: Record<string, string> = {
   ACTIVE:
     "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200",
@@ -188,10 +179,21 @@ const floatingNoticeBaseClass =
   "rounded-2xl border shadow-[0_18px_40px_rgba(15,27,45,0.12)] backdrop-blur";
 
 const primaryActionClassName =
-  "rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90";
+  "rounded-full bg-[color:var(--business-success)] px-4 text-white shadow-[0_8px_24px_color-mix(in_srgb,var(--business-success)_35%,transparent)] transition-all hover:-translate-y-0.5 hover:brightness-95 hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--business-success)_45%,transparent)]";
 
 const outlineActionClassName =
-  "rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 hover:bg-[color:var(--color-card)]";
+  "rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 backdrop-blur hover:bg-[color:var(--color-card)]";
+
+const glassPanelClassName =
+  "relative overflow-hidden rounded-[1.75rem] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_55%,transparent)] backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(15,27,45,0.18)]";
+
+const ambientOrb =
+  "pointer-events-none absolute rounded-full blur-3xl";
+
+const bentoGlow: React.CSSProperties = {
+  background:
+    "radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--business-success) 18%, transparent) 0%, color-mix(in srgb, var(--color-primary) 12%, transparent) 45%, transparent 100%)",
+};
 
 const isNotFoundError = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("response" in error)) {
@@ -268,14 +270,12 @@ function FlowStepNode({
   index,
   isAdmin,
   onEdit,
-  onDelete,
   onSetDeleteTarget,
 }: {
   step: Step;
   index: number;
   isAdmin: boolean;
   onEdit: (step: Step) => void;
-  onDelete: (step: Step) => void;
   onSetDeleteTarget: (target: DeleteTarget) => void;
 }) {
   return (
@@ -351,7 +351,13 @@ function FlowWaitNode({ days }: { days: number }) {
   );
 }
 
-function FlowAddButton({ onClick, label }: { onClick: () => void; label?: string }) {
+function FlowAddButton({
+  onClick,
+  label,
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-0">
       <div className="flex flex-col items-center">
@@ -380,6 +386,166 @@ function FlowStartNode() {
       </div>
       <div className="flex flex-col items-center">
         <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+    </div>
+  );
+}
+
+function BentoMetricCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  tone = "primary",
+  className,
+  glow,
+  span,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone?: "primary" | "success" | "info" | "warning" | "danger";
+  className?: string;
+  glow?: boolean;
+  span?: boolean;
+}) {
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
+  const toneClasses = {
+    primary:
+      "bg-gradient-to-br from-[color:var(--color-primary)]/20 to-[color:var(--color-primary)]/5 text-[color:var(--color-primary)]",
+    success:
+      "bg-gradient-to-br from-[color:var(--business-success)]/25 to-[color:var(--business-success)]/5 text-[color:color-mix(in_srgb,var(--business-success)_75%,black)]",
+    info:
+      "bg-gradient-to-br from-[color:var(--color-info)]/20 to-[color:var(--color-info)]/5 text-[color:var(--color-info)]",
+    warning:
+      "bg-gradient-to-br from-[color:var(--business-warning)]/25 to-[color:var(--business-warning)]/5 text-[color:color-mix(in_srgb,var(--business-warning)_80%,black)]",
+    danger:
+      "bg-gradient-to-br from-[color:var(--color-destructive)]/20 to-[color:var(--color-destructive)]/5 text-[color:var(--color-destructive)]",
+  } as const;
+
+  return (
+    <div
+      className={cn(
+        glassPanelClassName,
+        "group relative flex min-h-[7.5rem] flex-col justify-between overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_-24px_rgba(15,27,45,0.35)] sm:min-h-[8.5rem] sm:p-6",
+        span && "sm:min-h-[8.5rem]",
+        className,
+      )}
+    >
+      {glow ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-70 transition-opacity group-hover:opacity-100"
+          style={bentoGlow}
+        />
+      ) : null}
+      <div
+        aria-hidden
+        className={cn(
+          ambientOrb,
+          "size-24 -top-10",
+          isRtl ? "-left-10" : "-right-10",
+          "opacity-60",
+        )}
+      />
+
+      <div className="flex items-center justify-between gap-3">
+        <div
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12",
+            toneClasses[tone],
+          )}
+        >
+          <Icon className="size-5 sm:size-6" />
+        </div>
+        <ArrowUpRight
+          className={cn(
+            "size-4 text-[color:var(--color-muted-foreground)]/40 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
+            isRtl && "-scale-x-100",
+          )}
+        />
+      </div>
+
+      <div className="mt-4 space-y-1.5">
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)] sm:text-xs">
+          {label}
+        </p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold tracking-tight text-[color:var(--color-foreground)] sm:text-4xl">
+            {value}
+          </span>
+          {hint ? (
+            <span className="text-xs font-medium text-[color:var(--business-success)]">
+              {hint}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AmbientBackdrop() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        className={cn(
+          ambientOrb,
+          "size-[28rem] -top-40 -right-32 bg-[color:color-mix(in_srgb,var(--business-success)_14%,transparent)]",
+        )}
+      />
+      <div
+        className={cn(
+          ambientOrb,
+          "size-[24rem] top-1/4 -left-40 bg-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)]",
+        )}
+      />
+      <div
+        className={cn(
+          ambientOrb,
+          "size-[20rem] bottom-0 right-1/3 bg-[color:color-mix(in_srgb,var(--color-info)_10%,transparent)]",
+        )}
+      />
+    </div>
+  );
+}
+
+function FlowHeader({
+  flow,
+  stepsCount,
+  isEnabled,
+}: {
+  flow: Flow | null;
+  stepsCount: number;
+  isEnabled: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/25 to-[color:var(--business-success)]/10 text-[color:var(--color-primary)]">
+        <GitBranch className="size-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-base font-bold text-[color:var(--color-foreground)] sm:text-lg">
+          {flow?.name || "—"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
+          <span>{stepsCount} خطوة</span>
+          <span className="size-1 rounded-full bg-[color:var(--shell-control-border)]" />
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-full px-2 py-0",
+              isEnabled
+                ? "border-[color:color-mix(in_srgb,var(--business-success)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_12%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,black)]"
+                : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
+            )}
+          >
+            {isEnabled ? "مفعّلة" : "موقوفة"}
+          </Badge>
+        </div>
       </div>
     </div>
   );
@@ -744,18 +910,28 @@ const WhatsAppCustomerJourney: React.FC = () => {
         backHref="/whatsapp/notifications"
         backLabel={t("common.back") as string}
       >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-3xl" />
-          ))}
-        </div>
-        <Skeleton className="h-14 rounded-full" />
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
-          <div className="space-y-4">
-            <Skeleton className="h-[28rem] rounded-3xl" />
-            <Skeleton className="h-64 rounded-3xl" />
+        <div className="relative">
+          <AmbientBackdrop />
+          <div className="relative grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton
+                key={index}
+                className={cn(
+                  "rounded-[1.75rem]",
+                  index === 0 && "xl:col-span-2",
+                  "h-36",
+                )}
+              />
+            ))}
           </div>
-          <Skeleton className="h-[38rem] rounded-3xl" />
+          <Skeleton className="relative mt-6 h-14 rounded-full" />
+          <div className="relative mt-6 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.7fr)]">
+            <div className="space-y-4">
+              <Skeleton className="h-[28rem] rounded-[1.75rem]" />
+              <Skeleton className="h-64 rounded-[1.75rem]" />
+            </div>
+            <Skeleton className="h-[38rem] rounded-[1.75rem]" />
+          </div>
         </div>
       </WhatsAppPageShell>
     );
@@ -810,31 +986,41 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.activeJourneys")}
-          value={stats.activeCount}
-          icon={Users}
-          tone="primary"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.totalSent")}
-          value={stats.totalSent}
-          icon={Send}
-          tone="success"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.completionRate")}
-          value={`${stats.completionRate}%`}
-          icon={TrendingUp}
-          tone="info"
-        />
-        <WhatsAppMetricCard
-          label={t("whatsappJourney.stats.deliveryStatus")}
-          value={stats.healthLabel}
-          icon={Zap}
-          tone={stats.healthTone as "success" | "danger"}
-        />
+      <div className="relative">
+        <AmbientBackdrop />
+
+        <div className="relative grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <BentoMetricCard
+            label={t("whatsappJourney.stats.activeJourneys")}
+            value={stats.activeCount}
+            hint={`${stats.totalJourneys} إجمالي`}
+            icon={Users}
+            tone="primary"
+            glow
+            span
+            className="xl:col-span-2"
+          />
+          <BentoMetricCard
+            label={t("whatsappJourney.stats.totalSent")}
+            value={stats.totalSent}
+            icon={Send}
+            tone="success"
+            glow
+          />
+          <BentoMetricCard
+            label={t("whatsappJourney.stats.completionRate")}
+            value={`${stats.completionRate}%`}
+            icon={TrendingUp}
+            tone="info"
+            glow
+          />
+          <BentoMetricCard
+            label={t("whatsappJourney.stats.deliveryStatus")}
+            value={stats.healthLabel}
+            icon={Zap}
+            tone={stats.healthTone === "danger" ? "danger" : "success"}
+          />
+        </div>
       </div>
 
       <Tabs
@@ -842,7 +1028,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         onValueChange={(value) => setActiveTab(value as TabId)}
         className="space-y-4"
       >
-        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1">
+        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-card)_60%,transparent)] p-1 backdrop-blur-xl">
           <TabsTrigger className="rounded-full px-4 py-2" value="flows">
             <Layout className="size-4" />
             {t("whatsappJourney.tabs.flows")}
@@ -856,10 +1042,20 @@ const WhatsAppCustomerJourney: React.FC = () => {
         <TabsContent value="flows" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
             <div className="space-y-4">
-              <WhatsAppSurfaceCard
-                title={t("whatsappJourney.tabs.flows") as string}
-                description={t("whatsappJourney.flows.emptyDesc") as string}
-              >
+              <div className={cn(glassPanelClassName, "p-4 sm:p-5")}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[color:var(--color-foreground)] sm:text-base">
+                      {t("whatsappJourney.tabs.flows")}
+                    </h3>
+                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                      {t("whatsappJourney.flows.emptyDesc")}
+                    </p>
+                  </div>
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/20 to-[color:var(--color-primary)]/5 text-[color:var(--color-primary)]">
+                    <GitBranch className="size-4" />
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div className="relative">
                     <Search
@@ -873,7 +1069,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t("common.search") as string}
                       className={cn(
-                        "h-11 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
+                        "h-11 rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
                         isRtl ? "pr-10" : "pl-10",
                       )}
                     />
@@ -897,47 +1093,66 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               }
                             }}
                             className={cn(
-                              "rounded-2xl border px-4 py-4 shadow-sm transition-all",
-                              "cursor-pointer bg-[color:var(--color-card)]/70 hover:-translate-y-0.5 hover:bg-[color:var(--color-card)]",
+                              "group relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300",
+                              "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-16px_rgba(15,27,45,0.3)]",
                               selected
-                                ? "border-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--business-success)_0%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] shadow-[0_4px_20px_rgba(139,92,246,0.1)]"
-                                : "border-[color:var(--shell-control-border)]",
+                                ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_6%,var(--color-card))]"
+                                : "border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/60",
                             )}
                           >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0 space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="truncate text-base font-semibold text-[color:var(--color-foreground)]">
-                                    {flow.name}
-                                  </p>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      flow.isEnabled
-                                        ? "border-[color:color-mix(in_srgb,rgba(34,197,94,0.4)_100%,transparent)] bg-[color:color-mix(in_srgb,rgba(34,197,94,0.08)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(34,197,94,0.9)_100%,var(--color-success)_0%)]"
-                                        : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
-                                    )}
-                                  >
-                                    {flow.isEnabled
-                                      ? t("whatsappJourney.flows.enabled")
-                                      : t("whatsappJourney.flows.disabled")}
-                                  </Badge>
-                                  {flow._count?.categories && flow._count.categories > 0 ? (
-                                    <Badge variant="outline" className="rounded-full border-[color:color-mix(in_srgb,rgba(234,179,8,0.4)_100%,transparent)] bg-[color:color-mix(in_srgb,rgba(234,179,8,0.08)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(234,179,8,0.9)_100%,var(--color-warning)_0%)]">
-                                      <Sparkles className="size-3" />
-                                      تصنيف
-                                    </Badge>
-                                  ) : null}
+                            {selected ? (
+                              <div
+                                aria-hidden
+                                className={cn(ambientOrb, "size-28 -top-12 -right-12 bg-[color:color-mix(in_srgb,var(--business-success)_16%,transparent)] opacity-70")}
+                              />
+                            ) : null}
+                            <div className="relative flex items-start justify-between gap-4">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <div
+                                  className={cn(
+                                    "flex size-10 shrink-0 items-center justify-center rounded-xl transition-all",
+                                    selected
+                                      ? "bg-gradient-to-br from-[color:var(--business-success)]/30 to-[color:var(--business-success)]/10 text-[color:color-mix(in_srgb,var(--business-success)_75%,black)]"
+                                      : "bg-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] text-[color:var(--color-primary)] group-hover:bg-[color:color-mix(in_srgb,var(--color-primary)_15%,transparent)]",
+                                  )}
+                                >
+                                  <GitBranch className="size-5" />
                                 </div>
-                                <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                                  {t("whatsappJourney.flows.activeCustomers", {
-                                    count: flow._count?.journeys || 0,
-                                  })}
-                                </p>
+                                <div className="min-w-0 space-y-1.5">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+                                      {flow.name}
+                                    </p>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "rounded-full px-2 py-0 text-[10px]",
+                                        flow.isEnabled
+                                          ? "border-[color:color-mix(in_srgb,var(--business-success)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_12%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,black)]"
+                                          : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
+                                      )}
+                                    >
+                                      {flow.isEnabled
+                                        ? t("whatsappJourney.flows.enabled")
+                                        : t("whatsappJourney.flows.disabled")}
+                                    </Badge>
+                                    {flow._count?.categories && flow._count.categories > 0 ? (
+                                      <Badge variant="outline" className="rounded-full border-[color:color-mix(in_srgb,var(--business-warning)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-warning)_10%,transparent)] px-2 py-0 text-[10px] text-[color:color-mix(in_srgb,var(--business-warning)_85%,black)]">
+                                        <Sparkles className="size-3" />
+                                        تصنيف
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                                    {t("whatsappJourney.flows.activeCustomers", {
+                                      count: flow._count?.journeys || 0,
+                                    })}
+                                  </p>
+                                </div>
                               </div>
 
                               {isAdmin && (
-                                <div className="flex items-center gap-1">
+                                <div className="flex shrink-0 items-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="icon-sm"
@@ -966,8 +1181,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               )}
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
-                              <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
+                            <div className="relative mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
+                              <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
                                 <MessageSquare className="size-4" />
                                 <span>{flow._count?.steps || 0} خطوة</span>
                               </div>
@@ -1002,56 +1217,83 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     />
                   )}
                 </div>
-              </WhatsAppSurfaceCard>
+              </div>
 
-              <WhatsAppSurfaceCard
-                className="border-transparent bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-foreground)_88%,transparent)_0%,color-mix(in_srgb,var(--color-foreground)_96%,transparent)_100%)] text-white shadow-[0_26px_60px_rgba(15,27,45,0.18)]"
-                contentClassName="px-5 py-5 sm:px-6"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[color:var(--color-card)]/10 text-[color:var(--business-warning)]">
-                      <Zap className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold">
-                        {t("whatsappJourney.hints.title")}
-                      </p>
-                      <p className="text-sm text-white/70">
-                        {t("whatsappJourney.subtitle")}
-                      </p>
-                    </div>
+            <div
+              className={cn(
+                glassPanelClassName,
+                "p-4 text-white sm:p-5",
+                "bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-foreground)_88%,transparent)_0%,color-mix(in_srgb,var(--color-foreground)_96%,transparent)_100%)]",
+                "border-transparent shadow-[0_26px_60px_rgba(15,27,45,0.18)]",
+              )}
+            >
+              <div
+                aria-hidden
+                className={cn(
+                  ambientOrb,
+                  "size-40 -bottom-20 -left-16 bg-[color:color-mix(in_srgb,var(--business-warning)_22%,transparent)]",
+                )}
+              />
+              <div className="relative space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-[color:var(--business-warning)] backdrop-blur">
+                    <Flame className="size-5" />
                   </div>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 rounded-xl border border-white/10 bg-[color:var(--color-card)]/6 px-4 py-3"
-                      >
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-card)]/10 text-xs font-semibold text-white">
-                          {index}
-                        </div>
-                        <p className="text-sm leading-6 text-white/82">
-                          {t(`whatsappJourney.hints.tip${index}`)}
-                        </p>
-                      </div>
-                    ))}
+                  <div>
+                    <p className="text-base font-semibold">
+                      {t("whatsappJourney.hints.title")}
+                    </p>
+                    <p className="text-sm text-white/70">
+                      {t("whatsappJourney.subtitle")}
+                    </p>
                   </div>
                 </div>
-              </WhatsAppSurfaceCard>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/6 px-4 py-3 backdrop-blur"
+                    >
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
+                        {index}
+                      </div>
+                      <p className="text-sm leading-6 text-white/82">
+                        {t(`whatsappJourney.hints.tip${index}`)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+          </div>
 
-            <WhatsAppSurfaceCard
-              title={(selectedFlow?.name || t("whatsappJourney.steps.title")) as string}
-              description={
-                (selectedFlow
-                  ? t("whatsappJourney.subtitle")
-                  : t("whatsappJourney.flows.emptyDesc")) as string
-              }
-              action={
-                selectedFlow ? (
+            <div
+              className={cn(
+                glassPanelClassName,
+                "min-h-[40rem] p-4 sm:p-5",
+              )}
+            >
+              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                {selectedFlow ? (
+                  <FlowHeader
+                    flow={selectedFlow}
+                    stepsCount={steps.length}
+                    isEnabled={selectedFlow.isEnabled}
+                  />
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/25 to-[color:var(--business-success)]/10 text-[color:var(--color-primary)]">
+                      <Wand2 className="size-5" />
+                    </div>
+                    <p className="text-base font-bold text-[color:var(--color-foreground)]">
+                      {t("whatsappJourney.steps.title")}
+                    </p>
+                  </div>
+                )}
+
+                {selectedFlow ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1">
+                    <div className="flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1 backdrop-blur">
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -1093,10 +1335,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       </Button>
                     )}
                   </div>
-                ) : undefined
-              }
-              className="min-h-[40rem]"
-            >
+                ) : undefined}
+              </div>
+
               {!selectedFlow ? (
                 <EmptyState
                   icon={Sparkles}
@@ -1123,11 +1364,29 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </div>
               ) : (
                 <div
-                  className="overflow-auto rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] bg-[color:color-mix(in_srgb,var(--color-muted)_30%,var(--color-background)_70%)] p-6"
-                  style={{ minHeight: "32rem" }}
+                  className="relative overflow-auto rounded-[1.5rem] border border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] p-6"
+                  style={{
+                    minHeight: "32rem",
+                    background:
+                      "radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--business-success) 7%, transparent) 0%, color-mix(in srgb, var(--color-primary) 6%, transparent) 45%, transparent 100%)",
+                  }}
                 >
                   <div
-                    className="mx-auto flex flex-col items-center"
+                    aria-hidden
+                    className={cn(
+                      ambientOrb,
+                      "size-56 -top-20 left-1/2 -translate-x-1/2 bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)]",
+                    )}
+                  />
+                  <div
+                    aria-hidden
+                    className={cn(
+                      ambientOrb,
+                      "size-40 bottom-0 right-0 bg-[color:color-mix(in_srgb,var(--color-info)_8%,transparent)]",
+                    )}
+                  />
+                  <div
+                    className="relative mx-auto flex flex-col items-center"
                     style={{
                       transform: `scale(${zoomLevel / 100})`,
                       transformOrigin: "top center",
@@ -1139,7 +1398,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     {isAdmin && (
                       <FlowAddButton
                         onClick={openCreateStepDialog}
-                        label={t("whatsappJourney.steps.add")}
+                        label={t("whatsappJourney.steps.add") as string}
                       />
                     )}
 
@@ -1154,15 +1413,12 @@ const WhatsAppCustomerJourney: React.FC = () => {
                             index={index}
                             isAdmin={isAdmin}
                             onEdit={openEditStepDialog}
-                            onDelete={(s) =>
-                              setDeleteTarget({ type: "step", id: s.id || "" })
-                            }
                             onSetDeleteTarget={setDeleteTarget}
                           />
                           {isAdmin && (
                             <FlowAddButton
                               onClick={openCreateStepDialog}
-                              label={t("whatsappJourney.steps.add")}
+                              label={t("whatsappJourney.steps.add") as string}
                             />
                           )}
                         </React.Fragment>
@@ -1201,15 +1457,21 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   </div>
                 </div>
               )}
-            </WhatsAppSurfaceCard>
+            </div>
           </div>
         </TabsContent>
 
         <TabsContent value="monitoring" className="space-y-4">
-          <WhatsAppSurfaceCard
-            title={t("whatsappJourney.tabs.monitoring") as string}
-            description={t("whatsappJourney.subtitle") as string}
-            action={
+          <div className={cn(glassPanelClassName, "p-4 sm:p-5")}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-[color:var(--color-foreground)] sm:text-base">
+                  {t("whatsappJourney.tabs.monitoring")}
+                </h3>
+                <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                  {t("whatsappJourney.subtitle")}
+                </p>
+              </div>
               <Button
                 variant="outline"
                 className={outlineActionClassName}
@@ -1219,10 +1481,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
                 {t("common.refresh")}
               </Button>
-            }
-          >
+            </div>
             {journeys.length > 0 ? (
-              <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
+              <div className="overflow-hidden rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_45%,transparent)]">
                 <Table>
                   <TableHeader className="bg-[color:var(--color-muted)]">
                     <TableRow className="hover:bg-transparent">
@@ -1345,13 +1606,13 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </Table>
               </div>
             ) : (
-              <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
+              <Alert className="rounded-2xl border border-dashed border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_45%,transparent)]">
                 <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                 <AlertTitle>{t("whatsappJourney.tabs.monitoring")}</AlertTitle>
                 <AlertDescription>{t("common.no_data")}</AlertDescription>
               </Alert>
             )}
-          </WhatsAppSurfaceCard>
+          </div>
         </TabsContent>
       </Tabs>
 
