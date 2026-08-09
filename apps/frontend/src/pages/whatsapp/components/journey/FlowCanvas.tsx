@@ -21,7 +21,19 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MessageSquare, Plus, Trash2, Edit3, Eye, EyeOff } from "lucide-react";
+import {
+  GripVertical,
+  MessageSquare,
+  Plus,
+  Trash2,
+  Edit3,
+  Eye,
+  EyeOff,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -42,6 +54,8 @@ interface FlowCanvasProps {
   onDelete: (step: FlowStep) => void;
   /** Whether to show the live preview pane (side-by-side on desktop) */
   showPreview?: boolean;
+  /** Optional callback to open the AI co-pilot */
+  onOpenCopilot?: () => void;
 }
 
 const variableReplacements: Record<string, string> = {
@@ -65,6 +79,85 @@ function sortStepOrder(steps: FlowStep[]): FlowStep[] {
     .map((step, index) => ({ ...step, stepOrder: index + 1 }));
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Validation
+// ─────────────────────────────────────────────────────────────────
+
+type ValidationSeverity = "error" | "warning";
+
+interface FlowIssue {
+  stepId?: string;
+  severity: ValidationSeverity;
+  message: string;
+}
+
+const MAX_DELAY_DAYS = 30;
+const MAX_MESSAGE_LENGTH = 1024;
+
+function validateFlow(steps: FlowStep[]): FlowIssue[] {
+  const issues: FlowIssue[] = [];
+  const seenContent = new Map<string, number>();
+
+  steps.forEach((step, index) => {
+    // Empty message
+    if (!step.content || !step.content.trim()) {
+      issues.push({
+        stepId: step.id,
+        severity: "error",
+        message: `Step ${index + 1} has no message content`,
+      });
+    }
+
+    // Oversized message (WhatsApp limit is 4096, but 1024 is more practical)
+    if (step.content && step.content.length > MAX_MESSAGE_LENGTH) {
+      issues.push({
+        stepId: step.id,
+        severity: "warning",
+        message: `Step ${index + 1} is ${step.content.length} characters — risk of truncation`,
+      });
+    }
+
+    // Long delay
+    if (step.delayDays > MAX_DELAY_DAYS) {
+      issues.push({
+        stepId: step.id,
+        severity: "warning",
+        message: `Step ${index + 1} has a ${step.delayDays}-day delay — consider splitting the flow`,
+      });
+    }
+
+    // Duplicate content
+    if (step.content) {
+      const normalized = step.content.trim().toLowerCase();
+      const previous = seenContent.get(normalized) ?? -1;
+      if (previous >= 0) {
+        issues.push({
+          stepId: step.id,
+          severity: "warning",
+          message: `Step ${index + 1} duplicates step ${previous + 1}`,
+        });
+      } else {
+        seenContent.set(normalized, index);
+      }
+    }
+
+    // Missing variable close brace
+    if (step.content) {
+      const opens = (step.content.match(/\{/g) || []).length;
+      const closes = (step.content.match(/\}/g) || []).length;
+      if (opens !== closes) {
+        issues.push({
+          stepId: step.id,
+          severity: "error",
+          message: `Step ${index + 1} has unmatched variable braces`,
+        });
+      }
+    }
+  });
+
+  return issues;
+}
+
 export function FlowCanvas({
   steps,
   isAdmin,
@@ -73,6 +166,7 @@ export function FlowCanvas({
   onAdd,
   onDelete,
   showPreview: showPreviewProp = true,
+  onOpenCopilot,
 }: FlowCanvasProps) {
   const [previewOpen, setPreviewOpen] = useState(showPreviewProp);
   const [hoveredStepId, setHoveredStepId] = useState<string | null>(null);
@@ -82,6 +176,20 @@ export function FlowCanvas({
   );
 
   const orderedSteps = useMemo(() => sortStepOrder(steps), [steps]);
+  const issues = useMemo(() => validateFlow(orderedSteps), [orderedSteps]);
+  const issueByStepId = useMemo(() => {
+    const map = new Map<string, FlowIssue[]>();
+    issues.forEach((issue) => {
+      if (issue.stepId) {
+        const list = map.get(issue.stepId) || [];
+        list.push(issue);
+        map.set(issue.stepId, list);
+      }
+    });
+    return map;
+  }, [issues]);
+  const errorCount = issues.filter((i) => i.severity === "error").length;
+  const warningCount = issues.filter((i) => i.severity === "warning").length;
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -127,7 +235,7 @@ export function FlowCanvas({
         style={{ borderRight: previewOpen ? "1.5px solid var(--editorial-border-subtle)" : "0" }}
       >
         {/* Header */}
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <p
               className="ed-eyebrow"
@@ -155,7 +263,34 @@ export function FlowCanvas({
                 : "Read-only view"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Validation status pill */}
+            {orderedSteps.length > 0 && (
+              <ValidationBadge
+                errorCount={errorCount}
+                warningCount={warningCount}
+                issues={issues}
+              />
+            )}
+            {onOpenCopilot && (
+              <button
+                type="button"
+                className="ed-btn"
+                style={{
+                  height: 32,
+                  padding: "0 12px",
+                  fontSize: 11,
+                  background: "var(--editorial-ink)",
+                  color: "var(--editorial-accent)",
+                  borderColor: "var(--editorial-accent)",
+                }}
+                onClick={onOpenCopilot}
+                title="Open AI co-pilot (⌘K)"
+              >
+                <Sparkles className="size-3" />
+                ask co-pilot
+              </button>
+            )}
             <button
               type="button"
               className="ed-btn ed-btn-ghost"
@@ -190,9 +325,11 @@ export function FlowCanvas({
               strategy={verticalListSortingStrategy}
             >
               <ol className="m-0 flex list-none flex-col gap-0 p-0">
-                {orderedSteps.map((step, index) => (
+                {orderedSteps.map((step, index) => {
+                  const stepKey = step.id || `idx-${step.stepOrder}`;
+                  return (
                   <SortableStep
-                    key={step.id || `idx-${step.stepOrder}`}
+                    key={stepKey}
                     step={step}
                     index={index}
                     isLast={index === orderedSteps.length - 1}
@@ -201,8 +338,10 @@ export function FlowCanvas({
                     onDelete={onDelete}
                     onHover={(id) => setHoveredStepId(id)}
                     onHoverEnd={() => setHoveredStepId(null)}
+                    issues={issueByStepId.get(stepKey) || []}
                   />
-                ))}
+                  );
+                })}
               </ol>
             </SortableContext>
           </DndContext>
@@ -237,6 +376,7 @@ interface SortableStepProps {
   onDelete: (step: FlowStep) => void;
   onHover: (id: string) => void;
   onHoverEnd: () => void;
+  issues: FlowIssue[];
 }
 
 function SortableStep({
@@ -248,6 +388,7 @@ function SortableStep({
   onDelete,
   onHover,
   onHoverEnd,
+  issues,
 }: SortableStepProps) {
   const id = step.id || `idx-${step.stepOrder}`;
   const {
@@ -371,6 +512,34 @@ function SortableStep({
               </span>
             )}
           </p>
+          {issues.length > 0 ? (
+            <ul
+              className="m-0 flex flex-col gap-1 p-0"
+              style={{ listStyle: "none" }}
+            >
+              {issues.map((issue, i) => (
+                <li
+                  key={i}
+                  className="flex items-center gap-1.5 ed-mono"
+                  style={{
+                    fontSize: 10,
+                    color:
+                      issue.severity === "error"
+                        ? "oklch(0.55 0.21 25)"
+                        : "var(--editorial-ink-soft)",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {issue.severity === "error" ? (
+                    <AlertCircle className="size-3 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="size-3 shrink-0" />
+                  )}
+                  {issue.message}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {/* Actions */}
@@ -416,6 +585,71 @@ function SortableStep({
         />
       )}
     </li>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+
+function ValidationBadge({
+  errorCount,
+  warningCount,
+  issues,
+}: {
+  errorCount: number;
+  warningCount: number;
+  issues: FlowIssue[];
+}) {
+  if (errorCount === 0 && warningCount === 0) {
+    return (
+      <span
+        className="ed-badge"
+        style={{
+          fontSize: 10,
+          color: "var(--editorial-ink-muted)",
+          borderColor: "var(--editorial-border-subtle)",
+          background: "var(--editorial-surface-sunken)",
+        }}
+        title="No issues"
+      >
+        <CheckCircle2 className="size-3" />
+        validated
+      </span>
+    );
+  }
+
+  const tone =
+    errorCount > 0
+      ? {
+          color: "oklch(0.55 0.21 25)",
+          border: "oklch(0.55 0.21 25)",
+          bg: "transparent",
+        }
+      : {
+          color: "var(--editorial-ink)",
+          border: "var(--editorial-border)",
+          bg: "transparent",
+        };
+  const Icon = errorCount > 0 ? AlertCircle : AlertTriangle;
+  const label =
+    errorCount > 0
+      ? `${errorCount} error${errorCount === 1 ? "" : "s"}`
+      : `${warningCount} warning${warningCount === 1 ? "" : "s"}`;
+
+  return (
+    <span
+      className="ed-badge"
+      style={{
+        fontSize: 10,
+        color: tone.color,
+        borderColor: tone.border,
+        background: tone.bg,
+        cursor: "help",
+      }}
+      title={issues.map((i) => i.message).join("\n")}
+    >
+      <Icon className="size-3" />
+      {label}
+    </span>
   );
 }
 

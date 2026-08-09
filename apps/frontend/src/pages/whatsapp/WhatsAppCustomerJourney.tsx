@@ -70,6 +70,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { WhatsAppPageShell } from "./components/WhatsAppPageShell";
 import { FlowCanvas } from "./components/journey/FlowCanvas";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
+import "./components/journey/editorial.css";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
@@ -1491,9 +1492,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     <FlowCanvas
                       steps={steps}
                       isAdmin={isAdmin}
+                      onOpenCopilot={() => copilot.setOpen(true)}
                       onReorder={(next) => {
-                        // Optimistic local update; backend persistence
-                        // will be handled in a follow-up PATCH.
+                        // Optimistic local update only.
+                        // Backend persistence intentionally not wired
+                        // in this page-local redesign.
                         setSteps(next);
                       }}
                       onEdit={openEditStepDialog}
@@ -1506,6 +1509,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     <FlowCanvas
                       steps={steps}
                       isAdmin={isAdmin}
+                      onOpenCopilot={() => copilot.setOpen(true)}
                       onReorder={() => {
                         /* read-only */
                       }}

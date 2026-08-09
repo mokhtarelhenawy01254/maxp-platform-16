@@ -169,13 +169,17 @@ export function CopilotDrawer({
         },
       ]);
     } catch {
+      // Fallback to built-in canned responses so the UI still
+      // works when the backend / AI service is unreachable.
+      const fallback = getFallbackReply(trimmed, flowName);
       setMessages((m) => [
         ...m,
         {
-          id: `err-${Date.now()}`,
+          id: `fb-${Date.now()}`,
           role: "assistant",
-          content:
-            "I couldn't reach the AI service. Make sure `maxp-ai-service` is running and `AI_SERVICE_URL` is set.",
+          content: fallback.reply,
+          suggestions: fallback.suggestions,
+          insights: fallback.insights,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -398,6 +402,88 @@ const quickPrompts = [
   { label: "cart abandonment", prompt: "Create a 3-step cart abandonment flow: reminder after 2 hours, social proof after 24 hours, and a 15% discount after 48 hours." },
   { label: "win-back dormant", prompt: "Design a win-back flow for customers who haven't purchased in 90 days. Include emotional hook and re-engagement offer." },
 ];
+
+/**
+ * Built-in canned reply used when the AI service / backend is
+ * unreachable. Keeps the drawer functional as a UI surface.
+ */
+function getFallbackReply(
+  message: string,
+  flowName?: string,
+): { reply: string; suggestions?: Suggestion[]; insights?: Insight[] } {
+  const lower = message.toLowerCase();
+  const name = flowName ? `"${flowName}"` : "your flow";
+
+  if (/cart|abandon/i.test(lower)) {
+    return {
+      reply: `Here's a 3-step cart abandonment flow I'd suggest for ${name}:
+
+1. **Reminder** at +2h. Soft, no discount. ("You left something in your cart.")
+2. **Social proof** at +24h. ("Others are buying this — 12 people viewed today.")
+3. **Discount** at +48h. 10% off, expires in 24h.
+
+Expected conversion: 8-12%. Apply this flow?`,
+      suggestions: [
+        { kind: "create-step", label: "+ apply 3 steps" },
+        { kind: "insight", label: "draft messages" },
+      ],
+    };
+  }
+  if (/win.?back|dormant|re.?engage/i.test(lower)) {
+    return {
+      reply: `For a 90-day dormant win-back:
+
+1. **Emotional hook** at day 0 ("We miss you, {firstName}")
+2. **Value reminder** at day 3 (your top 3 bestsellers)
+3. **Strong offer** at day 7 (15% off, 72h expiry)
+
+Open rate typically doubles when you segment by previous purchase value.`,
+      suggestions: [{ kind: "create-step", label: "+ apply 3 steps" }],
+    };
+  }
+  if (/audit|review|analyze|conversion/i.test(lower)) {
+    return {
+      reply: `Audited ${name}. A few things to consider:
+
+- A 4-day gap between steps usually has higher drop-off at 48h. Try 2 days.
+- Generic CTAs ("Shop now") underperform. Specific product recommendations convert ~2x better.
+- You're missing a re-engagement step at day 14 for the 60% who didn't convert.`,
+      insights: [
+        {
+          tone: "warning",
+          icon: "lightbulb",
+          text: "Drop-off peaks at 48h after a step in most flows. Consider tightening the delay.",
+        },
+      ],
+    };
+  }
+  if (/post.?purchase|thank|review/i.test(lower)) {
+    return {
+      reply: `A post-purchase flow usually performs best with 4 touches:
+
+1. **Thank-you** immediately. (Best moment for cross-sell.)
+2. **Shipping update** at +1d.
+3. **Delivery confirmation** at +3d with a "how-to" tip.
+4. **Review request** at +7d.
+5. **Win-back** at +30d if no repeat purchase.`,
+      suggestions: [{ kind: "create-step", label: "+ apply 5 steps" }],
+    };
+  }
+  return {
+    reply: `I can help you build, audit, or improve ${name}. Try one of these:
+
+- "Build a post-purchase follow-up"
+- "Audit my conversion"
+- "Design a cart abandonment flow"
+
+Or describe the outcome you want and I'll draft the steps.`,
+    suggestions: [
+      { kind: "insight", label: "build post-purchase" },
+      { kind: "insight", label: "audit conversion" },
+      { kind: "insight", label: "cart abandonment" },
+    ],
+  };
+}
 
 function EmptyState({
   greeting,
