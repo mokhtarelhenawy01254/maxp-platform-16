@@ -1,90 +1,76 @@
-/**
- * Frontend icon-import safety gate (config icon maps)
- *
- * يفحص ملفات src/config (خرائط الأيقونات مثل sidebar.ts) للتأكد أن كل
- * "icon: X" يستخدم معرّفاً مستورداً فعلاً في الملف.
- *
- * هذه الفئة من الأخطاء سبّبت انهيار كامل للـ dashboard (ReferenceError: X is not defined)
- * عندما استُخدمت أيقونة lucide-react في config/sidebar.ts بدون إضافتها للـ import.
- *
- * Usage: node scripts/check-icon-imports.cjs
- * Exit code 1 = تم العثور على مشاكل (يمنع الـ deploy).
- */
+#!/usr/bin/env node
+/* eslint-disable no-console */
+const fs = require('fs');
+const path = require('path');
 
-const fs = require('node:fs');
-const path = require('node:path');
+const ROOT = path.resolve(__dirname, '..');
+const CONFIG_DIR = path.join(ROOT, 'src', 'config');
 
-const configRoot = path.resolve(__dirname, '..', 'src', 'config');
+const errors = [];
+let filesChecked = 0;
+let iconsChecked = 0;
 
-// قيمة icon يجب أن تكون معرّفاً بسيطاً متبوعاً بـ , } أو نهاية سطر
-// (يستبعد الأنواع: React.ElementType / String(...) / A | B)
-const ICON_VALUE_RE = /icon\s*:\s*([A-Z][A-Za-z0-9_]*)\s*(?=[,}\n])/g;
+function collectTsFiles(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) collectTsFiles(full, out);
+    else if (/\.(ts|tsx|js|jsx)$/.test(entry.name) && !entry.name.endsWith('.test.') && !entry.name.endsWith('.spec.')) out.push(full);
+  }
+  return out;
+}
 
-function extractImports(content) {
+function extractAllNamedImports(source) {
   const imported = new Set();
-  const re = /import\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"]/g;
+  const re = /import\s*(?:type\s+)?\{([^}]*)\}\s*from\s*['"][^'"]+['"]/g;
   let m;
-  while ((m = re.exec(content)) !== null) {
-    const block = m[0];
-    const named = block.match(/\{([^}]*)\}/g) || [];
-    for (const group of named) {
-      for (const part of group.replace(/[{}]/g, '').split(',')) {
-        const name = part.trim().split(/\s+as\s+/).pop().trim();
-        if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) imported.add(name);
-      }
-    }
-    const def = block.match(/import\s+([A-Za-z_$][A-Za-z0-9_$]*)\s+from/);
-    if (def) imported.add(def[1]);
+  while ((m = re.exec(source)) !== null) {
+    m[1].split(',').forEach(part => {
+      const name = part.trim().replace(/^[\w]+\s+as\s+/, '').trim();
+      if (name) imported.add(name);
+    });
   }
   return imported;
 }
 
-function isDeclaredElsewhere(content, name) {
-  // معرّف مُعرّف داخل الملف (const/let/var/function/class/interface type)
-  return new RegExp(`(?:const|let|var|function|class|interface|type)\\s+${name}\\b`).test(content) ||
-    new RegExp(`\\b${name}\\s*\\??:\\s`).test(content); // نوع أو destructure alias
-}
-
-const files = [];
-try {
-  fs.readdirSync(configRoot, { withFileTypes: true }).forEach((e) => {
-    if (e.isFile() && /\.(ts|tsx|js|jsx)$/.test(e.name) && !/\.(test|spec)\./.test(e.name)) {
-      files.push(path.join(configRoot, e.name));
-    }
-  });
-} catch {
-  console.error(`❌ [ICON-IMPORTS] Cannot read config dir: ${configRoot}`);
-  process.exit(1);
-}
-
-const failures = [];
-
-for (const file of files) {
-  let content;
-  try {
-    content = fs.readFileSync(file, 'utf8');
-  } catch {
-    continue;
-  }
-  const imports = extractImports(content);
+function extractLocalConsts(source) {
+  const locals = new Set();
+  const re = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g;
   let m;
-  ICON_VALUE_RE.lastIndex = 0;
-  const rel = path.relative(path.resolve(__dirname, '..'), file);
-  while ((m = ICON_VALUE_RE.exec(content)) !== null) {
-    const name = m[1];
-    if (imports.has(name)) continue;
-    if (isDeclaredElsewhere(content, name)) continue;
-    const line = content.slice(0, m.index).split('\n').length;
-    failures.push(`${rel}:${line} — icon '${name}' is NOT imported in this file`);
+  while ((m = re.exec(source)) !== null) locals.add(m[1]);
+  return locals;
+}
+
+function extractIconReferences(source) {
+  const refs = new Set();
+  const re = /\bicon\s*:\s*([A-Za-z_$][\w$]*)/g;
+  let m;
+  while ((m = re.exec(source)) !== null) {
+    const after = source.charAt(m.index + m[0].length);
+    if (after === '.') continue;
+    refs.add(m[1]);
+  }
+  return refs;
+}
+
+function checkFile(file) {
+  const source = fs.readFileSync(file, 'utf8');
+  const known = new Set([...extractAllNamedImports(source), ...extractLocalConsts(source)]);
+  const referenced = extractIconReferences(source);
+  filesChecked++;
+  for (const icon of referenced) {
+    iconsChecked++;
+    if (!known.has(icon)) {
+      errors.push(`${path.relative(ROOT, file)}: icon "${icon}" is referenced but not imported or defined anywhere in the file`);
+    }
   }
 }
 
-if (failures.length > 0) {
-  console.error(`❌ [ICON-IMPORTS] ${failures.length} icon(s) used without import (crashes the dashboard):`);
-  for (const f of failures) console.error(`   - ${f}`);
-  console.error('Refusing to proceed — add the missing icon to the file import.');
+for (const file of collectTsFiles(CONFIG_DIR)) checkFile(file);
+
+if (errors.length > 0) {
+  console.error(`[check-icon-imports] ${errors.length} invalid icon reference(s):`);
+  errors.forEach(e => console.error(`  - ${e}`));
   process.exit(1);
 }
 
-console.log(`✅ [ICON-IMPORTS] Scanned ${files.length} config files: all "icon:" references are imported.`);
-process.exit(0);
+console.log(`[check-icon-imports] OK — ${filesChecked} file(s), ${iconsChecked} icon reference(s) all valid.`);
