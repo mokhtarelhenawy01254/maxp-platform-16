@@ -193,6 +193,10 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
             </div>
           ) : null}
         </div>
+      ) : autoDiscount?.status === "PRE_ACTIVATION" ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-violet-300 bg-white/60 px-4 py-4 text-sm text-gray-600 dark:border-violet-800 dark:bg-gray-900/40 dark:text-gray-300">
+          هذا العميل طلب قبل تفعيل نظام الولاء، فالخصم التلقائي مش بيطبق عليه.
+        </div>
       ) : (
         <div className="mt-6 rounded-2xl border border-dashed border-violet-300 bg-white/60 px-4 py-4 text-sm text-gray-600 dark:border-violet-800 dark:bg-gray-900/40 dark:text-gray-300">
           الخصم بيتفعّل تلقائيًا بعد تسليم طلبك. كل أوردر مؤهل بيديك كوبون
