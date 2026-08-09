@@ -374,67 +374,123 @@ async function resolveAggregateCustomerIds(prisma, companyId, rawCriteria) {
 }
 
 /**
+ * تطبيق شرط الاستثناء (excludeContactedInDays):
+ * يستبعد العملاء الذين تواصل معهم أو تواصلوا خلال آخر N يوم —
+ * أي لديهم رسالة (واردة أو صادرة) داخل الفترة.
+ * يُعدّل الـ where كـ NOT على conversations.messages.
+ */
+function applyContactExclusion(where, criteria) {
+  const excludeDays = toPositiveInt(criteria.excludeContactedInDays, null);
+  if (!excludeDays) return where;
+
+  const threshold = daysAgo(excludeDays);
+  const contactedFilter = {
+    conversations: {
+      some: {
+        messages: {
+          some: {
+            createdAt: { gte: threshold },
+          },
+        },
+      },
+    },
+  };
+
+  if (where.NOT) {
+    return { ...where, NOT: [where.NOT, contactedFilter].flat() };
+  }
+  return { ...where, NOT: contactedFilter };
+}
+
+/**
  * Combine where + aggregation into a single Customer where usable by count/findMany.
  */
 async function buildEffectiveCustomerListWhere(prisma, companyId, rawCriteria) {
+  const criteria = parseCriteria(rawCriteria);
   const built = buildCustomerListWhere(companyId, rawCriteria);
+  let where = built.where;
+
   if (built._minTotalSpent != null || built._minOrdersCount != null) {
     const ids = await resolveAggregateCustomerIds(prisma, companyId, rawCriteria);
     if (ids !== null && ids.length === 0) {
       return { where: { companyId, id: { in: [] } }, orderBy: built.orderBy, take: built.take };
     }
     if (ids !== null) {
-      return { where: { ...built.where, id: { in: ids } }, orderBy: built.orderBy, take: built.take };
+      where = { ...where, id: { in: ids } };
     }
   }
-  return { where: built.where, orderBy: built.orderBy, take: built.take };
+
+  where = applyContactExclusion(where, criteria);
+
+  return { where, orderBy: built.orderBy, take: built.take };
 }
 
 function criteriaToSummary(criteria) {
   const c = parseCriteria(criteria);
   const type = c.type || 'all';
+  let summary;
   switch (type) {
     case 'all':
-      return 'جميع العملاء النشطين';
+      summary = 'جميع العملاء النشطين';
+      break;
     case 'active':
-      return `نشط خلال آخر ${toPositiveInt(c.hours ?? c.lastActivity, 24)} ساعة`;
+      summary = `نشط خلال آخر ${toPositiveInt(c.hours ?? c.lastActivity, 24)} ساعة`;
+      break;
     case 'inactive':
-      return `غير نشط منذ ${toPositiveInt(c.days ?? c.lastActivity, 30)} يوم`;
+      summary = `غير نشط منذ ${toPositiveInt(c.days ?? c.lastActivity, 30)} يوم`;
+      break;
     case 'tag':
-      return `يحمل وسم: ${c.tag || ''}`;
+      summary = `يحمل وسم: ${c.tag || ''}`;
+      break;
     case 'orderStatus':
-      return c.days
+      summary = c.days
         ? `طلبات بحالة ${c.status} خلال آخر ${c.days} يوم`
         : `طلبات بحالة ${c.status}`;
+      break;
     case 'returnRequest':
-      return c.days
+      summary = c.days
         ? `مرتجعات بحالة ${c.status || 'الكل'} خلال آخر ${c.days} يوم`
         : `مرتجعات بحالة ${c.status || 'الكل'}`;
+      break;
     case 'paymentStatus':
-      return c.days
+      summary = c.days
         ? `دفع بحالة ${c.status} خلال آخر ${c.days} يوم`
         : `دفع بحالة ${c.status}`;
+      break;
     case 'city':
-      return `من مدينة: ${c.city || ''}`;
+      summary = `من مدينة: ${c.city || ''}`;
+      break;
     case 'customerRating':
-      return `التقييم: ${c.rating || ''}`;
+      summary = `التقييم: ${c.rating || ''}`;
+      break;
     case 'latest':
-      return `أحدث ${toPositiveInt(c.limit, 100)} عميل`;
+      summary = `أحدث ${toPositiveInt(c.limit, 100)} عميل`;
+      break;
     case 'oldest':
-      return `أقدم ${toPositiveInt(c.limit, 100)} عميل`;
+      summary = `أقدم ${toPositiveInt(c.limit, 100)} عميل`;
+      break;
     case 'minTotalSpent':
-      return `إجمالي إنفاق ≥ ${c.amount}`;
+      summary = `إجمالي إنفاق ≥ ${c.amount}`;
+      break;
     case 'minOrdersCount':
-      return `عدد طلبات ≥ ${c.count}`;
+      summary = `عدد طلبات ≥ ${c.count}`;
+      break;
     case 'combo':
-      return 'قائمة مخصّصة (شروط متعددة)';
+      summary = 'قائمة مخصّصة (شروط متعددة)';
+      break;
     case 'preset': {
       const preset = PRESETS[c.preset || c.name];
-      return preset ? preset.label : 'قائمة جاهزة';
+      summary = preset ? preset.label : 'قائمة جاهزة';
+      break;
     }
     default:
-      return 'جميع العملاء النشطين';
+      summary = 'جميع العملاء النشطين';
   }
+
+  if (toPositiveInt(c.excludeContactedInDays, null)) {
+    summary += ` | بدون مراسلة خلال آخر ${c.excludeContactedInDays} يوم`;
+  }
+  return summary;
 }
 
 module.exports = {
@@ -449,5 +505,6 @@ module.exports = {
   buildEffectiveCustomerListWhere,
   resolveAggregateCustomerIds,
   extractAggregates,
+  applyContactExclusion,
   criteriaToSummary,
 };

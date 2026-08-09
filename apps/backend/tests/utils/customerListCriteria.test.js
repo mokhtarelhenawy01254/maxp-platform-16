@@ -1,8 +1,10 @@
 const {
   buildCustomerListWhere,
+  buildEffectiveCustomerListWhere,
   criteriaToSummary,
   extractAggregates,
   resolveAggregateCustomerIds,
+  applyContactExclusion,
   PRESETS,
   ORDER_STATUSES,
   RETURN_STATUSES,
@@ -271,5 +273,41 @@ describe('criteriaToSummary للقوالب', () => {
   test('يترجم preset للاسم العربي', () => {
     expect(criteriaToSummary({ type: 'preset', preset: 'champions' })).toBe('أفضل العملاء');
     expect(criteriaToSummary({ type: 'preset', preset: 'loyal' })).toBe('العملاء الأوفياء');
+  });
+});
+
+describe('applyContactExclusion — استثناء المراسَلين', () => {
+  test('يضيف NOT على الرسائل خلال الفترة', () => {
+    const base = { companyId: 'c1', status: 'ACTIVE' };
+    const out = applyContactExclusion(base, { excludeContactedInDays: 7 });
+    expect(out.NOT).toBeDefined();
+    expect(out.NOT.conversations.some.messages.some.createdAt.gte).toBeInstanceOf(Date);
+    expect(out.status).toBe('ACTIVE');
+  });
+
+  test('بدون قيمة → يعيد الـ where كما هو', () => {
+    const base = { companyId: 'c1' };
+    expect(applyContactExclusion(base, {})).toEqual(base);
+  });
+
+  test('يدمج مع NOT موجودة كمصفوفة AND', () => {
+    const base = { companyId: 'c1', NOT: { tags: { contains: 'x' } } };
+    const out = applyContactExclusion(base, { excludeContactedInDays: 3 });
+    expect(Array.isArray(out.NOT)).toBe(true);
+    expect(out.NOT).toHaveLength(2);
+  });
+
+  test('buildEffectiveCustomerListWhere يطبّق الاستثناء', async () => {
+    const prisma = { order: { groupBy: jest.fn().mockResolvedValue([]) } };
+    const { where } = await buildEffectiveCustomerListWhere(prisma, 'c1', {
+      type: 'all',
+      excludeContactedInDays: 7,
+    });
+    expect(where.NOT).toBeDefined();
+  });
+
+  test('criteriaToSummary يضيف نص الاستثناء', () => {
+    expect(criteriaToSummary({ type: 'all', excludeContactedInDays: 14 }))
+      .toContain('بدون مراسلة خلال آخر 14 يوم');
   });
 });

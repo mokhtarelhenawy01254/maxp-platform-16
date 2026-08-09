@@ -337,8 +337,9 @@ const CustomerLists: React.FC = () => {
 
   const changeCriteriaType = (type: string) => {
     const t = type as CriteriaType;
+    const exclude = formCriteria.excludeContactedInDays;
     setFormCriteriaType(t);
-    setFormCriteria(buildEmptyCriteria(t));
+    setFormCriteria({ ...buildEmptyCriteria(t), ...(exclude ? { excludeContactedInDays: exclude } : {}) });
     setPreviewCount(null);
   };
 
@@ -856,6 +857,34 @@ const CustomerLists: React.FC = () => {
                 })()}
               </div>
             )}
+
+            {/* Exclusion window */}
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/30 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>استثناء المراسَلين حديثاً</Label>
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    استبعد العملاء الذين أرسلوا إليك أو أُرسل إليهم خلال آخر (يوم). يمنع إزعاج عملاء تواصلوا مؤخراً.
+                  </p>
+                </div>
+                <div className="w-32 shrink-0">
+                  <Select
+                    value={formCriteria.excludeContactedInDays ? String(formCriteria.excludeContactedInDays) : "0"}
+                    onValueChange={(v) => updateCriteriaField("excludeContactedInDays", v === "0" ? undefined : parseInt(v || "0", 10))}
+                  >
+                    <SelectTrigger className="h-11"><SelectValue placeholder="بدون استثناء" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">بدون استثناء</SelectItem>
+                      <SelectItem value="1">يوم واحد</SelectItem>
+                      <SelectItem value="3">3 أيام</SelectItem>
+                      <SelectItem value="7">7 أيام</SelectItem>
+                      <SelectItem value="14">14 يوم</SelectItem>
+                      <SelectItem value="30">30 يوم</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
             {/* Live count preview */}
             <div className="flex items-center justify-between rounded-2xl border border-[color:color-mix(in_srgb,var(--color-primary)_20%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))] px-4 py-3">

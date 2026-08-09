@@ -181,15 +181,38 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     setRecipients((prev) => prev.filter((p) => p !== phone));
   }, []);
 
+  const fetchAllListPhones = useCallback(async (listId: string): Promise<string[]> => {
+    const phones: string[] = [];
+    const pageSize = 200;
+    let page = 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const res = await broadcastService.getCustomersInListPaginated(listId, page, pageSize);
+      const customers = (res as any)?.data || [];
+      customers.forEach((c: any) => {
+        if (c?.phone) phones.push(c.phone);
+      });
+      const total = (res as any)?.total ?? customers.length;
+      if (!customers.length || page * pageSize >= total) break;
+      page += 1;
+    }
+    return phones;
+  }, []);
+
   const handleSelectList = useCallback(async (listId: string) => {
     setSelectedListId(listId);
     if (listId === "manual") return;
     try {
-      const res = await broadcastService.getCustomersInList(listId);
-      const customers = Array.isArray(res) ? res : (res as any)?.data || [];
-      const phones = customers.map((c: any) => c.phone).filter(Boolean);
+      const phones = await fetchAllListPhones(listId);
+      if (phones.length === 0) {
+        toast.warning("لا يوجد أرقام هواتف في هذه القائمة");
+        return;
+      }
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
-    } catch { }
+      toast.success(`تم تحميل ${phones.length} عميل من القائمة`);
+    } catch {
+      tToast.error("WhatsAppTemplateBroadcast.failed_load_914a");
+    }
   }, []);
 
   useEffect(() => {
