@@ -283,7 +283,7 @@ const getOrderPdf = async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Error generating lab PDF:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في توليد التقرير' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في توليد التقرير', detail: String(error?.message || error) });
   }
 };
 
