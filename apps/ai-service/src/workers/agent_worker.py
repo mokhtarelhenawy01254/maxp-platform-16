@@ -168,10 +168,9 @@ async def handle_memory_consolidation(job: dict[str, Any]) -> None:
             return
 
         from src.llm.client import LLMClient
-        from src.config import get_settings
+        from src.llm.key_resolver import get_active_key
 
-        settings = get_settings()
-        api_key = settings.google_api_key
+        api_key = await get_active_key("GOOGLE")
         provider = LLMClient(provider="GOOGLE", model="gemini-2.5-flash", api_key=api_key) if api_key else None
 
         for conv in conversations:
