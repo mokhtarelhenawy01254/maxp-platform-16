@@ -9,7 +9,6 @@ import {
   Clock,
   Edit,
   Eye,
-  Flame,
   GitBranch,
   Layout,
   MessageSquare,
@@ -1218,53 +1217,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   )}
                 </div>
               </div>
-
-            <div
-              className={cn(
-                glassPanelClassName,
-                "p-4 text-white sm:p-5",
-                "bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-foreground)_88%,transparent)_0%,color-mix(in_srgb,var(--color-foreground)_96%,transparent)_100%)]",
-                "border-transparent shadow-[0_26px_60px_rgba(15,27,45,0.18)]",
-              )}
-            >
-              <div
-                aria-hidden
-                className={cn(
-                  ambientOrb,
-                  "size-40 -bottom-20 -left-16 bg-[color:color-mix(in_srgb,var(--business-warning)_22%,transparent)]",
-                )}
-              />
-              <div className="relative space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-[color:var(--business-warning)] backdrop-blur">
-                    <Flame className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold">
-                      {t("whatsappJourney.hints.title")}
-                    </p>
-                    <p className="text-sm text-white/70">
-                      {t("whatsappJourney.subtitle")}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {[1, 2, 3].map((index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/6 px-4 py-3 backdrop-blur"
-                    >
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
-                        {index}
-                      </div>
-                      <p className="text-sm leading-6 text-white/82">
-                        {t(`whatsappJourney.hints.tip${index}`)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
 
             <div
