@@ -75,7 +75,6 @@ interface PreparationOrdersTableProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
-  onMarkAsShortageFailed: (orderNumber: string) => void;
   onHoldAsProblem: (orderNumber: string) => void;
   onReleaseProblemHold: (orderNumber: string) => void;
   onEditProblemReason: (orderNumber: string) => void;
@@ -111,7 +110,6 @@ const PreparationOrdersTable = ({
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
-  onMarkAsShortageFailed,
   onHoldAsProblem,
   onReleaseProblemHold,
   onEditProblemReason,
@@ -476,7 +474,6 @@ const PreparationOrdersTable = ({
                             onSaveShortageHoldDetails={
                               onSaveShortageHoldDetails
                             }
-                            onMarkAsShortageFailed={onMarkAsShortageFailed}
                           />
                         ) : null}
 

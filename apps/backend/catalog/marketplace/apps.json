@@ -920,6 +920,62 @@
     "updatedAt": "2026-06-26T00:00:00Z"
   },
   {
+    "id": "cat-app-lab-app",
+    "slug": "lab-app",
+    "name": "نظام المعمل",
+    "nameEn": "Lab System",
+    "description": "نظام متكامل لإدارة المعامل — كتالوج الاختبارات، الاستقبال، النتائج، والتقارير.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المعامل والمراكز الطبية ومقدمي خدمات التحاليل.",
+      "surface": "لوحة تحكم شاملة داخل نظام المعمل — كتالوج الاختبارات، الاستقبال، النتائج والتقارير.",
+      "outcome": "تنظيم كامل للعمليات المعملية مع نتائج وتقارير موثقة."
+    },
+    "features": {
+      "tests": {
+        "enabled": true,
+        "name": "كتالوج الاختبارات",
+        "description": "إدارة كتالوج الاختبارات والمعايير والقيم المرجعية.",
+        "access": "PAID"
+      },
+      "reception": {
+        "enabled": true,
+        "name": "الاستقبال",
+        "description": "تسجيل المرضى وأخذ العينات مع علم بأوقات الصيام وخصائص المريض.",
+        "access": "PAID"
+      },
+      "results": {
+        "enabled": true,
+        "name": "النتائج والتقارير",
+        "description": "إدخال النتائج ومراجعتها وتوقيعها وتسليمها للمرضى.",
+        "access": "PAID"
+      },
+      "orders": {
+        "enabled": true,
+        "name": "طلبات التحاليل",
+        "description": "متابعة الطلبات من الاستلام حتى التسليم مع الفوترة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "flask-conical",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-08T00:00:00Z",
+    "updatedAt": "2026-08-08T00:00:00Z"
+  },
+  {
     "id": "cat-app-inventory-pro",
     "slug": "inventory-pro",
     "name": "المخزون والمستودعات",

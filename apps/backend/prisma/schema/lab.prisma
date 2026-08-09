@@ -1,0 +1,98 @@
+// Lab module - test catalog
+model LabTest {
+  id           String   @id @default(cuid())
+  companyId    String
+  category     String?
+  name         String
+  abbreviation String?
+  sampleType   String?
+  price        Float    @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parameters   LabTestParameter[]
+  orderTests   LabOrderTest[]
+
+  @@index([companyId])
+  @@map("lab_tests")
+}
+
+/// Lab test parameter (result field with unit, reference range, options, flag)
+model LabTestParameter {
+  id             String   @id @default(cuid())
+  companyId      String
+  testId         String
+  name           String
+  unit           String?
+  referenceRange String?
+  resultOptions  Json?    /// predefined result dropdown options (array of strings)
+  showFlag       Boolean  @default(true) /// critical high/high/normal/low/critical low
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  test           LabTest  @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([testId])
+  @@map("lab_test_parameters")
+}
+
+/// Lab order (patient requisition) — reception intake
+model LabOrder {
+  id             String    @id @default(cuid())
+  companyId      String
+  orderNumber    String?   /// barcode / patient code
+  patientId      String?   /// optional link to Patient
+  patientName    String
+  patientPhone   String?
+  patientGender  String?
+  patientAge     String?
+  contractId     String?
+  branchId       String?
+  doctorName     String?   /// referring doctor
+  doctorType     String?   /// contracted | variable
+  fastingHours   Int?
+  externalSample Boolean   @default(false) /// sample picked up externally (lab-to-lab)
+  collectionDate DateTime?
+  receiveDate    DateTime?
+  status         String    @default("PENDING") /// PENDING|COLLECTED|IN_PROGRESS|REVIEWED|SIGNED|DELIVERED
+  reportStatus   String    @default("PENDING") /// PENDING|RESULTS_ENTERED|REVIEWED|SIGNED|DELIVERED
+  subtotal       Float     @default(0)
+  discount       Float     @default(0)
+  total          Float     @default(0)
+  paid           Float     @default(0)
+  remaining      Float     @default(0)
+  patientFlags   Json?     /// {"bleeding":true,"diabetic":true,...}
+  notes          String?
+  signedBy       String?
+  signedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tests          LabOrderTest[]
+
+  @@index([companyId])
+  @@index([orderNumber])
+  @@index([status])
+  @@map("lab_orders")
+}
+
+/// Tests selected on an order, with entered results
+model LabOrderTest {
+  id        String   @id @default(cuid())
+  companyId String
+  orderId   String
+  testId    String
+  price     Float    @default(0)
+  status    String   @default("PENDING") /// PENDING|RESULTS_ENTERED|REVIEWED|SIGNED
+  results   Json?    /// [{parameterId, parameterName, unit, result, flag}]
+  order     LabOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  test      LabTest  @relation(fields: [testId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, testId])
+  @@index([companyId])
+  @@map("lab_order_tests")
+}

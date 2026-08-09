@@ -955,6 +955,20 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.6️⃣ نظام المعمل
+        {
+            id: 'lab',
+            title: t('sidebar.labModule'),
+            icon: FlaskConical,
+            hidden: !isAppActive('lab-app'),
+            items: [
+                { to: '/lab/dashboard', icon: BarChart3, label: t('sidebar.labDashboard') },
+                { to: '/lab/tests', icon: FlaskConical, label: t('sidebar.labTests') },
+                { to: '/lab/reception', icon: Inbox, label: t('sidebar.labReception') },
+                { to: '/lab/orders', icon: ListChecks, label: t('sidebar.labOrders') },
+            ]
+        },
+
         // 7️⃣.7️⃣ النظام التعليمي
         {
             id: 'education',

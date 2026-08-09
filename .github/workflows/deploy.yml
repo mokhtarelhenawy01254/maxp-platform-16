@@ -142,6 +142,10 @@ jobs:
       - name: Build Frontend
         working-directory: ./apps/frontend
         run: |
+          # Purge Vite's persistent transform cache before building so a stale
+          # node_modules cache restored by actions/cache@v4 can never serve an
+          # outdated bundle (this previously shipped an old index-*.js hash).
+          rm -rf node_modules/.vite
           npm run build
           test -f dist/placeholders/luxury-shoes/hero.png
           echo "📂 Listing build files:"

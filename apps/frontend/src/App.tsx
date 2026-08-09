@@ -944,6 +944,9 @@ const EducationFunnelPage = React.lazy(
 const HotelManagementPage = React.lazy(
   () => import("./pages/admin/HotelManagementPage"),
 );
+const LabManagementPage = React.lazy(
+  () => import("./pages/lab/LabManagementPage"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -6909,6 +6912,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <BookingManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/lab/*"
+                  element={
+                    <Layout fullWidth>
+                      <LabManagementPage />
                     </Layout>
                   }
                 />

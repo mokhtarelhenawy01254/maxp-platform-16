@@ -58,7 +58,6 @@ interface PreparationOrderCardProps {
   onSingleStatusUpdate: (orderNumber: string, nextStatus: string) => void;
   onMarkAsShortageHold: (orderNumber: string) => void;
   onReleaseShortageHold: (orderNumber: string) => void;
-  onMarkAsShortageFailed: (orderNumber: string) => void;
   onHoldAsProblem: (orderNumber: string) => void;
   onReleaseProblemHold: (orderNumber: string) => void;
   onEditProblemReason: (orderNumber: string) => void;
@@ -95,7 +94,6 @@ const PreparationOrderCard = ({
   onSingleStatusUpdate,
   onMarkAsShortageHold,
   onReleaseShortageHold,
-  onMarkAsShortageFailed,
   onHoldAsProblem,
   onReleaseProblemHold,
   onEditProblemReason,
@@ -149,7 +147,6 @@ const PreparationOrderCard = ({
             formatDate={formatDate}
             onShortageFieldChange={onShortageFieldChange}
             onSaveShortageHoldDetails={onSaveShortageHoldDetails}
-            onMarkAsShortageFailed={onMarkAsShortageFailed}
           />
         ) : null}
 

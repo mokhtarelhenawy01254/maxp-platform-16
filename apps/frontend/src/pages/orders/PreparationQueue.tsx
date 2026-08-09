@@ -29,7 +29,6 @@ import {
   PROBLEM_HOLD_STATUS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
-  SHORTAGE_FAILED_STATUS,
   VISIBLE_COLUMNS_STORAGE_KEY,
   type PageSize,
   type PreparationFilterSection,
@@ -449,7 +448,6 @@ const PreparationQueue: React.FC = () => {
     addOption("QUALITY_CHECK", t('preparation.page.stages.QUALITY_CHECK'));
     addOption("PACKAGED", t('preparation.page.stages.PACKAGED'));
     addOption(SHORTAGE_HOLD_STATUS, t('preparation.page.stages.STOCK_SHORTAGE'));
-    addOption(SHORTAGE_FAILED_STATUS, t('preparation.page.stages.SHORTAGE_FAILED'));
     addOption(preparationSettings.handoffStatus || "READY_TO_SHIP", t('preparation.page.stages.READY_TO_SHIP'));
 
     if (preparationSettings.startingStatus) {
@@ -489,15 +487,6 @@ const PreparationQueue: React.FC = () => {
       tabs.push({
         statusCode: shortageCode,
         name: statusLabelMap.get(shortageCode) || t('preparation.k_9'),
-      });
-    }
-
-    const shortageFailedCode = toUpper(SHORTAGE_FAILED_STATUS);
-    if (!seen.has(shortageFailedCode)) {
-      seen.add(shortageFailedCode);
-      tabs.push({
-        statusCode: shortageFailedCode,
-        name: statusLabelMap.get(shortageFailedCode) || t('preparation.shortageFailedTab'),
       });
     }
 
@@ -1711,29 +1700,6 @@ const PreparationQueue: React.FC = () => {
     [handleSingleStatusUpdate, orders, saveShortageHoldDetails, shortageHoldDrafts],
   );
 
-  const handleMarkAsShortageFailed = useCallback(
-    async (orderNumber: string) => {
-      const order = orders.find((item) => item.orderNumber === orderNumber);
-      const currentDraft =
-        shortageHoldDrafts[orderNumber] || buildShortageHoldDetails(order?.metadata);
-      // skipRefresh=true: handleSingleStatusUpdate below already calls fetchAll
-      const saved = await saveShortageHoldDetails(
-        orderNumber,
-        {
-          ...currentDraft,
-          heldAt: currentDraft.heldAt || new Date().toISOString(),
-          releasedAt: "",
-          state: "held",
-        },
-        { successMessage: null, skipRefresh: true },
-      );
-      if (!saved) return;
-
-      await handleSingleStatusUpdate(orderNumber, SHORTAGE_FAILED_STATUS);
-    },
-    [handleSingleStatusUpdate, orders, saveShortageHoldDetails, shortageHoldDrafts],
-  );
-
   const handleReleaseShortageHold = useCallback(
     async (orderNumber: string) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
@@ -2144,9 +2110,6 @@ const PreparationQueue: React.FC = () => {
                     onReleaseShortageHold={(orderNumber) =>
                       void handleReleaseShortageHold(orderNumber)
                     }
-                    onMarkAsShortageFailed={(orderNumber) =>
-                      void handleMarkAsShortageFailed(orderNumber)
-                    }
                     onHoldAsProblem={(orderNumber) =>
                       void handleHoldAsProblem(orderNumber)
                     }
@@ -2200,9 +2163,6 @@ const PreparationQueue: React.FC = () => {
                 }
                 onReleaseShortageHold={(orderNumber) =>
                   void handleReleaseShortageHold(orderNumber)
-                }
-                onMarkAsShortageFailed={(orderNumber) =>
-                  void handleMarkAsShortageFailed(orderNumber)
                 }
                 onHoldAsProblem={(orderNumber) =>
                   void handleHoldAsProblem(orderNumber)
