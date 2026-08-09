@@ -963,9 +963,19 @@ export const getSidebarConfig = (
             hidden: !isAppActive('lab-app'),
             items: [
                 { to: '/lab/dashboard', icon: BarChart3, label: t('sidebar.labDashboard') },
-                { to: '/lab/tests', icon: FlaskConical, label: t('sidebar.labTests') },
                 { to: '/lab/reception', icon: Inbox, label: t('sidebar.labReception') },
+                { to: '/lab/patients', icon: Users, label: t('sidebar.labPatients') },
                 { to: '/lab/orders', icon: ListChecks, label: t('sidebar.labOrders') },
+                { to: '/lab/reports-medical', icon: FileText, label: t('sidebar.labMedicalReports') },
+                { to: '/lab/tests', icon: FlaskConical, label: t('sidebar.labTests') },
+                { to: '/lab/cultures', icon: Dna, label: t('sidebar.labCultures') },
+                { to: '/lab/price-lists', icon: Tag, label: t('sidebar.labPriceLists') },
+                { to: '/lab/contracts', icon: Handshake, label: t('sidebar.labContracts') },
+                { to: '/lab/branches', icon: Building2, label: t('sidebar.labBranches') },
+                { to: '/lab/invoices', icon: CreditCard, label: t('sidebar.labInvoices') },
+                { to: '/lab/reports', icon: BarChart3, label: t('sidebar.labReports') },
+                { to: '/lab/home-visits', icon: Home, label: t('sidebar.labHomeVisits') },
+                { to: '/lab/settings', icon: Settings, label: t('sidebar.labSettings') },
             ]
         },
 

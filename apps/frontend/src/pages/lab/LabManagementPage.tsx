@@ -4,21 +4,27 @@ import LabDashboardTab from "./LabDashboardTab";
 import TestsTab from "./TestsTab";
 import ReceptionTab from "./ReceptionTab";
 import OrdersTab from "./OrdersTab";
+import LabPatientsTab from "./LabPatientsTab";
+import LabBranchesTab from "./LabBranchesTab";
+import LabInvoicesTab from "./LabInvoicesTab";
+import PlaceholderTab from "./PlaceholderTab";
+import PriceListsTab from "@/pages/admin/booking/PriceListsTab";
+import BookingReportsTab from "@/pages/admin/booking/BookingReportsTab";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function LabManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (["dashboard", "tests", "reception", "orders"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b dark:border-gray-800">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">نظام إدارة المعمل</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">كتالوج الاختبارات، الاستقبال، النتائج والتقارير</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">الاستقبال، الاختبارات، النتائج والتقارير</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 max-w-3xl">
           {TABS.map(t => (
             <a
               key={t.id}
@@ -34,9 +40,19 @@ export default function LabManagementPage() {
       </div>
 
       {activeTab === "dashboard" && <TabErrorBoundary tabLabel="لوحة المعمل"><LabDashboardTab /></TabErrorBoundary>}
-      {activeTab === "tests" && <TabErrorBoundary tabLabel="الاختبارات"><TestsTab /></TabErrorBoundary>}
       {activeTab === "reception" && <TabErrorBoundary tabLabel="الاستقبال"><ReceptionTab /></TabErrorBoundary>}
+      {activeTab === "patients" && <TabErrorBoundary tabLabel="المرضى"><LabPatientsTab /></TabErrorBoundary>}
       {activeTab === "orders" && <TabErrorBoundary tabLabel="الطلبات"><OrdersTab /></TabErrorBoundary>}
+      {activeTab === "reports-medical" && <TabErrorBoundary tabLabel="التقارير الطبية"><OrdersTab /></TabErrorBoundary>}
+      {activeTab === "tests" && <TabErrorBoundary tabLabel="الاختبارات"><TestsTab /></TabErrorBoundary>}
+      {activeTab === "cultures" && <TabErrorBoundary tabLabel="المزارع"><PlaceholderTab title="المزارع" /></TabErrorBoundary>}
+      {activeTab === "price-lists" && <TabErrorBoundary tabLabel="قوائم الأسعار"><PriceListsTab /></TabErrorBoundary>}
+      {activeTab === "contracts" && <TabErrorBoundary tabLabel="التعاقدات"><PlaceholderTab title="التعاقدات" /></TabErrorBoundary>}
+      {activeTab === "branches" && <TabErrorBoundary tabLabel="الفروع"><LabBranchesTab /></TabErrorBoundary>}
+      {activeTab === "invoices" && <TabErrorBoundary tabLabel="المدفوعات"><LabInvoicesTab /></TabErrorBoundary>}
+      {activeTab === "reports" && <TabErrorBoundary tabLabel="التقارير"><BookingReportsTab /></TabErrorBoundary>}
+      {activeTab === "home-visits" && <TabErrorBoundary tabLabel="الزيارات المنزلية"><PlaceholderTab title="الزيارات المنزلية" /></TabErrorBoundary>}
+      {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><PlaceholderTab title="الإعدادات" /></TabErrorBoundary>}
     </div>
   );
 }

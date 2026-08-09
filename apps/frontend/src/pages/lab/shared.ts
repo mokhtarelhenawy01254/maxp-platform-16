@@ -1,14 +1,27 @@
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { LayoutDashboard, FlaskConical, Inbox, ListChecks } from 'lucide-react'
+import { LayoutDashboard, FlaskConical, Inbox, ListChecks, Users, FileText, Dna, Tag, Building2, CreditCard, BarChart3, Home, Settings } from 'lucide-react'
 
-export type TabId = "dashboard" | "tests" | "reception" | "orders";
+export type TabId =
+  | "dashboard" | "reception" | "patients" | "orders" | "reports-medical"
+  | "tests" | "cultures" | "price-lists" | "contracts" | "branches"
+  | "invoices" | "reports" | "home-visits" | "settings";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "لوحة المعمل", icon: LayoutDashboard },
-  { id: "tests", label: "كتالوج الاختبارات", icon: FlaskConical },
   { id: "reception", label: "الاستقبال", icon: Inbox },
+  { id: "patients", label: "المرضى", icon: Users },
   { id: "orders", label: "الطلبات", icon: ListChecks },
+  { id: "reports-medical", label: "التقارير الطبية", icon: FileText },
+  { id: "tests", label: "كتالوج الاختبارات", icon: FlaskConical },
+  { id: "cultures", label: "المزارع", icon: Dna },
+  { id: "price-lists", label: "قوائم الأسعار", icon: Tag },
+  { id: "contracts", label: "التعاقدات", icon: FileText },
+  { id: "branches", label: "الفروع", icon: Building2 },
+  { id: "invoices", label: "المدفوعات", icon: CreditCard },
+  { id: "reports", label: "التقارير", icon: BarChart3 },
+  { id: "home-visits", label: "الزيارات المنزلية", icon: Home },
+  { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
 export const getCompanyId = (): string | null => {
@@ -24,6 +37,17 @@ export const getAuthHeaders = () => {
 
 export const api = (path: string) => {
   const base = buildApiUrl(`lab/${path}`);
+  let url: URL;
+  try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
+  const cid = getCompanyId();
+  if (cid) url.searchParams.set("companyId", cid);
+  return url.toString();
+};
+
+/** Reuse the shared booking endpoints (patients/invoices/price-lists/branches/reports) —
+ *  they are NOT gated by booking-app at the backend, so a lab-only company can use them. */
+export const bookingApi = (path: string) => {
+  const base = buildApiUrl(`booking/${path}`);
   let url: URL;
   try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
   const cid = getCompanyId();
