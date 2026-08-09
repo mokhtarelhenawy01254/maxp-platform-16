@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Save, Loader2, Zap } from "lucide-react";
 
+interface AutoDiscountSettingsProps {
+  onSaved?: (data?: any) => void;
+}
+
 /**
  * إعدادات نظام "الخصم التلقائي":
  * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
  * + معدل النقاط وقيمة الاستبدال.
  */
-const AutoDiscountSettings: React.FC = () => {
+const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
@@ -43,8 +47,9 @@ const AutoDiscountSettings: React.FC = () => {
     setSavedMsg("");
     setErrorMsg("");
     try {
-      await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
+      const res = await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
       setSavedMsg("تم حفظ إعدادات الخصم التلقائي ✓");
+      onSaved?.(res.data?.data);
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || "فشل الحفظ");
     } finally {
