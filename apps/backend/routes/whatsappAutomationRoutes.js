@@ -17,10 +17,16 @@ router.delete('/flows/:id', verifyToken.authenticateToken, (req, res) => whatsap
 // Steps management
 router.get('/flows/:flowId/steps', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getFlowSteps(req, res));
 router.post('/flows/:flowId/steps', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.upsertStep(req, res));
+router.put('/steps/:id', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.upsertStep(req, res));
+router.post('/flows/:flowId/steps/reorder', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.reorderSteps(req, res));
 router.delete('/steps/:id', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.deleteStep(req, res));
 
 // Journeys monitoring
 router.get('/journeys', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getJourneys(req, res));
 router.post('/journeys/re-enroll', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.reEnrollJourney(req, res));
+
+// AI Co-pilot (Phase 3) — proxies to maxp-ai-service via aiServiceAdminClient
+router.get('/copilot/agent', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getCopilotAgent(req, res));
+router.post('/copilot/chat', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.copilotChat(req, res));
 
 module.exports = router;

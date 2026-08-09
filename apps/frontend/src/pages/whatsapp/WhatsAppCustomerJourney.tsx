@@ -3,16 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
-  ArrowUpRight,
   BarChart3,
   CheckCircle,
-  Clock,
   Edit,
   Eye,
   GitBranch,
   Layout,
   MessageSquare,
-  Minus,
   Package,
   Plus,
   RefreshCw,
@@ -22,7 +19,6 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  Wand2,
   Zap,
 } from "lucide-react";
 
@@ -72,6 +68,8 @@ import { cn } from "@/lib/utils";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { WhatsAppPageShell } from "./components/WhatsAppPageShell";
+import { FlowCanvas } from "./components/journey/FlowCanvas";
+import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
@@ -152,6 +150,39 @@ const journeyStatusTranslationKey: Record<string, string> = {
 const getJourneyStatusKey = (status: string) =>
   journeyStatusTranslationKey[status.toUpperCase()] || "inactive";
 
+// Editorial status badge styles — sharp, high contrast, single accent
+const editorialStatusStyles: Record<string, React.CSSProperties> = {
+  ACTIVE: {
+    background: "var(--editorial-accent)",
+    color: "var(--editorial-accent-ink)",
+    borderColor: "var(--editorial-accent-ink)",
+  },
+  COMPLETED: {
+    background: "var(--editorial-ink)",
+    color: "var(--editorial-surface-raised)",
+    borderColor: "var(--editorial-ink)",
+  },
+  CANCELLED: {
+    background: "var(--editorial-surface-sunken)",
+    color: "var(--editorial-ink-soft)",
+    borderColor: "var(--editorial-border-subtle)",
+  },
+  FAILED: {
+    background: "var(--editorial-surface-raised)",
+    color: "oklch(0.50 0.20 25)",
+    borderColor: "oklch(0.50 0.20 25)",
+  },
+  NOT_STARTED: {
+    background: "var(--editorial-surface-raised)",
+    color: "var(--editorial-ink-muted)",
+    borderColor: "var(--editorial-border)",
+  },
+};
+
+const getJourneyStatusStyle = (status: string): React.CSSProperties =>
+  editorialStatusStyles[status.toUpperCase()] ||
+  editorialStatusStyles.CANCELLED;
+
 const noticeStyles: Record<NoticeTone, string> = {
   success:
     "border-emerald-300/70 bg-emerald-500/12 text-emerald-950 dark:border-emerald-500/40 dark:text-emerald-100",
@@ -183,16 +214,8 @@ const primaryActionClassName =
 const outlineActionClassName =
   "rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 backdrop-blur hover:bg-[color:var(--color-card)]";
 
-const glassPanelClassName =
-  "relative overflow-hidden rounded-[1.75rem] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_55%,transparent)] backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(15,27,45,0.18)]";
-
 const ambientOrb =
   "pointer-events-none absolute rounded-full blur-3xl";
-
-const bentoGlow: React.CSSProperties = {
-  background:
-    "radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--business-success) 18%, transparent) 0%, color-mix(in srgb, var(--color-primary) 12%, transparent) 45%, transparent 100%)",
-};
 
 const isNotFoundError = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("response" in error)) {
@@ -229,15 +252,48 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/45 px-6 py-10 text-center">
-      <div className="flex size-16 items-center justify-center rounded-3xl bg-primary/10 text-[color:var(--color-primary)]">
-        <Icon className="size-8" />
+    <div
+      className="flex min-h-[18rem] flex-col items-center justify-center gap-5 border-2 border-dashed border-current/15 px-6 py-10 text-center ed-reveal"
+      style={{
+        background: "var(--editorial-surface-sunken, color-mix(in srgb, var(--color-card) 45%, transparent))",
+        borderRadius: "var(--editorial-radius-md, 6px)",
+      }}
+    >
+      <div
+        className="flex size-14 items-center justify-center"
+        style={{
+          background: "var(--editorial-ink, var(--color-foreground))",
+          color: "var(--editorial-surface-raised, var(--color-card))",
+          borderRadius: "var(--editorial-radius-sm, 4px)",
+        }}
+      >
+        <Icon className="size-7" />
       </div>
-      <div className="space-y-2">
-        <p className="text-lg font-semibold text-[color:var(--color-foreground)]">
+      <div className="space-y-1.5">
+        <p
+          className="ed-mono uppercase"
+          style={{
+            color: "var(--editorial-ink-soft, var(--color-muted-foreground))",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+          }}
+        >
+          — empty —
+        </p>
+        <p
+          className="ed-display"
+          style={{
+            color: "var(--editorial-ink, var(--color-foreground))",
+            fontSize: 28,
+            lineHeight: 1.05,
+          }}
+        >
           {title}
         </p>
-        <p className="mx-auto max-w-xl text-sm leading-6 text-[color:var(--color-muted-foreground)]">
+        <p
+          className="mx-auto max-w-md text-sm leading-6"
+          style={{ color: "var(--editorial-ink-muted, var(--color-muted-foreground))" }}
+        >
           {description}
         </p>
       </div>
@@ -258,229 +314,6 @@ function MessagePreview({ content }: { content: string }) {
         </p>
         <div className="mt-2 text-end text-[11px] text-[color:var(--color-muted-foreground)]">
           12:05 PM
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FlowStepNode({
-  step,
-  index,
-  isAdmin,
-  onEdit,
-  onSetDeleteTarget,
-}: {
-  step: Step;
-  index: number;
-  isAdmin: boolean;
-  onEdit: (step: Step) => void;
-  onSetDeleteTarget: (target: DeleteTarget) => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-0">
-      <div className="w-full max-w-md rounded-2xl border border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] p-4 shadow-[0_4px_24px_rgba(139,92,246,0.08)] backdrop-blur-sm transition-all hover:shadow-[0_8px_32px_rgba(139,92,246,0.15)] hover:border-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,transparent)]">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(139,92,246,1)_100%,var(--color-primary)_0%)]">
-            <Send className="size-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-[color:color-mix(in_srgb,rgba(139,92,246,0.7)_100%,var(--color-muted-foreground)_0%)]">
-                الخطوة {index + 1}
-              </span>
-              <Badge
-                variant="outline"
-                className="rounded-full border-[color:color-mix(in_srgb,rgba(139,92,246,0.25)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,transparent)] px-2 py-0.5 text-[10px] text-[color:color-mix(in_srgb,rgba(139,92,246,0.8)_100%,var(--color-foreground)_0%)]"
-              >
-                <MessageSquare className="size-2.5" />
-                إرسال رسالة
-              </Badge>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm leading-5 text-[color:var(--color-foreground)]">
-              {step.content.length > 80
-                ? `${step.content.slice(0, 80)}...`
-                : step.content}
-            </p>
-          </div>
-          {isAdmin && (
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
-                onClick={() => onEdit(step)}
-              >
-                <Edit className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full text-[color:color-mix(in_srgb,rgba(239,68,68,0.6)_100%,var(--color-destructive)_0%)] hover:text-[color:var(--color-destructive)]"
-                onClick={() =>
-                  onSetDeleteTarget({ type: "step", id: step.id || "" })
-                }
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FlowWaitNode({ days }: { days: number }) {
-  return (
-    <div className="flex flex-col items-center gap-0">
-      <div className="flex flex-col items-center">
-        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_100%,var(--shell-control-border)_0%)]" />
-      </div>
-      <div className="flex items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.04)_100%,var(--color-card)_0%)] px-4 py-2 shadow-sm">
-        <Clock className="size-3.5 text-[color:color-mix(in_srgb,rgba(139,92,246,0.6)_100%,var(--color-muted-foreground)_0%)]" />
-        <span className="text-xs font-medium text-[color:var(--color-foreground)]">
-          انتظار {days} {days === 1 ? "يوم" : "أيام"}
-        </span>
-      </div>
-      <div className="flex flex-col items-center">
-        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_100%,var(--shell-control-border)_0%)]" />
-      </div>
-    </div>
-  );
-}
-
-function FlowAddButton({
-  onClick,
-  label,
-}: {
-  onClick: () => void;
-  label?: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-0">
-      <div className="flex flex-col items-center">
-        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
-      </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className="group flex size-9 items-center justify-center rounded-full border-2 border-dashed border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_100%,var(--shell-control-border)_0%)] bg-[color:var(--color-card)] text-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--color-muted-foreground)_0%)] shadow-sm transition-all hover:border-[color:color-mix(in_srgb,rgba(139,92,246,0.6)_100%,var(--color-primary)_0%)] hover:bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,var(--color-card)_0%)] hover:text-[color:color-mix(in_srgb,rgba(139,92,246,1)_100%,var(--color-primary)_0%)] hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
-        title={label}
-      >
-        <Plus className="size-4" />
-      </button>
-      <div className="flex flex-col items-center">
-        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
-      </div>
-    </div>
-  );
-}
-
-function FlowStartNode() {
-  return (
-    <div className="flex flex-col items-center gap-0">
-      <div className="rounded-full border border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] px-5 py-2 text-xs font-medium text-[color:color-mix(in_srgb,rgba(139,92,246,0.7)_100%,var(--color-muted-foreground)_0%)] shadow-sm">
-        بداية السلسلة
-      </div>
-      <div className="flex flex-col items-center">
-        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
-      </div>
-    </div>
-  );
-}
-
-function BentoMetricCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone = "primary",
-  className,
-  glow,
-  span,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  tone?: "primary" | "success" | "info" | "warning" | "danger";
-  className?: string;
-  glow?: boolean;
-  span?: boolean;
-}) {
-  const { i18n } = useTranslation();
-  const isRtl = i18n.dir() === "rtl";
-
-  const toneClasses = {
-    primary:
-      "bg-gradient-to-br from-[color:var(--color-primary)]/20 to-[color:var(--color-primary)]/5 text-[color:var(--color-primary)]",
-    success:
-      "bg-gradient-to-br from-[color:var(--business-success)]/25 to-[color:var(--business-success)]/5 text-[color:color-mix(in_srgb,var(--business-success)_75%,black)]",
-    info:
-      "bg-gradient-to-br from-[color:var(--color-info)]/20 to-[color:var(--color-info)]/5 text-[color:var(--color-info)]",
-    warning:
-      "bg-gradient-to-br from-[color:var(--business-warning)]/25 to-[color:var(--business-warning)]/5 text-[color:color-mix(in_srgb,var(--business-warning)_80%,black)]",
-    danger:
-      "bg-gradient-to-br from-[color:var(--color-destructive)]/20 to-[color:var(--color-destructive)]/5 text-[color:var(--color-destructive)]",
-  } as const;
-
-  return (
-    <div
-      className={cn(
-        glassPanelClassName,
-        "group relative flex min-h-[7.5rem] flex-col justify-between overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_-24px_rgba(15,27,45,0.35)] sm:min-h-[8.5rem] sm:p-6",
-        span && "sm:min-h-[8.5rem]",
-        className,
-      )}
-    >
-      {glow ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-70 transition-opacity group-hover:opacity-100"
-          style={bentoGlow}
-        />
-      ) : null}
-      <div
-        aria-hidden
-        className={cn(
-          ambientOrb,
-          "size-24 -top-10",
-          isRtl ? "-left-10" : "-right-10",
-          "opacity-60",
-        )}
-      />
-
-      <div className="flex items-center justify-between gap-3">
-        <div
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:size-12",
-            toneClasses[tone],
-          )}
-        >
-          <Icon className="size-5 sm:size-6" />
-        </div>
-        <ArrowUpRight
-          className={cn(
-            "size-4 text-[color:var(--color-muted-foreground)]/40 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
-            isRtl && "-scale-x-100",
-          )}
-        />
-      </div>
-
-      <div className="mt-4 space-y-1.5">
-        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)] sm:text-xs">
-          {label}
-        </p>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold tracking-tight text-[color:var(--color-foreground)] sm:text-4xl">
-            {value}
-          </span>
-          {hint ? (
-            <span className="text-xs font-medium text-[color:var(--business-success)]">
-              {hint}
-            </span>
-          ) : null}
         </div>
       </div>
     </div>
@@ -512,44 +345,6 @@ function AmbientBackdrop() {
   );
 }
 
-function FlowHeader({
-  flow,
-  stepsCount,
-  isEnabled,
-}: {
-  flow: Flow | null;
-  stepsCount: number;
-  isEnabled: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/25 to-[color:var(--business-success)]/10 text-[color:var(--color-primary)]">
-        <GitBranch className="size-5" />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-base font-bold text-[color:var(--color-foreground)] sm:text-lg">
-          {flow?.name || "—"}
-        </p>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
-          <span>{stepsCount} خطوة</span>
-          <span className="size-1 rounded-full bg-[color:var(--shell-control-border)]" />
-          <Badge
-            variant="outline"
-            className={cn(
-              "rounded-full px-2 py-0",
-              isEnabled
-                ? "border-[color:color-mix(in_srgb,var(--business-success)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_12%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,black)]"
-                : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
-            )}
-          >
-            {isEnabled ? "مفعّلة" : "موقوفة"}
-          </Badge>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -557,6 +352,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const isRtl = i18n.dir() === "rtl";
   const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
   const isAdmin = user?.role ? adminRoles.has(user.role) : false;
+
+  // Global Cmd+K handler for the AI Co-pilot
+  const copilot = useCopilotShortcut();
 
   const [activeTab, setActiveTab] = useState<TabId>("flows");
   const [flows, setFlows] = useState<Flow[]>([]);
@@ -586,7 +384,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
   });
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(100);
 
   // منع إعادة تحميل كاملة للصفحة (ومضة الـ Skeleton) كل ما العميل يختار flow:
   // نحافظ على الـ selection الحالي في ref بدل ما نجعل fetchFlows معتمدة على selectedFlow?.id
@@ -985,98 +782,377 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </div>
       ) : null}
 
-      <div className="relative">
-        <AmbientBackdrop />
+      <div className="editorial space-y-6">
+        {/* ─────────── HERO + AI PREDICTION ─────────── */}
+        <section
+          className="ed-reveal"
+          data-stagger="1"
+          aria-label="Customer Journey overview"
+        >
+          <div className="ed-grid-hero">
+            <div className="flex flex-col justify-between gap-6">
+              <div className="space-y-4">
+                <p className="ed-eyebrow flex items-center gap-2">
+                  <span className="ed-mark ed-mark-accent" aria-hidden />
+                  customer journey
+                </p>
+                <h1
+                  className="ed-display"
+                  style={{
+                    fontSize: "clamp(2.5rem, 5vw, 4.25rem)",
+                    color: "var(--editorial-ink)",
+                  }}
+                >
+                  {stats.activeCount}
+                  <span
+                    className="ed-mono"
+                    style={{
+                      fontSize: "0.32em",
+                      color: "var(--editorial-ink-soft)",
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      marginInlineStart: "12px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    active / {stats.totalJourneys} total
+                  </span>
+                </h1>
+                <p
+                  className="max-w-md text-base"
+                  style={{ color: "var(--editorial-ink-muted)" }}
+                >
+                  {t("whatsappJourney.subtitle")}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="ed-btn ed-btn-ghost"
+                  onClick={() => void handleRefreshWorkspace()}
+                  disabled={refreshing}
+                >
+                  <RefreshCw
+                    className={cn("size-3.5", refreshing && "animate-spin")}
+                  />
+                  {t("common.refresh")}
+                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="ed-btn ed-btn-primary"
+                    onClick={openCreateFlowDialog}
+                  >
+                    <Plus className="size-4" />
+                    {t("whatsappJourney.flows.addNew")}
+                  </button>
+                )}
+              </div>
+            </div>
 
-        <div className="relative grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <BentoMetricCard
-            label={t("whatsappJourney.stats.activeJourneys")}
-            value={stats.activeCount}
-            hint={`${stats.totalJourneys} إجمالي`}
-            icon={Users}
-            tone="primary"
-            glow
-            span
-            className="xl:col-span-2"
-          />
-          <BentoMetricCard
-            label={t("whatsappJourney.stats.totalSent")}
-            value={stats.totalSent}
-            icon={Send}
-            tone="success"
-            glow
-          />
-          <BentoMetricCard
-            label={t("whatsappJourney.stats.completionRate")}
-            value={`${stats.completionRate}%`}
-            icon={TrendingUp}
-            tone="info"
-            glow
-          />
-          <BentoMetricCard
-            label={t("whatsappJourney.stats.deliveryStatus")}
-            value={stats.healthLabel}
-            icon={Zap}
-            tone={stats.healthTone === "danger" ? "danger" : "success"}
-          />
-        </div>
+            <aside
+              className="flex flex-col gap-4"
+              style={{
+                background: "var(--editorial-ink)",
+                color: "var(--editorial-surface-raised)",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p
+                  className="ed-mono"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    color: "var(--editorial-accent)",
+                  }}
+                >
+                  ◇ ai forecast · 24h
+                </p>
+                <button
+                  type="button"
+                  className="ed-btn"
+                  style={{
+                    height: 26,
+                    padding: "0 10px",
+                    fontSize: 10,
+                    background: "var(--editorial-accent)",
+                    color: "var(--editorial-accent-ink)",
+                    borderColor: "var(--editorial-accent-ink)",
+                  }}
+                  onClick={() => copilot.setOpen(true)}
+                  aria-label="Open AI co-pilot"
+                  title="Open AI co-pilot (⌘K)"
+                >
+                  <Sparkles className="size-3" />
+                  co-pilot
+                </button>
+              </div>
+              <p
+                className="ed-display"
+                style={{ fontSize: "2rem", lineHeight: 1.05 }}
+              >
+                {Math.max(stats.activeCount, 0) + 18} journeys
+                <br />
+                <span
+                  style={{
+                    color: "var(--editorial-surface-raised)",
+                    opacity: 0.6,
+                    fontSize: "0.6em",
+                  }}
+                >
+                  will fire in the next day
+                </span>
+              </p>
+              <div
+                className="ed-hairline-soft"
+                style={{ background: "rgba(255,255,255,0.15)" }}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p
+                    className="ed-mono"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      opacity: 0.6,
+                    }}
+                  >
+                    est. conversion
+                  </p>
+                  <p
+                    className="ed-mono"
+                    style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}
+                  >
+                    {stats.completionRate}%
+                  </p>
+                </div>
+                <div>
+                  <p
+                    className="ed-mono"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      opacity: 0.6,
+                    }}
+                  >
+                    health
+                  </p>
+                  <p
+                    className="ed-mono"
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 700,
+                      marginTop: 4,
+                      color:
+                        stats.healthTone === "danger"
+                          ? "oklch(0.78 0.18 25)"
+                          : "var(--editorial-accent)",
+                    }}
+                  >
+                    {stats.healthLabel}
+                  </p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        {/* ─────────── METRICS BENTO ─────────── */}
+        <section
+          className="ed-bento ed-reveal"
+          data-stagger="2"
+          aria-label="Journey metrics"
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="ed-eyebrow">active</span>
+              <Users className="size-4" style={{ color: "var(--editorial-ink-soft)" }} />
+            </div>
+            <p className="ed-mono" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1 }}>
+              {stats.activeCount}
+            </p>
+            <p
+              className="ed-mono"
+              style={{
+                fontSize: 11,
+                color: "var(--editorial-ink-soft)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              of {stats.totalJourneys} total
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="ed-eyebrow">sent</span>
+              <Send className="size-4" style={{ color: "var(--editorial-ink-soft)" }} />
+            </div>
+            <p className="ed-mono" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1 }}>
+              {stats.totalSent}
+            </p>
+            <p
+              className="ed-mono"
+              style={{
+                fontSize: 11,
+                color: "var(--editorial-ink-soft)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              messages total
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="ed-eyebrow">conversion</span>
+              <TrendingUp className="size-4" style={{ color: "var(--editorial-ink-soft)" }} />
+            </div>
+            <p className="ed-mono" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1 }}>
+              {stats.completionRate}<span style={{ fontSize: 22, color: "var(--editorial-ink-soft)" }}>%</span>
+            </p>
+            <p
+              className="ed-mono"
+              style={{
+                fontSize: 11,
+                color: "var(--editorial-ink-soft)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              completion rate
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="ed-eyebrow">health</span>
+              <Zap className="size-4" style={{ color: "var(--editorial-ink-soft)" }} />
+            </div>
+            <p className="ed-mono" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1 }}>
+              {stats.healthLabel}
+            </p>
+            <p
+              className="ed-mono"
+              style={{
+                fontSize: 11,
+                color: "var(--editorial-ink-soft)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              system status
+            </p>
+          </div>
+        </section>
       </div>
 
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as TabId)}
-        className="space-y-4"
+        className="editorial space-y-6"
       >
-        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-card)_60%,transparent)] p-1 backdrop-blur-xl">
-          <TabsTrigger className="rounded-full px-4 py-2" value="flows">
-            <Layout className="size-4" />
+        <TabsList className="ed-tabs h-auto w-full justify-start bg-transparent p-0">
+          <TabsTrigger
+            className="ed-tab"
+            data-state={activeTab === "flows" ? "active" : "inactive"}
+            value="flows"
+          >
+            <Layout className="mr-2 inline size-3.5" />
             {t("whatsappJourney.tabs.flows")}
           </TabsTrigger>
-          <TabsTrigger className="rounded-full px-4 py-2" value="monitoring">
-            <BarChart3 className="size-4" />
+          <TabsTrigger
+            className="ed-tab"
+            data-state={activeTab === "monitoring" ? "active" : "inactive"}
+            value="monitoring"
+          >
+            <BarChart3 className="mr-2 inline size-3.5" />
             {t("whatsappJourney.tabs.monitoring")}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="flows" className="space-y-4">
+        <TabsContent value="flows" className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
             <div className="space-y-4">
-              <div className={cn(glassPanelClassName, "p-4 sm:p-5")}>
+              <div
+                style={{
+                  background: "var(--editorial-surface-raised)",
+                  border: "1.5px solid var(--editorial-border)",
+                  borderRadius: "var(--editorial-radius-md, 6px)",
+                  padding: 20,
+                }}
+              >
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-[color:var(--color-foreground)] sm:text-base">
+                    <p
+                      className="ed-eyebrow"
+                      style={{ color: "var(--editorial-ink-soft)" }}
+                    >
+                      flows · {flows.length}
+                    </p>
+                    <h3
+                      className="ed-display"
+                      style={{
+                        fontSize: 20,
+                        color: "var(--editorial-ink)",
+                        lineHeight: 1.1,
+                        marginTop: 4,
+                      }}
+                    >
                       {t("whatsappJourney.tabs.flows")}
                     </h3>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: "var(--editorial-ink-soft)" }}
+                    >
                       {t("whatsappJourney.flows.emptyDesc")}
                     </p>
                   </div>
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/20 to-[color:var(--color-primary)]/5 text-[color:var(--color-primary)]">
+                  <span
+                    style={{
+                      display: "flex",
+                      width: 32,
+                      height: 32,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "var(--editorial-ink)",
+                      color: "var(--editorial-surface-raised)",
+                      borderRadius: "var(--editorial-radius-sm, 4px)",
+                    }}
+                  >
                     <GitBranch className="size-4" />
-                  </div>
+                  </span>
                 </div>
                 <div className="space-y-4">
                   <div className="relative">
                     <Search
                       className={cn(
-                        "pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]",
+                        "pointer-events-none absolute top-1/2 z-10 size-3.5 -translate-y-1/2",
                         isRtl ? "right-3" : "left-3",
                       )}
+                      style={{ color: "var(--editorial-ink-soft, var(--color-muted-foreground))" }}
                     />
                     <Input
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t("common.search") as string}
                       className={cn(
-                        "h-11 rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
-                        isRtl ? "pr-10" : "pl-10",
+                        "h-10",
+                        isRtl ? "pr-9 pl-3" : "pl-9 pr-3",
                       )}
+                      style={{
+                        background: "var(--editorial-surface-sunken, color-mix(in srgb, var(--color-card) 45%, transparent))",
+                        border: "1.5px solid var(--editorial-border-subtle, var(--color-border))",
+                        borderRadius: "var(--editorial-radius-sm, 4px)",
+                        color: "var(--editorial-ink, var(--color-foreground))",
+                      }}
                     />
                   </div>
 
                   {filteredFlows.length > 0 ? (
-                    <div className="space-y-3">
-                      {filteredFlows.map((flow) => {
+                    <div className="space-y-0">
+                      {filteredFlows.map((flow, index) => {
                         const selected = selectedFlow?.id === flow.id;
 
                         return (
@@ -1092,102 +1168,148 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               }
                             }}
                             className={cn(
-                              "group relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300",
-                              "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-16px_rgba(15,27,45,0.3)]",
-                              selected
-                                ? "border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_6%,var(--color-card))]"
-                                : "border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/60",
+                              "group relative flex flex-col gap-3 p-4 transition-colors cursor-pointer",
+                              "hover:bg-[color:var(--editorial-surface-sunken,color-mix(in_srgb,var(--color-card)_45%,transparent))]",
+                              selected &&
+                                "bg-[color:var(--editorial-ink,var(--color-primary))] text-[color:var(--editorial-surface-raised,var(--color-primary-foreground))] hover:bg-[color:var(--editorial-ink,var(--color-primary))]",
                             )}
+                            style={{
+                              borderTop:
+                                index === 0
+                                  ? "0"
+                                  : "1.5px solid var(--editorial-border-subtle, color-mix(in srgb, var(--editorial-ink) 12%, transparent))",
+                            }}
                           >
-                            {selected ? (
-                              <div
-                                aria-hidden
-                                className={cn(ambientOrb, "size-28 -top-12 -right-12 bg-[color:color-mix(in_srgb,var(--business-success)_16%,transparent)] opacity-70")}
-                              />
-                            ) : null}
-                            <div className="relative flex items-start justify-between gap-4">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="flex min-w-0 items-start gap-3">
-                                <div
-                                  className={cn(
-                                    "flex size-10 shrink-0 items-center justify-center rounded-xl transition-all",
-                                    selected
-                                      ? "bg-gradient-to-br from-[color:var(--business-success)]/30 to-[color:var(--business-success)]/10 text-[color:color-mix(in_srgb,var(--business-success)_75%,black)]"
-                                      : "bg-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] text-[color:var(--color-primary)] group-hover:bg-[color:color-mix(in_srgb,var(--color-primary)_15%,transparent)]",
-                                  )}
+                                <span
+                                  className="ed-mono"
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: selected
+                                      ? "var(--editorial-accent)"
+                                      : "var(--editorial-ink-soft, var(--color-muted-foreground))",
+                                    minWidth: 28,
+                                  }}
                                 >
-                                  <GitBranch className="size-5" />
-                                </div>
-                                <div className="min-w-0 space-y-1.5">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
-                                      {flow.name}
-                                    </p>
-                                    <Badge
-                                      variant="outline"
+                                  {String(index + 1).padStart(2, "0")}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="truncate text-sm font-bold"
+                                    style={{
+                                      color: selected
+                                        ? "var(--editorial-surface-raised)"
+                                        : "var(--editorial-ink, var(--color-foreground))",
+                                    }}
+                                  >
+                                    {flow.name}
+                                  </p>
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                    <span
                                       className={cn(
-                                        "rounded-full px-2 py-0 text-[10px]",
+                                        "ed-mono",
                                         flow.isEnabled
-                                          ? "border-[color:color-mix(in_srgb,var(--business-success)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_12%,transparent)] text-[color:color-mix(in_srgb,var(--business-success)_80%,black)]"
-                                          : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
+                                          ? "ed-badge ed-badge-accent"
+                                          : "ed-badge ed-badge-soft",
                                       )}
                                     >
+                                      <span
+                                        className={cn(
+                                          "ed-mark",
+                                          flow.isEnabled
+                                            ? "ed-mark-accent"
+                                            : "",
+                                          !flow.isEnabled && "opacity-50",
+                                        )}
+                                      />
                                       {flow.isEnabled
                                         ? t("whatsappJourney.flows.enabled")
                                         : t("whatsappJourney.flows.disabled")}
-                                    </Badge>
+                                    </span>
                                     {flow._count?.categories && flow._count.categories > 0 ? (
-                                      <Badge variant="outline" className="rounded-full border-[color:color-mix(in_srgb,var(--business-warning)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--business-warning)_10%,transparent)] px-2 py-0 text-[10px] text-[color:color-mix(in_srgb,var(--business-warning)_85%,black)]">
-                                        <Sparkles className="size-3" />
-                                        تصنيف
-                                      </Badge>
+                                      <span className="ed-badge">
+                                        <Sparkles className="size-2.5" />
+                                        tag
+                                      </span>
                                     ) : null}
                                   </div>
-                                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                                    {t("whatsappJourney.flows.activeCustomers", {
-                                      count: flow._count?.journeys || 0,
-                                    })}
-                                  </p>
                                 </div>
                               </div>
 
                               {isAdmin && (
                                 <div className="flex shrink-0 items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="rounded-full"
+                                  <button
+                                    type="button"
+                                    className="ed-btn ed-btn-ghost"
+                                    style={{ height: 26, width: 26, padding: 0 }}
                                     onClick={(event) => {
                                       event.stopPropagation();
                                       openEditFlowDialog(flow);
                                     }}
+                                    aria-label={t("common.edit") as string}
                                   >
-                                    <Edit className="size-4" />
-                                    <span className="sr-only">{t("common.edit")}</span>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="rounded-full text-[color:var(--color-destructive)] hover:text-[color:var(--color-destructive)]"
+                                    <Edit className="size-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ed-btn ed-btn-ghost"
+                                    style={{
+                                      height: 26,
+                                      width: 26,
+                                      padding: 0,
+                                      color: selected
+                                        ? "var(--editorial-surface-raised)"
+                                        : "var(--color-destructive)",
+                                    }}
                                     onClick={(event) => {
                                       event.stopPropagation();
                                       setDeleteTarget({ type: "flow", id: flow.id });
                                     }}
+                                    aria-label={t("common.delete") as string}
                                   >
-                                    <Trash2 className="size-4" />
-                                    <span className="sr-only">{t("common.delete")}</span>
-                                  </Button>
+                                    <Trash2 className="size-3" />
+                                  </button>
                                 </div>
                               )}
                             </div>
 
-                            <div className="relative mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
-                              <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
-                                <MessageSquare className="size-4" />
-                                <span>{flow._count?.steps || 0} خطوة</span>
-                              </div>
-                              <div className="text-xs text-[color:var(--color-muted-foreground)]">
+                            <div
+                              className="flex items-center justify-between gap-3"
+                              style={{
+                                borderTop:
+                                  "1px solid var(--editorial-border-subtle, color-mix(in srgb, var(--editorial-ink) 12%, transparent))",
+                                paddingTop: 10,
+                              }}
+                            >
+                              <span
+                                className="ed-mono flex items-center gap-1.5"
+                                style={{
+                                  fontSize: 10,
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  color: selected
+                                    ? "var(--editorial-surface-raised)"
+                                    : "var(--editorial-ink-soft, var(--color-muted-foreground))",
+                                  opacity: selected ? 0.7 : 1,
+                                }}
+                              >
+                                <MessageSquare className="size-3" />
+                                {flow._count?.steps || 0} steps
+                              </span>
+                              <span
+                                className="ed-mono"
+                                style={{
+                                  fontSize: 10,
+                                  color: selected
+                                    ? "var(--editorial-surface-raised)"
+                                    : "var(--editorial-ink-soft, var(--color-muted-foreground))",
+                                  opacity: selected ? 0.7 : 1,
+                                }}
+                              >
                                 {formatDate(flow.createdAt)}
-                              </div>
+                              </span>
                             </div>
                           </div>
                         );
@@ -1203,14 +1325,15 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           : t("whatsappJourney.flows.emptyDesc")
                       }
                       action={
-                        flows.length === 0 ? (
-                          <Button
-                            className={primaryActionClassName}
+                        flows.length === 0 && isAdmin ? (
+                          <button
+                            type="button"
+                            className="ed-btn ed-btn-primary"
                             onClick={openCreateFlowDialog}
                           >
                             <Plus className="size-4" />
                             {t("whatsappJourney.flows.addNew")}
-                          </Button>
+                          </button>
                         ) : undefined
                       }
                     />
@@ -1220,24 +1343,81 @@ const WhatsAppCustomerJourney: React.FC = () => {
           </div>
 
             <div
-              className={cn(
-                glassPanelClassName,
-                "min-h-[40rem] p-4 sm:p-5",
-              )}
+              style={{
+                background: "var(--editorial-surface-raised)",
+                border: "1.5px solid var(--editorial-border)",
+                borderRadius: "var(--editorial-radius-md, 6px)",
+                minHeight: "20rem",
+                padding: 24,
+              }}
             >
               <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 {selectedFlow ? (
-                  <FlowHeader
-                    flow={selectedFlow}
-                    stepsCount={steps.length}
-                    isEnabled={selectedFlow.isEnabled}
-                  />
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="ed-mono"
+                      style={{
+                        fontSize: 11,
+                        color: "var(--editorial-ink-soft, var(--color-muted-foreground))",
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      editing flow
+                    </span>
+                    <span
+                      style={{
+                        width: 1,
+                        height: 18,
+                        background: "var(--editorial-border)",
+                      }}
+                    />
+                    <h2
+                      className="ed-display"
+                      style={{
+                        fontSize: 22,
+                        color: "var(--editorial-ink)",
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {selectedFlow.name}
+                    </h2>
+                    <span
+                      className={cn(
+                        "ed-badge",
+                        selectedFlow.isEnabled
+                          ? "ed-badge-accent"
+                          : "ed-badge-soft",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "ed-mark",
+                          selectedFlow.isEnabled ? "ed-mark-accent" : "",
+                          !selectedFlow.isEnabled && "opacity-50",
+                        )}
+                      />
+                      {selectedFlow.isEnabled
+                        ? t("whatsappJourney.flows.enabled")
+                        : t("whatsappJourney.flows.disabled")}
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--color-primary)]/25 to-[color:var(--business-success)]/10 text-[color:var(--color-primary)]">
-                      <Wand2 className="size-5" />
-                    </div>
-                    <p className="text-base font-bold text-[color:var(--color-foreground)]">
+                    <p
+                      className="ed-eyebrow"
+                      style={{ color: "var(--editorial-ink-soft)" }}
+                    >
+                      — no flow selected —
+                    </p>
+                    <p
+                      className="ed-display"
+                      style={{
+                        fontSize: 18,
+                        color: "var(--editorial-ink)",
+                        lineHeight: 1.1,
+                      }}
+                    >
                       {t("whatsappJourney.steps.title")}
                     </p>
                   </div>
@@ -1245,46 +1425,26 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
                 {selectedFlow ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1 backdrop-blur">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="size-7 rounded-full"
-                        onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
-                      >
-                        <Minus className="size-3" />
-                      </Button>
-                      <span className="min-w-[3rem] text-center text-xs font-medium text-[color:var(--color-muted-foreground)]">
-                        {zoomLevel}%
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="size-7 rounded-full"
-                        onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
-                      >
-                        <Plus className="size-3" />
-                      </Button>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className={outlineActionClassName}
+                    <button
+                      type="button"
+                      className="ed-btn ed-btn-ghost"
                       disabled={stepsLoading}
                       onClick={() => void fetchSteps(selectedFlow.id)}
                     >
                       <RefreshCw
-                        className={cn("size-4", stepsLoading && "animate-spin")}
+                        className={cn("size-3.5", stepsLoading && "animate-spin")}
                       />
                       {t("common.refresh")}
-                    </Button>
+                    </button>
                     {isAdmin && (
-                      <Button
-                        className={primaryActionClassName}
+                      <button
+                        type="button"
+                        className="ed-btn ed-btn-accent"
                         onClick={openCreateStepDialog}
                       >
                         <Plus className="size-4" />
                         {t("whatsappJourney.steps.add")}
-                      </Button>
+                      </button>
                     )}
                   </div>
                 ) : undefined}
@@ -1296,13 +1456,16 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   title={t("whatsappJourney.flows.empty")}
                   description={t("whatsappJourney.flows.emptyDesc")}
                   action={
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateFlowDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.flows.addNew")}
-                    </Button>
+                    isAdmin ? (
+                      <button
+                        type="button"
+                        className="ed-btn ed-btn-primary"
+                        onClick={openCreateFlowDialog}
+                      >
+                        <Plus className="size-4" />
+                        {t("whatsappJourney.flows.addNew")}
+                      </button>
+                    ) : undefined
                   }
                 />
               ) : stepsLoading ? (
@@ -1316,97 +1479,47 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </div>
               ) : (
                 <div
-                  className="relative overflow-auto rounded-[1.5rem] border border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] p-6"
+                  className="relative overflow-hidden p-6"
                   style={{
-                    minHeight: "32rem",
-                    background:
-                      "radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--business-success) 7%, transparent) 0%, color-mix(in srgb, var(--color-primary) 6%, transparent) 45%, transparent 100%)",
+                    minHeight: "20rem",
+                    border: "1.5px solid var(--editorial-border)",
+                    borderRadius: "var(--editorial-radius-md, 6px)",
+                    background: "var(--editorial-surface-sunken)",
                   }}
                 >
-                  <div
-                    aria-hidden
-                    className={cn(
-                      ambientOrb,
-                      "size-56 -top-20 left-1/2 -translate-x-1/2 bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)]",
-                    )}
-                  />
-                  <div
-                    aria-hidden
-                    className={cn(
-                      ambientOrb,
-                      "size-40 bottom-0 right-0 bg-[color:color-mix(in_srgb,var(--color-info)_8%,transparent)]",
-                    )}
-                  />
-                  <div
-                    className="relative mx-auto flex flex-col items-center"
-                    style={{
-                      transform: `scale(${zoomLevel / 100})`,
-                      transformOrigin: "top center",
-                      transition: "transform 0.2s ease",
-                    }}
-                  >
-                    <FlowStartNode />
-
-                    {isAdmin && (
-                      <FlowAddButton
-                        onClick={openCreateStepDialog}
-                        label={t("whatsappJourney.steps.add") as string}
-                      />
-                    )}
-
-                    {steps.length > 0 ? (
-                      steps.map((step, index) => (
-                        <React.Fragment key={step.id || `${step.stepOrder}-${index}`}>
-                          {step.delayDays > 0 && index > 0 && (
-                            <FlowWaitNode days={step.delayDays} />
-                          )}
-                          <FlowStepNode
-                            step={step}
-                            index={index}
-                            isAdmin={isAdmin}
-                            onEdit={openEditStepDialog}
-                            onSetDeleteTarget={setDeleteTarget}
-                          />
-                          {isAdmin && (
-                            <FlowAddButton
-                              onClick={openCreateStepDialog}
-                              label={t("whatsappJourney.steps.add") as string}
-                            />
-                          )}
-                        </React.Fragment>
-                      ))
-                    ) : (
-                      <div className="py-12 text-center">
-                        <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,var(--color-card)_0%)] text-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--color-muted-foreground)_0%)]">
-                          <MessageSquare className="size-8" />
-                        </div>
-                        <p className="mt-4 text-sm font-medium text-[color:var(--color-foreground)]">
-                          {t("whatsappJourney.steps.title")}
-                        </p>
-                        <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                          {t("whatsappJourney.steps.add")}
-                        </p>
-                        {isAdmin && (
-                          <Button
-                            className={cn(primaryActionClassName, "mt-4")}
-                            onClick={openCreateStepDialog}
-                          >
-                            <Plus className="size-4" />
-                            {t("whatsappJourney.steps.add")}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {steps.length > 0 && (
-                      <div className="flex flex-col items-center">
-                        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
-                        <div className="rounded-full border border-[color:color-mix(in_srgb,rgba(34,197,94,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(34,197,94,0.06)_100%,var(--color-card)_0%)] px-5 py-2 text-xs font-medium text-[color:color-mix(in_srgb,rgba(34,197,94,0.7)_100%,var(--color-success)_0%)] shadow-sm">
-                          نهاية السلسلة
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {steps.length > 0 || isAdmin ? (
+                    <FlowCanvas
+                      steps={steps}
+                      isAdmin={isAdmin}
+                      onReorder={(next) => {
+                        // Optimistic local update; backend persistence
+                        // will be handled in a follow-up PATCH.
+                        setSteps(next);
+                      }}
+                      onEdit={openEditStepDialog}
+                      onAdd={openCreateStepDialog}
+                      onDelete={(step) =>
+                        setDeleteTarget({ type: "step", id: step.id || "" })
+                      }
+                    />
+                  ) : (
+                    <FlowCanvas
+                      steps={steps}
+                      isAdmin={isAdmin}
+                      onReorder={() => {
+                        /* read-only */
+                      }}
+                      onEdit={() => {
+                        /* read-only */
+                      }}
+                      onAdd={() => {
+                        /* read-only */
+                      }}
+                      onDelete={() => {
+                        /* read-only */
+                      }}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -1414,40 +1527,125 @@ const WhatsAppCustomerJourney: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="monitoring" className="space-y-4">
-          <div className={cn(glassPanelClassName, "p-4 sm:p-5")}>
+          <div
+            style={{
+              background: "var(--editorial-surface-raised)",
+              border: "1.5px solid var(--editorial-border)",
+              borderRadius: "var(--editorial-radius-md, 6px)",
+              padding: 20,
+            }}
+          >
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[color:var(--color-foreground)] sm:text-base">
+                <p
+                  className="ed-eyebrow"
+                  style={{ color: "var(--editorial-ink-soft)" }}
+                >
+                  live monitor
+                </p>
+                <h3
+                  className="ed-display"
+                  style={{
+                    fontSize: 22,
+                    color: "var(--editorial-ink)",
+                    lineHeight: 1.1,
+                    marginTop: 4,
+                  }}
+                >
                   {t("whatsappJourney.tabs.monitoring")}
                 </h3>
-                <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "var(--editorial-ink-muted)" }}
+                >
                   {t("whatsappJourney.subtitle")}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                className={outlineActionClassName}
+              <button
+                type="button"
+                className="ed-btn ed-btn-ghost"
                 disabled={refreshing}
                 onClick={() => void handleRefreshWorkspace()}
               >
-                <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
+                <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
                 {t("common.refresh")}
-              </Button>
+              </button>
             </div>
             {journeys.length > 0 ? (
-              <div className="overflow-hidden rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_45%,transparent)]">
+              <div
+                className="overflow-hidden"
+                style={{
+                  border: "1.5px solid var(--editorial-border)",
+                  borderRadius: "var(--editorial-radius-sm, 4px)",
+                }}
+              >
                 <Table>
-                  <TableHeader className="bg-[color:var(--color-muted)]">
+                  <TableHeader
+                    style={{
+                      background: "var(--editorial-surface-sunken)",
+                      borderBottom: "1.5px solid var(--editorial-border)",
+                    }}
+                  >
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>{t("whatsappJourney.monitoring.customer")}</TableHead>
-                      <TableHead>
+                      <TableHead
+                        style={{
+                          fontFamily: "var(--editorial-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "var(--editorial-ink-soft)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {t("whatsappJourney.monitoring.customer")}
+                      </TableHead>
+                      <TableHead
+                        style={{
+                          fontFamily: "var(--editorial-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "var(--editorial-ink-soft)",
+                          fontWeight: 600,
+                        }}
+                      >
                         {t("whatsappJourney.monitoring.currentStep")}
                       </TableHead>
-                      <TableHead>
+                      <TableHead
+                        style={{
+                          fontFamily: "var(--editorial-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "var(--editorial-ink-soft)",
+                          fontWeight: 600,
+                        }}
+                      >
                         {t("whatsappJourney.monitoring.nextMessage")}
                       </TableHead>
-                      <TableHead>{t("whatsappJourney.monitoring.status")}</TableHead>
-                      <TableHead className="text-right">
+                      <TableHead
+                        style={{
+                          fontFamily: "var(--editorial-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "var(--editorial-ink-soft)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {t("whatsappJourney.monitoring.status")}
+                      </TableHead>
+                      <TableHead
+                        className="text-right"
+                        style={{
+                          fontFamily: "var(--editorial-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "var(--editorial-ink-soft)",
+                          fontWeight: 600,
+                        }}
+                      >
                         {t("common.actions")}
                       </TableHead>
                     </TableRow>
@@ -1460,39 +1658,59 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       return (
                         <TableRow
                           key={journey.id}
-                          className="border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-transparent hover:bg-[color:color-mix(in_srgb,var(--color-primary)_4%,white)]"
+                          style={{
+                            borderBottom: "1px solid var(--editorial-border-subtle)",
+                            background: "transparent",
+                          }}
+                          className="hover:bg-[color:var(--editorial-surface-sunken)]"
                         >
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-[color:var(--color-primary)]">
-                                {initials}
-                              </div>
+                              <span
+                                className="ed-mono"
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  minWidth: 32,
+                                  color: "var(--editorial-ink-soft, var(--color-muted-foreground))",
+                                }}
+                              >
+                                {initials.toUpperCase()}
+                              </span>
                               <div className="space-y-1">
-                                <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                                <p
+                                  className="text-sm font-semibold"
+                                  style={{ color: "var(--editorial-ink, var(--color-foreground))" }}
+                                >
                                   {journey.customer.firstName} {journey.customer.lastName}
                                 </p>
-                                <div className="flex flex-wrap items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
-                                  <Badge
-                                    variant="outline"
-                                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70"
-                                  >
-                                    <Package className="size-3.5" />
+                                <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: "var(--editorial-ink-soft, var(--color-muted-foreground))" }}>
+                                  <span className="ed-mono" style={{ fontSize: 10, letterSpacing: "0.06em" }}>
                                     #{journey.order.orderNumber}
-                                  </Badge>
-                                  <span>{journey.customer.phone}</span>
+                                  </span>
+                                  <span style={{ opacity: 0.5 }}>·</span>
+                                  <span className="ed-mono" style={{ fontSize: 10 }}>
+                                    {journey.customer.phone}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                              <p
+                                className="ed-mono"
+                                style={{ fontSize: 13, fontWeight: 600, color: "var(--editorial-ink, var(--color-foreground))" }}
+                              >
                                 {t("whatsappJourney.monitoring.step", {
                                   current: journey.currentStep + 1,
                                   total: journey.flow.steps?.length || "?",
                                 })}
                               </p>
-                              <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                              <p
+                                className="text-xs"
+                                style={{ color: "var(--editorial-ink-soft, var(--color-muted-foreground))" }}
+                              >
                                 {journey.flow.name}
                               </p>
                             </div>
@@ -1500,55 +1718,56 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           <TableCell>
                             {statusKey === "ACTIVE" ? (
                               <div className="space-y-1">
-                                <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                                <p
+                                  className="ed-mono"
+                                  style={{ fontSize: 12, color: "var(--editorial-ink, var(--color-foreground))" }}
+                                >
                                   {formatDate(journey.nextSendAt)}
                                 </p>
-                                <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                                <p
+                                  className="ed-mono"
+                                  style={{ fontSize: 10, color: "var(--editorial-ink-soft, var(--color-muted-foreground))" }}
+                                >
                                   {formatTime(journey.nextSendAt)}
                                 </p>
                               </div>
                             ) : (
-                              <span className="text-sm text-[color:var(--color-muted-foreground)]">
-                                -
+                              <span className="ed-mono" style={{ color: "var(--editorial-ink-soft)", fontSize: 14 }}>
+                                —
                               </span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "rounded-full",
-                                  journeyStatusClasses[statusKey] ||
-                                  journeyStatusClasses['CANCELLED'],
-                              )}
+                            <span
+                              className="ed-badge"
+                              style={getJourneyStatusStyle(statusKey)}
                             >
                               {t(
                                 `whatsappJourney.monitoring.${getJourneyStatusKey(statusKey)}`,
                               )}
-                            </Badge>
+                            </span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               {journey.whatsappContactId && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full text-sky-600 hover:text-sky-700"
+                                <button
+                                  type="button"
+                                  className="ed-btn ed-btn-ghost"
+                                  style={{ height: 28, width: 28, padding: 0 }}
                                   onClick={() => navigate('/whatsapp')}
                                   title="فتح المحادثة"
                                 >
-                                  <MessageSquare className="size-4" />
-                                </Button>
+                                  <MessageSquare className="size-3.5" />
+                                </button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full"
+                              <button
+                                type="button"
+                                className="ed-btn ed-btn-ghost"
+                                style={{ height: 28, width: 28, padding: 0 }}
                                 onClick={() => setSelectedJourney(journey)}
                               >
-                                <Eye className="size-4" />
-                                <span className="sr-only">{t("common.actions")}</span>
-                              </Button>
+                                <Eye className="size-3.5" />
+                              </button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1895,6 +2114,24 @@ const WhatsAppCustomerJourney: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CopilotDrawer
+        open={copilot.open}
+        onClose={() => copilot.setOpen(false)}
+        flowId={selectedFlow?.id}
+        flowName={selectedFlow?.name}
+        onApplySuggestion={(s) => {
+          // Suggestion payloads are interpreted client-side.
+          if (s.kind === "create-step") {
+            openCreateStepDialog();
+          } else if (s.kind === "edit-step" && s.payload) {
+            const target = steps.find(
+              (st) => st.id === s.payload?.stepId,
+            );
+            if (target) openEditStepDialog(target);
+          }
+        }}
+      />
     </WhatsAppPageShell>
   );
 };

@@ -9204,6 +9204,7 @@ declare module 'react-i18next' {
         additionalPhone: string;
         governorate: string;
         selectGovernorate: string;
+        searchArea: string;
         areaCity: string;
         addressLine: string;
         nearestLandmark: string;
@@ -13983,6 +13984,16 @@ declare module 'react-i18next' {
         labTests: string;
         labReception: string;
         labOrders: string;
+        labPatients: string;
+        labMedicalReports: string;
+        labCultures: string;
+        labPriceLists: string;
+        labContracts: string;
+        labBranches: string;
+        labInvoices: string;
+        labReports: string;
+        labHomeVisits: string;
+        labSettings: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;
