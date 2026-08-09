@@ -794,6 +794,15 @@
     "train": {
       "title": "Train Agent",
       "subtitle": "Teach your agent your prices, policies and business facts in plain words",
+      "topicLabel": "Topic",
+      "whatToTeach": "Write the fact",
+      "placeholder": "e.g. We deliver inside Cairo within 24-48h, delivery fee is 60 EGP, free above 1500 EGP...",
+      "hint": "The agent extracts and stores the fact so it can answer from it later",
+      "save": "Save to Agent",
+      "saved": "Saved successfully",
+      "saveFailed": "Failed to save",
+      "savedFacts": "{{count}} facts saved",
+      "savedFactsSuffix": "facts saved",
       "topic": {
         "location": "Location",
         "hours": "Opening hours",
@@ -803,15 +812,7 @@
         "prices": "Prices",
         "contact": "Contact",
         "general": "General"
-      },
-      "whatToTeach": "Write the fact",
-      "placeholder": "e.g. We deliver inside Cairo within 24-48h, delivery fee is 60 EGP, free above 1500 EGP...",
-      "hint": "The agent extracts and stores the fact so it can answer from it later",
-      "save": "Save to Agent",
-      "saved": "Saved successfully",
-      "saveFailed": "Failed to save",
-      "savedFacts": "{{count}} facts saved",
-      "savedFactsSuffix": "facts saved"
+      }
     },
     "widget": {
       "title": "Web Chat Widget",

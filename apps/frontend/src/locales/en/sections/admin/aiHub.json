@@ -60,7 +60,7 @@
   "train": {
     "title": "Train Agent",
     "subtitle": "Teach your agent your prices, policies and business facts in plain words",
-    "topic": "Topic",
+    "topicLabel": "Topic",
     "whatToTeach": "Write the fact",
     "placeholder": "e.g. We deliver inside Cairo within 24-48h, delivery fee is 60 EGP, free above 1500 EGP...",
     "hint": "The agent extracts and stores the fact so it can answer from it later",

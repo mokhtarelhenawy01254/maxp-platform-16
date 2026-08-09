@@ -67,7 +67,7 @@ export default function AgentTrainingPage() {
 
       <div className="rounded-xl border bg-card p-5 space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">{t("aiHub.train.topic")}</label>
+          <label className="text-sm font-medium">{t("aiHub.train.topicLabel")}</label>
           <div className="flex flex-wrap gap-2">
             {TOPICS.map((tp) => (
               <button

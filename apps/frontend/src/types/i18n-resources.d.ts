@@ -787,6 +787,15 @@ declare module 'react-i18next' {
         train: {
           title: string;
           subtitle: string;
+          topicLabel: string;
+          whatToTeach: string;
+          placeholder: string;
+          hint: string;
+          save: string;
+          saved: string;
+          saveFailed: string;
+          savedFacts: string;
+          savedFactsSuffix: string;
           topic: {
             location: string;
             hours: string;
@@ -797,14 +806,6 @@ declare module 'react-i18next' {
             contact: string;
             general: string;
           };
-          whatToTeach: string;
-          placeholder: string;
-          hint: string;
-          save: string;
-          saved: string;
-          saveFailed: string;
-          savedFacts: string;
-          savedFactsSuffix: string;
         };
         widget: {
           title: string;
