@@ -690,6 +690,33 @@ describe('radiologyController', () => {
       expect(res.payload.error).toBe('الصورة غير موجودة');
       expect(res.sent).toBeNull();
     });
+
+    test('converts Uint8Array Bytes to a real Buffer before sending', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
+      const u8 = new Uint8Array([0x44, 0x49, 0x43, 0x4d, 0x00, 0x01]);
+      prisma.radiologyStudyImage.findFirst.mockResolvedValue({
+        id: 'img-1',
+        studyId: 'study-1',
+        fileName: 'slice.dcm',
+        mimeType: 'application/dicom',
+        data: u8,
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getStudyImageFile(req({ params: { id: 'study-1', imageId: 'img-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sent).toBeInstanceOf(Buffer);
+      expect(Buffer.from(res.sent).toString('hex')).toBe(Buffer.from(u8).toString('hex'));
+      expect(res.setHeader.mock.calls).toEqual(
+        expect.arrayContaining([
+          ['Content-Type', 'application/dicom'],
+          ['Content-Length', u8.length],
+        ])
+      );
+    });
   });
 
   describe('deleteStudyImage', () => {

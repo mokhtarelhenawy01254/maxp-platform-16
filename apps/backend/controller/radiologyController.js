@@ -491,13 +491,16 @@ const getStudyImageFile = async (req, res) => {
     const image = await prisma.radiologyStudyImage.findFirst({ where: { id: imageId, studyId: id } });
     if (!image || !image.data) return res.status(404).json({ success: false, error: 'الصورة غير موجودة' });
 
-    res.setHeader('Content-Type', image.mimeType || 'application/dicom');
-    res.setHeader('Content-Length', image.data.length);
+    const raw = image.data;
+    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw.buffer ?? raw, raw.byteOffset ?? 0, raw.byteLength ?? raw.length);
+
+    res.setHeader('Content-Type', 'application/dicom');
+    res.setHeader('Content-Length', buf.length);
     res.setHeader(
       'Content-Disposition',
       `inline; filename="${(image.fileName || image.storedName || 'image.dcm').replace(/"/g, '')}"`
     );
-    res.send(image.data);
+    res.send(buf);
   } catch (error) {
     console.error('Error fetching radiology study image file:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب صورة الدراسة' });
