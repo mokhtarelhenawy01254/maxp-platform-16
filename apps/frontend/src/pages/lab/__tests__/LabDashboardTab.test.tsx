@@ -1,41 +1,47 @@
-import React from "react";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import LabDashboardTab from "../LabDashboardTab";
 
-jest.mock("../../../utils/urlHelper", () => ({ buildApiUrl: jest.fn((p: string) => `http://localhost/api/v1/${p}`) }));
-jest.mock("../../../utils/tokenManager", () => ({
-  __esModule: true,
-  default: { createAuthHeaders: jest.fn(() => ({ "Content-Type": "application/json" })) },
+jest.mock("../shared", () => ({
+  api: (p: string) => `https://x/api/v1/lab/${p}`,
+  bookingApi: (p: string) => `https://x/api/v1/booking/${p}`,
+  fetchJson: jest.fn(),
+  LAB_STATUS_MAP: {
+    PENDING: { label: "بانتظار أخذ العينة", color: "x" },
+    COLLECTED: { label: "تم أخذ العينة", color: "x" },
+    IN_PROGRESS: { label: "جارٍ التحليل", color: "x" },
+    REVIEWED: { label: "تمت المراجعة", color: "x" },
+    SIGNED: { label: "تم التوقيع", color: "x" },
+    DELIVERED: { label: "تم التسليم", color: "x" },
+  },
 }));
 
-const jsonResponse = (body: unknown) => ({ ok: true, json: async () => body }) as Response;
+import { fetchJson } from "../shared";
 
-beforeEach(() => {
-  (global.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
-    key === "user" ? JSON.stringify({ companyId: "123" }) : null,
-  );
-});
-
-afterEach(() => { jest.clearAllMocks(); cleanup(); });
+const mockFetchJson = fetchJson as jest.Mock;
 
 describe("LabDashboardTab", () => {
-  test("builds the orders URL with &limit (not a second ?) after companyId", async () => {
-    const fetchMock = jest.fn(async (url: RequestInfo | URL) => {
-      const u = String(url);
-      if (u.includes("/lab/orders")) {
-        return jsonResponse({ success: true, data: { items: [], total: 3, page: 1, limit: 200 } });
-      }
-      return jsonResponse({ success: false, error: "not found" });
-    });
-    global.fetch = fetchMock as unknown as typeof fetch;
+  beforeEach(() => mockFetchJson.mockReset());
+
+  test("renders KPI cards from orders + revenue", async () => {
+    mockFetchJson
+      .mockResolvedValueOnce({ items: [
+        { status: "PENDING", reportStatus: "PENDING", total: 100, paid: 50 },
+        { status: "SIGNED", reportStatus: "SIGNED", total: 200, paid: 200 },
+      ], total: 2 })
+      .mockResolvedValueOnce({ totals: { billed: 300 } });
 
     render(<LabDashboardTab />);
 
-    await screen.findByText("3");
-    expect(screen.getByText("طلبات اليوم")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("طلبات اليوم")).toBeInTheDocument());
+    expect(screen.getByText("قيد التحليل")).toBeInTheDocument();
+    expect(screen.getByText("موقعة / مسلمة")).toBeInTheDocument();
+    expect(screen.getByText("إجمالي الفواتير")).toBeInTheDocument();
+    expect(screen.getByText("المحصل")).toBeInTheDocument();
+  });
 
-    const calledUrl = String(fetchMock.mock.calls[0]?.[0]);
-    expect(calledUrl).toContain("companyId=123&limit=200");
-    expect(calledUrl).not.toMatch(/companyId=123\?/);
+  test("renders error state on failure", async () => {
+    mockFetchJson.mockRejectedValueOnce(new Error("فشل"));
+    render(<LabDashboardTab />);
+    await waitFor(() => expect(screen.getByText("فشل")).toBeInTheDocument());
   });
 });
