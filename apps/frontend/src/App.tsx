@@ -950,9 +950,6 @@ const HotelManagementPage = React.lazy(
 const LabManagementPage = React.lazy(
   () => import("./pages/lab/LabManagementPage"),
 );
-const RadiologyManagementPage = React.lazy(
-  () => import("./pages/radiology/RadiologyManagementPage"),
-);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -6934,14 +6931,6 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <LabManagementPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/radiology/*"
-                  element={
-                    <Layout fullWidth>
-                      <RadiologyManagementPage />
                     </Layout>
                   }
                 />
