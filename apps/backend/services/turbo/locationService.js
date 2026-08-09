@@ -100,6 +100,83 @@ class LocationService {
       require('../../utils/turbo/errorHandler').handleError(error, 'Get Branches');
     }
   }
+
+  async searchAreaByText(text, options = {}) {
+    const limit = Number(options.limit) || 10;
+    const query = String(text || '').trim();
+    if (!query) {
+      return { success: true, query: text, matches: [], count: 0 };
+    }
+
+    const govs = (await this.getGovernments()).governments || [];
+    if (!govs.length) {
+      return { success: true, query: text, matches: [], count: 0 };
+    }
+
+    const normalize = (s) => String(s || '').toLowerCase().trim()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/ؤ/g, 'و')
+      .replace(/ئ/g, 'ي')
+      .replace(/\s+/g, ' ');
+
+    const nQuery = normalize(query);
+    const queryWords = nQuery.split(' ').filter((w) => w.length > 2);
+    const matches = [];
+    const pushMatch = (g, a, score) => {
+      matches.push({
+        governorateId: String(g.id || ''),
+        governorate: g.name || '',
+        areaId: a ? String(a.id || '') : '',
+        area: a ? a.name || '' : '',
+        confidence: Number(score.toFixed(2)),
+      });
+    };
+
+    // 1) Governorate appears in the text → restrict search to those govs only.
+    const matchedGovs = govs.filter((g) => {
+      const gn = normalize(g.name);
+      return nQuery.includes(gn) || gn.includes(nQuery)
+        || queryWords.some((w) => w.length > 3 && (gn.includes(w) || w.includes(gn)));
+    });
+
+    const candidates = matchedGovs.length ? matchedGovs.slice(0, 3) : govs;
+
+    // 2) Load areas for candidate governorates (cached), then match area names.
+    for (const g of candidates) {
+      let areas = [];
+      try {
+        const areasRes = await this.getAreas(g.id);
+        areas = Array.isArray(areasRes.areas) ? areasRes.areas : [];
+      } catch (e) {
+        continue;
+      }
+      for (const a of areas) {
+        const an = normalize(a.name);
+        let score = 0;
+        if (an === nQuery) score = 1;
+        else if (nQuery.includes(an) && an.length > 2) score = 0.85;
+        else if (an.includes(nQuery) && nQuery.length > 2) score = 0.75;
+        else {
+          const hit = queryWords.filter((w) => w.length > 2 && (an.includes(w) || w.includes(an)));
+          if (hit.length) score = 0.45 + 0.15 * Math.min(hit.length, 2);
+        }
+        if (score > 0) pushMatch(g, a, score);
+      }
+    }
+
+    // Governorate-only match (no area name found) → include governorate as a fallback row.
+    if (!matches.length && matchedGovs.length) {
+      for (const g of matchedGovs.slice(0, 3)) {
+        pushMatch(g, null, 0.6);
+      }
+    }
+
+    matches.sort((a, b) => b.confidence - a.confidence || a.area.length - b.area.length);
+    const top = matches.slice(0, limit);
+    return { success: true, query: text, matches: top, count: top.length };
+  }
 }
 
 module.exports = LocationService;

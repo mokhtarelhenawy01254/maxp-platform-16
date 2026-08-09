@@ -387,6 +387,10 @@ async function updateSelfReviewSettings(data) {
   return request('PATCH', '/admin/self-review/settings', data);
 }
 
+async function notifyOrderCreated(data) {
+  return request('POST', '/admin/orders/created', data);
+}
+
 module.exports = {
   listTools,
   listSkills,
@@ -441,4 +445,5 @@ module.exports = {
   updateReviewModel,
   getSelfReviewSettings,
   updateSelfReviewSettings,
+  notifyOrderCreated,
 };

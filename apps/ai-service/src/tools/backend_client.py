@@ -241,6 +241,15 @@ class BackendClient:
             params={"companyId": company_id},
         )
 
+    async def search_area_by_text(
+        self, company_id: str, query: str, limit: int = 10
+    ) -> dict[str, Any]:
+        """Search the shipping company's area map by free text (Turbo search-area)."""
+        return await self._request(
+            "GET", "/api/v1/turbo/search-area",
+            params={"q": query, "limit": limit, "companyId": company_id},
+        )
+
     async def cancel_order(
         self, company_id: str, order_number: str, reason: str | None = None
     ) -> dict[str, Any]:

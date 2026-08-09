@@ -41,6 +41,7 @@ roles:
     - shipping_rates
     - shipping_company_governorates
     - shipping_company_areas
+    - search_area_by_text
     - customer_info
     - whatsapp_send
     - agent_handoff_to

@@ -11,8 +11,10 @@ from src.tools.definitions.order import (
     order_update_details,
 )
 from src.tools.definitions.shipping import (
+    SearchAreaByTextInput,
     ShippingCompanyAreasInput,
     ShippingCompanyGovernoratesInput,
+    search_area_by_text,
     shipping_company_areas,
     shipping_company_governorates,
 )
@@ -151,6 +153,61 @@ async def test_shipping_company_areas_calls_backend(monkeypatch):
     ))
     assert result["found"] is True
     assert result["areas"][0]["name"] == "مدينة نصر"
+
+
+@pytest.mark.asyncio
+async def test_search_area_by_text_missing_params():
+    result = await search_area_by_text(SearchAreaByTextInput(query="", company_id=""))
+    assert result["found"] is False
+    assert "Missing" in result["error"]
+    assert result["matches"] == []
+
+
+@pytest.mark.asyncio
+async def test_search_area_by_text_calls_backend(monkeypatch):
+    async def fake_search(self, company_id, query, limit=10):
+        assert company_id == "comp1"
+        assert query == "مدينة نصر"
+        return {
+            "success": True,
+            "matches": [
+                {
+                    "governorateId": "1",
+                    "governorate": "القاهرة",
+                    "areaId": "10",
+                    "area": "مدينة نصر",
+                    "confidence": 1.0,
+                },
+            ],
+            "count": 1,
+        }
+
+    monkeypatch.setattr(
+        "src.tools.backend_client.BackendClient.search_area_by_text",
+        fake_search,
+    )
+
+    result = await search_area_by_text(SearchAreaByTextInput(query="مدينة نصر", company_id="comp1"))
+    assert result["found"] is True
+    assert result["count"] == 1
+    assert result["matches"][0]["governorate"] == "القاهرة"
+    assert result["matches"][0]["area"] == "مدينة نصر"
+
+
+@pytest.mark.asyncio
+async def test_search_area_by_text_backend_failure(monkeypatch):
+    async def fake_search(self, company_id, query, limit=10):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        "src.tools.backend_client.BackendClient.search_area_by_text",
+        fake_search,
+    )
+
+    result = await search_area_by_text(SearchAreaByTextInput(query="المعادي", company_id="comp1"))
+    assert result["found"] is False
+    assert "boom" in result["error"]
+    assert result["matches"] == []
 
 
 @pytest.mark.asyncio

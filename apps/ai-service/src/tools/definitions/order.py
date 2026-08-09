@@ -106,6 +106,10 @@ class OrderUpdateDetailsInput(BaseModel):
     city: str | None = Field(default=None, description="City / area name")
     governorate: str | None = Field(default=None, description="Governorate name")
     notes: str | None = Field(default=None, description="Order notes")
+    metadata_patch: dict[str, Any] | None = Field(
+        default=None,
+        description="Deep-merged metadata patch to attach to the order (e.g. address resolution audit fields)",
+    )
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
     @model_validator(mode="before")
@@ -361,6 +365,8 @@ async def order_update_details(input_data: OrderUpdateDetailsInput) -> dict[str,
         data["governorate"] = input_data.governorate
     if input_data.notes is not None:
         data["notes"] = input_data.notes
+    if input_data.metadata_patch is not None:
+        data["metadataPatch"] = input_data.metadata_patch
 
     if not data:
         return {

@@ -96,6 +96,7 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "coupon_validate",
     "shipping_company_governorates",
     "shipping_company_areas",
+    "search_area_by_text",
     "order_lookup_by_phone",
 }
 
@@ -190,6 +191,7 @@ discount_create_draft_tool = _registry.resolve("discount_create_draft")
 whatsapp_send_tool = _registry.resolve("whatsapp_send")
 shipping_company_governorates_tool = _registry.resolve("shipping_company_governorates")
 shipping_company_areas_tool = _registry.resolve("shipping_company_areas")
+search_area_by_text_tool = _registry.resolve("search_area_by_text")
 competitor_search_tool = _registry.resolve("competitor_search")
 competitor_get_products_tool = _registry.resolve("competitor_get_products")
 competitor_price_compare_tool = _registry.resolve("competitor_price_compare")
@@ -267,6 +269,7 @@ from src.tools.definitions.shipping import (  # noqa: E402 F401
     ShippingUpdateInput,
     ShippingCompanyGovernoratesInput,
     ShippingCompanyAreasInput,
+    SearchAreaByTextInput,
 )
 from src.tools.definitions.governance import (  # noqa: E402 F401
     SchedulerCreateJobInput,

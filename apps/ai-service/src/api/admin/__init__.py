@@ -14,6 +14,7 @@ from src.api.admin.settings import router as settings_router
 from src.api.admin.playground import router as playground_router
 from src.api.admin.search import router as search_router
 from src.api.admin.tasks import router as tasks_router
+from src.api.admin.orders import router as orders_router
 
 router = APIRouter()
 router.include_router(agents_router)
@@ -28,3 +29,4 @@ router.include_router(settings_router)
 router.include_router(playground_router)
 router.include_router(search_router)
 router.include_router(tasks_router)
+router.include_router(orders_router)

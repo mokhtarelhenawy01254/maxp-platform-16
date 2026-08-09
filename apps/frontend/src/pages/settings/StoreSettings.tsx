@@ -30,6 +30,7 @@ import { CheckoutFormSection } from "../../components/store/CheckoutFormSection"
 import { FooterSettingsSection } from "../../components/store/FooterSettingsSection";
 import { BranchModal } from "../../components/store/BranchModal";
 import { ShippingModalV2 } from "../../components/store/ShippingModalV2";
+import { CheckoutAddressSettingsSection } from "./CheckoutAddressSettingsSection";
 import PromotionSettings from "./PromotionSettings";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import {
@@ -1197,6 +1198,13 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                   shippingClasses={shippingClasses}
                   promotionSettings={promotionSettings}
                   onUpdatePromotionSettings={handleUpdatePromotionSettings}
+                />
+
+                <CheckoutAddressSettingsSection
+                  settings={storefrontSettings}
+                  onChange={(patch) =>
+                    setStorefrontSettings((prev) => ({ ...prev, ...patch }))
+                  }
                 />
 
                 <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">

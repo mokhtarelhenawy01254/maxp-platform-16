@@ -73,6 +73,7 @@ class TurboService {
   async getGovernments() { return this._location.getGovernments(); }
   async getAreas(g) { return this._location.getAreas(g); }
   async getBranches(c, g) { return this._location.getBranches(c, g); }
+  async searchAreaByText(t, o) { return this._location.searchAreaByText(t, o); }
 
   // ── Labels ────────────────────────────────────────────
   async printLabel(i) { return this._label.printLabel(i); }
