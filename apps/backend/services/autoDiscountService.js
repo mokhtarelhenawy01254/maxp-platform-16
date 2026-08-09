@@ -48,6 +48,10 @@ async function updateSettings(companyId, data) {
   const next = { ...current, ...data };
   delete next.loyaltySystem;
   next.system = system;
+  // 🕐 عند تفعيل الخصم التلقائي لأول مرة (أو الرجوع إليه بعد المستويات) نحفظ تاريخ التفعيل
+  if (system === 'AUTO_DISCOUNT' && current.loyaltySystem !== 'AUTO_DISCOUNT') {
+    next.loyaltyActivatedAt = new Date().toISOString();
+  }
   await prisma.company.update({
     where: { id: companyId },
     data: {
@@ -76,6 +80,11 @@ async function issueVoucherForDeliveredOrder({ orderId, companyId }) {
     if (existing) return { issued: false, reason: 'already_issued' };
 
     const settings = await getSettings(companyId);
+    // 🕐 الأوردرات اللي اتطلبت قبل تفعيل نظام الولاء مش بتاخد كوبون خصم
+    const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
+    if (activatedAt && new Date(order.createdAt) < activatedAt) {
+      return { issued: false, reason: 'order_before_activation' };
+    }
     const percent = Number(settings.discountPercent || 10);
     const paid = Number(order.total || 0);
     const amount = (paid * percent) / 100;
@@ -258,6 +267,102 @@ async function restoreRedeemedPointsForOrder({ orderId, companyId }) {
   }
 }
 
+/**
+ * تاريخ تفعيل نظام الخصم التلقائي للشركة.
+ * لو ملوش تاريخ محفوظ (بيانات قديمة) نستدل من أول كوبون صدر.
+ */
+async function getLoyaltyActivatedAt(companyId, settings) {
+  const raw = settings?.loyaltyActivatedAt;
+  if (raw) {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const prisma = getSharedPrismaClient();
+  const firstVoucher = await prisma.customerLoyaltyVoucher.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true }
+  });
+  return firstVoucher?.createdAt ? new Date(firstVoucher.createdAt) : null;
+}
+
+/**
+ * حالة خصم عميل واحد:
+ * - 'AVAILABLE': عنده كوبون خصم فعّال (خصم متاح)
+ * - 'PRE_ACTIVATION': كل أوردراته المسلّمة اتطلبت قبل تفعيل نظام الولاء (مش بيطبق عليه)
+ * - null: مش له حالة (مفيش أوردرات / استخدم الخصم)
+ */
+async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }) {
+  const prisma = getSharedPrismaClient();
+  const cfg = settings || await getSettings(companyId);
+  const voucher = await prisma.customerLoyaltyVoucher.findFirst({
+    where: { companyId, customerId, status: 'ACTIVE', expiresAt: { gt: new Date() } }
+  });
+  if (voucher) return 'AVAILABLE';
+
+  const activatedAt = await getLoyaltyActivatedAt(companyId, cfg);
+  if (!activatedAt) return null;
+
+  const [pre, post] = await Promise.all([
+    prisma.order.findFirst({
+      where: { companyId, customerId, status: 'DELIVERED', createdAt: { lt: activatedAt } },
+      select: { id: true }
+    }),
+    prisma.order.findFirst({
+      where: { companyId, customerId, status: 'DELIVERED', createdAt: { gte: activatedAt } },
+      select: { id: true }
+    })
+  ]);
+  if (pre && !post) return 'PRE_ACTIVATION';
+  return null;
+}
+
+/**
+ * إثراء قائمة عملاء بحالة الخصم (AVAILABLE / PRE_ACTIVATION) لصفحة قائمة العملاء.
+ * بيبقى null لو نظام الخصم التلقائي مش مفعّل أو مفيش حالة.
+ */
+async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
+  if (!Array.isArray(customers) || customers.length === 0) return customers;
+  const settings = await getSettings(companyId);
+  if (settings.loyaltySystem !== 'AUTO_DISCOUNT' || settings.enabled === false) {
+    return customers;
+  }
+  const prisma = getSharedPrismaClient();
+  const ids = customers.map(c => c.id);
+  const now = new Date();
+
+  const activeVouchers = await prisma.customerLoyaltyVoucher.findMany({
+    where: { companyId, customerId: { in: ids }, status: 'ACTIVE', expiresAt: { gt: now } },
+    select: { customerId: true }
+  });
+  const availableIds = new Set(activeVouchers.map(v => v.customerId));
+
+  const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
+  let preActivationIds = new Set();
+  if (activatedAt) {
+    const preOrders = await prisma.order.findMany({
+      where: { companyId, customerId: { in: ids }, status: 'DELIVERED', createdAt: { lt: activatedAt } },
+      select: { customerId: true },
+      distinct: ['customerId']
+    });
+    if (preOrders.length > 0) {
+      const preIds = new Set(preOrders.map(o => o.customerId));
+      const postOrders = await prisma.order.findMany({
+        where: { companyId, customerId: { in: ids }, status: 'DELIVERED', createdAt: { gte: activatedAt } },
+        select: { customerId: true },
+        distinct: ['customerId']
+      });
+      const postIds = new Set(postOrders.map(o => o.customerId));
+      preActivationIds = new Set([...preIds].filter(id => !postIds.has(id)));
+    }
+  }
+
+  return customers.map(c => ({
+    ...c,
+    autoDiscountStatus: availableIds.has(c.id) ? 'AVAILABLE' : preActivationIds.has(c.id) ? 'PRE_ACTIVATION' : null
+  }));
+}
+
 module.exports = {
   DEFAULT_SETTINGS,
   getSettings,
@@ -269,5 +374,8 @@ module.exports = {
   markVoucherUsed,
   convertExpiredVouchers,
   reverseVoucherForOrder,
-  restoreRedeemedPointsForOrder
+  restoreRedeemedPointsForOrder,
+  getLoyaltyActivatedAt,
+  getCustomerAutoDiscountStatus,
+  enrichCustomersWithAutoDiscountStatus
 };

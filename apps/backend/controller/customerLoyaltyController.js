@@ -731,6 +731,7 @@ async function getCustomerPortalSummary(req, res) {
     const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT';
 
     let activeVoucher = null;
+    let autoDiscountStatus = null;
     if (isAutoDiscount) {
       const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
       if (voucher) {
@@ -741,6 +742,11 @@ async function getCustomerPortalSummary(req, res) {
           expiresAt: voucher.expiresAt,
           sourceOrderNumber: voucher.orderNumber || null
         };
+        autoDiscountStatus = 'AVAILABLE';
+      } else {
+        autoDiscountStatus = await autoDiscountService
+          .getCustomerAutoDiscountStatus({ companyId, customerId, settings: autoSettings })
+          .catch(() => null);
       }
     }
 
@@ -775,6 +781,7 @@ async function getCustomerPortalSummary(req, res) {
           ? {
               discountPercent: Number(autoSettings.discountPercent || 0),
               validityDays: Number(autoSettings.validityDays || 3),
+              status: autoDiscountStatus,
               activeVoucher
             }
           : null,

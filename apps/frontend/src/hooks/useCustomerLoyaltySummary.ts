@@ -55,6 +55,7 @@ export interface CustomerLoyaltySummary {
   autoDiscount: {
     discountPercent: number;
     validityDays: number;
+    status?: string | null;
     activeVoucher: {
       id: string;
       percent: number;
