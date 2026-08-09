@@ -216,6 +216,10 @@ const bookingInsuranceMemberTypesRoutes = require("./routes/bookingInsuranceMemb
 const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsRoutes");
 const labTestsRoutes = require("./routes/labTestsRoutes");
 const labOrdersRoutes = require("./routes/labOrdersRoutes");
+const labCulturesRoutes = require("./routes/labCulturesRoutes");
+const labContractsRoutes = require("./routes/labContractsRoutes");
+const labHomeVisitsRoutes = require("./routes/labHomeVisitsRoutes");
+const labSampleTypesRoutes = require("./routes/labSampleTypesRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -790,6 +794,10 @@ app.use("/api/v1/booking/insurance-member-types", bookingInsuranceMemberTypesRou
 app.use("/api/v1/booking/patient-documents", bookingPatientDocumentsRoutes);
 app.use("/api/v1/lab/tests", labTestsRoutes);
 app.use("/api/v1/lab/orders", labOrdersRoutes);
+app.use("/api/v1/lab/cultures", labCulturesRoutes);
+app.use("/api/v1/lab/contracts", labContractsRoutes);
+app.use("/api/v1/lab/home-visits", labHomeVisitsRoutes);
+app.use("/api/v1/lab/sample-types", labSampleTypesRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);

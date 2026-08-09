@@ -7,7 +7,10 @@ import OrdersTab from "./OrdersTab";
 import LabPatientsTab from "./LabPatientsTab";
 import LabBranchesTab from "./LabBranchesTab";
 import LabInvoicesTab from "./LabInvoicesTab";
-import PlaceholderTab from "./PlaceholderTab";
+import CulturesTab from "./CulturesTab";
+import ContractsTab from "./ContractsTab";
+import HomeVisitsTab from "./HomeVisitsTab";
+import SettingsTab from "./SettingsTab";
 import PriceListsTab from "@/pages/admin/booking/PriceListsTab";
 import BookingReportsTab from "@/pages/admin/booking/BookingReportsTab";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
@@ -45,14 +48,14 @@ export default function LabManagementPage() {
       {activeTab === "orders" && <TabErrorBoundary tabLabel="الطلبات"><OrdersTab /></TabErrorBoundary>}
       {activeTab === "reports-medical" && <TabErrorBoundary tabLabel="التقارير الطبية"><OrdersTab /></TabErrorBoundary>}
       {activeTab === "tests" && <TabErrorBoundary tabLabel="الاختبارات"><TestsTab /></TabErrorBoundary>}
-      {activeTab === "cultures" && <TabErrorBoundary tabLabel="المزارع"><PlaceholderTab title="المزارع" /></TabErrorBoundary>}
+      {activeTab === "cultures" && <TabErrorBoundary tabLabel="المزارع"><CulturesTab /></TabErrorBoundary>}
       {activeTab === "price-lists" && <TabErrorBoundary tabLabel="قوائم الأسعار"><PriceListsTab /></TabErrorBoundary>}
-      {activeTab === "contracts" && <TabErrorBoundary tabLabel="التعاقدات"><PlaceholderTab title="التعاقدات" /></TabErrorBoundary>}
+      {activeTab === "contracts" && <TabErrorBoundary tabLabel="التعاقدات"><ContractsTab /></TabErrorBoundary>}
       {activeTab === "branches" && <TabErrorBoundary tabLabel="الفروع"><LabBranchesTab /></TabErrorBoundary>}
       {activeTab === "invoices" && <TabErrorBoundary tabLabel="المدفوعات"><LabInvoicesTab /></TabErrorBoundary>}
       {activeTab === "reports" && <TabErrorBoundary tabLabel="التقارير"><BookingReportsTab /></TabErrorBoundary>}
-      {activeTab === "home-visits" && <TabErrorBoundary tabLabel="الزيارات المنزلية"><PlaceholderTab title="الزيارات المنزلية" /></TabErrorBoundary>}
-      {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><PlaceholderTab title="الإعدادات" /></TabErrorBoundary>}
+      {activeTab === "home-visits" && <TabErrorBoundary tabLabel="الزيارات المنزلية"><HomeVisitsTab /></TabErrorBoundary>}
+      {activeTab === "settings" && <TabErrorBoundary tabLabel="الإعدادات"><SettingsTab /></TabErrorBoundary>}
     </div>
   );
 }

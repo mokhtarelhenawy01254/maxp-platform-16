@@ -96,3 +96,107 @@ model LabOrderTest {
   @@index([companyId])
   @@map("lab_order_tests")
 }
+
+/// Microbiology cultures (Culture & Sensitivity)
+model LabCulture {
+  id          String   @id @default(cuid())
+  companyId   String
+  category    String?
+  name        String
+  sampleType  String?
+  price       Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  organisms   LabCultureOrganism[]
+  antibiotics LabCultureAntibiotic[]
+
+  @@index([companyId])
+  @@map("lab_cultures")
+}
+
+model LabCultureOrganism {
+  id        String    @id @default(cuid())
+  companyId String
+  cultureId String
+  name      String
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  culture   LabCulture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([cultureId])
+  @@map("lab_culture_organisms")
+}
+
+model LabCultureAntibiotic {
+  id        String    @id @default(cuid())
+  companyId String
+  cultureId String
+  name      String
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  culture   LabCulture @relation(fields: [cultureId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([cultureId])
+  @@map("lab_culture_antibiotics")
+}
+
+/// Contracts (companies / other labs ordering tests)
+model LabContract {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  region          String?
+  governorate     String?
+  discountType    String   @default("PERCENTAGE") /// PERCENTAGE|CUSTOM|NONE
+  discountPercent Float    @default(0)
+  externalSample  Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("lab_contracts")
+}
+
+/// Home visits (sample collection at home)
+model LabHomeVisit {
+  id          String    @id @default(cuid())
+  companyId   String
+  patientName String
+  phone       String?
+  address     String?
+  visitDate   DateTime?
+  status      String    @default("SCHEDULED") /// SCHEDULED|DONE|CANCELLED
+  notes       String?
+  reviewed    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("lab_home_visits")
+}
+
+/// Lab sample types catalog (with collection instructions)
+model LabSampleType {
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  instructions String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("lab_sample_types")
+}

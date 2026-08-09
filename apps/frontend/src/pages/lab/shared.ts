@@ -96,6 +96,31 @@ export interface LabResultItem {
   unit?: string; result?: string; flag?: string;
 }
 
+export interface LabCulture {
+  id: string; category?: string; name: string; sampleType?: string;
+  price: number; isActive: boolean; createdAt: string;
+  organisms?: { id: string; name: string }[];
+  antibiotics?: { id: string; name: string }[];
+  organismCount?: number; antibioticCount?: number;
+}
+
+export interface LabContract {
+  id: string; name: string; region?: string; governorate?: string;
+  discountType: string; discountPercent: number; externalSample: boolean;
+  isActive: boolean; createdAt: string;
+}
+
+export interface LabHomeVisit {
+  id: string; patientName: string; phone?: string; address?: string;
+  visitDate?: string; status: string; notes?: string; reviewed: boolean; createdAt: string;
+}
+
+export interface LabSampleType {
+  id: string; name: string; instructions?: string; isActive: boolean; createdAt: string;
+}
+
+export const CULTURE_STATUS = { SCHEDULED: "مجدولة", DONE: "تمت", CANCELLED: "ملغاة" };
+
 export const LAB_STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "بانتظار أخذ العينة", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   COLLECTED: { label: "تم أخذ العينة", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
