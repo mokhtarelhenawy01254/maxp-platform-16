@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, Gift, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -604,7 +604,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/abandoned-cart', icon: ShoppingCart, label: t('sidebar.abandonedCart') },
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
                 { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
-                { to: '/reports/status-analysis', icon: FileBarChart, label: t('sidebar.statusAnalysis') },
+                { to: '/analytics/orders/status-analysis', icon: BarChart3, label: t('sidebar.statusAnalysis') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
@@ -976,6 +976,28 @@ export const getSidebarConfig = (
                 { to: '/lab/reports', icon: BarChart3, label: t('sidebar.labReports') },
                 { to: '/lab/home-visits', icon: Home, label: t('sidebar.labHomeVisits') },
                 { to: '/lab/settings', icon: Settings, label: t('sidebar.labSettings') },
+            ]
+        },
+
+        // 7️⃣.6️⃣.5 نظام الأشعة
+        {
+            id: 'radiology',
+            title: t('sidebar.radiologyModule'),
+            icon: Radiation,
+            hidden: !isAppActive('radiology-app'),
+            items: [
+                { to: '/radiology/dashboard', icon: BarChart3, label: t('sidebar.radiologyDashboard') },
+                { to: '/radiology/reception', icon: Inbox, label: t('sidebar.radiologyReception') },
+                { to: '/radiology/patients', icon: Users, label: t('sidebar.radiologyPatients') },
+                { to: '/radiology/studies', icon: FolderOpen, label: t('sidebar.radiologyStudies') },
+                { to: '/radiology/reports', icon: FileText, label: t('sidebar.radiologyReports') },
+                { to: '/radiology/exam-types', icon: ScanLine, label: t('sidebar.radiologyExamTypes') },
+                { to: '/radiology/price-lists', icon: Tag, label: t('sidebar.radiologyPriceLists') },
+                { to: '/radiology/contracts', icon: FileText, label: t('sidebar.radiologyContracts') },
+                { to: '/radiology/branches', icon: Building2, label: t('sidebar.radiologyBranches') },
+                { to: '/radiology/invoices', icon: CreditCard, label: t('sidebar.radiologyInvoices') },
+                { to: '/radiology/reports-overview', icon: BarChart3, label: t('sidebar.radiologyReportsOverview') },
+                { to: '/radiology/settings', icon: Settings, label: t('sidebar.radiologySettings') },
             ]
         },
 

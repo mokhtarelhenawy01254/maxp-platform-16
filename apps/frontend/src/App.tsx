@@ -664,6 +664,9 @@ const TeamPerformanceAnalytics = React.lazy(
 const TodayOps = React.lazy(
   () => import("./pages/Analytics/orders/TodayOps"),
 );
+const OrderStatusAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/OrderStatusAnalytics"),
+);
 const AbandonedCartAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
 );
@@ -946,6 +949,9 @@ const HotelManagementPage = React.lazy(
 );
 const LabManagementPage = React.lazy(
   () => import("./pages/lab/LabManagementPage"),
+);
+const RadiologyManagementPage = React.lazy(
+  () => import("./pages/radiology/RadiologyManagementPage"),
 );
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
@@ -4649,6 +4655,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/analytics/orders/status-analysis"
+                  element={
+                    <Layout>
+                      <OrderStatusAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/analytics/orders/cancellations"
                   element={
                     <Layout>
@@ -6920,6 +6934,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <LabManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/radiology/*"
+                  element={
+                    <Layout fullWidth>
+                      <RadiologyManagementPage />
                     </Layout>
                   }
                 />

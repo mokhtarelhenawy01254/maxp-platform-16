@@ -20,6 +20,7 @@ router.get('/products', reportsController.getProductsReport);
 router.get('/performance', reportsController.getPerformanceReport);
 router.get('/moderators', reportsController.getModeratorsReport);
 router.get('/orders-detailed', reportsController.getDetailedOrderReport);
+router.get('/order-status-analytics', reportsController.getOrderStatusAnalytics);
 router.get('/inventory-detailed', reportsController.getDetailedInventoryReport);
 router.get('/profit-loss', reportsController.getProfitLossReport);
 

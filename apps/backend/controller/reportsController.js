@@ -852,6 +852,153 @@ const getReports = async (req, res) => {
     }
 }
 
+// تقرير تحليل حالات الطلبات — يركز علىSHORTAGE_FAILED
+const getOrderStatusAnalytics = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { startDate, endDate, status } = req.query;
+
+        const company = await getSharedPrismaClient().company.findUnique({
+            where: { id: companyId },
+            select: { timezone: true }
+        });
+        const timeZone = company?.timezone || 'Africa/Cairo';
+
+        const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 90);
+        const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
+
+        const where = {
+            companyId,
+            createdAt: { gte: start, lte: end }
+        };
+
+        if (status) {
+            where.status = status.toUpperCase();
+        }
+
+        const orders = await getSharedPrismaClient().order.findMany({
+            where,
+            select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                total: true,
+                customerName: true,
+                customerPhone: true,
+                governorate: true,
+                city: true,
+                paymentMethod: true,
+                sourceType: true,
+                createdAt: true,
+                updatedAt: true,
+                metadata: true
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5000
+        });
+
+        // توزيع الحالات
+        const statusDistribution = {};
+        const dailyStatusTrend = {};
+        const hourlyOrders = {};
+        const governorateStats = {};
+        const paymentStats = {};
+        const sourceStats = {};
+        let totalRevenue = 0;
+        let shortageFailedRevenue = 0;
+        let shortageFailedCount = 0;
+
+        orders.forEach(order => {
+            const s = order.status || 'UNKNOWN';
+            statusDistribution[s] = (statusDistribution[s] || 0) + 1;
+
+            if (s === 'SHORTAGE_FAILED') {
+                shortageFailedCount++;
+                shortageFailedRevenue += parseFloat(order.total || 0);
+            }
+            totalRevenue += parseFloat(order.total || 0);
+
+            // اتجاه يومي (حسب منطقة زمنية للشركة لتطابق التوزيع الساعي)
+            const day = order.createdAt ? formatInTimeZone(order.createdAt, timeZone, 'yyyy-MM-dd') : 'unknown';
+            if (!dailyStatusTrend[day]) dailyStatusTrend[day] = {};
+            dailyStatusTrend[day][s] = (dailyStatusTrend[day][s] || 0) + 1;
+
+            // توزيع ساعي
+            const hour = order.createdAt ? new Date(order.createdAt).getHours() : 0;
+            hourlyOrders[hour] = (hourlyOrders[hour] || 0) + 1;
+
+            if (order.governorate) {
+                governorateStats[order.governorate] = (governorateStats[order.governorate] || 0) + 1;
+            }
+            if (order.paymentMethod) {
+                paymentStats[order.paymentMethod] = (paymentStats[order.paymentMethod] || 0) + 1;
+            }
+            if (order.sourceType) {
+                sourceStats[order.sourceType] = (sourceStats[order.sourceType] || 0) + 1;
+            }
+        });
+
+        // تجهيز بيانات الاتجاه اليومي
+        const trendData = Object.entries(dailyStatusTrend)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .slice(-30)
+            .map(([date, statuses]) => ({
+                date,
+                ...statuses
+            }));
+
+        // تجهيز بيانات الساعات
+        const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+            hour: `${i.toString().padStart(2, '0')}:00`,
+            count: hourlyOrders[i] || 0
+        }));
+
+        // أعلى المحافظات
+        const topGovernorates = Object.entries(governorateStats)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 10)
+            .map(([name, count]) => ({ name, count }));
+
+        res.json({
+            success: true,
+            data: {
+                summary: {
+                    totalOrders: orders.length,
+                    totalRevenue,
+                    avgOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+                    shortageFailedCount,
+                    shortageFailedRevenue,
+                    shortageFailedPercentage: orders.length > 0 ? ((shortageFailedCount / orders.length) * 100).toFixed(1) : 0,
+                    dateRange: { start: start.toISOString(), end: end.toISOString() }
+                },
+                statusDistribution: Object.entries(statusDistribution)
+                    .map(([status, count]) => ({ status, count, percentage: ((count / orders.length) * 100).toFixed(1) }))
+                    .sort((a, b) => b.count - a.count),
+                trendData,
+                hourlyData,
+                topGovernorates,
+                paymentStats: Object.entries(paymentStats).map(([method, count]) => ({ method, count })),
+                sourceStats: Object.entries(sourceStats).map(([source, count]) => ({ source, count })),
+                recentShortageFailed: orders
+                    .filter(o => o.status === 'SHORTAGE_FAILED')
+                    .slice(0, 50)
+                    .map(o => ({
+                        id: o.id,
+                        orderNumber: o.orderNumber,
+                        customerName: o.customerName,
+                        customerPhone: o.customerPhone,
+                        total: parseFloat(o.total || 0),
+                        governorate: o.governorate,
+                        createdAt: o.createdAt
+                    }))
+            }
+        });
+    } catch (error) {
+        console.error('Error in getOrderStatusAnalytics:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
     getReports,
     getSalesReport,
@@ -863,5 +1010,6 @@ module.exports = {
     getDetailedOrderReport,
     getDetailedInventoryReport,
     getProfitLossReport,
-    getModeratorsReport
+    getModeratorsReport,
+    getOrderStatusAnalytics
 }
