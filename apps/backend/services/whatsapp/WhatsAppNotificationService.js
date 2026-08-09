@@ -35,6 +35,46 @@ function replaceVariables(template, variables) {
 }
 
 /**
+ * يحوّل أي مسار وسيط لرابط HTTPS مطلق (ميتا تتطلب رابطاً قابلاً للتحميل في الهيدر).
+ */
+function toAbsoluteMediaUrl(url) {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = (process.env.APP_URL || 'https://maxp.online').replace(/\/$/, '');
+  const relativePath = url.startsWith('/') ? url : `/${url}`;
+  return `${baseUrl}${relativePath}`;
+}
+
+/**
+ * يستخرج صورة أول منتج من الطلب (snapshot على الـ orderItem أو من المنتج نفسه).
+ * تسمح لقالب الحالة بهيدر IMAGE أن يرسل صورة المنتج اللي العميل طلبه.
+ */
+function resolveOrderPrimaryImage(order) {
+  if (!order) return null;
+  const items = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+  const first = items[0];
+  if (!first) return null;
+
+  let img = first.productImage || first.imageUrl || first.image || first.product?.mainImage;
+  if (!img && typeof first.product?.images === 'string') {
+    img = first.product.images;
+  }
+  if (!img) return null;
+
+  // Product.images قد يكون JSON array نصي
+  let url = img;
+  if (typeof img === 'string' && img.trim().startsWith('[')) {
+    try {
+      const arr = JSON.parse(img);
+      if (Array.isArray(arr)) url = arr[0];
+    } catch { /* نص عادي */ }
+  }
+  return url ? toAbsoluteMediaUrl(url) : null;
+}
+
+/**
  * اختيار قالب الحدث حسب قناة الإرسال الفعلية (Baileys أم Meta Cloud).
  *
  * الحالة الواحدة تقدر يكون ليها قالبان مستقلان (من صفحة قوالب الحالات):
@@ -1275,9 +1315,29 @@ async function sendNotification(options) {
 
           // header وسائط يأتي أولاً في components (من القالب المحلي المخزّن)
           const components = [];
-          if (safeTemplate?.headerFormat && safeTemplate.headerFormat !== 'TEXT' && safeTemplate.headerMediaHandle) {
-            const headerParam = buildBroadcastHeaderParams(safeTemplate.headerMediaHandle, String(safeTemplate.headerFormat).toLowerCase());
-            if (headerParam) components.push(headerParam);
+          if (safeTemplate?.headerFormat && safeTemplate.headerFormat !== 'TEXT') {
+            // 🆕 headerUsesOrderProduct: صورة أول منتج من الطلب (متغيرة لكل رسالة)
+            let headerMedia = null;
+            if (safeTemplate.headerUsesOrderProduct) {
+              headerMedia = variables.productImage || null;
+              if (!headerMedia && orderId) {
+                try {
+                  const order = await safeQuery(() => getSharedPrismaClient().order.findUnique({
+                    where: { id: orderId },
+                    select: {
+                      orderItems: { select: { productImage: true, imageUrl: true, product: { select: { mainImage: true, images: true } } } },
+                    }
+                  }));
+                  headerMedia = resolveOrderPrimaryImage(order);
+                } catch { /* غير حرج — يقع على الصورة الثابتة */ }
+              }
+            }
+            const fallbackMedia = safeTemplate.headerMediaHandle || null;
+            const media = headerMedia || fallbackMedia;
+            if (media) {
+              const headerParam = buildBroadcastHeaderParams(media, String(safeTemplate.headerFormat).toLowerCase());
+              if (headerParam) components.push(headerParam);
+            }
           }
           components.push({ type: 'BODY', parameters: bodyParams });
 
@@ -1908,6 +1968,7 @@ async function sendOrderCreatedNotification(order) {
       total: (order.total || 0).toString(),
       currency: order.currency || 'EGP',
       trackingLink,
+      productImage: resolveOrderPrimaryImage(order),
       orderId: order.id
     },
     orderId: trackedOrderId,
@@ -2049,7 +2110,8 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         currency: order.currency || 'EGP',
         trackingNumber: order.turboTrackingNumber || '',
         estimatedDays: '2-3',
-        reason: ''
+        reason: '',
+        productImage: resolveOrderPrimaryImage(order)
       },
       orderId: trackedOrderId,
       customerId: order.customerId,

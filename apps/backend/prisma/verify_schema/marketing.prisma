@@ -719,6 +719,7 @@ model WhatsAppNotificationTemplate {
   mediaType                  String?
   headerFormat               String?
   headerMediaHandle          String?
+  headerUsesOrderProduct     Boolean                                @default(false)
   hasButtons                 Boolean                                @default(false)
   buttons                    String?                                @db.Text
   hasList                    Boolean                                @default(false)

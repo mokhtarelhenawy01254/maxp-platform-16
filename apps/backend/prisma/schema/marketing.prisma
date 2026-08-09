@@ -1146,6 +1146,7 @@ model WhatsAppNotificationTemplate {
   mediaType                  String?
   headerFormat               String?                                // META template HEADER format: TEXT|IMAGE|VIDEO|DOCUMENT
   headerMediaHandle          String?                                // META media id/handle for the header (uploaded via Media API)
+  headerUsesOrderProduct     Boolean                                @default(false) // HEADER = صورة أول منتج من الطلب وقت الإرسال
   hasButtons                 Boolean                                @default(false)
   buttons                    String?
   hasList                    Boolean                                @default(false)

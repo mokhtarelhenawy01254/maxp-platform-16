@@ -203,6 +203,7 @@ async function createTemplate(req, res) {
       mediaType,
       headerFormat,
       headerMediaHandle,
+      headerUsesOrderProduct,
       hasButtons,
       buttons,
       hasList,
@@ -229,6 +230,7 @@ async function createTemplate(req, res) {
         mediaType,
         headerFormat,
         headerMediaHandle,
+        headerUsesOrderProduct: headerUsesOrderProduct === true || headerUsesOrderProduct === 'true',
         hasButtons: hasButtons || false,
         buttons: buttons ? JSON.stringify(buttons) : null,
         hasList: hasList || false,
@@ -283,6 +285,7 @@ async function updateTemplate(req, res) {
       mediaType,
       headerFormat,
       headerMediaHandle,
+      headerUsesOrderProduct,
       hasButtons,
       buttons,
       hasList,
@@ -306,6 +309,9 @@ async function updateTemplate(req, res) {
         mediaType,
         headerFormat,
         headerMediaHandle,
+        headerUsesOrderProduct: headerUsesOrderProduct !== undefined
+          ? (headerUsesOrderProduct === true || headerUsesOrderProduct === 'true')
+          : existing.headerUsesOrderProduct,
         hasButtons,
         buttons: buttons ? JSON.stringify(buttons) : existing.buttons,
         hasList,

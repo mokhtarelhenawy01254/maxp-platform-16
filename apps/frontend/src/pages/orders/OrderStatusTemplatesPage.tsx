@@ -45,6 +45,7 @@ interface Template {
   channel?: string;
   headerFormat?: string | null;
   headerMediaHandle?: string | null;
+  headerUsesOrderProduct?: boolean | null;
   metaTemplateName?: string | null;
   metaTemplateStatus?: string | null;
   metaTemplateLanguage?: string | null;
@@ -115,6 +116,7 @@ interface TemplateFormState {
   headerFormat: string;
   headerMediaHandle: string;
   headerMediaName: string;
+  headerUsesOrderProduct: boolean;
 }
 
 interface SettingsForm {
@@ -143,6 +145,7 @@ const emptyTemplateForm = (): TemplateFormState => ({
   headerFormat: "TEXT",
   headerMediaHandle: "",
   headerMediaName: "",
+  headerUsesOrderProduct: false,
 });
 
 const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
@@ -565,6 +568,7 @@ export default function OrderStatusTemplatesPage() {
       headerFormat: slot === "meta" ? "IMAGE" : "TEXT",
       headerMediaHandle: "",
       headerMediaName: "",
+      headerUsesOrderProduct: slot === "meta",
     });
     setShowLocalRef(false);
     setDialogOpen(true);
@@ -593,6 +597,7 @@ export default function OrderStatusTemplatesPage() {
       headerFormat: target?.headerFormat || (slot === "meta" ? "IMAGE" : "TEXT"),
       headerMediaHandle: target?.headerMediaHandle || "",
       headerMediaName: target?.headerMediaHandle || "",
+      headerUsesOrderProduct: target?.headerUsesOrderProduct ?? (slot === "meta"),
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -624,6 +629,7 @@ export default function OrderStatusTemplatesPage() {
       headerFormat: current?.headerFormat || "IMAGE",
       headerMediaHandle: current?.headerMediaHandle || "",
       headerMediaName: current?.headerMediaHandle || "",
+      headerUsesOrderProduct: current?.headerUsesOrderProduct ?? true,
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -654,6 +660,7 @@ export default function OrderStatusTemplatesPage() {
         channel?: string;
         headerFormat?: string;
         headerMediaHandle?: string;
+        headerUsesOrderProduct?: boolean;
       } = {
         category: selectedStatus.code === INCOMPLETE_CART_EVENT_TYPE ? "ABANDONED_CART" : "ORDERS",
         eventType: selectedStatus.code,
@@ -666,6 +673,7 @@ export default function OrderStatusTemplatesPage() {
       if (dialogSlot === "meta" && templateForm.headerFormat !== "TEXT") {
         payload.headerFormat = templateForm.headerFormat;
         payload.headerMediaHandle = templateForm.headerMediaHandle || undefined;
+        payload.headerUsesOrderProduct = templateForm.headerUsesOrderProduct;
       }
       if (!isEdit) {
         payload.channel = dialogSlot === "meta" ? "META_CLOUD" : "AUTO";
@@ -2002,7 +2010,21 @@ export default function OrderStatusTemplatesPage() {
                       )}
                     </div>
                     <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس. يمكن تغييرها لكل رسالة وقت البث.
+                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس (تُستخدم كعيّنة للموافقة).
+                    </p>
+                    <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={templateForm.headerUsesOrderProduct}
+                        onChange={(e) => setTemplateForm((p) => ({ ...p, headerUsesOrderProduct: e.target.checked }))}
+                        className="size-4 accent-indigo-600"
+                      />
+                      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                        استخدم صورة المنتج من الطلب وقت الإرسال
+                      </span>
+                    </label>
+                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      لو مفعّل، كل رسالة للعميل هتتبعت بيها صورة أول منتج طلبه (متغيرة لكل طلب). لو بدون تحديد صورة ثابتة، القالب هيحتاج صورة عيّنة للموافقة.
                     </p>
                   </div>
                 )}
