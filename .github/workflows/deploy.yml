@@ -133,6 +133,12 @@ jobs:
           HUSKY: '0'
         continue-on-error: false
 
+      # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
+      - name: Check Frontend Icon Imports
+        working-directory: ./apps/frontend
+        run: node scripts/check-icon-imports.cjs
+        continue-on-error: false
+
       - name: Build Frontend
         working-directory: ./apps/frontend
         run: |
