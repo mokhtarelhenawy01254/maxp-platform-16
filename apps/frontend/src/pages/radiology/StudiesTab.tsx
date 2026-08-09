@@ -1,8 +1,9 @@
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUpCircle, ExternalLink, FileText, FolderOpen, Loader2, Plus, RefreshCw, Save, Search } from "lucide-react";
+import { ArrowUpCircle, ExternalLink, FileText, FolderOpen, Loader2, Plus, RefreshCw, Save, Search, Upload } from "lucide-react";
+import tokenManager from "../../utils/tokenManager";
 import {
-  api, fetchJson, RadiologyStudy, RadiologyStatusMap, RadiologySubmissionStatusMap,
+  api, fetchJson, getCompanyId, RadiologyStudy, RadiologyStatusMap, RadiologySubmissionStatusMap,
   STUDY_STATUS, MODAL_INPUT_CLS,
 } from "./shared";
 import RadiologyViewerModal from "./RadiologyViewerModal";
@@ -37,6 +38,30 @@ export default function StudiesTab() {
   const [drafts, setDrafts] = useState<Record<string, RologyDraft>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const uploadImages = async (id: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (uploadingId === id) return;
+    setUploadingId(id);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append("files", f));
+      const headers = tokenManager.createAuthHeaders({});
+      const cid = getCompanyId();
+      if (cid) headers["X-Company-Id"] = cid;
+      const res = await fetch(api(`studies/${id}/images`), { method: "POST", headers, body: fd });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "فشل رفع الصور");
+      toast.success(`تم رفع ${files.length} ملف DICOM`);
+      await refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل رفع الصور");
+    } finally {
+      setUploadingId(null);
+    }
+  };
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -191,6 +216,15 @@ export default function StudiesTab() {
                       <td className="py-3 px-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
+                          <input
+                            ref={el => { fileInputs.current[s.id] = el; }}
+                            type="file"
+                            accept=".dcm,.DCM,application/dicom,application/octet-stream"
+                            multiple
+                            className="hidden"
+                            onChange={e => { uploadImages(s.id, e.target.files); e.target.value = ""; }}
+                          />
+                          <button onClick={() => fileInputs.current[s.id]?.click()} disabled={uploadingId === s.id} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded disabled:opacity-40" title="رفع صور DICOM">{uploadingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}</button>
                           <button onClick={() => setViewerStudyId(s.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="عرض الصور"><FolderOpen className="w-4 h-4" /></button>
                           <button onClick={() => setReportStudyId(s.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title="إدخال التقرير"><FileText className="w-4 h-4" /></button>
                           {s.rologyStudyLink ? (

@@ -83,18 +83,14 @@ export interface RadiologyStudy {
 }
 
 export const RadiologyStatusMap: Record<string, { label: string; color: string }> = {
-  REGISTERED: { label: "مسجل", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  IMAGES_UPLOADED: { label: "تم رفع الصور", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  AWAITING_REPORT: { label: "بانتظار التقرير", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  PENDING_IMAGING: { label: "مسجل", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IMAGED: { label: "تم رفع الصور", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  PENDING_REPORT: { label: "بانتظار التقرير", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
   REPORTED: { label: "تم التقرير", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  REVIEWED: { label: "تمت المراجعة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  SIGNED: { label: "تم التوقيع", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
   DELIVERED: { label: "تم التسليم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
-  CANCELLED: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 };
 
 export const RadiologyReportStatusMap: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "بانتظار التقرير", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   DRAFT: { label: "مسودة", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   REVIEWED: { label: "تمت المراجعة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
   SIGNED: { label: "تم التوقيع", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
@@ -104,17 +100,14 @@ export const RadiologyReportStatusMap: Record<string, { label: string; color: st
 export const RadiologySubmissionStatusMap: Record<string, { label: string; color: string }> = {
   NOT_SUBMITTED: { label: "غير مرفوع", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   SUBMITTED: { label: "تم الرفع", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  PROCESSED: { label: "قيد المعالجة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
-  FAILED: { label: "فشل الرفع", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  REPORT_READY: { label: "التقرير جاهز", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
 };
 
 export const STUDY_STATUS: Record<string, string> = {
-  REGISTERED: "IMAGES_UPLOADED",
-  IMAGES_UPLOADED: "AWAITING_REPORT",
-  AWAITING_REPORT: "REPORTED",
-  REPORTED: "REVIEWED",
-  REVIEWED: "SIGNED",
-  SIGNED: "DELIVERED",
+  PENDING_IMAGING: "IMAGED",
+  IMAGED: "PENDING_REPORT",
+  PENDING_REPORT: "REPORTED",
+  REPORTED: "DELIVERED",
   DELIVERED: "",
 };
 
