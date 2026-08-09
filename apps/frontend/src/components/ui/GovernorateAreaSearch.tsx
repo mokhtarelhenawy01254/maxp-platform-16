@@ -13,7 +13,6 @@ import {
   MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
-import { storefrontFetch } from "../../utils/storefrontApi";
 
 export interface AreaSearchResult {
   governorateId: string;
@@ -90,13 +89,13 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
       try {
         let matches: AreaSearchResult[] = [];
         if (publicMode) {
-          const response = await storefrontFetch("/turbo/location/search-area", {
-            companyId,
-            query: { q, limit: 25 },
-            signal: controller.signal,
-          });
+          const params = new URLSearchParams({ q, limit: "25" });
+          if (companyId) params.set("companyId", String(companyId));
+          const url = `/api/v1/public/turbo/location/search-area?${params.toString()}`;
+          const response = await fetch(url, { signal: controller.signal });
+          const payload = await response.json();
           matches =
-            ((response as { data?: { matches?: AreaSearchResult[] } })?.data
+            ((payload as { data?: { matches?: AreaSearchResult[] } })?.data
               ?.matches as AreaSearchResult[] | undefined) || [];
         } else {
           const response = await apiClient.get<{
