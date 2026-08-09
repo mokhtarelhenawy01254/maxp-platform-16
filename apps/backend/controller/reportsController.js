@@ -899,7 +899,7 @@ const getOrderStatusAnalytics = async (req, res) => {
             prisma.order.aggregate({ where, _sum: { total: true } }),
             prisma.order.aggregate({ where: { ...where, status: 'SHORTAGE_FAILED' }, _sum: { total: true } }),
             prisma.order.groupBy({ by: ['status'], where, _count: { _all: true } }),
-            prisma.order.groupBy({ by: ['governorate'], where, _count: { _all: true }, orderBy: { _count: { _all: 'desc' } }, take: 10 }),
+            prisma.order.groupBy({ by: ['governorate'], where, _count: { _all: true }, orderBy: { _count: { governorate: 'desc' } }, take: 10 }),
             prisma.order.groupBy({ by: ['paymentMethod'], where, _count: { _all: true } }),
             prisma.order.groupBy({ by: ['sourceType'], where, _count: { _all: true } }),
             prisma.order.findMany({
