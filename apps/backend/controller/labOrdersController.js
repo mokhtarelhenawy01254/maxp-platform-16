@@ -77,7 +77,6 @@ const ORDER_DETAIL_TEST_INCLUDE = {
 
 const ORDER_DETAIL_INCLUDE = {
   tests: ORDER_DETAIL_TEST_INCLUDE,
-  patient: { select: { id: true, firstName: true, lastName: true, phone: true } },
 };
 
 const formatOrderTest = (ot) => ({
@@ -120,7 +119,6 @@ const formatOrder = (order) => ({
   signedAt: formatDate(order.signedAt),
   createdAt: formatDate(order.createdAt),
   updatedAt: formatDate(order.updatedAt),
-  patient: order.patient || null,
   tests: Array.isArray(order.tests) ? order.tests.map(formatOrderTest) : undefined,
 });
 
@@ -228,7 +226,6 @@ const getAllOrders = async (req, res) => {
         where,
         include: {
           tests: ORDER_LIST_TEST_INCLUDE,
-          patient: { select: { id: true, firstName: true, lastName: true, phone: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
