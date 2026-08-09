@@ -260,6 +260,33 @@ const getOrderById = async (req, res) => {
   }
 };
 
+const getOrderPdf = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.labOrder.findFirst({
+      where: { id, companyId },
+      include: ORDER_DETAIL_INCLUDE,
+    });
+    if (!order) return res.status(404).json({ success: false, error: 'طلب التحاليل غير موجود' });
+
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+    const { generateOrderPdf } = require('../services/labPdfService');
+    const pdfBuffer = await generateOrderPdf(order, company);
+
+    const filename = `report-${(order.orderNumber || order.id).replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating lab PDF:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في توليد التقرير' });
+  }
+};
+
 const createOrder = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -719,6 +746,7 @@ module.exports = {
   validateLabOrderTestTransition,
   getAllOrders,
   getOrderById,
+  getOrderPdf,
   createOrder,
   updateOrder,
   deleteOrder,

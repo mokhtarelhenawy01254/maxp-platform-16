@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { ClipboardList, FileText, Loader2, RefreshCw, Search, X } from "lucide-react";
 import {
-  api, fetchJson, LabOrder, LabOrderTest, LabTest, LabTestParameter,
+  api, fetchJson, getAuthHeaders, LabOrder, LabOrderTest, LabTest, LabTestParameter,
   LAB_STATUS_MAP, LAB_REPORT_STATUS_MAP, FLAG_OPTIONS, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 
@@ -296,6 +296,22 @@ export default function OrdersTab() {
     }
   };
 
+  const viewReport = async (orderId: string) => {
+    try {
+      const res = await fetch(api(`orders/${orderId}/pdf`), { headers: getAuthHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "فشل تحميل التقرير");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تحميل التقرير");
+    }
+  };
+
   const handleSaved = () => {
     setDetailOrderId(null);
     refresh({ silent: true });
@@ -362,6 +378,7 @@ export default function OrdersTab() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button onClick={() => setDetailOrderId(o.id)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="إدخال النتائج"><ClipboardList className="w-4 h-4" /></button>
+                          <button onClick={() => viewReport(o.id)} className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded" title="عرض التقرير PDF"><FileText className="w-4 h-4" /></button>
                           {action && (
                             <button
                               onClick={() => setConfirmAction({ id: o.id, kind: action.kind })}

@@ -7,6 +7,7 @@ const { requireRole } = require('../utils/verifyToken');
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 
 router.get('/', verifyToken.authenticateToken, controller.getAllOrders);
+router.get('/:id/pdf', verifyToken.authenticateToken, controller.getOrderPdf);
 router.get('/:id', verifyToken.authenticateToken, controller.getOrderById);
 router.post('/', verifyToken.authenticateToken, controller.createOrder);
 router.put('/:id', verifyToken.authenticateToken, controller.updateOrder);
