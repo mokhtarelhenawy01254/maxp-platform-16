@@ -1069,8 +1069,6 @@ const HeldOrdersBanner: React.FC = () => {
     </>
   );
 };
-  );
-};
 
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
