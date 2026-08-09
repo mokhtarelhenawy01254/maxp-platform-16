@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookingPatient, BookingAppointment, MODAL_CONTENT_CLS, STATUS_MAP, INVOICE_STATUS_MAP, api, getAuthHeaders, tryParseJSON } from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
+import { computeAge } from "./patientAge";
 
 import { X, ExternalLink } from 'lucide-react'
 interface Props {
@@ -120,7 +121,9 @@ export default function PatientDetailModal({ patientId, onClose }: Props) {
                   {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {patient.email}</p>}
                   {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">🪪 الرقم القومي: {patient.nationalId}</p>}
                   {patient.address && <p>📍 {patient.address}</p>}
-                  {patient.birthDate && <p>🎂 {String(patient.birthDate).split("T")[0]}</p>}
+                  {patient.birthDate && (
+                    <p>🎂 {String(patient.birthDate).split("T")[0]}{computeAge(String(patient.birthDate)) && <span className="text-xs text-gray-500 dark:text-gray-400"> · العمر: {computeAge(String(patient.birthDate))}</span>}</p>
+                  )}
                   {patient.nationalIdImage && (
                     <div className="pt-1">
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">صورة البطاقة</p>

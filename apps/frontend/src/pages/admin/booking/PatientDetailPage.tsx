@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
-import { BookingPatient, BookingAppointment, STATUS_MAP, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, api, getAuthHeaders, tryParseJSON, fetchJson } from "./shared";
+import { BookingPatient, BookingAppointment, PatientDocument, STATUS_MAP, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, DOCUMENT_TYPES, MODAL_INPUT_CLS, api, getAuthHeaders, tryParseJSON, fetchJson } from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
 import PatientModal from "./PatientModal";
+import { computeAge } from "./patientAge";
 
 interface PatientInvoice {
   id: string; invoiceNumber: string; appointmentId?: string;
@@ -51,6 +52,7 @@ const PAGE_TABS = [
   { id: "data", label: "بيانات" },
   { id: "medical", label: "التاريخ الطبي" },
   { id: "appointments", label: "المواعيد" },
+  { id: "documents", label: "المستندات" },
 ] as const;
 
 type PageTab = typeof PAGE_TABS[number]["id"];
@@ -63,6 +65,15 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<PageTab>("data");
   const [editing, setEditing] = useState(false);
+  const [documents, setDocuments] = useState<PatientDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [docType, setDocType] = useState("OTHER");
+  const [docName, setDocName] = useState("");
+  const [docNotes, setDocNotes] = useState("");
+  const [docFile, setDocFile] = useState<{ name: string; dataUrl: string; mimeType: string } | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -86,6 +97,82 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
   const diseases = renderList(patient?.chronicDiseases);
   const medications = renderList(patient?.medications);
   const medicalHistory = parseMedicalHistory(patient?.medicalHistory);
+
+  useEffect(() => {
+    if (tab !== "documents" || !id) return;
+    let cancelled = false;
+    setDocumentsLoading(true);
+    (async () => {
+      try {
+        const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
+        if (!cancelled) setDocuments(data);
+      } catch (e: unknown) {
+        if (!cancelled) setDocError(e instanceof Error ? e.message : "خطأ");
+      } finally {
+        if (!cancelled) setDocumentsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tab, id]);
+
+  const onDocFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setDocError(null);
+    if (!file) { setDocFile(null); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      if (dataUrl.length > 5 * 1024 * 1024) {
+        setDocError("حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)");
+        setDocFile(null);
+        setFileInputKey(k => k + 1);
+        return;
+      }
+      setDocFile({ name: file.name, dataUrl, mimeType: file.type || "" });
+    };
+    reader.onerror = () => { setDocError("تعذر قراءة الملف"); setDocFile(null); };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpload = async () => {
+    if (!id || !docFile) return;
+    setUploading(true);
+    setDocError(null);
+    try {
+      await fetchJson(api("patient-documents"), {
+        method: "POST",
+        body: JSON.stringify({
+          patientId: id,
+          documentType: docType,
+          name: docName.trim() || docFile.name,
+          fileData: docFile.dataUrl,
+          mimeType: docFile.mimeType || undefined,
+          notes: docNotes.trim() || undefined,
+        }),
+      });
+      setDocName("");
+      setDocNotes("");
+      setDocFile(null);
+      setFileInputKey(k => k + 1);
+      const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
+      setDocuments(data);
+    } catch (e: unknown) {
+      setDocError(e instanceof Error ? e.message : "خطأ");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!window.confirm("هل تريد حذف هذا المستند؟")) return;
+    setDocError(null);
+    try {
+      await fetchJson(api(`patient-documents/${docId}`), { method: "DELETE" });
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+    } catch (e: unknown) {
+      setDocError(e instanceof Error ? e.message : "خطأ");
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
@@ -130,7 +217,9 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
                 {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {patient.email}</p>}
                 {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">🪪 الرقم القومي: {patient.nationalId}</p>}
                 {patient.address && <p>📍 {patient.address}</p>}
-                {patient.birthDate && <p>🎂 {String(patient.birthDate).split("T")[0]}</p>}
+                {patient.birthDate && (
+                  <p>🎂 {String(patient.birthDate).split("T")[0]}{computeAge(String(patient.birthDate)) && <span className="text-xs text-gray-500 dark:text-gray-400"> · العمر: {computeAge(String(patient.birthDate))}</span>}</p>
+                )}
                 {patient.nationalIdImage && (
                   <div className="pt-1">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">صورة البطاقة</p>
@@ -262,6 +351,64 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
               )}
             </div>
           )}
+          {tab === "documents" && (
+            <div className="space-y-5">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+                <h4 className="font-bold mb-3">إضافة مستند</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">نوع المستند</label>
+                    <select value={docType} onChange={e => setDocType(e.target.value)} className={MODAL_INPUT_CLS}>
+                      {DOCUMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">اسم المستند</label>
+                    <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">ملاحظات</label>
+                    <input value={docNotes} onChange={e => setDocNotes(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <input key={fileInputKey} type="file" onChange={onDocFileChange} className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-300 file:font-semibold" />
+                  {docFile && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">تم اختيار: {docFile.name}</p>}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button onClick={handleUpload} disabled={!docFile || uploading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">{uploading ? "جارٍ الرفع..." : "رفع المستند"}</button>
+                </div>
+                {docError && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{docError}</p>}
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
+                <h4 className="font-bold mb-3">المستندات ({documents.length})</h4>
+                {documentsLoading ? (
+                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
+                ) : documents.length === 0 ? (
+                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد مستندات مرفوعة</p>
+                ) : (
+                  <div className="space-y-2">
+                    {documents.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between gap-3 border dark:border-gray-700 rounded-lg px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${documentTypeColor(doc.documentType)}`}>{documentTypeLabel(doc.documentType)}</span>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{doc.name || "بدون اسم"}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{String(doc.uploadedAt).split("T")[0]}{doc.uploadedBy ? ` · ${doc.uploadedBy}` : ""}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {doc.fileData && <a href={doc.fileData} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">فتح</a>}
+                          <button onClick={() => handleDeleteDocument(doc.id)} className="text-sm text-red-600 dark:text-red-400 hover:underline">حذف</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
       {editing && patient && (
@@ -290,4 +437,18 @@ const statusLabel = (s: string): string => {
 const maritalLabel = (s: string): string => {
   const labels: Record<string, string> = { SINGLE: "أعزب/عزباء", MARRIED: "متزوج/متزوجة", DIVORCED: "مطلق/مطلقة", WIDOW: "أرمل/أرملة" };
   return labels[s] || s;
+};
+
+const documentTypeLabel = (t: string): string => DOCUMENT_TYPES.find(d => d.value === t)?.label || t;
+
+const documentTypeColor = (t: string): string => {
+  const colors: Record<string, string> = {
+    DRIVING_LICENSE: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    INSURANCE: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    PRESCRIPTION: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+    IMAGE: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+    VIDEO: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+    OTHER: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+  };
+  return colors[t] || "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
 };

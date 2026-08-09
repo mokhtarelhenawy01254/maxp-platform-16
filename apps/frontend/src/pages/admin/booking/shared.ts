@@ -3,7 +3,7 @@ import { buildApiUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
 ;
 
-import { BarChart4, Building2, CalendarDays, Users, Wrench, Tag, ListChecks, Printer } from 'lucide-react'
+import { BarChart4, Building2, CalendarDays, Users, Wrench, Tag, ListChecks, Printer, ShieldCheck, BadgePercent } from 'lucide-react'
 export const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
 };
@@ -205,10 +205,46 @@ export interface BookingPatient {
   priceListId?: string;
   priceList?: { id: string; name: string };
   mergedIntoId?: string;
+  title?: string;
+  insuranceNumber?: string;
+  insuranceCompanyId?: string;
+  insuranceCompany?: { id: string; name: string; priceListId?: string };
+  memberTypeId?: string;
+  memberType?: { id: string; name: string; coveragePercent?: number };
+  homePhone?: string;
+  workPhone?: string;
+  fax?: string;
+  postalCode?: string;
   customer?: { id: string; firstName: string; lastName: string; phone?: string };
 }
 
-export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar" | "patients" | "invoices" | "price-lists" | "workflow" | "reports" | "operations";
+export interface InsuranceCompany {
+  id: string; name: string; priceListId?: string;
+  phone1?: string; fax?: string; contactName?: string; contactPhone?: string;
+  isActive: boolean;
+  priceList?: { id: string; name: string };
+}
+
+export interface InsuranceMemberType {
+  id: string; name: string; coveragePercent: number; isActive: boolean;
+}
+
+export interface PatientDocument {
+  id: string; patientId: string; documentType: string;
+  name?: string; fileData?: string; mimeType?: string; notes?: string;
+  uploadedBy?: string; uploadedAt: string;
+}
+
+export const DOCUMENT_TYPES = [
+  { value: "DRIVING_LICENSE", label: "رخصة قيادة" },
+  { value: "INSURANCE", label: "تأمين" },
+  { value: "PRESCRIPTION", label: "وصفة طبية" },
+  { value: "IMAGE", label: "صورة" },
+  { value: "VIDEO", label: "فيديو" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar" | "patients" | "invoices" | "price-lists" | "workflow" | "reports" | "operations" | "insurance-companies" | "member-types";
 
 export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
   { id: "dashboard", label: "لوحة التحكم", icon: BarChart4 },
@@ -223,6 +259,8 @@ export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
   { id: "workflow", label: "سير العمل", icon: ListChecks },
   { id: "reports", label: "التقارير", icon: BarChart4 },
   { id: "operations", label: "العمليات", icon: Printer },
+  { id: "insurance-companies", label: "شركات التأمين", icon: ShieldCheck },
+  { id: "member-types", label: "أنواع الأعضاء", icon: BadgePercent },
 ];
 
 export interface BookingInvoice {

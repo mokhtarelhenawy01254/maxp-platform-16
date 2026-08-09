@@ -20,6 +20,27 @@ def _generate_id() -> str:
     return str(uuid.uuid4())
 
 
+async def _channel_reply_enabled(company_id: str, channel: str, session: AsyncSession) -> bool:
+    try:
+        from src.api.admin.settings import is_channel_reply_enabled
+        return await is_channel_reply_enabled(company_id, channel, session)
+    except Exception:
+        logger.warning("channel_reply_check_failed", company_id=company_id, channel=channel, exc_info=True)
+        return True
+
+
+async def _company_has_active_agents(company_id: str, session: AsyncSession) -> bool:
+    try:
+        row = await session.execute(
+            "SELECT 1 FROM ai.agents WHERE company_id = :c AND status = 'ACTIVE' LIMIT 1",
+            {"c": company_id},
+        )
+        return row.scalar_one_or_none() is not None
+    except Exception:
+        logger.warning("active_agents_check_failed", company_id=company_id, exc_info=True)
+        return False
+
+
 def _parse_metadata(meta: str | dict | None) -> dict:
     if meta is None:
         return {}
@@ -324,6 +345,10 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
     logger.info("processing facebook message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "facebook", session):
+            logger.info("facebook reply disabled for company", company_id=company_id)
+            return
+
         # 1. Get Page Token
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :page_id AND company_id = :company_id",
@@ -383,7 +408,7 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 6. AI Process — try DB channel agent first, fall back to template
+        # 6. AI Process — try DB channel agent; no agent on channel = no reply
         from src.agents.base import BaseAgent
         from src.workflows.orchestration_flow import _resolve_channel_agent
         from src.skills.registry import get_skill_registry
@@ -398,6 +423,9 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to facebook, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="facebook-sales-support-agent",
                 company_id=company_id,
@@ -479,6 +507,10 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
             break
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "facebook", session):
+            logger.info("facebook comment reply disabled for company", company_id=company_id)
+            return
+
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :page_id",
             {"page_id": page_id},
@@ -499,7 +531,7 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         )
         await session.commit()
 
-    # AI Reply to comment — try DB channel agent first, fall back to template
+    # AI Reply to comment — try DB channel agent; no agent on channel = no reply
     from src.agents.base import BaseAgent
     from src.workflows.orchestration_flow import _resolve_channel_agent
     from src.skills.registry import get_skill_registry
@@ -514,6 +546,9 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
     except Exception:
         logger.warning("channel_agent_resolution_failed", exc_info=True)
     if not agent:
+        if await _company_has_active_agents(company_id, session):
+            logger.info("no agent routed to facebook, skipping comment reply", company_id=company_id)
+            return
         agent = await BaseAgent.from_template(
             template_slug="facebook-sales-support-agent",
             company_id=company_id,
@@ -577,6 +612,10 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
     logger.info("processing whatsapp message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "whatsapp", session):
+            logger.info("whatsapp reply disabled for company", company_id=company_id)
+            return
+
         # 1. Get Page/Phone Token
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :pid AND company_id = :cid",
@@ -641,6 +680,9 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to whatsapp, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="sales-agent",
                 company_id=company_id,
@@ -692,6 +734,10 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
     logger.info("processing telegram message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "telegram", session):
+            logger.info("telegram reply disabled for company", company_id=company_id)
+            return
+
         # 1. Customer Lookup/Creation
         cust_row = await session.execute(
             "SELECT id FROM customers WHERE telegram_id = :sid AND company_id = :cid",
@@ -745,6 +791,9 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to telegram, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="sales-agent",
                 company_id=company_id,

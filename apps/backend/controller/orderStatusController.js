@@ -6,6 +6,33 @@ const { seedDefaultOrderTemplates } = require('../services/orderTemplateSeeding'
 const { isNonNotifiableStatus } = require('../utils/orderStatusMeta');
 
 // ═══════════════════════════════════════════════════════════════
+// 🛡️ Validation Helpers
+// ═══════════════════════════════════════════════════════════════
+
+const MAX_NAME_LENGTH = 100;
+const CODE_REGEX = /^[A-Z0-9_]{1,50}$/;
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
+
+/**
+ * Validate a single status field set and return an error message or null if valid.
+ */
+const validateStatusFields = ({ code, name, color }) => {
+  if (!code || !name) {
+    return 'الكود والاسم مطلوبان';
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return `اسم الحالة لا يمكن أن يتجاوز ${MAX_NAME_LENGTH} حرفًا`;
+  }
+  if (!CODE_REGEX.test(code.toUpperCase())) {
+    return 'الكود يجب أن يحتوي فقط على أحرف إنجليزية كبيرة، أرقام، وشرطة سفلية (مثال: CONFIRMED أو SHIPPED_V2)';
+  }
+  if (color && !HEX_COLOR_REGEX.test(color)) {
+    return 'لون الحالة يجب أن يكون كود hex صالح (مثال: #3B82F6)';
+  }
+  return null;
+};
+
+// ═══════════════════════════════════════════════════════════════
 // 🎨 Default System Statuses
 // ═══════════════════════════════════════════════════════════════
 
@@ -71,7 +98,8 @@ const DEFAULT_PREPARATION_STATUSES = [
   { code: 'QUALITY_CHECK', name: 'فحص الجودة', nameEn: 'Quality Check', color: '#06B6D4', icon: 'CheckCircle', sortOrder: 4 },
   { code: 'PACKAGED', name: 'تم التغليف', nameEn: 'Packaged', color: '#3B82F6', icon: 'Package', sortOrder: 5 },
   { code: 'ON_HOLD_PREP', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 6 },
-  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 }
+  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 },
+  { code: 'SHORTAGE_FAILED', name: 'فشل بسبب العجز', nameEn: 'Shortage Failed', color: '#7C3AED', icon: 'XCircle', sortOrder: 8 }
 ];
 
 // WooCommerce default statuses mapping
@@ -290,16 +318,21 @@ const createStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'الكود والاسم مطلوبان' });
     }
 
+    // 🛡️ Validate name length, code format, and color hex
+    const validationError = validateStatusFields({ code, name, color });
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
     // التحقق من عدم تكرار الكود
+    const finalCode = code.toUpperCase().replace(/\s+/g, '_');
     const existing = await getSharedPrismaClient().orderStatusConfig.findFirst({
-      where: { companyId, code }
+      where: { companyId, code: finalCode }
     });
 
     if (existing) {
       return res.status(400).json({ success: false, message: 'هذا الكود موجود بالفعل' });
     }
-
-    const finalCode = code.toUpperCase().replace(/\s+/g, '_');
     const status = await getSharedPrismaClient().orderStatusConfig.create({
       data: {
         companyId,
@@ -377,6 +410,14 @@ const updateStatus = async (req, res) => {
       smsTemplate,
       isActive
     } = req.body;
+
+    // 🛡️ Validate optional fields if provided
+    if (name !== undefined && name.length > MAX_NAME_LENGTH) {
+      return res.status(400).json({ success: false, message: `اسم الحالة لا يمكن أن يتجاوز ${MAX_NAME_LENGTH} حرفًا` });
+    }
+    if (color !== undefined && !HEX_COLOR_REGEX.test(color)) {
+      return res.status(400).json({ success: false, message: 'لون الحالة يجب أن يكون كود hex صالح (مثال: #3B82F6)' });
+    }
 
     const status = await getSharedPrismaClient().orderStatusConfig.update({
       where: { id },
@@ -722,154 +763,79 @@ const initializeStatuses = async (req, res) => {
 /**
  * Helper: تهيئة الحالات الافتراضية
  */
+/**
+ * ⚡ Refactored: one read + parallel upserts in a transaction.
+ * Previously: 4 loops × (N × findFirst + N × create/update) = O(8N) sequential queries.
+ * Now: 1 read + 1 transaction with N parallel upserts = O(1) round-trips.
+ */
 const initializeDefaultStatuses = async (companyId) => {
   const prisma = getSharedPrismaClient();
 
-  // حالات الطلبات
-  for (const status of DEFAULT_ORDER_STATUSES) {
-    try {
-      const existing = await prisma.orderStatusConfig.findFirst({
-        where: { companyId, code: status.code }
-      });
+  // Single read: get all existing statuses for this company
+  const existingStatuses = await prisma.orderStatusConfig.findMany({
+    where: { companyId },
+    select: { code: true, statusType: true, isSystemStatus: true }
+  });
+  const existingMap = new Map(existingStatuses.map(s => [s.code, s]));
 
-      if (!existing) {
-        await prisma.orderStatusConfig.create({
-          data: {
-            companyId,
-            ...status,
-            statusType: 'order',
-            source: 'system',
-            isSystemStatus: true
-          }
-        });
-      } else if (existing.statusType !== 'order' || !existing.isSystemStatus) {
-        // تحديث الحالة الموجودة إذا كانت من نوع مختلف أو ليست نظامية
-        await prisma.orderStatusConfig.update({
-          where: { id: existing.id },
-          data: {
-            ...status,
-            statusType: 'order',
-            source: 'system',
-            isSystemStatus: true,
-            isActive: true
-          }
-        });
-      }
-    } catch (error) {
-      // تجاهل خطأ unique constraint - يعني الحالة موجودة بالفعل
-      if (!error.message.includes('unique constraint') && !error.message.includes('Unique constraint')) {
-        console.error(`❌ [ORDER-STATUS] Error creating order status ${status.code}:`, error.message);
-      }
-    }
+  const makeUpsertData = (status, statusType, source) => ({
+    companyId,
+    ...status,
+    statusType,
+    source,
+    isSystemStatus: true,
+    isActive: true
+  });
+
+  const upsertOps = [
+    ...DEFAULT_ORDER_STATUSES.map(s => ({
+      code: s.code,
+      statusType: 'order',
+      source: 'system',
+      data: makeUpsertData(s, 'order', 'system')
+    })),
+    ...DEFAULT_PAYMENT_STATUSES.map(s => ({
+      code: s.code,
+      statusType: 'payment',
+      source: 'system',
+      data: makeUpsertData(s, 'payment', 'system')
+    })),
+    ...DEFAULT_SHIPPING_STATUSES.map(s => ({
+      code: s.code,
+      statusType: 'shipping',
+      source: s.code.startsWith('TURBO_') ? 'turbo' : 'system',
+      data: makeUpsertData(s, 'shipping', s.code.startsWith('TURBO_') ? 'turbo' : 'system')
+    })),
+    ...DEFAULT_PREPARATION_STATUSES.map(s => ({
+      code: s.code,
+      statusType: 'preparation',
+      source: 'system',
+      data: makeUpsertData(s, 'preparation', 'system')
+    }))
+  ];
+
+  // Upsert only if missing or stale (not system / wrong type)
+  const needsUpdate = upsertOps.filter(op => {
+    const existing = existingMap.get(op.code);
+    return !existing || existing.statusType !== op.statusType || !existing.isSystemStatus;
+  });
+
+  if (needsUpdate.length === 0) {
+    return;
   }
 
-  // حالات الدفع
-  for (const status of DEFAULT_PAYMENT_STATUSES) {
-    try {
-      const existing = await prisma.orderStatusConfig.findFirst({
-        where: { companyId, code: status.code }
-      });
+  // Single transaction for all writes — parallel via Promise.all
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(needsUpdate.map(op =>
+      tx.orderStatusConfig.upsert({
+        where: { companyId_code: { companyId, code: op.code } },
+        update: op.data,
+        create: op.data
+      })
+    ));
+  });
 
-      if (!existing) {
-        await prisma.orderStatusConfig.create({
-          data: {
-            companyId,
-            ...status,
-            statusType: 'payment',
-            source: 'system',
-            isSystemStatus: true
-          }
-        });
-      } else if (existing.statusType !== 'payment' || !existing.isSystemStatus) {
-        await prisma.orderStatusConfig.update({
-          where: { id: existing.id },
-          data: {
-            ...status,
-            statusType: 'payment',
-            source: 'system',
-            isSystemStatus: true,
-            isActive: true
-          }
-        });
-      }
-    } catch (error) {
-      if (!error.message.includes('unique constraint') && !error.message.includes('Unique constraint')) {
-        console.error(`❌ [ORDER-STATUS] Error creating payment status ${status.code}:`, error.message);
-      }
-    }
-  }
-
-  // حالات الشحن
-  for (const status of DEFAULT_SHIPPING_STATUSES) {
-    try {
-      const existing = await prisma.orderStatusConfig.findFirst({
-        where: { companyId, code: status.code }
-      });
-
-      if (!existing) {
-        await prisma.orderStatusConfig.create({
-          data: {
-            companyId,
-            ...status,
-            statusType: 'shipping',
-            source: status.code.startsWith('TURBO_') ? 'turbo' : 'system',
-            isSystemStatus: true
-          }
-        });
-      } else if (existing.statusType !== 'shipping' || !existing.isSystemStatus) {
-        await prisma.orderStatusConfig.update({
-          where: { id: existing.id },
-          data: {
-            ...status,
-            statusType: 'shipping',
-            source: status.code.startsWith('TURBO_') ? 'turbo' : 'system',
-            isSystemStatus: true,
-            isActive: true
-          }
-        });
-      }
-    } catch (error) {
-      if (!error.message.includes('unique constraint') && !error.message.includes('Unique constraint')) {
-        console.error(`❌ [ORDER-STATUS] Error creating shipping status ${status.code}:`, error.message);
-      }
-    }
-  }
-
-  // حالات التجهيز
-  for (const status of DEFAULT_PREPARATION_STATUSES) {
-    try {
-      const existing = await prisma.orderStatusConfig.findFirst({
-        where: { companyId, code: status.code }
-      });
-
-      if (!existing) {
-        await prisma.orderStatusConfig.create({
-          data: {
-            companyId,
-            ...status,
-            statusType: 'preparation',
-            source: 'system',
-            isSystemStatus: true
-          }
-        });
-      } else if (existing.statusType !== 'preparation' || !existing.isSystemStatus) {
-        await prisma.orderStatusConfig.update({
-          where: { id: existing.id },
-          data: {
-            ...status,
-            statusType: 'preparation',
-            source: 'system',
-            isSystemStatus: true,
-            isActive: true
-          }
-        });
-      }
-    } catch (error) {
-      if (!error.message.includes('unique constraint') && !error.message.includes('Unique constraint')) {
-        console.error(`❌ [ORDER-STATUS] Error creating preparation status ${status.code}:`, error.message);
-      }
-    }
-  }
+  console.log(`🏷️ [ORDER-STATUS] Initialized ${needsUpdate.length} default status(s) for company ${companyId}`);
 };
 
 // ═══════════════════════════════════════════════════════════════

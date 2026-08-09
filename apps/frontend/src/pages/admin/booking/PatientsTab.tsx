@@ -29,8 +29,10 @@ export default function PatientsTab({
 }: Props) {
   const navigate = useNavigate();
   const [sourceFilter, setSourceFilter] = useState("");
+  const [insuranceFilter, setInsuranceFilter] = useState("");
   const [mergeSource, setMergeSource] = useState<BookingPatient | null>(null);
   const [mergeTargetId, setMergeTargetId] = useState("");
+  const [merging, setMerging] = useState(false);
   const [localPatients, setLocalPatients] = useState<BookingPatient[] | null>(null);
 
   useEffect(() => { setLocalPatients(null); }, [patients]);
@@ -43,14 +45,22 @@ export default function PatientsTab({
     return Array.from(set);
   }, [list]);
 
+  const insuranceCompanies = useMemo(() => {
+    const set = new Set<string>();
+    list.forEach(p => { if (p.insuranceCompany?.name) set.add(p.insuranceCompany.name); });
+    return Array.from(set);
+  }, [list]);
+
   const filtered = useMemo(() => list.filter(p => {
     if (sourceFilter && p.source !== sourceFilter) return false;
+    if (insuranceFilter && p.insuranceCompany?.name !== insuranceFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (p.firstName || "").toLowerCase().includes(q)
       || (p.lastName || "").toLowerCase().includes(q)
-      || (p.phone || "").toLowerCase().includes(q);
-  }), [list, search, sourceFilter]);
+      || (p.phone || "").toLowerCase().includes(q)
+      || (p.insuranceNumber || "").toLowerCase().includes(q);
+  }), [list, search, sourceFilter, insuranceFilter]);
 
   const refresh = async () => {
     try { setLocalPatients(await fetchJson<BookingPatient[]>(api("patients?includeInactive=true"))); } catch { /* keep current list */ }
@@ -59,7 +69,8 @@ export default function PatientsTab({
   const candidates = list.filter(p => p.id !== mergeSource?.id && p.isActive !== false && p.status !== "INACTIVE");
 
   const confirmMerge = async () => {
-    if (!mergeSource || !mergeTargetId) return;
+    if (!mergeSource || !mergeTargetId || merging) return;
+    setMerging(true);
     try {
       await fetchJson(api(`patients/${mergeSource.id}/merge`), {
         method: "POST",
@@ -71,6 +82,8 @@ export default function PatientsTab({
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل دمج المرضى");
+    } finally {
+      setMerging(false);
     }
   };
 
@@ -84,6 +97,12 @@ export default function PatientsTab({
             <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
               <option value="">كل المصادر</option>
               {sources.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+          {insuranceCompanies.length > 0 && (
+            <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={insuranceFilter} onChange={e => setInsuranceFilter(e.target.value)}>
+              <option value="">كل شركات التأمين</option>
+              {insuranceCompanies.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
           <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" />إضافة مريض</button>
@@ -101,6 +120,7 @@ export default function PatientsTab({
                 <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusMeta(p.status).color}`}>{statusMeta(p.status).label}</span>
               </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{p.phone ? <span dir="ltr">{p.phone}</span> : "—"}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{p.insuranceNumber ? <span dir="ltr">رقم التأمين: {p.insuranceNumber}</span> : ""}{p.insuranceCompany?.name ? ` · ${p.insuranceCompany.name}` : ""}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">الزيارات: {p.visitCount ?? 0}</p>
               <div className="flex gap-2">
                 <button onClick={() => onView(p.id)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><Eye className="w-3.5 h-3.5 inline ml-1" />عرض</button>
@@ -116,13 +136,17 @@ export default function PatientsTab({
         {/* Desktop table */}
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
           <table className="w-full">
-            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "الهاتف", "الجنس", "فصيلة الدم", "الزيارات", "الحالة", "المصدر", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "الهاتف", "الجنس", "فصيلة الدم", "رقم التأمين", "الزيارات", "الحالة", "المصدر", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
             <tbody>{filtered.map(p => (
               <tr key={p.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${!p.isActive ? "opacity-60" : ""}`}>
                 <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
                 <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{GENDER_LABEL[p.gender || ""] || "—"}</td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.bloodType || "—"}</td>
+                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                  <span dir="ltr">{p.insuranceNumber || "—"}</span>
+                  {p.insuranceCompany?.name ? <div className="text-xs">{p.insuranceCompany.name}</div> : null}
+                </td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.visitCount ?? 0}</td>
                 <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusMeta(p.status).color}`}>{statusMeta(p.status).label}</span></td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.source || "—"}</td>
@@ -157,7 +181,7 @@ export default function PatientsTab({
             </select>
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setMergeSource(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={confirmMerge} disabled={!mergeTargetId} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">تأكيد الدمج</button>
+              <button onClick={confirmMerge} disabled={!mergeTargetId || merging} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">تأكيد الدمج</button>
             </div>
           </div>
         </div>

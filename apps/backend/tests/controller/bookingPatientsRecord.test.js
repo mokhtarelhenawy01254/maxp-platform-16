@@ -283,12 +283,12 @@ describe('bookingPatientsRecord', () => {
           .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
           .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' })
           .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', _count: { appointments: 4 } }),
-        update: jest.fn().mockImplementation(async ({ where, data }) => ({ id: where.id, ...data })),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       medicalInvoice: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) },
       appointment: { updateMany: jest.fn().mockResolvedValue({ count: 5 }) },
       transactionLog: { create: jest.fn().mockResolvedValue({ id: 'log-1' }) },
-      $transaction: jest.fn((ops) => Promise.all(ops)),
+      $transaction: jest.fn((cb) => cb(prisma)),
     };
     getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -300,12 +300,12 @@ describe('bookingPatientsRecord', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
+    expect(prisma.patient.updateMany).toHaveBeenCalledWith({
+      where: { id: 'source', mergedIntoId: null },
+      data: { mergedIntoId: 'target', status: 'INACTIVE', isActive: false },
+    });
     expect(prisma.medicalInvoice.updateMany).toHaveBeenCalledWith({ where: { patientId: 'source' }, data: { patientId: 'target' } });
     expect(prisma.appointment.updateMany).toHaveBeenCalledWith({ where: { patientId: 'source' }, data: { patientId: 'target' } });
-    expect(prisma.patient.update).toHaveBeenCalledWith({
-      where: { id: 'source' },
-      data: expect.objectContaining({ mergedIntoId: 'target', status: 'INACTIVE', isActive: false }),
-    });
     expect(prisma.transactionLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ companyId: 'company-1', entityType: 'PATIENT', entityId: 'source', action: 'MERGE' }),
     });
@@ -376,12 +376,12 @@ describe('bookingPatientsRecord', () => {
           .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
           .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' })
           .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', _count: { appointments: 0 } }),
-        update: jest.fn().mockImplementation(async ({ where, data }) => ({ id: where.id, ...data })),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       medicalInvoice: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       appointment: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       transactionLog: { create: jest.fn().mockResolvedValue({ id: 'log-1' }) },
-      $transaction: jest.fn((ops) => Promise.all(ops)),
+      $transaction: jest.fn((cb) => cb(prisma)),
     };
     getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -393,10 +393,39 @@ describe('bookingPatientsRecord', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
-    expect(prisma.patient.update).toHaveBeenCalledWith({
-      where: { id: 'source' },
+    expect(prisma.patient.updateMany).toHaveBeenCalledWith({
+      where: { id: 'source', mergedIntoId: null },
       data: expect.objectContaining({ mergedIntoId: 'target', status: 'INACTIVE', isActive: false }),
     });
+  });
+
+  test('mergePatients rejects a concurrent double-merge via the guarded write', async () => {
+    const prisma = {
+      patient: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'source', companyId: 'company-1' })
+          .mockResolvedValueOnce({ id: 'target', companyId: 'company-1', firstName: 'هدف', lastName: 'م' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      medicalInvoice: { updateMany: jest.fn() },
+      appointment: { updateMany: jest.fn() },
+      transactionLog: { create: jest.fn() },
+      $transaction: jest.fn((cb) => cb(prisma)),
+    };
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await mergePatients(
+      companyReq({ params: { id: 'source' }, body: { targetPatientId: 'target' } }),
+      res
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.error).toBe('لا يمكن دمج مريض مدمج بالفعل');
+    expect(prisma.medicalInvoice.updateMany).not.toHaveBeenCalled();
+    expect(prisma.appointment.updateMany).not.toHaveBeenCalled();
+    expect(prisma.transactionLog.create).not.toHaveBeenCalled();
   });
 
   test('mergePatients rejects merging when source belongs to another company', async () => {
@@ -499,6 +528,42 @@ describe('bookingPatientsRecord', () => {
       outstanding: 180,
     });
     expect(res.payload.data.transactionLogCount).toBe(3);
+  });
+
+  test('getPatientFull outstanding uses net (total - discount + addition) and excludes REFUNDED', async () => {
+    const prisma = {
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'p1',
+          companyId: 'company-1',
+          firstName: 'أحمد',
+          gender: 'MALE',
+          referringPhysician: null,
+          priceList: null,
+          appointments: [],
+          _count: { appointments: 0 },
+        }),
+      },
+      medicalInvoice: {
+        findMany: jest.fn().mockResolvedValue([
+          { status: 'PARTIAL', total: 1000, discount: 100, additionAmount: 200, amountPaid: 300 },
+          { status: 'REFUNDED', total: 500, discount: 0, additionAmount: 0, amountPaid: 500 },
+        ]),
+      },
+      transactionLog: { count: jest.fn().mockResolvedValue(0) },
+    };
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await getPatientFull(companyReq({ params: { id: 'p1' } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data.invoicesSummary).toEqual({
+      count: 2,
+      totalBilled: 1000,
+      totalPaid: 300,
+      outstanding: 800,
+    });
   });
 
   describe('referring physicians CRUD', () => {

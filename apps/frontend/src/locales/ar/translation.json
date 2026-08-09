@@ -768,6 +768,7 @@
       "channel": "القناة",
       "agent": "الوكيل المسؤول",
       "autoReply": "الرد التلقائي",
+      "reply": "الرد",
       "toolStatus": "حالة الأداة",
       "selectPlaceholder": "اختر وكيل...",
       "noRouting": "بدون توجيه (CEO)",
@@ -10626,6 +10627,9 @@
     "statusSearch": "بحث عن حالة...",
     "statusSelectAll": "تحديد الكل",
     "statusNoResults": "لا توجد نتائج",
+    "filterSearch": "بحث...",
+    "filterSelectAll": "تحديد الكل",
+    "filterNoResults": "لا توجد نتائج",
     "refreshOrders": "تحديث الطلبات",
     "lastUpdatedAt": "آخر تحديث: {{time}}",
     "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
@@ -10815,6 +10819,7 @@
       "PACKAGED": "تم التغليف",
       "READY_TO_SHIP": "جاهز للشحن",
       "STOCK_SHORTAGE": "عجز مخزون",
+      "SHORTAGE_FAILED": "فشل بسبب العجز",
       "PENDING_CANCELLATION": "بانتظار الإلغاء"
     },
     "stageDescriptions": {
@@ -10824,6 +10829,7 @@
       "PACKAGED": "الطلب مغلف وفي انتظار التسليم للشحن",
       "READY_TO_SHIP": "جاهز للتسليم لشركة الشحن أو إنشاء شحنة",
       "STOCK_SHORTAGE": "طلبات معلقة بسبب عجز في المخزون أو انتظار تحويل",
+      "SHORTAGE_FAILED": "طلب فشل بسبب عجز نهائي في المخزون — مش هينفّذ",
       "PENDING_CANCELLATION": "العميل طلب إلغاء أثناء التجهيز — يجب الإيقاف فورًا"
     },
     "shortageReasons": {
@@ -10897,6 +10903,7 @@
       "pos": "نقطة بيع",
       "unknown": "غير معروف"
     },
+    "shortageFailedTab": "عجز نهائي",
     "actionLabels": {
       "viewOnlyDesc": "التاجر يرى اسم العميل والمنتجات فقط — أدوات التجهيز غير مفعلة.",
       "viewOnly": "عرض فقط",
@@ -10972,7 +10979,9 @@
       "tomorrowSuccess": "تم تحديد المتابعة على الغد",
       "clearDateSuccess": "تم مسح موعد المتابعة",
       "customerNotifiedBadge": "تم إبلاغ العميل",
-      "ownerBadge": "المسؤول: {{name}}"
+      "ownerBadge": "المسؤول: {{name}}",
+      "markAsShortageFailed": "عجز نهائي",
+      "confirmShortageFailed": "هل أنت متأكد من تحديد هذا الطلب كعجز نهائي؟ الطلب لن يتم تنفيذه."
     },
     "problemPanel": {
       "title": "تجهيز معلق — سبب المشكلة",
@@ -13885,6 +13894,7 @@
     "customerLoyalty": "ولاء العملاء",
     "customerPointsCenter": "مركز نقاط العملاء",
     "customerSegments": "مركز التقسيم",
+    "customerLists": "قوائم العملاء",
     "customerNotifications": "إشعارات العملاء",
     "customers": "العملاء",
     "customersBirthday": "عيد ميلاد العملاء",
@@ -13974,6 +13984,8 @@
     "bookingWorkflow": "سير العمل",
     "bookingReports": "التقارير",
     "bookingOperations": "العمليات",
+    "bookingInsuranceCompanies": "شركات التأمين",
+    "bookingMemberTypes": "أنواع الأعضاء",
     "marketplace": "متجر التطبيقات",
     "marketplaceManagement": "إدارة المتجر",
     "merchantCommissions": "عمولاتي ومستحقاتي",

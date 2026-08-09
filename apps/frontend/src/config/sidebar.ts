@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Printer, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Percent, Printer, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -698,6 +698,7 @@ export const getSidebarConfig = (
                 { to: '/customers/loyalty-members', icon: Users, label: t('sidebar.loyaltyMembers') },
                 { to: '/customers/loyalty-analytics', icon: BarChart3, label: t('sidebar.loyaltyAnalytics') },
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
+                { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/cashback', icon: DollarSign, label: t('sidebar.cashbackSettings') },
                 { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
@@ -949,6 +950,8 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/workflow', icon: ListChecks, label: t('sidebar.bookingWorkflow') },
                 { to: '/admin/booking/reports', icon: BarChart3, label: t('sidebar.bookingReports') },
                 { to: '/admin/booking/operations', icon: Printer, label: t('sidebar.bookingOperations') },
+                { to: '/admin/booking/insurance-companies', icon: ShieldCheck, label: t('sidebar.bookingInsuranceCompanies') },
+                { to: '/admin/booking/member-types', icon: Percent, label: t('sidebar.bookingMemberTypes') },
             ]
         },
 

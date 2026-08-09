@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -143,6 +143,19 @@ const journeyStatusClasses: Record<string, string> = {
     "border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200",
 };
 
+// مفتاح الترجمة لكل حالة (الـ backend بيرجع uppercase والترجمات camelCase)
+const journeyStatusTranslationKey: Record<string, string> = {
+  ACTIVE: "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+  FAILED: "failed",
+  NOT_STARTED: "notStarted",
+  INACTIVE: "inactive",
+};
+
+const getJourneyStatusKey = (status: string) =>
+  journeyStatusTranslationKey[status.toUpperCase()] || "inactive";
+
 const noticeStyles: Record<NoticeTone, string> = {
   success:
     "border-emerald-300/70 bg-emerald-500/12 text-emerald-950 dark:border-emerald-500/40 dark:text-emerald-100",
@@ -279,6 +292,13 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
 
+  // منع إعادة تحميل كاملة للصفحة (ومضة الـ Skeleton) كل ما العميل يختار flow:
+  // نحافظ على الـ selection الحالي في ref بدل ما نجعل fetchFlows معتمدة على selectedFlow?.id
+  const selectedFlowIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedFlowIdRef.current = selectedFlow?.id || null;
+  }, [selectedFlow?.id]);
+
   const showNotice = useCallback(
     (message: string, tone: NoticeTone = "success") => {
       setNotice({ message, tone });
@@ -305,7 +325,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         const response = await apiClient.get(
           `/whatsapp/automation/flows/${flowId}/steps`,
         );
-        setSteps((response as any).data.data ?? []);
+        setSteps((response.data as { data?: Step[] }).data ?? []);
       } catch (error) {
         setSteps([]);
         if (!isNotFoundError(error)) {
@@ -321,11 +341,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const fetchFlows = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/flows");
-      const nextFlows = (response as any).data.data ?? [];
+      const nextFlows = (response.data as { data?: Flow[] }).data ?? [];
       setFlows(nextFlows);
 
       const nextSelected =
-        nextFlows.find((flow: Flow) => flow.id === selectedFlow?.id) ??
+        nextFlows.find((flow: Flow) => flow.id === selectedFlowIdRef.current) ??
         nextFlows[0] ??
         null;
 
@@ -344,12 +364,12 @@ const WhatsAppCustomerJourney: React.FC = () => {
         showNotice(t("common.error"), "error");
       }
     }
-  }, [fetchSteps, selectedFlow?.id, showNotice, t]);
+  }, [fetchSteps, showNotice, t]);
 
   const fetchJourneys = useCallback(async () => {
     try {
       const response = await apiClient.get("/whatsapp/automation/journeys");
-      setJourneys((response as any).data.data ?? []);
+      setJourneys((response.data as { data?: Journey[] }).data ?? []);
     } catch (error) {
       setJourneys([]);
       if (!isNotFoundError(error)) {
@@ -1154,8 +1174,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               )}
                             >
                               {t(
-                                `whatsappJourney.monitoring.${statusKey.toLowerCase()}`,
-                              ) || statusKey}
+                                `whatsappJourney.monitoring.${getJourneyStatusKey(statusKey)}`,
+                              )}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -1235,8 +1255,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       )}
                     >
                       {t(
-                        `whatsappJourney.monitoring.${selectedJourney.status.toLowerCase()}`,
-                      ) || selectedJourney.status}
+                        `whatsappJourney.monitoring.${getJourneyStatusKey(selectedJourney.status)}`,
+                      )}
                     </Badge>
                     <Badge
                       variant="outline"
@@ -1255,7 +1275,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-[color:var(--color-foreground)]">
                   <RefreshCw className="size-4" />
-                  Activity History
+                  {t("whatsappJourney.monitoring.details")}
                 </div>
                 <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                   {selectedJourney.logs?.trim() ? (

@@ -125,7 +125,7 @@ const TEMPLATE_ICON: Record<string, string> = {
   sas: "📊", "sas-sales-agent": "📊",
   ceo: "🧠", "manager-ceo": "🧠",
   competitor: "🔍", analyst: "🔍",
-  order: "🛒", "order-agent": "🛒",
+  order: "🛒", "order-agent": "🛒", "order-confirmation-agent": "✅",
   customer: "🤝",
 };
 

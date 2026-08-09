@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getDateStringInTimezone } = require('../utils/dateUtils');
 
 const INVOICE_STATUSES = ['UNPAID', 'PARTIAL', 'PAID', 'REFUNDED'];
 const PAYMENT_METHODS = ['CASH', 'CARD', 'CREDIT', 'VODAFONE_CASH', 'PAYMOB', 'INSTAPAY', 'FAWRY', 'VOUCHER', 'REFERRAL'];
@@ -6,6 +7,32 @@ const EXPENSE_SPLITS = ['PATIENT', 'INSURANCE', 'BOTH'];
 
 const netOf = (total, discount, additionAmount) =>
   Math.max(0, (Number(total) || 0) - (Number(discount) || 0) + (Number(additionAmount) || 0));
+
+const computeInsuranceShare = (net, coveragePercent) => {
+  const coverage = Number(coveragePercent);
+  if (Number.isNaN(coverage) || !Number.isFinite(coverage) || coverage <= 0) return 0;
+  return Math.round(Math.max(0, Number(net) || 0) * Math.min(100, coverage) / 100);
+};
+
+const resolveAutoInsurance = (req, net, patient) => {
+  const body = req.body || {};
+  const explicitInsurance = body.insuranceAmount !== undefined && body.insuranceAmount !== null;
+  const explicitSplit = body.expenseSplit !== undefined && body.expenseSplit !== null;
+  const coverage = Number(patient?.memberType?.coveragePercent) || 0;
+  const canAuto = !!patient?.memberTypeId && coverage > 0 && !explicitInsurance && !explicitSplit;
+  if (!canAuto) {
+    return {
+      insuranceAmount: explicitInsurance ? Math.max(0, Number(body.insuranceAmount) || 0) : 0,
+      expenseSplit: body.expenseSplit || 'PATIENT',
+      insuranceCompanyId: body.insuranceCompanyId || null,
+    };
+  }
+  return {
+    insuranceAmount: computeInsuranceShare(net, coverage),
+    expenseSplit: 'BOTH',
+    insuranceCompanyId: body.insuranceCompanyId || patient.insuranceCompanyId || null,
+  };
+};
 
 const computeStatus = (total, discount, additionAmount = 0, amountPaid) => {
   const net = netOf(total, discount, additionAmount);
@@ -59,6 +86,27 @@ const generateInvoiceNumber = async (prisma, companyId) => {
   const count = await prisma.medicalInvoice.count({ where: { companyId } });
   const shortId = companyId.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase() || 'MED';
   return `INV-${shortId}-${String(count + 1).padStart(4, '0')}`;
+};
+
+class AmountPaidMismatchError extends Error {
+  constructor() {
+    super('AMOUNT_PAID_CHANGED');
+    this.name = 'AmountPaidMismatchError';
+    this.code = 'AMOUNT_PAID_CHANGED';
+  }
+}
+
+const createInvoiceWithRetry = async (prisma, companyId, build) => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
+    try {
+      return await build(invoiceNumber);
+    } catch (error) {
+      if (attempt < 2 && error && error.code === 'P2002') continue;
+      throw error;
+    }
+  }
+  throw new Error('Failed to allocate invoice number');
 };
 
 const formatInvoice = (inv) => ({
@@ -173,7 +221,10 @@ const createInvoice = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const patient = await prisma.patient.findFirst({ where: { id: patientId, companyId } });
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, companyId },
+      include: { memberType: true },
+    });
     if (!patient) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
 
     const resolvedAppointmentId = appointmentId || null;
@@ -182,70 +233,72 @@ const createInvoice = async (req, res) => {
       if (!appointmentExists) return res.status(400).json({ success: false, error: 'الموعد غير موجود' });
     }
 
-    const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
+    const resolvedInsurance = resolveAutoInsurance(req, net, patient);
     const cashierNameFinal = cashierNameOf(req, cashierName);
 
-    const invoice = await prisma.$transaction(async (tx) => {
-      const created = await tx.medicalInvoice.create({
-        data: {
-          companyId, invoiceNumber, patientId,
-          appointmentId: resolvedAppointmentId,
-          total: amount, discount: disc,
-          discountReason: disc > 0 ? String(discountReason).trim() : null,
-          additionAmount: add,
-          additionReason: add > 0 ? String(additionReason).trim() : null,
-          insuranceAmount: rawInsurance,
-          expenseSplit: expenseSplit || 'PATIENT',
-          insuranceCompanyId: insuranceCompanyId || null,
-          ticketNumber: ticketNumber || null,
-          cashierId: cashierId || req.user.id || null,
-          cashierName: cashierNameFinal,
-          amountPaid: initialPaid,
-          status: computeStatus(amount, disc, add, initialPaid),
-          dueDate: dueDate ? new Date(dueDate) : null,
-          notes: notes || null,
-        },
-      });
-
-      if (initialPaid > 0) {
-        await tx.medicalPayment.create({
+    const invoice = await createInvoiceWithRetry(prisma, companyId, (invoiceNumber) =>
+      prisma.$transaction(async (tx) => {
+        const created = await tx.medicalInvoice.create({
           data: {
-            companyId, invoiceId: created.id,
-            amount: initialPaid,
-            method: payMethod,
+            companyId, invoiceNumber, patientId,
+            appointmentId: resolvedAppointmentId,
+            total: amount, discount: disc,
+            discountReason: disc > 0 ? String(discountReason).trim() : null,
+            additionAmount: add,
+            additionReason: add > 0 ? String(additionReason).trim() : null,
+            insuranceAmount: resolvedInsurance.insuranceAmount,
+            expenseSplit: resolvedInsurance.expenseSplit,
+            insuranceCompanyId: resolvedInsurance.insuranceCompanyId,
+            ticketNumber: ticketNumber || null,
+            cashierId: cashierId || req.user.id || null,
             cashierName: cashierNameFinal,
+            amountPaid: initialPaid,
+            status: computeStatus(amount, disc, add, initialPaid),
+            dueDate: dueDate ? new Date(dueDate) : null,
             notes: notes || null,
-            createdById: req.user.id,
           },
         });
+
+        if (initialPaid > 0) {
+          await tx.medicalPayment.create({
+            data: {
+              companyId, invoiceId: created.id,
+              amount: initialPaid,
+              method: payMethod,
+              cashierName: cashierNameFinal,
+              notes: notes || null,
+              createdById: req.user.id,
+            },
+          });
+          await writeTransactionLog(tx, req, {
+            entityType: 'PAYMENT',
+            entityId: created.id,
+            action: 'PAYMENT',
+            description: `دفعة أولى (${payMethod})`,
+            amount: initialPaid,
+            payer: payerNameOf(patient.firstName, patient.lastName),
+          });
+        }
+
         await writeTransactionLog(tx, req, {
-          entityType: 'PAYMENT',
+          entityType: 'INVOICE',
           entityId: created.id,
-          action: 'PAYMENT',
-          description: `دفعة أولى (${payMethod})`,
-          amount: initialPaid,
+          action: 'CREATE',
+          description: `إنشاء فاتورة ${created.invoiceNumber}`,
+          amount: net,
           payer: payerNameOf(patient.firstName, patient.lastName),
         });
-      }
 
-      await writeTransactionLog(tx, req, {
-        entityType: 'INVOICE',
-        entityId: created.id,
-        action: 'CREATE',
-        description: `إنشاء فاتورة ${created.invoiceNumber}`,
-        amount: net,
-        payer: payerNameOf(patient.firstName, patient.lastName),
-      });
+        if (created.appointmentId) {
+          await tx.appointment.update({
+            where: { id: created.appointmentId },
+            data: { paymentStatus: appointmentPaymentStatus(created.status) },
+          });
+        }
 
-      if (created.appointmentId) {
-        await tx.appointment.update({
-          where: { id: created.appointmentId },
-          data: { paymentStatus: appointmentPaymentStatus(created.status) },
-        });
-      }
-
-      return created;
-    });
+        return created;
+      }),
+    );
 
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
@@ -315,6 +368,10 @@ const updateInvoice = async (req, res) => {
     }
 
     const next = { ...existing, ...data };
+    const nextNet = netOf(next.total, next.discount, next.additionAmount || 0);
+    if (next.amountPaid > nextNet + 0.001) {
+      return res.status(400).json({ success: false, error: 'لا يمكن خفض الصافي إلى أقل من المبلغ المسدد' });
+    }
     data.status = computeStatus(next.total, next.discount, next.additionAmount || 0, next.amountPaid);
 
     const invoice = await prisma.medicalInvoice.update({ where: { id }, data });
@@ -392,10 +449,18 @@ const addPayment = async (req, res) => {
         description: `دفعة (${payMethod})`,
         amount: paymentAmount,
       });
-      const updated = await tx.medicalInvoice.update({
-        where: { id },
+      const applied = await tx.medicalInvoice.updateMany({
+        where: { id, amountPaid: invoice.amountPaid },
         data: { amountPaid: newPaid, status: newStatus, cashierName: cashierNameFinal, cashierId: invoice.cashierId || req.user.id },
       });
+      if (applied.count !== 1) throw new AmountPaidMismatchError();
+      const updated = {
+        ...invoice,
+        amountPaid: newPaid,
+        status: newStatus,
+        cashierName: cashierNameFinal,
+        cashierId: invoice.cashierId || req.user.id,
+      };
       if (updated.appointmentId) {
         await tx.appointment.update({
           where: { id: updated.appointmentId },
@@ -407,6 +472,9 @@ const addPayment = async (req, res) => {
 
     res.json({ success: true, data: formatInvoice(result) });
   } catch (error) {
+    if (error instanceof AmountPaidMismatchError) {
+      return res.status(409).json({ success: false, error: 'تغيّر رصيد الفاتورة، أعد المحاولة' });
+    }
     console.error('Error adding payment:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفع' });
   }
@@ -470,10 +538,12 @@ const paybackPayment = async (req, res) => {
         description: `استرداد (${payMethod}): ${String(reason).trim()}`,
         amount: paybackAmount,
       });
-      const updated = await tx.medicalInvoice.update({
-        where: { id },
+      const applied = await tx.medicalInvoice.updateMany({
+        where: { id, amountPaid: invoice.amountPaid },
         data: { amountPaid: newPaid, status: newStatus },
       });
+      if (applied.count !== 1) throw new AmountPaidMismatchError();
+      const updated = { ...invoice, amountPaid: newPaid, status: newStatus };
       if (updated.appointmentId) {
         await tx.appointment.update({
           where: { id: updated.appointmentId },
@@ -485,6 +555,9 @@ const paybackPayment = async (req, res) => {
 
     res.json({ success: true, data: formatInvoice(result) });
   } catch (error) {
+    if (error instanceof AmountPaidMismatchError) {
+      return res.status(409).json({ success: false, error: 'تغيّر رصيد الفاتورة، أعد المحاولة' });
+    }
     console.error('Error processing payback:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في معالجة الاسترداد' });
   }
@@ -504,6 +577,23 @@ const deleteInvoice = async (req, res) => {
     }
 
     await prisma.medicalInvoice.delete({ where: { id } });
+
+    if (invoice.appointmentId) {
+      const remainingInvoices = await prisma.medicalInvoice.findMany({
+        where: { companyId, appointmentId: invoice.appointmentId, id: { not: id } },
+        select: { status: true },
+      });
+      const nextStatus = remainingInvoices.some((i) => i.status === 'PAID')
+        ? 'PAID'
+        : remainingInvoices.some((i) => i.status === 'PARTIAL')
+          ? 'PARTIAL'
+          : 'UNPAID';
+      await prisma.appointment.update({
+        where: { id: invoice.appointmentId },
+        data: { paymentStatus: appointmentPaymentStatus(nextStatus) },
+      });
+    }
+
     res.json({ success: true, message: 'تم حذف الفاتورة' });
   } catch (error) {
     console.error('Error deleting invoice:', error);
@@ -557,6 +647,11 @@ const createInvoiceFromAppointment = async (req, res) => {
     });
     if (!appointment) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
+    const patient = await prisma.patient.findFirst({
+      where: { id: appointment.patientId, companyId },
+      include: { memberType: true },
+    });
+
     // Reject if an invoice already exists for this appointment
     const existing = await prisma.medicalInvoice.findFirst({ where: { appointmentId, companyId } });
     if (existing) return res.status(400).json({ success: false, error: 'يوجد فاتورة لهذا الموعد بالفعل' });
@@ -593,64 +688,66 @@ const createInvoiceFromAppointment = async (req, res) => {
       return res.status(400).json({ success: false, error: 'طريقة الدفع غير صالحة' });
     }
 
-    const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
     const cashierNameFinal = cashierNameOf(req, cashierName);
+    const resolvedInsurance = resolveAutoInsurance(req, net, patient);
 
-    const invoice = await prisma.$transaction(async (tx) => {
-      const created = await tx.medicalInvoice.create({
-        data: {
-          companyId, invoiceNumber, patientId: appointment.patientId,
-          appointmentId: appointment.id,
-          total: price, discount: disc,
-          discountReason: disc > 0 ? String(discountReason).trim() : null,
-          additionAmount: add,
-          additionReason: add > 0 ? String(additionReason).trim() : null,
-          insuranceAmount: rawInsurance,
-          expenseSplit: expenseSplit || 'PATIENT',
-          insuranceCompanyId: insuranceCompanyId || null,
-          ticketNumber: ticketNumber || null,
-          cashierId: cashierId || req.user.id || null,
-          cashierName: cashierNameFinal,
-          amountPaid: initialPaid,
-          status: computeStatus(price, disc, add, initialPaid),
-          dueDate: dueDate ? new Date(dueDate) : null,
-          notes: notes || `فاتورة تلقائية: ${appointment.serviceName || ''}`.trim(),
-        },
-      });
-      if (initialPaid > 0) {
-        await tx.medicalPayment.create({
+    const invoice = await createInvoiceWithRetry(prisma, companyId, (invoiceNumber) =>
+      prisma.$transaction(async (tx) => {
+        const created = await tx.medicalInvoice.create({
           data: {
-            companyId, invoiceId: created.id, amount: initialPaid,
-            method: payMethod,
+            companyId, invoiceNumber, patientId: appointment.patientId,
+            appointmentId: appointment.id,
+            total: price, discount: disc,
+            discountReason: disc > 0 ? String(discountReason).trim() : null,
+            additionAmount: add,
+            additionReason: add > 0 ? String(additionReason).trim() : null,
+            insuranceAmount: resolvedInsurance.insuranceAmount,
+            expenseSplit: resolvedInsurance.expenseSplit,
+            insuranceCompanyId: resolvedInsurance.insuranceCompanyId,
+            ticketNumber: ticketNumber || null,
+            cashierId: cashierId || req.user.id || null,
             cashierName: cashierNameFinal,
-            notes: notes || null, createdById: req.user.id,
+            amountPaid: initialPaid,
+            status: computeStatus(price, disc, add, initialPaid),
+            dueDate: dueDate ? new Date(dueDate) : null,
+            notes: notes || `فاتورة تلقائية: ${appointment.serviceName || ''}`.trim(),
           },
         });
+        if (initialPaid > 0) {
+          await tx.medicalPayment.create({
+            data: {
+              companyId, invoiceId: created.id, amount: initialPaid,
+              method: payMethod,
+              cashierName: cashierNameFinal,
+              notes: notes || null, createdById: req.user.id,
+            },
+          });
+          await writeTransactionLog(tx, req, {
+            entityType: 'PAYMENT',
+            entityId: created.id,
+            action: 'PAYMENT',
+            description: `دفعة أولى (${payMethod})`,
+            amount: initialPaid,
+            payer: appointment.customerName || null,
+          });
+        }
         await writeTransactionLog(tx, req, {
-          entityType: 'PAYMENT',
+          entityType: 'INVOICE',
           entityId: created.id,
-          action: 'PAYMENT',
-          description: `دفعة أولى (${payMethod})`,
-          amount: initialPaid,
+          action: 'CREATE',
+          description: `فاتورة تلقائية ${created.invoiceNumber}`,
+          amount: net,
           payer: appointment.customerName || null,
         });
-      }
-      await writeTransactionLog(tx, req, {
-        entityType: 'INVOICE',
-        entityId: created.id,
-        action: 'CREATE',
-        description: `فاتورة تلقائية ${created.invoiceNumber}`,
-        amount: net,
-        payer: appointment.customerName || null,
-      });
-      if (created.appointmentId) {
-        await tx.appointment.update({
-          where: { id: created.appointmentId },
-          data: { paymentStatus: appointmentPaymentStatus(created.status) },
-        });
-      }
-      return created;
-    });
+        if (created.appointmentId) {
+          await tx.appointment.update({
+            where: { id: created.appointmentId },
+            data: { paymentStatus: appointmentPaymentStatus(created.status) },
+          });
+        }
+        return created;
+      }),
+    );
 
     res.json({ success: true, data: formatInvoice(invoice) });
   } catch (error) {
@@ -802,8 +899,8 @@ const getCashierShiftBalance = async (req, res) => {
     res.json({
       success: true,
       data: {
-        from: fromDate.toISOString().split('T')[0],
-        to: toDate.toISOString().split('T')[0],
+        from: getDateStringInTimezone(fromDate),
+        to: getDateStringInTimezone(toDate),
         collectedByMethod,
         totalCollected,
         paybacks,
@@ -831,4 +928,5 @@ module.exports = {
   closeCashierShift,
   getCurrentCashierShift,
   getCashierShiftBalance,
+  computeInsuranceShare,
 };

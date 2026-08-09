@@ -130,7 +130,7 @@ export default function BookingReportsTab({ branches = [], doctors = [], selecte
     if (doctors.length === 0) {
       fetchJson<BookingDoctor[]>(api("doctors")).then(setFetchedDoctors).catch(() => {});
     }
-  }, [branches, doctors]);
+  }, []);
 
   const branchList = branches.length > 0 ? branches : fetchedBranches;
   const doctorList = doctors.length > 0 ? doctors : fetchedDoctors;

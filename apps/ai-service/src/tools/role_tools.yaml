@@ -21,6 +21,7 @@ roles:
     - category_list
     - customer_info
     - order_lookup
+    - order_lookup_by_phone
     - order_summary
     - order_recent_list
     - order_create_draft
@@ -29,6 +30,19 @@ roles:
     - order_refund
     - shipping_rates
     - facebook_reply
+    - agent_handoff_to
+
+  ORDER_CONFIRMATION:
+    - order_lookup
+    - order_lookup_by_phone
+    - order_confirm
+    - order_update_details
+    - order_cancel
+    - shipping_rates
+    - shipping_company_governorates
+    - shipping_company_areas
+    - customer_info
+    - whatsapp_send
     - agent_handoff_to
 
   SALES:

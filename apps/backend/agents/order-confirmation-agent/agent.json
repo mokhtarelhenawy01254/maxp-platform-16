@@ -1,0 +1,58 @@
+{
+  "slug": "order-confirmation-agent",
+  "name": "منى — منسقة تأكيد الطلبات",
+  "role": "ORDER_CONFIRMATION",
+  "version": "1.0.0",
+  "icon": "📦",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "friendly",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": true
+  },
+  "successMetrics": {
+    "primaryGoal": "order_confirm",
+    "secondaryGoal": "customer_satisfaction",
+    "failureEscalation": "agent.handoff"
+  },
+  "allowedTools": [
+    "order_lookup",
+    "order_lookup_by_phone",
+    "order_confirm",
+    "order_update_details",
+    "order_cancel",
+    "shipping_rates",
+    "shipping_company_governorates",
+    "shipping_company_areas",
+    "customer_info",
+    "whatsapp_send",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [
+    "order-confirmation"
+  ],
+  "channels": [
+    "whatsapp"
+  ],
+  "humanApproval": {
+    "mode": "NEVER"
+  },
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 8
+  }
+}

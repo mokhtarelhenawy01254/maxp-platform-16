@@ -3,6 +3,7 @@ import {
   resolvePostAuthDestination,
   saveLastPath,
   isAllowedPostAuthPath,
+  getLastPath,
 } from "../postAuthRouting";
 
 const installMemoryStorage = () => {
@@ -157,6 +158,43 @@ describe("resolvePostAuthDestination precedence", () => {
     const merchant = companyUser({ role: "MERCHANT" });
     saveLastPath(merchant, "/orders/workspace");
     expect(resolvePostAuthDestination(merchant)).toBe("/merchant-portal");
+  });
+});
+
+describe("SUPER_ADMIN post-auth routing", () => {
+  beforeEach(() => {
+    installMemoryStorage();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it("does not resume a company page like /apps as the last path", () => {
+    const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
+    saveLastPath(superAdmin, "/apps");
+    expect(getLastPath(superAdmin)).toBeNull();
+    expect(resolvePostAuthDestination(superAdmin)).toBe("/super-admin/dev-dashboard");
+  });
+
+  it("ignores state.from pointing to /apps", () => {
+    const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
+    expect(resolvePostAuthDestination(superAdmin, "/apps")).toBe(
+      "/super-admin/dev-dashboard",
+    );
+  });
+
+  it("resumes a super-admin dashboard path saved before logout", () => {
+    const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
+    saveLastPath(superAdmin, "/super-admin/companies-v2");
+    expect(resolvePostAuthDestination(superAdmin)).toBe("/super-admin/companies-v2");
+  });
+
+  it("resumes state.from pointing to a super-admin path", () => {
+    const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
+    expect(resolvePostAuthDestination(superAdmin, "/super-admin/dashboard")).toBe(
+      "/super-admin/dashboard",
+    );
   });
 });
 

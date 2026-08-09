@@ -33,14 +33,16 @@ const getAllPatients = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { search, page, limit, includeInactive } = req.query;
+    const { search, page, limit, includeInactive, insuranceCompanyId } = req.query;
     const where = { companyId };
     if (includeInactive !== 'true') where.isActive = true;
+    if (insuranceCompanyId) where.insuranceCompanyId = insuranceCompanyId;
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
+        { insuranceNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -53,6 +55,8 @@ const getAllPatients = async (req, res) => {
         where,
         include: {
           customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          insuranceCompany: { select: { id: true, name: true } },
+          memberType: { select: { id: true, name: true, coveragePercent: true } },
           _count: { select: { appointments: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -83,6 +87,8 @@ const getPatientById = async (req, res) => {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
         referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
         priceList: { select: { id: true, name: true } },
+        insuranceCompany: { select: { id: true, name: true } },
+        memberType: { select: { id: true, name: true, coveragePercent: true } },
         appointments: {
           orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
           include: {
@@ -104,11 +110,12 @@ const getPatientById = async (req, res) => {
     const data = formatPatient(patient);
     // Compute financial summary
     const activeInvoices = (data.invoices || []).filter(i => i.status !== 'REFUNDED');
+    const netOf = (i) => Math.max(0, (Number(i.total) || 0) - (Number(i.discount) || 0) + (Number(i.additionAmount) || 0));
     data.financialSummary = {
       invoiceCount: data.invoices?.length || 0,
       totalBilled: +activeInvoices.reduce((s, i) => s + (Number(i.total) || 0), 0).toFixed(2),
       totalPaid: +activeInvoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0).toFixed(2),
-      outstanding: +activeInvoices.reduce((s, i) => s + (Math.max(0, Number(i.total) - Number(i.discount) - Number(i.amountPaid))), 0).toFixed(2),
+      outstanding: +activeInvoices.reduce((s, i) => s + Math.max(0, netOf(i) - (Number(i.amountPaid) || 0)), 0).toFixed(2),
       unpaidInvoices: activeInvoices.filter(i => i.status === 'UNPAID' || i.status === 'PARTIAL').length,
     };
 
@@ -124,7 +131,7 @@ const createPatient = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId } = req.body;
+    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId, title, insuranceNumber, insuranceCompanyId, memberTypeId, homePhone, workPhone, fax, postalCode } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
 
     let medicalHistoryData;
@@ -156,6 +163,14 @@ const createPatient = async (req, res) => {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: priceListId, companyId }, select: { id: true } });
       if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
     }
+    if (insuranceCompanyId) {
+      const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: insuranceCompanyId, companyId }, select: { id: true } });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
+    }
+    if (memberTypeId) {
+      const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: memberTypeId, companyId }, select: { id: true } });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
+    }
 
     const patient = await getSharedPrismaClient().patient.create({
       data: {
@@ -184,6 +199,14 @@ const createPatient = async (req, res) => {
         medicalHistory: medicalHistoryData,
         referringPhysicianId: referringPhysicianId || null,
         priceListId: priceListId || null,
+        title: title || null,
+        insuranceNumber: insuranceNumber || null,
+        insuranceCompanyId: insuranceCompanyId || null,
+        memberTypeId: memberTypeId || null,
+        homePhone: homePhone || null,
+        workPhone: workPhone || null,
+        fax: fax || null,
+        postalCode: postalCode || null,
       },
     });
     res.json({ success: true, data: formatPatient(patient) });
@@ -202,7 +225,7 @@ const updatePatient = async (req, res) => {
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId'];
+    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId', 'title', 'insuranceNumber', 'insuranceCompanyId', 'memberTypeId', 'homePhone', 'workPhone', 'fax', 'postalCode'];
     const data = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) data[field] = req.body[field];
@@ -228,6 +251,14 @@ const updatePatient = async (req, res) => {
     if (data.priceListId) {
       const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: data.priceListId, companyId }, select: { id: true } });
       if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
+    }
+    if (data.insuranceCompanyId) {
+      const company = await getSharedPrismaClient().insuranceCompany.findFirst({ where: { id: data.insuranceCompanyId, companyId }, select: { id: true } });
+      if (!company) return res.status(400).json({ success: false, error: 'شركة التأمين غير موجودة' });
+    }
+    if (data.memberTypeId) {
+      const memberType = await getSharedPrismaClient().insuranceMemberType.findFirst({ where: { id: data.memberTypeId, companyId }, select: { id: true } });
+      if (!memberType) return res.status(400).json({ success: false, error: 'نوع العضوية غير موجود' });
     }
 
     const patient = await getSharedPrismaClient().patient.update({ where: { id }, data });
@@ -258,11 +289,15 @@ const mergePatients = async (req, res) => {
       return res.status(400).json({ success: false, error: 'لا يمكن الدمج إلى مريض غير نشط' });
     }
 
-    await prisma.$transaction([
-      prisma.medicalInvoice.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } }),
-      prisma.appointment.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } }),
-      prisma.patient.update({ where: { id }, data: { mergedIntoId: targetPatientId, status: 'INACTIVE', isActive: false } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.patient.updateMany({
+        where: { id, mergedIntoId: null },
+        data: { mergedIntoId: targetPatientId, status: 'INACTIVE', isActive: false },
+      });
+      if (claimed.count !== 1) throw new Error('PATIENT_ALREADY_MERGED');
+      await tx.medicalInvoice.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } });
+      await tx.appointment.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } });
+    });
 
     try {
       await prisma.transactionLog.create({
@@ -287,6 +322,9 @@ const mergePatients = async (req, res) => {
 
     res.json({ success: true, data: formatPatient(updatedTarget) });
   } catch (error) {
+    if (error && error.message === 'PATIENT_ALREADY_MERGED') {
+      return res.status(400).json({ success: false, error: 'لا يمكن دمج مريض مدمج بالفعل' });
+    }
     console.error('Error merging patients:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في دمج المرضى' });
   }
@@ -304,6 +342,8 @@ const getPatientFull = async (req, res) => {
       include: {
         referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
         priceList: { select: { id: true, name: true } },
+        insuranceCompany: { select: { id: true, name: true } },
+        memberType: { select: { id: true, name: true, coveragePercent: true } },
         appointments: {
           orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
           take: 10,
@@ -320,7 +360,7 @@ const getPatientFull = async (req, res) => {
 
     const invoices = await prisma.medicalInvoice.findMany({
       where: { patientId: id, companyId },
-      select: { status: true, total: true, discount: true, amountPaid: true },
+      select: { status: true, total: true, discount: true, additionAmount: true, amountPaid: true },
     });
 
     let transactionLogCount = 0;
@@ -333,11 +373,13 @@ const getPatientFull = async (req, res) => {
     const data = formatPatient(patient);
     data.latestAppointments = data.appointments;
     delete data.appointments;
+    const activeInvoices = invoices.filter(i => i.status !== 'REFUNDED');
+    const netOfInvoice = (i) => Math.max(0, (Number(i.total) || 0) - (Number(i.discount) || 0) + (Number(i.additionAmount) || 0));
     data.invoicesSummary = {
       count: invoices.length,
-      totalBilled: +invoices.reduce((s, i) => s + (Number(i.total) || 0), 0).toFixed(2),
-      totalPaid: +invoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0).toFixed(2),
-      outstanding: +invoices.reduce((s, i) => s + Math.max(0, Number(i.total) - Number(i.discount) - Number(i.amountPaid)), 0).toFixed(2),
+      totalBilled: +activeInvoices.reduce((s, i) => s + (Number(i.total) || 0), 0).toFixed(2),
+      totalPaid: +activeInvoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0).toFixed(2),
+      outstanding: +activeInvoices.reduce((s, i) => s + Math.max(0, netOfInvoice(i) - (Number(i.amountPaid) || 0)), 0).toFixed(2),
     };
     data.transactionLogCount = transactionLogCount;
 

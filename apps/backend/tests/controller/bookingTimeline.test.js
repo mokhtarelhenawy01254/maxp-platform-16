@@ -377,6 +377,98 @@ describe('bookingAppointmentsController.updateAppointment', () => {
     });
     expect(prisma.appointment.update).not.toHaveBeenCalled();
   });
+
+  test('rescheduling resets label/result flags and voids the old delivery', async () => {
+    const prisma = {
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'apt-1', companyId: 'company-1',
+          appointmentDate: new Date('2026-08-07'), startTime: '10:00',
+          labelPrinted: true, resultDelivered: true, deliveredWithoutReport: true,
+        }),
+        update: jest.fn().mockImplementation(async ({ data }) => ({
+          id: 'apt-1',
+          customerName: 'سارة',
+          appointmentDate: data.appointmentDate,
+          startTime: data.startTime,
+          endTime: '11:30',
+          duration: 30,
+          status: 'confirmed',
+          createdAt: new Date('2026-08-07T08:00:00.000Z'),
+          bookingStatus: null,
+          reportStatus: null,
+          diagnosis: null,
+          treatmentPlan: null,
+          prescription: null,
+          vitals: null,
+          followUpDate: null,
+          ...data,
+        }))
+      },
+      reportDelivery: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) }
+    };
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await updateAppointment({
+      user: { companyId: 'company-1' },
+      params: { id: 'apt-1' },
+      body: { appointmentDate: '2026-08-09', startTime: '11:00' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.appointment.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        labelPrinted: false,
+        resultDelivered: false,
+        deliveredWithoutReport: false,
+      }),
+    }));
+    expect(prisma.reportDelivery.updateMany).toHaveBeenCalledWith({
+      where: { appointmentId: 'apt-1', companyId: 'company-1' },
+      data: { status: 'NOT_READY', deliveredAt: null, deliveredBy: null },
+    });
+  });
+
+  test('does not reset flags when editing non-schedule fields', async () => {
+    const prisma = {
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'apt-1', companyId: 'company-1',
+          appointmentDate: new Date('2026-08-07'), startTime: '10:00',
+        }),
+        update: jest.fn().mockImplementation(async ({ data }) => ({
+          id: 'apt-1',
+          customerName: 'سارة',
+          appointmentDate: new Date('2026-08-07'),
+          startTime: '10:00',
+          endTime: '10:30',
+          duration: 30,
+          status: 'confirmed',
+          createdAt: new Date('2026-08-07T08:00:00.000Z'),
+          ...data,
+        }))
+      },
+      reportDelivery: { updateMany: jest.fn() }
+    };
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const res = createResponse();
+    await updateAppointment({
+      user: { companyId: 'company-1' },
+      params: { id: 'apt-1' },
+      body: { room: 'غرفة 9' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.appointment.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ room: 'غرفة 9' }),
+    }));
+    const dataArg = prisma.appointment.update.mock.calls[0][0].data;
+    expect(dataArg.labelPrinted).toBeUndefined();
+    expect(dataArg.resultDelivered).toBeUndefined();
+    expect(prisma.reportDelivery.updateMany).not.toHaveBeenCalled();
+  });
 });
 
 describe('bookingPatientService.findOrCreatePatient tenant isolation', () => {

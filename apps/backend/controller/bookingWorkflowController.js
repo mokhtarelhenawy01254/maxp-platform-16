@@ -1,4 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getDateStringInTimezone } = require('../utils/dateUtils');
+
+const todayString = () => getDateStringInTimezone(new Date());
 
 const BOOKING_CHAIN = ['UNCONFIRMED', 'CONFIRMED', 'CHECKED_IN', 'PROCEDURE_STARTED', 'PROCEDURE_COMPLETED', 'CHECKED_OUT'];
 
@@ -169,6 +172,7 @@ const updateBookingStatus = async (req, res) => {
           where: {
             companyId,
             id: { not: id },
+            ticketNumber: { not: null },
             ...(existing.branchId ? { branchId: existing.branchId } : {}),
             appointmentDate: existing.appointmentDate,
           },
@@ -313,7 +317,7 @@ const receptionQueue = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date, branchId } = req.query;
-    const dateStr = date || new Date().toISOString().split('T')[0];
+    const dateStr = date || todayString();
 
     const where = {
       companyId,
@@ -352,7 +356,7 @@ const doctorWorklist = async (req, res) => {
 
     const { date, doctorId } = req.query;
     if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
-    const dateStr = date || new Date().toISOString().split('T')[0];
+    const dateStr = date || todayString();
 
     const appointments = await getSharedPrismaClient().appointment.findMany({
       where: {
@@ -378,7 +382,7 @@ const reportWorklist = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { date } = req.query;
-    const dateStr = date || new Date().toISOString().split('T')[0];
+    const dateStr = date || todayString();
 
     const appointments = await getSharedPrismaClient().appointment.findMany({
       where: {

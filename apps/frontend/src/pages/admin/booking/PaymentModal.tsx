@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookingInvoice, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
+import { toast } from "sonner";
 
 import { X } from 'lucide-react'
 interface Props {
@@ -26,6 +27,8 @@ export default function PaymentModal({ invoice, onClose, onSave, onPayback }: Pr
     try {
       await onSave({ amount, method: form.method, notes: form.notes.trim() || undefined });
       onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تسجيل الدفع");
     } finally { setBusy(false); }
   };
 

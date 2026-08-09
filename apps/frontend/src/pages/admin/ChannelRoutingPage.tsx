@@ -29,6 +29,7 @@ interface ChannelConfig {
   agentId: string | null;
   toolName: string;
   toolActive: boolean;
+  replyEnabled: boolean;
 }
 
 const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
@@ -55,6 +56,7 @@ export default function ChannelRoutingPage() {
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [channelConfigs, setChannelConfigs] = useState<ChannelConfig[]>([]);
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
+const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +75,9 @@ export default function ChannelRoutingPage() {
       const activeAgents = agentsList.filter((a) => a.status === "ACTIVE");
       const autoReplyResp = await apiFetch<{ autoReplyEnabled: boolean }>("/agent-manager/auto-reply").catch(() => ({ autoReplyEnabled: false }));
       setAutoReplyEnabled(autoReplyResp.autoReplyEnabled !== false);
+      const channelReplyResp = await apiFetch<{ channels: Record<string, boolean> }>("/agent-manager/channel-reply").catch(() => ({ channels: {} as Record<string, boolean> }));
+      const channelFlags = channelReplyResp.channels || {};
+      setChannelReply(channelFlags);
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
         const assigned = activeAgents.find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(ch.key)
@@ -86,6 +91,7 @@ export default function ChannelRoutingPage() {
           toolActive: !ch.tool || activeAgents.some((a) =>
             (a.allowedTools || []).includes(ch.tool)
           ),
+          replyEnabled: channelFlags[ch.key] !== false,
         };
       });
       setChannelConfigs(configs);
@@ -113,6 +119,11 @@ export default function ChannelRoutingPage() {
     setDirty(true);
   };
 
+  const handleChannelReplyToggle = (channel: string, enabled: boolean) => {
+    setChannelReply((prev) => ({ ...prev, [channel]: enabled }));
+    setDirty(true);
+  };
+
   const handleAssignAll = (agentId: string) => {
     setChannelConfigs((prev) => prev.map((c) => ({ ...c, agentId: agentId || null })));
     setDirtyChannels(new Set(CHANNELS.map((c) => c.key)));
@@ -122,6 +133,7 @@ export default function ChannelRoutingPage() {
   const handleReset = () => {
     if (!initialConfigsRef.current) return;
     setChannelConfigs(JSON.parse(initialConfigsRef.current));
+    setChannelReply({});
     setDirtyChannels(new Set());
     setDirty(false);
   };
@@ -162,6 +174,14 @@ export default function ChannelRoutingPage() {
       await apiFetch("/agent-manager/auto-reply", {
         method: "PUT",
         body: JSON.stringify({ enabled: autoReplyEnabled }),
+      });
+      const replyMap: Record<string, boolean> = {};
+      CHANNELS.forEach((ch) => {
+        replyMap[ch.key] = channelReply[ch.key] !== false;
+      });
+      await apiFetch("/agent-manager/channel-reply", {
+        method: "PUT",
+        body: JSON.stringify({ channels: replyMap }),
       });
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
@@ -254,6 +274,7 @@ export default function ChannelRoutingPage() {
               <TableRow>
                 <TableHead className="w-[200px]">{t("aiHub.channelRouting.channel")}</TableHead>
                 <TableHead>{t("aiHub.channelRouting.agent")}</TableHead>
+                <TableHead className="w-[140px]">{t("aiHub.channelRouting.reply")}</TableHead>
                 <TableHead className="w-[140px]">{t("aiHub.channelRouting.toolStatus")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -290,6 +311,17 @@ export default function ChannelRoutingPage() {
                           ))}
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={channelReply[config.channel] !== false}
+                        onCheckedChange={(val) => handleChannelReplyToggle(config.channel, val)}
+                      />
+                      <span className={`text-xs ${channelReply[config.channel] !== false ? "text-green-600" : "text-muted-foreground"}`}>
+                        {channelReply[config.channel] !== false ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {config.toolName ? (

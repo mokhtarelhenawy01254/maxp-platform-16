@@ -271,6 +271,9 @@ const requirePermission = (permission) => {
     // SUPER_ADMIN always passes
     if (userRole === 'SUPER_ADMIN') return next();
 
+    // AI_SERVICE: shared service-token identity (no DB user record).
+    if (userRole === 'AI_SERVICE') return next();
+
     // DB-based permissions only (loaded by authenticateToken / requireCompanyAccess)
     const permissions = req.user.userPermissions;
     if (!permissions || !Array.isArray(permissions) || !permissions.includes(permission)) {
@@ -297,6 +300,10 @@ const requireDbPermission = (permissionKey) => {
     }
 
     if (req.user.role === 'SUPER_ADMIN') return next();
+
+    // AI_SERVICE: shared service-token identity (no DB user record).
+    // Trust the service token; the secret itself is the gate.
+    if (req.user.role === 'AI_SERVICE' || req.user.service === true) return next();
 
     const companyId = req.user.effectiveCompanyId || req.user.companyId;
     if (!companyId) {

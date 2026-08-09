@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookingInvoice, BookingPatient, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "./shared";
+import { toast } from "sonner";
 
 import { X } from 'lucide-react'
 interface Props {
@@ -38,6 +39,7 @@ export default function InvoiceModal({ invoice, patients, onClose, onSave }: Pro
     initialPayment: "",
     method: "CASH",
   });
+  const [saving, setSaving] = useState(false);
 
   const total = Number(form.total) || 0;
   const discount = Number(form.discount) || 0;
@@ -48,24 +50,32 @@ export default function InvoiceModal({ invoice, patients, onClose, onSave }: Pro
   const additionReasonOk = addition > 0 ? form.additionReason.trim().length > 0 : true;
   const valid = form.patientId && total > 0 && initialPayment >= 0 && initialPayment <= net && discountReasonOk && additionReasonOk;
 
-  const handleSave = () => {
-    onSave({
-      ...invoice,
-      patientId: form.patientId,
-      total,
-      discount,
-      discountReason: discount > 0 ? form.discountReason.trim() : undefined,
-      additionAmount: addition,
-      additionReason: addition > 0 ? form.additionReason.trim() : undefined,
-      insuranceAmount: Number(form.insuranceAmount) || 0,
-      expenseSplit: form.expenseSplit,
-      insuranceCompanyId: form.insuranceCompanyId.trim() || undefined,
-      ticketNumber: form.ticketNumber.trim() || undefined,
-      dueDate: form.dueDate || undefined,
-      notes: form.notes.trim() || undefined,
-      initialPayment: form.initialPayment ? initialPayment : undefined,
-      method: form.method,
-    });
+  const handleSave = async () => {
+    if (saving || !valid) return;
+    setSaving(true);
+    try {
+      await onSave({
+        ...invoice,
+        patientId: form.patientId,
+        total,
+        discount,
+        discountReason: discount > 0 ? form.discountReason.trim() : undefined,
+        additionAmount: addition,
+        additionReason: addition > 0 ? form.additionReason.trim() : undefined,
+        insuranceAmount: Number(form.insuranceAmount) || 0,
+        expenseSplit: form.expenseSplit,
+        insuranceCompanyId: form.insuranceCompanyId.trim() || undefined,
+        ticketNumber: form.ticketNumber.trim() || undefined,
+        dueDate: form.dueDate || undefined,
+        notes: form.notes.trim() || undefined,
+        initialPayment: form.initialPayment ? initialPayment : undefined,
+        method: form.method,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل حفظ الفاتورة");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -129,7 +139,7 @@ export default function InvoiceModal({ invoice, patients, onClose, onSave }: Pro
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={handleSave} disabled={!valid} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+          <button onClick={handleSave} disabled={!valid || saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>

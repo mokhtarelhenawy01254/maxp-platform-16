@@ -13,17 +13,22 @@ env:
   NODE_VERSION: '20'
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
 
-concurrency:
-  group: production-deploy
-  # الـ deploy اللي شغال لازم يخلص من غير ما يتشال في النص (مش CI عادي).
-  # لو في pushes متتالية، اللي قاعدين بيستنوا وبعدين بيتخطوا بـ supersede check.
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    name: Deploy Frontend & Backend
+  # ═══════════════════════════════════════════════════════════════════
+  # BUILD job — CI + نقل التاربولز لـ staging dir على السيرفر (cancelable)
+  # cancel-in-progress: true — أي commit أحدث يلغي البناء القديم فورًا.
+  # لو اتلغى في النص: الـ staging بيفضل جزئي بس جوب الـ deploy لن يشتغل
+  # لإنه needs build + is-latest. الملفات القديمة بتتنضف age-based.
+  # ═══════════════════════════════════════════════════════════════════
+  build:
+    name: Build & Verify (cancelable)
     runs-on: ubuntu-latest
-    
+    concurrency:
+      group: production-build
+      cancel-in-progress: true
+    outputs:
+      is-latest: ${{ steps.check-latest.outputs.is-latest }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -32,30 +37,28 @@ jobs:
           fetch-depth: 2 # Required for git diff HEAD~1
 
       - name: Skip if superseded by a newer commit
-        if: github.event_name == 'push'
+        id: check-latest
         shell: bash
         run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "is-latest=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git fetch --force origin main
           LATEST=$(git rev-parse origin/main)
           if [ "$LATEST" != "${{ github.sha }}" ]; then
-            echo "⏭️ This deploy (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
             echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
+            echo "is-latest=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "✅ This is the latest commit on main. Proceeding with deploy."
+          echo "is-latest=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      # 🛡️ RADICAL SAFETY GATE — full syntax check over all runtime backend files.
-      # Any commit with a SyntaxError in a runtime file blocks the deploy BEFORE
-      # it reaches the server (a broken commit previously crashed the backend → 502).
-      - name: Full Backend Syntax Gate
-        working-directory: ./apps/backend
-        run: node scripts/check_syntax.js
-        continue-on-error: false
 
       - name: Verify Secrets
         run: |
@@ -64,30 +67,13 @@ jobs:
           if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then echo "❌ SERVER_SSH_KEY missing"; exit 1; fi
           echo "✅ All secrets present"
 
-      - name: Setup SSH Key
-        uses: ./.github/actions/setup-ssh
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ env.SERVER_SSH_PORT }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-
-      - name: Test SSH Connection
-        shell: bash
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
-        run: |
-          set -euo pipefail
-          ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
-            -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" \
-            "echo '✅ SSH connection successful' && df -h \$HOME"
-
-      - name: Get Runner IP
-        run: |
-          RUNNER_IP=$(curl -s https://ifconfig.me)
-          echo "🌐 GitHub Runner Public IP: $RUNNER_IP"
-          echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
+      # 🛡️ RADICAL SAFETY GATE — full syntax check over all runtime backend files.
+      # Any commit with a SyntaxError in a runtime file blocks the deploy BEFORE
+      # it reaches the server (a broken commit previously crashed the backend → 502).
+      - name: Full Backend Syntax Gate
+        working-directory: ./apps/backend
+        run: node scripts/check_syntax.js
+        continue-on-error: false
 
       - name: Enforce AI Agent File Size Guard
         run: |
@@ -147,6 +133,12 @@ jobs:
           HUSKY: '0'
         continue-on-error: false
 
+      # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
+      - name: Check Frontend Icon Imports
+        working-directory: ./apps/frontend
+        run: node scripts/check-icon-imports.cjs
+        continue-on-error: false
+
       - name: Build Frontend
         working-directory: ./apps/frontend
         run: |
@@ -188,7 +180,7 @@ jobs:
           tar -czf frontend.tar.gz -C apps/frontend/dist .
           tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
           tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
-          
+
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
 
@@ -212,22 +204,36 @@ jobs:
 
           ls -lh *.tar.gz
 
-      - name: Upload Build Artifacts
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
+      # ───────────────────────────────────────────────────────────────────
+      # نقل التاربولز للسيرفر (staging فقط — آمن، لا يلمس الحالة الحية)
+      # ───────────────────────────────────────────────────────────────────
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
         with:
-          name: deploy-tarballs-${{ github.run_id }}
-          path: |
-            frontend.tar.gz
-            backend.tar.gz
-            ai-service.tar.gz
-            shared.tar.gz
-            nginx-configs.tar.gz
-            theme-presets.tar.gz
-          retention-days: 3
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
 
-      # Setup Remote Staging Directory
+      - name: Test SSH Connection
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" \
+            "echo '✅ SSH connection successful' && df -h \$HOME"
 
+      - name: Get Runner IP
+        run: |
+          RUNNER_IP=$(curl -s https://ifconfig.me)
+          echo "🌐 GitHub Runner Public IP: $RUNNER_IP"
+          echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
+
+      # Setup Remote Staging Directory — التنظيف age-based عشان محدش يمسح
+      # staging تبع deploy شغال في الخلفية (كانت rm -rf لكل حاجة).
       - name: Setup Remote Staging Directory
         shell: bash
         env:
@@ -239,16 +245,17 @@ jobs:
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
           ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" '
             set -e
-            echo "🧹 Cleaning up old deploy staging directories, logs, and caches to free space..."
-            rm -rf $HOME/deploy_staging_* 2>/dev/null || true
+            echo "🧹 Cleaning stale staging dirs (older than 1 day)..."
+            find $HOME -maxdepth 1 -name "deploy_staging_*" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
             sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/backend_uploads_backup 2>/dev/null || true
             sudo journalctl --vacuum-time=1d 2>/dev/null || true
             sudo npm cache clean --force 2>/dev/null || true
             sudo docker system prune -af --volumes 2>/dev/null || true
             pm2 flush 2>/dev/null || true
 
-            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}"
+            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}"
             echo "🚀 Creating staging directory: $DEPLOY_STAGING"
+            rm -rf "$DEPLOY_STAGING"
             mkdir -p "$DEPLOY_STAGING/backend"
             mkdir -p "$DEPLOY_STAGING/frontend"
             echo "✅ Staging directory created."
@@ -277,7 +284,7 @@ jobs:
               -o ServerAliveCountMax=10 \
               -o ConnectTimeout=30 \
               *.tar.gz \
-              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"; then
+              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/"; then
               echo "✅ Tarballs transferred successfully"
               break
             else
@@ -294,9 +301,50 @@ jobs:
           scp -i "$SSH_KEY_PATH" -P "$SERVER_SSH_PORT" \
             -o StrictHostKeyChecking=accept-new \
             scripts/deploy-remote.sh \
-            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/deploy-remote.sh"
+            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/deploy-remote.sh"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # DEPLOY job — ينفذ deploy-remote.sh على السيرفر فقط (never cancel)
+  # cancel-in-progress: false — الديبلوي اللي شغال لازم يخلص من غير ما
+  # يتقطع في النص (npm prune / prisma migrate / pm2 restart).
+  # الـ pending الأقدم بيتلغي أوتوماتيك لصالح الأحدث (سلوك GitHub الافتراضي).
+  # ═══════════════════════════════════════════════════════════════════
+  deploy:
+    name: Deploy to Server (never cancel)
+    runs-on: ubuntu-latest
+    needs: build
+    # مش هينضاف للطابور غير لما الـ build يكون هو الأحدث على main.
+    if: needs.build.outputs.is-latest == 'true'
+    concurrency:
+      group: production-deploy-apply
+      cancel-in-progress: false
+    timeout-minutes: 150
+
+    steps:
+      - name: Skip deploy if superseded while waiting in queue
+        id: check-deploy-latest
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LATEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/main" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+          if [ -n "$LATEST" ] && [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main."
+            echo "   The newer commit's deploy will cover these changes."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "✅ Still the latest commit on main. Proceeding with deploy."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Run Deployment Script on Server
+        if: steps.check-deploy-latest.outputs.proceed == 'true'
         uses: appleboy/ssh-action@v1.0.3
         env:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
@@ -316,7 +364,7 @@ jobs:
               echo "❌ Passwordless sudo is required for production deploys"
               exit 1
             }
-            export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+            export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}"
             exec 9>/tmp/maxp-production-deploy.lock
             if ! flock -n 9; then
               echo "❌ Another production deployment is already running on the server"

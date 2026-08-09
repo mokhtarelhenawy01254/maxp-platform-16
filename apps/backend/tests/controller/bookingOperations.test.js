@@ -3,6 +3,7 @@ jest.mock('../../services/sharedDatabase', () => ({
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../../utils/dateUtils');
 const controller = require('../../controller/bookingOperationsController');
 
 const createResponse = () => {
@@ -175,8 +176,8 @@ describe('bookingOperationsController', () => {
       );
 
       const printedAtWhere = prisma.examLabel.findMany.mock.calls[0][0].where.printedAt;
-      expect(printedAtWhere.gte.toISOString()).toBe('2026-08-07T00:00:00.000Z');
-      expect(printedAtWhere.lte.toISOString()).toBe('2026-08-07T23:59:59.999Z');
+      expect(printedAtWhere.gte.toISOString()).toBe(getStartOfDayInTimezone(new Date('2026-08-07T00:00:00.000Z')).toISOString());
+      expect(printedAtWhere.lte.toISOString()).toBe(getEndOfDayInTimezone(new Date('2026-08-07T00:00:00.000Z')).toISOString());
 
       const entry = res.payload.data[0];
       expect(entry.id).toBe('label-1');

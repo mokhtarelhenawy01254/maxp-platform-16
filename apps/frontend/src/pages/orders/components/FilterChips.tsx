@@ -14,6 +14,16 @@ export interface MerchantFilterOption {
   email?: string;
 }
 
+export interface AffiliateFilterOption {
+  id: string;
+  affiliateCode?: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+}
+
 export interface FilterChipsProps {
   /** Current filter state. */
   filters: {
@@ -37,7 +47,7 @@ export interface FilterChipsProps {
   filterableOrderStatuses?: OrderStatusFilterOption[];
   filterablePaymentStatuses?: OrderStatusFilterOption[];
   merchantOptions?: MerchantFilterOption[];
-  affiliateOptions?: MerchantFilterOption[];
+  affiliateOptions?: AffiliateFilterOption[];
   /** Apply a single filter change. */
   onFilterChange: (key: string, value: string | boolean | string[]) => void;
   /** Clear the advanced filters (and the chip strip in one go). */
@@ -189,7 +199,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
         key: t("orders.affiliateLabel", { defaultValue: "المسوق" }),
         value: match?.user?.firstName
           ? `${match.user.firstName} ${match.user.lastName ?? ""}`.trim()
-          : (match as any)?.affiliateCode || value,
+          : match?.affiliateCode || value,
         tone: "warning",
         remove: () =>
           onFilterChange(

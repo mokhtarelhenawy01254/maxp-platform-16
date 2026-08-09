@@ -34,6 +34,7 @@
     "channel": "Channel",
     "agent": "Responsible Agent",
     "autoReply": "Auto Reply",
+    "reply": "Reply",
     "toolStatus": "Tool Status",
     "selectPlaceholder": "Select agent...",
     "noRouting": "No Routing (CEO)",

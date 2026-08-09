@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getDateStringInTimezone, getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 
 const CSV_HEADERS = {
   appointments: ['id', 'customerName', 'customerPhone', 'customerGender', 'branchName', 'doctorName', 'serviceName', 'appointmentDate', 'startTime', 'endTime', 'status', 'diagnosis', 'paymentStatus', 'source'],
@@ -24,7 +25,7 @@ const getReportsSummary = async (req, res) => {
     const period = req.query.period || 'today';
     const now = new Date();
     let dateFrom, dateTo;
-    const fmt = (d) => d.toISOString().split('T')[0];
+    const fmt = (d) => getDateStringInTimezone(d);
 
     if (period === 'today') {
       dateFrom = new Date(now); dateFrom.setHours(0, 0, 0, 0);
@@ -68,8 +69,9 @@ const getReportsSummary = async (req, res) => {
     // Financials
     const activeInvoices = invoices.filter(i => i.status !== 'REFUNDED');
     const totalRevenue = activeInvoices.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const netRevenue = activeInvoices.reduce((s, i) => s + netOf(i.total, i.discount, i.additionAmount), 0);
     const collected = activeInvoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0);
-    const outstanding = totalRevenue - collected;
+    const outstanding = netRevenue - collected;
     const unpaidInvoices = invoices.filter(i => i.status === 'UNPAID' || i.status === 'PARTIAL').length;
 
     // Doctor performance
@@ -143,6 +145,7 @@ const getReportsSummary = async (req, res) => {
       // Financials
       financials: {
         totalRevenue: +totalRevenue.toFixed(2),
+        netRevenue: +netRevenue.toFixed(2),
         collected: +collected.toFixed(2),
         outstanding: +outstanding.toFixed(2),
         invoiceCount: invoices.length,
@@ -246,34 +249,27 @@ const num = (v) => Number(v) || 0;
 
 const round2 = (v) => Math.round((num(v) + Number.EPSILON) * 100) / 100;
 
-const fmtDate = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().split('T')[0] : '';
+const fmtDate = (d) => (d instanceof Date && !isNaN(d.getTime())) ? getDateStringInTimezone(d) : '';
 
 const netOf = (total, discount, additionAmount) =>
   Math.max(0, num(total) - num(discount) + num(additionAmount));
 
-const PAYBACK_REASON_PATTERNS = ['payback', 'refund', 'استرداد', 'مرتجع'];
-
 const isPaybackPayment = (p) =>
   p.paybackOfPaymentId != null ||
-  num(p.amount) < 0 ||
-  (!!p.reason && PAYBACK_REASON_PATTERNS.some((pt) => String(p.reason).toLowerCase().includes(pt.toLowerCase())));
+  num(p.amount) < 0;
 
-const buildPaybackReasonOr = () => {
-  const ors = [{ paybackOfPaymentId: { not: null } }, { amount: { lt: 0 } }];
-  for (const pattern of PAYBACK_REASON_PATTERNS) {
-    if (/[a-z]/i.test(pattern)) ors.push({ reason: { contains: pattern, mode: 'insensitive' } });
-    else ors.push({ reason: { contains: pattern } });
-  }
-  return ors;
-};
+const buildPaybackReasonOr = () => [
+  { paybackOfPaymentId: { not: null } },
+  { amount: { lt: 0 } },
+];
 
 const parseDayStart = (raw) => {
   const s = String(raw || '').trim();
   if (!s) return null;
   const iso = s.slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return new Date(`${iso}T00:00:00.000Z`);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return getStartOfDayInTimezone(new Date(`${iso}T00:00:00.000Z`));
   const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+  return isNaN(d.getTime()) ? null : getStartOfDayInTimezone(d);
 };
 
 const resolveDateRange = (req, res) => {
@@ -282,7 +278,7 @@ const resolveDateRange = (req, res) => {
   const toRaw = req.query.to || req.query.dateTo;
   const start = fromRaw ? parseDayStart(fromRaw) : new Date(now.getFullYear(), now.getMonth(), 1);
   const end = toRaw
-    ? (() => { const d = parseDayStart(toRaw); if (d) d.setUTCHours(23, 59, 59, 999); return d; })()
+    ? (() => { const d = parseDayStart(toRaw); if (d) return getEndOfDayInTimezone(d); return d; })()
     : (() => { const d = new Date(now); d.setHours(23, 59, 59, 999); return d; })();
   if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
     res.status(400).json({ success: false, error: 'نطاق التاريخ غير صالح' });
@@ -478,12 +474,11 @@ const getActualVsExpected = async (req, res) => {
     const firstDay = fmtDate(range.start);
     const lastDay = fmtDate(range.end);
     const days = [];
-    const cursor = new Date(`${firstDay}T00:00:00.000Z`);
-    const endTime = new Date(`${lastDay}T23:59:59.999Z`);
+    const cursor = getStartOfDayInTimezone(new Date(`${firstDay}T00:00:00.000Z`));
+    const endTime = getStartOfDayInTimezone(new Date(`${lastDay}T00:00:00.000Z`));
     while (cursor <= endTime) {
-      days.push(cursor.toISOString().split('T')[0]);
+      days.push(getDateStringInTimezone(cursor));
       cursor.setUTCDate(cursor.getUTCDate() + 1);
-      cursor.setUTCHours(0, 0, 0, 0);
     }
 
     let expected = 0;
@@ -689,7 +684,7 @@ const getRefunds = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const { cashierName } = req.query;
 
-    const paybacks = await prisma.medicalPayment.findMany({
+    const paybacks = (await prisma.medicalPayment.findMany({
       where: {
         companyId,
         paidAt: { gte: range.start, lte: range.end },
@@ -700,7 +695,7 @@ const getRefunds = async (req, res) => {
         invoice: { select: { invoiceNumber: true, patient: { select: { firstName: true, lastName: true, phone: true } } } },
       },
       orderBy: { paidAt: 'desc' },
-    });
+    })).filter(isPaybackPayment);
 
     const byCashier = new Map();
     const byMethod = new Map();

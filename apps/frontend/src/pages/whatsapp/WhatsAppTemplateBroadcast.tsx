@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import {
   Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
 } from "lucide-react";
@@ -45,6 +46,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 = ({ companyId, companyName: _companyName, superAdminMode: _superAdminMode = false }) => {
   const { t, i18n } = useTranslation();
   void i18n;
+  const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState("create");
 
@@ -189,6 +191,27 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
     } catch { }
   }, []);
+
+  useEffect(() => {
+    const urlListId = searchParams.get("listId");
+    if (!urlListId || urlListId === "manual") return;
+    let cancelled = false;
+    const apply = async () => {
+      const res = await broadcastService.getCustomerLists();
+      const lists = Array.isArray(res) ? res : (res as any)?.data || [];
+      const found = lists.find((l: any) => l.id === urlListId);
+      if (cancelled) return;
+      if (found) {
+        setActiveTab("create");
+        await handleSelectList(found.id);
+        toast.success(`تم تحميل القائمة "${found.name}" (${found.count} عميل)`);
+      } else {
+        toast.error("القائمة المحددة غير موجودة");
+      }
+    };
+    void apply();
+    return () => { cancelled = true; };
+  }, [searchParams, handleSelectList]);
 
   const handleSelectTag = useCallback(async (tagName: string) => {
     setSelectedTag(tagName);

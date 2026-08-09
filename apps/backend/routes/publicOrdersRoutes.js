@@ -2152,8 +2152,10 @@ router.post('/', async (req, res) => {
           price: parseFloat(item.price || 0),
           total: parseFloat((item.price || 0) * (item.quantity || 1)),
           productSku: item.productSku || item.sku || null,
-          productColor,
-          productSize,
+          // productColor/productSize مقبولان في OrderItem كـ String فقط؛
+          // خصائص الفاريانت (سايز) قد تكون Int (37) فيخفق إنشاء الـ primary order.
+          productColor: productColor == null ? null : String(productColor),
+          productSize: productSize == null ? null : String(productSize),
           productId: item.productId || null,
           variantId: item.variantId || null,
           productImage,

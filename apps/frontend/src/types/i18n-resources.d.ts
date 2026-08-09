@@ -761,6 +761,7 @@ declare module 'react-i18next' {
           channel: string;
           agent: string;
           autoReply: string;
+          reply: string;
           toolStatus: string;
           selectPlaceholder: string;
           noRouting: string;
@@ -10618,6 +10619,9 @@ declare module 'react-i18next' {
         statusSearch: string;
         statusSelectAll: string;
         statusNoResults: string;
+        filterSearch: string;
+        filterSelectAll: string;
+        filterNoResults: string;
         refreshOrders: string;
         lastUpdatedAt: string;
         liveUpdates: string;
@@ -10807,6 +10811,7 @@ declare module 'react-i18next' {
           PACKAGED: string;
           READY_TO_SHIP: string;
           STOCK_SHORTAGE: string;
+          SHORTAGE_FAILED: string;
           PENDING_CANCELLATION: string;
         };
         stageDescriptions: {
@@ -10816,6 +10821,7 @@ declare module 'react-i18next' {
           PACKAGED: string;
           READY_TO_SHIP: string;
           STOCK_SHORTAGE: string;
+          SHORTAGE_FAILED: string;
           PENDING_CANCELLATION: string;
         };
         shortageReasons: {
@@ -10889,6 +10895,7 @@ declare module 'react-i18next' {
           pos: string;
           unknown: string;
         };
+        shortageFailedTab: string;
         actionLabels: {
           viewOnlyDesc: string;
           viewOnly: string;
@@ -10965,6 +10972,8 @@ declare module 'react-i18next' {
           clearDateSuccess: string;
           customerNotifiedBadge: string;
           ownerBadge: string;
+          markAsShortageFailed: string;
+          confirmShortageFailed: string;
         };
         problemPanel: {
           title: string;
@@ -13877,6 +13886,7 @@ declare module 'react-i18next' {
         customerLoyalty: string;
         customerPointsCenter: string;
         customerSegments: string;
+        customerLists: string;
         customerNotifications: string;
         customers: string;
         customersBirthday: string;
@@ -13966,6 +13976,8 @@ declare module 'react-i18next' {
         bookingWorkflow: string;
         bookingReports: string;
         bookingOperations: string;
+        bookingInsuranceCompanies: string;
+        bookingMemberTypes: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;

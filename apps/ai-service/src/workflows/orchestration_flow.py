@@ -199,6 +199,24 @@ async def run_orchestration(
 ) -> dict[str, Any]:
     effective_channel = channel or ("merchant" if is_merchant else "chat")
 
+    if session is not None and not is_merchant:
+        try:
+            from src.api.admin.settings import is_channel_reply_enabled
+            if not await is_channel_reply_enabled(company_id, effective_channel, session):
+                logger.info(
+                    "orchestration_channel_reply_disabled",
+                    company_id=company_id,
+                    channel=effective_channel,
+                )
+                return {
+                    "reply": "",
+                    "thread_id": thread_id,
+                    "tool_results": [],
+                    "response_attachments": [],
+                }
+        except Exception:
+            logger.warning("orchestration_channel_reply_check_failed", exc_info=True)
+
     # Load registry early so we can pick the agent's configured provider
     registry = get_agent_registry()
     state_manager = RunStateManager(session) if session else None

@@ -2643,12 +2643,12 @@ const Orders: React.FC = () => {
         formatPrice={formatPrice}
         getFulfillmentSourceText={getFulfillmentSourceText}
         onClearMerchantFilters={() => {
-          handleFilterChange("merchantOperationStatus", "");
-          handleFilterChange("merchantSettlementStatus", "");
+          handleFilterChange("merchantOperationStatus", []);
+          handleFilterChange("merchantSettlementStatus", []);
         }}
         onShowDueOrders={() => {
-          handleFilterChange("merchantOperationStatus", "DELIVERED");
-          handleFilterChange("merchantSettlementStatus", "PAYABLE");
+          handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
+          handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
         }}
       />
 

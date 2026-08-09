@@ -313,6 +313,14 @@ async function updateAutoReply(companyId, enabled) {
   return request('PUT', `/admin/settings/auto-reply?company_id=${encodeURIComponent(companyId)}`, { autoReplyEnabled: enabled });
 }
 
+async function getChannelReply(companyId) {
+  return request('GET', `/admin/settings/channel-reply?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateChannelReply(companyId, channels) {
+  return request('PUT', `/admin/settings/channel-reply?company_id=${encodeURIComponent(companyId)}`, { channels });
+}
+
 async function getGlobalFilterSettings(companyId) {
   return request('GET', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`);
 }
@@ -422,6 +430,8 @@ module.exports = {
   updateGuardrails,
   getAutoReply,
   updateAutoReply,
+  getChannelReply,
+  updateChannelReply,
   visualSearch,
   getGlobalFilterSettings,
   updateGlobalFilterSettings,

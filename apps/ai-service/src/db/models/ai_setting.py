@@ -15,7 +15,8 @@ class AiSetting(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     company_id: Mapped[str] = mapped_column("companyId", String, nullable=False, index=True, unique=True)
-    autoReplyEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    autoReplyEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    channelReplyEnabled: Mapped[str | None] = mapped_column(Text, nullable=True)
     promptTemplate: Mapped[str | None] = mapped_column(Text, nullable=True)
     responseRules: Mapped[str | None] = mapped_column(Text, nullable=True)
     modelSettings: Mapped[str | None] = mapped_column(Text, nullable=True)

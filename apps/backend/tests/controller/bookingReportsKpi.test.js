@@ -4,6 +4,7 @@ jest.mock('../../services/sharedDatabase', () => ({
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const {
+  getReportsSummary,
   getRevenueReport,
   getActualVsExpected,
   getDues,
@@ -292,15 +293,45 @@ describe('bookingReports KPI controllers', () => {
       const mohamedDay1 = res.payload.data.rows.find((r) => r.date === '2026-08-01' && r.cashierName === 'محمد');
       expect(mohamedDay1).toEqual(expect.objectContaining({ totalCollected: 300, paybacks: 0, shiftStatus: 'NO_SHIFT' }));
 
+      const mohamedDay2 = res.payload.data.rows.find((r) => r.date === '2026-08-02' && r.cashierName === 'محمد');
+      expect(mohamedDay2).toEqual(expect.objectContaining({ totalCollected: 50, paybacks: 0 }));
+
       expect(res.payload.data.totals).toEqual(expect.objectContaining({
-        totalCollected: 1800,
-        totalCount: 3,
+        totalCollected: 1850,
+        totalCount: 4,
         discounts: 100,
-        paybacks: 250,
-        netCollected: 1450,
+        paybacks: 200,
+        netCollected: 1550,
         dayCount: 2,
         cashierCount: 2,
       }));
+    });
+
+    test('does NOT treat a positive payment with a refund-ish reason as a payback', async () => {
+      const prisma = {
+        medicalPayment: {
+          findMany: jest.fn().mockResolvedValueOnce([
+            { amount: 500, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'), cashierName: 'أحمد', reason: 'تحصيل استرداد سابق', paybackOfPaymentId: null },
+            { amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T11:00:00.000Z'), cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: 'orig-1' },
+          ])
+        },
+        medicalInvoice: {
+          findMany: jest.fn().mockResolvedValueOnce([]),
+        },
+        cashierShift: {
+          findMany: jest.fn().mockResolvedValueOnce([]),
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await getCashierDaily(buildReq({ from: '2026-08-01', to: '2026-08-01' }), res);
+
+      expect(res.statusCode).toBe(200);
+      const ahmed = res.payload.data.rows.find((r) => r.cashierName === 'أحمد');
+      expect(ahmed.totalCollected).toBe(500);
+      expect(ahmed.totalCount).toBe(1);
+      expect(ahmed.paybacks).toBe(200);
     });
   });
 
@@ -336,6 +367,64 @@ describe('bookingReports KPI controllers', () => {
       const day2 = res.payload.data.rows.find((r) => r.date === '2026-08-02');
       expect(day2).toEqual({ date: '2026-08-02', expected: 800, actual: 300, variance: -500 });
     });
+
+    test('groups late-night Egyptian payments into the correct Cairo day and range', async () => {
+      const prisma = {
+        medicalInvoice: {
+          findMany: jest.fn().mockResolvedValueOnce([
+            { id: 'inv-n', total: 1000, discount: 0, additionAmount: 0, status: 'PAID', createdAt: new Date('2026-08-01T23:00:00.000Z') },
+          ])
+        },
+        medicalPayment: {
+          findMany: jest.fn().mockResolvedValueOnce([
+            { amount: 1000, paidAt: new Date('2026-08-01T23:00:00.000Z') },
+          ])
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await getActualVsExpected(buildReq({ from: '2026-08-02', to: '2026-08-02' }), res);
+
+      expect(res.statusCode).toBe(200);
+      const day2 = res.payload.data.rows.find((r) => r.date === '2026-08-02');
+      expect(day2).toEqual({ date: '2026-08-02', expected: 1000, actual: 1000, variance: 0 });
+    });
+  });
+
+  describe('getReportsSummary', () => {
+    test('financials outstanding uses net (total - discount + addition) minus collected and excludes REFUNDED', async () => {
+      const prisma = {
+        appointment: {
+          count: jest.fn().mockResolvedValue(10),
+          groupBy: jest.fn().mockResolvedValue([]),
+        },
+        medicalInvoice: {
+          findMany: jest.fn().mockResolvedValue([
+            { total: 1000, discount: 100, additionAmount: 0, amountPaid: 900, status: 'PAID', patientId: 'p1', appointmentId: null },
+            { total: 500, discount: 0, additionAmount: 50, amountPaid: 100, status: 'PARTIAL', patientId: 'p2', appointmentId: null },
+            { total: 300, discount: 0, additionAmount: 0, amountPaid: 0, status: 'REFUNDED', patientId: 'p3', appointmentId: null },
+          ]),
+        },
+        bookingBranch: { findMany: jest.fn().mockResolvedValue([]) },
+        bookingDoctor: { findMany: jest.fn().mockResolvedValue([]) },
+        patient: { findMany: jest.fn().mockResolvedValue([]) },
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await getReportsSummary({ user: { companyId: 'company-1' }, query: { period: 'today' } }, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.financials).toEqual(expect.objectContaining({
+        totalRevenue: 1500,
+        netRevenue: 1450,
+        collected: 1000,
+        outstanding: 450,
+        invoiceCount: 3,
+        unpaidInvoices: 1,
+      }));
+    });
   });
 
   describe('getRefunds', () => {
@@ -349,8 +438,8 @@ describe('bookingReports KPI controllers', () => {
               invoice: { invoiceNumber: 'INV-1', patient: { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' } },
             },
             {
-              id: 'p-2', invoiceId: 'inv-2', amount: 50, method: 'CARD', paidAt: new Date('2026-08-02T10:00:00.000Z'),
-              cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: null,
+              id: 'p-2', invoiceId: 'inv-2', amount: -50, method: 'CARD', paidAt: new Date('2026-08-02T10:00:00.000Z'),
+              cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: 'orig-2',
               invoice: { invoiceNumber: 'INV-2', patient: { firstName: 'مريم', lastName: '', phone: '01100000000' } },
             },
           ])
@@ -394,6 +483,36 @@ describe('bookingReports KPI controllers', () => {
           }),
         })
       );
+    });
+
+    test('does NOT return a positive payment whose reason mentions refund as a payback', async () => {
+      const prisma = {
+        medicalPayment: {
+          findMany: jest.fn().mockResolvedValueOnce([
+            {
+              id: 'p-1', invoiceId: 'inv-1', amount: -200, method: 'CASH', paidAt: new Date('2026-08-01T10:00:00.000Z'),
+              cashierName: 'أحمد', reason: 'استرداد', paybackOfPaymentId: 'orig-1',
+              invoice: { invoiceNumber: 'INV-1', patient: { firstName: 'أحمد', lastName: 'علي', phone: '01000000000' } },
+            },
+            {
+              id: 'p-2', invoiceId: 'inv-2', amount: 50, method: 'CARD', paidAt: new Date('2026-08-02T10:00:00.000Z'),
+              cashierName: 'محمد', reason: 'payback refund', paybackOfPaymentId: null,
+              invoice: { invoiceNumber: 'INV-2', patient: { firstName: 'مريم', lastName: '', phone: '01100000000' } },
+            },
+          ])
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await getRefunds(buildReq({ from: '2026-08-01', to: '2026-08-31' }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.summary).toEqual(expect.objectContaining({
+        totalPayback: 200,
+        count: 1,
+      }));
+      expect(res.payload.data.rows.map((r) => r.id)).toEqual(['p-1']);
     });
   });
 

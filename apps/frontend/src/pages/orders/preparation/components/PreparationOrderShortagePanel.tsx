@@ -27,6 +27,7 @@ interface PreparationOrderShortagePanelProps {
     overrides?: Partial<ShortageHoldDetails>,
     options?: { successMessage?: string | null },
   ) => Promise<boolean>;
+  onMarkAsShortageFailed: (orderNumber: string) => void;
 }
 
 const PreparationOrderShortagePanel = ({
@@ -37,6 +38,7 @@ const PreparationOrderShortagePanel = ({
   formatDate,
   onShortageFieldChange,
   onSaveShortageHoldDetails,
+  onMarkAsShortageFailed,
 }: PreparationOrderShortagePanelProps) => {
   const { t } = useTranslation();
 
@@ -239,6 +241,19 @@ const PreparationOrderShortagePanel = ({
             <CheckCircleIcon className="h-4 w-4" />
           )}
           {t("preparation.shortagePanel.save")}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm(t("preparation.shortagePanel.confirmShortageFailed"))) {
+              onMarkAsShortageFailed(order.orderNumber);
+            }
+          }}
+          disabled={rowBusy}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-5 py-3 text-sm font-medium text-purple-800 transition hover:border-purple-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:border-purple-600"
+        >
+          {t("preparation.shortagePanel.markAsShortageFailed")}
         </button>
       </div>
     </div>

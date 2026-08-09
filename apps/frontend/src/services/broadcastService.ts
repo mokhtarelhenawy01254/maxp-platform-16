@@ -330,6 +330,52 @@ class BroadcastService {
     return this.makeRequest(`/broadcast/customer-lists/${listId}`, { method: "DELETE" });
   }
 
+  async updateCustomerList(
+    listId: string,
+    listData: {
+      name: string;
+      description: string;
+      criteria: any;
+    },
+  ): Promise<CustomerList> {
+    return this.makeRequest(`/broadcast/customer-lists/${listId}`, {
+      method: "PUT",
+      body: JSON.stringify(listData),
+    });
+  }
+
+  async refreshCustomerListCount(listId: string): Promise<any> {
+    return this.makeRequest(`/broadcast/customer-lists/${listId}/refresh-count`, {
+      method: "POST",
+    });
+  }
+
+  async previewCustomerListCount(criteria: any): Promise<{ success: boolean; data: { count: number } }> {
+    return this.makeRequest("/broadcast/customer-lists/preview-count", {
+      method: "POST",
+      body: JSON.stringify({ criteria }),
+    });
+  }
+
+  async getCustomersInListPaginated(
+    listId: string,
+    page = 1,
+    limit = 25,
+    search = "",
+  ): Promise<{
+    success: boolean;
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  }> {
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+    return this.makeRequest(
+      `/broadcast/customer-lists/${listId}/customers?page=${page}&limit=${limit}${searchParam}`,
+    );
+  }
+
   // Settings methods
   async getSettings(): Promise<BroadcastSettings> {
     return this.makeRequest("/broadcast/settings");

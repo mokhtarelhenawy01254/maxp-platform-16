@@ -78,6 +78,12 @@ export const saveLastPath = (
   pathname: string,
 ): void => {
   if (!user?.id || !isAllowedPostAuthPath(pathname)) return;
+  // System roles (SUPER_ADMIN) must only resume their own dashboard surface,
+  // never company pages like /apps that are technically allowed but not the
+  // intended landing after login.
+  if (isSystemUserRole(user?.role) && !pathname.startsWith("/super-admin/")) {
+    return;
+  }
   try {
     localStorage.setItem(getLastPathKey(user), pathname);
   } catch {
@@ -99,6 +105,10 @@ const isResumePathAllowed = (
   user?: PostAuthUser | null,
 ): boolean => {
   if (!isAllowedPostAuthPath(path)) return false;
+  // System roles (SUPER_ADMIN) may only resume their own dashboard surface.
+  if (isSystemUserRole(user?.role) && !path.startsWith("/super-admin/")) {
+    return false;
+  }
   if (!isPathAllowedForUser(path, user)) return false;
 
   // Merchant / affiliate shells must stay inside their allowed surface.

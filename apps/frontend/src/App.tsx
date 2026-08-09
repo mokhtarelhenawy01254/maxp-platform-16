@@ -1453,6 +1453,9 @@ const CustomerSegments = React.lazy(
 const CustomerNotifications = React.lazy(
   () => import("./pages/customers/CustomerNotifications"),
 );
+const CustomerLists = React.lazy(
+  () => import("./pages/customers/CustomerLists"),
+);
 const RecruitmentDashboard = React.lazy(
   () => import("./pages/hr/recruitment/RecruitmentDashboard"),
 );
@@ -1505,6 +1508,7 @@ if (typeof window !== "undefined") {
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
+  p["/customers/lists"] = () => import("./pages/customers/CustomerLists");
   p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
@@ -2796,6 +2800,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.create']}>
                       <Layout>
                         <CustomerCreate />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customers/lists"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerLists />
                       </Layout>
                     </PermissionProtectedRoute>
                   }

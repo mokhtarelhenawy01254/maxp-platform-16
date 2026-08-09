@@ -8,17 +8,17 @@ from typing import Any
 from src.llm.tool_parsers.base import BaseToolParser
 
 _DSML_INVOKE_RE = re.compile(
-    r"<[｜| \t]*DSML[｜| \t]*invoke\s+name=(?P<quote>['\"])(?P<name>[a-zA-Z0-9_-]+)(?P=quote)[｜| \t]*>(?P<content>.*?)<[｜| \t/]*DSML[｜| \t]*invoke[｜| \t/]*>",
+    r"<[｜| \t]*(?:DSML[｜| \t]*)?invoke\s+name=(?P<quote>['\"])(?P<name>[a-zA-Z0-9_.-]+)(?P=quote)[｜| \t]*>(?P<content>.*?)<[｜| \t/]*(?:DSML[｜| \t]*)?invoke[｜| \t/]*>",
     re.DOTALL
 )
 
 _DSML_PARAM_RE = re.compile(
-    r"<[｜| \t]*DSML[｜| \t]*parameter\s+name=(?P<quote>['\"])(?P<param_name>[a-zA-Z0-9_-]+)(?P=quote)(?:\s+string=(?P<s_quote>['\"])(?P<is_string>true|false)(?P=s_quote))?[｜| \t]*>(?P<param_value>.*?)<[｜| \t/]*DSML[｜| \t]*parameter[｜| \t/]*>",
+    r"<[｜| \t]*(?:DSML[｜| \t]*)?parameter\s+name=(?P<quote>['\"])(?P<param_name>[a-zA-Z0-9_.-]+)(?P=quote)(?:\s+string=(?P<s_quote>['\"])(?P<is_string>true|false)(?P=s_quote))?[｜| \t]*>(?P<param_value>.*?)<[｜| \t/]*(?:DSML[｜| \t]*)?parameter[｜| \t/]*>",
     re.DOTALL
 )
 
 _DSML_JSON_RE = re.compile(
-    r"<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>(.*?)<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>",
+    r"<[｜|]{1,2}(?:DSML[｜|]{1,2})?tool_calls>(.*?)<[｜|]{1,2}(?:DSML[｜|]{1,2})?tool_calls>",
     re.DOTALL,
 )
 
