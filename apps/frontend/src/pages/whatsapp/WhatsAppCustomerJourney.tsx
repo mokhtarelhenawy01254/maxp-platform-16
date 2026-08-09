@@ -66,11 +66,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
 import {
   WhatsAppMetricCard,
   WhatsAppPageShell,
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
+
+const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
 interface Flow {
   id: string;
@@ -260,8 +263,10 @@ function MessagePreview({ content }: { content: string }) {
 const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isRtl = i18n.dir() === "rtl";
   const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
+  const isAdmin = user?.role ? adminRoles.has(user.role) : false;
 
   const [activeTab, setActiveTab] = useState<TabId>("flows");
   const [flows, setFlows] = useState<Flow[]>([]);
@@ -648,10 +653,12 @@ const WhatsAppCustomerJourney: React.FC = () => {
             <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
             {t("common.refresh")}
           </Button>
-          <Button className={primaryActionClassName} onClick={openCreateFlowDialog}>
-            <Plus className="size-4" />
-            {t("whatsappJourney.flows.addNew")}
-          </Button>
+          {isAdmin && (
+            <Button className={primaryActionClassName} onClick={openCreateFlowDialog}>
+              <Plus className="size-4" />
+              {t("whatsappJourney.flows.addNew")}
+            </Button>
+          )}
         </>
       }
     >
@@ -803,32 +810,34 @@ const WhatsAppCustomerJourney: React.FC = () => {
                                 </p>
                               </div>
 
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    openEditFlowDialog(flow);
-                                  }}
-                                >
-                                  <Edit className="size-4" />
-                                  <span className="sr-only">{t("common.edit")}</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="rounded-full text-[color:var(--color-destructive)] hover:text-[color:var(--color-destructive)]"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setDeleteTarget({ type: "flow", id: flow.id });
-                                  }}
-                                >
-                                  <Trash2 className="size-4" />
-                                  <span className="sr-only">{t("common.delete")}</span>
-                                </Button>
-                              </div>
+                              {isAdmin && (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="rounded-full"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openEditFlowDialog(flow);
+                                    }}
+                                  >
+                                    <Edit className="size-4" />
+                                    <span className="sr-only">{t("common.edit")}</span>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="rounded-full text-[color:var(--color-destructive)] hover:text-[color:var(--color-destructive)]"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setDeleteTarget({ type: "flow", id: flow.id });
+                                    }}
+                                  >
+                                    <Trash2 className="size-4" />
+                                    <span className="sr-only">{t("common.delete")}</span>
+                                  </Button>
+                                </div>
+                              )}
                             </div>
 
                             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
@@ -927,13 +936,15 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       />
                       {t("common.refresh")}
                     </Button>
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateStepDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.steps.add")}
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        className={primaryActionClassName}
+                        onClick={openCreateStepDialog}
+                      >
+                        <Plus className="size-4" />
+                        {t("whatsappJourney.steps.add")}
+                      </Button>
+                    )}
                   </div>
                 ) : undefined
               }
@@ -1012,29 +1023,31 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               {step.content}
                             </p>
 
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                className={outlineActionClassName}
-                                onClick={() => openEditStepDialog(step)}
-                              >
-                                <Edit className="size-4" />
-                                {t("common.edit")}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
-                                onClick={() =>
-                                  setDeleteTarget({
-                                    type: "step",
-                                    id: step.id || "",
-                                  })
-                                }
-                              >
-                                <Trash2 className="size-4" />
-                                {t("common.delete")}
-                              </Button>
-                            </div>
+                            {isAdmin && (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  className={outlineActionClassName}
+                                  onClick={() => openEditStepDialog(step)}
+                                >
+                                  <Edit className="size-4" />
+                                  {t("common.edit")}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
+                                  onClick={() =>
+                                    setDeleteTarget({
+                                      type: "step",
+                                      id: step.id || "",
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="size-4" />
+                                  {t("common.delete")}
+                                </Button>
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-3">
