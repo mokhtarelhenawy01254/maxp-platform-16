@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BarChart as BarChartIcon,
   TrendingUp,
@@ -118,18 +118,43 @@ const PIE_COLORS = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  SHORTAGE_FAILED: "ÙØ´Ù„ Ø§Ù„Ø¹Ø¬Ø²",
-  CANCELLED: "Ù…Ù„ØºÙŠ",
-  DELIVERED: "ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…",
-  SHIPPED: "ØªÙ… Ø§Ù„Ø´Ø­Ù†",
-  PROCESSING: "Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©",
-  CONFIRMED: "Ù…Ø¤ÙƒØ¯",
-  PENDING: "Ù…Ø¹Ù„Ù‚",
-  STOCK_SHORTAGE: "Ø¹Ø¬Ø² Ù…Ø®Ø²ÙˆÙ†",
-  RETURNED: "Ù…Ø³ØªØ±Ø¬Ø¹",
-  REFUNDED: "Ù…Ø³ØªØ±Ø¯",
-  PARTIALLY_DELIVERED: "ØªØ³Ù„ÙŠÙ… Ø¬Ø²Ø¦ÙŠ",
-  DUPLICATE_ORDER: "Ù…ÙƒØ±Ø±",
+  SHORTAGE_FAILED: "فشل العجز",
+  CANCELLED: "ملغي",
+  DELIVERED: "تم التسليم",
+  SHIPPED: "تم الشحن",
+  PROCESSING: "قيد المعالجة",
+  CONFIRMED: "مؤكد",
+  PENDING: "معلق",
+  STOCK_SHORTAGE: "عجز مخزون",
+  RETURNED: "مسترجع",
+  REFUNDED: "مسترد",
+  PARTIALLY_DELIVERED: "تسليم جزئي",
+  DUPLICATE_ORDER: "مكرر",
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: "كاش عند الاستلام",
+  CREDIT_CARD: "بطاقة ائتمان",
+  BANK_TRANSFER: "تحويل بنكي",
+  PAYPAL: "باي بال",
+  STRIPE: "سترايب",
+  WALLET: "محفظة رقمية",
+  INSTAPAY: "إنستاباي",
+  VISA: "فيزا",
+  MASTERCARD: "ماستركارد",
+  VODAFONE_CASH: "فودافون كاش",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  storefront: "المتجر",
+  ai_conversation: "محادثة ذكية",
+  internal_push: "إدخال داخلي",
+  woocommerce: "ووكومرس",
+  manual: "يدوي",
+  REGULAR: "عادي",
+  AFFILIATE_REFERRAL: "تسويق بالعمولة (إحالة)",
+  AFFILIATE_DIRECT: "تسويق بالعمولة (مباشر)",
+  INTERNAL_IMPORT: "استيراد داخلي",
 };
 
 export default function OrderStatusAnalytics() {
@@ -156,7 +181,7 @@ export default function OrderStatusAnalytics() {
       );
       setData(res.data.data);
     } catch {
-      setError("ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª");
+      setError("فشل تحميل البيانات");
     } finally {
       setLoading(false);
     }
@@ -170,6 +195,9 @@ export default function OrderStatusAnalytics() {
   const hourlyData = data?.hourlyData || [];
   const topGovs = data?.topGovernorates || [];
   const recentFailed = data?.recentShortageFailed || [];
+  const deliveredCount = statusDist.find((s) => s.status === "DELIVERED")?.count || 0;
+  const deliveryRate =
+    summary?.totalOrders ? ((deliveredCount / summary.totalOrders) * 100).toFixed(1) : "0";
 
   const handleExport = () => {
     const rows = recentFailed.map((o) => [
@@ -181,7 +209,7 @@ export default function OrderStatusAnalytics() {
       o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
     ]);
     const csvContent =
-      "\uFEFFØ±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨,Ø§Ù„Ø¹Ù…ÙŠÙ„,Ø§Ù„Ù‡Ø§ØªÙ,Ø§Ù„Ù…Ø­Ø§ÙØ¸Ø©,Ø§Ù„Ù…Ø¨Ù„Øº,Ø§Ù„ØªØ§Ø±ÙŠØ®\n" +
+      "\uFEFFرقم الطلب,العميل,الهاتف,المحافظة,المبلغ,التاريخ\n" +
       rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -199,7 +227,7 @@ export default function OrderStatusAnalytics() {
       <div className="flex items-center justify-center min-h-[500px]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
-          <p className="text-sm text-gray-500">Ø¬Ø§Ø±Ù ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªØ­Ù„ÙŠÙ„...</p>
+          <p className="text-sm text-gray-500">جارٍ تحميل التحليل...</p>
         </div>
       </div>
     );
@@ -212,7 +240,7 @@ export default function OrderStatusAnalytics() {
           <XCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <p className="text-red-600 font-medium">{error}</p>
           <button onClick={() => fetchData(true)} className="mt-4 px-5 py-2 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">
-            Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©
+            إعادة المحاولة
           </button>
         </div>
       </div>
@@ -227,18 +255,18 @@ export default function OrderStatusAnalytics() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-l from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              ØªØ­Ù„ÙŠÙ„ Ø­Ø§Ù„Ø§Øª Ø§Ù„Ø·Ù„Ø¨Ø§Øª
+              تحليل حالات الطلبات
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Ø±Ø¤ÙŠØ© Ø´Ø§Ù…Ù„Ø© Ù„Ø­Ø§Ù„Ø§Øª Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ù…Ø¹ ØªØ±ÙƒÙŠØ² Ø¹Ù„Ù‰ Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ
+              رؤية شاملة لحالات الطلبات مع تركيز على العجز النهائي
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => fetchData(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-sm">
-              <RefreshCw className="h-4 w-4" /> ØªØ­Ø¯ÙŠØ«
+            <button onClick={() => fetchData(true)} disabled={loading} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-sm disabled:opacity-60">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> تحديث
             </button>
             <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition shadow-sm shadow-purple-200">
-              <Download className="h-4 w-4" /> ØªØµØ¯ÙŠØ±
+              <Download className="h-4 w-4" /> تصدير
             </button>
           </div>
         </div>
@@ -248,12 +276,12 @@ export default function OrderStatusAnalytics() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Ù…Ù†:</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">من:</span>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Ø¥Ù„Ù‰:</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">إلى:</span>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
             </div>
@@ -263,9 +291,9 @@ export default function OrderStatusAnalytics() {
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
           {([
-            { key: "overview", label: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø©", icon: BarChartIcon },
-            { key: "shortage", label: "Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ", icon: AlertTriangle },
-            { key: "trends", label: "Ø§Ù„Ø§ØªØ¬Ø§Ù‡Ø§Øª", icon: TrendingUp },
+            { key: "overview", label: "نظرة عامة", icon: BarChartIcon },
+            { key: "shortage", label: "العجز النهائي", icon: AlertTriangle },
+            { key: "trends", label: "الاتجاهات", icon: TrendingUp },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -278,41 +306,41 @@ export default function OrderStatusAnalytics() {
           ))}
         </div>
 
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Overview */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
-                title="Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨Ø§Øª"
+                title="إجمالي الطلبات"
                 value={summary?.totalOrders || 0}
                 icon={ShoppingCart}
                 color="blue"
-                detail={`${summary?.dateRange ? new Date(summary.dateRange.start).toLocaleDateString("ar-EG") : ""} â€” ${summary?.dateRange ? new Date(summary.dateRange.end).toLocaleDateString("ar-EG") : ""}`}
+                detail={`${summary?.dateRange ? new Date(summary.dateRange.start + "T00:00:00").toLocaleDateString("ar-EG") : ""} — ${summary?.dateRange ? new Date(summary.dateRange.end + "T00:00:00").toLocaleDateString("ar-EG") : ""}`}
               />
               <KpiCard
-                title="Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª"
-                value={`${(summary?.totalRevenue || 0).toLocaleString("ar-EG")} Ø¬.Ù…`}
+                title="إجمالي الإيرادات"
+                value={`${(summary?.totalRevenue || 0).toLocaleString("ar-EG")} ج.م`}
                 icon={DollarSign}
                 color="green"
-                detail={`Ù…ØªÙˆØ³Ø·: ${(summary?.avgOrderValue || 0).toLocaleString("ar-EG")} Ø¬.Ù…`}
+                detail={`متوسط: ${(summary?.avgOrderValue || 0).toLocaleString("ar-EG")} ج.م`}
               />
               <KpiCard
-                title="ÙØ´Ù„ Ø¨Ø³Ø¨Ø¨ Ø§Ù„Ø¹Ø¬Ø²"
+                title="فشل بسبب العجز"
                 value={summary?.shortageFailedCount || 0}
                 icon={AlertTriangle}
                 color="purple"
-                detail={`${summary?.shortageFailedPercentage || 0}% Ù…Ù† Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ`}
+                detail={`${summary?.shortageFailedPercentage || 0}% من الإجمالي`}
                 trend={Number(summary?.shortageFailedPercentage || 0) > 10 ? "down" : "up"}
               />
               <KpiCard
-                title="Ù‚ÙŠÙ…Ø© Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„ÙØ§Ø´Ù„"
-                value={`${(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} Ø¬.Ù…`}
+                title="قيمة العجز الفاشل"
+                value={`${(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} ج.م`}
                 icon={Wallet}
                 color="orange"
-                detail={`${summary?.shortageFailedCount || 0} Ø·Ù„Ø¨`}
+                detail={`${summary?.shortageFailedCount || 0} طلب`}
               />
             </div>
 
@@ -320,7 +348,7 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Status Distribution Pie */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø­Ø§Ù„Ø§Øª</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">توزيع الحالات</h3>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -330,7 +358,7 @@ export default function OrderStatusAnalytics() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value, name) => [`${value} Ø·Ù„Ø¨`, STATUS_LABELS[String(name)] || String(name)]}
+                        formatter={(value, name) => [`${value} طلب`, STATUS_LABELS[String(name)] || String(name)]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -348,7 +376,7 @@ export default function OrderStatusAnalytics() {
 
               {/* Daily Trend */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ø§Ù„Ø§ØªØ¬Ø§Ù‡ Ø§Ù„ÙŠÙˆÙ…ÙŠ</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">الاتجاه اليومي</h3>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={trendData}>
@@ -375,7 +403,7 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Clock className="h-5 w-5 inline ml-2 text-gray-400" /> Ø§Ù„ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø³Ø§Ø¹ÙŠ
+                  <Clock className="h-5 w-5 inline ml-2 text-gray-400" /> التوزيع الساعي
                 </h3>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -392,7 +420,7 @@ export default function OrderStatusAnalytics() {
 
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <MapPin className="h-5 w-5 inline ml-2 text-gray-400" /> Ø£Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø­Ø§ÙØ¸Ø§Øª
+                  <MapPin className="h-5 w-5 inline ml-2 text-gray-400" /> أعلى المحافظات
                 </h3>
                 <div className="space-y-3">
                   {topGovs.slice(0, 8).map((g, i) => (
@@ -415,9 +443,9 @@ export default function OrderStatusAnalytics() {
           </div>
         )}
 
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Shortage Failed */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "shortage" && (
           <div className="space-y-6">
             {/* Shortage KPIs */}
@@ -425,36 +453,36 @@ export default function OrderStatusAnalytics() {
               <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„ÙØ§Ø´Ù„</p>
+                    <p className="text-purple-100 text-sm">إجمالي طلبات العجز الفاشل</p>
                     <p className="text-4xl font-bold mt-2">{summary?.shortageFailedCount || 0}</p>
                   </div>
                   <AlertTriangle className="h-10 w-10 text-purple-200" />
                 </div>
-                <p className="text-purple-200 text-sm mt-3">{summary?.shortageFailedPercentage || 0}% Ù…Ù† Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨Ø§Øª</p>
+                <p className="text-purple-200 text-sm mt-3">{summary?.shortageFailedPercentage || 0}% من إجمالي الطلبات</p>
               </div>
 
               <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-sm">Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø©</p>
-                    <p className="text-3xl font-bold mt-2">{(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} <span className="text-lg">Ø¬.Ù…</span></p>
+                    <p className="text-orange-100 text-sm">القيمة المفقودة</p>
+                    <p className="text-3xl font-bold mt-2">{(summary?.shortageFailedRevenue || 0).toLocaleString("ar-EG")} <span className="text-lg">ج.م</span></p>
                   </div>
                   <DollarSign className="h-10 w-10 text-orange-200" />
                 </div>
-                <p className="text-orange-200 text-sm mt-3">Ù…ØªÙˆØ³Ø·: {summary?.shortageFailedCount ? ((summary?.shortageFailedRevenue || 0) / summary.shortageFailedCount).toLocaleString("ar-EG") : 0} Ø¬.Ù…/Ø·Ù„Ø¨</p>
+                <p className="text-orange-200 text-sm mt-3">متوسط: {summary?.shortageFailedCount ? ((summary?.shortageFailedRevenue || 0) / summary.shortageFailedCount).toLocaleString("ar-EG") : 0} ج.م/طلب</p>
               </div>
 
               <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm">Ù†Ø³Ø¨Ø© Ø§Ù„ØªØ³Ù„ÙŠÙ… Ø§Ù„ÙØ¹Ù„ÙŠ</p>
+                    <p className="text-emerald-100 text-sm">نسبة التسليم</p>
                     <p className="text-4xl font-bold mt-2">
-                      {summary?.totalOrders ? (((summary.totalOrders - (summary.shortageFailedCount || 0)) / summary.totalOrders) * 100).toFixed(1) : 0}%
+                      {deliveryRate}%
                     </p>
                   </div>
                   <Target className="h-10 w-10 text-emerald-200" />
                 </div>
-                <p className="text-emerald-200 text-sm mt-3">Ù…Ù† ØºÙŠØ± Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„ÙØ§Ø´Ù„</p>
+                <p className="text-emerald-200 text-sm mt-3">من إجمالي الطلبات</p>
               </div>
             </div>
 
@@ -462,32 +490,32 @@ export default function OrderStatusAnalytics() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-purple-500" /> Ø¢Ø®Ø± Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¹Ø¬Ø² Ø§Ù„ÙØ§Ø´Ù„
-                  <span className="text-sm font-normal text-gray-400 mr-auto">({recentFailed.length} Ø·Ù„Ø¨)</span>
+                  <XCircle className="h-5 w-5 text-purple-500" /> آخر طلبات العجز الفاشل
+                  <span className="text-sm font-normal text-gray-400 mr-auto">({recentFailed.length} طلب)</span>
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø§Ù„Ø¹Ù…ÙŠÙ„</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø§Ù„Ù‡Ø§ØªÙ</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø§Ù„Ù…Ø¨Ù„Øº</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø§Ù„Ù…Ø­Ø§ÙØ¸Ø©</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Ø§Ù„ØªØ§Ø±ÙŠØ®</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">العميل</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">الهاتف</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">المبلغ</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentFailed.length === 0 ? (
-                      <tr><td colSpan={6} className="py-12 text-center text-gray-400">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨Ø§Øª Ø¹Ø¬Ø² ÙØ§Ø´Ù„ ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„ÙØªØ±Ø©</td></tr>
+                      <tr><td colSpan={6} className="py-12 text-center text-gray-400">لا توجد طلبات عجز فاشل في هذه الفترة</td></tr>
                     ) : (
                       recentFailed.map((o) => (
                         <tr key={o.id} className="border-b border-gray-50 dark:border-gray-750 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition">
                           <td className="py-3 px-4 font-medium text-purple-700 dark:text-purple-300">{o.orderNumber}</td>
                           <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{o.customerName || "-"}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400" dir="ltr">{o.customerPhone || "-"}</td>
-                          <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{o.total.toLocaleString("ar-EG")} Ø¬.Ù…</td>
+                          <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{o.total.toLocaleString("ar-EG")} ج.م</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{o.governorate || "-"}</td>
                           <td className="py-3 px-4 text-gray-500 dark:text-gray-400 text-xs">
                             {o.createdAt ? new Date(o.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" }) : "-"}
@@ -502,14 +530,14 @@ export default function OrderStatusAnalytics() {
           </div>
         )}
 
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {/* TAB: Trends */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ═══════════════════════════════════════════════ */}
         {activeTab === "trends" && (
           <div className="space-y-6">
             {/* Full Trend Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ø­Ø§Ù„Ø§Øª Ø¹Ù„Ù‰ Ù…Ø¯Ø§Ø± Ø§Ù„ÙˆÙ‚Øª</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">اتجاه الحالات على مدار الوقت</h3>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
@@ -531,12 +559,12 @@ export default function OrderStatusAnalytics() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Wallet className="h-5 w-5 inline ml-2 text-gray-400" /> Ø·Ø±Ù‚ Ø§Ù„Ø¯ÙØ¹
+                  <Wallet className="h-5 w-5 inline ml-2 text-gray-400" /> طرق الدفع
                 </h3>
                 <div className="space-y-3">
                   {(data?.paymentStats || []).map((p) => (
                     <div key={p.method} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{p.method || "ØºÙŠØ± Ù…Ø­Ø¯Ø¯"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{PAYMENT_LABELS[p.method] || p.method || "غير محدد"}</span>
                       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" style={{ width: `${(p.count / Math.max(...(data?.paymentStats || []).map(x => x.count), 1)) * 100}%` }} />
                       </div>
@@ -548,12 +576,12 @@ export default function OrderStatusAnalytics() {
 
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Package className="h-5 w-5 inline ml-2 text-gray-400" /> Ù…ØµØ§Ø¯Ø± Ø§Ù„Ø·Ù„Ø¨Ø§Øª
+                  <Package className="h-5 w-5 inline ml-2 text-gray-400" /> مصادر الطلبات
                 </h3>
                 <div className="space-y-3">
                   {(data?.sourceStats || []).map((s) => (
                     <div key={s.source} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{s.source || "ØºÙŠØ± Ù…Ø­Ø¯Ø¯"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24 truncate">{SOURCE_LABELS[s.source] || s.source || "غير محدد"}</span>
                       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full" style={{ width: `${(s.count / Math.max(...(data?.sourceStats || []).map(x => x.count), 1)) * 100}%` }} />
                       </div>
@@ -570,7 +598,7 @@ export default function OrderStatusAnalytics() {
   );
 }
 
-/* â”€â”€â”€ KPI Card Component â”€â”€â”€ */
+/* ─── KPI Card Component ─── */
 function KpiCard({ title, value, icon: Icon, color, detail, trend }: {
   title: string;
   value: string | number;

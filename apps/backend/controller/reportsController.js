@@ -876,121 +876,139 @@ const getOrderStatusAnalytics = async (req, res) => {
             where.status = status.toUpperCase();
         }
 
-        const orders = await getSharedPrismaClient().order.findMany({
-            where,
-            select: {
-                id: true,
-                orderNumber: true,
-                status: true,
-                total: true,
-                customerName: true,
-                customerPhone: true,
-                governorate: true,
-                city: true,
-                paymentMethod: true,
-                sourceType: true,
-                createdAt: true,
-                updatedAt: true,
-                metadata: true
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 5000
-        });
+        const prisma = getSharedPrismaClient();
+
+        // تحقق من قيمة الحالة قبل الاستعلام لتجنب خطأ Prisma (400 بدلاً من 500)
+        const VALID_ORDER_STATUSES = new Set([
+            'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+            'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED',
+            'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
+            'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
+            'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
+            'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED',
+            'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'
+        ]);
+
+        if (status && !VALID_ORDER_STATUSES.has(String(status).toUpperCase())) {
+            return res.status(400).json({ success: false, error: `Invalid status filter: ${status}` });
+        }
+
+        // تجميع كامل على مستوى قاعدة البيانات (بدون حد 5000 الذي كان يبتُر النتائج)
+        const [totalOrders, revenueAgg, shortageAgg, statusGroups, govGroups, payGroups, srcGroups, recentShortage, trendRows, hourRows] = await Promise.all([
+            prisma.order.count({ where }),
+            prisma.order.aggregate({ where, _sum: { total: true } }),
+            prisma.order.aggregate({ where: { ...where, status: 'SHORTAGE_FAILED' }, _sum: { total: true } }),
+            prisma.order.groupBy({ by: ['status'], where, _count: { _all: true } }),
+            prisma.order.groupBy({ by: ['governorate'], where, _count: { _all: true }, orderBy: { _count: { _all: 'desc' } }, take: 10 }),
+            prisma.order.groupBy({ by: ['paymentMethod'], where, _count: { _all: true } }),
+            prisma.order.groupBy({ by: ['sourceType'], where, _count: { _all: true } }),
+            prisma.order.findMany({
+                where: { ...where, status: 'SHORTAGE_FAILED' },
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    customerName: true,
+                    customerPhone: true,
+                    governorate: true,
+                    total: true,
+                    createdAt: true
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 50
+            }),
+            prisma.$queryRawUnsafe(
+                `SELECT to_char("createdAt" AT TIME ZONE $4, 'YYYY-MM-DD') AS day, status, COUNT(*)::int AS cnt
+                 FROM "orders"
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
+                 GROUP BY day, status ORDER BY day`,
+                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+            ),
+            prisma.$queryRawUnsafe(
+                `SELECT EXTRACT(HOUR FROM ("createdAt" AT TIME ZONE $4))::int AS hour, COUNT(*)::int AS cnt
+                 FROM "orders"
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
+                 GROUP BY hour ORDER BY hour`,
+                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+            )
+        ]);
+
+        const totalRevenue = parseFloat(revenueAgg._sum.total || 0);
+        const shortageFailedRevenue = parseFloat(shortageAgg._sum.total || 0);
+        const shortageFailedCount = (statusGroups.find(g => g.status === 'SHORTAGE_FAILED')?._count?._all) || 0;
 
         // توزيع الحالات
-        const statusDistribution = {};
+        const statusDistribution = statusGroups
+            .map(g => ({ status: g.status, count: g._count._all }))
+            .sort((a, b) => b.count - a.count)
+            .map(row => ({ ...row, percentage: totalOrders > 0 ? ((row.count / totalOrders) * 100).toFixed(1) : '0.0' }));
+
+        // الاتجاه اليومي (حسب منطقة زمنية للشركة)
         const dailyStatusTrend = {};
-        const hourlyOrders = {};
-        const governorateStats = {};
-        const paymentStats = {};
-        const sourceStats = {};
-        let totalRevenue = 0;
-        let shortageFailedRevenue = 0;
-        let shortageFailedCount = 0;
-
-        orders.forEach(order => {
-            const s = order.status || 'UNKNOWN';
-            statusDistribution[s] = (statusDistribution[s] || 0) + 1;
-
-            if (s === 'SHORTAGE_FAILED') {
-                shortageFailedCount++;
-                shortageFailedRevenue += parseFloat(order.total || 0);
-            }
-            totalRevenue += parseFloat(order.total || 0);
-
-            // اتجاه يومي (حسب منطقة زمنية للشركة لتطابق التوزيع الساعي)
-            const day = order.createdAt ? formatInTimeZone(order.createdAt, timeZone, 'yyyy-MM-dd') : 'unknown';
-            if (!dailyStatusTrend[day]) dailyStatusTrend[day] = {};
-            dailyStatusTrend[day][s] = (dailyStatusTrend[day][s] || 0) + 1;
-
-            // توزيع ساعي
-            const hour = order.createdAt ? new Date(order.createdAt).getHours() : 0;
-            hourlyOrders[hour] = (hourlyOrders[hour] || 0) + 1;
-
-            if (order.governorate) {
-                governorateStats[order.governorate] = (governorateStats[order.governorate] || 0) + 1;
-            }
-            if (order.paymentMethod) {
-                paymentStats[order.paymentMethod] = (paymentStats[order.paymentMethod] || 0) + 1;
-            }
-            if (order.sourceType) {
-                sourceStats[order.sourceType] = (sourceStats[order.sourceType] || 0) + 1;
-            }
+        (trendRows || []).forEach(r => {
+            if (!r.day) return;
+            dailyStatusTrend[r.day] = dailyStatusTrend[r.day] || {};
+            dailyStatusTrend[r.day][r.status] = (dailyStatusTrend[r.day][r.status] || 0) + r.cnt;
         });
-
-        // تجهيز بيانات الاتجاه اليومي
         const trendData = Object.entries(dailyStatusTrend)
             .sort(([a], [b]) => a.localeCompare(b))
             .slice(-30)
-            .map(([date, statuses]) => ({
-                date,
-                ...statuses
-            }));
+            .map(([date, statuses]) => ({ date, ...statuses }));
 
-        // تجهيز بيانات الساعات
+        // التوزيع الساعي (حسب منطقة زمنية للشركة)
+        const hourlyMap = {};
+        (hourRows || []).forEach(r => { hourlyMap[Number(r.hour)] = r.cnt; });
         const hourlyData = Array.from({ length: 24 }, (_, i) => ({
             hour: `${i.toString().padStart(2, '0')}:00`,
-            count: hourlyOrders[i] || 0
+            count: hourlyMap[i] || 0
         }));
 
         // أعلى المحافظات
-        const topGovernorates = Object.entries(governorateStats)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 10)
-            .map(([name, count]) => ({ name, count }));
+        const topGovernorates = (govGroups || [])
+            .filter(g => g.governorate)
+            .map(g => ({ name: g.governorate, count: g._count._all }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        // طرق الدفع والمصادر
+        const paymentStats = (payGroups || [])
+            .filter(g => g.paymentMethod)
+            .map(g => ({ method: g.paymentMethod, count: g._count._all }))
+            .sort((a, b) => b.count - a.count);
+        const sourceStats = (srcGroups || [])
+            .filter(g => g.sourceType)
+            .map(g => ({ source: g.sourceType, count: g._count._all }))
+            .sort((a, b) => b.count - a.count);
 
         res.json({
             success: true,
             data: {
                 summary: {
-                    totalOrders: orders.length,
+                    totalOrders,
                     totalRevenue,
-                    avgOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+                    avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
                     shortageFailedCount,
                     shortageFailedRevenue,
-                    shortageFailedPercentage: orders.length > 0 ? ((shortageFailedCount / orders.length) * 100).toFixed(1) : 0,
-                    dateRange: { start: start.toISOString(), end: end.toISOString() }
+                    shortageFailedPercentage: totalOrders > 0 ? ((shortageFailedCount / totalOrders) * 100).toFixed(1) : '0.0',
+                    dateRange: {
+                        start: startDate || start.toISOString().slice(0, 10),
+                        end: endDate || end.toISOString().slice(0, 10)
+                    }
                 },
-                statusDistribution: Object.entries(statusDistribution)
-                    .map(([status, count]) => ({ status, count, percentage: ((count / orders.length) * 100).toFixed(1) }))
-                    .sort((a, b) => b.count - a.count),
+                statusDistribution,
                 trendData,
                 hourlyData,
                 topGovernorates,
-                paymentStats: Object.entries(paymentStats).map(([method, count]) => ({ method, count })),
-                sourceStats: Object.entries(sourceStats).map(([source, count]) => ({ source, count })),
-                recentShortageFailed: orders
-                    .filter(o => o.status === 'SHORTAGE_FAILED')
-                    .slice(0, 50)
-                    .map(o => ({
-                        id: o.id,
-                        orderNumber: o.orderNumber,
-                        customerName: o.customerName,
-                        customerPhone: o.customerPhone,
-                        total: parseFloat(o.total || 0),
-                        governorate: o.governorate,
-                        createdAt: o.createdAt
-                    }))
+                paymentStats,
+                sourceStats,
+                recentShortageFailed: (recentShortage || []).map(o => ({
+                    id: o.id,
+                    orderNumber: o.orderNumber,
+                    customerName: o.customerName,
+                    customerPhone: o.customerPhone,
+                    total: parseFloat(o.total || 0),
+                    governorate: o.governorate,
+                    createdAt: o.createdAt
+                }))
             }
         });
     } catch (error) {
