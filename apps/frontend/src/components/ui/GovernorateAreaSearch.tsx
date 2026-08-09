@@ -12,7 +12,6 @@ import {
   ChevronDownIcon,
   MapPinIcon,
 } from "@heroicons/react/24/outline";
-import { apiClient } from "../../services/apiClient";
 
 export interface AreaSearchResult {
   governorateId: string;
@@ -98,6 +97,7 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
             ((payload as { data?: { matches?: AreaSearchResult[] } })?.data
               ?.matches as AreaSearchResult[] | undefined) || [];
         } else {
+          const { apiClient } = await import("../../services/apiClient");
           const response = await apiClient.get<{
             data?: { matches?: AreaSearchResult[] };
           }>("/turbo/search-area", {
