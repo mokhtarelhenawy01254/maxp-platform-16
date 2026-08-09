@@ -976,6 +976,62 @@
     "updatedAt": "2026-08-08T00:00:00Z"
   },
   {
+    "id": "cat-app-radiology-app",
+    "slug": "radiology-app",
+    "name": "نظام الأشعة",
+    "nameEn": "Radiology System",
+    "description": "نظام متكامل لإدارة مراكز الأشعة — الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "مراكز الأشعة والمستشفيات ومقدمي خدمات التصوير الطبي.",
+      "surface": "لوحة تحكم شاملة داخل نظام الأشعة — الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+      "outcome": "تنظيم كامل لدورة العمل الشعاعي من الاستقبال حتى تسليم التقرير."
+    },
+    "features": {
+      "studies": {
+        "enabled": true,
+        "name": "دراسات الأشعة",
+        "description": "إدارة الدراسات والأشعات ومتابعة حالاتها.",
+        "access": "PAID"
+      },
+      "viewer": {
+        "enabled": true,
+        "name": "قارئ الصور DICOM",
+        "description": "عرض وتحليل صور DICOM داخل النظام.",
+        "access": "PAID"
+      },
+      "reports": {
+        "enabled": true,
+        "name": "التقارير",
+        "description": "كتابة ومراجعة وتوقيع تقارير الأشعة.",
+        "access": "PAID"
+      },
+      "reception": {
+        "enabled": true,
+        "name": "الاستقبال",
+        "description": "تسجيل المرضى وجدولة المواعيد والدراسات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "radiation",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00Z",
+    "updatedAt": "2026-08-10T00:00:00Z"
+  },
+  {
     "id": "cat-app-inventory-pro",
     "slug": "inventory-pro",
     "name": "المخزون والمستودعات",

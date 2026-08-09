@@ -294,6 +294,9 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
     },
     root: '.',
+    worker: {
+      format: 'es',
+    },
     // Path resolution
     resolve: {
       dedupe: Array.from(REACT_RUNTIME_PACKAGES),
@@ -320,6 +323,7 @@ export default defineConfig(({ mode }) => {
         { find: 'react-router', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router') },
         { find: 'react-router-dom', replacement: resolve(FRONTEND_NODE_MODULES, 'react-router-dom') },
         { find: '@', replacement: resolve(__dirname, 'src') },
+        { find: '@icr/polyseg-wasm', replacement: resolve(__dirname, 'src/components/radiology/polysegStub.js') },
       ],
     },
     plugins: [
@@ -555,6 +559,8 @@ export default defineConfig(({ mode }) => {
               return 'app-ui-primitives';
             }
 
+            if (normalizedId.includes('@cornerstonejs') || normalizedId.includes(NODE_MODULES_SEGMENT + 'dicom-parser/')) return 'cornerstone';
+
             // Route-based chunk grouping for app source files
             if (
               !normalizedId.includes(NODE_MODULES_SEGMENT) &&
@@ -608,6 +614,7 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (normalizedId.includes('/src/pages/broadcast/')) return 'route-broadcast';
               if (normalizedId.includes('/src/pages/whatsapp-inbox/')) return 'route-whatsapp-inbox';
               if (normalizedId.includes('/src/pages/pos/')) return 'route-pos';
+              if (normalizedId.includes('/src/pages/radiology/')) return 'route-radiology';
               if (normalizedId.includes('/src/pages/wallet/')) return 'route-wallet';
               if (normalizedId.includes('/src/pages/categories/')) return 'route-categories';
                             if (normalizedId.includes('/src/pages/tickets/')) return 'route-tickets';
