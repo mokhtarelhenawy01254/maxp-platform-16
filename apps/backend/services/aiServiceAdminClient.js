@@ -321,6 +321,14 @@ async function updateChannelReply(companyId, channels) {
   return request('PUT', `/admin/settings/channel-reply?company_id=${encodeURIComponent(companyId)}`, { channels });
 }
 
+async function getAgentPause(companyId) {
+  return request('GET', `/admin/settings/pause?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateAgentPause(companyId, paused, reason) {
+  return request('PUT', `/admin/settings/pause?company_id=${encodeURIComponent(companyId)}`, { paused, reason });
+}
+
 async function getGlobalFilterSettings(companyId) {
   return request('GET', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`);
 }
@@ -436,6 +444,8 @@ module.exports = {
   updateAutoReply,
   getChannelReply,
   updateChannelReply,
+  getAgentPause,
+  updateAgentPause,
   visualSearch,
   getGlobalFilterSettings,
   updateGlobalFilterSettings,

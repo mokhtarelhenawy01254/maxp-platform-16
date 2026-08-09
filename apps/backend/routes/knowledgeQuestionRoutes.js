@@ -32,6 +32,27 @@ router.get('/count', async (req, res) => {
   }
 });
 
+// POST /api/v1/ai/knowledge-questions/train - Train agent from free-form text
+router.post('/train', async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const { text, topic } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+    const result = await aiSdkClient.trainKnowledge({
+      companyId,
+      text: text.trim(),
+      topic: topic || null,
+    });
+    return res.json({ success: true, result });
+  } catch (error) {
+    console.error('[KnowledgeQuestions] Error training:', error.message);
+    res.status(502).json({ error: 'Failed to train knowledge', detail: error.message });
+  }
+});
+
 // POST /api/v1/ai/knowledge-questions/:id/answer - Answer a pending question
 router.post('/:id/answer', async (req, res) => {
   try {

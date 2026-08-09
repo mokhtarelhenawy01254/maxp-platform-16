@@ -26,6 +26,11 @@ class AnswerKnowledgeQuestionRequest(BaseModel):
     answer: str = Field(description="The merchant's answer to the question")
 
 
+class TrainKnowledgeRequest(BaseModel):
+    text: str = Field(description="Free-form business knowledge the merchant typed (prices, delivery, policies, hours...)")
+    topic: str | None = Field(default=None, description="Optional topic hint (location, delivery, payment, policy, prices, contact)")
+
+
 @router.get("/knowledge-questions")
 async def list_knowledge_questions(
     request: Request,
@@ -208,4 +213,102 @@ async def answer_knowledge_question(
         "status": "answered",
         "knowledge_embedding_id": embedding_id,
         "message": "Answer recorded. The agent will now have access to this knowledge.",
+    }
+
+
+async def _upsert_faq_embedding(
+    session: AsyncSession,
+    company_id: str,
+    title: str,
+    content: str,
+    source_id: str,
+) -> str | None:
+    """Create/refresh a single FAQ knowledge embedding row. Returns embedding id or None."""
+    try:
+        from src.memory.episodic_memory import EpisodicMemoryService
+
+        embed_text = f"Q: {title}\nA: {content}"
+        svc = EpisodicMemoryService()
+        res = await svc.generate_embedding_with_provider(text=embed_text)
+        q_vec = res.get("vector")
+
+        if not q_vec or len(q_vec) != 768:
+            logger.warning("faq_embedding_vector_unexpected", length=len(q_vec or []))
+            return None
+
+        embedding_id = str(uuid.uuid4())
+        q_vec_str = "[" + ",".join(str(x) for x in q_vec) + "]"
+        insert_emb = text("""
+            INSERT INTO ai.knowledge_embeddings
+                (id, company_id, source_id, source_type, title, content, category, embed_text, text_embedding, created_at, updated_at)
+            VALUES
+                (:id, :company_id, :source_id, 'faq', :title, :content, 'knowledge_question', :embed_text, CAST(:q_vec AS vector), now(), now())
+            ON CONFLICT (source_id, source_type) DO UPDATE
+                SET title = EXCLUDED.title, content = EXCLUDED.content, embed_text = EXCLUDED.embed_text,
+                    text_embedding = EXCLUDED.text_embedding, updated_at = now()
+        """)
+        await session.execute(insert_emb, {
+            "id": embedding_id,
+            "company_id": company_id,
+            "source_id": source_id,
+            "title": title,
+            "content": content,
+            "embed_text": embed_text,
+            "q_vec": q_vec_str,
+        })
+        await session.commit()
+        return embedding_id
+    except Exception as exc:
+        logger.warning("faq_embedding_creation_failed", error=str(exc))
+        await session.rollback()
+        return None
+
+
+@router.post("/knowledge-questions/train")
+async def train_knowledge(
+    request: Request,
+    body: TrainKnowledgeRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Merchant trains the agent from free-form text.
+
+    Accepts plain business facts (e.g. "Delivery is 60 EGP inside Cairo, free above 1500 EGP")
+    and stores them as knowledge embeddings the agent can retrieve. The merchant's own
+    wording is used directly; the agent's RAG pipeline indexes it like an FAQ.
+    """
+    company_id = get_company_id(request)
+
+    text_content = (body.text or "").strip()
+    if not text_content:
+        raise HTTPException(status_code=400, detail="text is required")
+    if len(text_content) > 4000:
+        raise HTTPException(status_code=400, detail="text too long (max 4000 chars)")
+
+    topic = (body.topic or "").strip()[:60] or "general"
+
+    # Try to split into plausible Q&A statements by sentence boundaries so each
+    # embedding is self-contained and easy to retrieve.
+    statements = [s.strip() for s in text_content.replace("\n", ". ").split(".") if s.strip()]
+    if not statements:
+        statements = [text_content]
+
+    saved = []
+    for idx, stmt in enumerate(statements[:25], start=1):
+        title = f"{topic}: {stmt[:180]}"
+        embedding_id = await _upsert_faq_embedding(
+            session,
+            company_id,
+            title=title,
+            content=stmt,
+            source_id=f"train_{uuid.uuid4().hex[:12]}_{idx}",
+        )
+        saved.append({"index": idx, "statement": stmt, "embedding_id": embedding_id})
+
+    logger.info("knowledge_train_saved", company=company_id, topic=topic, saved=len([s for s in saved if s["embedding_id"]]))
+
+    return {
+        "success": True,
+        "saved": len([s for s in saved if s["embedding_id"]]),
+        "statements": saved,
+        "message": "Knowledge saved. The agent will now use it in future replies.",
     }

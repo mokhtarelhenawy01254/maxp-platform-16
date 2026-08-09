@@ -15,7 +15,7 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-DEFAULT_CHANNELS = ["MESSENGER", "WHATSAPP", "INSTAGRAM", "TELEGRAM", "DASHBOARD"]
+DEFAULT_CHANNELS = ["MESSENGER", "WHATSAPP", "INSTAGRAM", "TELEGRAM", "DASHBOARD", "WEB_CHAT"]
 
 CHANNEL_KEY_MAP = {
     "facebook": "MESSENGER",
@@ -27,6 +27,11 @@ CHANNEL_KEY_MAP = {
     "chat": "DASHBOARD",
     "dashboard": "DASHBOARD",
     "merchant": "DASHBOARD",
+    "web_chat": "WEB_CHAT",
+    "webchat": "WEB_CHAT",
+    "web-chat": "WEB_CHAT",
+    "widget": "WEB_CHAT",
+    "site": "WEB_CHAT",
 }
 
 
@@ -207,6 +212,46 @@ async def update_channel_reply(
     setting.channelReplyEnabled = json.dumps(sanitized, ensure_ascii=False)
     await session.commit()
     return {"success": True, "channels": sanitized}
+
+
+# ── Agent pause / resume ────────────────────────────────────────────────
+
+
+@router.get("/settings/pause")
+async def get_agent_pause(
+    company_id: str = Query(...),
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    row = await _get_setting_row(company_id, session)
+    return {
+        "success": True,
+        "paused": bool(row.agentPaused) if row else False,
+        "pauseReason": (row.pauseReason or None) if row else None,
+    }
+
+
+@router.put("/settings/pause")
+async def update_agent_pause(
+    company_id: str = Query(...),
+    body: dict[str, Any] = None,
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    setting = await _get_or_create_setting(company_id, session)
+    paused = bool((body or {}).get("paused", False))
+    reason = str((body or {}).get("reason") or "").strip()[:200] or None
+    setting.agentPaused = paused
+    setting.pauseReason = reason if paused else None
+    await session.commit()
+    await session.refresh(setting)
+    return {"success": True, "paused": setting.agentPaused, "pauseReason": setting.pauseReason}
+
+
+async def agent_pause_state(company_id: str, session: AsyncSession) -> tuple[bool, str | None]:
+    """Return (paused, pause_reason) for the company, defaulting to not paused."""
+    row = await _get_setting_row(company_id, session)
+    if row is None:
+        return False, None
+    return bool(row.agentPaused), (row.pauseReason or None)
 
 
 # ── Comment Filters ─────────────────────────────────────────────────────

@@ -479,6 +479,37 @@ router.put('/channel-reply', async (req, res) => {
   }
 });
 
+// GET /pause — read agent pause state
+router.get('/pause', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const data = await aiServiceAdminClient.getAgentPause(companyId);
+    return res.json({ success: true, paused: data?.paused === true, pauseReason: data?.pauseReason || null });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /pause — pause/resume the agent with an optional reason
+router.put('/pause', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const paused = req.body?.paused === true;
+    const reason = req.body?.reason || null;
+    const data = await aiServiceAdminClient.updateAgentPause(companyId, paused, reason);
+    await prisma().aiSetting.upsert({
+      where: { companyId },
+      update: { agentPaused: paused, pauseReason: paused ? reason : null },
+      create: { companyId, agentPaused: paused, pauseReason: paused ? reason : null },
+    });
+    return res.json({ success: true, paused: data?.paused === true, pauseReason: data?.pauseReason || null });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: error.message });
+  }
+});
+
 // DELETE /agents/:id — archive a sub-agent (not CEO)
 router.delete('/agents/:id', async (req, res) => {
   try {

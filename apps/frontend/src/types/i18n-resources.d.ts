@@ -738,6 +738,8 @@ declare module 'react-i18next' {
         tabs: {
           agents: string;
           sandbox: string;
+          train: string;
+          widget: string;
           rag: string;
           tools: string;
           skills: string;
@@ -776,6 +778,45 @@ declare module 'react-i18next' {
           assignAllPlaceholder: string;
           reset: string;
           modified: string;
+          agentPause: string;
+          pausedBody: string;
+          resumeBody: string;
+          pauseReasonPlaceholder: string;
+          pauseReasonHint: string;
+        };
+        train: {
+          title: string;
+          subtitle: string;
+          topic: {
+            location: string;
+            hours: string;
+            delivery: string;
+            payment: string;
+            policy: string;
+            prices: string;
+            contact: string;
+            general: string;
+          };
+          whatToTeach: string;
+          placeholder: string;
+          hint: string;
+          save: string;
+          saved: string;
+          saveFailed: string;
+          savedFacts: string;
+          savedFactsSuffix: string;
+        };
+        widget: {
+          title: string;
+          subtitle: string;
+          themeColor: string;
+          titleLabel: string;
+          embedCode: string;
+          copy: string;
+          copied: string;
+          usage: string;
+          routingHint: string;
+          routingBody: string;
         };
         sandbox: {
           chat: {
@@ -13994,6 +14035,19 @@ declare module 'react-i18next' {
         labReports: string;
         labHomeVisits: string;
         labSettings: string;
+        radiologyModule: string;
+        radiologyDashboard: string;
+        radiologyReception: string;
+        radiologyPatients: string;
+        radiologyStudies: string;
+        radiologyReports: string;
+        radiologyExamTypes: string;
+        radiologyPriceLists: string;
+        radiologyContracts: string;
+        radiologyBranches: string;
+        radiologyInvoices: string;
+        radiologyReportsOverview: string;
+        radiologySettings: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;

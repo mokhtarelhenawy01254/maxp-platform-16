@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2 } from "lucide-react";
+import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -37,6 +38,7 @@ const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
   { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp.send" },
   { key: "INSTAGRAM", label: "Instagram", icon: "📸", tool: "" },
   { key: "TELEGRAM", label: "Telegram", icon: "✈️", tool: "" },
+  { key: "WEB_CHAT", label: "Web Chat", icon: "🌐", tool: "" },
   { key: "DASHBOARD", label: "Dashboard", icon: "🖥️", tool: "" },
 ];
 
@@ -56,7 +58,9 @@ export default function ChannelRoutingPage() {
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [channelConfigs, setChannelConfigs] = useState<ChannelConfig[]>([]);
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
-const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
+  const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
+  const [agentPaused, setAgentPaused] = useState(false);
+  const [pauseReason, setPauseReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +82,9 @@ const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
       const channelReplyResp = await apiFetch<{ channels: Record<string, boolean> }>("/agent-manager/channel-reply").catch(() => ({ channels: {} as Record<string, boolean> }));
       const channelFlags = channelReplyResp.channels || {};
       setChannelReply(channelFlags);
+      const pauseResp = await apiFetch<{ paused: boolean; pauseReason: string | null }>("/agent-manager/pause").catch(() => ({ paused: false, pauseReason: null }));
+      setAgentPaused(pauseResp.paused === true);
+      setPauseReason(pauseResp.pauseReason || "");
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
         const assigned = activeAgents.find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(ch.key)
@@ -121,6 +128,11 @@ const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
 
   const handleChannelReplyToggle = (channel: string, enabled: boolean) => {
     setChannelReply((prev) => ({ ...prev, [channel]: enabled }));
+    setDirty(true);
+  };
+
+  const handlePauseToggle = (paused: boolean) => {
+    setAgentPaused(paused);
     setDirty(true);
   };
 
@@ -174,6 +186,10 @@ const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
       await apiFetch("/agent-manager/auto-reply", {
         method: "PUT",
         body: JSON.stringify({ enabled: autoReplyEnabled }),
+      });
+      await apiFetch("/agent-manager/pause", {
+        method: "PUT",
+        body: JSON.stringify({ paused: agentPaused, reason: agentPaused ? pauseReason : null }),
       });
       const replyMap: Record<string, boolean> = {};
       CHANNELS.forEach((ch) => {
@@ -231,6 +247,36 @@ const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      <Card className={agentPaused ? "border-amber-400" : ""}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                {agentPaused ? <Pause className="size-4 text-amber-600" /> : <Play className="size-4 text-green-600" />}
+                {t("aiHub.channelRouting.agentPause")}
+              </CardTitle>
+              <CardDescription>
+                {agentPaused
+                  ? t("aiHub.channelRouting.pausedBody")
+                  : t("aiHub.channelRouting.resumeBody")}
+              </CardDescription>
+            </div>
+            <Switch checked={agentPaused} onCheckedChange={handlePauseToggle} />
+          </div>
+        </CardHeader>
+        {agentPaused && (
+          <CardContent>
+            <Input
+              value={pauseReason}
+              onChange={(e) => { setPauseReason(e.target.value); setDirty(true); }}
+              placeholder={t("aiHub.channelRouting.pauseReasonPlaceholder") as string}
+              className="max-w-md"
+            />
+            <p className="text-xs text-muted-foreground mt-2">{t("aiHub.channelRouting.pauseReasonHint")}</p>
+          </CardContent>
+        )}
+      </Card>
 
       <Card>
         <CardHeader className="pb-3">

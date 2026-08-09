@@ -201,7 +201,26 @@ async def run_orchestration(
 
     if session is not None and not is_merchant:
         try:
-            from src.api.admin.settings import is_channel_reply_enabled
+            from src.api.admin.settings import is_channel_reply_enabled, agent_pause_state
+
+            # Global pause — agent deliberately stopped by the merchant.
+            paused, pause_reason = await agent_pause_state(company_id, session)
+            if paused:
+                logger.info(
+                    "orchestration_agent_paused",
+                    company_id=company_id,
+                    channel=effective_channel,
+                    pause_reason=pause_reason,
+                )
+                return {
+                    "reply": "",
+                    "reply_hint": pause_reason,
+                    "paused": True,
+                    "thread_id": thread_id,
+                    "tool_results": [],
+                    "response_attachments": [],
+                }
+
             if not await is_channel_reply_enabled(company_id, effective_channel, session):
                 logger.info(
                     "orchestration_channel_reply_disabled",

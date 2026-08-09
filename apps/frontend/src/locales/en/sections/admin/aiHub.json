@@ -11,6 +11,8 @@
   "tabs": {
     "agents": "Agents",
     "sandbox": "AI Assistant",
+    "train": "Train Agent",
+    "widget": "Web Chat",
     "rag": "Knowledge Base",
     "tools": "Tools",
     "skills": "Skills",
@@ -48,7 +50,47 @@
     "assignAll": "Assign Agent to All",
     "assignAllPlaceholder": "Select agent for all",
     "reset": "Reset",
-    "modified": "Modified"
+    "modified": "Modified",
+    "agentPause": "Pause Agent",
+    "pausedBody": "The agent is paused on all channels. Customers will see a friendly notice.",
+    "resumeBody": "The agent is running. Toggle to pause it across all channels.",
+    "pauseReasonPlaceholder": "e.g. public holiday, store maintenance...",
+    "pauseReasonHint": "The reason is shown to customers inside the notice."
+  },
+  "train": {
+    "title": "Train Agent",
+    "subtitle": "Teach your agent your prices, policies and business facts in plain words",
+    "topic": "Topic",
+    "whatToTeach": "Write the fact",
+    "placeholder": "e.g. We deliver inside Cairo within 24-48h, delivery fee is 60 EGP, free above 1500 EGP...",
+    "hint": "The agent extracts and stores the fact so it can answer from it later",
+    "save": "Save to Agent",
+    "saved": "Saved successfully",
+    "saveFailed": "Failed to save",
+    "savedFacts": "{{count}} facts saved",
+    "savedFactsSuffix": "facts saved",
+    "topic": {
+      "location": "Location",
+      "hours": "Opening hours",
+      "delivery": "Delivery",
+      "payment": "Payment",
+      "policy": "Policy",
+      "prices": "Prices",
+      "contact": "Contact",
+      "general": "General"
+    }
+  },
+  "widget": {
+    "title": "Web Chat Widget",
+    "subtitle": "Add the AI agent to any website with one line and let visitors chat directly",
+    "themeColor": "Theme color",
+    "titleLabel": "Widget title",
+    "embedCode": "Embed code",
+    "copy": "Copy",
+    "copied": "Copied",
+    "usage": "Paste this before the </body> tag on your website",
+    "routingHint": "Route the agent to Web Chat",
+    "routingBody": "Open the Routing tab and assign an agent to the \"Web Chat\" channel. Without an assigned agent, visitors get a fallback reply."
   },
   "sandbox": {
     "chat": {

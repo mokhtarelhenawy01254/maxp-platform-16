@@ -26,6 +26,8 @@ class AiSetting(Base):
     autoFilterEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     negativeKeywords: Mapped[str | None] = mapped_column(Text, nullable=True)
     negativeCommentAction: Mapped[str] = mapped_column(String, nullable=False, default="hide")
+    agentPaused: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    pauseReason: Mapped[str | None] = mapped_column(Text, nullable=True)
     createdAt: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

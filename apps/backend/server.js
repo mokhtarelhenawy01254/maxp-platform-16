@@ -594,6 +594,7 @@ app.use("/api/v1/public/platform", publicPlatformRoutes);
 app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
 app.use("/api/v1/public/merchants", publicMerchantRoutes);
 app.use("/api/v1/public/booking", require("./routes/publicBookingRoutes"));
+app.use("/api/v1/public/widget", require("./routes/publicWidgetChatRoutes"));
 app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
