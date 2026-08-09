@@ -808,6 +808,7 @@ function buildNewsletterAdminAlertContent() {
 const { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBaileysSession, isMetaWindowError } = require('./sessionBalancer');
 const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
 const { buildMetaBodyParams } = require('../../utils/metaTemplateVariables');
+const { buildBroadcastHeaderParams } = require('../../utils/broadcastTemplateParams');
 
 const settingsInitializationInFlight = new Map();
 
@@ -1272,7 +1273,13 @@ async function sendNotification(options) {
           })() : null;
           const bodyParams = buildMetaBodyParams(variablesOrder, safeTemplate?.content, variables);
 
-          const components = [{ type: 'BODY', parameters: bodyParams }];
+          // header وسائط يأتي أولاً في components (من القالب المحلي المخزّن)
+          const components = [];
+          if (safeTemplate?.headerFormat && safeTemplate.headerFormat !== 'TEXT' && safeTemplate.headerMediaHandle) {
+            const headerParam = buildBroadcastHeaderParams(safeTemplate.headerMediaHandle, String(safeTemplate.headerFormat).toLowerCase());
+            if (headerParam) components.push(headerParam);
+          }
+          components.push({ type: 'BODY', parameters: bodyParams });
 
           result = await WhatsAppMessageHandler.sendTemplateMessage(sessionId, formattedPhone, metaTemplateName, {
             name: metaTemplateName,

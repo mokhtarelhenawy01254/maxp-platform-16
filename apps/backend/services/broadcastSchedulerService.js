@@ -232,8 +232,7 @@ class BroadcastSchedulerService {
     const socketService = require('./socketService');
     const WhatsAppMessageHandler = require('./whatsapp').WhatsAppMessageHandler;
     const MetaCloudProvider = require('./whatsapp/providers/MetaCloudProvider');
-    const { buildBroadcastBodyParams } = require('../utils/broadcastTemplateParams');
-
+    const { buildBroadcastBodyParams, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
     console.log(`📊 [BroadcastScheduler] Starting to send campaign ${campaign.id}`);
 
     // تحديث حالة الحملة إلى "sending"
@@ -451,12 +450,14 @@ class BroadcastSchedulerService {
     // Fetch template body text from Meta API so body params match the template's
     // expected variable count (Meta rejects mismatches with #132000).
     let templateBodyText = '';
+    let templateHeaderFormat = null;
     if (isWhatsApp) {
       try {
         const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
         const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
         if (targetMetaTemplate) {
           templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+          templateHeaderFormat = getTemplateHeaderFormat(targetMetaTemplate);
         }
       } catch (tmplErr) {
         console.warn(`⚠️ [BroadcastScheduler] Could not fetch template body text: ${tmplErr.message}`);
@@ -537,9 +538,15 @@ class BroadcastSchedulerService {
           // Meta rejects with (#132000) if the count differs.
           const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer);
 
-          const components = bodyParams.length > 0
-            ? [{ type: 'body', parameters: bodyParams }]
-            : [];
+          // header يأتي أولاً في components (إن كان قالب الحملة هيدره وسائط ولها وسيط)
+          const components = [];
+          if (templateHeaderFormat?.hasMedia && campaign.waHeaderMedia) {
+            const headerParam = buildBroadcastHeaderParams(campaign.waHeaderMedia, templateHeaderFormat.format.toLowerCase());
+            if (headerParam) components.push(headerParam);
+          }
+          if (bodyParams.length > 0) {
+            components.push({ type: 'body', parameters: bodyParams });
+          }
 
           let result;
           try {

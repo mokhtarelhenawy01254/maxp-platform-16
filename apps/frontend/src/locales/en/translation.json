@@ -16257,7 +16257,8 @@
     "msg_e04d": "يوجد أخطاء توافق مع سياسات Meta — راجع رسائل الفحص أعلاه",
     "success_update_ee74": "تم تحديث القالب — سيمر بمراجعة ميتا",
     "success_delete_3acd": "تم حذف القالب",
-    "failed_create_1d9d": "فشل إنشاء القالب"
+    "failed_create_1d9d": "فشل إنشاء القالب",
+    "success_upload_media": "تم رفع الوسيط إلى ميتا — جاهز لاستخدامه في رأس القالب"
   },
   "WhatsAppTemplateBroadcast": {
     "failed_load_914a": "فشل في تحميل العملاء حسب الوسم",

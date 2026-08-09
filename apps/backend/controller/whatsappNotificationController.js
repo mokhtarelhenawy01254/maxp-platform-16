@@ -201,6 +201,8 @@ async function createTemplate(req, res) {
       contentWithMedia,
       mediaUrl,
       mediaType,
+      headerFormat,
+      headerMediaHandle,
       hasButtons,
       buttons,
       hasList,
@@ -225,6 +227,8 @@ async function createTemplate(req, res) {
         contentWithMedia: contentWithMedia || false,
         mediaUrl,
         mediaType,
+        headerFormat,
+        headerMediaHandle,
         hasButtons: hasButtons || false,
         buttons: buttons ? JSON.stringify(buttons) : null,
         hasList: hasList || false,
@@ -277,6 +281,8 @@ async function updateTemplate(req, res) {
       contentWithMedia,
       mediaUrl,
       mediaType,
+      headerFormat,
+      headerMediaHandle,
       hasButtons,
       buttons,
       hasList,
@@ -298,6 +304,8 @@ async function updateTemplate(req, res) {
         contentWithMedia,
         mediaUrl,
         mediaType,
+        headerFormat,
+        headerMediaHandle,
         hasButtons,
         buttons: buttons ? JSON.stringify(buttons) : existing.buttons,
         hasList,
@@ -887,6 +895,7 @@ async function createMetaTemplateFromLocal(sessionId, localTemplate) {
   const metaCategory = built.metaCategory;
   const bodyText = built.bodyText;
   const buttonsComponent = built.buttonsComponent;
+  const headerComponent = built.headerComponent;
   const variableCount = built.variableCount;
   const variableOrder = built.variableOrder;
 
@@ -902,13 +911,16 @@ async function createMetaTemplateFromLocal(sessionId, localTemplate) {
   };
   const bodyPlain = { type: 'BODY', text: bodyText };
 
+  // الـ HEADER (وسائط) يأتي أولاً في components — ميتا تتطلب أن يكون أول component
+  const withHeader = (comps) => headerComponent ? [headerComponent, ...comps] : comps;
+
   const variants = [];
   if (buttonsComponent) {
-    variants.push({ label: 'buttons+example', components: [bodyWithExample, buttonsComponent] });
-    variants.push({ label: 'buttons', components: [bodyPlain, buttonsComponent] });
+    variants.push({ label: 'buttons+example', components: withHeader([bodyWithExample, buttonsComponent]) });
+    variants.push({ label: 'buttons', components: withHeader([bodyPlain, buttonsComponent]) });
   }
-  variants.push({ label: 'body+example', components: [bodyWithExample] });
-  variants.push({ label: 'body', components: [bodyPlain] });
+  variants.push({ label: 'body+example', components: withHeader([bodyWithExample]) });
+  variants.push({ label: 'body', components: withHeader([bodyPlain]) });
 
   const withTimeout = (promise, ms) => Promise.race([
     promise,
@@ -1104,7 +1116,10 @@ async function resubmitMetaTemplate(req, res) {
     const bodyWithExample = built.variableCount > 0
       ? { type: 'BODY', text: built.bodyText, example: { body_text: [Array.from({ length: built.variableCount }, (_, i) => `قيمة ${i + 1}`)] } }
       : { type: 'BODY', text: built.bodyText };
-    const components = [bodyWithExample];
+    // الـ HEADER يأتي أولاً في components
+    const components = [];
+    if (built.headerComponent) components.push(built.headerComponent);
+    components.push(bodyWithExample);
     if (built.buttonsComponent) components.push(built.buttonsComponent);
 
     // 2) الحالات التي تقبل التعديل المباشر: APPROVED / REJECTED / PAUSED

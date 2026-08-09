@@ -52,6 +52,7 @@ import {
   Globe,
   CheckCircle2,
   Pencil,
+  Image,
 } from "lucide-react";
 
 // ── Shared Types ────────────────────────────────────
@@ -66,6 +67,8 @@ interface TemplateItem {
   isActive: boolean;
   isDefault?: boolean;
   variables?: string | null;
+  headerFormat?: string | null;
+  headerMediaHandle?: string | null;
   metaTemplateName?: string | null;
   metaTemplateId?: string | null;
   metaTemplateStatus?: string | null;
@@ -198,6 +201,7 @@ const CustomerNotifications: React.FC = () => {
   const [resubmittingMeta, setResubmittingMeta] = useState(false);
   const [syncingStatus, setSyncingStatus] = useState(false);
   const [showVariables, setShowVariables] = useState(false);
+  const [uploadingHeader, setUploadingHeader] = useState(false);
 
   const metaSessions = useMemo(
     () => sessions.filter((s) => String(s.provider || "").toUpperCase() === "META_CLOUD"),
@@ -328,7 +332,7 @@ const CustomerNotifications: React.FC = () => {
       return null;
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: template.name.trim() || (slot === "META_CLOUD" ? "قالب ميتا" : "قالب واتساب"),
       category: category || "CUSTOMER",
       eventType,
@@ -337,6 +341,10 @@ const CustomerNotifications: React.FC = () => {
       variables: extractVariables(template.content),
       isActive: template.isActive,
     };
+    if (slot === "META_CLOUD" && template.headerFormat && template.headerFormat !== "TEXT") {
+      payload["headerFormat"] = template.headerFormat;
+      payload["headerMediaHandle"] = template.headerMediaHandle || null;
+    }
 
     try {
       if (template.id) {
@@ -357,6 +365,47 @@ const CustomerNotifications: React.FC = () => {
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "فشل حفظ القالب");
       return null;
+    }
+  };
+
+  const uploadHeaderMedia = async (file: File) => {
+    const metaId = selectedMetaSession || metaSessionId || metaSessions[0]?.id;
+    if (!metaId) {
+      toast.error("اختر جلسة ميتا أولاً");
+      return;
+    }
+    setUploadingHeader(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionId", metaId);
+      const res = await apiClient.post<{ success?: boolean; mediaId?: string; fileName?: string; error?: string }>(
+        "/whatsapp-templates/templates/upload-media",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const data = res.data;
+      if (data?.success && data.mediaId) {
+        setTemplateDialog((d) =>
+          d
+            ? {
+                ...d,
+                template: {
+                  ...d.template,
+                  headerFormat: "IMAGE",
+                  headerMediaHandle: data.mediaId!,
+                },
+              }
+            : d,
+        );
+        toast.success("تم رفع الصورة — ستُستخدم كهيدر القالب عند النشر");
+      } else {
+        toast.error(data?.error || "فشل رفع الصورة");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل رفع الصورة إلى ميتا");
+    } finally {
+      setUploadingHeader(false);
     }
   };
 
@@ -978,6 +1027,53 @@ const CustomerNotifications: React.FC = () => {
                   </p>
                 </div>
               </div>
+
+              {/* صورة الرأس (ميتا فقط) */}
+              {templateDialog.slot === "META_CLOUD" && (
+                <div className="space-y-1.5 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    صورة الرأس (HEADER) — اختياري
+                  </Label>
+                  {templateDialog.template.headerMediaHandle ? (
+                    <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-800">
+                      <Image className="size-4 shrink-0 text-slate-400" />
+                      <span className="flex-1 truncate text-xs text-slate-600 dark:text-slate-400" dir="ltr">
+                        {templateDialog.template.headerMediaHandle}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplateDialog((d) =>
+                            d ? { ...d, template: { ...d.template, headerFormat: "TEXT", headerMediaHandle: null } } : d,
+                          )
+                        }
+                        className="shrink-0 text-[11px] font-medium text-red-500 hover:text-red-600"
+                      >
+                        إزالة
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                      <Image className="size-4" />
+                      {uploadingHeader ? "جاري الرفع إلى ميتا..." : "اختر صورة للرأس"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingHeader}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadHeaderMedia(file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  )}
+                  <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                    ميتا تتطلب sample media لهيدر IMAGE — تُرفع الصورة وتُستخدم في القالب عند النشر.
+                  </p>
+                </div>
+              )}
 
               {/* المحرر + المعاينة جنب بعض */}
               <div className="grid gap-3 lg:grid-cols-2">

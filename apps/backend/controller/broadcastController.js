@@ -5,7 +5,7 @@ const WhatsAppMessageHandler = require('../services/whatsapp').WhatsAppMessageHa
 const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 const socketService = require('../services/socketService');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
-const { buildBroadcastBodyParams, countTemplateParams } = require('../utils/broadcastTemplateParams');
+const { buildBroadcastBodyParams, countTemplateParams, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
 const {
   buildEffectiveCustomerListWhere,
   resolveAggregateCustomerIds,
@@ -62,6 +62,7 @@ exports.createCampaign = async (req, res) => {
       targetAudience,
       waTemplateName,
       waLanguageCode,
+      waHeaderMedia,
       whatsAppSessionId,
       leadCategoryId,
       scheduledAt,
@@ -171,6 +172,7 @@ exports.createCampaign = async (req, res) => {
         targetAudience,
         waTemplateName: waTemplateName || null,
         waLanguageCode: waLanguageCode || 'en',
+        waHeaderMedia: waHeaderMedia || null,
         whatsAppSessionId: whatsAppSessionId || null,
         leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -916,11 +918,13 @@ exports.sendCampaign = async (req, res) => {
 
       // Fetch template body text from Meta API so chat history displays real text content
       let templateBodyText = '';
+      let templateHeaderFormat = null;
       try {
         const metaTemplates = await MetaCloudProvider.listTemplates(waSessionId);
         const targetMetaTemplate = metaTemplates.find(t => t.name === campaign.waTemplateName);
         if (targetMetaTemplate) {
           templateBodyText = targetMetaTemplate.components?.find(c => c.type === 'BODY')?.text || '';
+          templateHeaderFormat = getTemplateHeaderFormat(targetMetaTemplate);
         }
       } catch (tmplErr) {
         console.warn('⚠️ [SEND CAMPAIGN] Could not fetch template body text:', tmplErr.message);
@@ -970,9 +974,15 @@ exports.sendCampaign = async (req, res) => {
           const templateParamCount = countTemplateParams(templateBodyText);
           const bodyParams = buildBroadcastBodyParams(templateBodyText, conv.customer);
 
-          const components = bodyParams.length > 0
-            ? [{ type: 'body', parameters: bodyParams }]
-            : [];
+          // header يأتي أولاً في components (إن كان قالب الحملة هيدره وسائط ولها صورة/وسيط)
+          const components = [];
+          if (templateHeaderFormat?.hasMedia && campaign.waHeaderMedia) {
+            const headerParam = buildBroadcastHeaderParams(campaign.waHeaderMedia, templateHeaderFormat.format.toLowerCase());
+            if (headerParam) components.push(headerParam);
+          }
+          if (bodyParams.length > 0) {
+            components.push({ type: 'body', parameters: bodyParams });
+          }
 
           // Resolve variables in templateBodyText if present
           let resolvedBody = templateBodyText;

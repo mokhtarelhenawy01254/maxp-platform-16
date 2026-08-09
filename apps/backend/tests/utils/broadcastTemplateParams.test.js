@@ -8,6 +8,8 @@
 const {
   countTemplateParams,
   buildBroadcastBodyParams,
+  getTemplateHeaderFormat,
+  buildBroadcastHeaderParams,
 } = require('../../utils/broadcastTemplateParams');
 
 describe('countTemplateParams', () => {
@@ -60,5 +62,67 @@ describe('buildBroadcastBodyParams', () => {
     const body = '{{1}}';
     const params = buildBroadcastBodyParams(body, { firstName: 'محمد\nأحمد' });
     expect(params[0].text).toBe('محمد أحمد');
+  });
+});
+
+describe('getTemplateHeaderFormat', () => {
+  test('يستخرج format IMAGE من تعريف قالب هيدره وسائط', () => {
+    const templateDef = {
+      components: [
+        { type: 'HEADER', format: 'IMAGE' },
+        { type: 'BODY', text: 'أهلاً {{1}}' },
+      ],
+    };
+    const result = getTemplateHeaderFormat(templateDef);
+    expect(result).toEqual({ format: 'IMAGE', hasMedia: true });
+  });
+
+  test('يرجع null لقالب بدون HEADER', () => {
+    expect(getTemplateHeaderFormat({ components: [{ type: 'BODY', text: 'نص' }] })).toBeNull();
+  });
+
+  test('يرجع hasMedia=false لهيدر TEXT', () => {
+    const result = getTemplateHeaderFormat({ components: [{ type: 'HEADER', format: 'TEXT', text: 'سلام' }] });
+    expect(result).toEqual({ format: 'TEXT', hasMedia: false });
+  });
+
+  test('يتحمل غياب components أو القالب null', () => {
+    expect(getTemplateHeaderFormat(null)).toBeNull();
+    expect(getTemplateHeaderFormat({})).toBeNull();
+  });
+});
+
+describe('buildBroadcastHeaderParams', () => {
+  test('يبني header component بمعامل صورة من media id', () => {
+    const comp = buildBroadcastHeaderParams('123456', 'image');
+    expect(comp).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { id: '123456' } }],
+    });
+  });
+
+  test('يبني header component بمعامل صورة من رابط HTTPS', () => {
+    const comp = buildBroadcastHeaderParams('https://cdn.example.com/img.jpg', 'image');
+    expect(comp).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { link: 'https://cdn.example.com/img.jpg' } }],
+    });
+  });
+
+  test('يدعم الفيديو والمستند ويحوّل format للـ parameter type', () => {
+    expect(buildBroadcastHeaderParams('vid-1', 'VIDEO')).toEqual({
+      type: 'header',
+      parameters: [{ type: 'video', video: { id: 'vid-1' } }],
+    });
+    expect(buildBroadcastHeaderParams('doc-1', 'DOCUMENT')).toEqual({
+      type: 'header',
+      parameters: [{ type: 'document', document: { id: 'doc-1' } }],
+    });
+  });
+
+  test('يرجع null لو الوسيط فارغ أو undefined', () => {
+    expect(buildBroadcastHeaderParams(null, 'image')).toBeNull();
+    expect(buildBroadcastHeaderParams('', 'image')).toBeNull();
+    expect(buildBroadcastHeaderParams(undefined, 'image')).toBeNull();
   });
 });

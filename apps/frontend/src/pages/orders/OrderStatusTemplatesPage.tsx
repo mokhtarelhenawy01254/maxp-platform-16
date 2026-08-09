@@ -16,6 +16,7 @@ import {
   ClockIcon,
   BoltIcon,
   ArrowPathIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import {
   Dialog,
@@ -42,6 +43,8 @@ interface Template {
   buttons?: string;
   hasButtons?: boolean;
   channel?: string;
+  headerFormat?: string | null;
+  headerMediaHandle?: string | null;
   metaTemplateName?: string | null;
   metaTemplateStatus?: string | null;
   metaTemplateLanguage?: string | null;
@@ -109,6 +112,9 @@ interface TemplateFormState {
   sendMode: "direct" | "bind_meta";
   metaTemplateName: string;
   metaTemplateLanguage: string;
+  headerFormat: string;
+  headerMediaHandle: string;
+  headerMediaName: string;
 }
 
 interface SettingsForm {
@@ -134,6 +140,9 @@ const emptyTemplateForm = (): TemplateFormState => ({
   sendMode: "direct",
   metaTemplateName: "",
   metaTemplateLanguage: "ar",
+  headerFormat: "TEXT",
+  headerMediaHandle: "",
+  headerMediaName: "",
 });
 
 const DEFAULT_TEMPLATE_CONTENT = `مرحباً {{customerName}} 👋
@@ -435,6 +444,7 @@ export default function OrderStatusTemplatesPage() {
   const [showVariables, setShowVariables] = useState(false);
   const [showLocalRef, setShowLocalRef] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
+  const [headerUploading, setHeaderUploading] = useState(false);
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
@@ -552,6 +562,9 @@ export default function OrderStatusTemplatesPage() {
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: "",
       metaTemplateLanguage: "ar",
+      headerFormat: slot === "meta" ? "IMAGE" : "TEXT",
+      headerMediaHandle: "",
+      headerMediaName: "",
     });
     setShowLocalRef(false);
     setDialogOpen(true);
@@ -577,6 +590,9 @@ export default function OrderStatusTemplatesPage() {
       sendMode: slot === "meta" ? "bind_meta" : "direct",
       metaTemplateName: metaName,
       metaTemplateLanguage: target?.metaTemplateLanguage || "ar",
+      headerFormat: target?.headerFormat || (slot === "meta" ? "IMAGE" : "TEXT"),
+      headerMediaHandle: target?.headerMediaHandle || "",
+      headerMediaName: target?.headerMediaHandle || "",
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -605,6 +621,9 @@ export default function OrderStatusTemplatesPage() {
       sendMode: "bind_meta",
       metaTemplateName: metaName,
       metaTemplateLanguage: current?.metaTemplateLanguage || "ar",
+      headerFormat: current?.headerFormat || "IMAGE",
+      headerMediaHandle: current?.headerMediaHandle || "",
+      headerMediaName: current?.headerMediaHandle || "",
     });
     setDialogOpen(true);
     fetchMetaSessions();
@@ -633,6 +652,8 @@ export default function OrderStatusTemplatesPage() {
         hasButtons: boolean;
         buttons: { id: string; text: string; action: string }[];
         channel?: string;
+        headerFormat?: string;
+        headerMediaHandle?: string;
       } = {
         category: selectedStatus.code === INCOMPLETE_CART_EVENT_TYPE ? "ABANDONED_CART" : "ORDERS",
         eventType: selectedStatus.code,
@@ -642,6 +663,10 @@ export default function OrderStatusTemplatesPage() {
         hasButtons: saveButtons.length > 0,
         buttons: saveButtons,
       };
+      if (dialogSlot === "meta" && templateForm.headerFormat !== "TEXT") {
+        payload.headerFormat = templateForm.headerFormat;
+        payload.headerMediaHandle = templateForm.headerMediaHandle || undefined;
+      }
       if (!isEdit) {
         payload.channel = dialogSlot === "meta" ? "META_CLOUD" : "AUTO";
       }
@@ -692,6 +717,35 @@ export default function OrderStatusTemplatesPage() {
       setSaving(false);
     }
   }, [selectedStatus, selectedTemplate, templateForm, dialogSlot, t]);
+
+  const uploadHeaderMedia = useCallback(async (file: File) => {
+    if (!selectedMetaSession) {
+      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      return;
+    }
+    setHeaderUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionId", selectedMetaSession);
+      const res = await apiClient.post<{ success?: boolean; mediaId?: string; fileName?: string; error?: string }>(
+        "/whatsapp-templates/templates/upload-media",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const data = res.data;
+      if (data?.success && data.mediaId) {
+        setTemplateForm((p) => ({ ...p, headerMediaHandle: data.mediaId!, headerMediaName: data.fileName || file.name }));
+        toast.success(t("orders.headerMediaUploaded", "تم رفع الوسيط — جاهز للنشر على ميتا"));
+      } else {
+        toast.error(data?.error || t("orders.headerMediaUploadFailed", "فشل رفع الوسيط"));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || t("orders.headerMediaUploadFailed", "فشل رفع الوسيط"));
+    } finally {
+      setHeaderUploading(false);
+    }
+  }, [selectedMetaSession, t]);
 
   const handleSave = async () => {
     if (!selectedStatus) return;
@@ -1907,6 +1961,51 @@ export default function OrderStatusTemplatesPage() {
 
               {/* ===== LOCAL CONTENT ===== */}
               <div className={dialogSlot === "meta" ? "rounded-lg border border-slate-200 p-3 dark:border-slate-700" : ""}>
+                {dialogSlot === "meta" && (
+                  <div className="mb-3 space-y-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                      صورة الرأس (HEADER) — اختياري
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {templateForm.headerMediaHandle ? (
+                        <div className="flex h-10 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-800">
+                          <PhotoIcon className="size-4 shrink-0 text-slate-400" />
+                          <span className="flex-1 truncate text-xs text-slate-600 dark:text-slate-400" dir="ltr">
+                            {templateForm.headerMediaName || templateForm.headerMediaHandle}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setTemplateForm((p) => ({ ...p, headerMediaHandle: "", headerMediaName: "" }))}
+                            className="shrink-0 text-[11px] font-medium text-red-500 hover:text-red-600"
+                          >
+                            إزالة
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex h-10 flex-1 items-center gap-2">
+                          <label className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                            <PhotoIcon className="size-4" />
+                            {headerUploading ? "جاري الرفع إلى ميتا..." : "اختر صورة للرأس"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={headerUploading}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) uploadHeaderMedia(file);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس. يمكن تغييرها لكل رسالة وقت البث.
+                    </p>
+                  </div>
+                )}
                 {dialogSlot === "meta" ? (
                   <div>
                     <button

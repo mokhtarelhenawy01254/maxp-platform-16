@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
-  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List, Image as ImageIcon, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
@@ -56,6 +56,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
+
+  // Header media for Meta templates with an IMAGE header
+  const [waHeaderMedia, setWaHeaderMedia] = useState("");
+  const [headerMediaName, setHeaderMediaName] = useState("");
+  const [headerUploading, setHeaderUploading] = useState(false);
 
   // Campaign creation
   const [campaignName, setCampaignName] = useState("");
@@ -288,6 +293,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         targetAudience: selectedListId || "manual",
         waTemplateName: selectedTemplate,
         waLanguageCode: languageCode,
+        waHeaderMedia: waHeaderMedia || undefined,
         whatsAppSessionId: selectedSessionId,
         manualPhones: JSON.stringify(recipients),
         sendNow: scheduleAt ? "false" : "true",
@@ -321,7 +327,37 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     } finally {
       if (!scheduleAt) { setSending(false); setSendProgress(null); }
     }
-  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, selectedSessionId, withCompanyConfig, fetchCampaigns]);
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, selectedSessionId, withCompanyConfig, fetchCampaigns, waHeaderMedia]);
+
+  const handleUploadHeaderMedia = useCallback(async (file: File) => {
+    if (!selectedSessionId) {
+      tToast.error("WhatsAppTemplateBroadcast.msg_03ea");
+      return;
+    }
+    setHeaderUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionId", selectedSessionId);
+      const res = await apiClient.post<{ success?: boolean; mediaId?: string; fileName?: string; error?: string }>(
+        "/whatsapp-templates/templates/upload-media",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" }, ...withCompanyConfig() },
+      );
+      const data = res.data;
+      if (data?.success && data.mediaId) {
+        setWaHeaderMedia(data.mediaId);
+        setHeaderMediaName(data.fileName || file.name);
+        toast.success("تم رفع صورة الرأس — سترسل في هيدر القالب لكل عميل");
+      } else {
+        toast.error(data?.error || "فشل رفع الصورة");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل رفع الصورة إلى ميتا");
+    } finally {
+      setHeaderUploading(false);
+    }
+  }, [selectedSessionId, withCompanyConfig]);
 
   const openRate = (c: Campaign) =>
     c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;
@@ -410,6 +446,43 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>صورة الرأس (اختياري — لقوالب الهيدر IMAGE)</Label>
+                    {waHeaderMedia ? (
+                      <div className="flex h-11 items-center gap-2 rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3">
+                        <ImageIcon className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />
+                        <span className="flex-1 truncate text-sm text-[color:var(--color-muted-foreground)]" dir="ltr">
+                          {headerMediaName || waHeaderMedia}
+                        </span>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500" onClick={() => { setWaHeaderMedia(""); setHeaderMediaName(""); }}>
+                          إزالة
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[var(--color-muted)] text-sm text-[color:var(--color-muted-foreground)] hover:bg-[var(--shell-overlay-bg)]">
+                        {headerUploading ? (
+                          <><RefreshCw className="size-4 animate-spin" /> جاري الرفع إلى ميتا...</>
+                        ) : (
+                          <><ImageIcon className="size-4" /> اختر صورة تُرسل في هيدر القالب</>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={headerUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadHeaderMedia(file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    )}
+                    <p className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                      تظهر الصورة في كل رسالة من الحملة (يمكن لكل قالب هيدره IMAGE فقط). لتغيير الصورة لكل عميل، استخدم رابط HTTPS مخصص في البث.
+                    </p>
                   </div>
 
                   <div className="space-y-2">

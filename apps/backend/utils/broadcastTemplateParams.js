@@ -57,7 +57,57 @@ function buildBroadcastBodyParams(templateBodyText, customer = {}) {
   return bodyParams;
 }
 
+/**
+ * يستخرج تنسيق HEADER من تعريف قالب ميتا (listTemplates).
+ * Meta template components للـ HEADER: { type: 'HEADER', format: 'IMAGE'|'VIDEO'|'DOCUMENT'|'TEXT', ... }
+ *
+ * @param {object} templateDef - عنصر من MetaCloudProvider.listTemplates
+ * @returns {{format: string, hasMedia: boolean}|null}
+ */
+function getTemplateHeaderFormat(templateDef) {
+  if (!templateDef?.components || !Array.isArray(templateDef.components)) return null;
+  const header = templateDef.components.find(c => String(c.type).toUpperCase() === 'HEADER');
+  if (!header) return null;
+  const format = String(header.format || 'TEXT').toUpperCase();
+  return {
+    format,
+    hasMedia: format !== 'TEXT'
+  };
+}
+
+/**
+ * يبني header component مع معامل وسائط (image/video/document) للإرسال —
+ * يدعم صورة/وسيطاً مختلفاً لكل رسالة عبر media id أو رابط HTTPS عام.
+ *
+ * @param {string} media - media id (من Resumable/Media API) أو رابط HTTPS
+ * @param {string} kind - 'image' | 'video' | 'document' (يُستنتج من header format لو غائب)
+ * @returns {object|null} component بصيغة ميتا، أو null لو مفيش وسيط
+ */
+function buildBroadcastHeaderParams(media, kind = 'image') {
+  if (!media) return null;
+
+  const normalizedKind = String(kind).toLowerCase();
+  const validKinds = ['image', 'video', 'document'];
+  const type = validKinds.includes(normalizedKind) ? normalizedKind : 'image';
+
+  const mediaObj = /^https?:\/\//i.test(media)
+    ? { link: media }
+    : { id: media };
+
+  return {
+    type: 'header',
+    parameters: [
+      {
+        type,
+        [type]: mediaObj
+      }
+    ]
+  };
+}
+
 module.exports = {
   countTemplateParams,
   buildBroadcastBodyParams,
+  getTemplateHeaderFormat,
+  buildBroadcastHeaderParams,
 };

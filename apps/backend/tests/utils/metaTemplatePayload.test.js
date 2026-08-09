@@ -62,5 +62,30 @@ describe('buildMetaTemplatePayload', () => {
     expect(out.variableCount).toBe(0);
     expect(out.variableOrder).toBeNull();
     expect(out.buttonsComponent).toBeNull();
+    expect(out.headerComponent).toBeNull();
+  });
+
+  test('يبني headerComponent لوسائط (IMAGE) من headerFormat + headerMediaHandle', () => {
+    const out = buildMetaTemplatePayload({
+      content: 'رسالة بها صورة',
+      category: 'ORDER',
+      hasButtons: false,
+      buttons: null,
+      headerFormat: 'IMAGE',
+      headerMediaHandle: 'meta-handle-123'
+    });
+    expect(out.headerComponent).toEqual({
+      type: 'HEADER',
+      format: 'IMAGE',
+      example: { header_handle: ['meta-handle-123'] }
+    });
+  });
+
+  test('لا يبني headerComponent لهيدر TEXT أو بلا handle', () => {
+    const textHeader = buildMetaTemplatePayload({ content: 'نص', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'TEXT' });
+    expect(textHeader.headerComponent).toBeNull();
+
+    const noHandle = buildMetaTemplatePayload({ content: 'نص', category: 'ORDER', hasButtons: false, buttons: null, headerFormat: 'IMAGE' });
+    expect(noHandle.headerComponent).toBeNull();
   });
 });

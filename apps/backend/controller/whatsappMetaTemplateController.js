@@ -38,6 +38,53 @@ async function listMetaTemplates(req, res) {
   }
 }
 
+// رفع وسيط (صورة/فيديو/مستند) لاستخدامه في HEADER قالب ميتا — يرجع الـ handle المطلوب
+// في example.header_handle عند إنشاء القالب، أو كـ header parameter عند الإرسال.
+async function uploadTemplateMedia(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId مطلوب' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'الملف مطلوب (multipart field: file)' });
+    }
+
+    const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: targetSessionId, companyId }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'الجلسة غير موجودة' });
+    }
+
+    const handle = await MetaCloudProvider.uploadTemplateMedia(
+      targetSessionId,
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname
+    );
+
+    if (!handle) {
+      return res.status(500).json({ error: 'فشل رفع الوسائط إلى ميتا' });
+    }
+
+    res.json({
+      success: true,
+      mediaId: handle,
+      mediaType: req.file.mimetype,
+      fileName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Error uploading template media:', error);
+    res.status(500).json({ error: error.message || 'حدث خطأ أثناء رفع الوسائط' });
+  }
+}
+
 async function createMetaTemplate(req, res) {
   try {
     const { companyId } = req.user;
@@ -243,5 +290,6 @@ module.exports = {
   createMetaTemplate,
   updateMetaTemplate,
   deleteMetaTemplate,
-  broadcastMetaTemplate
+  broadcastMetaTemplate,
+  uploadTemplateMedia
 };
