@@ -20,7 +20,7 @@ import {
   type VolumeDiscountTier,
 } from "../utils/volumeDiscounts";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
-import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
+import { GovernorateAreaSearch } from "../../components/ui/GovernorateAreaSearch";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import type { CartItem } from "../store/useCartStore";
@@ -356,6 +356,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const resolvedGovernorate = effectiveGovernorateField.enabled
     ? formData.governorate?.trim() || ""
     : "";
+  const resolvedArea = effectiveGovernorateField.enabled
+    ? formData.city?.trim() || ""
+    : "";
   const resolvedAddress = effectiveAddressField.enabled
     ? formData.address?.trim() || ""
     : "";
@@ -596,7 +599,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         email: "",
         phone: contactPhone,
         address: resolvedAddress,
-        city: resolvedGovernorate,
+        city: resolvedArea || resolvedGovernorate,
         governorate: resolvedGovernorate,
         notes: buildQuickOrderNote({
           alternatePhone: resolvedAlternatePhone,
@@ -840,7 +843,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           email: "",
           phone: contactPhone,
           address: resolvedAddress,
-          city: resolvedGovernorate,
+          city: resolvedArea || resolvedGovernorate,
           governorate: resolvedGovernorate,
           notes: buildQuickOrderNote({
             alternatePhone:
@@ -873,7 +876,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 notes: payload.notes,
                 shippingAddress: {
                   governorate: resolvedGovernorate || undefined,
-                  city: resolvedGovernorate || undefined,
+                  city: resolvedArea || resolvedGovernorate || undefined,
                   street: resolvedAddress || undefined,
                   address: resolvedAddress || undefined,
                   addressLine1: resolvedAddress || undefined,
@@ -1483,24 +1486,40 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 <label className={fieldStackClassName}>
                   <span className={fieldLabelClassName}>{governorateLabel}</span>
                   <div className="relative">
-                    <select
-                      name="governorate"
-                      value={formData.governorate || ""}
-                      onChange={handleFieldChange}
-                      className={`${resolvedInputClassName} appearance-none pe-10`}
-                    >
-                      <option value="">
-                        {prefersArabicCopy ? "اختر المحافظة" : "Select governorate"}
-                      </option>
-                      {EGYPT_GOVERNORATES.map((governorate) => (
-                        <option key={governorate.id} value={governorate.nameEn}>
-                          {governorate.nameAr}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      ▼
-                    </span>
+                    <GovernorateAreaSearch
+                      value={{
+                        governorate: formData.governorate || "",
+                        area: formData.city || "",
+                      }}
+                      onChange={(next) => {
+                        updateFormData({
+                          governorate: next.governorate,
+                          city: next.area,
+                        });
+                      }}
+                      placeholder={
+                        prefersArabicCopy
+                          ? "ابحث عن المنطقة..."
+                          : "Search area..."
+                      }
+                      searchPlaceholder={
+                        prefersArabicCopy
+                          ? "اكتب اسم المنطقة أو المحافظة..."
+                          : "Type area or governorate..."
+                      }
+                      emptyText={
+                        prefersArabicCopy
+                          ? "لا توجد نتائج مطابقة"
+                          : "No matching results"
+                      }
+                      loadingText={
+                        prefersArabicCopy
+                          ? "جاري البحث..."
+                          : "Searching..."
+                      }
+                      publicMode
+                      companyId={companyId}
+                    />
                   </div>
                 </label>
               ) : null}

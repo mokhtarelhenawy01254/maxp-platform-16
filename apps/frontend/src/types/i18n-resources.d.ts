@@ -13978,6 +13978,11 @@ declare module 'react-i18next' {
         bookingOperations: string;
         bookingInsuranceCompanies: string;
         bookingMemberTypes: string;
+        labModule: string;
+        labDashboard: string;
+        labTests: string;
+        labReception: string;
+        labOrders: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;
@@ -16251,6 +16256,7 @@ declare module 'react-i18next' {
         success_update_ee74: string;
         success_delete_3acd: string;
         failed_create_1d9d: string;
+        success_upload_media: string;
       };
       WhatsAppTemplateBroadcast: {
         failed_load_914a: string;

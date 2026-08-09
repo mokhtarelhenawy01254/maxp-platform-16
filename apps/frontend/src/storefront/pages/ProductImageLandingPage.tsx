@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import i18n from "../../i18n";
 import { tToast } from "../../utils/i18n-toast";
 
-import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
+import { GovernorateAreaSearch } from "../../components/ui/GovernorateAreaSearch";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { buildCheckoutOrderPayload } from "../hooks/useCheckout";
 import type { Product, ProductVariant } from "../hooks/useProducts";
@@ -1032,34 +1032,26 @@ const ProductImageLandingPage: React.FC = () => {
           ) : null}
 
           <div className="pil-two-cols">
-            <div className="pil-field">
-              <label htmlFor="pil-governorate">المحافظة</label>
-              <select
-                id="pil-governorate"
-                name="governorate"
-                value={formState.governorate}
-                onChange={updateFormField("governorate")}
-                required
-              >
-                <option value="">اختار</option>
-                {EGYPT_GOVERNORATES.map((governorate) => (
-                  <option key={governorate.id} value={governorate.nameAr}>
-                    {governorate.nameAr}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="pil-field">
-              <label htmlFor="pil-area">المنطقة</label>
-              <input
-                id="pil-area"
-                name="area"
-                value={formState.area}
-                onChange={updateFormField("area")}
-                autoComplete="address-level2"
-                placeholder="مثال: مدينة نصر"
-                required
+            <div className="pil-field pil-field-full">
+              <label htmlFor="pil-governorate">المحافظة والمنطقة</label>
+              <GovernorateAreaSearch
+                value={{
+                  governorate: formState.governorate,
+                  area: formState.area,
+                }}
+                onChange={(next) => {
+                  setFormState((current) => ({
+                    ...current,
+                    governorate: next.governorate,
+                    area: next.area,
+                  }));
+                }}
+                placeholder="ابحث عن المنطقة..."
+                searchPlaceholder="اكتب اسم المنطقة أو المحافظة..."
+                emptyText="لا توجد نتائج مطابقة"
+                loadingText="جاري البحث..."
+                publicMode
+                companyId={companyId}
               />
             </div>
           </div>

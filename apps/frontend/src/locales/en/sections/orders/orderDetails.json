@@ -51,6 +51,7 @@
   "additionalPhone": "Additional Phone Number",
   "governorate": "Governorate",
   "selectGovernorate": "Select Governorate",
+  "searchArea": "Type area or governorate...",
   "areaCity": "Area / City",
   "addressLine": "Address",
   "nearestLandmark": "Nearest Landmark",

@@ -13,6 +13,7 @@ import {
   MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import { storefrontFetch } from "../../utils/storefrontApi";
 
 export interface AreaSearchResult {
   governorateId: string;
@@ -31,6 +32,10 @@ interface GovernorateAreaSearchProps {
   loadingText?: string;
   disabled?: boolean;
   autoSearchText?: string;
+  /** Use the public storefront endpoint (no auth). Requires companyId. */
+  publicMode?: boolean;
+  /** Company id used when publicMode is true. */
+  companyId?: string | null;
 }
 
 /**
@@ -47,6 +52,8 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
   loadingText = "جاري البحث...",
   disabled = false,
   autoSearchText = "",
+  publicMode = false,
+  companyId = null,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -68,35 +75,50 @@ const GovernorateAreaSearch: React.FC<GovernorateAreaSearchProps> = ({
     return Array.from(groups.entries());
   }, [results]);
 
-  const runSearch = useCallback(async (text: string) => {
-    const q = text.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    try {
-      const response = await apiClient.get<{
-        data?: { matches?: AreaSearchResult[] };
-      }>("/turbo/search-area", {
-        params: { q, limit: 25 },
-        signal: controller.signal,
-      });
-      const matches = response.data?.data?.matches || [];
-      setResults(matches);
-    } catch (error) {
-      // Ignore abort; on real failures keep whatever we had.
-      if ((error as { code?: string })?.code !== "ERR_CANCELED") {
+  const runSearch = useCallback(
+    async (text: string) => {
+      const q = text.trim();
+      if (q.length < 2) {
         setResults([]);
+        setLoading(false);
+        return;
       }
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  }, []);
+      setLoading(true);
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      try {
+        let matches: AreaSearchResult[] = [];
+        if (publicMode) {
+          const response = await storefrontFetch("/turbo/location/search-area", {
+            companyId,
+            query: { q, limit: 25 },
+            signal: controller.signal,
+          });
+          matches =
+            ((response as { data?: { matches?: AreaSearchResult[] } })?.data
+              ?.matches as AreaSearchResult[] | undefined) || [];
+        } else {
+          const response = await apiClient.get<{
+            data?: { matches?: AreaSearchResult[] };
+          }>("/turbo/search-area", {
+            params: { q, limit: 25 },
+            signal: controller.signal,
+          });
+          matches = response.data?.data?.matches || [];
+        }
+        setResults(matches);
+      } catch (error) {
+        // Ignore abort; on real failures keep whatever we had.
+        if ((error as { code?: string })?.code !== "ERR_CANCELED") {
+          setResults([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    },
+    [companyId, publicMode],
+  );
 
   // Auto-search: if the caller supplies pre-filled text (e.g. an existing
   // address), run it once on mount so the merchant sees suggested areas.
