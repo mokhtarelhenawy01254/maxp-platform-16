@@ -152,6 +152,15 @@ router.post('/checkout-draft', async (req, res) => {
           },
         });
 
+    if (!existingCart && savedCart) {
+      try {
+        const { handleCartCreated } = require('../services/orders/incompleteCartMessagingService');
+        handleCartCreated(savedCart);
+      } catch (triggerError) {
+        console.warn('⚠️ [PUBLIC-ORDERS] Incomplete cart messaging trigger failed:', triggerError.message);
+      }
+    }
+
     if (typeof res.cookie === 'function') {
       res.cookie('cart_id', resolvedCartId, {
         maxAge: CHECKOUT_DRAFT_TTL_MS,
@@ -848,7 +857,8 @@ router.post('/', async (req, res) => {
       fbc,
       fbp,
       useWallet,
-      walletAmount
+      walletAmount,
+      redeemPoints
     } = req.body;
 
     const headerFbc = req.headers['x-fbc'];
@@ -1404,35 +1414,55 @@ router.post('/', async (req, res) => {
       discountAmount += promoDiscount;
     }
 
-    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
+    // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) / أو كوبون الخصم التلقائي
     let loyaltyDiscount = 0;
     let loyaltyRewards = null;
     let loyaltyTierInfo = null;
+    let autoDiscountVoucherId = null;
+    let loyaltyCustomer = null;
     try {
-      const loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
+      loyaltyCustomer = await findCustomerByPhone(prisma, guestPhone, company.id);
       if (loyaltyCustomer) {
-        loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
-        const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
-        loyaltyTierInfo = progress?.tier || null;
+        const autoDiscountService = require('../services/autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(company.id);
 
-        if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
-          freeShippingAdjustment = {
-            source: 'loyalty_tier',
-            originalShippingCost: Number(shippingCost),
-            discountAmount: Number(shippingCost),
-            appliedShippingCost: 0,
-          };
-          shippingCost = 0;
-        }
+        if (autoActive) {
+          // نظام "الخصم التلقائي": نطبق كوبون 10% على الأوردر الجاي (لو موجود نشط)
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: company.id,
+            customerId: loyaltyCustomer.id,
+            cartTotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            loyaltyDiscount = voucherRes.discount;
+            discountAmount += loyaltyDiscount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+          }
+        } else {
+          loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(company.id, loyaltyCustomer.id);
+          const progress = await customerLoyaltyService.getCustomerTierProgress(company.id, loyaltyCustomer.id);
+          loyaltyTierInfo = progress?.tier || null;
 
-        const lp = Number(loyaltyRewards?.discountPercent || 0);
-        if (lp > 0) {
-          loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
-          discountAmount += loyaltyDiscount;
+          if (loyaltyRewards?.freeShipping && Number(shippingCost) > 0) {
+            freeShippingAdjustment = {
+              source: 'loyalty_tier',
+              originalShippingCost: Number(shippingCost),
+              discountAmount: Number(shippingCost),
+              appliedShippingCost: 0,
+            };
+            shippingCost = 0;
+          }
+
+          const lp = Number(loyaltyRewards?.discountPercent || 0);
+          if (lp > 0) {
+            loyaltyDiscount = (Number(cartTotal) || 0) * (lp / 100);
+            discountAmount += loyaltyDiscount;
+          }
         }
       }
     } catch (loyaltyError) {
-      console.error('⚠️ [LOYALTY] Failed to apply tier rewards at checkout:', loyaltyError?.message);
+      console.error('⚠️ [LOYALTY] Failed to apply rewards at checkout:', loyaltyError?.message);
     }
 
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
@@ -1445,14 +1475,14 @@ router.post('/', async (req, res) => {
       : 0;
 
     if (wantsWallet) {
-      if (!customerAuth) {
+      if (!customerAuth && !loyaltyCustomer) {
         return res.status(401).json({
           success: false,
           error: 'يجب تسجيل الدخول كعميل لاستخدام المحفظة'
         });
       }
 
-      if (customerAuth.companyId !== company.id) {
+      if (customerAuth && customerAuth.companyId !== company.id) {
         return res.status(403).json({
           success: false,
           error: 'رمز العميل لا يطابق شركة المتجر'
@@ -1615,17 +1645,21 @@ router.post('/', async (req, res) => {
 
     // Create order and update stock in a transaction to ensure data consistency
     // ✅ FIX: Increased timeout to 30 seconds to prevent "Transaction already closed" errors
+    let pointsApplied = 0;
+    let pointsUsed = 0;
+    let pointsProgramId = null;
     const order = await prisma.$transaction(async (tx) => {
       let walletApplied = 0;
       let walletBalanceBefore = null;
       let walletBalanceAfter = null;
       let walletIdForTxn = null;
 
-      if (wantsWallet && customerAuth) {
+      const walletCustomerId = customerAuth?.customerId || loyaltyCustomer?.id || null;
+      if (wantsWallet && walletCustomerId) {
         // Ensure wallet exists
         let wallet = await tx.customerWallet.findFirst({
           where: {
-            customerId: customerAuth.customerId,
+            customerId: walletCustomerId,
             companyId: company.id,
             isActive: true
           }
@@ -1634,7 +1668,7 @@ router.post('/', async (req, res) => {
         if (!wallet) {
           wallet = await tx.customerWallet.create({
             data: {
-              customerId: customerAuth.customerId,
+              customerId: walletCustomerId,
               companyId: company.id,
               balance: 0,
               totalEarned: 0,
@@ -1667,6 +1701,45 @@ router.post('/', async (req, res) => {
 
       const finalTotalAfterWallet = Math.max(0, (Number(finalTotal) || 0) - walletApplied);
 
+      // استبدال النقاط كدفع (نظام الخصم التلقائي): نقطة = pointsRedemptionValue ج
+      if (redeemPoints === true || redeemPoints === 'true') {
+        try {
+          const autoDiscountService = require('../services/autoDiscountService');
+          const autoSettings = await autoDiscountService.getSettings(company.id);
+          if (autoSettings.loyaltySystem === 'AUTO_DISCOUNT' && autoSettings.redeemPointsEnabled !== false) {
+            const program = await tx.customerLoyaltyProgram.findFirst({
+              where: { companyId: company.id, type: 'POINTS', status: 'ACTIVE' },
+              orderBy: { createdAt: 'asc' }
+            });
+            if (program && loyaltyCustomer) {
+              const record = await tx.customerLoyaltyRecord.findUnique({
+                where: { customerId_programId: { customerId: loyaltyCustomer.id, programId: program.id } }
+              });
+              if (record && parseFloat(record.currentPoints) > 0) {
+                const valuePer = Number(autoSettings.pointsRedemptionValue || 1);
+                const maxUsable = Math.floor(finalTotalAfterWallet / valuePer);
+                pointsUsed = Math.min(Math.floor(parseFloat(record.currentPoints)), maxUsable);
+                if (pointsUsed > 0) {
+                  pointsApplied = pointsUsed * valuePer;
+                  await tx.customerLoyaltyRecord.update({
+                    where: { id: record.id },
+                    data: {
+                      currentPoints: Math.max(0, parseFloat(record.currentPoints) - pointsUsed),
+                      totalRedeemed: (parseFloat(record.totalRedeemed) || 0) + pointsUsed,
+                      lastPointsRedeemed: new Date()
+                    }
+                  });
+                  pointsProgramId = program.id;
+                }
+              }
+            }
+          }
+        } catch (pointsError) {
+          console.error('⚠️ [POINTS-REDEEM] Failed to redeem points at checkout:', pointsError?.message);
+        }
+      }
+      const finalTotalAfterPoints = Math.max(0, finalTotalAfterWallet - pointsApplied);
+
       // Create order
       // Note: items and shippingAddress must be JSON strings for Prisma
       const orderMetadata = {};
@@ -1682,7 +1755,7 @@ router.post('/', async (req, res) => {
 
       if (walletApplied > 0) {
         orderMetadata.walletApplied = walletApplied;
-        orderMetadata.walletCustomerId = customerAuth.customerId;
+        orderMetadata.walletCustomerId = walletCustomerId;
         orderMetadata.walletBalanceBefore = walletBalanceBefore;
         orderMetadata.walletBalanceAfter = walletBalanceAfter;
       }
@@ -1710,6 +1783,23 @@ router.post('/', async (req, res) => {
         };
       }
 
+      if (autoDiscountVoucherId) {
+        orderMetadata.autoDiscount = {
+          usedVoucherId: autoDiscountVoucherId,
+          discountAmount: Number(loyaltyDiscount.toFixed(2)),
+          appliedAt: new Date().toISOString()
+        };
+      }
+
+      if (pointsApplied > 0) {
+        orderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
+
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
       }
@@ -1724,7 +1814,7 @@ router.post('/', async (req, res) => {
           total: cartTotal,
           shippingCost,
           discountAmount,
-          finalTotal: finalTotalAfterWallet,
+          finalTotal: finalTotalAfterPoints,
           shippingAddress: JSON.stringify(shippingAddress),
           paymentMethod,
           status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
@@ -2114,6 +2204,14 @@ router.post('/', async (req, res) => {
       if (freeShippingMetadata) {
         regularOrderMetadata.freeShipping = freeShippingMetadata;
       }
+      if (pointsApplied > 0) {
+        regularOrderMetadata.pointsRedemption = {
+          programId: pointsProgramId,
+          pointsUsed,
+          value: pointsApplied,
+          appliedAt: new Date().toISOString()
+        };
+      }
       if (promoDiscount > 0) {
         regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
       }
@@ -2260,35 +2358,47 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (createdOrder && !isDuplicateOrder) {
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    if (!isDuplicateOrder) {
+    // عناصر الطلب — متاحة دائماً من الـ guest order
+    let guestItems = [];
     try {
-      console.log('📱 [WHATSAPP] Preparing to send notification for order:', createdOrder.orderNumber);
+      guestItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+    } catch (parseErr) {
+      guestItems = cartItems || [];
+    }
+
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    // ملاحظة: نعتمد على بيانات الـ guest order (المتوفرة دائماً) بدلاً من createdOrder —
+    // لو فشل تحويل الزائر لطلب عادي (customer.create/order.create) يبقى الإشعار يشتغل عادي.
+    try {
+      console.log('📱 [WHATSAPP] Preparing to send notification for order:', order.orderNumber);
       console.log('📱 [WHATSAPP] Order data:', {
-        id: createdOrder.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        id: order.id,
+        customerPhone: order.guestPhone,
+        customerName: order.guestName,
         companyId: company.id,
-        total: createdOrder.total
+        total: order.finalTotal
       });
 
       const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
       // تجهيز بيانات الطلب للإشعار
       const orderForNotification = {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
+        id: createdOrder?.id || order.id,
+        orderNumber: order.orderNumber,
         companyId: company.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
+        customerPhone: order.guestPhone || createdOrder?.customerPhone,
+        customerName: order.guestName || createdOrder?.customerName,
         customer: {
-          firstName: createdOrder.customerName?.split(' ')[0] || createdOrder.customerName,
-          phone: createdOrder.customerPhone
+          firstName: (order.guestName || createdOrder?.customerName || '').split(' ')[0] || order.guestName,
+          phone: order.guestPhone || createdOrder?.customerPhone
         },
-        total: parseFloat(createdOrder.total),
-        shipping: parseFloat(createdOrder.shipping),
+        customerId: createdOrder?.customerId || null,
+        total: parseFloat(order.finalTotal ?? order.total ?? createdOrder?.total ?? 0),
+        shipping: parseFloat(order.shippingCost ?? createdOrder?.shipping ?? 0),
         currency: 'EGP',
-        items: createdOrder.orderItems || [] // ✅ Include items for WhatsApp notification
+        items: (createdOrder?.orderItems && createdOrder.orderItems.length > 0) ? createdOrder.orderItems : guestItems,
+        createdAt: order.createdAt || createdOrder?.createdAt
       };
 
       console.log('📱 [WHATSAPP] Calling sendOrderCreatedNotification with:', orderForNotification);
@@ -2312,7 +2422,7 @@ router.post('/', async (req, res) => {
           console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
         }
       } else {
-        console.log('✅ [WHATSAPP] Order notification sent successfully for:', createdOrder.orderNumber);
+        console.log('✅ [WHATSAPP] Order notification sent successfully for:', order.orderNumber);
       }
     } catch (whatsappError) {
       // لا نوقف العملية إذا فشل WhatsApp
@@ -2322,25 +2432,29 @@ router.post('/', async (req, res) => {
 
     // 📧 إرسال إشعار البريد الإلكتروني تلقائياً
     try {
-      if (createdOrder.customerEmail) {
-        console.log('📧 [EMAIL] Preparing to send confirmation to:', createdOrder.customerEmail);
+      const emailRecipient = createdOrder?.customerEmail || order.guestEmail;
+      if (emailRecipient) {
+        console.log('📧 [EMAIL] Preparing to send confirmation to:', emailRecipient);
 
-        const emailItems = (Array.isArray(createdOrder.items) ? createdOrder.items : []).map(item => ({
-          productName: item.product?.name || item.productName,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
+        const emailItems = ((createdOrder?.orderItems && createdOrder.orderItems.length > 0)
+          ? createdOrder.orderItems
+          : guestItems
+        ).map(item => ({
+          productName: item.product?.name || item.productName || item.name,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || 0),
           productColor: item.productColor,
           productSize: item.productSize
         }));
 
         await EmailService.sendOrderConfirmation({
-          customerEmail: createdOrder.customerEmail,
-          customerName: createdOrder.customerName,
-          orderNumber: createdOrder.orderNumber,
+          customerEmail: emailRecipient,
+          customerName: createdOrder?.customerName || order.guestName,
+          orderNumber: order.orderNumber,
           items: emailItems,
-          total: parseFloat(createdOrder.total),
-          status: createdOrder.status,
-          customerPhone: createdOrder.customerPhone
+          total: parseFloat(order.finalTotal ?? createdOrder?.total ?? 0),
+          status: createdOrder?.status || order.status || 'PENDING',
+          customerPhone: order.guestPhone || createdOrder?.customerPhone
         });
         console.log('✅ [EMAIL] Order confirmation sent successfully');
       }
@@ -2454,6 +2568,11 @@ router.post('/', async (req, res) => {
         loyaltyDiscount,
         loyaltyFreeShipping: Boolean(loyaltyRewards?.freeShipping),
         loyaltyTierName: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name || null,
+        autoDiscountApplied: Boolean(autoDiscountVoucherId),
+        autoDiscountVoucherId,
+        pointsRedemptionApplied: pointsApplied > 0,
+        pointsUsed,
+        pointsValue: pointsApplied,
       },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'
@@ -2498,6 +2617,45 @@ router.get('/track', async (req, res) => {
 
     if (order) {
       order.items = coerceCartItemsToArray(order.items).map(buildTrackedOrderItem);
+    }
+
+    // دمج بيانات الطلب الأساسي (Order) مع GuestOrder:
+    // الـ GuestOrder لقطة وقت الإنشاء وبتفضل متجمدة، بينما مكافآت الولاء
+    // (النقاط والكاش باك) والحالة الحقيقية بتتكتب على الـ Order الأساسي بعد التسليم.
+    // ملاحظة: أوردرات الستور بتخزن رقم الطلب في حقل id، فبنبحث بـ id أو orderNumber.
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: order.orderNumber },
+              { orderNumber: order.orderNumber }
+            ]
+          },
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => {
+            try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; }
+          })();
+          const primaryMeta = (() => {
+            try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; }
+          })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          // GuestOrder total/finalTotal/discountAmount/shippingCost تقابل Order total/discount/shipping
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER] Failed to merge primary order data:', mergeError.message);
+      }
     }
 
     // إذا لم يتم العثور عليه في GuestOrder، ابحث في Order العادي
@@ -2671,6 +2829,36 @@ router.get('/:orderNumber/track', async (req, res) => {
         companyId: company.id
       }
     });
+
+    if (order) {
+      try {
+        const primaryOrder = await prisma.order.findFirst({
+          where: {
+            companyId: company.id,
+            OR: [
+              { id: orderNumber },
+              { orderNumber }
+            ]
+          },
+          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+        });
+        if (primaryOrder) {
+          const guestMeta = (() => { try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; } })();
+          const primaryMeta = (() => { try { return typeof primaryOrder.metadata === 'string' ? JSON.parse(primaryOrder.metadata) : (primaryOrder.metadata || {}); } catch (e) { return {}; } })();
+          order.metadata = JSON.stringify({ ...guestMeta, ...primaryMeta });
+          if (primaryOrder.status) order.status = primaryOrder.status;
+          if (primaryOrder.total !== null && primaryOrder.total !== undefined) {
+            order.total = primaryOrder.total;
+            order.finalTotal = primaryOrder.total;
+          }
+          if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
+          if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
+          if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+        }
+      } catch (mergeError) {
+        console.error('⚠️ [TRACK-ORDER-LEGACY] Failed to merge primary order data:', mergeError.message);
+      }
+    }
 
     if (!order) {
       return res.status(404).json({

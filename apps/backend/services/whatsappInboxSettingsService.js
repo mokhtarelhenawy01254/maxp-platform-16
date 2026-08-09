@@ -226,6 +226,10 @@ function serializeSettingsPayload(payload = {}) {
   return serialized;
 }
 
+// لا cache هنا عمداً: `inboxSettings` بتخزّن كمان `assignmentState` (round-robin index +
+// lastAssignedUserByCustomer) اللي بيتكتب على كل عملية إسناد (`whatsappAssignmentEngineService`).
+// أي cache للصف كله هيـ serve قيمة قديمة للـ assignmentState → الـ round-robin يكرر نفس الـ agent.
+// والـ query أصلاً `findUnique` على الـ PK (companyId) — رخيصة (±1ms)، فمفيش مكسب يستاهل المخاطرة.
 async function getOrCreateSettings(companyId, prisma = getSharedPrismaClient()) {
   let record = await prisma.inboxSettings.findUnique({
     where: { companyId }

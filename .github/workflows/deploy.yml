@@ -15,7 +15,9 @@ env:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: true
+  # الـ deploy اللي شغال لازم يخلص من غير ما يتشال في النص (مش CI عادي).
+  # لو في pushes متتالية، اللي قاعدين بيستنوا وبعدين بيتخطوا بـ supersede check.
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -29,10 +31,31 @@ jobs:
           token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
           fetch-depth: 2 # Required for git diff HEAD~1
 
+      - name: Skip if superseded by a newer commit
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git fetch --force origin main
+          LATEST=$(git rev-parse origin/main)
+          if [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ This deploy (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+            echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
+            exit 0
+          fi
+          echo "✅ This is the latest commit on main. Proceeding with deploy."
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+
+      # 🛡️ RADICAL SAFETY GATE — full syntax check over all runtime backend files.
+      # Any commit with a SyntaxError in a runtime file blocks the deploy BEFORE
+      # it reaches the server (a broken commit previously crashed the backend → 502).
+      - name: Full Backend Syntax Gate
+        working-directory: ./apps/backend
+        run: node scripts/check_syntax.js
+        continue-on-error: false
 
       - name: Verify Secrets
         run: |

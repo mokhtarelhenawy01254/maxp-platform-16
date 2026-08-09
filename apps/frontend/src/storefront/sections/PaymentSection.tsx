@@ -200,6 +200,8 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [usePoints, setUsePoints] = useState(false);
+  const [useCashback, setUseCashback] = useState(false);
   const trackedCheckoutFingerprintRef = useRef('');
   const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -399,14 +401,19 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
   // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي)
   const tierProgress = useCheckoutStore((s) => s.tierProgress);
-  const loyaltyFreeShipping = Boolean(tierProgress?.rewards?.freeShipping);
-  const loyaltyDiscountPercent = Number(tierProgress?.rewards?.discountPercent || 0);
+  const isAutoDiscountMode = tierProgress?.loyaltySystem === 'AUTO_DISCOUNT';
+  const loyaltyFreeShipping = isAutoDiscountMode ? false : Boolean(tierProgress?.rewards?.freeShipping);
+  const loyaltyDiscountPercent = isAutoDiscountMode ? 0 : Number(tierProgress?.rewards?.discountPercent || 0);
   const loyaltyDiscount =
     loyaltyDiscountPercent > 0 ? (Number(subtotal) || 0) * (loyaltyDiscountPercent / 100) : 0;
+  const voucherDiscount =
+    isAutoDiscountMode && tierProgress?.activeVoucher
+      ? (Number(subtotal) || 0) * (Number(tierProgress.activeVoucher.percent) / 100)
+      : 0;
   const effectiveShipping =
     loyaltyFreeShipping && Number(shipping) > 0 ? 0 : Number(shipping);
 
-  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount);
+  const total = Math.max(0, subtotal + effectiveShipping - couponDiscount - loyaltyDiscount - voucherDiscount);
   const summaryShippingValueText = (() => {
     if (isShippingLoading) {
       return calculatingText;
@@ -774,6 +781,9 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       shippingCost: effectiveShipping,
       subtotal,
       total,
+      redeemPoints: usePoints,
+      useWallet: useCashback,
+      walletAmount: useCashback ? Math.min(Number(tierProgress?.walletBalance || 0), subtotal + effectiveShipping) : 0,
     });
   };
 
@@ -981,6 +991,46 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
           ))}
         </div>
 
+        {tierProgress?.activeVoucher ? (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
+            <span className="text-xl">🎁</span>
+            <div className="text-sm text-emerald-800 dark:text-emerald-200">
+              <p className="font-bold">عندك خصم {tierProgress.activeVoucher.percent}% جاهز على طلبك</p>
+              <p className="text-emerald-700 dark:text-emerald-300">
+                بيتخصم تلقائياً ✓ · صالح حتى {new Date(tierProgress.activeVoucher.expiresAt).toLocaleDateString('ar-EG')}
+              </p>
+            </div>
+          </div>
+        ) : Number(tierProgress?.walletBalance) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <input
+                type="checkbox"
+                checked={useCashback}
+                onChange={(e) => setUseCashback(e.target.checked)}
+                className="h-4 w-4 accent-emerald-600"
+              />
+              استخدم كاش باكي في الدفع
+            </span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatStorefrontCurrency(Number(tierProgress.walletBalance), currency)}</span>
+          </label>
+        ) : null}
+
+        {tierProgress?.method === 'POINTS' && Number(tierProgress.currentMetric) > 0 ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              استخدم نقاطي في خصم الطلب
+            </span>
+            <span className="font-bold text-amber-700 dark:text-amber-300">{tierProgress.currentMetric} نقطة</span>
+          </label>
+        ) : null}
+
         {showSummaryCard ? (
           <div className={summaryWrapperClassName}>
             <div className="mb-3">
@@ -1013,10 +1063,20 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
             {loyaltyDiscount > 0 ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  خصم مستوى {tierProgress?.tier?.nameAr || tierProgress?.tier?.name || ''} ({loyaltyDiscountPercent}%)
+                  {isAutoDiscountMode ? '' : 'خصم مستوى '}{loyaltyDiscountPercent}%
                 </span>
                 <span className="font-medium text-emerald-600">
                   -{formatStorefrontCurrency(loyaltyDiscount, currency)}
+                </span>
+              </div>
+            ) : null}
+            {voucherDiscount > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  خصم الكوبون ({tierProgress?.activeVoucher?.percent}%)
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -{formatStorefrontCurrency(voucherDiscount, currency)}
                 </span>
               </div>
             ) : null}

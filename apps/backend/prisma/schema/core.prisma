@@ -9,6 +9,8 @@ model Company {
   currency                        String                           @default("EGP")
   isActive                        Boolean                          @default(true)
   settings                        String?
+  loyaltySystem                   String                           @default("TIERS")
+  loyaltySettings                 String?
   createdAt                       DateTime                         @default(now())
   updatedAt                       DateTime                         @updatedAt
   slug                            String?                          @unique
@@ -92,7 +94,9 @@ model Company {
   customerLoyaltyPrograms         CustomerLoyaltyProgram[]
   customerLoyaltyRecords          CustomerLoyaltyRecord[]
   customerLoyaltyTiers            CustomerLoyaltyTier[]
+  customerLoyaltyVouchers         CustomerLoyaltyVoucher[]
   customerNotificationPreferences CustomerNotificationPreference[]
+  customerNotificationSchedules   CustomerNotificationSchedule[]
   customerWallets                 CustomerWallet[]
   customerBlockRules              CustomerBlockRule[]
   customerBlockSettings           CustomerBlockSettings?
@@ -285,15 +289,21 @@ model Company {
   moderatorDashboardCaches         ModeratorDashboardCache[]
    inboxSettings                    InboxSettings?
    followUp                         FollowUp?
-   bookingBranches                  BookingBranch[]
-   bookingDoctors                   BookingDoctor[]
-   bookingServices                  BookingService[]
-   bookingServiceCategories         BookingServiceCategory[]
-   bookingDoctorServices            BookingDoctorService[]
-   doctorAvailabilities             DoctorAvailability[]
-   patients                         Patient[]
-   medicalInvoices                  MedicalInvoice[]
-   medicalPayments                  MedicalPayment[]
+    bookingBranches                  BookingBranch[]
+    bookingDoctors                   BookingDoctor[]
+    bookingServices                  BookingService[]
+    bookingServiceCategories         BookingServiceCategory[]
+    bookingDoctorServices            BookingDoctorService[]
+    doctorAvailabilities             DoctorAvailability[]
+    patients                         Patient[]
+    medicalInvoices                  MedicalInvoice[]
+    medicalPayments                  MedicalPayment[]
+    referringPhysicians              ReferringPhysician[]
+    priceLists                       PriceList[]
+    cashierShifts                    CashierShift[]
+    examLabels                       ExamLabel[]
+    reportDeliveries                 ReportDelivery[]
+    transactionLogs                  TransactionLog[]
     educationSubjects                EducationSubject[]
     services                         Service[]
     serviceOrders                    ServiceOrder[]

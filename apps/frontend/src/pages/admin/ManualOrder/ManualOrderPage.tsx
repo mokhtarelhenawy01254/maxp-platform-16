@@ -5,6 +5,7 @@ import CartColumn from "./components/CartColumn";
 import CheckoutColumn from "./components/CheckoutColumn";
 import { toast } from "sonner";
 import { CartItem } from "./types";
+import { apiClient } from "../../../services/apiClient";
 import {
   InformationCircleIcon,
   ShoppingBagIcon,
@@ -16,6 +17,11 @@ import { useAuth } from "../../../hooks/useAuthSimple";
 
 type MobilePanel = "products" | "cart" | "checkout";
 
+type ManualAccessState = {
+  subscription: "ACTIVE" | "EXPIRED" | "NONE";
+  installed: boolean;
+};
+
 const ManualOrderPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -24,6 +30,28 @@ const ManualOrderPage = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [activeMobilePanel, setActiveMobilePanel] =
     useState<MobilePanel>("products");
+  const [access, setAccess] = useState<ManualAccessState | null>(null);
+  const [accessLoading, setAccessLoading] = useState(true);
+
+  // فحص وصول اشتراك الطلبات اليدوية (NONE مقفول / EXPIRED يكتب وأوردراته تتعلق)
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get("/orders-enhanced/manual-access")
+      .then((res) => {
+        const data = (res as { data?: { data?: ManualAccessState } })?.data?.data;
+        if (!cancelled) setAccess(data || { subscription: "NONE", installed: false });
+      })
+      .catch(() => {
+        if (!cancelled) setAccess({ subscription: "NONE", installed: false });
+      })
+      .finally(() => {
+        if (!cancelled) setAccessLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // منع scroll من main
   useEffect(() => {
@@ -221,11 +249,41 @@ const ManualOrderPage = () => {
     },
   ];
 
+  if (accessLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+        جاري التحقق من الاشتراك...
+      </div>
+    );
+  }
+
+  if (access?.subscription === "NONE") {
+    return (
+      <div className="flex h-screen items-center justify-center p-4">
+        <div className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {t("manualOrder.title", "الطلبات اليدوية")}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            هذه الميزة تتطلب تفعيل تطبيق مخصص. فعّل تطبيق "الطلبات اليدوية" من متجر التطبيقات للمتابعة.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100dvh-64px)]"
       dir="rtl"
     >
+      {access?.subscription === "EXPIRED" ? (
+        <div className="mb-3 shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+          اشتراك الطلبات اليدوية منتهي. يمكنك إنشاء أوردرات جديدة، لكن لو رصيد المحفظة صفر
+          ستكون <b className="font-semibold">معلّقة (مخفية)</b> في صفحة الطلبات حتى تجدّد اشتراكك.
+        </div>
+      ) : null}
+
       <header className="mb-3 flex shrink-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-lg font-bold text-slate-950 dark:text-white sm:text-xl">

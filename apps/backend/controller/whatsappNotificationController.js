@@ -104,9 +104,18 @@ async function getTemplates(req, res) {
     const { companyId } = req.user;
     const { category, eventType } = req.query;
 
+    const ORDER_TAB_EVENT_TYPES = [
+      'CART_ABANDONED_1H',
+      'CART_ABANDONED_24H',
+      'CART_ABANDONED_72H',
+      'CART_ABANDONED_WITH_DISCOUNT',
+      'INCOMPLETE_CART_FIRST_APPEARANCE',
+    ];
+
     const where = { companyId };
     if (category) where.category = category;
     if (eventType) where.eventType = eventType;
+    else where.eventType = { notIn: ORDER_TAB_EVENT_TYPES };
 
     const templates = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: {
@@ -117,12 +126,21 @@ async function getTemplates(req, res) {
     }));
 
     const defaultTemplates = WhatsAppNotificationService.DEFAULT_TEMPLATES;
-    const existingEvents = templates.map(t => t.eventType);
+    // نتخطى القالب الافتراضي فقط لو فيه قالب "عادي" فعلي (BAILEYS/AUTO) للحدث.
+    // قالب ميتا فقط (META_CLOUD) لا يمنع ظهور القالب الافتراضي في الكارد العادي.
+    const hasRegularForEvent = (evtType) =>
+      templates.some(
+        (t) =>
+          t.eventType === evtType &&
+          (!t.channel || ['BAILEYS', 'AUTO'].includes(String(t.channel).toUpperCase())),
+      );
 
     const allTemplates = [...templates];
 
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
-      if (existingEvents.includes(evtType)) continue;
+      if (hasRegularForEvent(evtType)) continue;
+      if (eventType && evtType !== eventType) continue;
+      if (!eventType && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
       const templateCategory = getCategoryForEvent(evtType);
       if (!category && templateCategory === 'ORDERS') continue;
       if (category && templateCategory !== category) continue;
@@ -188,7 +206,8 @@ async function createTemplate(req, res) {
       hasList,
       listData,
       variables,
-      isDefault
+      isDefault,
+      channel
     } = req.body;
 
     if (!name || !category || !eventType || !content) {
@@ -211,6 +230,7 @@ async function createTemplate(req, res) {
         hasList: hasList || false,
         listData: listData ? JSON.stringify(listData) : null,
         variables: variables ? JSON.stringify(variables) : null,
+        channel: channel || 'AUTO',
         isDefault: isDefault || false,
         updatedAt: new Date()
       }
@@ -263,7 +283,11 @@ async function updateTemplate(req, res) {
       listData,
       variables,
       isActive,
-      isDefault
+      isDefault,
+      channel,
+      metaTemplateName,
+      metaTemplateId,
+      metaTemplateStatus
     } = req.body;
 
     const template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.update({
@@ -279,8 +303,12 @@ async function updateTemplate(req, res) {
         hasList,
         listData: listData ? JSON.stringify(listData) : existing.listData,
         variables: variables ? JSON.stringify(variables) : existing.variables,
+        channel: channel !== undefined ? channel : existing.channel,
         isActive,
         isDefault,
+        metaTemplateName,
+        metaTemplateId,
+        metaTemplateStatus,
         updatedAt: new Date()
       }
     }));
@@ -370,19 +398,57 @@ async function getNotificationLogs(req, res) {
           skip: (parseInt(page) - 1) * parseInt(limit),
           take: parseInt(limit),
           include: {
-            whatsapp_notification_templates: { select: { name: true } },
-            order: { select: { orderNumber: true } },
+            whatsapp_notification_templates: {
+              select: { name: true, metaTemplateName: true, channel: true }
+            },
+            order: { select: { orderNumber: true, total: true } },
             customer: { select: { firstName: true, lastName: true } }
           }
         })),
         safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.count({ where }))
       ]);
 
+      // جلب أسماء الجلسات للـ sessionIds الموجودة في اللوج
+      const sessionIds = [...new Set((logs || []).map((l) => l.sessionId).filter(Boolean))];
+      let sessionsMap = {};
+      if (sessionIds.length > 0) {
+        try {
+          const sessions = await safeQuery(() => getSharedPrismaClient().whatsAppSession.findMany({
+            where: { id: { in: sessionIds } },
+            select: { id: true, name: true, phoneNumber: true, provider: true }
+          }));
+          sessionsMap = Object.fromEntries((sessions || []).map((s) => [s.id, s]));
+        } catch (e) {
+          console.error('⚠️ [NOTIFICATION-LOGS] Failed to load session names:', e.message);
+        }
+      }
+
+      // إضافة اسم القالب من حقل الربط (القالب الذي يستخدمه الإشعار)
+      const enrichedLogs = (logs || []).map((log) => {
+        const session = sessionsMap[log.sessionId] || {};
+        return {
+          ...log,
+          templateName: log.whatsapp_notification_templates?.name || null,
+          metaTemplateName: log.whatsapp_notification_templates?.metaTemplateName || null,
+          templateChannel: log.whatsapp_notification_templates?.channel || null,
+          orderNumber: log.order?.orderNumber || null,
+          orderTotal: log.order?.total != null ? String(log.order.total) : null,
+          sessionName: session?.name || null,
+          sessionPhone: session?.phoneNumber || null,
+          sessionProvider: session?.provider || null,
+          customerFirstName: log.customer?.firstName || null,
+          customerLastName: log.customer?.lastName || null,
+          whatsapp_notification_templates: undefined,
+          order: undefined,
+          customer: undefined
+        };
+      });
+
       console.log('✅ [NOTIFICATION-LOGS] Found', total, 'logs');
 
       res.json({
         success: true,
-        logs: logs || [],
+        logs: enrichedLogs || [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -786,6 +852,7 @@ function getCategoryForEvent(eventType) {
   }
   if (eventType === 'NEWSLETTER_SUBSCRIBED') return 'MARKETING';
   if (eventType.startsWith('CART_')) return 'ABANDONED_CART';
+  if (eventType === 'INCOMPLETE_CART_FIRST_APPEARANCE') return 'ABANDONED_CART';
   if (eventType.startsWith('BACK_IN_STOCK') || eventType.startsWith('PRICE_') || eventType.startsWith('NEW_PRODUCT') || eventType === 'LOW_STOCK_ALERT') return 'PRODUCTS';
   if (eventType.startsWith('ATTENDANCE_') || eventType.startsWith('LEAVE_') || eventType.startsWith('PAYROLL') || eventType.startsWith('BIRTHDAY_EMPLOYEE') || eventType.startsWith('WARNING_') || eventType.startsWith('ANNOUNCEMENT')) return 'HR';
   if (eventType === 'OTP') return 'SYSTEM';
@@ -1192,21 +1259,29 @@ async function listAvailableMetaTemplates(req, res) {
 
     const localTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: { companyId },
-      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true }
+      select: { id: true, eventType: true, metaTemplateName: true, metaTemplateStatus: true, content: true }
     });
 
     const available = (metaTemplates || [])
       .filter(t => String(t.status).toUpperCase() === 'APPROVED')
       .map(t => {
-        const bound = localTemplates.find(l => l.metaTemplateName === t.name);
+        // قالب ميتا واحد ممكن يتربط باكتر من حالة/قالب محلي — نرجع كل الربطات
+        const bound = (localTemplates || []).filter(l => l.metaTemplateName === t.name);
+        // محتوى أول قالب محلي مربوط — لتمكين auto-fill في الفرونت عند اختيار قالب ميتا
+        // (بيخلي المستخدم يختار قالب ميتا بس والمحتوى يتبني تلقائياً بدل ما يكتب المتغيرات يدوياً)
+        const boundContent = bound[0]?.content || null;
         return {
           name: t.name,
           status: t.status,
           language: t.language || 'ar',
           category: t.category || 'UTILITY',
           components: t.components || null,
-          boundToLocalTemplateId: bound ? bound.id : null,
-          boundToEventType: bound ? bound.eventType : null
+          boundToLocalTemplateIds: bound.map(b => b.id),
+          boundToEventTypes: bound.map(b => b.eventType),
+          boundLocalContent: boundContent,
+          // للتوافق مع الفرونت القديم: أول ربط بس (كان الحقل السابق)
+          boundToLocalTemplateId: bound[0] ? bound[0].id : null,
+          boundToEventType: bound[0] ? bound[0].eventType : null
         };
       });
 
@@ -1314,7 +1389,7 @@ async function getTemplatesDeliveryPreview(req, res) {
     const templates = await prisma.whatsAppNotificationTemplate.findMany({
       where: { companyId, isActive: true },
       select: {
-        id: true, eventType: true, category: true,
+        id: true, eventType: true, category: true, channel: true,
         metaTemplateName: true, metaTemplateStatus: true, metaTemplateLanguage: true,
       },
     });
@@ -1368,6 +1443,7 @@ async function getTemplatesDeliveryPreview(req, res) {
       return {
         templateId: t.id,
         eventType: t.eventType,
+        channel: t.channel || 'AUTO',
         provider,
         deliveryStatus,
         riskLevel,
@@ -1377,6 +1453,31 @@ async function getTemplatesDeliveryPreview(req, res) {
       };
     });
 
+    // 5. لو الحدث الواحد ليه قالبان (عادي + ميتا)، نحتفظ بالقالب اللي مسار الإرسال
+    //    هيستخدمه فعلًا (نفس قاعدة findNotificationTemplateForEvent) عشان المؤشر
+    //    يعكس المصير الحقيقي مش آخر قالب اعتباطي.
+    const isMetaDefault = defaultSession?.provider === 'META_CLOUD';
+    const isMetaApproved = (item) =>
+      String(item.channel).toUpperCase() === 'META_CLOUD' &&
+      String(item.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
+
+    const perEvent = new Map();
+    for (const item of preview) {
+      const prev = perEvent.get(item.eventType);
+      if (!prev) {
+        perEvent.set(item.eventType, item);
+        continue;
+      }
+      if (isMetaDefault) {
+        if (isMetaApproved(item) && !isMetaApproved(prev)) perEvent.set(item.eventType, item);
+      } else {
+        const itemIsMeta = String(item.channel).toUpperCase() === 'META_CLOUD';
+        const prevIsMeta = String(prev.channel).toUpperCase() === 'META_CLOUD';
+        if (!itemIsMeta && prevIsMeta) perEvent.set(item.eventType, item);
+      }
+    }
+    const finalPreview = Array.from(perEvent.values());
+
     res.json({
       success: true,
       defaultSession: defaultSession ? {
@@ -1385,7 +1486,7 @@ async function getTemplatesDeliveryPreview(req, res) {
       } : null,
       connectedSessionsCount: sessions.length,
       hasBaileysBackup: sessions.some(s => s.provider === 'BAILEYS'),
-      preview,
+      preview: finalPreview,
     });
   } catch (error) {
     console.error('❌ Error in getTemplatesDeliveryPreview:', error);

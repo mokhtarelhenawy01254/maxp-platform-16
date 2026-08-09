@@ -57,9 +57,80 @@ function DropdownMenuContent({
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
   >) {
+  const [positionerEl, setPositionerEl] = React.useState<HTMLDivElement | null>(
+    null,
+  );
+  const positionerRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setPositionerEl(node);
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    const positioner = positionerEl;
+    const menu = positioner?.querySelector(
+      '[data-slot="dropdown-menu-content"]',
+    );
+    if (!positioner || !menu) return;
+
+    // Safety net: floating-ui can fail to position the popup, leaving the
+    // positioner at its initial (0, 0) placeholder. When that happens, anchor
+    // the menu to its trigger so it always opens in the right place.
+    const applyFallback = () => {
+      if (positioner.getAttribute("data-open") == null) return;
+      const trigger = document.querySelector(
+        `[aria-controls="${menu.id}"]`,
+      );
+      if (!trigger) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const isRtl = document.documentElement.dir === "rtl";
+      const left = isRtl
+        ? triggerRect.right - menuRect.width
+        : triggerRect.left;
+      const offset = typeof sideOffset === "number" ? sideOffset : 4;
+      const top =
+        side === "top"
+          ? triggerRect.top - menuRect.height - offset
+          : triggerRect.bottom + offset;
+
+      if (positioner.style.position !== "fixed") {
+        positioner.style.position = "fixed";
+      }
+      if (positioner.style.left !== `${left}px`) {
+        positioner.style.left = `${left}px`;
+      }
+      if (positioner.style.top !== `${top}px`) {
+        positioner.style.top = `${top}px`;
+      }
+      if (positioner.style.transform !== "none") {
+        positioner.style.transform = "none";
+      }
+    };
+
+    const observer = new MutationObserver(applyFallback);
+    observer.observe(positioner, {
+      attributes: true,
+      attributeFilter: ["style", "data-open"],
+    });
+
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(applyFallback),
+    );
+    window.addEventListener("resize", applyFallback);
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      window.removeEventListener("resize", applyFallback);
+    };
+  }, [positionerEl, side, sideOffset]);
+
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
+        ref={positionerRef}
         className="isolate z-50 outline-none"
         align={align}
         alignOffset={alignOffset}

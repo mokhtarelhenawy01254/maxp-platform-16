@@ -627,6 +627,9 @@ router.get('/labels/:labelId/contacts', verifyToken.authenticateToken, checkAppA
 // مزامنة يدوية للتصنيفات
 router.post('/labels/sync', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.syncLabels);
 
+// استعادة التصنيفات الافتراضية
+router.post('/labels/restore', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.restoreDefaultLabels);
+
 // إنشاء علامة جديدة
 router.post('/labels', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.labels.manage'), whatsappController.createLabel);
 

@@ -63,6 +63,12 @@ const historySyncQueues = new Map(); // sessionId -> Promise
 const historyMediaSyncJobs = new Map(); // sessionId -> Promise
 const historySyncCompletionRequested = new Set();
 
+// Cache لصور البروفايل: كانت `sock.profilePictureUrl()` (نداء شبكة لواتساب) بتتنفذ
+// على كل رسالة واردة — صورة البروفايل نادراً ما تتغير، فـ TTL طويل (ساعة) آمن.
+const profilePicCache = new Map(); // `${sessionId}:${jid}` -> { url, expiresAt }
+const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour (نجاح)
+const PROFILE_PIC_MISS_TTL_MS = 10 * 60 * 1000; // 10 min (مفيش صورة — retry دوري)
+
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
@@ -2426,8 +2432,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const messageTimestampSeconds = getIncomingMessageTimestampSeconds(msg) || (Date.now() / 1000);
             const messageTimestamp = new Date(messageTimestampSeconds * 1000);
 
-            // DEBUG: Log incoming message key (نمنعها أثناء history import عشان ما نضيعش performance)
-            if (!importHistory) {
+            // DEBUG: Log incoming message key — opt-in عبر env flag بس.
+            // كان بيـ INSERT row في whatsAppEventLog على كل رسالة (حمل على الـ DB في البرودكشن).
+            // فعّله فقط عند الحاجة للـ debugging: WHATSAPP_DEBUG_INCOMING_EVENTS=true
+            if (!importHistory && toBooleanOption(process.env.WHATSAPP_DEBUG_INCOMING_EVENTS)) {
                 await logEvent(sessionId, companyId, 'debug_incoming_msg', {
                     key: msg.key,
                     pushName: msg.pushName
@@ -3272,13 +3280,34 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName = undefined;
         }
 
-        // محاولة الحصول على صورة البروفايل
+        // محاولة الحصول على صورة البروفايل — مع cache (كانت بتنفذ لكل رسالة)
         let profilePicUrl = null;
         if (!skipProfilePic) {
-            try {
-                profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
-            } catch (e) {
-                // تجاهل الخطأ إذا لم تكن الصورة متاحة
+            const profileCacheKey = `${sessionId}:${remoteJid}`;
+            const cachedPic = profilePicCache.get(profileCacheKey);
+            if (cachedPic && cachedPic.expiresAt > Date.now()) {
+                profilePicUrl = cachedPic.url;
+            } else {
+                try {
+                    profilePicUrl = await sock.profilePictureUrl(remoteJid, 'image');
+                    if (profilePicCache.size > 10000) {
+                        const picNow = Date.now();
+                        for (const [key, entry] of profilePicCache) {
+                            if (entry.expiresAt <= picNow) profilePicCache.delete(key);
+                        }
+                    }
+                    // مفيش صورة (null) → cache قصير (10 دقايق) عشان نعيد المحاولة بشكل دوري
+                    // من غير ما ننفذ نداء الشبكة على كل رسالة. صورة ناجحة → ساعة.
+                    const ttl = profilePicUrl
+                        ? PROFILE_PIC_CACHE_TTL_MS
+                        : PROFILE_PIC_MISS_TTL_MS;
+                    profilePicCache.set(profileCacheKey, {
+                        url: profilePicUrl,
+                        expiresAt: Date.now() + ttl
+                    });
+                } catch (e) {
+                    // تجاهل الخطأ إذا لم تكن الصورة متاحة
+                }
             }
         }
 
@@ -3315,12 +3344,14 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
                     updateData.lastMessageAt = existing.lastMessageAt;
                 } else {
                     updateData.lastMessageAt = lastMessageAt;
+                    updateData.lastMessageIsFromMe = isOutgoing;
                     if (lastMessagePreview !== undefined) {
                         updateData.lastMessagePreview = lastMessagePreview;
                     }
                 }
             } else {
                 updateData.lastMessageAt = new Date();
+                updateData.lastMessageIsFromMe = isOutgoing;
             }
             if (incrementCounters) {
                 updateData.totalMessages = { increment: 1 };
@@ -3338,6 +3369,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
             pushName: pushName || null,
             profilePicUrl,
             lastMessageAt: lastMessageAt || new Date(),
+            lastMessageIsFromMe: isOutgoing,
             unreadCount: (!isOutgoing && !isGroupParticipant && !suppressUnread) ? 1 : 0,
             totalMessages: incrementCounters ? 1 : 0,
             isGroup
@@ -5053,11 +5085,12 @@ async function labelChat(sessionId, jid, labelId) {
     }
 
     try {
-        await session.sock.addChatLabel(jid, labelId);
-        console.log(`🏷️ Chat labeled: ${jid}`);
+        const result = await session.sock.addChatLabel(jid, labelId);
+        console.log(`🏷️ Chat labeled: ${jid} label=${labelId}`, result ? JSON.stringify(result) : '');
         return { success: true };
     } catch (error) {
-        console.error('❌ Error labeling chat:', error);
+        console.error(`❌ Error labeling chat: ${jid} label=${labelId}`);
+        console.error(`   [BAILEYS-ERR] ${error?.message} | code=${error?.output?.statusCode} | stack=${error?.stack?.split('\n').slice(0, 3).join(' | ')}`);
         throw error;
     }
 }
@@ -5188,6 +5221,8 @@ async function syncLabels(sessionId) {
         // نجرب نزامن من واتساب، لكن مع timeout حماية عشان ميحبسش الطلب
         if (session.sock?.resyncAppState) {
             try {
+                const myKeyId = session.sock.authState?.creds?.myAppStateKeyId;
+                console.log(`🔍 [SYNC-LABELS] myAppStateKeyId present=${!!myKeyId} value=${myKeyId || 'NONE'}`);
                 // جملة reset للـ app-state-sync-version عشان نجبر واتساب يبعت snapshot كامل
                 // (الـ resync من غير reset بيجيب patches زيادة بس — ومفيش patches جديدة فبيرجع فاضي)
                 const keys = session.sock.authState?.keys;
@@ -5336,10 +5371,11 @@ async function createLabel(sessionId, name, color) {
 
         // 📡 Try Baileys sync (non-blocking - don't fail if disconnected)
         try {
-            await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
-            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`);
+            const addResult = await session.sock.addLabel(labelId, { id: labelId, name, color: colorIndex });
+            console.log(`🏷️ Label created via Baileys: ${name} (${labelId})`, addResult ? JSON.stringify(addResult) : '');
         } catch (baileysErr) {
             console.log(`⚠️ Label saved locally (Baileys unavailable): ${name} (${labelId})`);
+            console.log(`   [BAILEYS-ERR] ${baileysErr?.message} | code=${baileysErr?.output?.statusCode} | stack=${baileysErr?.stack?.split('\n').slice(0, 3).join(' | ')}`);
         }
 
         return { id: labelId, name, color: colorHex };
@@ -5347,6 +5383,47 @@ async function createLabel(sessionId, name, color) {
         console.error('❌ Error creating label:', error);
         throw error;
     }
+}
+
+/**
+ * استعادة التصنيفات الافتراضية القديمة (اللي كانت موجودة على حساب واتساب سابق)
+ * بيعمل create لكل تصنيف مش موجود حالياً في الجلسة
+ */
+const DEFAULT_LABELS = [
+    { name: 'زبون جديد', color: '#2196F3' },
+    { name: 'مهم', color: '#FF5722' },
+    { name: 'متدربة جديده', color: '#4CAF50' },
+    { name: 'اوردرات واتساب', color: '#9C27B0' },
+    { name: 'تواريخ ميلاد', color: '#FF9800' },
+    { name: 'غير مقروءة', color: '#607D8B' },
+    { name: 'المفضلة', color: '#E91E63' },
+    { name: 'المجموعات', color: '#00BCD4' },
+    { name: '000', color: '#795548' },
+];
+
+async function restoreDefaultLabels(sessionId) {
+    const session = getSession(sessionId);
+    if (!session) {
+        throw new Error('Session not found');
+    }
+
+    const existingNames = new Set(
+        Array.from(session.labels.values()).map(l => String(l.name || '').trim())
+    );
+
+    const created = [];
+    for (const def of DEFAULT_LABELS) {
+        if (existingNames.has(def.name)) continue;
+        try {
+            const result = await createLabel(sessionId, def.name, def.color);
+            created.push({ name: def.name, id: result.id });
+        } catch (err) {
+            console.error(`❌ Error restoring label ${def.name}:`, err.message);
+        }
+    }
+
+    console.log(`🏷️ Restore labels: created ${created.length} labels for session ${sessionId}`);
+    return { created, total: DEFAULT_LABELS.length };
 }
 
 /**
@@ -6139,6 +6216,7 @@ module.exports = {
     deleteLabel,
     removeChatLabel,
     getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,

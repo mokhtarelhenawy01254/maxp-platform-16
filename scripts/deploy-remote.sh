@@ -379,6 +379,17 @@ else
   echo "⚠️ Backend not found, skipping..."
 fi
 
+# 🛡️ SERVER-SIDE SYNTAX GATE — refuse to proceed if any runtime backend file is broken.
+# This runs BEFORE npm install / db push / PM2 restart, so if it fails the OLD PM2
+# process keeps running untouched and production stays up.
+echo "🔍 Running full backend syntax gate on the server..."
+cd /var/www/backend2
+node scripts/check_syntax.js || {
+  echo "❌ Backend syntax gate FAILED on the server — aborting deploy. The old PM2 process stays up."
+  exit 1
+}
+echo "✅ Server-side backend syntax gate passed."
+
 # Re-install dependencies on the server (now safe because we handle failures)
 echo "📦 Installing backend production dependencies on server..."
 cd /var/www/backend2

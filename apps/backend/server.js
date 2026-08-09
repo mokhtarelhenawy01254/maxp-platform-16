@@ -203,10 +203,14 @@ const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
 const bookingReportsRoutes = require("./routes/bookingReportsRoutes");
 const bookingPatientsRoutes = require("./routes/bookingPatientsRoutes");
+const bookingReferringPhysiciansRoutes = require("./routes/bookingReferringPhysiciansRoutes");
 const bookingInvoicesRoutes = require("./routes/bookingInvoicesRoutes");
 const bookingDoctorAvailabilityRoutes = require("./routes/bookingDoctorAvailabilityRoutes");
 const bookingDoctorPortalRoutes = require("./routes/bookingDoctorPortalRoutes");
 const bookingPatientPortalRoutes = require("./routes/bookingPatientPortalRoutes");
+const bookingPriceListsRoutes = require("./routes/bookingPriceListsRoutes");
+const bookingWorkflowRoutes = require("./routes/bookingWorkflowRoutes");
+const bookingOperationsRoutes = require("./routes/bookingOperationsRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -768,9 +772,13 @@ app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/booking/patients", bookingPatientsRoutes);
+app.use("/api/v1/booking/referring-physicians", bookingReferringPhysiciansRoutes);
 app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
 app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
 app.use("/api/v1/booking/patient-portal", bookingPatientPortalRoutes);
+app.use("/api/v1/booking/price-lists", bookingPriceListsRoutes);
+app.use("/api/v1/booking/workflow", bookingWorkflowRoutes);
+app.use("/api/v1/booking/operations", bookingOperationsRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -1120,6 +1128,30 @@ try {
   console.log("✅ [ORDER-STATUS-AUTO-CHANGE-CRON] Order status auto-change cron started (runs every 1 min)");
 } catch (error) {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
+}
+
+// Start Auto-Discount voucher expiry conversion cron
+try {
+  const { startAutoDiscountVoucherCron } = require("./cron/autoDiscountVoucherCron");
+  startAutoDiscountVoucherCron();
+} catch (error) {
+  console.error("❌ [AUTO-DISCOUNT-CRON] Failed to start voucher conversion cron:", error);
+}
+
+// Start customer birthday automation cron
+try {
+  const { startCustomerBirthdayScheduler } = require("./cron/customerBirthdayCron");
+  startCustomerBirthdayScheduler();
+} catch (error) {
+  console.error("❌ [CUSTOMER-BIRTHDAY-CRON] Failed to start customer birthday cron:", error);
+}
+
+// Start scheduled occasion campaign cron
+try {
+  const { startOccasionCampaignScheduler } = require("./cron/occasionCampaignCron");
+  startOccasionCampaignScheduler();
+} catch (error) {
+  console.error("❌ [OCCASION-CRON] Failed to start occasion campaign cron:", error);
 }
 
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب

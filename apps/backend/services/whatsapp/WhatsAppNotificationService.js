@@ -35,6 +35,62 @@ function replaceVariables(template, variables) {
 }
 
 /**
+ * اختيار قالب الحدث حسب قناة الإرسال الفعلية (Baileys أم Meta Cloud).
+ *
+ * الحالة الواحدة تقدر يكون ليها قالبان مستقلان (من صفحة قوالب الحالات):
+ *  - template عادي (channel != META_CLOUD) يُرسل نصاً حراً.
+ *  - metaTemplate (channel == META_CLOUD) مربوط بقالب ميتا معتمد.
+ *
+ * القاعدة:
+ *  1) جلسة META_CLOUD → نفضّل قالب META_CLOUD المرتبط بقالب معتمد؛
+ *     لو مش موجود/معتمد → ننزل للقالب العادي.
+ *  2) جلسة BAILEYS → نفضّل القالب العادي.
+ *  3) لو مفيش قالب مطابق للقناة → أي قالب للحدث (توافق مع بيانات قديمة
+ *     مالهاش channel، واللي كان فيها الربط على نفس القالب).
+ */
+async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
+  const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
+
+  if (isMetaSession) {
+    // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
+    const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return metaTemplate;
+    }
+
+    // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
+    //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
+    const legacyMeta = await prisma.whatsAppNotificationTemplate.findFirst({
+      where: {
+        companyId,
+        eventType,
+        isActive: true,
+        channel: { not: 'META_CLOUD' },
+        metaTemplateName: { not: null },
+      },
+      orderBy: { isDefault: 'desc' }
+    });
+    if (legacyMeta && legacyMeta.metaTemplateName && String(legacyMeta.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
+      return legacyMeta;
+    }
+  }
+
+  const regularTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
+    orderBy: { isDefault: 'desc' }
+  });
+  if (regularTemplate) return regularTemplate;
+
+  return prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true },
+    orderBy: { isDefault: 'desc' }
+  });
+}
+
+/**
  * بناء ID وظيفي لزر تغيير حالة الطلب من إعدادات الزر
  * @param {object} btn - { id, text, action }
  * @param {object} variables - متغيرات الإرسال (يجب أن تحتوي orderId)
@@ -301,10 +357,19 @@ function getModuleSettingKey(eventType) {
     eventType.startsWith('CART_') ||
     eventType === 'PROMOTIONAL' ||
     eventType === 'COUPON_SENT' ||
-    eventType === 'BIRTHDAY_WISH' ||
-    eventType === 'LOYALTY_POINTS_AWARDED'
+    eventType === 'BIRTHDAY_WISH'
   ) {
     return 'marketingNotificationsEnabled';
+  }
+
+  // 🎁 إشعارات الولاء والكاش باك والجودة — تُدار من مفتاح الولاء الخاص
+  // (loyaltyEnabled) بدل الاعتماد على marketingNotificationsEnabled.
+  if (
+    eventType.startsWith('LOYALTY_') ||
+    eventType.startsWith('CASHBACK_') ||
+    eventType.startsWith('CUSTOMER_QUALITY_')
+  ) {
+    return 'loyaltyEnabled';
   }
 
   if (
@@ -824,7 +889,10 @@ async function sendNotification(options) {
     priority = 5,
     scheduleAt = null,
     buttons = null,
-    fallbackEventType = null
+    fallbackEventType = null,
+    // 🎁 دعم إشعارات العملاء: إرسال قالب محدد + فرض قناة (BAILEYS/META_CLOUD/AUTO)
+    preferredTemplateId = null,
+    channel = null
   } = options;
 
   const prisma = getSharedPrismaClient();
@@ -992,76 +1060,81 @@ async function sendNotification(options) {
     if (options.contentOverride) {
       console.log(`[WHATSAPP-NOTIFY] Using contentOverride for journey notification`);
     } else {
-      // محاولة العثور على القالب برمز الحالة مباشرة أولاً
-      // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
-      if (fallbackEventType && fallbackEventType !== eventType) {
+      // 🎁 إشعارات العملاء: عند تمرير قالب محدد نستخدمه مباشرة (وليس بحثاً بالحدث)
+      if (preferredTemplateId) {
         template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-          where: {
-            companyId,
-            eventType: fallbackEventType,
-            isActive: true
-          },
-          orderBy: { isDefault: 'desc' }
+          where: { id: preferredTemplateId, companyId, isActive: true }
         }));
-      }
-
-      if (!template) {
-        template = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
-          where: {
+        if (!template) return { success: false, reason: 'template_not_found' };
+        templateId = template.id;
+      } else {
+        // محاولة العثور على القالب برمز الحالة مباشرة أولاً
+        // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
+        if (fallbackEventType && fallbackEventType !== eventType) {
+          template = await safeQuery(() => findNotificationTemplateForEvent(
             companyId,
-            eventType,
-            isActive: true
-          },
-          orderBy: { isDefault: 'desc' }
-        }));
-      }
-
-      // استخدام القالب الافتراضي إذا لم يوجد
-      // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
-      // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
-      const isOrderEvent = isOrderCategory(category, eventType);
-      if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
-        const defaultTemplate = DEFAULT_TEMPLATES[eventType];
-        template = {
-          id: null,
-          content: defaultTemplate.content,
-          hasButtons: defaultTemplate.hasButtons || false,
-          buttons: defaultTemplate.buttons || null,
-          hasList: false
-        };
-      }
-
-      // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): auto-seed دفاعي —
-      // شركة جديدة لم تفتح صفحة /orders/status-templates بعد كانت تفشل بصمت
-      // بـ no_template. نضمن قالباً (صف DB قابلاً للتعديل من الصفحة) ثم نعيد البحث.
-      if (!template && isOrderEvent) {
-        try {
-          const { ensureOrderTemplate } = require('../orderTemplateSeeding');
-          template = await ensureOrderTemplate({
-            companyId,
-            eventType,
             fallbackEventType,
-            prisma: getSharedPrismaClient(),
-          });
-        } catch (seedErr) {
-          console.error('⚠️ [WHATSAPP-ORDER] Auto-seed failed:', seedErr.message);
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
         }
-      }
 
-      if (!template) {
-        if (isOrderEvent) {
-          // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
-          // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
-          console.error(
-            `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
-            `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
-            `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
-          );
+        if (!template) {
+          template = await safeQuery(() => findNotificationTemplateForEvent(
+            companyId,
+            eventType,
+            sessionProvider,
+            getSharedPrismaClient()
+          ));
+        }
+
+        // استخدام القالب الافتراضي إذا لم يوجد
+        // ملاحظة: أحداث الطلبات لا تستخدم القوالب المثبتة في الكود —
+        // مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates (جدول DB).
+        const isOrderEvent = isOrderCategory(category, eventType);
+        if (!template && !isOrderEvent && DEFAULT_TEMPLATES[eventType]) {
+          const defaultTemplate = DEFAULT_TEMPLATES[eventType];
+          template = {
+            id: null,
+            content: defaultTemplate.content,
+            hasButtons: defaultTemplate.hasButtons || false,
+            buttons: defaultTemplate.buttons || null,
+            hasList: false
+          };
+        }
+
+        // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3): auto-seed دفاعي —
+        // شركة جديدة لم تفتح صفحة /orders/status-templates بعد كانت تفشل بصمت
+        // بـ no_template. نضمن قالباً (صف DB قابلاً للتعديل من الصفحة) ثم نعيد البحث.
+        if (!template && isOrderEvent) {
+          try {
+            const { ensureOrderTemplate } = require('../orderTemplateSeeding');
+            template = await ensureOrderTemplate({
+              companyId,
+              eventType,
+              fallbackEventType,
+              prisma: getSharedPrismaClient(),
+            });
+          } catch (seedErr) {
+            console.error('⚠️ [WHATSAPP-ORDER] Auto-seed failed:', seedErr.message);
+          }
+        }
+
+        if (!template) {
+          if (isOrderEvent) {
+            // لا نرسل نصاً حراً لحالات الطلبات — إن لم يوجد قالب في الداتابيز
+            // (أُنشئ من صفحة /orders/status-templates) نتوقف ونُسجّل تحذيراً واضحاً.
+            console.error(
+              `⚠️ [WHATSAPP-ORDER] لا يوجد قالب طلب مُعدّ في الداتابيز للحدث "${eventType}" ` +
+              `(fallback=${fallbackEventType || 'none'}, category=${category}). ` +
+              `لم يتم الإرسال. أنشئ القالب من صفحة /orders/status-templates.`
+            );
+            return { success: false, reason: 'no_template' };
+          }
           return { success: false, reason: 'no_template' };
         }
-        return { success: false, reason: 'no_template' };
+        templateId = template.id || null;
       }
-      templateId = template.id || null;
     }
 
     const safeTemplate = template || {
@@ -1073,6 +1146,20 @@ async function sendNotification(options) {
       listData: null,
       footer: null
     };
+
+    // 🎁 فرض القناة المطلوبة (من جدول إشعارات العملاء)
+    if (channel === 'BAILEYS') {
+      // إرسال نص حر دائماً — نجرد ربط الميتا حتى لا يدخل مسار القالب المعتمد
+      safeTemplate.metaTemplateName = null;
+      safeTemplate.metaTemplateStatus = null;
+    } else if (channel === 'META_CLOUD') {
+      const metaName = safeTemplate?.metaTemplateName;
+      const metaStatus = String(safeTemplate?.metaTemplateStatus || '').toUpperCase();
+      if (!metaName || metaStatus !== 'APPROVED') {
+        console.warn(`⚠️ [WHATSAPP] Channel=META_CLOUD لكن قالب "${eventType}" غير مربوط/معتمد — تم التخطي.`);
+        return { success: false, reason: 'meta_template_not_ready' };
+      }
+    }
 
     // 5. تجهيز المحتوى
     const rawContent = options.contentOverride || safeTemplate.content || '';
@@ -1154,6 +1241,14 @@ async function sendNotification(options) {
       const jid = `${formattedPhone}@s.whatsapp.net`;
 
       let result;
+      let usedMessageType = 'TEXT'; // TEMPLATE | BUTTONS | TEXT
+
+      // 🚨 PRODUCTION-FIX: منع مسار النص الحر (BUTTONS/TEXT) عبر META_CLOUD
+      // لما كان فيه قالب معتمد APPROVED متاح وفشل. خارج نافذة 24 ساعة،
+      // free-form (interactive/text) مرفوض من ميتا حتماً — النزول له = فشل مضمون
+      // يكتب failureReason مضلل (131047) بدل السبب الحقيقي لفشل القالب.
+      let blockFreeTextMetaFallback = false;
+      let lastMetaTemplateError = null;
 
       // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
       // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
@@ -1189,9 +1284,11 @@ async function sendNotification(options) {
           });
 
           console.log(`☁️ [META-CLOUD] Template message result:`, result);
+          if (result) usedMessageType = 'TEMPLATE';
         } catch (metaError) {
           // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
           console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+          lastMetaTemplateError = metaError;
 
           // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
           // لو الخطأ بسبب نافذة 24 ساعة أو قالب غير معتمد، دوّر على Baileys session
@@ -1206,15 +1303,41 @@ async function sendNotification(options) {
               try {
                 result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
                 console.log(`✅ [FALLBACK] Sent via Baileys fallback.`);
+                if (result) usedMessageType = 'TEXT';
               } catch (fallbackErr) {
                 console.error(`❌ [FALLBACK] Baileys fallback also failed:`, fallbackErr.message);
                 result = null;
               }
             } else {
+              // 🚨 PRODUCTION-FIX: لا يوجد Baileys متصل.
+              // لو كان القالب المعتمد متاحاً (canSendViaMetaTemplate)، ممنوع النزول
+              // لـ BUTTONS/TEXT عبر نفس جلسة META_CLOUD — free-form مرفوض خارج
+              // نافذة 24 ساعة وسيفشل حتماً بنفس الخطأ (131047) ويضلل الـ failureReason.
+              // الأصح: نوقف هنا ونُسجّل فشل القالب الحقيقي.
+              if (canSendViaMetaTemplate) {
+                console.warn(`⚠️ [FALLBACK] No connected Baileys session for company ${companyId}. ` +
+                  `Approved template "${metaTemplateName}" failed (${metaError?.code || metaError?.message}) ` +
+                  `and free-text via META_CLOUD is impossible outside 24h window. Failing notification.`);
+                blockFreeTextMetaFallback = true;
+                result = null;
+                metaError.code = metaError.code || (isWindowError ? 131047 : null);
+                throw metaError;
+              }
               console.warn(`⚠️ [FALLBACK] No connected Baileys session available for company ${companyId}. Notification will fail.`);
               result = null;
             }
           } else {
+            // 🚨 PRODUCTION-FIX: فشل القالب المعتمد بخطأ غير نافذة (network/params/undeliverable...).
+            // بما أن canSendViaMetaTemplate كان متاحاً والجلسة META_CLOUD، النزول لـ BUTTONS/TEXT
+            // عبر نفس جلسة الميتا خارج نافذة 24 ساعة سيفشل حتماً (free-form مرفوض) ويضلل الـ failureReason.
+            // الأصح: نمنع مسار النص الحر ونُسجّل فشل القالب الحقيقي.
+            if (canSendViaMetaTemplate) {
+              console.error(`☁️ [META-CLOUD] Approved template "${metaTemplateName}" failed with non-window error ` +
+                `(${metaError?.code || metaError?.message}). Blocking free-text meta fallback.`);
+              blockFreeTextMetaFallback = true;
+              result = null;
+              throw metaError;
+            }
             console.error(`☁️ [META-CLOUD] Falling back to local send path for ${eventType}`);
             result = null;
           }
@@ -1279,6 +1402,16 @@ async function sendNotification(options) {
         ];
       }
 
+      if (blockFreeTextMetaFallback) {
+        // 🚨 PRODUCTION-FIX: القالب المعتمد APPROVED فشل ولا يوجد Baileys بديل.
+        // ممنوع تجربة free-text عبر META_CLOUD خارج نافذة 24 ساعة — ميتا سترفض حتماً.
+        // نرمي خطأ يحمل السبب الحقيقي لفشل القالب (بدل 131047 مضلل من buttons).
+        throw new Error(
+          `Approved Meta template failed and free-text is blocked outside 24h window` +
+          (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')
+        );
+      }
+
       if (!result && finalButtons && finalButtons.length > 0) {
         try {
           // Get footer from default template if not in DB template (DB model lacks footer field currently)
@@ -1294,9 +1427,31 @@ async function sendNotification(options) {
           result = await WhatsAppMessageHandler.sendButtons(sessionId, jid, content, finalButtons, {
             footer: footerStr
           });
+          if (result) usedMessageType = 'BUTTONS';
         } catch (error) {
-          console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          // 🚨 PRODUCTION-FIX: لو فشلت الأزرار عبر META_CLOUD بخطأ نافذة (131047/131026) —
+          // sendText عبر نفس جلسة الميتا سيفشل حتماً خارج نافذة 24 ساعة.
+          // نحاول Baileys session بديلة أولاً؛ إن لم توجد نرمي الخطأ الأصلي (يحافظ على errorCode).
+          if (sessionProvider === 'META_CLOUD' && isMetaWindowError(error)) {
+            console.log(`🔄 [FALLBACK] Meta buttons rejected (window error). Searching for a Baileys session...`);
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [FALLBACK] Baileys text fallback also failed:`, baileysErr.message);
+                throw error; // نحتفظ بخطأ الميتا الأصلي (131047) للسبب الحقيقي
+              }
+            } else {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta buttons failed and no Baileys session available:`, error.message);
+              throw error; // نحتفظ بالكود الأصلي بدل 'Both Meta and Baileys send failed' (بلا code)
+            }
+          } else {
+            console.error(`❌ [WHATSAPP-DEBUG] Failed to send buttons, falling back to text:`, error);
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
       } else if (!result && safeTemplate.hasList && safeTemplate.listData) {
         try {
@@ -1305,11 +1460,59 @@ async function sendNotification(options) {
           result = await WhatsAppMessageHandler.sendList(sessionId, jid, listData);
         } catch (parseError) {
           console.error(`❌ [WHATSAPP-DEBUG] Failed to parse listData, falling back to text:`, parseError);
-          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          // 🚨 PRODUCTION-FIX: لو META_CLOUD خارج النافذة، نفضل Baileys بدل sendText عبر ميتا.
+          if (sessionProvider === 'META_CLOUD') {
+            const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+            if (baileysSession) {
+              try {
+                result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (baileysErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+                result = null;
+              }
+            } else {
+              try {
+                result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+                if (result) usedMessageType = 'TEXT';
+              } catch (metaTextErr) {
+                console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+                throw metaTextErr;
+              }
+            }
+          } else {
+            result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+            if (result) usedMessageType = 'TEXT';
+          }
         }
       } else if (!result) {
         console.log(`[WHATSAPP-DEBUG] Sending text message:`, content?.substring(0, 50));
-        result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+
+        // 🚨 PRODUCTION-FIX: لو الجلسة META_CLOUD وخارج نافذة 24 ساعة، sendText عبر الميتا
+        // سيفشل بـ 131047. نحاول Baileys session بديلة إن وجدت — نص Baileys يعمل دائماً.
+        if (sessionProvider === 'META_CLOUD') {
+          const baileysSession = await findAlternativeBaileysSession(companyId, sessionId);
+          if (baileysSession) {
+            try {
+              result = await WhatsAppMessageHandler.sendText(baileysSession.sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (baileysErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Baileys text fallback failed:`, baileysErr.message);
+              result = null;
+            }
+          } else {
+            try {
+              result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+              if (result) usedMessageType = 'TEXT';
+            } catch (metaTextErr) {
+              console.error(`❌ [WHATSAPP-DEBUG] Meta text send failed:`, metaTextErr.message);
+              throw metaTextErr; // يحافظ على errorCode الحقيقي (مثل 131047)
+            }
+          }
+        } else {
+          result = await WhatsAppMessageHandler.sendText(sessionId, jid, content);
+          if (result) usedMessageType = 'TEXT';
+        }
       }
 
       console.log(`[WHATSAPP-DEBUG] Send result:`, result);
@@ -1326,6 +1529,7 @@ async function sendNotification(options) {
         where: { id: notificationLog.id },
         data: {
           status: 'SENT',
+          messageType: usedMessageType || result?.messageType || 'TEXT',
           sentAt: new Date(),
           whatsappMessageId: result?.messageId || result?.key?.id || null
         }
@@ -1791,13 +1995,21 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
   // Format order items with color and size (Always include if available)
+  // 🚨 PRODUCTION-FIX: الطلب قد يأتي بــ order.orderItems (Prisma relation من
+  // updateOrderStatus) أو order.items (من مسارات أخرى). كان الكود يقرأ order.items
+  // فقط → الـ orderItemsText يبقى فاضي → قوالب بvariable إلزامي (orderItems) تفشل
+  // بـ Meta 131008 "Required parameter is missing".
+  const orderItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
+    ? order.orderItems
+    : (Array.isArray(order.items) ? order.items : []);
+
   let orderItemsText = '';
-  if (order.items && order.items.length > 0) {
+  if (orderItemsSource.length > 0) {
     orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    order.items.forEach((item, index) => {
+    orderItemsSource.forEach((item, index) => {
       const color = item.productColor || item.color || item.attributes?.color;
       const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name}`;
+      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
       if (color) itemDetails += ` | اللون: ${color}`;
       if (size) itemDetails += ` | المقاس: ${size}`;
       itemDetails += ` | الكمية: ${item.quantity || 1}`;
@@ -1846,6 +2058,58 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     console.log(`[WHATSAPP-STATUS] ==== END (with error) ====`);
     return { success: false, reason: 'error', error: error.message };
   }
+}
+
+/**
+ * إرسال إشعار إنشاء طلب متوافق مع حالة الطلب الفعلية.
+ * تُستخدم في مسارات إنشاء الطلب اليدوي (service + route) لتوحيد المنطق:
+ * - بدون حالة / PENDING / SCHEDULED / حالات داخلية → قالب "طلب جديد" (ORDER_CREATED).
+ * - أي حالة أخرى (CONFIRMED/PROCESSING/RETURNED/EXCHANGED/حالة مخصصة...) →
+ *   قالب حالة الطلب عبر sendOrderStatusNotification (ORDER_CONFIRMED... إلخ)
+ *   من صفحة /orders/status-templates — بدل إرسال "طلب جديد" دائماً.
+ */
+async function sendOrderCreationNotification(order) {
+  const status = String(order?.status || '').trim().toUpperCase();
+
+  const useNewOrderTemplate =
+    !status ||
+    status === 'PENDING' ||
+    status === 'SCHEDULED' ||
+    isNonNotifiableStatus(status);
+
+  // نفس الـ eventType اللي بيتخزّن فعلاً في whatsAppNotificationLog
+  // (sendOrderStatusNotification بيرشّحه بـ getPersistedNotificationEventType).
+  const eventType = useNewOrderTemplate
+    ? 'ORDER_CREATED'
+    : getPersistedNotificationEventType(status);
+
+  // 🛡️ Dedup موحّد: createEnhancedOrder والـ route بينادوها الاتنين عند الإنشاء
+  // اليدوي — منع إرسال رسالة "طلب جديد" أو "حالة الطلب" مرتين لنفس الطلب
+  // (مسار ORDER_CREATED كان محمي بالداخل قبل التعديل، والحالات بقا لازم تتحمي برضه).
+  const { trackedOrderId, isGuestOrder } = getOrderNotificationTracking(order);
+  const hasDedupKey =
+    trackedOrderId ||
+    (isGuestOrder && (order.customerPhone || order.customer?.phone));
+  if (hasDedupKey) {
+    const isDup = await isDuplicateNotification({
+      companyId: order.companyId,
+      ...(trackedOrderId
+        ? { orderId: trackedOrderId }
+        : { recipientPhone: order.customerPhone || order.customer?.phone }),
+      eventType,
+    });
+    if (isDup) {
+      console.log(`⚠️ [WHATSAPP] Duplicate ${eventType} blocked for order ${order.orderNumber}`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+  }
+
+  if (useNewOrderTemplate) {
+    return sendOrderCreatedNotification(order);
+  }
+
+  console.log(`[WHATSAPP-ORDER] Order ${order?.orderNumber} created directly with status ${status} — using status template instead of ORDER_CREATED`);
+  return sendOrderStatusNotification(order, status, 'PENDING');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3259,6 +3523,7 @@ module.exports = {
   // إشعارات الطلبات
   sendOrderCreatedNotification,
   sendOrderStatusNotification,
+  sendOrderCreationNotification,
 
   // إشعارات العربة المتروكة
   sendAbandonedCartNotification,

@@ -25,6 +25,19 @@ function normalizeInteractiveData(interactiveData = {}) {
         };
     }
 
+    // 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا (type="button") —
+    // الـ payload هو نص الزر (مثل "تأكيد الأوردر") وليس ID وظيفي.
+    // نستخدم الـ payload كـ id مبدئياً + نحتفظ بالـ context (wamid الرسالة الأصلية)
+    // لتحديد الطلب المقصود.
+    if (interactiveData.type === 'button' && (interactiveData.payload || interactiveData.text)) {
+        return {
+            id: interactiveData.payload || interactiveData.text,
+            text: interactiveData.text || interactiveData.payload || '',
+            contextMessageId: interactiveData.contextMessageId || null,
+            contextFrom: interactiveData.contextFrom || null
+        };
+    }
+
     return {
         id: null,
         text: ''
@@ -51,7 +64,7 @@ const WhatsAppInteractionService = {
      * معالجة رد على زر
      */
     async handleButtonResponse(sessionId, companyId, remoteJid, interactiveData) {
-        const { id, text } = normalizeInteractiveData(interactiveData);
+        const { id, text, contextMessageId, contextFrom } = normalizeInteractiveData(interactiveData);
         if (!id) return null;
 
         console.log(`⚡ [INTERACTION] Button response: ${id} (${text}) from ${remoteJid}`);
@@ -93,6 +106,87 @@ const WhatsAppInteractionService = {
             return await this.updateOrderStatus(orderId, companyId, 'CANCELLED', 'العميل طلب إلغاء الطلب عبر الواتساب ❌');
         }
 
+        // 4. 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا ترسل الـ payload نصياً
+        // (مثل "تأكيد الأوردر" / "إلغاء الأوردر") بدون ID وظيفي.
+        // نحدد الطلب من الرسالة الأصلية (contextMessageId = wamid القالب) أو من
+        // أحدث طلب غير مؤكد مرسل لهذا الرقم.
+        if (this._isQuickReplyText(id)) {
+            const action = this._mapQuickReplyAction(id);
+            if (!action) return null;
+
+            const prisma = getSharedPrismaClient();
+            let order = null;
+
+            // محاولة 1: البحث عن الطلب المرتبط برسالة القالب الأصلية (wamid)
+            if (contextMessageId) {
+                try {
+                    const originalMsg = await prisma.whatsAppMessage.findFirst({
+                        where: {
+                            messageId: contextMessageId,
+                            remoteJid,
+                            sessionId
+                        },
+                        select: { interactiveData: true, content: true }
+                    });
+                    if (originalMsg?.interactiveData) {
+                        const parsed = typeof originalMsg.interactiveData === 'string'
+                            ? JSON.parse(originalMsg.interactiveData)
+                            : originalMsg.interactiveData;
+                        const tplBody = parsed?.templateBody || parsed?.content || originalMsg.content || '';
+                        const orderMatch = String(tplBody).match(/ORD-\d{6}-\d{3}/);
+                        if (orderMatch) {
+                            order = await prisma.order.findFirst({
+                                where: { orderNumber: orderMatch[0], companyId }
+                            });
+                        }
+                    }
+                } catch (ctxErr) {
+                    console.error(`⚠️ [INTERACTION] Failed to resolve order from context: ${ctxErr.message}`);
+                }
+            }
+
+            // محاولة 2: أحدث طلب نشط (غير مؤكد/غير ملغي) لهذا الرقم
+            if (!order) {
+                order = await prisma.order.findFirst({
+                    where: {
+                        companyId,
+                        customerPhone: remoteJid.split('@')[0],
+                        status: { in: ['PENDING', 'CREATED', 'NEW'] }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                });
+            }
+
+            if (!order) {
+                console.warn(`⚠️ [INTERACTION] Quick-reply "${id}" but no pending order found for ${remoteJid}`);
+                return null;
+            }
+
+            return await this.updateOrderStatus(order.id, companyId, action.status, action.note);
+        }
+
+        return null;
+    },
+
+    _isQuickReplyText(id) {
+        const normalized = String(id || '').trim();
+        const confirmWords = ['تأكيد الأوردر', 'تأكيد', 'confirm', 'تأكيد الطلب'];
+        const cancelWords = ['إلغاء الأوردر', 'إلغاء', 'cancel', 'الغاء'];
+        const delayWords = ['تأجيل', 'delay', 'postpone', 'تأجيل التسليم'];
+        return [...confirmWords, ...cancelWords, ...delayWords].some(w => normalized === w);
+    },
+
+    _mapQuickReplyAction(id) {
+        const normalized = String(id || '').trim();
+        if (['تأكيد الأوردر', 'تأكيد', 'confirm', 'تأكيد الطلب'].includes(normalized)) {
+            return { status: 'CONFIRMED', note: 'تم تأكيد الطلب عبر الواتساب ✅' };
+        }
+        if (['إلغاء الأوردر', 'إلغاء', 'cancel', 'الغاء'].includes(normalized)) {
+            return { status: 'CANCELLED', note: 'العميل طلب إلغاء الطلب عبر الواتساب ❌' };
+        }
+        if (['تأجيل', 'delay', 'postpone', 'تأجيل التسليم'].includes(normalized)) {
+            return { status: 'PROCESSING', note: 'العميل طلب تأجيل التسليم ⏳' };
+        }
         return null;
     },
 

@@ -9,9 +9,11 @@ const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
 const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const verifyToken = require('../utils/verifyToken');
+const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+const autoDiscountService = require('../services/autoDiscountService');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { t } = require('../services/i18n');
-const { toCanonicalE164 } = require('../utils/phoneNormalization');
+const { toCanonicalE164, getPhoneVariants } = require('../utils/phoneNormalization');
 const { findCustomerByPhone } = require('../utils/customerIdentity');
 
 router.get('/ping', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), version: 'v3' }));
@@ -378,7 +380,6 @@ router.post('/lead-capture', getCompanyFromSubdomain, async (req, res) => {
     const duplicateFilters = [];
     if (email) duplicateFilters.push({ email });
     if (phone) {
-      const { getPhoneVariants } = require('../utils/phoneNormalization');
       duplicateFilters.push({ OR: [{ phoneNormalized: toCanonicalE164(phone) }, { phone: { in: getPhoneVariants(phone) } }] });
     }
 
@@ -796,6 +797,150 @@ router.get('/me', verifyToken.authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [PUBLIC-CUSTOMER] Error in /me:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'حدث خطأ أثناء تحميل بيانات العميل'
+    });
+  }
+});
+
+router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'CUSTOMER') {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح'
+      });
+    }
+
+    const customerId = req.user.customerId || req.user.userId || req.user.id;
+    const companyId = req.user.companyId;
+
+    if (!customerId || !companyId) {
+      return res.status(401).json({
+        success: false,
+        message: 'رمز المصادقة غير صحيح'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const [customer, wallet, progress, autoSettings] = await Promise.all([
+      prisma.customer.findFirst({
+        where: { id: customerId, companyId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          phoneNormalized: true,
+          avatar: true,
+          createdAt: true
+        }
+      }),
+      prisma.customerWallet.findFirst({ where: { customerId, companyId, isActive: true } }),
+      customerLoyaltyService.getCustomerTierProgress(companyId, customerId),
+      autoDiscountService.getSettings(companyId)
+    ]);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'العميل غير موجود'
+      });
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, name: true, nameAr: true, currency: true, logo: true, loyaltySystem: true }
+    });
+
+    const loyaltyRecord = await prisma.customerLoyaltyRecord.findFirst({
+      where: { companyId, customerId, status: 'ACTIVE' },
+      orderBy: { updatedAt: 'desc' },
+      select: { currentPoints: true, totalEarned: true, totalRedeemed: true, joinDate: true }
+    });
+
+    let totalCashback = 0;
+    if (wallet) {
+      const agg = await prisma.walletTransaction.aggregate({
+        where: { walletId: wallet.id, type: 'CASHBACK' },
+        _sum: { amount: true }
+      });
+      totalCashback = parseFloat(agg._sum.amount || 0);
+    }
+
+    const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
+    const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT';
+
+    let activeVoucher = null;
+    if (isAutoDiscount) {
+      const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
+      if (voucher) {
+        activeVoucher = {
+          id: voucher.id,
+          percent: Number(voucher.percent),
+          amount: Number(voucher.amount),
+          expiresAt: voucher.expiresAt,
+          sourceOrderNumber: voucher.orderNumber || null
+        };
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        customer: {
+          id: customer.id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          phone: customer.phone,
+          avatar: customer.avatar,
+          joinedAt: customer.createdAt
+        },
+        company: {
+          id: company?.id,
+          name: company?.name,
+          nameAr: company?.nameAr,
+          currency: company?.currency || 'EGP',
+          logo: company?.logo,
+          loyaltySystem
+        },
+        loyaltySystem,
+        loyalty: {
+          method: progress?.method || null,
+          metricLabel: progress?.metricLabel || 'نقطة',
+          currentMetric: progress ? Number(progress.currentMetric) : (loyaltyRecord ? parseFloat(loyaltyRecord.currentPoints) : 0),
+          tier: progress?.tier || null,
+          nextTier: progress?.nextTier || null,
+          rewards: progress?.rewards || { freeShipping: false, discountPercent: 0 },
+          points: {
+            current: loyaltyRecord ? parseFloat(loyaltyRecord.currentPoints) : 0,
+            totalEarned: loyaltyRecord ? parseFloat(loyaltyRecord.totalEarned) : 0,
+            totalRedeemed: loyaltyRecord ? parseFloat(loyaltyRecord.totalRedeemed) : 0,
+            joinedAt: loyaltyRecord?.joinDate || null
+          }
+        },
+        autoDiscount: isAutoDiscount
+          ? {
+              discountPercent: Number(autoSettings.discountPercent || 0),
+              validityDays: Number(autoSettings.validityDays || 3),
+              activeVoucher
+            }
+          : null,
+        wallet: {
+          balance: wallet ? parseFloat(wallet.balance) : 0,
+          totalEarned: wallet ? parseFloat(wallet.totalEarned) : 0,
+          totalSpent: wallet ? parseFloat(wallet.totalSpent) : 0,
+          totalCashback,
+          currency: wallet?.currency || company?.currency || 'EGP'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ [PUBLIC-CUSTOMER] Error in /loyalty-summary:', error);
     return res.status(500).json({
       success: false,
       message: 'حدث خطأ أثناء تحميل بيانات العميل'

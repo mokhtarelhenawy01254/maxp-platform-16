@@ -51,7 +51,7 @@ describe('cashbackService.reverseCashbackForOrder', () => {
     expect(prisma.customerWallet.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'wallet-1' } }),
     );
-    const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][1].data.metadata);
+    const metaUpdate = JSON.parse(prisma.order.update.mock.calls[0][0].data.metadata);
     expect(metaUpdate.cashback.cancelledReversed).toBe(true);
 
     // second attempt blocked

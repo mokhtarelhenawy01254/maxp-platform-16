@@ -24,7 +24,10 @@ import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
+import { OrdersOverviewStats } from "./components/OrdersOverviewStats";
 import { OrdersPagination } from "./components/OrdersPagination";
+import { BulkActionBar } from "./components/BulkActionBar";
+import { CommandPalette } from "../../components/common/CommandPalette";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import type { OrderDetailsType } from "./types";
 
@@ -116,6 +119,8 @@ export interface Order {
   metadata?: {
     source?: string;
     isGuestOrder?: boolean;
+    isIncompleteCart?: boolean;
+    cartId?: string;
     confidence?: number;
     extractionMethod?: string;
     [key: string]: unknown;
@@ -235,14 +240,14 @@ export interface OrderStatusDefinition {
 }
 
 export interface OrdersFilters {
-  status: string;
-  paymentStatus: string;
-  sourceType: string;
-  merchantId: string;
-  affiliateId: string;
-  fulfillmentSource: string;
-  merchantOperationStatus: string;
-  merchantSettlementStatus: string;
+  status: string[];
+  paymentStatus: string[];
+  sourceType: string[];
+  merchantId: string[];
+  affiliateId: string[];
+  fulfillmentSource: string[];
+  merchantOperationStatus: string[];
+  merchantSettlementStatus: string[];
   search: string;
   startDate: string;
   endDate: string;
@@ -646,14 +651,14 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
 
 const ORDERS_LIST_STORAGE_KEY = "orders:list:view-state:v1";
 const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
-  status: "",
-  paymentStatus: "",
-  sourceType: "",
-  merchantId: "",
-  affiliateId: "",
-  fulfillmentSource: "",
-  merchantOperationStatus: "",
-  merchantSettlementStatus: "",
+  status: [],
+  paymentStatus: [],
+  sourceType: [],
+  merchantId: [],
+  affiliateId: [],
+  fulfillmentSource: [],
+  merchantOperationStatus: [],
+  merchantSettlementStatus: [],
   search: "",
   startDate: "",
   endDate: "",
@@ -729,23 +734,37 @@ export const getMerchantOperationsTotals = (
   ...(summary?.summary || {}),
 });
 
-const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => ({
-  status: searchParams.get("status") || "",
-  paymentStatus: searchParams.get("paymentStatus") || "",
-  sourceType: searchParams.get("sourceType") || "",
-  merchantId: searchParams.get("merchantId") || "",
-  affiliateId: searchParams.get("affiliateId") || "",
-  fulfillmentSource: searchParams.get("fulfillmentSource") || "",
-  merchantOperationStatus: searchParams.get("merchantOperationStatus") || "",
-  merchantSettlementStatus: searchParams.get("merchantSettlementStatus") || "",
-  search: searchParams.get("search") || "",
+const parseMultiFilterParam = (rawValue: string | null): string[] => {
+  if (!rawValue) return [];
+  return rawValue.split(",").map((s) => s.trim()).filter(Boolean);
+};
+
+const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => {
+  const rawStatus = searchParams.get("status") || "";
+  return {
+    status: rawStatus
+      ? rawStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+    paymentStatus: parseMultiFilterParam(searchParams.get("paymentStatus")),
+    sourceType: parseMultiFilterParam(searchParams.get("sourceType")),
+    merchantId: parseMultiFilterParam(searchParams.get("merchantId")),
+    affiliateId: parseMultiFilterParam(searchParams.get("affiliateId")),
+    fulfillmentSource: parseMultiFilterParam(searchParams.get("fulfillmentSource")),
+    merchantOperationStatus: parseMultiFilterParam(
+      searchParams.get("merchantOperationStatus"),
+    ),
+    merchantSettlementStatus: parseMultiFilterParam(
+      searchParams.get("merchantSettlementStatus"),
+    ),
+    search: searchParams.get("search") || "",
   startDate: searchParams.get("startDate") || "",
   endDate: searchParams.get("endDate") || "",
   extractionMethod: searchParams.get("extractionMethod") || "",
   minConfidence: searchParams.get("minConfidence") || "",
   onlyUnseen: searchParams.get("onlyUnseen") === "true",
   timeRange: searchParams.get("timeRange") || "",
-});
+  };
+};
 
 const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
   const candidate =
@@ -754,24 +773,30 @@ const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       : {};
 
   return {
-    status: typeof candidate.status === "string" ? candidate.status : "",
-    paymentStatus:
-      typeof candidate.paymentStatus === "string" ? candidate.paymentStatus : "",
-    sourceType: typeof candidate.sourceType === "string" ? candidate.sourceType : "",
-    merchantId: typeof candidate.merchantId === "string" ? candidate.merchantId : "",
-    affiliateId: typeof candidate.affiliateId === "string" ? candidate.affiliateId : "",
-    fulfillmentSource:
-      typeof candidate.fulfillmentSource === "string"
-        ? candidate.fulfillmentSource
-        : "",
-    merchantOperationStatus:
-      typeof candidate.merchantOperationStatus === "string"
-        ? candidate.merchantOperationStatus
-        : "",
-    merchantSettlementStatus:
-      typeof candidate.merchantSettlementStatus === "string"
-        ? candidate.merchantSettlementStatus
-        : "",
+    status: Array.isArray(candidate.status)
+      ? candidate.status.filter((s): s is string => typeof s === "string")
+      : [],
+    paymentStatus: Array.isArray(candidate.paymentStatus)
+      ? candidate.paymentStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    sourceType: Array.isArray(candidate.sourceType)
+      ? candidate.sourceType.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantId: Array.isArray(candidate.merchantId)
+      ? candidate.merchantId.filter((s): s is string => typeof s === "string")
+      : [],
+    affiliateId: Array.isArray(candidate.affiliateId)
+      ? candidate.affiliateId.filter((s): s is string => typeof s === "string")
+      : [],
+    fulfillmentSource: Array.isArray(candidate.fulfillmentSource)
+      ? candidate.fulfillmentSource.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantOperationStatus: Array.isArray(candidate.merchantOperationStatus)
+      ? candidate.merchantOperationStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantSettlementStatus: Array.isArray(candidate.merchantSettlementStatus)
+      ? candidate.merchantSettlementStatus.filter((s): s is string => typeof s === "string")
+      : [],
     search: typeof candidate.search === "string" ? candidate.search : "",
     startDate: typeof candidate.startDate === "string" ? candidate.startDate : "",
     endDate: typeof candidate.endDate === "string" ? candidate.endDate : "",
@@ -833,9 +858,33 @@ const getInitialOrdersListViewState = (
   );
 };
 
+interface BillingHoldOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  itemCount: number;
+  billingHoldAmount: number | null;
+  holdReason: "insufficient_balance" | "subscription_expired";
+  customerName: string;
+  customerPhone: string;
+}
+
+const HELD_REASON_LABEL: Record<string, string> = {
+  insufficient_balance: "رصيد المحفظة",
+  subscription_expired: "اشتراك الطلبات اليدوية",
+};
+
 const HeldOrdersBanner: React.FC = () => {
   const { user } = useAuth();
-  const [held, setHeld] = useState<{ count: number; amount: number } | null>(null);
+  const [held, setHeld] = useState<{
+    count: number;
+    amount: number;
+    subscriptionCount: number;
+  } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [heldOrders, setHeldOrders] = useState<BillingHoldOrder[]>([]);
+  const [heldTotal, setHeldTotal] = useState(0);
+  const [loadingHeld, setLoadingHeld] = useState(false);
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
     user?.role || "",
   );
@@ -844,35 +893,182 @@ const HeldOrdersBanner: React.FC = () => {
     if (!isAdmin) return;
     apiClient
       .get("/wallet/billing/summary")
-      .then((res: { data?: { data?: { heldOrders?: { count?: number; amount?: number } } } }) => {
-        const data = res?.data?.data;
-        const count = Number(data?.heldOrders?.count || 0);
-        if (count > 0) {
-          setHeld({ count, amount: Number(data?.heldOrders?.amount || 0) });
-        }
-      })
+      .then(
+        (res: {
+          data?: {
+            data?: {
+              heldOrders?: { count?: number; amount?: number; subscriptionCount?: number };
+            };
+          };
+        }) => {
+          const data = res?.data?.data;
+          const count = Number(data?.heldOrders?.count || 0);
+          if (count > 0) {
+            setHeld({
+              count,
+              amount: Number(data?.heldOrders?.amount || 0),
+              subscriptionCount: Number(data?.heldOrders?.subscriptionCount || 0),
+            });
+          }
+        },
+      )
       .catch(() => {
         /* تجاهل - البانر اختياري */
       });
   }, [isAdmin]);
 
+  const openMoreInfo = async () => {
+    setModalOpen(true);
+    setLoadingHeld(true);
+    try {
+      const res = await apiClient.get("/orders-new/billing-holds");
+      const data = (res as {
+        data?: {
+          data?: {
+            orders?: BillingHoldOrder[];
+            totalAmount?: number;
+            subscriptionCount?: number;
+          };
+        };
+      })?.data?.data;
+      setHeldOrders(data?.orders || []);
+      setHeldTotal(Number(data?.totalAmount || 0));
+    } catch {
+      setHeldOrders([]);
+    } finally {
+      setLoadingHeld(false);
+    }
+  };
+
   if (!held) return null;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
-      <span className="font-semibold">
-        لديك {held.count} طلب معلّق بسبب انخفاض رصيد المحفظة.
-      </span>
-      <span className="text-sm">
-        المبلغ المستحق {(held.amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — اشحن رصيدك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
-      </span>
-      <Link
-        to="/payments"
-        className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
-      >
-        شحن الرصيد
-      </Link>
-    </div>
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+        <span className="font-semibold">
+          لديك {held.count} طلب معلّق
+          {held.subscriptionCount > 0 && held.subscriptionCount === held.count
+            ? " بسبب انتهاء اشتراك الطلبات اليدوية"
+            : held.subscriptionCount > 0
+              ? " (رصيد + اشتراك)"
+              : " بسبب انخفاض رصيد المحفظة"}
+          .
+        </span>
+        <span className="text-sm">
+          {held.amount > 0
+            ? `المبلغ المستحق ${held.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م — `
+            : ""}
+          اشحن رصيدك أو جدّد اشتراكك ليُخصم المبلغ وتظهر الطلبات تلقائياً.
+        </span>
+        <button
+          onClick={openMoreInfo}
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          مزيد المعلومات
+        </button>
+        <Link
+          to="/payments"
+          className="text-sm font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+        >
+          شحن الرصيد
+        </Link>
+      </div>
+
+      {modalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                الطلبات المعلّقة ({heldOrders.length})
+              </h3>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                إغلاق
+              </button>
+            </div>
+
+            {loadingHeld ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                جاري التحميل...
+              </div>
+            ) : heldOrders.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                لا توجد طلبات معلّقة.
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  {heldTotal > 0 ? (
+                    <>
+                      المبلغ المستحق الإجمالي:{" "}
+                      <b className="font-semibold">
+                        {heldTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م
+                      </b>
+                    </>
+                  ) : (
+                    "لا توجد رسوم مستحقة — الطلبات معلّقة بسبب انتهاء الاشتراك."
+                  )}
+                </div>
+                <div className="max-h-96 space-y-2 overflow-y-auto">
+                  {heldOrders.map((o) => (
+                    <div
+                      key={o.id}
+                      className="rounded-xl border border-gray-200 p-3 dark:border-gray-700"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {o.orderNumber}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            o.holdReason === "subscription_expired"
+                              ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                          }`}
+                        >
+                          {HELD_REASON_LABEL[o.holdReason] || "معلّق"}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {format(new Date(o.createdAt), "dd/MM/yyyy HH:mm")} • عدد القطع:{" "}
+                        {o.itemCount}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-200">
+                        <span>العميل: {o.customerName || "-"}</span>
+                        <span>الهاتف: {o.customerPhone || "-"}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {o.holdReason === "subscription_expired"
+                          ? "معلّق حتى تجديد اشتراك الطلبات اليدوية"
+                          : `رسوم الاستخدام المستحقة: ${(o.billingHoldAmount || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} ج.م`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <Link
+                    to="/payments"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    شحن الرصيد / تجديد الاشتراك لإظهار الطلبات
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
   );
 };
 
@@ -931,6 +1127,8 @@ const Orders: React.FC = () => {
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
   );
+  const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -948,7 +1146,9 @@ const Orders: React.FC = () => {
     setLimit((prev) => (prev !== newLimit ? newLimit : prev));
   }, [searchParams]);
 
-  const isTrashView = filters.status.toLowerCase() === "trash";
+  const isTrashView =
+    Array.isArray(filters.status) &&
+    filters.status.some((s) => s.toLowerCase() === "trash");
 
   const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
     try {
@@ -1003,14 +1203,14 @@ const Orders: React.FC = () => {
     AGENT_WORKSPACE_APP_SLUGS,
   );
   const merchantOperationFilterIsActive = Boolean(
-    filters.merchantId ||
-      filters.fulfillmentSource ||
-      filters.merchantOperationStatus ||
-      filters.merchantSettlementStatus,
+    filters.merchantId.length > 0 ||
+      filters.fulfillmentSource.length > 0 ||
+      filters.merchantOperationStatus.length > 0 ||
+      filters.merchantSettlementStatus.length > 0,
   );
-  const affiliateFilterIsActive = Boolean(filters.affiliateId);
+  const affiliateFilterIsActive = filters.affiliateId.length > 0;
   const canShowUnifiedOperationFilters = isAdmin && !isMerchant;
-  const sourceFilterIsActive = Boolean(filters.sourceType);
+  const sourceFilterIsActive = filters.sourceType.length > 0;
   const hasOrderSourceTrackingApp = hasAnyCompanyAppSlug(
     activeCompanyAppSlugSet,
     ORDER_SOURCE_TRACKING_APP_SLUGS,
@@ -1049,6 +1249,8 @@ const Orders: React.FC = () => {
 
       if (typeof value === "string" && value) {
         params[key] = value;
+      } else if (Array.isArray(value) && value.length > 0) {
+        params[key] = value.join(",");
       }
     });
 
@@ -1112,6 +1314,10 @@ const Orders: React.FC = () => {
           return count + (value ? 1 : 0);
         }
 
+        if (Array.isArray(value)) {
+          return count + value.length;
+        }
+
         if (!value) return count;
         return count + 1;
       }, 0),
@@ -1120,14 +1326,14 @@ const Orders: React.FC = () => {
   const advancedFilterCount = useMemo(() => {
     let count = 0;
 
-    if (filters.status) count += 1;
-    if (filters.paymentStatus) count += 1;
-    if (filters.sourceType) count += 1;
-    if (filters.merchantId) count += 1;
-    if (filters.affiliateId) count += 1;
-    if (filters.fulfillmentSource) count += 1;
-    if (filters.merchantOperationStatus) count += 1;
-    if (filters.merchantSettlementStatus) count += 1;
+    if (filters.status.length > 0) count += filters.status.length;
+    if (filters.paymentStatus.length > 0) count += filters.paymentStatus.length;
+    if (filters.sourceType.length > 0) count += filters.sourceType.length;
+    if (filters.merchantId.length > 0) count += filters.merchantId.length;
+    if (filters.affiliateId.length > 0) count += filters.affiliateId.length;
+    if (filters.fulfillmentSource.length > 0) count += filters.fulfillmentSource.length;
+    if (filters.merchantOperationStatus.length > 0) count += filters.merchantOperationStatus.length;
+    if (filters.merchantSettlementStatus.length > 0) count += filters.merchantSettlementStatus.length;
     if (filters.extractionMethod) count += 1;
     if (filters.minConfidence) count += 1;
     if (filters.timeRange || filters.startDate || filters.endDate) count += 1;
@@ -1266,7 +1472,8 @@ const Orders: React.FC = () => {
   }, [isAdmin, isMerchant]);
 
   useEffect(() => {
-    if (!isAdmin || isMerchant || !filters.merchantId) {
+    const selectedMerchantId = filters.merchantId[0] || "";
+    if (!isAdmin || isMerchant || filters.merchantId.length !== 1 || !selectedMerchantId) {
       setMerchantSettlementSummary(null);
       setMerchantSettlementError("");
       setMerchantSettlementLoading(false);
@@ -1283,7 +1490,7 @@ const Orders: React.FC = () => {
           success?: boolean;
           data?: MerchantSettlementSummary;
           message?: string;
-        }>(`/merchants/${filters.merchantId}/settlement-summary`, {
+        }>(`/merchants/${selectedMerchantId}/settlement-summary`, {
           _skipErrorToast: true,
         });
 
@@ -1385,11 +1592,11 @@ const Orders: React.FC = () => {
 
       // Merchants use the same core Orders screen, scoped by the simple orders API.
       const usesUnifiedOperationFilters = Boolean(
-        filters.merchantId ||
-          filters.affiliateId ||
-          filters.fulfillmentSource ||
-          filters.merchantOperationStatus ||
-          filters.merchantSettlementStatus,
+        filters.merchantId.length > 0 ||
+          filters.affiliateId.length > 0 ||
+          filters.fulfillmentSource.length > 0 ||
+          filters.merchantOperationStatus.length > 0 ||
+          filters.merchantSettlementStatus.length > 0,
       );
       const useEnhanced =
         !isMerchant &&
@@ -1401,11 +1608,15 @@ const Orders: React.FC = () => {
         const queryParams = {
           page: page.toString(),
           limit: limit.toString(),
-          ...(filters.status && { status: filters.status.toUpperCase() }),
-          ...(filters.paymentStatus && {
-            paymentStatus: filters.paymentStatus.toUpperCase(),
+          ...(filters.status.length > 0 && {
+            status: filters.status.map((s) => s.toUpperCase()).join(","),
           }),
-          ...(filters.sourceType && { sourceType: filters.sourceType }),
+          ...(filters.paymentStatus.length > 0 && {
+            paymentStatus: filters.paymentStatus.map((s) => s.toUpperCase()).join(","),
+          }),
+          ...(filters.sourceType.length > 0 && {
+            sourceType: filters.sourceType.join(","),
+          }),
           ...(filters.search && { search: filters.search }),
           ...(filters.extractionMethod && {
             extractionMethod: filters.extractionMethod,
@@ -1457,6 +1668,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch enhanced orders:", data.message);
@@ -1469,18 +1681,18 @@ const Orders: React.FC = () => {
           limit: limit.toString(),
         };
 
-        if (filters.status) queryParams.status = filters.status;
-        if (filters.paymentStatus)
-          queryParams.paymentStatus = filters.paymentStatus;
-        if (filters.sourceType) queryParams.sourceType = filters.sourceType;
-        if (filters.merchantId) queryParams.merchantId = filters.merchantId;
-        if (filters.affiliateId) queryParams.affiliateId = filters.affiliateId;
-        if (filters.fulfillmentSource)
-          queryParams.fulfillmentSource = filters.fulfillmentSource;
-        if (filters.merchantOperationStatus)
-          queryParams.merchantOperationStatus = filters.merchantOperationStatus;
-        if (filters.merchantSettlementStatus)
-          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus;
+        if (filters.status.length > 0) queryParams.status = filters.status.join(",");
+        if (filters.paymentStatus.length > 0)
+          queryParams.paymentStatus = filters.paymentStatus.join(",");
+        if (filters.sourceType.length > 0) queryParams.sourceType = filters.sourceType.join(",");
+        if (filters.merchantId.length > 0) queryParams.merchantId = filters.merchantId.join(",");
+        if (filters.affiliateId.length > 0) queryParams.affiliateId = filters.affiliateId.join(",");
+        if (filters.fulfillmentSource.length > 0)
+          queryParams.fulfillmentSource = filters.fulfillmentSource.join(",");
+        if (filters.merchantOperationStatus.length > 0)
+          queryParams.merchantOperationStatus = filters.merchantOperationStatus.join(",");
+        if (filters.merchantSettlementStatus.length > 0)
+          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus.join(",");
         if (filters.search) queryParams.search = filters.search;
         if (filters.startDate) queryParams.startDate = filters.startDate;
         if (filters.endDate) queryParams.endDate = filters.endDate;
@@ -1525,7 +1737,12 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
+          const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
+          if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
+            setShowIncompleteInOrders(metaFlag.showIncompleteCartsInOrders);
+          }
         } else {
           console.error("Failed to fetch orders:", data.message);
           setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
@@ -1692,14 +1909,14 @@ const Orders: React.FC = () => {
   const clearAdvancedFilters = () => {
     setFilters((prev) => ({
       ...prev,
-      status: "",
-      paymentStatus: "",
-      sourceType: "",
-      merchantId: "",
-      affiliateId: "",
-      fulfillmentSource: "",
-      merchantOperationStatus: "",
-      merchantSettlementStatus: "",
+      status: [],
+      paymentStatus: [],
+      sourceType: [],
+      merchantId: [],
+      affiliateId: [],
+      fulfillmentSource: [],
+      merchantOperationStatus: [],
+      merchantSettlementStatus: [],
       startDate: "",
       endDate: "",
       extractionMethod: "",
@@ -1735,6 +1952,8 @@ const Orders: React.FC = () => {
   };
 
   const toggleOrderSelection = (orderNumber: string) => {
+    const order = orders.find((o) => o.orderNumber === orderNumber);
+    if (order?.metadata?.isIncompleteCart) return;
     setSelectedOrders((prev) =>
       prev.includes(orderNumber)
         ? prev.filter((id) => id !== orderNumber)
@@ -1743,10 +1962,11 @@ const Orders: React.FC = () => {
   };
 
   const toggleAllSelection = () => {
-    if (orders.every((o) => selectedOrders.includes(o.orderNumber))) {
+    const selectable = orders.filter((o) => !o.metadata?.isIncompleteCart);
+    if (selectable.every((o) => selectedOrders.includes(o.orderNumber))) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((o) => o.orderNumber));
+      setSelectedOrders(selectable.map((o) => o.orderNumber));
     }
   };
 
@@ -2104,8 +2324,26 @@ const Orders: React.FC = () => {
 
   const filterableOrderStatuses = useMemo(() => {
     const list = orderStatuses.filter((s) => normalizeStatusCode(s.code) !== "TRASH");
-    const activeFilter = normalizeStatusCode(filters.status);
-    if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
+    if (showIncompleteInOrders) {
+      const existingCodes = new Set(list.map((s) => normalizeStatusCode(s.code)));
+      if (!existingCodes.has("INCOMPLETE")) {
+        list.push({
+          code: "INCOMPLETE",
+          name: getStatusDisplay("INCOMPLETE").label,
+        });
+      }
+      if (!existingCodes.has("LOST")) {
+        list.push({
+          code: "LOST",
+          name: getStatusDisplay("LOST").label,
+        });
+      }
+    }
+    filters.status.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter || activeFilter === "TRASH" || activeFilter === "TRASH_ORDER") {
+        return;
+      }
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -2113,14 +2351,15 @@ const Orders: React.FC = () => {
           name: getStatusDisplay(activeFilter).label,
         });
       }
-    }
+    });
     return list;
-  }, [orderStatuses, filters.status]);
+  }, [orderStatuses, filters.status, showIncompleteInOrders]);
 
   const filterablePaymentStatuses = useMemo(() => {
     const list = [...paymentStatuses];
-    const activeFilter = normalizeStatusCode(filters.paymentStatus);
-    if (activeFilter) {
+    filters.paymentStatus.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter) return;
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -2128,7 +2367,7 @@ const Orders: React.FC = () => {
           name: getPaymentStatusText(activeFilter.toLowerCase()),
         });
       }
-    }
+    });
     return list;
   }, [paymentStatuses, filters.paymentStatus]);
 
@@ -2286,6 +2525,10 @@ const Orders: React.FC = () => {
   };
 
   const handleOpenOrder = (order: Order) => {
+    if (order.metadata?.isIncompleteCart) {
+      navigate(`/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`);
+      return;
+    }
     setSelectedOrder(order);
     setShowOrderModal(true);
     if (!order.isViewed) {
@@ -2352,6 +2595,8 @@ const Orders: React.FC = () => {
       <div className="w-full max-w-none">
         <HeldOrdersBanner />
 
+        <OrdersOverviewStats />
+
         <OrdersToolbar
         filters={filters}
         loading={loading}
@@ -2382,12 +2627,15 @@ const Orders: React.FC = () => {
         onSetQuickDate={setQuickDate}
         onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
+        onRefresh={fetchOrders}
+        lastUpdatedAt={lastUpdatedAt}
+        isConnected={isConnected}
       />
 
       <OrdersStatsBar
         isAdmin={isAdmin}
         isMerchant={isMerchant}
-        merchantId={filters.merchantId}
+        merchantId={filters.merchantId[0] || ""}
         merchantSettlementSummary={merchantSettlementSummary}
         merchantSettlementLoading={merchantSettlementLoading}
         merchantSettlementError={merchantSettlementError}
@@ -2405,69 +2653,48 @@ const Orders: React.FC = () => {
       />
 
       {/* Bulk Toolbar */}
-      {canSelectOrders && selectedOrders.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckCircleIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <span className="font-medium text-blue-900 dark:text-blue-100">
-              {t("orders.ordersSelected", { count: selectedOrders.length })}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <select
-              aria-label={String(t("orders.updateStatus"))}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) {
-                  handleBulkStatusUpdate(val);
-                  e.target.value = ""; // Reset
-                }
-              }}
-              className="theme-native-control px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100"
-              disabled={bulkProcessing}
-            >
-              <option value="">{t("orders.updateStatus")}</option>
-              {bulkUpdatableStatuses.map((status) => (
-                <option
-                  key={status.code}
-                  value={status.code.toLowerCase()}
-                >
-                  {status.name}
-                </option>
-              ))}
-              <option value="trash">{t("orders.moveToTrash")}</option>
-              <option value="restore">{t("orders.restoreFromTrash")}</option>
-            </select>
-            <button
-              onClick={handleBulkPrintInvoices}
-              disabled={printingInvoices}
-              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg text-sm hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
-            >
-              <PrinterIcon className="w-4 h-4 ml-2" />
-              {printingInvoices ? t("orders.printing") : t("orders.printInvoices")}
-            </button>
-            <button
-              onClick={handleBulkCreateTurboShipments}
-              disabled={bulkProcessing}
-              className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-            >
-              <RocketLaunchIcon className="w-4 h-4 ml-2" />
-              {bulkProcessing
-                ? t("orders.creating")
-                : t("orders.createTurboShipments")}
-            </button>
-            <button
-              onClick={handleBulkDelete}
-              disabled={bulkProcessing}
-              className="px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors border border-red-200 dark:border-red-800"
-            >
-              {bulkProcessing
-                ? t("orders.processing2")
-                : t(isTrashView ? "orders.deleteSelectedPermanently" : "orders.deleteSelected")}
-            </button>
-          </div>
-        </div>
+      {canSelectOrders && (
+        <BulkActionBar
+          count={selectedOrders.length}
+          statuses={bulkUpdatableStatuses}
+          isTrashView={isTrashView}
+          busy={bulkProcessing}
+          printing={printingInvoices}
+          onClearSelection={() => setSelectedOrders([])}
+          onStatusChange={handleBulkStatusUpdate}
+          onPrintInvoices={handleBulkPrintInvoices}
+          onCreateTurboShipments={handleBulkCreateTurboShipments}
+          onDelete={handleBulkDelete}
+        />
       )}
+
+      {/* Hidden command palette that registers the page-level bulk actions.
+          The toolbar already has its own palette trigger; this one is mount-only
+          (no trigger button) and just contributes commands to the same global
+          keyboard shortcut handler. */}
+      <CommandPalette
+        showTrigger={false}
+        extraCommands={[
+          {
+            id: "bulk-print",
+            group: "bulk",
+            label: t("orders.palette.bulkPrintAll"),
+            onSelect: () => handleBulkPrintInvoices(),
+          },
+          {
+            id: "bulk-turbo",
+            group: "bulk",
+            label: t("orders.palette.bulkCreateTurboAll"),
+            onSelect: () => handleBulkCreateTurboShipments(),
+          },
+          {
+            id: "bulk-delete",
+            group: "bulk",
+            label: t("orders.palette.bulkDeleteAll"),
+            onSelect: () => handleBulkDelete(),
+          },
+        ]}
+      />
 
             <OrdersMobileList
         orders={orders}

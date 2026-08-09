@@ -1148,6 +1148,7 @@ model OrderInvoiceSettings {
   duplicateOrderAction   String   @default("filter")
   duplicateOrderWindowMinutes Int @default(60)
   incompleteOrderLostAfterHours Int @default(24)
+  showIncompleteCartsInOrders Boolean @default(false)
   companies              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])

@@ -5,17 +5,18 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   MagnifyingGlassIcon,
-  XMarkIcon,
   PlusIcon,
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
-import { toast } from "sonner";
 import { tToast } from "../../../utils/i18n-toast";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
+import OrderModal from "../../../components/common/OrderModal";
 
 interface ProductVariant {
   id: string;
@@ -65,7 +66,6 @@ const parseVariantAttributes = (
           ? JSON.parse(variant.metadata)
           : variant.metadata;
 
-      // ✅ استخراج من attributes المستوردة من WooCommerce
       if (metadata.attributes && Array.isArray(metadata.attributes)) {
         const attrs: Record<string, string> = {};
         metadata.attributes.forEach((attr: any) => {
@@ -105,7 +105,6 @@ const parseVariantAttributes = (
   }
 
   if (variant.name) {
-    // محاولة استخراج من اسم المتغير بصيغة "اللون: أحمر | المقاس: 38"
     const pipePattern = /([^:]+):\s*([^|]+)/g;
     const attrs: Record<string, string> = {};
     let match;
@@ -167,6 +166,7 @@ const extractAttributes = (
 const SimplifiedProductSelectionModal: React.FC<
   SimplifiedProductSelectionModalProps
 > = ({ isOpen, onClose, onProductSelected }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -292,7 +292,6 @@ const SimplifiedProductSelectionModal: React.FC<
       setSelectedProduct(product);
       setSelectedAttributes({});
     } else {
-      // ✅ Check stock for products without variants
       if (product.stock !== undefined && product.stock <= 0) {
         tToast.error("SimplifiedProductSelectionModal.msg_0e6c");
         return;
@@ -303,7 +302,6 @@ const SimplifiedProductSelectionModal: React.FC<
 
   const handleVariantSelect = (variant: ProductVariant) => {
     if (selectedProduct) {
-      // ✅ Check stock
       if (variant.stock !== undefined && variant.stock <= 0) {
         tToast.error("SimplifiedProductSelectionModal.msg_0e6c");
         return;
@@ -360,121 +358,112 @@ const SimplifiedProductSelectionModal: React.FC<
     return filteredVariants[0];
   }, [allAttributesSelected, filteredVariants]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
-              <PlusIcon className="w-5 h-5" />
-            </div>
-            <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
-              إضافة منتج للطلب
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-400 dark:text-gray-500 transition-colors"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="flex-1 flex overflow-hidden">
+    <OrderModal
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      title="إضافة منتج للطلب"
+      icon={PlusIcon}
+      tone="primary"
+      size="full"
+      showCancel={false}
+      flushBody
+      hideClose
+    >
+      <div className="flex h-[min(78vh,720px)] flex-col overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
           {/* Left Side: Product List & Search */}
-          <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 border-l border-gray-100 dark:border-gray-700">
-            <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex flex-1 flex-col border-e border-border/60">
+            <div className="border-b border-border/60 bg-background p-4">
               <div className="relative">
                 <input
                   type="text"
                   autoFocus
                   placeholder="بحث باسم المنتج أو SKU..."
-                  className="w-full pl-4 pr-11 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-100 outline-none transition-all"
+                  className="w-full rounded-xl border border-border bg-muted/40 px-4 py-3 pe-11 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/30"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <MagnifyingGlassIcon className="w-6 h-6 text-gray-400 absolute right-3.5 top-3" />
+                <MagnifyingGlassIcon className="pointer-events-none absolute end-3.5 top-3 h-6 w-6 text-muted-foreground" />
               </div>
             </div>
 
             <div
               ref={listContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-4 custom-scrollbar"
+              className="custom-scrollbar flex-1 overflow-y-auto p-4"
             >
               {loading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                   {[...Array(6)].map((_, i) => (
                     <div
                       key={i}
-                      className="animate-pulse bg-gray-50 dark:bg-gray-900/50 rounded-xl h-48 border border-gray-100 dark:border-gray-800"
+                      className="h-48 animate-pulse rounded-xl border border-border bg-muted/40"
                     />
                   ))}
                 </div>
               ) : products.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12">
-                  <ArchiveBoxIcon className="w-16 h-16 mb-4 opacity-20" />
+                <div className="flex h-full flex-col items-center justify-center py-12 text-muted-foreground">
+                  <ArchiveBoxIcon className="mb-4 h-16 w-16 opacity-30" />
                   <p className="text-lg">لا توجد منتجات مطابقة</p>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                     {products.map((product) => (
                       <div
                         key={product.id}
                         onClick={() => handleProductClick(product)}
-                        className={`group relative flex flex-col bg-white dark:bg-gray-800 border-2 rounded-xl overflow-hidden transition-all cursor-pointer h-full ${
+                        className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border-2 bg-card transition-all ${
                           selectedProduct?.id === product.id
-                            ? "border-blue-600 dark:border-blue-500 ring-2 ring-blue-50 dark:ring-blue-900/20"
-                            : "border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md"
+                            ? "border-primary ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/60 hover:shadow-md"
                         }`}
                       >
-                        <div className="aspect-square bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+                        <div className="relative aspect-square overflow-hidden bg-muted/40">
                           {product.image ? (
                             <img
                               src={product.image}
                               alt={product.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-200 dark:text-gray-700">
-                              <ArchiveBoxIcon className="w-12 h-12" />
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+                              <ArchiveBoxIcon className="h-12 w-12" />
                             </div>
                           )}
                           {product.variants.length > 0 && (
-                            <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg shadow-sm">
+                            <div className="absolute end-2 top-2 rounded-lg bg-primary/90 px-2 py-1 text-[10px] font-bold text-primary-foreground shadow-sm backdrop-blur-sm">
                               خيارات
                             </div>
                           )}
                         </div>
-                        <div className="p-3 bg-white dark:bg-gray-800">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
+                        <div className="bg-card p-3">
+                          <h3 className="mb-1 line-clamp-1 text-sm font-semibold text-foreground">
                             {product.name}
                           </h3>
-                          <div className="flex justify-between items-center">
-                            <span className="text-blue-600 dark:text-blue-400 font-bold">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary">
                               {product.price} ج.م
                             </span>
-                            <div className="text-[10px] text-gray-400 truncate max-w-[60px]">
+                            <div className="max-w-[60px] truncate text-[10px] text-muted-foreground">
                               SKU: {product.sku || "N/A"}
                             </div>
                           </div>
-                          {/* Stock indicator */}
                           {product.stock !== undefined && (
                             <div className="mt-1">
                               {product.stock <= 0 ? (
-                                <span className="text-[10px] text-red-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-destructive">
                                   نفذ من المخزون
                                 </span>
                               ) : product.stock < 5 ? (
-                                <span className="text-[10px] text-orange-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-warning">
                                   متبقي {product.stock}
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-green-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-success">
                                   متوفر
                                 </span>
                               )}
@@ -487,13 +476,13 @@ const SimplifiedProductSelectionModal: React.FC<
 
                   {loadingMore && (
                     <div className="flex justify-center py-6">
-                      <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     </div>
                   )}
                   {!loadingMore && hasMore && (
                     <button
                       onClick={loadMore}
-                      className="w-full mt-4 py-3 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold hover:border-blue-400 hover:text-blue-500 transition-colors"
+                      className="mt-4 w-full rounded-xl border-2 border-dashed border-border py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                     >
                       عرض المزيد من المنتجات
                     </button>
@@ -503,22 +492,24 @@ const SimplifiedProductSelectionModal: React.FC<
             </div>
           </div>
 
-          {/* Right Side: Variant Selection (Dynamic) */}
+          {/* Right Side: Variant Selection */}
           <div
-            className={`w-80 flex flex-col bg-gray-50/50 dark:bg-gray-900/30 transition-all ${selectedProduct ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}
+            className={`w-80 flex-col overflow-y-auto bg-muted/30 transition-all ${
+              selectedProduct ? "flex" : "hidden md:flex"
+            }`}
           >
             {selectedProduct ? (
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <h3 className="font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">
+              <div className="flex h-full flex-col">
+                <div className="border-b border-border/60 bg-card p-4">
+                  <h3 className="line-clamp-2 font-bold leading-snug text-foreground">
                     {selectedProduct.name}
                   </h3>
-                  <p className="text-blue-600 dark:text-blue-400 font-bold mt-1 text-lg">
+                  <p className="mt-1 text-lg font-bold text-primary">
                     {selectedProduct.price} ج.م
                   </p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-4">
                   {productAttributes.length > 0 ? (
                     productAttributes.map((attr) => {
                       const availableValues = getAvailableValues(attr.name);
@@ -526,10 +517,10 @@ const SimplifiedProductSelectionModal: React.FC<
 
                       return (
                         <div key={attr.name} className="space-y-3">
-                          <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                          <label className="flex items-center justify-between text-sm font-bold text-foreground">
                             {attr.name}
                             {isSelected && (
-                              <span className="text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded-full">
+                              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                                 {isSelected}
                               </span>
                             )}
@@ -551,15 +542,13 @@ const SimplifiedProductSelectionModal: React.FC<
                                     }))
                                   }
                                   disabled={!isAvailable}
-                                  className={`px-3 py-2.5 min-w-[3rem] rounded-xl text-sm font-semibold transition-all border-2
-                                                                        ${
-                                                                          isActive
-                                                                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                                                                            : isAvailable
-                                                                              ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm"
-                                                                              : "bg-gray-100 dark:bg-gray-800 border-gray-100 dark:border-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed line-through"
-                                                                        }
-                                                                    `}
+                                  className={`min-w-[3rem] rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition-all ${
+                                    isActive
+                                      ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                      : isAvailable
+                                        ? "border-border bg-card text-foreground hover:border-primary/60 hover:shadow-sm"
+                                        : "cursor-not-allowed border-border bg-muted/40 text-muted-foreground line-through"
+                                  }`}
                                 >
                                   {value}
                                 </button>
@@ -570,7 +559,6 @@ const SimplifiedProductSelectionModal: React.FC<
                       );
                     })
                   ) : (
-                    /* Fallback for simple variant list */
                     <div className="space-y-2">
                       {selectedProduct.variants.map((variant) => (
                         <button
@@ -579,17 +567,17 @@ const SimplifiedProductSelectionModal: React.FC<
                           disabled={
                             variant.stock !== undefined && variant.stock <= 0
                           }
-                          className={`w-full text-right p-3 rounded-xl border-2 transition-all ${
+                          className={`w-full rounded-xl border-2 p-3 text-end transition-all ${
                             variant.stock !== undefined && variant.stock <= 0
-                              ? "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-50 cursor-not-allowed"
-                              : "border-gray-100 dark:border-gray-700 hover:border-blue-500 bg-white dark:bg-gray-800"
+                              ? "cursor-not-allowed border-border bg-muted/40 opacity-50"
+                              : "border-border bg-card hover:border-primary"
                           }`}
                         >
-                          <div className="font-bold text-gray-900 dark:text-gray-100">
+                          <div className="font-bold text-foreground">
                             {variant.name}
                           </div>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-blue-600 dark:text-blue-400 text-sm font-semibold">
+                          <div className="mt-1 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-primary">
                               {variant.price &&
                               parseFloat(variant.price as any) > 0
                                 ? `${variant.price} ج.م`
@@ -597,15 +585,15 @@ const SimplifiedProductSelectionModal: React.FC<
                             </span>
                             {variant.stock !== undefined &&
                               (variant.stock <= 0 ? (
-                                <span className="text-[10px] text-red-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-destructive">
                                   نفذ
                                 </span>
                               ) : variant.stock < 5 ? (
-                                <span className="text-[10px] text-orange-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-warning">
                                   متبقي {variant.stock}
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-green-500 font-semibold">
+                                <span className="text-[10px] font-semibold text-success">
                                   متوفر
                                 </span>
                               ))}
@@ -616,18 +604,18 @@ const SimplifiedProductSelectionModal: React.FC<
                   )}
                 </div>
 
-                <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                <div className="border-t border-border/60 bg-card p-4">
                   {matchedVariant ? (
                     <button
                       onClick={() => handleVariantSelect(matchedVariant)}
-                      className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-2"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
                     >
-                      <PlusIcon className="w-5 h-5" />
+                      <PlusIcon className="h-5 w-5" />
                       تأكيد الإضافة
                     </button>
                   ) : (
-                    <div className="py-4 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-center border-2 border-dashed border-gray-200 dark:border-gray-700">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="rounded-xl border-2 border-dashed border-border bg-muted/40 px-3 py-4 text-center">
+                      <p className="text-xs text-muted-foreground">
                         {!allAttributesSelected
                           ? `يرجى اختيار ${productAttributes
                               .filter((a) => !selectedAttributes[a.name])
@@ -640,10 +628,10 @@ const SimplifiedProductSelectionModal: React.FC<
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 grayscale opacity-50">
-                <ArchiveBoxIcon className="w-16 h-16 mb-4 text-gray-300" />
-                <h4 className="font-bold text-gray-400">اختر منتجاً</h4>
-                <p className="text-sm text-gray-400 mt-2">
+              <div className="flex h-full flex-col items-center justify-center p-8 text-center opacity-50 grayscale">
+                <ArchiveBoxIcon className="mb-4 h-16 w-16 text-muted-foreground" />
+                <h4 className="font-bold text-muted-foreground">اختر منتجاً</h4>
+                <p className="mt-2 text-sm text-muted-foreground">
                   اختر منتجاً من القائمة الجانبية لتخصيص الخيارات
                 </p>
               </div>
@@ -651,7 +639,7 @@ const SimplifiedProductSelectionModal: React.FC<
           </div>
         </div>
       </div>
-    </div>
+    </OrderModal>
   );
 };
 

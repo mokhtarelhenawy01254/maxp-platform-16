@@ -25,6 +25,7 @@ model Customer {
   deliveryRate                   Float                           @default(0)
   totalDelivered                 Int                             @default(0)
   totalOrdersCount               Int                             @default(0)
+  lastNotifiedQualityTier        String?
   activities                     Activity[]
   affiliate_referrals            AffiliateReferral[]
   aiInteractions                 AiInteraction[]
@@ -33,6 +34,7 @@ model Customer {
   conversationOutcomes           ConversationOutcome[]
   conversations                  Conversation[]
   customerLoyaltyRecords         CustomerLoyaltyRecord[]
+  customerLoyaltyVouchers        CustomerLoyaltyVoucher[]
   customerNotes                  CustomerNote[]
   customerNotificationPreference CustomerNotificationPreference?
   customerWallets                CustomerWallet?
@@ -554,6 +556,34 @@ model CustomerLoyaltyTier {
   @@index([minPoints])
   @@index([programId])
   @@map("customer_loyalty_tiers")
+}
+
+/// كوبون الخصم التلقائي (نظام "الخصم التلقائي"): يصدر بعد كل أوردر مسلّم،
+/// صالح لمدة محددة، وعند انتهائه يتحول لكاش باك في المحفظة.
+model CustomerLoyaltyVoucher {
+  id                    String    @id @default(cuid())
+  companyId             String
+  customerId            String
+  sourceOrderId         String
+  orderNumber           String
+  percent               Decimal   @default(10.00) @db.Decimal(5, 2)
+  amount                Decimal   @default(0.00) @db.Decimal(10, 2)
+  status                String    @default("ACTIVE") // ACTIVE | USED | EXPIRED | CONVERTED | CANCELLED
+  expiresAt             DateTime
+  usedAt                DateTime?
+  convertedAt           DateTime?
+  convertedWalletTxId   String?
+  metadata              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer              Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("customer_loyalty_vouchers")
 }
 
 model CustomerNotificationPreference {

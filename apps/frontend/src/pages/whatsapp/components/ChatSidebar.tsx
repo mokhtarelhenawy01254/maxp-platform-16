@@ -52,12 +52,13 @@ import { cn } from "@/lib/utils";
 import type {
   Contact,
   Session as WhatsAppSession,
+  WhatsAppSidebarFilter,
+  WhatsAppConversationCounts,
 } from "../../../hooks/useWhatsAppQueries";
 import {
   getBestContactDisplayName,
   getContactDisplayPhone,
   getContactInitials,
-  getContactPhoneNumber,
 } from "../whatsappContactDisplay";
 
 interface WhatsAppStatus {
@@ -112,9 +113,15 @@ interface ChatSidebarProps {
   onDeleteAll?: (sessionId?: string) => void;
   // تصنيفات واتساب
   labels?: { id: string; name: string; color: string }[];
+  // فلاتر server-side (بيتطبّقوا على كل المحادثات)
+  filterType: WhatsAppSidebarFilter;
+  onFilterTypeChange: (filter: WhatsAppSidebarFilter) => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  showArchived: boolean;
+  onToggleArchived: (archived: boolean) => void;
+  counts?: WhatsAppConversationCounts;
 }
-
-type SidebarFilter = "all" | "unread" | "groups" | "statuses";
 
 function getContactName(contact: Contact) {
   return getBestContactDisplayName(contact);
@@ -241,11 +248,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onBulkDelete,
   onDeleteAll,
   labels,
+  filterType,
+  onFilterTypeChange,
+  searchTerm,
+  onSearchChange,
+  showArchived,
+  onToggleArchived,
+  counts,
 }) => {
   const { t, i18n } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-  const [filterType, setFilterType] = useState<SidebarFilter>("all");
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
@@ -369,49 +380,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return map;
   }, [labels]);
 
-  const filteredConversations = useMemo(() => {
-    let filtered = conversations;
-
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (contact) =>
-          contact.name?.toLowerCase().includes(lowerTerm) ||
-          contact.pushName?.toLowerCase().includes(lowerTerm) ||
-          getContactPhoneNumber(contact).toLowerCase().includes(lowerTerm),
-      );
-    }
-
-    filtered = filtered.filter(
-      (contact) => Boolean(contact.isArchived) === showArchived,
-    );
-
-    if (filterType === "unread") {
-      filtered = filtered.filter((contact) => contact.unreadCount > 0);
-    } else if (filterType === "groups") {
-      filtered = filtered.filter((contact) => contact.isGroup);
-    }
-
-    return [...filtered].sort((first, second) => {
-      if (first.isPinned !== second.isPinned) {
-        return first.isPinned ? -1 : 1;
-      }
-
-      const firstDate = new Date(first.lastMessageAt || 0).getTime();
-      const secondDate = new Date(second.lastMessageAt || 0).getTime();
-      return secondDate - firstDate;
-    });
-  }, [conversations, filterType, searchTerm, showArchived]);
-
-  const unreadCount = useMemo(
-    () => conversations.filter((contact) => contact.unreadCount > 0).length,
-    [conversations],
-  );
-
-  const groupCount = useMemo(
-    () => conversations.filter((contact) => contact.isGroup).length,
-    [conversations],
-  );
+  // القائمة مبنيّة من الـ server (فلاتر بيتطبّقوا على كل المحادثات) — الترتيب من الـ server برضه
+  const allCount = counts?.all ?? conversations.length;
+  const unreadCount = counts?.unread ?? 0;
+  const unrepliedCount = counts?.unreplied ?? 0;
+  const groupCount = counts?.groups ?? 0;
+  const archivedCount = counts?.archived ?? conversations.filter((c) => c.isArchived).length;
 
   const connectedSessionCount = useMemo(
     () =>
@@ -499,7 +473,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  const allJids = filteredConversations.map(c => c.jid);
+                  const allJids = conversations.map(c => c.jid);
                   if (selectedJids.size === allJids.length) {
                     setSelectedJids(new Set());
                   } else {
@@ -508,7 +482,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 }}
                 className="h-7 rounded-lg px-2 text-[11px] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
               >
-                {selectedJids.size === filteredConversations.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                {selectedJids.size === conversations.length ? 'إلغاء الكل' : 'تحديد الكل'}
               </Button>
               {selectedJids.size > 0 && onBulkDelete ? (
                 <Button
@@ -681,7 +655,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={showArchived}
-                onCheckedChange={(checked) => setShowArchived(Boolean(checked))}
+                onCheckedChange={(checked) => onToggleArchived(Boolean(checked))}
               >
                 {showArchived
                   ? t("whatsapp.sidebar.all")
@@ -699,7 +673,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
           <Input
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             placeholder={t("whatsapp.sidebar.searchPlaceholder") as string}
             aria-label={t("whatsapp.sidebar.searchPlaceholder") as string}
             className="whatsapp-search-input h-8 w-full rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
@@ -708,7 +682,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => setSearchTerm("")}
+              onClick={() => onSearchChange("")}
               className="absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
             >
               <X className="size-3" />
@@ -718,9 +692,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               variant="ghost"
               size="icon-sm"
               onClick={() =>
-                setFilterType((current) =>
-                  current === "unread" ? "all" : "unread",
-                )
+                onFilterTypeChange(filterType === "unread" ? "all" : "unread")
               }
               className={cn(
                 "absolute end-1 top-1/2 -translate-y-1/2 size-6 rounded-md",
@@ -739,32 +711,38 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <FilterPill
             active={filterType === "all" && !showArchived}
             label={t("whatsapp.sidebar.all")}
-            count={conversations.length}
-            onClick={() => { setFilterType("all"); setShowArchived(false); }}
+            count={allCount}
+            onClick={() => { onFilterTypeChange("all"); onToggleArchived(false); }}
+          />
+          <FilterPill
+            active={filterType === "unreplied"}
+            label={t("whatsapp.sidebar.unreplied")}
+            count={unrepliedCount}
+            onClick={() => { onFilterTypeChange("unreplied"); onToggleArchived(false); }}
           />
           <FilterPill
             active={filterType === "unread"}
             label={t("whatsapp.sidebar.unread")}
             count={unreadCount}
-            onClick={() => { setFilterType("unread"); setShowArchived(false); }}
+            onClick={() => { onFilterTypeChange("unread"); onToggleArchived(false); }}
           />
           <FilterPill
             active={filterType === "groups"}
             label={t("whatsapp.sidebar.groups")}
             count={groupCount}
-            onClick={() => { setFilterType("groups"); setShowArchived(false); }}
+            onClick={() => { onFilterTypeChange("groups"); onToggleArchived(false); }}
           />
           <FilterPill
             active={showArchived}
             label={t("whatsapp.sidebar.archive") || "الأرشيف"}
-            count={conversations.filter(c => c.isArchived).length}
-            onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
+            count={archivedCount}
+            onClick={() => { onToggleArchived(true); if (filterType === "statuses") onFilterTypeChange("all"); }}
           />
           <FilterPill
             active={filterType === "statuses"}
             label={t("whatsapp.sidebar.statuses")}
             count={statuses.length}
-            onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
+            onClick={() => { onFilterTypeChange("statuses"); onToggleArchived(false); }}
           />
         </div>
       </div>
@@ -856,9 +834,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </Button>
             ) : null}
           </div>
-        ) : isLoadingConversations && filteredConversations.length === 0 ? (
+        ) : isLoadingConversations && conversations.length === 0 ? (
           renderLoadingRows()
-        ) : filteredConversations.length === 0 ? (
+        ) : conversations.length === 0 ? (
           <EmptyState
             icon={Users}
             title={t("conversations.noConversations")}
@@ -866,7 +844,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           />
         ) : (
           <div className="space-y-2">
-            {filteredConversations.map((contact) => {
+            {conversations.map((contact) => {
               const contactName = getContactName(contact);
               const isSelected = selectedContact?.id === contact.id;
               const isSwiped = swipedContactId === contact.id;

@@ -56,7 +56,29 @@ interface ReportData {
   }>;
 }
 
-const PERIODS = ["7", "14", "30", "90", "365", "custom"];
+const PERIODS = ["today", "yesterday", "3", "7", "14", "30", "90", "365", "custom"];
+
+const toDateInput = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const getCalendarRange = (period: string): { from: string; to: string } | null => {
+  const now = new Date();
+  if (period === "today") {
+    const today = toDateInput(now);
+    return { from: today, to: today };
+  }
+  if (period === "yesterday") {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const day = toDateInput(yesterday);
+    return { from: day, to: day };
+  }
+  return null;
+};
 
 interface StatCard {
   label: string;
@@ -88,7 +110,13 @@ const IncompleteReports: React.FC = () => {
         if (customFrom) params["from"] = customFrom;
         if (customTo) params["to"] = customTo;
       } else {
-        params["days"] = period;
+        const range = getCalendarRange(period);
+        if (range) {
+          params["from"] = range.from;
+          params["to"] = range.to;
+        } else {
+          params["days"] = period;
+        }
       }
       const response = await apiClient.get<{ success: boolean; data?: ReportData }>(
         "/orders-new/incomplete/reports",
@@ -202,9 +230,13 @@ const IncompleteReports: React.FC = () => {
           >
             {PERIODS.map((p) => (
               <option key={p} value={p}>
-                {p === "custom"
-                  ? t("orders.incompleteCustomPeriod")
-                  : t("orders.incompleteDays", { count: Number(p) })}
+                {p === "today"
+                  ? t("orders.incompleteToday")
+                  : p === "yesterday"
+                    ? t("orders.incompleteYesterday")
+                    : p === "custom"
+                      ? t("orders.incompleteCustomPeriod")
+                      : t("orders.incompleteDays", { count: Number(p) })}
               </option>
             ))}
           </select>

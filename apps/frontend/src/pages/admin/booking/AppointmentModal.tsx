@@ -29,6 +29,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
     customerName: "", customerPhone: "", customerGender: "male",
     branchId: "", doctorId: "", serviceId: "",
     appointmentDate: "", startTime: "", notes: "",
+    room: "", preparationNote: "",
     ...appointment,
   });
   const [slots, setSlots] = useState<{ startTime: string; endTime: string; available: boolean }[]>([]);
@@ -161,6 +162,8 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
                 <InfoBlock label="حالة الدفع" value={appointment.paymentStatus || "—"} />
               </div>
             )}
+            {appointment.room && <InfoBlock label="الغرفة" value={appointment.room} />}
+            {appointment.preparationNote && <InfoBlock label="ملاحظة التحضير" value={appointment.preparationNote} fullWidth />}
             {appointment.notes && <InfoBlock label="ملاحظات" value={appointment.notes} fullWidth />}
             {appointment.diagnosis && <InfoBlock label="التشخيص" value={appointment.diagnosis} fullWidth />}
             {appointment.treatmentPlan && <InfoBlock label="خطة العلاج" value={appointment.treatmentPlan} fullWidth />}
@@ -266,6 +269,10 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
                 {(() => { const sel = services.find(s => s.id === form.serviceId); return sel?.durationMinutes ? `${sel.durationMinutes} دقيقة` : "—"; })()}
               </div>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الغرفة (اختياري)</label><input className={MODAL_INPUT_CLS} value={form.room || ""} onChange={e => setForm({ ...form, room: e.target.value })} placeholder="مثال: غرفة 3" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظة التحضير (اختياري)</label><input className={MODAL_INPUT_CLS} value={form.preparationNote || ""} onChange={e => setForm({ ...form, preparationNote: e.target.value })} placeholder="مثال: صيام 6 ساعات" /></div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوقت المتاح</label>

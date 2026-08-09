@@ -1000,7 +1000,7 @@ async function disconnectSession(req, res) {
 async function getConversations(req, res) {
     try {
         const { companyId, id: userId, role } = req.user;
-        const { sessionId, page = 1, limit = 50, search, category, archived } = req.query;
+        const { sessionId, page = 1, limit = 50, search, category, archived, filter } = req.query;
         const { normalizeRole } = require('../middleware/rbacMiddleware');
         const userRole = normalizeRole(role);
 
@@ -1050,8 +1050,25 @@ async function getConversations(req, res) {
             where.category = category;
         }
 
-        // تحسين: تشغيل استعلام المحادثات والعدد الكلي بشكل متزامن
-        const [contacts, total] = await Promise.all([
+        // فلترة خادم على كل المحادثات (مش بس اللي ظاهرة في الصفحة)
+        if (filter === 'unread') {
+            where.unreadCount = { gt: 0 };
+        } else if (filter === 'groups') {
+            where.isGroup = true;
+        } else if (filter === 'unreplied') {
+            // "بانتظار الرد" = آخر رسالة من العميل (مش من رقم البيزنس)
+            where.lastMessageIsFromMe = false;
+        }
+
+        // عدّادات دقيقة لكل الفلاتر على مستوى الجلسة (مش بتتأثر بالـ search/filter الحالي)
+        const activeCountWhere = {
+            sessionId: { in: sessionIds },
+            totalMessages: { gt: 0 },
+            NOT: { jid: { contains: '@lid' } }
+        };
+
+        // تحسين: تشغيل استعلام المحادثات والعدد الكلي والعدادات بشكل متزامن
+        const [contacts, total, countAll, countUnread, countGroups, countUnreplied, countArchived] = await Promise.all([
             getSharedPrismaClient().whatsAppContact.findMany({
                 where,
                 orderBy: [
@@ -1109,7 +1126,12 @@ async function getConversations(req, res) {
                     }
                 }
             }),
-            getSharedPrismaClient().whatsAppContact.count({ where })
+            getSharedPrismaClient().whatsAppContact.count({ where }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, unreadCount: { gt: 0 } } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, isGroup: true } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: false, lastMessageIsFromMe: false } }),
+            getSharedPrismaClient().whatsAppContact.count({ where: { ...activeCountWhere, isArchived: true } })
         ]);
 
         // جلب آخر رسالة لكل محادثة (Optimized Batch Query)
@@ -1194,6 +1216,13 @@ async function getConversations(req, res) {
 
         res.json({
             conversations: conversationsWithLabels,
+            counts: {
+                all: countAll,
+                unread: countUnread,
+                groups: countGroups,
+                unreplied: countUnreplied,
+                archived: countArchived
+            },
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -3526,6 +3555,32 @@ async function createLabel(req, res) {
     }
 }
 
+async function restoreDefaultLabels(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.restoreDefaultLabels(targetSessionId);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('❌ Error restoring default labels:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء استعادة التصنيفات' });
+    }
+}
+
 async function deleteLabel(req, res) {
     try {
         const { companyId } = req.user;
@@ -4610,6 +4665,7 @@ module.exports = {
     addLabelToChat,
     removeLabelFromChat,
     getLabelContacts,
+    restoreDefaultLabels,
 
     // Starred Messages
     starMessage,

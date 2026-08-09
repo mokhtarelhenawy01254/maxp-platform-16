@@ -942,6 +942,16 @@ const getStatusesWithTemplates = async (req, res) => {
       { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' }
     ];
 
+    const INCOMPLETE_CART_EVENT = {
+      code: 'INCOMPLETE_CART_FIRST_APPEARANCE',
+      name: 'رسالة أول ظهور - طلب غير مكتمل'
+    };
+
+    const incompleteSettings = await getSharedPrismaClient().whatsAppNotificationSettings.findUnique({
+      where: { companyId },
+      select: { incompleteCartImmediateMessage: true }
+    });
+
     const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
       where: {
         companyId,
@@ -953,7 +963,8 @@ const getStatusesWithTemplates = async (req, res) => {
 
     const allEventCodes = [
       ...statuses.map(s => s.code),
-      ...EXTRA_ORDER_EVENTS.map(e => e.code)
+      ...EXTRA_ORDER_EVENTS.map(e => e.code),
+      INCOMPLETE_CART_EVENT.code
     ];
 
     const templates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
@@ -964,21 +975,34 @@ const getStatusesWithTemplates = async (req, res) => {
       }
     });
 
-    const templateMap = {};
+    // كل حالة ليه قالبان مستقلان: template (واتساب عادي/تلقائي) + metaTemplate (قناة META_CLOUD).
+    // التصنيف بالـ channel — نفس منطق صفحة /customers/customer-notifications.
+    const regularMap = {};
+    const metaMap = {};
     for (const t of templates) {
-      templateMap[t.eventType] = t;
+      const isMeta = String(t.channel || '').toUpperCase() === 'META_CLOUD';
+      const map = isMeta ? metaMap : regularMap;
+      if (!map[t.eventType]) map[t.eventType] = t;
     }
 
+    const buildStatus = (base, code) => {
+      const regular = regularMap[code] || null;
+      const meta = metaMap[code] || null;
+      return {
+        ...base,
+        template: regular,
+        metaTemplate: meta,
+        hasTemplate: !!regular || !!meta,
+        hasMetaTemplate: !!meta,
+        isNonNotifiable: isNonNotifiableStatus(code)
+      };
+    };
+
     const result = [
-      ...statuses.map(s => ({
-        ...s,
-        template: templateMap[s.code] || null,
-        hasTemplate: !!templateMap[s.code],
-        isNonNotifiable: isNonNotifiableStatus(s.code)
-      })),
+      ...statuses.map(s => buildStatus(s, s.code)),
       // أحداث الطلبات العامة (غير مرتبطة بحالة orderStatusConfig) تظهر هنا
       // حتى يمكن إدارتها من صفحة قوالب الطلبات بدلاً من القوالب المثبتة في الكود.
-      ...EXTRA_ORDER_EVENTS.map(e => ({
+      ...EXTRA_ORDER_EVENTS.map(e => buildStatus({
         id: `extra-${e.code}`,
         code: e.code,
         name: e.name,
@@ -986,11 +1010,18 @@ const getStatusesWithTemplates = async (req, res) => {
         sortOrder: 999,
         statusType: 'order',
         notifyCustomer: true,
-        isSystemStatus: true,
-        template: templateMap[e.code] || null,
-        hasTemplate: !!templateMap[e.code],
-        isNonNotifiable: isNonNotifiableStatus(e.code)
-      }))
+        isSystemStatus: true
+      }, e.code)),
+      buildStatus({
+        id: `extra-${INCOMPLETE_CART_EVENT.code}`,
+        code: INCOMPLETE_CART_EVENT.code,
+        name: INCOMPLETE_CART_EVENT.name,
+        color: '#7C3AED',
+        sortOrder: 999,
+        statusType: 'incomplete',
+        notifyCustomer: incompleteSettings?.incompleteCartImmediateMessage === true,
+        isSystemStatus: true
+      }, INCOMPLETE_CART_EVENT.code)
     ];
 
     res.json({ success: true, data: result });

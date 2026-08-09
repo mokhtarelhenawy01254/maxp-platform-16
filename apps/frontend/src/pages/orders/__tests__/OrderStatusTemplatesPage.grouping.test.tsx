@@ -129,12 +129,11 @@ describe("OrderStatusTemplatesPage grouping", () => {
     const user = userEvent.setup();
 
     await screen.findByTestId("status-row-st7");
-    expect(screen.queryByText("معاينة القالب")).not.toBeInTheDocument();
-    expect(screen.queryByText(/أحمد محمد/)).not.toBeInTheDocument();
+    expect(screen.queryByText("المعاينة الكاملة")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^معاينة/ }));
 
-    expect(screen.getByText("معاينة القالب")).toBeInTheDocument();
-    expect(screen.getByText(/أحمد محمد/)).toBeInTheDocument();
+    expect(screen.getByText("المعاينة الكاملة")).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
   });
 });

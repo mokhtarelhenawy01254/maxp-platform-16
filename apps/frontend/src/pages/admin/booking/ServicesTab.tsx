@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon, PencilIcon, DocumentDuplicateIcon, EyeIcon, PlusIcon, FolderPlusIcon } from "@heroicons/react/24/outline";
 import { BookingService, BookingBranch, BookingDoctor, ServiceFormData, ServiceCategory } from "./shared";
 import ServiceModal from "./ServiceModal";
@@ -39,6 +40,7 @@ export default function ServicesTab({
 }: Props) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [categoryModal, setCategoryModal] = useState<Partial<ServiceCategory> | null | undefined>(undefined);
+  const navigate = useNavigate();
 
   const filtered = useMemo(() => services.filter(s => {
     const matchesSearch = !search || s.name.includes(search);
@@ -95,7 +97,8 @@ export default function ServicesTab({
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${s.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{s.isActive ? "نشط" : "غير نشط"}</span>
               </div>
-              {(s.basePrice !== undefined && s.basePrice !== null) && <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">السعر: {s.basePrice} ج.م</p>}
+              {(s.basePrice !== undefined && s.basePrice !== null) && <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">السعر الأساسي: {s.basePrice} ج.م</p>}
+              <button onClick={() => navigate("/admin/booking/price-lists")} className="text-xs text-blue-600 dark:text-blue-400 hover:underline mb-1 inline-block">إدارة قوائم الأسعار التعاقدية</button>
               {s.durationMinutes && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المدة: {s.durationMinutes} دقيقة</p>}
               <div className="flex flex-wrap gap-1 mb-2">
                 {visibleBranches.map(b => (

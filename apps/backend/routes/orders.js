@@ -5,6 +5,13 @@ const verifyToken = require('../utils/verifyToken');
 const router = express.Router();
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 
+const {
+  PRISMA_ORDER_STATUS_ENUM,
+  PREP_FILTER_STATUSES,
+  TURBO_STATUS_ALIASES,
+  parseStatusFilter
+} = require('../utils/orderStatusFilter');
+
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
@@ -16,27 +23,6 @@ const preparationQueueService = require('../services/preparationQueueService');
 // ── Dynamic Status Code Cache ──────────────────────────────────────────
 // Loads ALL known status codes (system + custom) from orderStatusConfig
 // so custom statuses like BDONKODTERBO also work in the main page filter.
-const PRISMA_ORDER_STATUS_ENUM = new Set([
-  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
-  'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED',
-  'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED', 'WOO_TAGHEZ', 'DRAFT',
-  'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST',
-  'PENDING_PREPARATION', 'PREPARING', 'READY', 'QUALITY_CHECK', 'PACKAGED',
-  'ON_HOLD_PREP', 'PARTIALLY_DELIVERED', 'STOCK_SHORTAGE'
-]);
-
-// Statuses that are stored in order.status under a mapped value (e.g. PREPARING
-// is persisted as PROCESSING) while the real stage lives in
-// metadata.preparationStatus. When filtering /orders by one of these, the query
-// must match COALESCE(metadata.preparationStatus, status) — see the
-// _customStatusFilter SQL below.
-const PREP_FILTER_STATUSES = new Set([
-  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING',
-  'PENDING_PREPARATION', 'PREPARING', 'PROCESSING', 'QUALITY_CHECK', 'PACKAGED',
-  'READY', 'READY_TO_SHIP', 'STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK',
-  'PENDING_CANCELLATION', 'ON_HOLD_PREP'
-]);
-
 let _knownStatusCodes = null;
 let _knownStatusCodesPromise = null;
 
@@ -215,17 +201,6 @@ const appendMerchantOrderFilter = (whereClause, guestWhereClause, condition) => 
   blockGuestOrdersForMerchantFilters(guestWhereClause);
 };
 
-const appendCommissionFilter = (whereClause, guestWhereClause, condition) => {
-  if (!condition) return;
-  if (!whereClause.AND) whereClause.AND = [];
-  whereClause.AND.push({
-    commissions: {
-      some: condition
-    }
-  });
-  blockGuestOrdersForMerchantFilters(guestWhereClause);
-};
-
 const buildMerchantOperationWhere = (operationStatus) => {
   switch (operationStatus) {
     case 'PREPARATION':
@@ -258,6 +233,80 @@ const buildMerchantOperationWhere = (operationStatus) => {
       };
     default:
       return null;
+  }
+};
+
+const buildRegularSourceCondition = (source) => {
+  switch (String(source).toLowerCase()) {
+    case 'manual':
+      return {
+        OR: [
+          { extractionMethod: { startsWith: 'manual' } },
+          { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
+          { sourceType: 'manual' },
+          { createdBy: { not: null } },
+          { createdByName: { not: null } },
+          { conversationId: 'manual' }
+        ]
+      };
+    case 'ai_conversation':
+      return {
+        AND: [
+          { sourceType: 'ai_conversation' },
+          { NOT: { extractionMethod: { startsWith: 'manual' } } },
+          { NOT: { extractionMethod: 'manual_admin' } },
+          { NOT: { extractionMethod: 'manual_order_modal' } },
+          { NOT: { conversationId: 'manual' } }
+        ]
+      };
+    case 'storefront':
+      return {
+        OR: [
+          { sourceType: 'storefront' },
+          { metadata: { contains: '"source":"storefront"' } },
+          { metadata: { contains: 'storefront', mode: 'insensitive' } }
+        ]
+      };
+    case 'woocommerce':
+      return {
+        OR: [
+          { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
+          { wooCommerceId: { not: null } },
+          { syncedFromWoo: true }
+        ]
+      };
+    case 'pos':
+      return {
+        OR: [
+          { sourceType: 'pos' },
+          { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
+        ]
+      };
+    case 'api':
+      return {
+        OR: [
+          { sourceType: { in: ['api', 'public_api'] } },
+          { metadata: { contains: '"source":"api"' } },
+          { metadata: { contains: 'api', mode: 'insensitive' } }
+        ]
+      };
+    case 'import':
+      return {
+        OR: [
+          { extractionMethod: 'import' },
+          { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
+          { orderSource: 'INTERNAL_IMPORT' }
+        ]
+      };
+    case 'unknown':
+      return {
+        OR: [
+          { sourceType: null },
+          { sourceType: 'unknown' }
+        ]
+      };
+    default:
+      return { sourceType: String(source).toLowerCase() };
   }
 };
 
@@ -723,6 +772,107 @@ const resolveGuestOrderAmounts = (guestOrder, shippingZones = []) => {
     shipping,
     discount,
     total: shouldUseComputedTotal ? computedTotal : storedFinalTotal
+  };
+};
+
+// تنسيق سلة غير مكتملة (guestCart) لتناسب شكل صف الطلب في صفحة الطلبات
+const formatIncompleteCartRow = (cart, lostThreshold) => {
+  let items = [];
+  try {
+    items = typeof cart.items === 'string' ? JSON.parse(cart.items) : (Array.isArray(cart.items) ? cart.items : []);
+  } catch (e) {
+    items = [];
+  }
+
+  let checkoutData = {};
+  try {
+    checkoutData = typeof cart.checkoutData === 'string'
+      ? JSON.parse(cart.checkoutData)
+      : (cart.checkoutData && typeof cart.checkoutData === 'object' ? cart.checkoutData : {});
+  } catch (e) {
+    checkoutData = {};
+  }
+
+  const total = typeof cart.total === 'string'
+    ? parseFloat(cart.total) || 0
+    : Number(cart.total || 0);
+
+  const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt || cart.createdAt;
+  const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
+
+  const customerName = checkoutData.guestName
+    || checkoutData.fullName
+    || checkoutData.customerName
+    || checkoutData.customerFullName
+    || checkoutData.name
+    || '';
+  const customerPhone = checkoutData.guestPhone
+    || checkoutData.customerPhone
+    || checkoutData.phoneNumber
+    || checkoutData.mobileNumber
+    || checkoutData.phone
+    || checkoutData.mobile
+    || '';
+  const customerEmail = checkoutData.guestEmail
+    || checkoutData.customerEmail
+    || checkoutData.emailAddress
+    || checkoutData.email
+    || '';
+  const governorate = checkoutData.governorate || checkoutData.gov || '';
+  const city = checkoutData.city || '';
+
+  return {
+    id: cart.cartId,
+    orderNumber: cart.cartId,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerAddress: checkoutData.address || '',
+    city,
+    governorate,
+    total,
+    subtotal: total,
+    tax: 0,
+    shipping: 0,
+    status: isLost ? 'lost' : 'incomplete',
+    paymentStatus: 'unavailable',
+    paymentMethod: 'cash_on_delivery',
+    shippingAddress: { city, governorate, country: '' },
+    items: Array.isArray(items) ? items.map((item) => {
+      const price = typeof item.price === 'string' ? parseFloat(item.price) || 0 : Number(item.price || 0);
+      const quantity = item.quantity || 1;
+      return {
+        id: item.id || item.productId || '',
+        productId: item.productId || item.id || '',
+        name: item.name || item.productName || item.title || '',
+        productName: item.name || item.productName || item.title || '',
+        price,
+        quantity,
+        total: typeof item.total === 'string' ? parseFloat(item.total) || 0 : Number(item.total || price * quantity),
+        sku: item.sku || item.productSku || '',
+        color: item.color || item.productColor || '',
+        size: item.size || item.productSize || '',
+        image: item.image || item.productImage || '',
+        metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
+      };
+    }) : [],
+    trackingNumber: null,
+    notes: checkoutData.notes || '',
+    createdAt: lastActivity,
+    updatedAt: cart.updatedAt || cart.createdAt,
+    isViewed: true,
+    sourceType: 'storefront',
+    extractionMethod: 'storefront',
+    orderSource: 'GUEST_CART',
+    conversationId: null,
+    conversation: null,
+    affiliateId: null,
+    metadata: {
+      source: 'storefront',
+      isGuestOrder: true,
+      isIncompleteCart: true,
+      cartId: cart.cartId
+    }
   };
 };
 
@@ -1936,6 +2086,38 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
 
+    // إعدادات الطلبات: عرض السلال غير المكتملة داخل صفحة الطلبات
+    let showIncompleteCarts = false;
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      showIncompleteCarts = Boolean(settings?.showIncompleteCartsInOrders);
+      const parsedLost = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsedLost) && parsedLost > 0) {
+        lostAfterHours = parsedLost;
+      }
+    } catch (settingsError) {
+      console.warn('⚠️ [ORDERS] /simple failed to load order settings:', settingsError.message);
+    }
+    if (req.query.includeIncomplete === 'true') showIncompleteCarts = true;
+
+    const nowSimple = new Date();
+    const lostThreshold = new Date(nowSimple.getTime() - lostAfterHours * 60 * 60 * 1000);
+    const cartActiveClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+    const cartLostClause = {
+      OR: [
+        { checkoutUpdatedAt: { lt: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { lt: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { lt: lostThreshold } }] }
+      ]
+    };
+
     // استخراج معاملات الفلترة والصفحات
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -1946,12 +2128,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
     const onlyUnseen = req.query.onlyUnseen === 'true';
-    const requestedMerchantId = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
-      ? ''
-      : String(req.query.merchantId || '').trim();
-    const requestedFulfillmentSource = normalizeOrderRouteCode(req.query.fulfillmentSource);
-    const requestedMerchantOperationStatus = normalizeOrderRouteCode(req.query.merchantOperationStatus);
-    const requestedMerchantSettlementStatus = normalizeOrderRouteCode(req.query.merchantSettlementStatus);
+    const requestedMerchantIds = normalizeOrderRouteCode(req.query.merchantId) === 'ALL'
+      ? []
+      : String(req.query.merchantId || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const requestedFulfillmentSources = String(req.query.fulfillmentSource || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantOperationStatuses = String(req.query.merchantOperationStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
+    const requestedMerchantSettlementStatuses = String(req.query.merchantSettlementStatus || '')
+      .split(',').map((s) => normalizeOrderRouteCode(s)).filter(Boolean);
 
     // "Fetch Top N" Strategy:
     // لجلب الصفحة رقم P، نحتاج لجلب أول (P * limit) عنصر من الجدولين
@@ -1986,8 +2171,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     addMerchantOrderScope(whereClause, merchant);
     disableGuestOrderScope(guestWhereClause, merchant);
 
-    // 🕵️ Affiliate Filtering Logic
-    let affiliateId = req.query.affiliateId;
+    // 🕵️ Affiliate Filtering Logic (`affiliateId` may be a comma-separated list)
+    let affiliateIds = String(req.query.affiliateId || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
 
     // 🔒 Security: If user is an AFFILIATE, enforce their own affiliateId
     if (req.user.role === 'AFFILIATE') {
@@ -1995,7 +2181,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         where: { userId: req.user.id }
       });
       if (affiliate) {
-        affiliateId = affiliate.id;
+        affiliateIds = [affiliate.id];
       } else {
         // If user is affiliate role but no affiliate profile, return empty
         return res.json({
@@ -2006,9 +2192,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    if (affiliateId) {
-      whereClause.affiliateId = affiliateId;
-      guestWhereClause.affiliateId = affiliateId;
+    if (affiliateIds.length > 0) {
+      const affiliateFilter = affiliateIds.length === 1
+        ? affiliateIds[0]
+        : { in: affiliateIds };
+      whereClause.affiliateId = affiliateFilter;
+      guestWhereClause.affiliateId = affiliateFilter;
     }
 
     // Filter by Creator (if specified)
@@ -2023,60 +2212,87 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       userId: req.user.id,
       affiliateIdArg: req.query.affiliateId,
       createdByArg: req.query.createdBy,
-      resolvedAffiliateId: affiliateId,
+      resolvedAffiliateId: affiliateIds,
       merchantId: merchant?.id || null,
-      requestedMerchantId,
-      requestedFulfillmentSource,
-      requestedMerchantOperationStatus,
-      requestedMerchantSettlementStatus,
+      requestedMerchantIds,
+      requestedFulfillmentSources,
+      requestedMerchantOperationStatuses,
+      requestedMerchantSettlementStatuses,
       whereClause
     });
 
     const merchantOrderFilterConditions = [];
-    const commissionFilterConditions = [];
+    const settlementFilterConditions = [];
     const queueMerchantOrderFilter = (condition) => {
       if (condition) merchantOrderFilterConditions.push(condition);
     };
-    const queueCommissionFilter = (condition) => {
-      if (condition) commissionFilterConditions.push(condition);
-    };
 
-    if (!merchant && requestedMerchantId) {
-      queueMerchantOrderFilter({ merchantId: requestedMerchantId });
+    const merchantIdList = requestedMerchantIds.length > 0 ? requestedMerchantIds : null;
+
+    if (!merchant && merchantIdList) {
+      queueMerchantOrderFilter({ merchantId: { in: merchantIdList } });
     }
 
-    if (MERCHANT_FULFILLMENT_SOURCES.has(requestedFulfillmentSource)) {
-      queueMerchantOrderFilter({ fulfillmentSource: requestedFulfillmentSource });
+    const fulfillmentSources = requestedFulfillmentSources.filter(
+      (s) => MERCHANT_FULFILLMENT_SOURCES.has(s)
+    );
+    if (fulfillmentSources.length > 0) {
+      queueMerchantOrderFilter({ fulfillmentSource: { in: fulfillmentSources } });
     }
 
-    if (MERCHANT_OPERATION_FILTERS.has(requestedMerchantOperationStatus)) {
-      queueMerchantOrderFilter(
-        buildMerchantOperationWhere(requestedMerchantOperationStatus)
-      );
+    const operationStatuses = requestedMerchantOperationStatuses.filter(
+      (s) => MERCHANT_OPERATION_FILTERS.has(s)
+    );
+    if (operationStatuses.length > 0) {
+      const operationWheres = operationStatuses
+        .map(buildMerchantOperationWhere)
+        .filter(Boolean);
+      if (operationWheres.length === 1) {
+        queueMerchantOrderFilter(operationWheres[0]);
+      } else if (operationWheres.length > 1) {
+        queueMerchantOrderFilter({ OR: operationWheres });
+      }
     }
 
-    if (MERCHANT_SETTLEMENT_FILTERS.has(requestedMerchantSettlementStatus)) {
-      switch (requestedMerchantSettlementStatus) {
+    // Settlement statuses combine with OR semantics across the underlying
+    // conditions (each maps to a different merchantOrder/commission shape).
+    const settlementStatuses = requestedMerchantSettlementStatuses.filter(
+      (s) => MERCHANT_SETTLEMENT_FILTERS.has(s)
+    );
+    for (const settlementStatus of settlementStatuses) {
+      switch (settlementStatus) {
         case 'PAID':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: 'PAID',
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: 'PAID',
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
         case 'PAYABLE':
         case 'PENDING':
-          queueCommissionFilter({
-            merchantId: { not: null },
-            status: { in: ['CONFIRMED', 'PENDING'] },
-            ...(requestedMerchantId ? { merchantId: requestedMerchantId } : {})
+          settlementFilterConditions.push({
+            commissions: {
+              some: {
+                merchantId: { not: null },
+                status: { in: ['CONFIRMED', 'PENDING'] },
+                ...(merchantIdList ? { merchantId: { in: merchantIdList } } : {})
+              }
+            }
           });
           break;
-        case 'NOT_PAYABLE':
-          queueMerchantOrderFilter(
-            buildMerchantOperationWhere('NOT_DELIVERED')
-          );
+        case 'NOT_PAYABLE': {
+          const notDeliveredWhere = buildMerchantOperationWhere('NOT_DELIVERED');
+          if (notDeliveredWhere) {
+            settlementFilterConditions.push({
+              merchantOrders: { some: notDeliveredWhere }
+            });
+          }
           break;
+        }
         default:
           break;
       }
@@ -2088,10 +2304,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    if (commissionFilterConditions.length > 0) {
-      appendCommissionFilter(whereClause, guestWhereClause, {
-        AND: commissionFilterConditions
-      });
+    if (settlementFilterConditions.length > 0) {
+      if (!whereClause.AND) whereClause.AND = [];
+      whereClause.AND.push({ OR: settlementFilterConditions });
+      blockGuestOrdersForMerchantFilters(guestWhereClause);
     }
 
     // 0. Filter by Viewed Status
@@ -2100,66 +2316,89 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestWhereClause.isViewed = false;
     }
 
-    // 1. Filter by Status (Safely handle Prisma OrderStatus enums and Turbo shipping aliases)
-    const TURBO_STATUS_ALIASES = {
-      'active': ['turbo_saved', 'turbo_sent', 'processing', 'out_for_delivery', 'delayed', 'status_1', 'status_2', 'status_3', 'status_4', 'status_13', '1', '2', '3', '4', '13'],
-      'merchant_preparing': ['turbo_saved', 'turbo_sent', 'status_1', 'status_2', '1', '2'],
-      'preparing': ['turbo_saved', 'turbo_sent', 'processing', 'status_1', 'status_2', 'status_3', 'created', '1', '2', '3'],
-      'turbo_saved': ['turbo_saved', 'status_1', '1'],
-      'turbo_sent': ['turbo_sent', 'status_2', '2'],
-      'processing': ['processing', 'status_3', 'created', '3'],
-      'out_for_delivery': ['out_for_delivery', 'status_4', '4'],
-      'returned_to_company': ['returned_to_company', 'status_5', 'status_14', '5', '14'],
-      'cancelled': ['cancelled', 'status_6', '6'],
-      'delivered': ['delivered', 'status_7', '7'],
-      'remitted': ['remitted', 'status_8', 'status_19', '8', '19'],
-      'archived': ['archived', 'status_9', '9'],
-      'returned_resent': ['returned_resent', 'status_10', 'status_15', '10', '15'],
-      'returned_missing': ['returned_missing', 'status_11', 'status_16', '11', '16'],
-      'returned_destroyed': ['returned_destroyed', 'status_12', 'status_17', '12', '17'],
-      'delayed': ['delayed', 'status_13', '13']
-    };
+    // 1. Filter by Status (Safely handle Prisma OrderStatus enums, prep metadata,
+    // and Turbo shipping aliases). `status` may be a comma-separated list so
+    // users can combine multiple statuses at once.
+    const knownCodes = getKnownStatusCodes();
+    const {
+      incompleteFilterStatus,
+      realStatusList,
+      plainEnumStatuses,
+      customStatuses,
+      turboAliasValues,
+      guestStatusValues,
+      ignored: ignoredStatuses
+    } = parseStatusFilter(status, knownCodes);
 
-    if (status && status !== 'all') {
-      const rawStatus = String(status).trim();
-      const upperStatus = rawStatus.toUpperCase();
-      const lowerStatus = rawStatus.toLowerCase();
+    for (const raw of ignoredStatuses) {
+      console.warn(`[ORDERS] Ignoring unrecognized status filter: "${raw}"`);
+    }
 
-      const knownCodes = getKnownStatusCodes();
-      const isKnownStatus = knownCodes.has(upperStatus);
+    if (realStatusList.length > 0) {
+      // Multiple statuses combine with OR semantics: an order matches if it has
+      // ANY of the selected statuses, across order.status / prep metadata / turbo.
+      const statusOrBranches = [];
+      if (plainEnumStatuses.length > 0) {
+        statusOrBranches.push({ status: { in: plainEnumStatuses } });
+      }
+      if (turboAliasValues.length > 0) {
+        statusOrBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (customStatuses.length > 0) {
+        // Prep/custom statuses are resolved to IDs via raw SQL later (they need
+        // COALESCE(preparationStatus, status) matching), then merged into the OR.
+        whereClause._customStatusFilter = customStatuses;
+      }
+      if (statusOrBranches.length === 1) {
+        Object.assign(whereClause, statusOrBranches[0]);
+      } else if (statusOrBranches.length > 1) {
+        whereClause.OR = statusOrBranches;
+      }
 
-      if (isKnownStatus) {
-        if (PRISMA_ORDER_STATUS_ENUM.has(upperStatus)) {
-          // Preparation-queue statuses are stored in order.status as their
-          // mapped value (e.g. PROCESSING), while the real stage lives in
-          // metadata.preparationStatus. Route these through the custom filter
-          // so the SQL matches COALESCE(metadata.preparationStatus, status).
-          if (PREP_FILTER_STATUSES.has(upperStatus)) {
-            whereClause._customStatusFilter = upperStatus;
-          } else {
-            whereClause.status = upperStatus;
-          }
-        } else {
-          whereClause._customStatusFilter = upperStatus;
-        }
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
-      } else if (TURBO_STATUS_ALIASES[lowerStatus] || lowerStatus.startsWith('turbo_') || lowerStatus.startsWith('returned_') || lowerStatus === 'remitted' || lowerStatus === 'merchant_preparing') {
-        const aliases = TURBO_STATUS_ALIASES[lowerStatus] || [lowerStatus, upperStatus];
-        whereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-        guestWhereClause.turboShipmentStatus = { in: aliases, mode: 'insensitive' };
-      } else {
-        guestWhereClause.status = { in: [upperStatus, lowerStatus] };
-        console.warn(`[ORDERS] Ignoring unrecognized status filter for regular orders, applied to guest orders only: "${rawStatus}"`);
+      // Guest orders carry statuses on a separate table — mirror the OR across
+      // order.status and turboShipmentStatus.
+      const guestStatusBranches = [];
+      if (guestStatusValues.length > 0) {
+        guestStatusBranches.push({ status: { in: [...new Set(guestStatusValues)] } });
+      }
+      if (turboAliasValues.length > 0) {
+        guestStatusBranches.push({
+          turboShipmentStatus: { in: [...new Set(turboAliasValues)], mode: 'insensitive' },
+        });
+      }
+      if (guestStatusBranches.length === 1) {
+        Object.assign(guestWhereClause, guestStatusBranches[0]);
+      } else if (guestStatusBranches.length > 1) {
+        guestWhereClause.OR = guestStatusBranches;
       }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
     }
+    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
+    if (incompleteOnlyView) {
+      // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
+      whereClause.id = '__incomplete_carts_only__';
+      guestWhereClause.id = '__incomplete_carts_only__';
+    }
+    if (incompleteFilterStatus === 'incomplete' && !showIncompleteCarts) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { total: 0, page, limit, pages: 0 },
+        meta: { showIncompleteCartsInOrders: false }
+      });
+    }
 
-    // 2. Filter by Payment Status
+    // 2. Filter by Payment Status (may be a comma-separated list)
     if (paymentStatus && paymentStatus !== 'all') {
-      const normalizedPaymentStatus = String(paymentStatus).toUpperCase();
-      whereClause.paymentStatus = normalizedPaymentStatus;
+      const paymentStatuses = String(paymentStatus)
+        .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      whereClause.paymentStatus = paymentStatuses.length === 1
+        ? paymentStatuses[0]
+        : { in: paymentStatuses };
       // Guest orders do not persist a payment-status field in the current Prisma client,
       // so including them in filtered payment views produces misleading results.
       appendAnd(guestWhereClause, {
@@ -2303,103 +2542,63 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       Object.assign(guestWhereClause, { OR: guestOrFields });
     }
 
-    // 5. Filter by Source Type (مصدر الطلب)
-    if (sourceType) {
-      const normalizedSource = String(sourceType).toLowerCase();
-      let regularSourceCondition = null;
-      let guestSourceCondition = null;
-
-      switch (normalizedSource) {
-        case 'manual':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: { startsWith: 'manual' } },
-              { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
-              { sourceType: 'manual' },
-              { createdBy: { not: null } },
-              { createdByName: { not: null } },
-              { conversationId: 'manual' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'ai_conversation':
-          regularSourceCondition = {
-            AND: [
-              { sourceType: 'ai_conversation' },
-              { NOT: { extractionMethod: { startsWith: 'manual' } } },
-              { NOT: { extractionMethod: 'manual_admin' } },
-              { NOT: { extractionMethod: 'manual_order_modal' } },
-              { NOT: { conversationId: 'manual' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'storefront':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'storefront' },
-              { metadata: { contains: '"source":"storefront"' } },
-              { metadata: { contains: 'storefront', mode: 'insensitive' } }
-            ]
-          };
-          // Guest orders are storefront by default
-          break;
-        case 'woocommerce':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
-              { wooCommerceId: { not: null } },
-              { syncedFromWoo: true }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'pos':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: 'pos' },
-              { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'api':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: { in: ['api', 'public_api'] } },
-              { metadata: { contains: '"source":"api"' } },
-              { metadata: { contains: 'api', mode: 'insensitive' } }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'import':
-          regularSourceCondition = {
-            OR: [
-              { extractionMethod: 'import' },
-              { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
-              { orderSource: 'INTERNAL_IMPORT' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        case 'unknown':
-          regularSourceCondition = {
-            OR: [
-              { sourceType: null },
-              { sourceType: 'unknown' }
-            ]
-          };
-          guestSourceCondition = { id: '__none__' };
-          break;
-        default:
-          regularSourceCondition = { sourceType: normalizedSource };
-          guestSourceCondition = { id: '__none__' };
+    // 5. Filter by Source Type (مصدر الطلب) — may be a comma-separated list
+    const sourceTypes = String(sourceType || '')
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (sourceTypes.length > 0) {
+      const regularSourceConditions = sourceTypes
+        .map(buildRegularSourceCondition)
+        .filter(Boolean);
+      if (regularSourceConditions.length === 1) {
+        appendAnd(whereClause, regularSourceConditions[0]);
+      } else if (regularSourceConditions.length > 1) {
+        appendAnd(whereClause, { OR: regularSourceConditions });
       }
+      // Guests are storefront by default; any non-storefront source excludes them.
+      const excludesGuests = sourceTypes.some((s) => s !== 'storefront');
+      if (excludesGuests) {
+        appendAnd(guestWhereClause, { id: '__none__' });
+      }
+    }
 
-      appendAnd(whereClause, regularSourceCondition);
-      appendAnd(guestWhereClause, guestSourceCondition);
+    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد
+    const includeIncompleteCarts =
+      showIncompleteCarts &&
+      !onlyUnseen &&
+      (!status || String(status).toLowerCase() === 'all' || Boolean(incompleteFilterStatus));
+    let cartQueryWhere = null;
+    if (includeIncompleteCarts) {
+      cartQueryWhere = { companyId };
+      const cartAnd = [];
+      if (incompleteFilterStatus === 'incomplete') {
+        cartAnd.push(cartActiveClause);
+      } else if (incompleteFilterStatus === 'lost') {
+        cartAnd.push(cartLostClause);
+      }
+      if (search) {
+        const searchTerms = String(search).trim();
+        if (searchTerms) {
+          cartAnd.push({
+            OR: [
+              { cartId: { contains: searchTerms } },
+              { checkoutData: { contains: searchTerms } }
+            ]
+          });
+        }
+      }
+      if (startDate || endDate) {
+        const createdAtFilter = {};
+        if (startDate) createdAtFilter.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          createdAtFilter.lte = end;
+        }
+        cartAnd.push({ createdAt: createdAtFilter });
+      }
+      if (cartAnd.length > 0) {
+        cartQueryWhere.AND = cartAnd;
+      }
     }
 
     // تنفيذ الاستعلامات (Top N)
@@ -2424,7 +2623,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     let customStatusOrderIds = null;
     let customStatusTotal = 0;
 
-    if (customStatusFilter) {
+    if (Array.isArray(customStatusFilter) && customStatusFilter.length > 0) {
       delete whereClause._customStatusFilter;
       const prisma = getSharedPrismaClient();
       // Prep statuses are stored under their mapped order.status while the real
@@ -2435,10 +2634,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // must not pull them back into a prep-stage filter.
       const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
-      const matchExpr = `(UPPER(${effectiveStatusExpr}) = $2 AND NOT (${statusIsTerminalExpr}))`;
+      const statusPlaceholders = customStatusFilter
+        .map((_, index) => `$${index + 2}`)
+        .join(', ');
+      const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
       let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
-      const params = [companyId, customStatusFilter];
+      const params = [companyId, ...customStatusFilter];
       if (whereClause.createdAt?.gte) {
         countSql += ` AND "createdAt" >= $3`;
         fetchSql += ` AND "createdAt" >= $3`;
@@ -2455,7 +2657,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
       const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
       customStatusOrderIds = rows.map(r => r.id);
-      whereClause.id = { in: customStatusOrderIds };
+
+      if (Array.isArray(whereClause.OR)) {
+        // The custom-status branch participates in the status OR (e.g. when the
+        // user also selected plain enum / turbo statuses).
+        whereClause.OR.push({ id: { in: customStatusOrderIds } });
+      } else {
+        whereClause.id = { in: customStatusOrderIds };
+      }
     }
 
     const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
@@ -2519,10 +2728,28 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' }
       }),
       // Count Total Regular (for pagination metadata)
-      customStatusFilter ? customStatusTotal : getSharedPrismaClient().order.count({ where: whereClause }),
+      customStatusFilter && !Array.isArray(whereClause.OR) && !whereClause.status && !whereClause.turboShipmentStatus
+        ? customStatusTotal
+        : getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
+
+    // ── السلال غير المكتملة (guestCart) ─────────────────────────────
+    let formattedIncompleteCarts = [];
+    let totalIncomplete = 0;
+    if (cartQueryWhere) {
+      const [carts, cartCount] = await Promise.all([
+        getSharedPrismaClient().guestCart.findMany({
+          where: cartQueryWhere,
+          take: fetchLimit,
+          orderBy: { updatedAt: 'desc' }
+        }),
+        getSharedPrismaClient().guestCart.count({ where: cartQueryWhere })
+      ]);
+      totalIncomplete = cartCount || 0;
+      formattedIncompleteCarts = carts.map((cart) => formatIncompleteCartRow(cart, lostThreshold));
+    }
 
     let shadowedGuestOrderNumberSet = new Set();
     let shadowedGuestTotal = 0;
@@ -2805,7 +3032,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
 
     // دمج وترتيب (Merge & Sort)
-    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders]
+    const allFetchedOrders = [...formattedRegularOrders, ...filteredGuestOrders, ...formattedIncompleteCarts]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // تطبيق Pagination (Slice)
@@ -2816,7 +3043,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const endIndex = startIndex + limit;
     const paginatedOrders = allFetchedOrders.slice(startIndex, endIndex);
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal, 0);
+    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -2828,6 +3055,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         page: page,
         limit: limit,
         pages: Math.ceil(totalOrders / limit)
+      },
+      meta: {
+        showIncompleteCartsInOrders: Boolean(showIncompleteCarts)
       }
     });
 
@@ -3718,13 +3948,100 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
   }
 });
 
+/**
+ * 🚧 الطلبات المعلّقة بانتظار شحن الرصيد (billing hold) — ببيانات مقنّعة
+ * GET /api/v1/orders-new/billing-holds
+ */
+router.get('/billing-holds', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const maskName = (name) => {
+      const s = String(name || '').trim();
+      if (!s) return '';
+      return `${s.charAt(0)}***`;
+    };
+
+    const maskPhone = (phone) => {
+      const s = String(phone || '').trim();
+      if (s.length <= 5) return s;
+      return `${s.slice(0, 3)}***${s.slice(-2)}`;
+    };
+
+    const heldOrders = await getSharedPrismaClient().order.findMany({
+      where: { companyId, billingHoldAt: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        _count: { select: { orderItems: true } },
+      },
+    });
+
+    const data = heldOrders.map((order) => {
+      const parsedMeta = (() => {
+        if (!order.metadata) return {};
+        try {
+          const parsed = JSON.parse(order.metadata);
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      })();
+      const holdReason =
+        parsedMeta?.billingHold?.reason === 'subscription_expired'
+          ? 'subscription_expired'
+          : 'insufficient_balance';
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        status: order.status,
+        itemCount: order._count.orderItems,
+        billingHoldAmount: order.billingHoldAmount !== null && order.billingHoldAmount !== undefined
+          ? Number(order.billingHoldAmount)
+          : null,
+        holdReason,
+        heldAt: parsedMeta?.billingHold?.heldAt || order.billingHoldAt,
+        customerName: maskName(order.customerName),
+        customerPhone: maskPhone(order.customerPhone),
+      };
+    });
+
+    const totalAmount = data.reduce(
+      (sum, o) => sum + (o.holdReason === 'insufficient_balance' ? o.billingHoldAmount || 0 : 0),
+      0,
+    );
+    const subscriptionCount = data.filter((o) => o.holdReason === 'subscription_expired').length;
+
+    res.json({
+      success: true,
+      data: {
+        count: data.length,
+        totalAmount,
+        subscriptionCount,
+        orders: data,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [BILLING-HOLDS] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الطلبات المعلّقة',
+      error: error.message,
+    });
+  }
+});
+
 // الحصول على جميع الطلبات
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, customerId } = req.query;
     const skip = (page - 1) * limit;
-
-    // التأكد من وجود companyId من المستخدم المصادق عليه
     const companyId = req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({

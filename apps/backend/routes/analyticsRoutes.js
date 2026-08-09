@@ -25,6 +25,9 @@ router.get('/daily', authenticateToken, cacheMiddleware(60000), analyticsControl
 // إحصائيات المنتجات المجمعة
 router.get('/products/analytics', authenticateToken, analyticsController.getProductAnalytics);
 
+// تقرير مبيعات المنتجات (كمية/أوردرات/متوسط سعر)
+router.get('/products/sales-performance', authenticateToken, analyticsController.getProductSalesPerformance);
+
 // تحليل المقاسات والألوان
 router.get('/variations', authenticateToken, analyticsController.getVariationsAnalytics);
 
@@ -69,6 +72,9 @@ router.get('/product-health', authenticateToken, analyticsController.getProductH
 
 // تحليل المرتجعات
 router.get('/returns', authenticateToken, analyticsController.getReturnAnalytics);
+
+// تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج
+router.get('/product-fulfillment', authenticateToken, analyticsController.getProductFulfillmentAnalytics);
 
 // تحليل أداء الفريق
 router.get('/team-performance', authenticateToken, analyticsController.getTeamPerformanceAnalytics);

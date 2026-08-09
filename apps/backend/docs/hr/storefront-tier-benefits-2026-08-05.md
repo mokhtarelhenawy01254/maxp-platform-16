@@ -95,6 +95,22 @@ subtotal (`cartTotal * pct / 100`) applied at checkout.
 Example (order = 1000, tier discount 10% + redeemed cashback 100): customer pays
 800; earned cashback/points for that order are based on 800, not 1000.
 
+## Track endpoint merges primary Order data
+
+The public track endpoints (`GET /api/v1/public/orders/track` and the legacy
+`/:orderNumber/track`) return the **GuestOrder** snapshot first. Reward stamps
+(points/cashback) and the real status are written to the **primary Order** on
+delivery, so the GuestOrder would show stale data. The handlers now also look up
+the primary Order and merge its `metadata` (primary wins), `status`, and totals
+into the tracked response.
+
+Important model difference: `GuestOrder` has `total/shippingCost/discountAmount/
+finalTotal`, while `Order` has `subtotal/shipping/discount/total`. The merge maps
+`Order.total → GuestOrder.total + finalTotal`, `Order.discount → discountAmount`,
+`Order.shipping → shippingCost`, `Order.subtotal → subtotal`. Storefront orders
+store the order number in the primary Order's `orderNumber` (found via `id` OR
+`orderNumber`), so the lookup searches both.
+
 ## Docs
 
 - `tier-calculation-config-2026-08-05.md` — the configurable methods/benefits feature.

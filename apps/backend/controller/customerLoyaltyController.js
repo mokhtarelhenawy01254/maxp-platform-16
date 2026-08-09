@@ -4,6 +4,7 @@
  */
 
 const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+const autoDiscountService = require('../services/autoDiscountService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 function parseJsonMaybe(value, fallback) {
@@ -636,6 +637,162 @@ async function updateCustomerTierOverride(req, res) {
   }
 }
 
+/**
+ * جلب جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+ * GET /api/v1/hr/customer-loyalty/notifications/schedule
+ */
+async function getNotificationSchedule(req, res) {
+  try {
+    const { companyId } = req.user;
+    const scheduleService = require('../services/hr/customerNotificationScheduleService');
+    const data = await scheduleService.getSchedules(companyId);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error getting notification schedule:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب جدول الإشعارات' });
+  }
+}
+
+/**
+ * تحديث صف من جدول إشعارات العملاء
+ * PUT /api/v1/hr/customer-loyalty/notifications/schedule
+ */
+async function updateNotificationSchedule(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { eventType, ...data } = req.body;
+    if (!eventType) {
+      return res.status(400).json({ success: false, error: 'eventType مطلوب' });
+    }
+
+    const scheduleService = require('../services/hr/customerNotificationScheduleService');
+    const updated = await scheduleService.updateSchedule(companyId, eventType, data);
+
+    res.json({ success: true, data: updated, message: 'تم تحديث الجدول بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating notification schedule:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث جدول الإشعارات' });
+  }
+}
+
+/**
+ * ملخص بوابة العميل (نقاط / خصومات / كاش باك / بيانات) لأي عميل
+ * GET /api/v1/hr/customer-loyalty/customers/:customerId/portal-summary
+ */
+async function getCustomerPortalSummary(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { customerId } = req.params;
+
+    if (!customerId) {
+      return res.status(400).json({ success: false, message: 'معرف العميل مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const [customer, wallet, progress, autoSettings] = await Promise.all([
+      prisma.customer.findFirst({
+        where: { id: customerId, companyId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          avatar: true,
+          createdAt: true
+        }
+      }),
+      prisma.customerWallet.findFirst({ where: { customerId, companyId, isActive: true } }),
+      customerLoyaltyService.getCustomerTierProgress(companyId, customerId),
+      autoDiscountService.getSettings(companyId)
+    ]);
+
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+    }
+
+    const loyaltyRecord = await prisma.customerLoyaltyRecord.findFirst({
+      where: { companyId, customerId, status: 'ACTIVE' },
+      orderBy: { updatedAt: 'desc' },
+      select: { currentPoints: true, totalEarned: true, totalRedeemed: true, joinDate: true }
+    });
+
+    let totalCashback = 0;
+    if (wallet) {
+      const agg = await prisma.walletTransaction.aggregate({
+        where: { walletId: wallet.id, type: 'CASHBACK' },
+        _sum: { amount: true }
+      });
+      totalCashback = parseFloat(agg._sum.amount || 0);
+    }
+
+    const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
+    const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT';
+
+    let activeVoucher = null;
+    if (isAutoDiscount) {
+      const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
+      if (voucher) {
+        activeVoucher = {
+          id: voucher.id,
+          percent: Number(voucher.percent),
+          amount: Number(voucher.amount),
+          expiresAt: voucher.expiresAt,
+          sourceOrderNumber: voucher.orderNumber || null
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        customer: {
+          id: customer.id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          phone: customer.phone,
+          avatar: customer.avatar,
+          joinedAt: customer.createdAt
+        },
+        loyaltySystem,
+        loyalty: {
+          method: progress?.method || null,
+          metricLabel: progress?.metricLabel || 'نقطة',
+          currentMetric: progress ? Number(progress.currentMetric) : (loyaltyRecord ? parseFloat(loyaltyRecord.currentPoints) : 0),
+          tier: progress?.tier || null,
+          nextTier: progress?.nextTier || null,
+          rewards: progress?.rewards || { freeShipping: false, discountPercent: 0 },
+          points: {
+            current: loyaltyRecord ? parseFloat(loyaltyRecord.currentPoints) : 0,
+            totalEarned: loyaltyRecord ? parseFloat(loyaltyRecord.totalEarned) : 0,
+            totalRedeemed: loyaltyRecord ? parseFloat(loyaltyRecord.totalRedeemed) : 0,
+            joinedAt: loyaltyRecord?.joinDate || null
+          }
+        },
+        autoDiscount: isAutoDiscount
+          ? {
+              discountPercent: Number(autoSettings.discountPercent || 0),
+              validityDays: Number(autoSettings.validityDays || 3),
+              activeVoucher
+            }
+          : null,
+        wallet: {
+          balance: wallet ? parseFloat(wallet.balance) : 0,
+          totalEarned: wallet ? parseFloat(wallet.totalEarned) : 0,
+          totalSpent: wallet ? parseFloat(wallet.totalSpent) : 0,
+          totalCashback,
+          currency: wallet?.currency || 'EGP'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting customer portal summary:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب بيانات العميل' });
+  }
+}
+
 module.exports = {
   getPrograms,
   getProgramById,
@@ -654,6 +811,38 @@ module.exports = {
   updateTierConfig,
   getCustomerTierOverride,
   updateCustomerTierOverride,
+  getCustomerPortalSummary,
   getCashbackSettings,
-  updateCashbackSettings
+  updateCashbackSettings,
+  getNotificationSchedule,
+  updateNotificationSchedule,
+  getSystemSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const settings = await autoDiscountService.getSettings(companyId);
+      res.json({ success: true, data: settings });
+    } catch (error) {
+      console.error('❌ Error getting loyalty system settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات النظام' });
+    }
+  },
+  updateSystemSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const settings = await autoDiscountService.updateSettings(companyId, req.body);
+      res.json({ success: true, data: settings, message: 'تم تحديث نظام الولاء بنجاح' });
+    } catch (error) {
+      console.error('❌ Error updating loyalty system settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات النظام' });
+    }
+  },
+  processExpiredVouchers: async (req, res) => {
+    try {
+      const result = await autoDiscountService.convertExpiredVouchers();
+      res.json({ success: true, data: result, message: `تم تحويل ${result.converted} كوبون منتهي` });
+    } catch (error) {
+      console.error('❌ Error processing expired vouchers:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء معالجة الكوبونات' });
+    }
+  }
 };

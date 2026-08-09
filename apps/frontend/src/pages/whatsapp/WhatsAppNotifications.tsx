@@ -170,7 +170,6 @@ type TemplateFormState = {
 type TabId =
   | "general"
   | "products"
-  | "abandoned-cart"
   | "marketing"
   | "company"
   | "hr"
@@ -404,7 +403,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       return [
         { id: "general", label: t("whatsappNotifications.tabs.general"), icon: Settings },
         { id: "products", label: t("whatsappNotifications.tabs.products"), icon: ShoppingCart },
-        { id: "abandoned-cart", label: t("whatsappNotifications.tabs.abandonedCart"), icon: ShoppingCart },
         { id: "marketing", label: t("whatsappNotifications.tabs.marketing"), icon: Megaphone },
         {
           id: "company",
@@ -473,6 +471,26 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       PROMOTIONAL: t("whatsappNotifications.marketing.promotional"),
       COUPON_SENT: t("whatsappNotifications.marketing.coupons"),
       BIRTHDAY_WISH: t("whatsappNotifications.marketing.birthday"),
+      LOYALTY_POINTS_AWARDED:
+        i18n.language === "ar" ? "إشعار كسب نقاط ولاء" : "Loyalty points awarded",
+      LOYALTY_TIER_UPGRADED:
+        i18n.language === "ar" ? "الترقية لمستوى أعلى" : "Loyalty tier upgrade",
+      LOYALTY_TIER_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض مستوى الولاء" : "Loyalty tier downgrade",
+      LOYALTY_POINTS_EXPIRY_WARNING:
+        i18n.language === "ar" ? "تنبيه قرب انتهاء النقاط" : "Points expiry warning",
+      LOYALTY_POINTS_EXPIRED:
+        i18n.language === "ar" ? "انتهاء صلاحية النقاط" : "Loyalty points expired",
+      LOYALTY_POINTS_REDEEMED:
+        i18n.language === "ar" ? "استبدال النقاط" : "Loyalty points redeemed",
+      CASHBACK_CREDITED:
+        i18n.language === "ar" ? "ايداع كاش باك" : "Cashback credited",
+      CASHBACK_REVERSED:
+        i18n.language === "ar" ? "خصم كاش باك" : "Cashback reversed",
+      CUSTOMER_QUALITY_UPGRADED:
+        i18n.language === "ar" ? "ارتفاع تصنيف الجودة" : "Customer quality upgrade",
+      CUSTOMER_QUALITY_DOWNGRADED:
+        i18n.language === "ar" ? "انخفاض تصنيف الجودة" : "Customer quality downgrade",
       REVIEW_REQUEST: t("whatsappNotifications.products.priceDrop"),
       NEW_SIGNUP_WELCOME:
         i18n.language === "ar" ? "رسالة ترحيب بعد التسجيل" : "Welcome after signup",
@@ -1596,141 +1614,6 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               ) : null}
             </div>
           </WhatsAppSurfaceCard>
-        </TabsContent>
-
-        <TabsContent value="abandoned-cart" className="space-y-4">
-          <WhatsAppSurfaceCard
-            title={ts("whatsappNotifications.abandonedCart.title")}
-            description={ts("whatsappNotifications.abandonedCart.desc")}
-          >
-            <div className="space-y-4">
-              <SectionHeader
-                icon={ShoppingCart}
-                title={ts("whatsappNotifications.abandonedCart.title")}
-                description={ts("whatsappNotifications.abandonedCart.desc")}
-                checked={settings.abandonedCartEnabled}
-                onCheckedChange={(checked) =>
-                  updateSetting("abandonedCartEnabled", checked)
-                }
-                toneClass="bg-orange-500/10 text-orange-700"
-              />
-
-              {settings.abandonedCartEnabled ? (
-                <>
-                  <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/[0.08] dark:text-sky-200">
-                    <AlertCircle className="size-4" />
-                    <AlertTitle>{t("whatsappNotifications.abandonedCart.title")}</AlertTitle>
-                    <AlertDescription>
-                      {t("whatsappNotifications.abandonedCart.desc")}
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-first">
-                        {t("whatsappNotifications.abandonedCart.firstReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-first"
-                        type="number"
-                        min={1}
-                        max={24}
-                        value={settings.abandonedCartFirstReminder || 1}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartFirstReminder",
-                            parseInteger(event.target.value, 1),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-second">
-                        {t("whatsappNotifications.abandonedCart.secondReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-second"
-                        type="number"
-                        min={1}
-                        max={72}
-                        value={settings.abandonedCartSecondReminder || 24}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartSecondReminder",
-                            parseInteger(event.target.value, 24),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="abandoned-third">
-                        {t("whatsappNotifications.abandonedCart.thirdReminder")}
-                      </Label>
-                      <Input
-                        id="abandoned-third"
-                        type="number"
-                        min={1}
-                        max={168}
-                        value={settings.abandonedCartThirdReminder || 72}
-                        onChange={(event) =>
-                          updateSetting(
-                            "abandonedCartThirdReminder",
-                            parseInteger(event.target.value, 72),
-                          )
-                        }
-                        className="h-11 bg-[color:var(--color-card)]"
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </WhatsAppSurfaceCard>
-
-          {settings.abandonedCartEnabled ? (
-            <WhatsAppSurfaceCard
-              title={ts("whatsappNotifications.abandonedCart.incentiveDiscount")}
-              description={ts("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
-            >
-              <div className="space-y-4">
-                <FeatureToggle
-                  label={t("whatsappNotifications.abandonedCart.incentiveDiscount")}
-                  description={ts("whatsappNotifications.abandonedCart.incentiveDiscountDesc")}
-                  checked={settings.abandonedCartDiscountEnabled}
-                  onCheckedChange={(checked) =>
-                    updateSetting("abandonedCartDiscountEnabled", checked)
-                  }
-                />
-
-                {settings.abandonedCartDiscountEnabled ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="discount-percent">
-                      {t("whatsappNotifications.abandonedCart.discountPercent")}
-                    </Label>
-                    <Input
-                      id="discount-percent"
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={settings.abandonedCartDiscountPercent || 10}
-                      onChange={(event) =>
-                        updateSetting(
-                          "abandonedCartDiscountPercent",
-                          parseInteger(event.target.value, 10),
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      {t("whatsappNotifications.abandonedCart.discountHelp")}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            </WhatsAppSurfaceCard>
-          ) : null}
         </TabsContent>
 
         <TabsContent value="marketing" className="space-y-4">

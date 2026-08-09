@@ -196,6 +196,65 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // 👤 [CUSTOMER] Customer portal tokens resolve against the Customer table,
+    // not the platform User table (customers are not platform users). The token
+    // is scoped to a single company — we never allow company override for customers.
+    if (decoded.role === 'CUSTOMER') {
+      const customerId = decoded.customerId || decoded.userId || decoded.id;
+      const customerCompanyId = decoded.companyId;
+
+      if (!customerId || !customerCompanyId) {
+        return res.status(401).json({
+          success: false,
+          message: 'رمز المصادقة غير صحيح',
+          code: 'INVALID_TOKEN_PAYLOAD'
+        });
+      }
+
+      const prisma = await getSharedPrismaClientAsync();
+      const customer = await executeWithRetry(async () =>
+        prisma.customer.findFirst({
+          where: { id: customerId, companyId: customerCompanyId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            phoneNormalized: true,
+            companyId: true,
+            status: true,
+            tags: true
+          }
+        })
+      );
+
+      if (!customer) {
+        return res.status(401).json({
+          success: false,
+          message: 'العميل غير موجود',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      req.user = {
+        ...decoded,
+        id: customer.id,
+        customerId: customer.id,
+        userId: customer.id,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone || decoded.phone,
+        role: 'CUSTOMER',
+        companyId: customerCompanyId,
+        effectiveCompanyId: customerCompanyId,
+        userPermissions: []
+      };
+
+      return tenantContext.run(customerCompanyId, () => next());
+    }
+
     // 🛡️ [SAAS] Secure Company Context Resolution
     let companyId = decoded.companyId;
     const headerCompanyId = req.headers['x-company-id'] || req.headers['X-Company-Id'];

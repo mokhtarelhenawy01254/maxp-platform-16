@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, FileBarChart, FileText, Filter, FlaskConical, Gift, Globe, GraduationCap, Grid3x3, Heart, Image, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Paintbrush, Palette, PackageCheck, Printer, RefreshCcw, Rocket, Search, Send, Settings, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -503,6 +503,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/cloud-connect', icon: Globe, label: t('sidebar.whatsappCloudConnect'), requiredPermissions: ['whatsapp.sessions'] },
                 { to: '/whatsapp/employee-analytics', icon: BarChart3, label: t('sidebar.whatsappEmployeeAnalytics'), requiredPermissions: ['whatsapp.analytics.view'] },
                 { to: '/whatsapp/conversation-analytics', icon: BarChart3, label: t('sidebar.whatsappConversationAnalytics'), requiredPermissions: ['whatsapp.analytics.view'] },
+                { to: '/whatsapp/notification-logs', icon: FileBarChart, label: t('sidebar.whatsappNotificationLogs'), requiredPermissions: ['whatsapp.analytics.view'] },
                 { to: '/whatsapp/meta-templates', icon: Globe, label: t('sidebar.whatsappMetaTemplates'), requiredPermissions: ['whatsapp.templates'] },
                 { to: '/whatsapp/template-broadcast', icon: Megaphone, label: t('sidebar.whatsappTemplateBroadcast'), requiredPermissions: ['whatsapp.broadcast'] },
                 { to: '/whatsapp/lead-followup', icon: Zap, label: t('sidebar.whatsappLeadFollowup'), requiredPermissions: ['inbox.view'] },
@@ -593,6 +594,8 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/today-ops', icon: Sparkles, label: t('sidebar.todayOps') },
                 { to: '/analytics/orders/cancellations', icon: XCircle, label: t('sidebar.cancellationAnalytics') },
                 { to: '/analytics/orders/delivery-rate', icon: Truck, label: t('sidebar.deliveryRate') },
+                { to: '/analytics/orders/fulfillment', icon: PackageCheck, label: t('sidebar.productFulfillment') },
+                { to: '/analytics/orders/delivery-returns', icon: Undo2, label: t('sidebar.deliveryReturnsAnalytics') },
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
                 { to: '/analytics/orders/funnel', icon: Filter, label: t('sidebar.conversionFunnel') },
@@ -600,6 +603,8 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/team-performance', icon: Users, label: t('sidebar.teamPerformance') },
                 { to: '/analytics/orders/abandoned-cart', icon: ShoppingCart, label: t('sidebar.abandonedCart') },
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
+                { to: '/reports/profit-loss', icon: DollarSign, label: t('sidebar.profitLoss') },
+                { to: '/reports/status-analysis', icon: FileBarChart, label: t('sidebar.statusAnalysis') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
@@ -695,6 +700,7 @@ export const getSidebarConfig = (
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/cashback', icon: DollarSign, label: t('sidebar.cashbackSettings') },
+                { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['crm-basic', 'crm-lite'])
@@ -939,6 +945,10 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/services', icon: Wrench, label: t('sidebar.bookingServices') },
                 { to: '/admin/booking/patients', icon: Users, label: t('sidebar.bookingPatients') },
                 { to: '/admin/booking/invoices', icon: BarChart3, label: t('sidebar.bookingInvoices') },
+                { to: '/admin/booking/price-lists', icon: Tag, label: t('sidebar.bookingPriceLists') },
+                { to: '/admin/booking/workflow', icon: ListChecks, label: t('sidebar.bookingWorkflow') },
+                { to: '/admin/booking/reports', icon: BarChart3, label: t('sidebar.bookingReports') },
+                { to: '/admin/booking/operations', icon: Printer, label: t('sidebar.bookingOperations') },
             ]
         },
 
@@ -1020,19 +1030,6 @@ export const getSidebarConfig = (
                     ],
                 },
             ]
-        },
-
-        // 9️⃣ التقارير والتحليلات
-        {
-            id: 'analytics',
-            title: t('sidebar.analyticsSection'),
-            icon: LineChart,
-            items: [
-                { to: '/reports', icon: BarChart3, label: t('sidebar.reports') },
-                { to: '/analytics', icon: LineChart, label: t('sidebar.advancedAnalytics') },
-            ],
-            // 🔒 إخفاء إذا كان غير مفعل
-            hidden: !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
         },
 
         // 1️⃣1️⃣ التطبيقات والفواتير

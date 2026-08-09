@@ -6,7 +6,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import OrderStatusTemplatesPage, { resolveVariablesForPreview } from "../OrderStatusTemplatesPage";
+import OrderStatusTemplatesPage, { resolveVariablesForPreview, buildLocalContentFromMetaBody } from "../OrderStatusTemplatesPage";
 
 const mockT = jest.fn((key: string, fallback?: string) => fallback || key);
 
@@ -52,6 +52,33 @@ describe("resolveVariablesForPreview", () => {
     const result = resolveVariablesForPreview("طلبك {{orderNumber}} بقيمة {{total}}");
     expect(result).toContain("ORD-12345");
     expect(result).toContain("500");
+  });
+});
+
+describe("buildLocalContentFromMetaBody", () => {
+  test("بيحوّل {{1}} {{2}} إلى متغيرات محلية افتراضية", () => {
+    const result = buildLocalContentFromMetaBody("أهلًا {{1}} 👋\nطلبك {{2}} بقيمة {{3}}");
+    expect(result).toContain("{{customerName}}");
+    expect(result).toContain("{{orderNumber}}");
+    expect(result).toContain("{{orderItems}}");
+    expect(result).not.toContain("{{1}}");
+    expect(result).not.toContain("{{2}}");
+  });
+
+  test("بيحافظ على النص الثابت من غير متغيرات", () => {
+    const result = buildLocalContentFromMetaBody("مرحبا بك في تطبيقنا");
+    expect(result).toBe("مرحبا بك في تطبيقنا");
+  });
+
+  test("بيرجّع نص فاضي لو النص فاضي", () => {
+    expect(buildLocalContentFromMetaBody("")).toBe("");
+  });
+
+  test("بيحط رقم ميتا زي ما هو لو العدّاد فايت المتغيرات المتاحة", () => {
+    const result = buildLocalContentFromMetaBody("{{1}} {{2}} {{3}} {{4}} {{5}} {{6}} {{7}} {{8}} {{9}} {{10}} {{11}} {{12}} {{13}} {{14}} {{15}}");
+    expect(result).toContain("{{customerName}}");
+    expect(result).toContain("{{reason}}");
+    expect(result).toContain("{{15}}");
   });
 });
 
@@ -112,8 +139,8 @@ describe("OrderStatusTemplatesPage preview UI", () => {
     await screen.findByTestId("status-row-st1");
     await user.click(screen.getByRole("button", { name: /^معاينة/ }));
 
-    expect(screen.getByText(/أحمد محمد/)).toBeInTheDocument();
-    expect(screen.getByText(/ORD-12345/)).toBeInTheDocument();
+    expect(screen.getAllByText(/أحمد محمد/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ORD-12345/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/customerName/)).not.toBeInTheDocument();
   });
 });

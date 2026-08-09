@@ -116,6 +116,23 @@ router.put('/tier-config',
   customerLoyaltyController.updateTierConfig
 );
 
+// نظام الولاء (اختيار: المستويات أو الخصم التلقائي)
+router.get('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getSystemSettings
+);
+
+router.put('/system-settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateSystemSettings
+);
+
+// معالجة الكوبونات المنتهية (تحويلها لكاش باك) — يدوي
+router.post('/vouchers/process-expired',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.processExpiredVouchers
+);
+
 // تجاوز عميل (طريقة الحساب + المزايا المخصصة)
 router.get('/customers/:customerId/tier-override',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
@@ -125,6 +142,28 @@ router.get('/customers/:customerId/tier-override',
 router.put('/customers/:customerId/tier-override',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
   customerLoyaltyController.updateCustomerTierOverride
+);
+
+// ملخص بوابة العميل (نقاط / خصومات / كاش باك / بيانات)
+router.get('/customers/:customerId/portal-summary',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getCustomerPortalSummary
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔔 جدول إشعارات العملاء (الولاء / الكاش باك / الجودة)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// جلب جدول الإشعارات
+router.get('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getNotificationSchedule
+);
+
+// تحديث صف من جدول الإشعارات
+router.put('/notifications/schedule',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateNotificationSchedule
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -7,6 +7,7 @@ import {
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   EyeIcon,
+  InformationCircleIcon,
   PencilIcon,
   UsersIcon,
   ShoppingBagIcon,
@@ -463,11 +464,18 @@ const CustomerList: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2 space-x-reverse">
                         <Link
+                          to={`/customers/${customer.id}/portal`}
+                          title="صفحة العميل (النقاط والخصومات والكاش باك)"
+                          className="text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-900 dark:hover:text-fuchsia-300"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Link>
+                        <Link
                           to={`/customers/${customer.id}`}
                           title={t("customers.tableActions")}
                           className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <InformationCircleIcon className="h-4 w-4" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}/edit`}

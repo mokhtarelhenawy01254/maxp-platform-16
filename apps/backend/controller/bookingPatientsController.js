@@ -7,6 +7,18 @@ const normalizeGender = (g) => {
   return v === 'MALE' || v === 'FEMALE' ? v : null;
 };
 
+const normalizeMedicalHistory = (v) => {
+  if (v === undefined || v === null || v === '') return { value: undefined, error: null };
+  let parsed = v;
+  if (typeof v === 'string') {
+    try { parsed = JSON.parse(v); } catch { return { value: null, error: 'صيغة التاريخ الطبي غير صحيحة (يجب أن تكون JSON صالحة)' }; }
+  }
+  if (Array.isArray(parsed) || parsed === null || typeof parsed !== 'object') {
+    return { value: null, error: 'التاريخ الطبي يجب أن يكون كائنًا يحتوي على الحالات والحساسية' };
+  }
+  return { value: parsed, error: null };
+};
+
 const formatPatient = (p) => {
   const { _count, password, ...rest } = p;
   return {
@@ -69,6 +81,8 @@ const getPatientById = async (req, res) => {
       where: { id, companyId },
       include: {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+        referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
+        priceList: { select: { id: true, name: true } },
         appointments: {
           orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
           include: {
@@ -110,8 +124,15 @@ const createPatient = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address } = req.body;
+    const { firstName, lastName, phone, email, gender, birthDate, bloodType, allergies, chronicDiseases, medications, notes, customerId, password, nationalId, nationalIdImage, address, status, source, maritalStatus, occupation, city, medicalHistory, referringPhysicianId, priceListId } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم المريض مطلوب' });
+
+    let medicalHistoryData;
+    if (medicalHistory !== undefined) {
+      const mh = normalizeMedicalHistory(medicalHistory);
+      if (mh.error) return res.status(400).json({ success: false, error: mh.error });
+      medicalHistoryData = mh.value;
+    }
 
     // Auto-link to an existing CRM Customer by phone when no customerId is provided
     let resolvedCustomerId = customerId;
@@ -121,6 +142,19 @@ const createPatient = async (req, res) => {
         select: { id: true },
       });
       if (customer) resolvedCustomerId = customer.id;
+    }
+
+    if (resolvedCustomerId) {
+      const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: resolvedCustomerId, companyId }, select: { id: true } });
+      if (!customer) return res.status(400).json({ success: false, error: 'العميل غير موجود' });
+    }
+    if (referringPhysicianId) {
+      const physician = await getSharedPrismaClient().referringPhysician.findFirst({ where: { id: referringPhysicianId, companyId }, select: { id: true } });
+      if (!physician) return res.status(400).json({ success: false, error: 'الطبيب المحوّل غير موجود' });
+    }
+    if (priceListId) {
+      const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: priceListId, companyId }, select: { id: true } });
+      if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
     }
 
     const patient = await getSharedPrismaClient().patient.create({
@@ -142,6 +176,14 @@ const createPatient = async (req, res) => {
         chronicDiseases: chronicDiseases ?? null,
         medications: medications ?? null,
         notes: notes || null,
+        status: status || undefined,
+        source: source || null,
+        maritalStatus: maritalStatus || null,
+        occupation: occupation || null,
+        city: city || null,
+        medicalHistory: medicalHistoryData,
+        referringPhysicianId: referringPhysicianId || null,
+        priceListId: priceListId || null,
       },
     });
     res.json({ success: true, data: formatPatient(patient) });
@@ -160,7 +202,7 @@ const updatePatient = async (req, res) => {
     const existing = await getSharedPrismaClient().patient.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
 
-    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address'];
+    const allowedFields = ['firstName', 'lastName', 'phone', 'email', 'gender', 'birthDate', 'bloodType', 'allergies', 'chronicDiseases', 'medications', 'notes', 'isActive', 'customerId', 'password', 'nationalId', 'nationalIdImage', 'address', 'status', 'source', 'maritalStatus', 'occupation', 'city', 'referringPhysicianId', 'priceListId'];
     const data = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) data[field] = req.body[field];
@@ -169,12 +211,140 @@ const updatePatient = async (req, res) => {
     if (data.birthDate) data.birthDate = new Date(data.birthDate);
     if (data.password) data.password = await bcrypt.hash(data.password, 10);
     else delete data.password;
+    if (req.body.medicalHistory !== undefined) {
+      const mh = normalizeMedicalHistory(req.body.medicalHistory);
+      if (mh.error) return res.status(400).json({ success: false, error: mh.error });
+      data.medicalHistory = mh.value;
+    }
+
+    if (data.customerId) {
+      const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: data.customerId, companyId }, select: { id: true } });
+      if (!customer) return res.status(400).json({ success: false, error: 'العميل غير موجود' });
+    }
+    if (data.referringPhysicianId) {
+      const physician = await getSharedPrismaClient().referringPhysician.findFirst({ where: { id: data.referringPhysicianId, companyId }, select: { id: true } });
+      if (!physician) return res.status(400).json({ success: false, error: 'الطبيب المحوّل غير موجود' });
+    }
+    if (data.priceListId) {
+      const list = await getSharedPrismaClient().priceList.findFirst({ where: { id: data.priceListId, companyId }, select: { id: true } });
+      if (!list) return res.status(400).json({ success: false, error: 'قائمة الأسعار غير موجودة' });
+    }
 
     const patient = await getSharedPrismaClient().patient.update({ where: { id }, data });
     res.json({ success: true, data: formatPatient(patient) });
   } catch (error) {
     console.error('Error updating patient:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المريض' });
+  }
+};
+
+const mergePatients = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const { targetPatientId } = req.body;
+    if (!targetPatientId) return res.status(400).json({ success: false, error: 'المريض الهدف مطلوب' });
+    if (id === targetPatientId) return res.status(400).json({ success: false, error: 'لا يمكن دمج المريض مع نفسه' });
+
+    const prisma = getSharedPrismaClient();
+    const source = await prisma.patient.findFirst({ where: { id, companyId } });
+    if (!source) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
+    if (source.mergedIntoId) return res.status(400).json({ success: false, error: 'لا يمكن دمج مريض مدمج بالفعل' });
+    const target = await prisma.patient.findFirst({ where: { id: targetPatientId, companyId } });
+    if (!target) return res.status(404).json({ success: false, error: 'المريض الهدف غير موجود' });
+    if (target.isActive === false || target.status === 'INACTIVE') {
+      return res.status(400).json({ success: false, error: 'لا يمكن الدمج إلى مريض غير نشط' });
+    }
+
+    await prisma.$transaction([
+      prisma.medicalInvoice.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } }),
+      prisma.appointment.updateMany({ where: { patientId: id }, data: { patientId: targetPatientId } }),
+      prisma.patient.update({ where: { id }, data: { mergedIntoId: targetPatientId, status: 'INACTIVE', isActive: false } }),
+    ]);
+
+    try {
+      await prisma.transactionLog.create({
+        data: {
+          companyId,
+          entityType: 'PATIENT',
+          entityId: id,
+          action: 'MERGE',
+          description: `تم دمج المريض في ${target.firstName} ${target.lastName || ''}`,
+          userId: req.user?.id || null,
+          userName: req.user?.name || null,
+        },
+      });
+    } catch (logError) {
+      console.error('Error logging patient merge:', logError);
+    }
+
+    const updatedTarget = await prisma.patient.findFirst({
+      where: { id: targetPatientId, companyId },
+      include: { _count: { select: { appointments: true } } },
+    });
+
+    res.json({ success: true, data: formatPatient(updatedTarget) });
+  } catch (error) {
+    console.error('Error merging patients:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في دمج المرضى' });
+  }
+};
+
+const getPatientFull = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const patient = await prisma.patient.findFirst({
+      where: { id, companyId },
+      include: {
+        referringPhysician: { select: { id: true, name: true, phone: true, specialty: true } },
+        priceList: { select: { id: true, name: true } },
+        appointments: {
+          orderBy: [{ appointmentDate: 'desc' }, { startTime: 'desc' }],
+          take: 10,
+          include: {
+            branch: { select: { id: true, name: true } },
+            doctor: { select: { id: true, title: true, name: true } },
+            service: { select: { id: true, name: true } },
+          },
+        },
+        _count: { select: { appointments: true } },
+      },
+    });
+    if (!patient) return res.status(404).json({ success: false, error: 'المريض غير موجود' });
+
+    const invoices = await prisma.medicalInvoice.findMany({
+      where: { patientId: id, companyId },
+      select: { status: true, total: true, discount: true, amountPaid: true },
+    });
+
+    let transactionLogCount = 0;
+    try {
+      transactionLogCount = await prisma.transactionLog.count({ where: { companyId, entityType: 'PATIENT', entityId: id } });
+    } catch (countError) {
+      console.error('Error counting transaction logs:', countError);
+    }
+
+    const data = formatPatient(patient);
+    data.latestAppointments = data.appointments;
+    delete data.appointments;
+    data.invoicesSummary = {
+      count: invoices.length,
+      totalBilled: +invoices.reduce((s, i) => s + (Number(i.total) || 0), 0).toFixed(2),
+      totalPaid: +invoices.reduce((s, i) => s + (Number(i.amountPaid) || 0), 0).toFixed(2),
+      outstanding: +invoices.reduce((s, i) => s + Math.max(0, Number(i.total) - Number(i.discount) - Number(i.amountPaid)), 0).toFixed(2),
+    };
+    data.transactionLogCount = transactionLogCount;
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching patient full record:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب بيانات المريض' });
   }
 };
 
@@ -196,4 +366,4 @@ const deletePatient = async (req, res) => {
   }
 };
 
-module.exports = { getAllPatients, getPatientById, createPatient, updatePatient, deletePatient };
+module.exports = { getAllPatients, getPatientById, createPatient, updatePatient, deletePatient, mergePatients, getPatientFull };

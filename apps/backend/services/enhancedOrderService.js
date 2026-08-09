@@ -10,6 +10,80 @@ const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone } = require('../utils/customerIdentity');
 const { splitCustomerName } = require('../utils/customerName');
 
+const buildSourceCondition = (source) => {
+  switch (String(source).toLowerCase()) {
+    case 'manual':
+      return {
+        OR: [
+          { extractionMethod: { startsWith: 'manual' } },
+          { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
+          { sourceType: 'manual' },
+          { createdBy: { not: null } },
+          { createdByName: { not: null } },
+          { conversationId: 'manual' }
+        ]
+      };
+    case 'ai_conversation':
+      return {
+        AND: [
+          { sourceType: 'ai_conversation' },
+          { NOT: { extractionMethod: { startsWith: 'manual' } } },
+          { NOT: { extractionMethod: 'manual_admin' } },
+          { NOT: { extractionMethod: 'manual_order_modal' } },
+          { NOT: { conversationId: 'manual' } }
+        ]
+      };
+    case 'storefront':
+      return {
+        OR: [
+          { sourceType: 'storefront' },
+          { metadata: { contains: '"source":"storefront"' } },
+          { metadata: { contains: 'storefront', mode: 'insensitive' } }
+        ]
+      };
+    case 'woocommerce':
+      return {
+        OR: [
+          { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
+          { wooCommerceId: { not: null } },
+          { syncedFromWoo: true }
+        ]
+      };
+    case 'pos':
+      return {
+        OR: [
+          { sourceType: 'pos' },
+          { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
+        ]
+      };
+    case 'api':
+      return {
+        OR: [
+          { sourceType: { in: ['api', 'public_api'] } },
+          { metadata: { contains: '"source":"api"' } },
+          { metadata: { contains: 'api', mode: 'insensitive' } }
+        ]
+      };
+    case 'import':
+      return {
+        OR: [
+          { extractionMethod: 'import' },
+          { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
+          { orderSource: 'INTERNAL_IMPORT' }
+        ]
+      };
+    case 'unknown':
+      return {
+        OR: [
+          { sourceType: null },
+          { sourceType: 'unknown' }
+        ]
+      };
+    default:
+      return { sourceType: String(source).toLowerCase() };
+  }
+};
+
 class EnhancedOrderService {
   constructor() {
     // ❌ Removed: this.prisma = getSharedPrismaClient() - causes early loading issues
@@ -331,6 +405,7 @@ class EnhancedOrderService {
             id: order.id,
             orderNumber: order.orderNumber,
             companyId: order.companyId,
+            status: order.status,
             customerPhone: order.customerPhone,
             customerName: order.customerName,
             customer: order.customer,
@@ -342,7 +417,7 @@ class EnhancedOrderService {
             items: order.orderItems || order.items || []
           };
 
-          await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+          await WhatsAppNotificationService.sendOrderCreationNotification(orderForNotification);
           console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
         } catch (whatsappError) {
           // لا نوقف العملية إذا فشل WhatsApp
@@ -1636,6 +1711,7 @@ class EnhancedOrderService {
         page = 1,
         limit = 20,
         status,
+        paymentStatus,
         customerId,
         conversationId,
         dateFrom,
@@ -1658,7 +1734,11 @@ class EnhancedOrderService {
 
       // فلاتر إضافية
       if (status && status !== 'all') {
-        where.status = status;
+        const statuses = String(status)
+          .split(',')
+          .map((s) => String(s).trim().toUpperCase())
+          .filter(Boolean);
+        where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
       } else {
         const hiddenStatuses = ['TRASH'];
         where.status = { notIn: hiddenStatuses };
@@ -1766,92 +1846,24 @@ class EnhancedOrderService {
       }
 
       if (sourceType) {
-        const normalizedSource = String(sourceType).toLowerCase();
-        let sourceCondition = null;
-
-        switch (normalizedSource) {
-          case 'manual':
-            sourceCondition = {
-              OR: [
-                { extractionMethod: { startsWith: 'manual' } },
-                { extractionMethod: { in: ['manual_order_modal', 'manual_admin'] } },
-                { sourceType: 'manual' },
-                { createdBy: { not: null } },
-                { createdByName: { not: null } },
-                { conversationId: 'manual' }
-              ]
-            };
-            break;
-          case 'ai_conversation':
-            sourceCondition = {
-              AND: [
-                { sourceType: 'ai_conversation' },
-                { NOT: { extractionMethod: { startsWith: 'manual' } } },
-                { NOT: { extractionMethod: 'manual_admin' } },
-                { NOT: { extractionMethod: 'manual_order_modal' } },
-                { NOT: { conversationId: 'manual' } }
-              ]
-            };
-            break;
-          case 'storefront':
-            sourceCondition = {
-              OR: [
-                { sourceType: 'storefront' },
-                { metadata: { contains: '"source":"storefront"' } },
-                { metadata: { contains: 'storefront', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'woocommerce':
-            sourceCondition = {
-              OR: [
-                { sourceType: { in: ['woocommerce', 'woocommerce_webhook', 'woo'] } },
-                { wooCommerceId: { not: null } },
-                { syncedFromWoo: true }
-              ]
-            };
-            break;
-          case 'pos':
-            sourceCondition = {
-              OR: [
-                { sourceType: 'pos' },
-                { metadata: { contains: 'pos_terminal', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'api':
-            sourceCondition = {
-              OR: [
-                { sourceType: { in: ['api', 'public_api'] } },
-                { metadata: { contains: '"source":"api"' } },
-                { metadata: { contains: 'api', mode: 'insensitive' } }
-              ]
-            };
-            break;
-          case 'import':
-            sourceCondition = {
-              OR: [
-                { extractionMethod: 'import' },
-                { sourceType: { in: ['import', 'easy-orders', 'internal_import'] } },
-                { orderSource: 'INTERNAL_IMPORT' }
-              ]
-            };
-            break;
-          case 'unknown':
-            sourceCondition = {
-              OR: [
-                { sourceType: null },
-                { sourceType: 'unknown' }
-              ]
-            };
-            break;
-          default:
-            sourceCondition = { sourceType: normalizedSource };
-        }
-
-        if (sourceCondition) {
+        const sourceTypes = String(sourceType)
+          .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+        const sourceConditions = sourceTypes.map(buildSourceCondition).filter(Boolean);
+        if (sourceConditions.length > 0) {
           if (!where.AND) where.AND = [];
-          where.AND.push(sourceCondition);
+          where.AND.push(
+            sourceConditions.length === 1 ? sourceConditions[0] : { OR: sourceConditions }
+          );
+        }
+      }
+
+      if (paymentStatus && paymentStatus !== 'all') {
+        const paymentStatuses = String(paymentStatus)
+          .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+        if (paymentStatuses.length > 0) {
+          where.paymentStatus = paymentStatuses.length === 1
+            ? paymentStatuses[0]
+            : { in: paymentStatuses };
         }
       }
 

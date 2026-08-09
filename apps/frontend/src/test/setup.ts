@@ -24,6 +24,17 @@ Object.defineProperty(window, "matchMedia", {
 // Mock scrollIntoView for jsdom
 Element.prototype.scrollIntoView = jest.fn();
 
+// Polyfill PointerEvent for base-ui components (Popover, etc.) — jsdom versions
+// before v22 do not ship it, and base-ui relies on pointer events for opening.
+if (typeof (global as unknown as { PointerEvent?: unknown }).PointerEvent === "undefined") {
+  class PointerEvent extends MouseEvent {
+    constructor(type: string, params?: PointerEventInit) {
+      super(type, params);
+    }
+  }
+  (global as unknown as { PointerEvent: typeof PointerEvent }).PointerEvent = PointerEvent;
+}
+
 // Mock IntersectionObserver
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),

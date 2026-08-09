@@ -122,6 +122,19 @@ function normalizeMetaMessage(msg) {
     } else {
       content = JSON.stringify(interactive);
     }
+  } else if (type === 'button') {
+    // 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا تأتي بـ type="button".
+    // سابقاً كان الـ else يلتقطها ويحفظ JSON خام — وبالتالي لا تصل لمعالج التفاعلات.
+    // الآن نستخرج الـ payload/text + الـ context.id (wamid الرسالة الأصلية) لمعالجة الزر.
+    const btn = msg.button || {};
+    interactiveData = {
+      type: 'button',
+      payload: btn.payload || btn.text || null,
+      text: btn.text || btn.payload || null,
+      contextMessageId: msg.context?.id || null,
+      contextFrom: msg.context?.from || null
+    };
+    content = btn.payload || btn.text || null;
   } else if (type === 'reaction') {
     content = msg.reaction?.emoji || null;
     quotedMessageId = msg.reaction?.message_id || null;
@@ -292,6 +305,29 @@ async function postWebhook(req, res) {
             pushName: value.contacts?.[0]?.profile?.name || null
           });
 
+          // 🚨 PRODUCTION-FIX: معالجة أزرار القوالب (QUICK_REPLY) من Meta webhook.
+          // سابقاً كانت الرسالة تُحفظ فقط (BUTTON) بدون أي معالجة للزر —
+          // لذا ضغط "تأكيد الأوردر" لم يكن يحوّل الطلب ولا يبعت تأكيداً.
+          // الآن نوجّهها لـ WhatsAppInteractionService (نفس مسار Baileys).
+          if (normalized.messageType === 'BUTTON' || normalized.messageType === 'INTERACTIVE') {
+            try {
+              const WhatsAppInteractionService = require('../services/whatsapp/WhatsAppInteractionService');
+              const handled = await WhatsAppInteractionService.handleButtonResponse(
+                session.id,
+                companyId,
+                remoteJid,
+                normalized.interactiveData
+              );
+              if (handled) {
+                console.log(`⚡ [META-WEBHOOK] Button interaction handled: ${normalized.content}`);
+              } else {
+                console.log(`ℹ️ [META-WEBHOOK] Button not handled (no matching order): ${normalized.content}`);
+              }
+            } catch (interactionErr) {
+              console.error(`❌ [META-WEBHOOK] Failed to process button interaction: ${interactionErr.message}`);
+            }
+          }
+
           void savedMessage;
         }
 
@@ -303,7 +339,14 @@ async function postWebhook(req, res) {
             failed: 'FAILED'
           };
           const mappedStatus = statusMap[status.status] || 'SENT';
-          await updateMessageStatus(companyId, status.id, mappedStatus);
+          const errors = Array.isArray(status.errors) ? status.errors : [];
+          const recipientId = status.recipient_id || null;
+          const timestamp = status.timestamp ? Number(status.timestamp) * 1000 : Date.now();
+          await updateMessageStatus(companyId, status.id, mappedStatus, {
+            errors,
+            recipientId,
+            timestamp
+          });
         }
       }
     }

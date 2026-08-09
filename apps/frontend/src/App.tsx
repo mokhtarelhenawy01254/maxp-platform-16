@@ -50,6 +50,7 @@ const CustomerDetails = React.lazy(
   () => import("./pages/customers/CustomerDetails"),
 );
 const CustomerEdit = React.lazy(() => import("./pages/customers/CustomerEdit"));
+const CustomerPortalView = React.lazy(() => import("./pages/customers/CustomerPortalView"));
 const CustomerWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerWhatsAppNotify"),
 );
@@ -281,7 +282,6 @@ const CompetitorSettingsPage = React.lazy(() => import("./pages/competitors/sett
 const SocialOverview = React.lazy(() => import("./pages/competitors/social/SocialOverview"));
 const AdIntelligence = React.lazy(() => import("./pages/competitors/social/AdIntelligence"));
 const PlatformOverview = React.lazy(() => import("./pages/competitors/social/PlatformOverview"));
-const Reports = React.lazy(() => import("./pages/reports/Reports"));
 const StatusAnalysisReport = React.lazy(() => import("./pages/reports/StatusAnalysisReport"));
 const ShippingReport = React.lazy(
   () => import("./pages/reports/ShippingReport"),
@@ -640,6 +640,12 @@ const CancellationAnalytics = React.lazy(
 const DeliveryRateAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/DeliveryRateAnalytics"),
 );
+const ProductFulfillmentAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ProductFulfillmentAnalytics"),
+);
+const DeliveryReturnsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/DeliveryReturnsAnalytics"),
+);
 const RegionAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/RegionAnalytics"),
 );
@@ -698,9 +704,6 @@ const TaskNotifications = React.lazy(
 const CalendarView = React.lazy(() => import("./pages/tasks/CalendarView"));
 const TimeReports = React.lazy(() => import("./pages/tasks/TimeReports"));
 const TaskTemplates = React.lazy(() => import("./pages/tasks/TaskTemplates"));
-const AdvancedReports = React.lazy(
-  () => import("./pages/reports/AdvancedReports"),
-);
 const ProfitLossReport = React.lazy(
   () => import("./pages/reports/ProfitLossReport"),
 );
@@ -1040,6 +1043,18 @@ const ParentWalletPage = React.lazy(
 const ParentBuyPackagePage = React.lazy(
   () => import("./pages/parent/ParentBuyPackagePage"),
 );
+const CustomerPortalLayout = React.lazy(
+  () => import("./pages/account/CustomerPortalLayout"),
+);
+const CustomerAccountHome = React.lazy(
+  () => import("./pages/account/CustomerAccountHome"),
+);
+const CustomerWalletPage = React.lazy(
+  () => import("./pages/account/CustomerWalletPage"),
+);
+const CustomerProfilePage = React.lazy(
+  () => import("./pages/account/CustomerProfilePage"),
+);
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
@@ -1261,6 +1276,9 @@ const WhatsAppEmployeeAnalytics = React.lazy(() =>
 const WhatsAppConversationAnalytics = React.lazy(() =>
   import("./pages/whatsapp/WhatsAppConversationAnalytics"),
 );
+const WhatsAppNotificationLogs = React.lazy(() =>
+  import("./pages/whatsapp/WhatsAppNotificationLogs"),
+);
 
 // HR Module
 const HRDashboard = React.lazy(() =>
@@ -1432,6 +1450,9 @@ const CustomerPointsCenter = React.lazy(
 const CustomerSegments = React.lazy(
   () => import("./pages/customers/CustomerSegments"),
 );
+const CustomerNotifications = React.lazy(
+  () => import("./pages/customers/CustomerNotifications"),
+);
 const RecruitmentDashboard = React.lazy(
   () => import("./pages/hr/recruitment/RecruitmentDashboard"),
 );
@@ -1484,6 +1505,7 @@ if (typeof window !== "undefined") {
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
+  p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
@@ -1497,7 +1519,6 @@ if (typeof window !== "undefined") {
   p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
   p["/tasks"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
-  p["/reports"] = () => import("./pages/reports/Reports");
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
@@ -1829,6 +1850,10 @@ const AppContent = () => {
             <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
             <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
             <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
+            {/* Customer Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/account" element={<CustomerPortalLayout><CustomerAccountHome /></CustomerPortalLayout>} />
+            <Route path="/account/cashback" element={<CustomerPortalLayout><CustomerWalletPage /></CustomerPortalLayout>} />
+            <Route path="/account/profile" element={<CustomerPortalLayout><CustomerProfilePage /></CustomerPortalLayout>} />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
@@ -2834,6 +2859,16 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/customers/:id/portal"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerPortalView />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
                   path="/wallet"
                   element={
                     <Layout>
@@ -3158,14 +3193,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ShippingReport />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
                     </Layout>
                   }
                 />
@@ -4621,6 +4648,22 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/analytics/orders/fulfillment"
+                  element={
+                    <Layout>
+                      <ProductFulfillmentAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/delivery-returns"
+                  element={
+                    <Layout>
+                      <DeliveryReturnsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/analytics/orders/regions"
                   element={
                     <Layout>
@@ -4789,14 +4832,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/reports"
-                  element={
-                    <Layout>
-                      <Reports />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/reports/profit-loss"
                   element={
                     <Layout>
@@ -4813,14 +4848,6 @@ const AppContent = () => {
                   }
                 />
                 {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
-                <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/analytics/store"
                   element={
@@ -5007,14 +5034,6 @@ const AppContent = () => {
                   }
                 />
                 {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
-                <Route
-                  path="/analytics"
-                  element={
-                    <Layout>
-                      <AdvancedReports />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/pos"
                   element={
@@ -5930,6 +5949,14 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route
+                  path="/whatsapp/notification-logs"
+                  element={
+                    <Layout>
+                      <WhatsAppNotificationLogs />
+                    </Layout>
+                  }
+                />
                 {/* HR Routes */}
                 <Route
                   path="/hr"
@@ -6280,6 +6307,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CustomerSegments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/customer-notifications"
+                  element={
+                    <Layout>
+                      <CustomerNotifications />
                     </Layout>
                   }
                 />

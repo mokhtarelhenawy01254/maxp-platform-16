@@ -57,6 +57,10 @@ class BillingNotificationService {
         await this.checkLowBalances();
       }, 2);
 
+      await safeQuery(async () => {
+        await this.sweepSubscriptionHeldOrders();
+      }, 2);
+
     } catch (error) {
       console.error('❌ [BILLING] Error in daily billing checks:', error.message);
     }
@@ -159,6 +163,33 @@ class BillingNotificationService {
       }
     } catch (error) {
       console.error('❌ [BILLING] Error in checkLowBalances:', error.message);
+    }
+  }
+
+  /**
+   * سكان يومي: تحرير الطلبات اليدوية المعلّقة بسبب انتهاء الاشتراك
+   * لكل الشركات اللي رجع اشتراك الطلبات اليدوية عندها ACTIVE/TRIAL.
+   */
+  async sweepSubscriptionHeldOrders() {
+    try {
+      const companies = await getSharedPrismaClient().order.findMany({
+        where: { billingHoldAt: { not: null }, billingHoldAmount: null },
+        distinct: ['companyId'],
+        select: { companyId: true },
+      });
+
+      if (companies.length === 0) return;
+
+      const { releaseSubscriptionHeldOrders } = require('./pendingBillingService');
+      for (const row of companies) {
+        try {
+          await releaseSubscriptionHeldOrders(row.companyId);
+        } catch (err) {
+          console.error(`⚠️ [BILLING] Sweep release failed for company ${row.companyId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('❌ [BILLING] Error in sweepSubscriptionHeldOrders:', error.message);
     }
   }
 

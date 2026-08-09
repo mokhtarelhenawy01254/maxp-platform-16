@@ -73,6 +73,7 @@ router.get('/', async (req, res) => {
                 duplicateOrderAction: settings.duplicateOrderAction || 'filter',
                 duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
+                showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE
@@ -100,6 +101,7 @@ router.put('/', async (req, res) => {
             duplicateOrderAction,
             duplicateOrderWindowMinutes,
             incompleteOrderLostAfterHours,
+            showIncompleteCartsInOrders,
             minimumOrderEnabled,
             minimumOrderAmount,
             minimumOrderMessage
@@ -208,6 +210,9 @@ router.put('/', async (req, res) => {
         if (incompleteOrderLostAfterHours !== undefined) {
             updateData.incompleteOrderLostAfterHours = parseInt(incompleteOrderLostAfterHours, 10);
         }
+        if (showIncompleteCartsInOrders !== undefined) {
+            updateData.showIncompleteCartsInOrders = parseBooleanSetting(showIncompleteCartsInOrders);
+        }
         if (parsedMinimumOrderEnabled !== undefined) updateData.minimumOrderEnabled = parsedMinimumOrderEnabled;
         if (parsedMinimumOrderAmount !== undefined) updateData.minimumOrderAmount = parsedMinimumOrderAmount;
         if (minimumOrderMessage !== undefined) {
@@ -229,6 +234,9 @@ router.put('/', async (req, res) => {
                 incompleteOrderLostAfterHours: incompleteOrderLostAfterHours !== undefined
                     ? parseInt(incompleteOrderLostAfterHours, 10)
                     : 24,
+                showIncompleteCartsInOrders: showIncompleteCartsInOrders !== undefined
+                    ? parseBooleanSetting(showIncompleteCartsInOrders)
+                    : false,
                 minimumOrderEnabled: parsedMinimumOrderEnabled || false,
                 minimumOrderAmount: parsedMinimumOrderAmount || 0,
                 minimumOrderMessage: minimumOrderMessage
@@ -299,6 +307,7 @@ router.put('/', async (req, res) => {
                 duplicateOrderAction: settings.duplicateOrderAction || 'filter',
                 duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
+                showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE

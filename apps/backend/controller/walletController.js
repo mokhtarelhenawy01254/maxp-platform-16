@@ -343,13 +343,19 @@ class WalletController {
         });
       });
 
-      // 🚧 الطلبات المعلّقة بانتظار شحن الرصيد
-      const heldOrdersAgg = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().order.aggregate({
-          where: { companyId, billingHoldAt: { not: null } },
-          _count: { id: true },
-          _sum: { billingHoldAmount: true }
-        });
+      // 🚧 الطلبات المعلّقة بانتظار شحن الرصيد (billingHoldAmount != null)
+      // أو بسبب انتهاء اشتراك الطلبات اليدوية (billingHoldAmount == null)
+      const [billingHeldAgg, subscriptionHeldCount] = await executeWithRetry(async () => {
+        return await Promise.all([
+          getSharedPrismaClient().order.aggregate({
+            where: { companyId, billingHoldAt: { not: null }, billingHoldAmount: { not: null } },
+            _count: { id: true },
+            _sum: { billingHoldAmount: true }
+          }),
+          getSharedPrismaClient().order.count({
+            where: { companyId, billingHoldAt: { not: null }, billingHoldAmount: null }
+          })
+        ]);
       });
 
       // Get usage breakdown by feature
@@ -389,8 +395,9 @@ class WalletController {
           activeApps: activeApps.length,
           usageBreakdown: usageByFeature,
           heldOrders: {
-            count: heldOrdersAgg._count.id || 0,
-            amount: parseFloat(heldOrdersAgg._sum.billingHoldAmount || 0)
+            count: (billingHeldAgg._count.id || 0) + subscriptionHeldCount,
+            amount: parseFloat(billingHeldAgg._sum.billingHoldAmount || 0),
+            subscriptionCount: subscriptionHeldCount
           }
         }
       });
