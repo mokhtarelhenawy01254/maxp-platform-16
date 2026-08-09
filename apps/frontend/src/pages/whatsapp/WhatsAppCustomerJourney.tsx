@@ -10,6 +10,7 @@ import {
   Eye,
   Layout,
   MessageSquare,
+  Minus,
   Package,
   Plus,
   RefreshCw,
@@ -20,6 +21,8 @@ import {
   TrendingUp,
   Users,
   Zap,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -260,6 +263,128 @@ function MessagePreview({ content }: { content: string }) {
   );
 }
 
+function FlowStepNode({
+  step,
+  index,
+  isAdmin,
+  onEdit,
+  onDelete,
+  onSetDeleteTarget,
+}: {
+  step: Step;
+  index: number;
+  isAdmin: boolean;
+  onEdit: (step: Step) => void;
+  onDelete: (step: Step) => void;
+  onSetDeleteTarget: (target: DeleteTarget) => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-0">
+      <div className="w-full max-w-md rounded-2xl border border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] p-4 shadow-[0_4px_24px_rgba(139,92,246,0.08)] backdrop-blur-sm transition-all hover:shadow-[0_8px_32px_rgba(139,92,246,0.15)] hover:border-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,transparent)]">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(139,92,246,1)_100%,var(--color-primary)_0%)]">
+            <Send className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-[color:color-mix(in_srgb,rgba(139,92,246,0.7)_100%,var(--color-muted-foreground)_0%)]">
+                الخطوة {index + 1}
+              </span>
+              <Badge
+                variant="outline"
+                className="rounded-full border-[color:color-mix(in_srgb,rgba(139,92,246,0.25)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,transparent)] px-2 py-0.5 text-[10px] text-[color:color-mix(in_srgb,rgba(139,92,246,0.8)_100%,var(--color-foreground)_0%)]"
+              >
+                <MessageSquare className="size-2.5" />
+                إرسال رسالة
+              </Badge>
+            </div>
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-[color:var(--color-foreground)]">
+              {step.content.length > 80
+                ? `${step.content.slice(0, 80)}...`
+                : step.content}
+            </p>
+          </div>
+          {isAdmin && (
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                onClick={() => onEdit(step)}
+              >
+                <Edit className="size-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full text-[color:color-mix(in_srgb,rgba(239,68,68,0.6)_100%,var(--color-destructive)_0%)] hover:text-[color:var(--color-destructive)]"
+                onClick={() =>
+                  onSetDeleteTarget({ type: "step", id: step.id || "" })
+                }
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FlowWaitNode({ days }: { days: number }) {
+  return (
+    <div className="flex flex-col items-center gap-0">
+      <div className="flex flex-col items-center">
+        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+      <div className="flex items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.04)_100%,var(--color-card)_0%)] px-4 py-2 shadow-sm">
+        <Clock className="size-3.5 text-[color:color-mix(in_srgb,rgba(139,92,246,0.6)_100%,var(--color-muted-foreground)_0%)]" />
+        <span className="text-xs font-medium text-[color:var(--color-foreground)]">
+          انتظار {days} {days === 1 ? "يوم" : "أيام"}
+        </span>
+      </div>
+      <div className="flex flex-col items-center">
+        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.2)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+    </div>
+  );
+}
+
+function FlowAddButton({ onClick, label }: { onClick: () => void; label?: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0">
+      <div className="flex flex-col items-center">
+        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        className="group flex size-9 items-center justify-center rounded-full border-2 border-dashed border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_100%,var(--shell-control-border)_0%)] bg-[color:var(--color-card)] text-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--color-muted-foreground)_0%)] shadow-sm transition-all hover:border-[color:color-mix(in_srgb,rgba(139,92,246,0.6)_100%,var(--color-primary)_0%)] hover:bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,var(--color-card)_0%)] hover:text-[color:color-mix(in_srgb,rgba(139,92,246,1)_100%,var(--color-primary)_0%)] hover:shadow-[0_0_16px_rgba(139,92,246,0.15)]"
+        title={label}
+      >
+        <Plus className="size-4" />
+      </button>
+      <div className="flex flex-col items-center">
+        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+    </div>
+  );
+}
+
+function FlowStartNode() {
+  return (
+    <div className="flex flex-col items-center gap-0">
+      <div className="rounded-full border border-[color:color-mix(in_srgb,rgba(139,92,246,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] px-5 py-2 text-xs font-medium text-[color:color-mix(in_srgb,rgba(139,92,246,0.7)_100%,var(--color-muted-foreground)_0%)] shadow-sm">
+        بداية السلسلة
+      </div>
+      <div className="flex flex-col items-center">
+        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
+      </div>
+    </div>
+  );
+}
+
 const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -296,6 +421,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
   });
 
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   // منع إعادة تحميل كاملة للصفحة (ومضة الـ Skeleton) كل ما العميل يختار flow:
   // نحافظ على الـ selection الحالي في ref بدل ما نجعل fetchFlows معتمدة على selectedFlow?.id
@@ -771,10 +897,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               }
                             }}
                             className={cn(
-                              "rounded-3xl border px-4 py-4 shadow-sm transition-all",
+                              "rounded-2xl border px-4 py-4 shadow-sm transition-all",
                               "cursor-pointer bg-[color:var(--color-card)]/70 hover:-translate-y-0.5 hover:bg-[color:var(--color-card)]",
                               selected
-                                ? "border-[color:var(--business-success)] bg-[color:color-mix(in_srgb,var(--business-success)_8%,white)] shadow-md"
+                                ? "border-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--business-success)_0%)] bg-[color:color-mix(in_srgb,rgba(139,92,246,0.06)_100%,var(--color-card)_0%)] shadow-[0_4px_20px_rgba(139,92,246,0.1)]"
                                 : "border-[color:var(--shell-control-border)]",
                             )}
                           >
@@ -788,8 +914,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
                                     variant="outline"
                                     className={cn(
                                       flow.isEnabled
-                                        ? flowStatusClasses.enabled
-                                        : flowStatusClasses.disabled,
+                                        ? "border-[color:color-mix(in_srgb,rgba(34,197,94,0.4)_100%,transparent)] bg-[color:color-mix(in_srgb,rgba(34,197,94,0.08)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(34,197,94,0.9)_100%,var(--color-success)_0%)]"
+                                        : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/50 text-[color:var(--color-muted-foreground)]",
                                     )}
                                   >
                                     {flow.isEnabled
@@ -797,7 +923,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                                       : t("whatsappJourney.flows.disabled")}
                                   </Badge>
                                   {flow._count?.categories && flow._count.categories > 0 ? (
-                                    <Badge variant="outline" className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200">
+                                    <Badge variant="outline" className="rounded-full border-[color:color-mix(in_srgb,rgba(234,179,8,0.4)_100%,transparent)] bg-[color:color-mix(in_srgb,rgba(234,179,8,0.08)_100%,transparent)] text-[color:color-mix(in_srgb,rgba(234,179,8,0.9)_100%,var(--color-warning)_0%)]">
                                       <Sparkles className="size-3" />
                                       تصنيف
                                     </Badge>
@@ -843,9 +969,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
                             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3">
                               <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
                                 <MessageSquare className="size-4" />
-                                <span>{flow._count?.steps || 0}</span>
+                                <span>{flow._count?.steps || 0} خطوة</span>
                               </div>
-                              <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+                              <div className="text-xs text-[color:var(--color-muted-foreground)]">
                                 {formatDate(flow.createdAt)}
                               </div>
                             </div>
@@ -924,7 +1050,28 @@ const WhatsAppCustomerJourney: React.FC = () => {
               }
               action={
                 selectedFlow ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-7 rounded-full"
+                        onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                      >
+                        <Minus className="size-3" />
+                      </Button>
+                      <span className="min-w-[3rem] text-center text-xs font-medium text-[color:var(--color-muted-foreground)]">
+                        {zoomLevel}%
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-7 rounded-full"
+                        onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
+                      >
+                        <Plus className="size-3" />
+                      </Button>
+                    </div>
                     <Button
                       variant="outline"
                       className={outlineActionClassName}
@@ -974,109 +1121,85 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     />
                   ))}
                 </div>
-              ) : steps.length > 0 ? (
+              ) : (
                 <div
-                  className={cn(
-                    "relative space-y-5",
-                    isRtl ? "pr-14" : "pl-14",
-                  )}
+                  className="overflow-auto rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] bg-[color:color-mix(in_srgb,var(--color-muted)_30%,var(--color-background)_70%)] p-6"
+                  style={{ minHeight: "32rem" }}
                 >
                   <div
-                    className={cn(
-                      "absolute bottom-2 top-2 w-px bg-[linear-gradient(180deg,color-mix(in_srgb,var(--business-success)_55%,transparent),color-mix(in_srgb,var(--color-secondary)_38%,transparent))]",
-                      isRtl ? "right-5" : "left-5",
+                    className="mx-auto flex flex-col items-center"
+                    style={{
+                      transform: `scale(${zoomLevel / 100})`,
+                      transformOrigin: "top center",
+                      transition: "transform 0.2s ease",
+                    }}
+                  >
+                    <FlowStartNode />
+
+                    {isAdmin && (
+                      <FlowAddButton
+                        onClick={openCreateStepDialog}
+                        label={t("whatsappJourney.steps.add")}
+                      />
                     )}
-                  />
-                  {steps.map((step, index) => (
-                    <div key={step.id || `${step.stepOrder}-${index}`} className="relative">
-                      <div
-                        className={cn(
-                          "absolute top-4 flex size-10 items-center justify-center rounded-full border border-[color:var(--business-success)] bg-[var(--app-panel-bg)] text-sm font-semibold text-[color:var(--business-success)] shadow-sm",
-                          isRtl ? "-right-14" : "-left-14",
+
+                    {steps.length > 0 ? (
+                      steps.map((step, index) => (
+                        <React.Fragment key={step.id || `${step.stepOrder}-${index}`}>
+                          {step.delayDays > 0 && index > 0 && (
+                            <FlowWaitNode days={step.delayDays} />
+                          )}
+                          <FlowStepNode
+                            step={step}
+                            index={index}
+                            isAdmin={isAdmin}
+                            onEdit={openEditStepDialog}
+                            onDelete={(s) =>
+                              setDeleteTarget({ type: "step", id: s.id || "" })
+                            }
+                            onSetDeleteTarget={setDeleteTarget}
+                          />
+                          {isAdmin && (
+                            <FlowAddButton
+                              onClick={openCreateStepDialog}
+                              label={t("whatsappJourney.steps.add")}
+                            />
+                          )}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <div className="py-12 text-center">
+                        <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-[color:color-mix(in_srgb,rgba(139,92,246,0.08)_100%,var(--color-card)_0%)] text-[color:color-mix(in_srgb,rgba(139,92,246,0.5)_100%,var(--color-muted-foreground)_0%)]">
+                          <MessageSquare className="size-8" />
+                        </div>
+                        <p className="mt-4 text-sm font-medium text-[color:var(--color-foreground)]">
+                          {t("whatsappJourney.steps.title")}
+                        </p>
+                        <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
+                          {t("whatsappJourney.steps.add")}
+                        </p>
+                        {isAdmin && (
+                          <Button
+                            className={cn(primaryActionClassName, "mt-4")}
+                            onClick={openCreateStepDialog}
+                          >
+                            <Plus className="size-4" />
+                            {t("whatsappJourney.steps.add")}
+                          </Button>
                         )}
-                      >
-                        {index + 1}
                       </div>
+                    )}
 
-                      <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/72 p-5 shadow-md">
-                        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.85fr)]">
-                          <div className="space-y-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-emerald-300/70 bg-emerald-500/10 px-3 py-1 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200"
-                              >
-                                <Clock className="size-3.5" />
-                                {t("whatsappJourney.steps.delay", {
-                                  days: step.delayDays,
-                                })}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-3 py-1 text-[color:var(--color-muted-foreground)]"
-                              >
-                                {t("whatsappJourney.steps.title")}
-                              </Badge>
-                            </div>
-
-                            <p className="whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-foreground)]">
-                              {step.content}
-                            </p>
-
-                            {isAdmin && (
-                              <div className="flex flex-wrap gap-2">
-                                <Button
-                                  variant="outline"
-                                  className={outlineActionClassName}
-                                  onClick={() => openEditStepDialog(step)}
-                                >
-                                  <Edit className="size-4" />
-                                  {t("common.edit")}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
-                                  onClick={() =>
-                                    setDeleteTarget({
-                                      type: "step",
-                                      id: step.id || "",
-                                    })
-                                  }
-                                >
-                                  <Trash2 className="size-4" />
-                                  {t("common.delete")}
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-                              <MessageSquare className="size-3.5" />
-                              {t("whatsappJourney.steps.preview")}
-                            </div>
-                            <MessagePreview content={step.content} />
-                          </div>
+                    {steps.length > 0 && (
+                      <div className="flex flex-col items-center">
+                        <div className="h-6 w-px bg-[color:color-mix(in_srgb,rgba(139,92,246,0.15)_100%,var(--shell-control-border)_0%)]" />
+                        <div className="rounded-full border border-[color:color-mix(in_srgb,rgba(34,197,94,0.3)_50%,var(--shell-control-border)_50%)] bg-[color:color-mix(in_srgb,rgba(34,197,94,0.06)_100%,var(--color-card)_0%)] px-5 py-2 text-xs font-medium text-[color:color-mix(in_srgb,rgba(34,197,94,0.7)_100%,var(--color-success)_0%)] shadow-sm">
+                          نهاية السلسلة
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <EmptyState
-                  icon={MessageSquare}
-                  title={t("whatsappJourney.steps.title")}
-                  description={t("whatsappJourney.steps.add")}
-                  action={
-                    <Button
-                      className={primaryActionClassName}
-                      onClick={openCreateStepDialog}
-                    >
-                      <Plus className="size-4" />
-                      {t("whatsappJourney.steps.add")}
-                    </Button>
-                  }
-                />
               )}
             </WhatsAppSurfaceCard>
           </div>
