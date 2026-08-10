@@ -884,7 +884,7 @@ describe('radiologyController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'review' } }), res);
+      await controller.advanceReport(req({ params: { id: 'study-1', kind: 'review' } }), res);
 
       expect(res.statusCode).toBe(200);
       expect(prisma.radiologyReport.update).toHaveBeenCalledWith({
@@ -904,7 +904,7 @@ describe('radiologyController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'sign' } }), res);
+      await controller.advanceReport(req({ params: { id: 'study-1', kind: 'sign' } }), res);
 
       expect(res.statusCode).toBe(200);
       const call = prisma.radiologyReport.update.mock.calls[0][0];
@@ -922,7 +922,7 @@ describe('radiologyController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'review' } }), res);
+      await controller.advanceReport(req({ params: { id: 'study-1', kind: 'review' } }), res);
 
       expect(res.statusCode).toBe(400);
       expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
@@ -934,9 +934,27 @@ describe('radiologyController', () => {
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
-      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'explode' } }), res);
+      await controller.advanceReport(req({ params: { id: 'study-1', kind: 'explode' } }), res);
 
       expect(res.statusCode).toBe(400);
+    });
+
+    test('dispatches deliver kind to markDelivered', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(makeStudy({ status: 'REPORTED' }));
+      prisma.radiologyReport.findUnique.mockResolvedValue({
+        id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'SIGNED',
+      });
+      prisma.radiologyReport.update.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportStatus: 'DELIVERED' });
+      prisma.radiologyStudy.update.mockResolvedValue(makeStudy({ status: 'DELIVERED' }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.advanceReport(req({ params: { id: 'study-1', kind: 'deliver' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.report.reportStatus).toBe('DELIVERED');
+      expect(res.payload.data.study.status).toBe('DELIVERED');
     });
   });
 

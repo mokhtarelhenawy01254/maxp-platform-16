@@ -244,7 +244,7 @@ const listStudies = async (req, res) => {
     res.json({ success: true, data: { items: studies, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error fetching radiology studies:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسات الأشعة', detail: String(error?.message || error) });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسات الأشعة' });
   }
 };
 
@@ -654,6 +654,12 @@ const advanceReportStatus = async (req, res) => {
   }
 };
 
+const advanceReport = async (req, res) => {
+  const kind = String(req.params.kind || '').toLowerCase();
+  if (kind === 'deliver') return markDelivered(req, res);
+  return advanceReportStatus(req, res);
+};
+
 const markDelivered = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -706,6 +712,6 @@ module.exports = {
   deleteStudyImage,
   getStudyReport,
   upsertStudyReport,
-  advanceReportStatus,
+  advanceReport,
   markDelivered,
 };
