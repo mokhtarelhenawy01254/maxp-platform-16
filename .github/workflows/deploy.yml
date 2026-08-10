@@ -296,7 +296,7 @@ jobs:
             set -e
             echo "🧹 Cleaning stale staging dirs (older than 1 day)..."
             find $HOME -maxdepth 1 -name "deploy_staging_*" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
-            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/backend_uploads_backup 2>/dev/null || true
+            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
             sudo journalctl --vacuum-time=1d 2>/dev/null || true
             pm2 flush 2>/dev/null || true
 

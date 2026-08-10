@@ -231,6 +231,9 @@ else
 fi
 
 # Move backend files from staging
+# Backups are run-id scoped so a concurrent deploy's cleanup can never
+# delete a backup that is still mid-restore (rsync code 24 race).
+BACKEND_UPLOADS_BACKUP="/tmp/backend_uploads_backup_${GITHUB_RUN_ID}"
 if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   echo "📦 Extracting backend files from tarball..."
   # Keep the current backend running during file sync/preparation.
@@ -239,8 +242,8 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   # Save uploads folder if it exists in backend2 (preserve user uploads)
   if [ -d "/var/www/backend2/uploads" ]; then
     echo "💾 Saving uploads folder from backend2..."
-    sudo rm -rf /tmp/backend_uploads_backup
-    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+    sudo rm -rf "$BACKEND_UPLOADS_BACKUP"
+    sudo cp -r /var/www/backend2/uploads "$BACKEND_UPLOADS_BACKUP"
   fi
 
   # Save .env if it exists in backend2
@@ -294,9 +297,9 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   fi
 
               # Restore uploads
-  if [ -d "/tmp/backend_uploads_backup" ]; then
-    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
-    sudo rm -rf /tmp/backend_uploads_backup
+  if [ -d "$BACKEND_UPLOADS_BACKUP" ]; then
+    sudo rsync -a "$BACKEND_UPLOADS_BACKUP/" /var/www/backend2/uploads/
+    sudo rm -rf "$BACKEND_UPLOADS_BACKUP"
   fi
   
   echo "✅ Backend extracted and restored successfully"
@@ -306,7 +309,7 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
   # Save uploads folder if it exists in backend2 (preserve user uploads)
   if [ -d "/var/www/backend2/uploads" ]; then
     echo "💾 Saving uploads folder from backend2..."
-    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+    sudo cp -r /var/www/backend2/uploads "$BACKEND_UPLOADS_BACKUP"
   fi
 
   # Save .env if it exists in backend2
@@ -363,9 +366,9 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
   fi
 
               # Restore uploads
-  if [ -d "/tmp/backend_uploads_backup" ]; then
-    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
-    sudo rm -rf /tmp/backend_uploads_backup
+  if [ -d "$BACKEND_UPLOADS_BACKUP" ]; then
+    sudo rsync -a "$BACKEND_UPLOADS_BACKUP/" /var/www/backend2/uploads/
+    sudo rm -rf "$BACKEND_UPLOADS_BACKUP"
   fi
   
   echo "✅ Backend moved successfully from staging"
