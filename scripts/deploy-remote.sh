@@ -46,7 +46,6 @@ if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" flush || echo "⚠️ PM2 flush failed"
 fi
 sudo journalctl --vacuum-time=1d || echo "⚠️ Journalctl cleanup failed"
-sudo npm cache clean --force || echo "⚠️ NPM cache cleanup failed"
 
 echo "🚀 Starting deployment on server..."
 
