@@ -20,8 +20,8 @@ export default function RadiologyDashboardTab() {
         const items = studies.items || [];
         const today = dayKey(new Date());
         const studiesToday = items.filter(s => s.createdAt && dayKey(new Date(s.createdAt)) === today).length;
-        const awaiting = items.filter(s => s.status === "AWAITING_REPORT" || s.reportStatus === "PENDING").length;
-        const ready = items.filter(s => s.status === "SIGNED" || s.status === "DELIVERED").length;
+        const awaiting = items.filter(s => s.status === "PENDING_REPORT").length;
+        const ready = items.filter(s => s.status === "REPORTED" || s.status === "DELIVERED").length;
         const emergency = items.filter(s => s.emergency === true).length;
 
         let revenue: number | undefined;
