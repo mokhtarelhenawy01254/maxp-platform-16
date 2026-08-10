@@ -139,6 +139,12 @@ router.get('/system-analytics',
   customerLoyaltyController.getSystemAnalytics
 );
 
+// إصدار الكوبونات الناقصة (backfill) للأوردرات المسلّمة القديمة
+router.post('/vouchers/backfill',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.backfillVouchers
+);
+
 // تجاوز عميل (طريقة الحساب + المزايا المخصصة)
 router.get('/customers/:customerId/tier-override',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),

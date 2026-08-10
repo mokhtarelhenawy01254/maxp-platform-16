@@ -1003,5 +1003,15 @@ module.exports = {
       console.error('❌ Error processing expired vouchers:', error);
       res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء معالجة الكوبونات' });
     }
+  },
+  backfillVouchers: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const result = await autoDiscountService.backfillMissingVouchers(companyId);
+      res.json({ success: true, data: result, message: `تم إصدار ${result.issued} كوبون ناقص` });
+    } catch (error) {
+      console.error('❌ Error backfilling vouchers:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إصدار الكوبونات الناقصة' });
+    }
   }
 };
