@@ -268,6 +268,64 @@ class WalletService {
       throw new Error('Failed to refund wallet balance');
     }
   }
+
+  // إضافة كاش باك داخل transaction معلن (للأغراض الذرية مع تحديث حالة الكوبون)
+  // بتستخدم نفس المنطق بتاع addToWallet لكن على الـ tx الممرر بدل prisma client.
+  static async addCashbackWithTx(tx, customerId, orderId, orderAmount, cashbackRate = 0.05, explicitCashbackAmount = null) {
+    let wallet = await tx.customerWallet.findFirst({
+      where: { customerId, isActive: true }
+    });
+
+    if (!wallet) {
+      const customer = await tx.customer.findUnique({
+        where: { id: customerId },
+        select: { companyId: true }
+      });
+      if (!customer) throw new Error('Customer not found');
+      wallet = await tx.customerWallet.upsert({
+        where: { customerId },
+        update: {},
+        create: {
+          customerId,
+          companyId: customer.companyId,
+          balance: 0,
+          totalEarned: 0,
+          totalSpent: 0,
+          currency: 'EGP',
+          isActive: true
+        }
+      });
+    }
+
+    const amount = explicitCashbackAmount !== null ? explicitCashbackAmount : (orderAmount * cashbackRate);
+    if (amount <= 0) return null;
+
+    const balanceBefore = wallet.balance;
+    const balanceAfter = balanceBefore + amount;
+
+    await tx.customerWallet.update({
+      where: { id: wallet.id },
+      data: {
+        balance: balanceAfter,
+        totalEarned: wallet.totalEarned + amount
+      }
+    });
+
+    const transaction = await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'CASHBACK',
+        amount,
+        balanceBefore,
+        balanceAfter,
+        description: `Cashback from order #${orderId}`,
+        metadata: JSON.stringify({ orderId, orderAmount, cashbackRate }),
+        orderId
+      }
+    });
+
+    return { wallet, transaction };
+  }
 }
 
 module.exports = WalletService;
