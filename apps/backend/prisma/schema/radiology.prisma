@@ -14,7 +14,7 @@ model RadiologyExamType {
 model RadiologyStudy {
   id                String   @id @default(cuid())
   companyId         String?
-  studyNumber       String?    // RAD-YYYYMMDD-XXXX
+  studyNumber       String?   @unique // RAD-YYYYMMDD-XXXX
   patientId         String?    // external ref to booking Patient
   patientName       String
   patientPhone      String?

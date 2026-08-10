@@ -22,7 +22,9 @@ export default function RadiologyPatientsTab() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await fetchJson<RadiologyPatient[]>(`${bookingApi("patients")}?limit=200`);
+      const url = new URL(bookingApi("patients"));
+      url.searchParams.set("limit", "200");
+      const data = await fetchJson<RadiologyPatient[]>(url.toString());
       setItems(Array.isArray(data) ? data : []);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تحميل المرضى");
