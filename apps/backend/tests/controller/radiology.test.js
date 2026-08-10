@@ -374,6 +374,7 @@ describe('radiologyController', () => {
       });
       expect(args.skip).toBe(25);
       expect(args.take).toBe(25);
+      expect(args.include).toEqual({ report: true });
       expect(prisma.radiologyStudy.count).toHaveBeenCalledWith({ where: args.where });
 
       expect(res.statusCode).toBe(200);
@@ -869,6 +870,73 @@ describe('radiologyController', () => {
 
       expect(res.statusCode).toBe(404);
       expect(prisma.radiologyReport.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('advanceReportStatus', () => {
+    test('review advances DRAFT -> REVIEWED', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
+      prisma.radiologyReport.findUnique.mockResolvedValue({
+        id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'DRAFT',
+      });
+      prisma.radiologyReport.update.mockResolvedValue({ id: 'rep-1', studyId: 'study-1', reportStatus: 'REVIEWED' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'review' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReport.update).toHaveBeenCalledWith({
+        where: { id: 'rep-1' },
+        data: { reportStatus: 'REVIEWED' },
+      });
+    });
+
+    test('sign sets signedBy/signedAt when not already signed', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
+      prisma.radiologyReport.findUnique.mockResolvedValue({
+        id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'REVIEWED',
+      });
+      prisma.radiologyReport.update.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'rep-1', reportStatus: data.reportStatus, signedBy: data.signedBy }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'sign' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      const call = prisma.radiologyReport.update.mock.calls[0][0];
+      expect(call.data.reportStatus).toBe('SIGNED');
+      expect(call.data.signedBy).toBeTruthy();
+      expect(call.data.signedAt).toBeInstanceOf(Date);
+    });
+
+    test('rejects a backward jump', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
+      prisma.radiologyReport.findUnique.mockResolvedValue({
+        id: 'rep-1', studyId: 'study-1', reportText: 'x', reportStatus: 'SIGNED',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'review' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(prisma.radiologyReport.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects an unknown kind', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.advanceReportStatus(req({ params: { id: 'study-1', kind: 'explode' } }), res);
+
+      expect(res.statusCode).toBe(400);
     });
   });
 

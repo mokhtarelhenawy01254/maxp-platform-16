@@ -33,7 +33,9 @@ router.get('/studies', controller.listStudies);
 router.post('/studies', controller.createStudy);
 router.get('/studies/:id/report', controller.getStudyReport);
 router.put('/studies/:id/report', controller.upsertStudyReport);
-router.put('/studies/:id/deliver', controller.markDelivered);
+router.put('/studies/:id/report/review', controller.advanceReportStatus);
+router.put('/studies/:id/report/sign', controller.advanceReportStatus);
+router.put('/studies/:id/report/deliver', controller.markDelivered);
 router.get('/studies/:id', controller.getStudy);
 router.put('/studies/:id', controller.updateStudy);
 

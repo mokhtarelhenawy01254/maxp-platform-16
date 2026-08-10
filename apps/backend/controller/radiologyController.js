@@ -237,7 +237,7 @@ const listStudies = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const [studies, total] = await Promise.all([
-      prisma.radiologyStudy.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limitNum }),
+      prisma.radiologyStudy.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limitNum, include: { report: true } }),
       prisma.radiologyStudy.count({ where }),
     ]);
 
@@ -614,6 +614,46 @@ const upsertStudyReport = async (req, res) => {
   }
 };
 
+const REPORT_KIND_STATUS = {
+  review: 'REVIEWED',
+  sign: 'SIGNED',
+};
+
+const advanceReportStatus = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id, kind } = req.params;
+    const target = REPORT_KIND_STATUS[String(kind || '').toLowerCase()];
+    if (!target) return res.status(400).json({ success: false, error: 'إجراء غير صحيح' });
+
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+
+    const report = await prisma.radiologyReport.findUnique({ where: { studyId: id } });
+    if (!report) return res.status(400).json({ success: false, error: 'التقرير غير موجود' });
+
+    if (report.reportStatus !== target) {
+      const transition = validateRadiologyReportTransition(report.reportStatus, target);
+      if (!transition.valid) return res.status(400).json({ success: false, error: transition.error });
+    }
+
+    const data = { reportStatus: target };
+    if (target === 'SIGNED' && !report.signedBy) {
+      data.signedBy = signerName(req);
+      data.signedAt = new Date();
+    }
+
+    const updated = await prisma.radiologyReport.update({ where: { id: report.id }, data });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error advancing radiology report status:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث التقرير' });
+  }
+};
+
 const markDelivered = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -666,5 +706,6 @@ module.exports = {
   deleteStudyImage,
   getStudyReport,
   upsertStudyReport,
+  advanceReportStatus,
   markDelivered,
 };
