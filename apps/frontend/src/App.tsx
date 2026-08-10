@@ -684,6 +684,9 @@ const InventoryReports = React.lazy(
 const InventoryAnalytics = React.lazy(
   () => import("./pages/inventory/InventoryAnalytics"),
 );
+const ReorderPointsPage = React.lazy(
+  () => import("./pages/inventory/ReorderPointsPage"),
+);
 const WarehouseManagement = React.lazy(
   () => import("./pages/inventory/WarehouseManagement"),
 );
@@ -4941,6 +4944,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <InventoryAudits />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/reorder-points"
+                  element={
+                    <Layout>
+                      <ReorderPointsPage />
                     </Layout>
                   }
                 />
