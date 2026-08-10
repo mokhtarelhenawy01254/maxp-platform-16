@@ -2,20 +2,29 @@ import { useState, useCallback } from "react";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 
-interface OrderItem {
+export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
   image: string | null;
 }
 
-interface Order {
+export interface Order {
   id: string;
   orderNumber: string;
   status: string;
   total: number;
   createdAt: string;
   items: OrderItem[];
+  customerName?: string;
+  customerPhone?: string;
+  city?: string;
+  address?: string;
+  notes?: string;
+  shipping?: number;
+  tax?: number;
+  currency?: string;
+  paymentMethod?: string;
 }
 
 interface Activity {

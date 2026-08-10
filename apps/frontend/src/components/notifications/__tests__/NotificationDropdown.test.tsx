@@ -36,6 +36,8 @@ jest.mock("../../../services/socketService", () => ({
       delete socketHandlers[event];
     }),
     playNotificationSound: jest.fn(),
+    playOrderAlarm: jest.fn(),
+    stopOrderAlarm: jest.fn(),
   },
 }));
 

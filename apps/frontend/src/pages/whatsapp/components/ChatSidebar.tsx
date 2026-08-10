@@ -15,7 +15,9 @@ import {
   Megaphone,
   MessageSquarePlus,
   MoreVertical,
+  Pencil,
   Pin,
+  Plus,
   RefreshCw,
   Search,
   Shield,
@@ -121,6 +123,9 @@ interface ChatSidebarProps {
   showArchived: boolean;
   onToggleArchived: (archived: boolean) => void;
   counts?: WhatsAppConversationCounts;
+  // Order code actions from the sidebar
+  onEditOrder?: (orderNumber: string, contact: Contact) => void;
+  onAddOrder?: (contact: Contact) => void;
 }
 
 function getContactName(contact: Contact) {
@@ -146,6 +151,24 @@ function getLastMessagePreview(contact: Contact) {
     default:
       return "....";
   }
+}
+
+/**
+ * استخراج كود الأوردر من محتوى آخر رسالة.
+ * الأنماط المدعومة: ORD-491639-964, ORD-995377-853-AFF-ez36, ...
+ */
+function extractOrderCode(content: string | null | undefined): string | null {
+  if (!content) return null;
+  const match = content.match(/ORD-\d{6}-\d{3}(?:-[A-Za-z0-9]+)*/i);
+  return match ? match[0] : null;
+}
+
+function getPreviewWithoutOrderCode(
+  content: string | null | undefined,
+  orderCode: string,
+): string {
+  if (!content) return "";
+  return content.replace(new RegExp(orderCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "").replace(/\s{2,}/g, " ").trim();
 }
 
 function FilterPill({
@@ -255,12 +278,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   showArchived,
   onToggleArchived,
   counts,
+  onEditOrder,
+  onAddOrder,
 }) => {
   const { t, i18n } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
     contact: Contact;
+  } | null>(null);
+  const [orderMenu, setOrderMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+    contact: Contact;
+    orderCode: string;
   } | null>(null);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedJids, setSelectedJids] = useState<Set<string>>(new Set());
@@ -335,17 +366,21 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   );
 
   useEffect(() => {
-    if (!contextMenu) {
+    if (!contextMenu && !orderMenu) {
       return undefined;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setContextMenu(null);
+        setOrderMenu(null);
       }
     };
 
-    const handleResize = () => setContextMenu(null);
+    const handleResize = () => {
+      setContextMenu(null);
+      setOrderMenu(null);
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", handleResize);
@@ -354,7 +389,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", handleResize);
     };
-  }, [contextMenu]);
+  }, [contextMenu, orderMenu]);
 
   const formatTime = (dateString: string | null) => {
     if (!dateString) {
@@ -851,6 +886,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
               const isSelectedInMulti = selectedJids.has(contact.jid);
 
+              const lastMessageContent = contact.lastMessage?.content;
+              const orderCode = extractOrderCode(lastMessageContent);
+              const previewText = orderCode
+                ? getPreviewWithoutOrderCode(lastMessageContent, orderCode)
+                : getLastMessagePreview(contact);
+
               return (
                 <div key={contact.id} className="relative overflow-hidden rounded-2xl">
                   {/* Action panel underneath */}
@@ -1006,9 +1047,44 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </div>
 
                         <div className="mt-1 flex items-center justify-between gap-2">
-                          <p className="line-clamp-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
-                            {getLastMessagePreview(contact)}
-                          </p>
+                          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                            {orderCode ? (
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                title={orderCode}
+                                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--color-primary)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_18%,transparent)]"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setOrderMenu({
+                                    mouseX: e.clientX + 2,
+                                    mouseY: e.clientY - 6,
+                                    contact,
+                                    orderCode,
+                                  });
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setOrderMenu({
+                                      mouseX: (e.currentTarget as HTMLElement).getBoundingClientRect().left,
+                                      mouseY: (e.currentTarget as HTMLElement).getBoundingClientRect().bottom + 4,
+                                      contact,
+                                      orderCode,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Pencil className="size-2.5" />
+                                <span className="max-w-[9rem] truncate">{orderCode}</span>
+                              </div>
+                            ) : null}
+                            <p className="line-clamp-1 min-w-0 flex-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
+                              {previewText}
+                            </p>
+                          </div>
                           <div className="flex shrink-0 items-center gap-1.5">
                             {contact.isPinned ? (
                               <Pin className="size-3 text-[color:var(--color-muted-foreground)]" />
@@ -1178,6 +1254,51 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   : t("whatsapp.sidebar.block")}
               </span>
               <Ban className="size-4" />
+            </button>
+          </div>
+        </>
+      ) : null}
+
+      {orderMenu ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            onClick={() => setOrderMenu(null)}
+            aria-label="Close order menu"
+          />
+          <div
+            className="fixed z-50 w-56 rounded-3xl border border-[color:var(--shell-overlay-border)] bg-[var(--shell-overlay-bg)] p-1.5 shadow-[var(--shell-overlay-shadow)] ring-1 ring-[color:var(--shell-overlay-edge)]"
+            style={{
+              left: Math.min(orderMenu.mouseX, (typeof window !== "undefined" ? window.innerWidth : 0) - 240),
+              top: Math.min(orderMenu.mouseY, (typeof window !== "undefined" ? window.innerHeight : 0) - 200),
+            }}
+            role="menu"
+          >
+            <p className="mx-1 mb-1 border-b border-[color:var(--shell-control-border)] px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--color-muted-foreground)]">
+              {orderMenu.orderCode}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onEditOrder?.(orderMenu.orderCode, orderMenu.contact);
+                setOrderMenu(null);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
+            >
+              <Pencil className="size-4" />
+              <span>تعديل الطلب</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onAddOrder?.(orderMenu.contact);
+                setOrderMenu(null);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
+            >
+              <Plus className="size-4" />
+              <span>إضافة طلب جديد</span>
             </button>
           </div>
         </>

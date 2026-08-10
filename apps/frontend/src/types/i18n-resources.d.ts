@@ -8285,6 +8285,39 @@ declare module 'react-i18next' {
           serviceRequests: {
             description: string;
           };
+          orderAutomation: {
+            description: string;
+          };
+          bulkSearch: {
+            description: string;
+          };
+          customerBlocks: {
+            description: string;
+          };
+          bulkOrders: {
+            description: string;
+          };
+          quickStatus: {
+            description: string;
+          };
+          statusSummary: {
+            description: string;
+          };
+          returnsSettings: {
+            description: string;
+          };
+          orderWorkflow: {
+            description: string;
+          };
+          facebookPost: {
+            description: string;
+          };
+          googleTagManager: {
+            description: string;
+          };
+          broadcast: {
+            description: string;
+          };
         };
       };
       appPricing: {
@@ -11079,6 +11112,8 @@ declare module 'react-i18next' {
         changeLog: string;
         oldStatus: string;
         changedAt: string;
+        duplicateTitle: string;
+        duplicateOrder: string;
         noResults: string;
       };
       returns: {

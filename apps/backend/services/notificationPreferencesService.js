@@ -261,6 +261,11 @@ const buildDefaultSettings = ({
       showPreview: true,
       requireInteraction: false,
     },
+    sound: {
+      enabled: true,
+      volume: 100,
+      pattern: "alarm",
+    },
   },
   typeSettings: buildDefaultTypeSettings(),
 });
@@ -316,6 +321,10 @@ const mergeSettingsWithDefaults = (incomingSettings = {}, defaults) => {
       browser: {
         ...defaults.channels.browser,
         ...(incomingSettings.channels?.browser || {}),
+      },
+      sound: {
+        ...defaults.channels.sound,
+        ...(incomingSettings.channels?.sound || {}),
       },
     },
     typeSettings: nextTypeSettings,

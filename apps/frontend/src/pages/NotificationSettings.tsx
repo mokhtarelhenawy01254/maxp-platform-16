@@ -12,8 +12,10 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   PlayIcon,
+  SpeakerWaveIcon,
 } from "@heroicons/react/24/outline";
 import api from "../services/api";
+import { socketService } from "../services/socketService";
 import { useAuth } from "../hooks/useAuthSimple";
 import {
   getBrowserNotificationPermission,
@@ -181,6 +183,14 @@ const createNormalizedSettings = ({
         showPreview: rawSettings?.channels?.browser?.showPreview ?? true,
         requireInteraction:
           rawSettings?.channels?.browser?.requireInteraction ?? false,
+      },
+      sound: {
+        enabled: rawSettings?.channels?.sound?.enabled ?? true,
+        volume:
+          typeof rawSettings?.channels?.sound?.volume === "number"
+            ? rawSettings.channels.sound.volume
+            : 100,
+        pattern: rawSettings?.channels?.sound?.pattern || "alarm",
       },
     },
     typeSettings: baseTypeSettings,
@@ -1539,6 +1549,78 @@ const NotificationSettings: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 p-4 dark:border-amber-900/40">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start">
+                    <SpeakerWaveIcon className="ml-3 h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                        صوت الطلبات (إنذار عالي)
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        صفّارة عالية تُطلق تلقائياً بمجرد وصول أي طلب جديد من
+                        المتجر لتنبيه الموظفين في المكان — وليس مجرد إشعار صامت.
+                      </p>
+                    </div>
+                  </div>
+                  <ToggleSwitch
+                    checked={settings.channels.sound.enabled}
+                    label="تفعيل صوت الطلبات"
+                    onChange={(checked) =>
+                      updateSettings("channels.sound.enabled", checked)
+                    }
+                  />
+                </div>
+
+                {settings.channels.sound.enabled ? (
+                  <div className="mt-4 space-y-3 border-t border-amber-100 pt-4 dark:border-amber-900/20">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          مستوى الصوت
+                        </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {settings.channels.sound.volume}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={settings.channels.sound.volume}
+                        onChange={(event) =>
+                          updateSettings(
+                            "channels.sound.volume",
+                            Number(event.target.value),
+                          )
+                        }
+                        className="w-full accent-amber-600"
+                        aria-label="مستوى صوت الطلبات"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          socketService.testOrderSound(
+                            (settings.channels.sound.volume ?? 100) / 100,
+                          );
+                        }}
+                        className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                      >
+                        <PlayIcon className="ml-2 h-4 w-4" />
+                        تجربة الصوت
+                      </button>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        اضغط للاستماع إلى صوت الإنذار قبل الحفظ.
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-700">

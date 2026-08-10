@@ -152,6 +152,39 @@
     },
     "serviceRequests": {
       "description": "إدارة طلبات الخدمات من العملاء"
+    },
+    "orderAutomation": {
+      "description": "أتمتة تغيير حالات الطلبات تلقائياً"
+    },
+    "bulkSearch": {
+      "description": "بحث مجمع عن الطلبات بالرقم أو التليفون"
+    },
+    "customerBlocks": {
+      "description": "إدارة قائمة حظر العملاء"
+    },
+    "bulkOrders": {
+      "description": "تنفيذ عمليات جماعية على الطلبات"
+    },
+    "quickStatus": {
+      "description": "تغيير سريع لحالة الطلبات"
+    },
+    "statusSummary": {
+      "description": "ملخص توزيع حالات الطلبات"
+    },
+    "returnsSettings": {
+      "description": "إعدادات نظام المرتجعات"
+    },
+    "orderWorkflow": {
+      "description": "تخصيص مسار معالجة الطلبات"
+    },
+    "facebookPost": {
+      "description": "إنشاء ونشر منشورات فيسبوك"
+    },
+    "googleTagManager": {
+      "description": "إعداد حاوية GTM وأكواد التتبع"
+    },
+    "broadcast": {
+      "description": "إرسال حملات ورسائل جماعية للعملاء عبر القنوات المتاحة"
     }
   }
 }

@@ -10,6 +10,7 @@ import {
   Package,
   RotateCcw,
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
 } from "lucide-react";
 import { getStatusDisplay, getSystemStatusOptions } from "../../utils/statusRegistry";
@@ -54,8 +55,10 @@ const QuickStatusChange: React.FC = () => {
   const [changeLoading, setChangeLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [duplicateWarning, setDuplicateWarning] = useState("");
   const [siteStatuses, setSiteStatuses] = useState<{id: string, name: string, code?: string}[]>([]);
   const [workflowEnabled, setWorkflowEnabled] = useState(false);
+  const searchCountsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -100,6 +103,18 @@ const QuickStatusChange: React.FC = () => {
       if (body?.success && body?.data) {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
         setCurrentOrder(order);
+
+        // Track repeated code entries and notify the user when the same order is searched twice
+        const codeKey = code.toLowerCase();
+        const searchCount = (searchCountsRef.current[codeKey] || 0) + 1;
+        searchCountsRef.current = { ...searchCountsRef.current, [codeKey]: searchCount };
+        if (searchCount > 1) {
+          const warning = t("quickStatus.duplicateOrder", { code, count: searchCount });
+          setDuplicateWarning(warning);
+          toast.warning(warning);
+        } else {
+          setDuplicateWarning("");
+        }
 
         // If user pre-selected a status, keep it; otherwise default to order's current status
         const statusToSet = preSelectedStatus || order.status;
@@ -232,6 +247,8 @@ const QuickStatusChange: React.FC = () => {
     setCurrentOrder(null);
     setSelectedStatus("");
     setSearchError("");
+    setDuplicateWarning("");
+    searchCountsRef.current = {};
     setHasSearched(false);
     inputRef.current?.focus();
   };
@@ -353,6 +370,18 @@ const QuickStatusChange: React.FC = () => {
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-start gap-3">
           <AlertCircle className="text-red-600 dark:text-red-400 mt-0.5 shrink-0" size={20} />
           <p className="text-red-800 dark:text-red-300">{searchError}</p>
+        </div>
+      )}
+
+      {duplicateWarning && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800 rounded-lg p-4 mb-6 flex items-start gap-3" role="alert">
+          <AlertTriangle className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" size={20} />
+          <div>
+            <p className="text-amber-900 dark:text-amber-200 font-medium">
+              {t("quickStatus.duplicateTitle")}
+            </p>
+            <p className="text-amber-800 dark:text-amber-300 mt-1">{duplicateWarning}</p>
+          </div>
         </div>
       )}
 

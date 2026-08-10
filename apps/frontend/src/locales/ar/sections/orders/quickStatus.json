@@ -21,5 +21,7 @@
   "changeLog": "سجل التغييرات",
   "oldStatus": "الحالة القديمة",
   "changedAt": "وقت التغيير",
+  "duplicateTitle": "تنبيه: أوردر مكرر",
+  "duplicateOrder": "تم إدخال كود {{code}} من قبل — هذا الأوردر مكرر (أُدخل {{count}} مرات)",
   "noResults": "لا توجد نتائج"
 }

@@ -1,9 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, X, Clock, TrendingUp, ArrowRight, Sparkles, Zap,
+  Search, X, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -15,8 +14,6 @@ interface SearchBarProps {
   onFocus?: () => void;
   onBlur?: () => void;
   suggestions?: string[];
-  trendingSearches?: string[];
-  popularApps?: Array<{ slug: string; name: string; icon?: string }>;
   className?: string;
   placeholder?: string;
 }
@@ -30,8 +27,6 @@ export function SearchBar({
   onFocus,
   onBlur,
   suggestions = [],
-  trendingSearches = [],
-  popularApps = [],
   className,
   placeholder,
 }: SearchBarProps) {
@@ -91,7 +86,7 @@ export function SearchBar({
     inputRef.current?.focus();
   };
 
-  const showDropdown = isFocused && (recentSearches.length > 0 || suggestions.length > 0 || trendingSearches.length > 0 || popularApps.length > 0);
+  const showDropdown = isFocused && (recentSearches.length > 0 || suggestions.length > 0);
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -142,40 +137,6 @@ export function SearchBar({
                     onClick={() => handleSelect(s)}
                   >
                     <Search size={13} className="text-muted-foreground/40 shrink-0" />
-                    <span className="truncate">{s}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {popularApps.length > 0 && !value && (
-              <div className="p-2">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">{t('marketplace.popular')}</p>
-                {popularApps.map(app => (
-                  <Link
-                    key={app.slug}
-                    to={`/marketplace/${app.slug}`}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-muted text-left"
-                    onClick={() => setIsFocused(false)}
-                  >
-                    <Sparkles size={13} className="text-primary/60 shrink-0" />
-                    <span className="truncate">{app.name}</span>
-                    <ArrowRight size={12} className="text-muted-foreground/30 ml-auto shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {!value && trendingSearches.length > 0 && (
-              <div className="p-2">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">{t('marketplace.trending')}</p>
-                {trendingSearches.map(s => (
-                  <button
-                    key={s}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-muted text-left"
-                    onClick={() => handleSelect(s)}
-                  >
-                    <TrendingUp size={13} className="text-amber-500 shrink-0" />
                     <span className="truncate">{s}</span>
                   </button>
                 ))}

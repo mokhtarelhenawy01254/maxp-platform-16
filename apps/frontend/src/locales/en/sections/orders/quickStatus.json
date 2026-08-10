@@ -21,5 +21,7 @@
   "changeLog": "Change Log",
   "oldStatus": "Old Status",
   "changedAt": "Changed At",
+  "duplicateTitle": "Warning: Duplicate Order",
+  "duplicateOrder": "Code {{code}} was entered before — this order is repeated (entered {{count}} times)",
   "noResults": "No Results Found"
 }

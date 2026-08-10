@@ -1,0 +1,6 @@
+- main [ref=f36e11]:
+  - generic [ref=f36e13]:
+    - generic [ref=f36e36]:
+      - heading "This page isn't available right now" [level=2] [ref=f36e38]
+      - generic [ref=f36e40]: This may be because of a technical error that we're working to get fixed. Try reloading this page.
+    - button "Reload page" [ref=f36e43] [cursor=pointer]
