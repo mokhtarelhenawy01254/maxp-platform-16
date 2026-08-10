@@ -34,9 +34,22 @@ router.post('/studies', controller.createStudy);
 router.get('/studies/:id/report', controller.getStudyReport);
 router.put('/studies/:id/report', controller.upsertStudyReport);
 router.put('/studies/:id/report/:kind', controller.advanceReport);
+router.get('/studies/:id/report/pdf', controller.getStudyReportPdf);
 router.put('/studies/:id/deliver', controller.markDelivered);
 router.get('/studies/:id', controller.getStudy);
 router.put('/studies/:id', controller.updateStudy);
+
+// Contracts
+router.get('/contracts', controller.listContracts);
+router.post('/contracts', verifyToken.requireRole(MANAGER_ROLES), controller.createContract);
+router.put('/contracts/:id', verifyToken.requireRole(MANAGER_ROLES), controller.updateContract);
+router.delete('/contracts/:id', verifyToken.requireRole(MANAGER_ROLES), controller.deleteContract);
+
+// Report templates
+router.get('/report-templates', controller.listReportTemplates);
+router.post('/report-templates', verifyToken.requireRole(MANAGER_ROLES), controller.createReportTemplate);
+router.put('/report-templates/:id', verifyToken.requireRole(MANAGER_ROLES), controller.updateReportTemplate);
+router.delete('/report-templates/:id', verifyToken.requireRole(MANAGER_ROLES), controller.deleteReportTemplate);
 
 // Images
 router.post('/studies/:id/images', upload.array('files', 200), controller.uploadStudyImages);

@@ -127,6 +127,60 @@ function makeUrlAbsolute(url) {
   const relativePath = url.startsWith('/') ? url : `/${url}`;
   return `${baseUrl}${relativePath}`;
 }
+
+/**
+ * كشف الـ URLs الداخلية التي لا تستطيع خوادم Meta الوصول إليها.
+ * ميتا تتحمّل الـ link من خوادمها، فـ localhost/127.0.0.1/عناوين خاصة
+ * (10.x, 172.16-31.x, 192.168.x) مش متاحة لها → لازم نرفعها بـ media id.
+ */
+function isInternalUrl(url) {
+  if (!url) return false;
+  if (!/^https?:\/\//i.test(String(url))) return true; // نسبي = داخلي
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (!hostname) return true;
+    if (hostname === 'localhost' || hostname === '::1' || hostname === '[::1]' || hostname === '0.0.0.0') return true;
+    if (/^127\./.test(hostname)) return true;
+    if (/^10\./.test(hostname)) return true;
+    if (/^192\.168\./.test(hostname)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true;
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
+function guessMediaMime(url, fallback = 'image/jpeg') {
+  const clean = String(url || '').split('?')[0].toLowerCase();
+  if (clean.endsWith('.png')) return 'image/png';
+  if (clean.endsWith('.gif')) return 'image/gif';
+  if (clean.endsWith('.webp')) return 'image/webp';
+  if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+  if (clean.endsWith('.mp4')) return 'video/mp4';
+  if (clean.endsWith('.pdf')) return 'application/pdf';
+  if (clean.endsWith('.mp3')) return 'audio/mpeg';
+  if (clean.endsWith('.ogg')) return 'audio/ogg';
+  return fallback;
+}
+
+function guessMediaFileName(url, fallback = 'media') {
+  try {
+    const pathname = new URL(url).pathname;
+    const base = decodeURIComponent(pathname.split('/').pop() || '');
+    if (base && base.includes('.')) return base;
+  } catch (e) { /* ignore */ }
+  return fallback;
+}
+
+async function downloadMediaBuffer(url, timeoutMs = 20000) {
+  const response = await axios.get(url, {
+    responseType: 'arraybuffer',
+    timeout: timeoutMs,
+    maxContentLength: 20 * 1024 * 1024,
+    maxBodyLength: 20 * 1024 * 1024,
+  });
+  return Buffer.from(response.data);
+}
 async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
   const session = await getSession(sessionId);
   if (!session) {
@@ -223,7 +277,27 @@ async function sendMedia(sessionId, to, media, kind, options = {}) {
   } else {
     const rawUrl = mediaObj?.url || mediaObj?.link;
     if (rawUrl) {
-      mediaPayload.link = makeUrlAbsolute(rawUrl);
+      // 🚨 ميتا تتحمّل الـ link من خوادمها — الـ URLs الداخلية (localhost/خاصة)
+      // مش متاحة لها، فبننزّل الملف ونرفعه لخوادم ميتا ونبعت بـ media id.
+      if (isInternalUrl(rawUrl)) {
+        try {
+          const buffer = await downloadMediaBuffer(rawUrl);
+          const mime = mediaObj?.mimetype || guessMediaMime(rawUrl, kind === 'image' ? 'image/jpeg' : 'application/octet-stream');
+          const fileName = mediaObj?.fileName || guessMediaFileName(rawUrl, `media_${Date.now()}`);
+          const mediaId = await uploadMediaFile(sessionId, buffer, mime, fileName);
+          if (mediaId) {
+            mediaPayload.id = mediaId;
+          } else {
+            throw new Error('فشل رفع الملف إلى خوادم Meta');
+          }
+        } catch (uploadErr) {
+          // فشل التحميل أو الرفع → fallback للـ link المطلق (قد ينجح لو الـ host عام)
+          console.warn(`⚠️ [META-SEND] Internal media upload failed, falling back to link: ${uploadErr.message}`);
+          mediaPayload.link = makeUrlAbsolute(rawUrl);
+        }
+      } else {
+        mediaPayload.link = makeUrlAbsolute(rawUrl);
+      }
     }
   }
 

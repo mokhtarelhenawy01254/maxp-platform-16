@@ -60,6 +60,21 @@ const createPrisma = (overrides = {}) => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    radiologyContract: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    radiologyReportTemplate: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    company: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn((fn) => fn(prisma)),
     ...overrides,
   };
@@ -1073,6 +1088,127 @@ describe('radiologyController', () => {
 
       expect(res.statusCode).toBe(403);
       expect(prisma.radiologyStudy.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('contracts', () => {
+    test('lists company-scoped contracts', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyContract.findMany.mockResolvedValue([{ id: 'c1', name: 'شركة تأمين' }]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listContracts(req(), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data).toHaveLength(1);
+      expect(prisma.radiologyContract.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: 'company-1', isActive: true } }));
+    });
+
+    test('creates a contract with validated discount type', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyContract.create.mockResolvedValue({ id: 'c1', name: 'تعاقد تجريبي' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createContract(req({ body: { name: 'تعاقد تجريبي', discountType: 'PERCENTAGE', discountPercent: '25' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyContract.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ name: 'تعاقد تجريبي', discountType: 'PERCENTAGE', discountPercent: 25 }),
+      });
+    });
+
+    test('rejects an invalid discount type', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createContract(req({ body: { name: 'تعاقد', discountType: 'XXX' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(prisma.radiologyContract.create).not.toHaveBeenCalled();
+    });
+
+    test('soft-deletes a contract', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyContract.findFirst.mockResolvedValue({ id: 'c1', companyId: 'company-1' });
+      prisma.radiologyContract.update.mockResolvedValue({ id: 'c1', isActive: false });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.deleteContract(req({ params: { id: 'c1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyContract.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { isActive: false } });
+    });
+  });
+
+  describe('report templates', () => {
+    test('creates a template with name + body', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyReportTemplate.create.mockResolvedValue({ id: 't1', name: 'صدر عادي' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createReportTemplate(req({ body: { name: 'صدر عادي', body: 'لا توجد علامات مرضية.' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReportTemplate.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ name: 'صدر عادي', body: 'لا توجد علامات مرضية.' }),
+      });
+    });
+
+    test('requires body text', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createReportTemplate(req({ body: { name: 'قالب' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(prisma.radiologyReportTemplate.create).not.toHaveBeenCalled();
+    });
+
+    test('lists active templates', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyReportTemplate.findMany.mockResolvedValue([{ id: 't1', name: 'صدر' }]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listReportTemplates(req(), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.radiologyReportTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: 'company-1', isActive: true } }));
+    });
+  });
+
+  describe('getStudyReportPdf', () => {
+    test('generates a PDF for a study with a report', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue({ id: 'study-1', patientName: 'مريض', studyNumber: 'RAD-1', report: { reportText: 'تقرير', reportStatus: 'SIGNED' } });
+      prisma.company.findUnique.mockResolvedValue({ name: 'مركز الاختبار' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getStudyReportPdf(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sent).toBeInstanceOf(Buffer);
+      expect(res.sent.toString('latin1').includes('%PDF')).toBe(true);
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    });
+
+    test('returns 404 for a foreign study', async () => {
+      const prisma = createPrisma();
+      prisma.radiologyStudy.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getStudyReportPdf(req({ params: { id: 'study-1' } }), res);
+
+      expect(res.statusCode).toBe(404);
+      expect(res.sent).toBeNull();
     });
   });
 });

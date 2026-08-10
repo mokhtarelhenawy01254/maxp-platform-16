@@ -63,9 +63,20 @@ export interface RadiologyStudyImage {
 }
 
 export interface RadiologyReport {
-  id: string; studyId: string; reportText?: string;
+  id: string; studyId: string; reportText: string;
   reportStatus: string; signedBy?: string; signedAt?: string;
-  deliveredBy?: string; deliveredAt?: string; createdAt?: string; updatedAt?: string;
+  createdAt: string; updatedAt: string;
+}
+
+export interface RadiologyReportTemplate {
+  id: string; name: string; body: string;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface RadiologyContract {
+  id: string; name: string; region?: string; governorate?: string;
+  discountType: string; discountPercent: number; externalSample: boolean;
+  isActive: boolean; createdAt: string; updatedAt: string;
 }
 
 export interface RadiologyStudy {
