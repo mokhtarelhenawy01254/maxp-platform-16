@@ -448,6 +448,20 @@ class OrderService {
         console.error('❌ [ORDER-SERVICE] Error in auto-distribution:', distError.message);
       }
 
+      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المحادثة
+      try {
+        const customerLoyaltyService = require('./hr/customerLoyaltyService');
+        await customerLoyaltyService.applyLoyaltyPointsForOrder({
+          orderId: order.id,
+          companyId,
+          changedBy: data.createdBy
+        }).catch((loyaltyError) => {
+          console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
+        });
+      } catch (loyaltyError) {
+        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      }
+
       //console.log('✅ Order created successfully:', order.orderNumber);
       return { ...order, customer };
 

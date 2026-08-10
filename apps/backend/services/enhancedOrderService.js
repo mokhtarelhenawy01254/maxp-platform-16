@@ -418,6 +418,21 @@ class EnhancedOrderService {
 
       console.log('✅ [ENHANCED-ORDER] تم إنشاء الطلب بنجاح:', order.orderNumber);
 
+      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط + تحديث المستوى لأي طلب جديد
+      // (مش بس عند التسليم) — أي أوردر بيتطلب يدخل الولاء ويحسب تلقائياً.
+      try {
+        const customerLoyaltyService = require('./hr/customerLoyaltyService');
+        await customerLoyaltyService.applyLoyaltyPointsForOrder({
+          orderId: order.id,
+          companyId: data.companyId,
+          changedBy: data.createdBy
+        }).catch((loyaltyError) => {
+          console.error(`❌ [LOYALTY-AUTO] Failed to award points for ${order.orderNumber}:`, loyaltyError.message);
+        });
+      } catch (loyaltyError) {
+        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      }
+
       // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية) - تجاهل للطلبات المكررة
       if (!isDuplicate) {
         try {
