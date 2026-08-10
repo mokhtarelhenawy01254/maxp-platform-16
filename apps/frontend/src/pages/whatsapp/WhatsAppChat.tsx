@@ -49,9 +49,11 @@ import BroadcastDialog from '../../components/whatsapp/BroadcastDialog';
 import PrivacySettingsDialog from '../../components/whatsapp/PrivacySettingsDialog';
 import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDialog';
 
-import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
+import QuickOrderModal, { type QuickOrderExistingOrder } from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import { useAuth } from '../../hooks/useAuthSimple';
+
+import type { Order as CustomerOrder } from '../../hooks/inbox/useCustomerProfile';
 
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
@@ -206,6 +208,31 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   const appError = error as AppErrorLike;
   return appError.response?.data?.error || appError.message || fallback;
 };
+
+function toExistingOrder(order: CustomerOrder): QuickOrderExistingOrder {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    total: order.total,
+    createdAt: order.createdAt,
+    items: (order.items || []).map((it) => ({
+      name: it.name,
+      quantity: it.quantity,
+      price: it.price,
+      image: it.image,
+    })),
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    city: order.city,
+    address: order.address,
+    notes: order.notes,
+    shipping: order.shipping,
+    tax: order.tax,
+    currency: order.currency,
+    paymentMethod: order.paymentMethod,
+  };
+}
 
 const WhatsAppChatContent: React.FC = () => {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -397,6 +424,10 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [orderForModal, setOrderForModal] = useState<QuickOrderExistingOrder | null>(null);
+  const [orderIntent, setOrderIntent] = useState<'create' | 'edit' | 'add'>('create');
+  const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
+  const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const loadContactsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1994,6 +2025,61 @@ const WhatsAppChatContent: React.FC = () => {
     return getContactDisplayPhone({ jid: participantJid });
   };
 
+  // فتح QuickOrderModal لإنشاء طلب جديد لعملاء القائمة الجانبية
+  const handleQuickOrderFromSidebar = useCallback((contact: Contact) => {
+    setQuickOrderContact(contact);
+    setOrderForModal(null);
+    setOrderIntent('create');
+    setShowQuickOrderModal(true);
+  }, []);
+
+  // جلب بيانات الطلب وفتحه في QuickOrderModal بوضع التعديل
+  const handleEditOrderFromSidebar = useCallback(async (orderNumber: string, contact: Contact) => {
+    setQuickOrderContact(contact);
+    setShowQuickOrderModal(true);
+    setOrderIntent('edit');
+    setOrderForModal(null);
+    try {
+      const response = await api.get(`/orders-enhanced/${encodeURIComponent(orderNumber)}`);
+      const body: any = response.data;
+      if (body?.success && body?.data) {
+        const raw = body.data;
+        const existingOrder: QuickOrderExistingOrder = {
+          id: raw.id || raw.orderNumber || orderNumber,
+          orderNumber: raw.orderNumber || orderNumber,
+          status: raw.status,
+          total: parseFloat(raw.total ?? raw.finalTotal ?? 0) || 0,
+          createdAt: raw.createdAt,
+          items: (Array.isArray(raw.items) ? raw.items : []).map((item: any) => ({
+            name: item.name || item.productName || 'منتج',
+            quantity: parseInt(item.quantity) || 1,
+            price: parseFloat(item.price) || 0,
+            image: item.image || item.mainImage || null,
+            productId: item.productId || item.product?.id || null,
+            variantId: item.variantId || item.variant?.id || null,
+            sku: item.sku || item.variant?.sku || null,
+            productColor: item.productColor || item.color || item.variant?.color || null,
+            productSize: item.productSize || item.size || item.variant?.size || null,
+          })),
+          customerName: raw.customerName || raw.customer?.name || '',
+          customerPhone: raw.customerPhone || raw.customer?.phone || '',
+          city: raw.city || raw.governorate || '',
+          address: raw.customerAddress || (typeof raw.shippingAddress === 'string' ? raw.shippingAddress : raw.shippingAddress?.address || ''),
+          notes: raw.notes || '',
+          shipping: parseFloat(raw.shipping ?? raw.shippingCost ?? 0) || 0,
+          tax: parseFloat(raw.tax ?? 0) || 0,
+          currency: raw.currency || 'EGP',
+          paymentMethod: raw.paymentMethod || 'cod',
+        };
+        setOrderForModal(existingOrder);
+      } else {
+        toast.error('تعذر تحميل بيانات الطلب');
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'تعذر تحميل بيانات الطلب'));
+    }
+  }, [api, getErrorMessage, toast]);
+
   const messageMenuLeft = messageContextMenu && typeof window !== 'undefined'
     ? Math.min(messageContextMenu.mouseX, window.innerWidth - 264)
     : 0;
@@ -2082,6 +2168,8 @@ const WhatsAppChatContent: React.FC = () => {
         showArchived={showArchived}
         onToggleArchived={(archived) => setShowArchived(archived)}
         counts={conversationCounts}
+        onEditOrder={handleEditOrderFromSidebar}
+        onAddOrder={handleQuickOrderFromSidebar}
       />
 
       <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">
@@ -2134,7 +2222,7 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenList={() => setListDialogOpen(true)}
           onOpenCatalog={() => { loadProducts(); setCatalogDialogOpen(true); }}
           onOpenLocation={() => setLocationDialogOpen(true)}
-          onOpenOrder={() => setShowQuickOrderModal(true)}
+          onOpenOrder={() => { setOrderForModal(null); setOrderIntent('create'); setShowQuickOrderModal(true); }}
           onOpenTasks={() => setShowQuickCreateTaskModal(true)}
           onOpenTemplate={handleOpenTemplateDialog}
           onBackToList={() => {
@@ -2160,9 +2248,20 @@ const WhatsAppChatContent: React.FC = () => {
               <ChatRightPanel
                 contact={selectedContact}
                 labels={labels}
-                onOpenOrder={() => setShowQuickOrderModal(true)}
+                refreshToken={ordersRefreshToken}
+                onOpenOrder={() => { setOrderForModal(null); setOrderIntent('create'); setShowQuickOrderModal(true); }}
                 onOpenTasks={() => setShowQuickCreateTaskModal(true)}
                 onClose={() => setShowRightPanel(false)}
+                onEditOrder={(order) => {
+                  setOrderForModal(toExistingOrder(order));
+                  setOrderIntent('edit');
+                  setShowQuickOrderModal(true);
+                }}
+                onAddToOrder={(order) => {
+                  setOrderForModal(toExistingOrder(order));
+                  setOrderIntent('add');
+                  setShowQuickOrderModal(true);
+                }}
                 onOpenLabels={() => {
                   setSelectedContactForLabel(selectedContact);
                   setLabelDialogOpen(true);
@@ -3105,19 +3204,25 @@ const WhatsAppChatContent: React.FC = () => {
       {/* Quick Order Modal (same as Facebook inbox - 1:1 copy) */}
       <QuickOrderModal
         isOpen={showQuickOrderModal}
-        onClose={() => setShowQuickOrderModal(false)}
-        customerName={selectedContact ? getContactName(selectedContact) : undefined}
-        customerPhone={selectedContactPhoneNumber || undefined}
-        conversationId={selectedContact?.id}
-        customerId={selectedContact?.id}
+        onClose={() => {
+          setShowQuickOrderModal(false);
+          setQuickOrderContact(null);
+        }}
+        customerName={quickOrderContact ? getContactName(quickOrderContact) : (selectedContact ? getContactName(selectedContact) : undefined)}
+        customerPhone={(quickOrderContact ? getContactPhoneNumber(quickOrderContact) : selectedContactPhoneNumber) || undefined}
+        conversationId={quickOrderContact?.id || selectedContact?.id}
+        customerId={quickOrderContact?.customer?.id || quickOrderContact?.id || selectedContact?.id}
         platform="whatsapp"
         pageName={
           selectedSession && selectedSession !== 'all'
             ? sessions.find(s => s.id === selectedSession)?.name || 'WhatsApp'
             : 'WhatsApp'
         }
+        existingOrder={orderForModal}
+        intent={orderIntent}
         onOrderCreated={(orderId) => {
           toast.success(t('whatsapp.dialogs.orderCreated', { orderId }));
+          setOrdersRefreshToken((prev) => prev + 1);
         }}
       />
 

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import {
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Grid3X3, Star, Heart,
-  ShoppingBag, Flame, Brain,
+  ShoppingBag, Brain,
   LayoutGrid,
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
@@ -45,6 +45,8 @@ import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters
 import {
   appIconsBySlug, categoryIcons, appIcons,
   normalizeRequiredApps,
+  categoryGroups,
+  OTHER_CATEGORY_GROUP_ID,
 } from "@/utils/marketplace";
 
 interface ApiEnvelope<T> {
@@ -71,14 +73,10 @@ const DISPLAY_INCREMENT = 20;
 const collections = [
   { id: "ALL" as ToolCollectionId, labelKey: "marketplace.allTools", icon: Grid3X3 },
   { id: "FEATURED" as ToolCollectionId, labelKey: "marketplace.featured", icon: Sparkles },
-  { id: "POPULAR" as ToolCollectionId, labelKey: "marketplace.popular", icon: TrendingUp },
-  { id: "TRENDING" as ToolCollectionId, labelKey: "marketplace.trending", icon: Flame },
-  { id: "FREE" as ToolCollectionId, labelKey: "marketplace.freeApps", icon: CheckCircle2 },
 ];
 
 const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
   { value: "featured", labelKey: "marketplace.sortFeatured" },
-  { value: "popular", labelKey: "marketplace.sortPopular" },
   { value: "newest", labelKey: "marketplace.sortNewest" },
   { value: "price_low", labelKey: "marketplace.sortPriceLow" },
   { value: "price_high", labelKey: "marketplace.sortPriceHigh" },
@@ -96,9 +94,6 @@ function getDefaultPricingModel(app: MarketplaceApp) {
 function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
   if (col === "ALL") return true;
   if (col === "FEATURED") return app.isFeatured;
-  if (col === "POPULAR") return (app.installCount || 0) > 0;
-  if (col === "TRENDING") return !!app.isTrending || (app.isFeatured && app.isPopular);
-  if (col === "FREE") return app.pricingModel === "FREE";
   return true;
 }
 
@@ -113,6 +108,34 @@ function matchesFilters(app: MarketplaceApp, filters: MarketplaceFilters) {
   if (filters.isNew && !app.isNew) return false;
   if (filters.isRecentlyUpdated && !app.isRecentlyUpdated) return false;
   return true;
+}
+
+interface AppGroupSection {
+  id: string;
+  labelKey: string;
+  apps: MarketplaceApp[];
+}
+
+function groupAppsBySidebarSections(apps: MarketplaceApp[]): AppGroupSection[] {
+  const byGroup = new Map<string, MarketplaceApp[]>();
+  const other: MarketplaceApp[] = [];
+  for (const app of apps) {
+    const group = categoryGroups.find((g) => g.categories.includes(app.category));
+    if (group) {
+      const list = byGroup.get(group.id) || [];
+      list.push(app);
+      byGroup.set(group.id, list);
+    } else {
+      other.push(app);
+    }
+  }
+  const result: AppGroupSection[] = [];
+  for (const g of categoryGroups) {
+    const items = byGroup.get(g.id);
+    if (items && items.length) result.push({ id: g.id, labelKey: g.labelKey, apps: items });
+  }
+  if (other.length) result.push({ id: OTHER_CATEGORY_GROUP_ID, labelKey: "marketplace.categories.groups.other", apps: other });
+  return result;
 }
 
 function getCategoryDisplayCategories(categories: Category[]) {
@@ -227,9 +250,6 @@ export default function MarketplaceV2() {
   const filteredApps = showInstalled ? filterFiltered.filter(a => a.isInstalled) : filterFiltered;
   const displayedApps = filteredApps.slice(0, displayCount);
   const installedCount = apps.filter(a => a.isInstalled).length;
-
-  const popularApps = useMemo(() => [...apps].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).filter(a => (a.installCount || 0) > 0).slice(0, 10), [apps]);
-  const trendingApps = useMemo(() => [...apps].filter(a => a.isTrending || (a.isFeatured && a.isPopular)).slice(0, 10), [apps]);
 
   const hasMoreApps = filteredApps.length > displayCount;
   useEffect(() => {
@@ -381,15 +401,6 @@ export default function MarketplaceV2() {
                   </p>
                 </div>
               </div>
-              <div className="mp-stat-item">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 shrink-0">
-                  <TrendingUp size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.trending')}</p>
-                  <p className="text-lg font-extrabold text-foreground">{trendingApps.length}</p>
-                </div>
-              </div>
               {activeSpecialty && (
                 <div className="mp-stat-item">
                   <div className="flex size-9 items-center justify-center rounded-xl bg-fuchsia-500/10 text-fuchsia-600 shrink-0">
@@ -418,8 +429,6 @@ export default function MarketplaceV2() {
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder={t('marketplace.searchPlaceholder')}
-                    trendingSearches={popularApps.slice(0, 5).map(a => a.name)}
-                    popularApps={popularApps.slice(0, 5).map(a => ({ slug: a.slug, name: a.name }))}
                   />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -493,23 +502,6 @@ export default function MarketplaceV2() {
                   <p className="text-sm text-muted-foreground mb-4 max-w-md">
                     {t('marketplace.emptyHint')}
                   </p>
-                  {trendingApps.length > 0 && (
-                    <div className="mb-6">
-                      <p className="text-xs font-bold text-muted-foreground mb-3">{t('marketplace.trending')}</p>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {trendingApps.slice(0, 6).map(app => (
-                          <Link
-                            key={app.id}
-                            to={`/marketplace/${app.slug}`}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold hover:border-primary/30 transition-colors"
-                          >
-                            <TrendingUp size={11} className="text-amber-500" />
-                            {app.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {(searchQuery || selectedCategory || filters) && (
                     <Button
                       variant="outline"
@@ -556,25 +548,34 @@ export default function MarketplaceV2() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {displayedApps.map((app, i) => (
-                      <div
-                        key={app.id}
-                        className="mp-stagger"
-                        style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
-                      >
-                        <AppCard
-                          app={app}
-                          variant="default"
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(a) => setConfirmUninstallApp(a)}
-                          onAddToWishlist={toggleWishlist}
-                          onCompare={toggleCompare}
-                          isInWishlist={wishlist.has(app.slug)}
-                          isInCompare={compareList.has(app.slug)}
-                          showBadges
+                  {groupAppsBySidebarSections(displayedApps).map((section) => (
+                    <div key={section.id} className="mt-6">
+                      <div className="mp-section-header-v2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Layers3 size={16} className="text-primary" />
+                          <h3 className="text-sm font-extrabold text-foreground tracking-tight">{t(section.labelKey)}</h3>
+                          <span className="mp-section-count-v2">{section.apps.length}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        {section.apps.map((app, i) => (
+                          <div
+                            key={app.id}
+                            className="mp-stagger"
+                            style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
+                          >
+                            <AppCard
+                              app={app}
+                              variant="default"
+                              installingApp={installingApp}
+                              uninstallingApp={uninstallingApp}
+                              onQuickInstall={handleQuickInstall}
+                              onUninstall={(a) => setConfirmUninstallApp(a)}
+                              onAddToWishlist={toggleWishlist}
+                              onCompare={toggleCompare}
+                              isInWishlist={wishlist.has(app.slug)}
+                              isInCompare={compareList.has(app.slug)}
+                              showBadges
                           showRating
                           showInstalls
                           showDescription
@@ -583,7 +584,9 @@ export default function MarketplaceV2() {
                         />
                       </div>
                     ))}
-                  </div>
+                      </div>
+                    </div>
+                  ))}
 
                   <div ref={sentinelRef} className={hasMoreApps ? "h-4" : "hidden"} />
                   {!hasMoreApps && displayedApps.length > 0 && (

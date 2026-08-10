@@ -1735,5 +1735,487 @@
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
     "updatedAt": "2026-08-05T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-automation",
+    "slug": "order-automation",
+    "name": "أتمتة الحالات",
+    "nameEn": "Order Status Automation",
+    "description": "غيّر حالة الطلبات تلقائياً بعد مرور وقت محدد أو عند حدوث حدث معين — أتمتة كاملة لمعالجة الطلبات بدون تدخل يدوي.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تعالج أعداد كبيرة من الطلبات وتريد تقليل العمل اليدوي.",
+      "surface": "داخل صفحة أتمتة الحالات في إدارة الطلبات.",
+      "outcome": "تغيير حالات الطلبات تلقائياً وتوفير وقت الفريق."
+    },
+    "features": {
+      "timeRules": {
+        "enabled": true,
+        "name": "قواعد التوقيت",
+        "description": "تغيير حالة الطلب تلقائياً بعد مرور مدة زمنية محددة (Cron Job يعمل في الخلفية).",
+        "access": "PAID"
+      },
+      "eventRules": {
+        "enabled": true,
+        "name": "قواعد الأحداث",
+        "description": "تغيير الحالة عند طباعة الطلب أو عند الإرسال لتربو وإصدار بوليصة شحن.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "zap",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-bulk-search",
+    "slug": "bulk-search",
+    "name": "البحث المجمع",
+    "nameEn": "Bulk Search",
+    "description": "بحث مجمع عن الطلبات بالرقم أو رقم التليفون دفعة واحدة — استرجاع عدة طلبات ومراجعتها بسرعة.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق خدمة العملاء والمتابعة التي تحتاج فحص عدة طلبات في نفس الوقت.",
+      "surface": "داخل صفحة البحث المجمع في إدارة الطلبات.",
+      "outcome": "استرجاع ومراجعة الطلبات بسرعة بدلاً من البحث عن كل طلب على حدة."
+    },
+    "features": {
+      "bulkLookup": {
+        "enabled": true,
+        "name": "بحث متعدد",
+        "description": "إدخال أكثر من رقم طلب أو رقم تليفون واسترجاع نتائجها في نفس الوقت.",
+        "access": "PAID"
+      },
+      "quickExport": {
+        "enabled": true,
+        "name": "تصدير سريع",
+        "description": "تصدير نتائج البحث المجمع لمراجعتها ومشاركتها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "search",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-customer-blocks",
+    "slug": "customer-blocks",
+    "name": "حظر العملاء",
+    "nameEn": "Customer Blocks",
+    "description": "إدارة قائمة حظر العملاء — منع العملاء غير المرغوب فيهم من إتمام الطلبات مع توثيق سبب الحظر.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تواجه عملاء مرتجعين أو مزعجين وتريد منعهم من الطلب.",
+      "surface": "داخل إعدادات حظر العملاء في إدارة الطلبات.",
+      "outcome": "تقليل المرتجعات وحماية المتجر من العملاء غير المرغوب فيهم."
+    },
+    "features": {
+      "blockList": {
+        "enabled": true,
+        "name": "قائمة الحظر",
+        "description": "عرض وإدارة العملاء المحظورين مع سبب الحظر.",
+        "access": "PAID"
+      },
+      "blockDuringOrder": {
+        "enabled": true,
+        "name": "منع أثناء الطلب",
+        "description": "تنبيه تلقائي عند محاولة إنشاء طلب لعميل محظور.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "shield-alert",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-bulk-orders",
+    "slug": "bulk-orders",
+    "name": "الطلبات الجماعية",
+    "nameEn": "Bulk Orders",
+    "description": "تنفيذ عمليات جماعية على الطلبات — تغيير الحالة، الحذف، والطباعة لعدد كبير من الطلبات دفعة واحدة.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق المعالجة التي تتعامل مع مئات الطلبات يومياً وترغب في تسريع العمليات.",
+      "surface": "داخل صفحة الطلبات الجماعية في إدارة الطلبات.",
+      "outcome": "تنفيذ الإجراءات على دفعات كبيرة بدلاً من التعديل الفردي."
+    },
+    "features": {
+      "bulkActions": {
+        "enabled": true,
+        "name": "إجراءات جماعية",
+        "description": "اختيار عدة طلبات وتنفيذ إجراء واحد عليها جميعاً.",
+        "access": "PAID"
+      },
+      "batchPrint": {
+        "enabled": true,
+        "name": "طباعة دفعات",
+        "description": "طباعة فواتير أو ملصقات لعدد كبير من الطلبات في وقت واحد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "list-ordered",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-quick-status",
+    "slug": "quick-status",
+    "name": "التغيير السريع للحالة",
+    "nameEn": "Quick Status Change",
+    "description": "تغيير حالة الطلبات بسرعة بدون فتح كل طلب — تحديث مباشر من قائمة الطلبات.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق الشحن والمعالجة التي تريد تسريع تغيير الحالات اليومي.",
+      "surface": "داخل صفحة التغيير السريع للحالة في إدارة الطلبات.",
+      "outcome": "تحديث حالات الطلبات بنقرة واحدة وبدون فتح كل طلب."
+    },
+    "features": {
+      "quickUpdate": {
+        "enabled": true,
+        "name": "تحديث سريع",
+        "description": "تغيير حالة طلب واحد أو أكثر بنقرة واحدة من قائمة الطلبات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "refresh-ccw",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-status-summary",
+    "slug": "status-summary",
+    "name": "ملخص حالات الطلبات",
+    "nameEn": "Order Status Summary",
+    "description": "ملخص فوري لتوزيع حالات الطلبات — معرفة عدد الطلبات في كل حالة ونسب التوزيع في أي لحظة.",
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المدراء وفرق المتابعة التي تحتاج رؤية فورية لأحجام الطلبات حسب الحالة.",
+      "surface": "داخل صفحة ملخص حالات الطلبات في إدارة الطلبات.",
+      "outcome": "فهم أسرع لتوزيع الطلبات واتخاذ قرارات أفضل."
+    },
+    "features": {
+      "summaryView": {
+        "enabled": true,
+        "name": "نظرة شاملة",
+        "description": "جدول ملخص بعدد الطلبات في كل حالة مع نسب التوزيع.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "file-bar-chart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-returns-settings",
+    "slug": "returns-settings",
+    "name": "إعدادات المرتجعات",
+    "nameEn": "Returns Settings",
+    "description": "إعدادات نظام المرتجعات — أسباب الإرجاع، الشروط، والسياسات الخاصة بمراجعة المرتجعات.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق المرتجعات التي تريد توحيد أسباب الإرجاع وسياسات القبول.",
+      "surface": "داخل إعدادات المرتجعات في إدارة الطلبات.",
+      "outcome": "معالجة المرتجعات بشكل منظم ووفق سياسات واضحة."
+    },
+    "features": {
+      "returnSettings": {
+        "enabled": true,
+        "name": "إعدادات الإرجاع",
+        "description": "تخصيص أسباب الإرجاع وشروط قبول المرتجعات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "cog",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-workflow",
+    "slug": "order-workflow",
+    "name": "مسار الطلبات",
+    "nameEn": "Order Workflow",
+    "description": "تخصيص مسار الطلبات — ترتيب الحالات وتسلسل معالجة الطلب من الاستلام حتى التسليم.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تريد تخصيص تسلسل معالجة طلباتها ليتناسب مع عمليتها.",
+      "surface": "داخل إعدادات مسار الطلبات في إدارة الطلبات.",
+      "outcome": "مسار معالجة واضح ومخصص لكل متجر."
+    },
+    "features": {
+      "workflowBuilder": {
+        "enabled": true,
+        "name": "مصمم المسار",
+        "description": "ترتيب وتسلسل حالات الطلب وتحديد الانتقالات المتاحة بينها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "arrow-left-right",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-facebook-post",
+    "slug": "facebook-post",
+    "name": "إنشاء منشور فيسبوك",
+    "nameEn": "Facebook Create Post",
+    "description": "إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق التسويق التي تدير صفحات فيسبوك وتنشر المحتوى يومياً.",
+      "surface": "داخل صفحة إنشاء منشور فيسبوك في التسويق.",
+      "outcome": "نشر المحتوى وجدولته مباشرة من المنصة بدون أدوات خارجية."
+    },
+    "features": {
+      "composer": {
+        "enabled": true,
+        "name": "منشئ المنشورات",
+        "description": "كتابة منشور وإضافة صور ونشر مباشرة على صفحة فيسبوك.",
+        "access": "PAID"
+      },
+      "scheduling": {
+        "enabled": true,
+        "name": "جدولة النشر",
+        "description": "تحديد موعد لاحق لنشر المنشور تلقائياً.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "square-pen",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-google-tag-manager",
+    "slug": "google-tag-manager",
+    "name": "Google Tag Manager",
+    "nameEn": "Google Tag Manager",
+    "description": "إعداد Google Tag Manager — ربط حاوية GTM وأكواد التتبع مع متجرك وإعلاناتك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 49,
+    "yearlyPrice": 490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تستخدم GTM لإدارة أكواد التتبع والتحويلات.",
+      "surface": "داخل إعدادات Google Tag Manager في التسويق.",
+      "outcome": "ربط حاوية GTM بسهولة وتتبع التحويلات بدقة."
+    },
+    "features": {
+      "gtmSetup": {
+        "enabled": true,
+        "name": "إعداد الحاوية",
+        "description": "إدخال معرّف حاوية GTM وربطها بالمتجر.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "chart-bar",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-broadcast-pro",
+    "slug": "broadcast-pro",
+    "name": "البث والحملات",
+    "nameEn": "Broadcast",
+    "description": "إرسال حملات ورسائل جماعية للعملاء عبر القنوات المتاحة — قوائم عملاء، جدولة، وتقارير أداء.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "فرق التسويق والتواصل التي تريد إرسال حملات للعملاء بشكل جماعي.",
+      "surface": "داخل صفحة البث والحملات ومركز الرسائل.",
+      "outcome": "إرسال رسائل جماعية منظمة مع تتبع الأداء وبدون أدوات خارجية."
+    },
+    "features": {
+      "broadcastCampaigns": {
+        "enabled": true,
+        "name": "الحملات",
+        "description": "إنشاء حملات رسائل جماعية للعملاء عبر القنوات المتاحة.",
+        "access": "PAID"
+      },
+      "customerLists": {
+        "enabled": true,
+        "name": "قوائم العملاء",
+        "description": "إنشاء وتنظيم قوائم العملاء المستهدفين بالحملات.",
+        "access": "PAID"
+      },
+      "campaignAnalytics": {
+        "enabled": true,
+        "name": "تقارير الأداء",
+        "description": "متابعة نسبة الوصول والتفاعل ونتائج كل حملة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "volume-2",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-09T00:00:00.000Z",
+    "updatedAt": "2026-08-09T00:00:00.000Z"
   }
 ]

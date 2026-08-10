@@ -20,8 +20,10 @@ import {
 } from "../../utils/browserNotifications";
 import {
   cacheNotificationSettings,
+  getOrderSoundVolume,
   isQuietHoursActive,
   readCachedNotificationSettings,
+  shouldPlayOrderSound,
   shouldShowBrowserNotificationForType,
   type NotificationSettingsData,
 } from "../../utils/notificationSettings";
@@ -287,6 +289,18 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
     const handleNewOrder = (order: OrderCreatedEventPayload) => {
       const orderNotification = buildOrderNotificationItem(order);
+
+      // 🔊 إنذار صوتي عالي لتنبيه الموظفين بقدوم طلب جديد
+      try {
+        const currentPreferences = notificationPreferencesRef.current;
+        if (shouldPlayOrderSound(currentPreferences)) {
+          socketService.playOrderAlarm({
+            volume: getOrderSoundVolume(currentPreferences),
+          });
+        }
+      } catch (soundError) {
+        console.error("❌ [SOUND] Error playing order alarm:", soundError);
+      }
 
       setNotifications((prev) => {
         const deduped = prev.filter(

@@ -1,0 +1,1079 @@
+- generic [ref=f45e10]:
+  - navigation "Main" [ref=f45e12]:
+    - generic [ref=f45e19]:
+      - generic [ref=f45e21]:
+        - button "Open mobile navigation menu" [ref=f45e23] [cursor=pointer]
+        - link "Meta home" [ref=f45e28] [cursor=pointer]:
+          - /url: https://developers.facebook.com/
+          - img "Nav Logo" [ref=f45e29]
+      - generic [ref=f45e32]:
+        - link "Login" [ref=f45e33] [cursor=pointer]:
+          - /url: https://business.facebook.com/business/loginpage/?next=https%3A%2F%2Fdevelopers.facebook.com%2Fdocumentation%2Fbusiness-messaging%2Fwhatsapp%2Fpricing
+        - button [ref=f45e34] [cursor=pointer]:
+          - img "Search" [ref=f45e35]
+  - generic [ref=f45e38]:
+    - generic [ref=f45e39]:
+      - generic [ref=f45e40]: WhatsApp Business Platform
+      - button "Expand Mobile Sidenav" [ref=f45e41] [cursor=pointer]
+    - main [ref=f45e53]:
+      - generic [ref=f45e54]:
+        - navigation "Breadcrumbs" [ref=f45e56]:
+          - list [ref=f45e57]:
+            - listitem [ref=f45e58]:
+              - link "Docs" [ref=f45e60] [cursor=pointer]:
+                - /url: /docs
+            - listitem [ref=f45e65]:
+              - link "Overview" [ref=f45e67] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/overview
+            - listitem [ref=f45e72]:
+              - generic [ref=f45e73]: Pricing on the WhatsApp Business Platform
+        - article [ref=f45e76]:
+          - heading "Pricing on the WhatsApp Business Platform" [level=1] [ref=f45e77]
+          - generic [ref=f45e78]: "Updated: Jul 1, 2026"
+          - generic [ref=f45e82]:
+            - button "Copy for LLM" [ref=f45e84] [cursor=pointer]
+            - link "View as Markdown" [ref=f45e91] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing.md
+          - generic [ref=f45e97]: This document explains how pricing works on the WhatsApp Business Platform.
+          - generic [ref=f45e100]:
+            - text: Pricing updates for Meta Business Agent, service, and utility messages will launch on August 1, 2026 and October 1, 2026.
+            - link "Learn more" [ref=f45e101] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/non-template-messages
+            - text: .
+          - generic [ref=f45e104]:
+            - heading "Cloud API and Marketing Messages API for WhatsApp" [level=2] [ref=f45e105]
+            - button [ref=f45e106] [cursor=pointer]
+          - generic [ref=f45e110]:
+            - text: Effective July 1, 2025, Meta charges on a
+            - strong [ref=f45e111]: per-message basis
+            - text: "for messages businesses deliver to WhatsApp users:"
+          - list [ref=f45e112]:
+            - listitem [ref=f45e114]:
+              - text: You are only charged when a
+              - link "template message" [ref=f45e115] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/templates/overview
+              - text: is
+              - emphasis [ref=f45e116]: delivered
+              - text: (
+              - code [ref=f45e117]: "\"type\":\"template\""
+              - text: ).
+            - listitem [ref=f45e119]:
+              - text: Rates vary based on the template’s
+              - link "category" [ref=f45e120] [cursor=pointer]:
+                - /url: "#message-template-categories"
+              - text: and the recipient WhatsApp phone number’s
+              - link "country calling code" [ref=f45e121] [cursor=pointer]:
+                - /url: "#country-calling-codes"
+              - text: .
+          - generic [ref=f45e122]: "Meta offers value to businesses in the following ways:"
+          - list [ref=f45e123]:
+            - listitem [ref=f45e125]:
+              - text: As of November 1, 2024 - Meta does not charge for
+              - link "non-template messages" [ref=f45e126] [cursor=pointer]:
+                - /url: "#non-template-messages"
+              - text: (
+              - code [ref=f45e127]: "\"type\":\"text\""
+              - text: ","
+              - code [ref=f45e128]: "\"type\":\"image\""
+              - text: ", and so on). Non-template messages can only be sent within an open"
+              - link "customer service window" [ref=f45e129] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+              - text: . See
+              - link "Sending messages" [ref=f45e130] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/messages/send-messages#sending-messages
+              - text: for a list of message types.
+            - listitem [ref=f45e132]:
+              - text: As of July 1, 2025 - Meta does not charge for
+              - link "utility templates in response to users" [ref=f45e133] [cursor=pointer]:
+                - /url: "#Utility-template-messages-in-response-to-users"
+              - text: (delivered within an open customer service window).
+            - listitem [ref=f45e135]:
+              - text: As of July 1, 2025 - You can unlock
+              - link "lower rates" [ref=f45e136] [cursor=pointer]:
+                - /url: "#volume-tiers"
+              - text: for utility and authentication template messages, based on messaging volume.
+            - listitem [ref=f45e138]:
+              - text: Free entry point window - All messages, including template messages, are free for 72 hours, if sent within an open
+              - link "free entry point window" [ref=f45e139] [cursor=pointer]:
+                - /url: "#free-entry-point-windows"
+              - text: .
+          - generic [ref=f45e142]:
+            - heading "Pricing explainer" [level=2] [ref=f45e143]
+            - button [ref=f45e144] [cursor=pointer]
+          - generic [ref=f45e149]:
+            - generic [ref=f45e150]:
+              - text: Pricing updates for Meta Business Agent, service, and utility messages will launch on August 1, 2026 and October 1, 2026.
+              - link "Learn more" [ref=f45e151] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing/non-template-messages
+              - text: .
+            - generic [ref=f45e152]: "The pricing explainer PDF outlines how Meta charges businesses, in PDF form, and reflects updates launching October 1, 2026:"
+            - link "Pricing explainer (PDF)" [ref=f45e153] [cursor=pointer]:
+              - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F752638678_1049998064240092_308143846811386719_n.pdf%3F_nc_cat%3D101%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DfIJWicwqL5gQ7kNvwG5Nhhi%26_nc_oc%3DAdpZIV6lfz7myfgd5H77zONiKyYpArl9cHyBemwQiDGTVUm75aysn0nPSSzwiXbhYCs%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFPhrrr_egxe5EoHxZ9Va-GPAoz7LPk2o_1yQQZY1Uzvg%26oe%3D6A7A2FC6&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+          - generic [ref=f45e156]:
+            - heading "Message template categories" [level=2] [ref=f45e157]
+            - button [ref=f45e158] [cursor=pointer]
+          - generic [ref=f45e162]: "Template messages are the only message type that can be sent outside of a customer service window, to reach out to users. Templates can be categorized as:"
+          - list [ref=f45e163]:
+            - listitem [ref=f45e165]: Marketing
+            - listitem [ref=f45e167]: Utility
+            - listitem [ref=f45e169]: Authentication
+          - generic [ref=f45e170]:
+            - text: See
+            - link "Template categorization" [ref=f45e171] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/templates/template-categorization
+            - text: to learn how template categorization works.
+          - generic [ref=f45e174]:
+            - heading "Template messages vs. non-template messages" [level=3] [ref=f45e175]
+            - button [ref=f45e176] [cursor=pointer]
+          - img "Diagram showing template messages vs non-template messages pricing" [ref=f45e181] [cursor=pointer]
+          - list [ref=f45e182]:
+            - listitem [ref=f45e184]:
+              - text: CSW =
+              - link "Customer service window" [ref=f45e185] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+            - listitem [ref=f45e187]:
+              - text: FEP =
+              - link "Free entry point window" [ref=f45e188] [cursor=pointer]:
+                - /url: "#free-entry-point-windows"
+          - generic [ref=f45e189]: Businesses are responsible for reviewing the category assigned to their approved templates. Whenever a template is used, a business accepts the charges associated with the category applied to the template at time of use.
+          - generic [ref=f45e194]:
+            - heading "Charge example" [level=2] [ref=f45e195]
+            - button [ref=f45e196] [cursor=pointer]
+          - generic [ref=f45e200]: In the example below, a business sends 4 messages to a WhatsApp user but is only charged for 2 (1 marketing charge, 1 utility charge).
+          - table [ref=f45e202]:
+            - rowgroup [ref=f45e203]:
+              - row [ref=f45e204]:
+                - columnheader "Hour" [ref=f45e205]
+                - columnheader "Action" [ref=f45e206]
+                - columnheader "Rate" [ref=f45e207]
+                - columnheader "Reason" [ref=f45e208]
+            - rowgroup [ref=f45e209]:
+              - row [ref=f45e210]:
+                - cell "0" [ref=f45e211]
+                - cell "You send a marketing template message to a WhatsApp user, promoting your new product." [ref=f45e214]
+                - cell "Marketing" [ref=f45e217]
+                - cell "All marketing template messages are charged." [ref=f45e220]
+              - row [ref=f45e223]:
+                - cell "2" [ref=f45e224]
+                - cell "The user messages you about the product. This opens a 24 hour customer service window (“CSW”)." [ref=f45e227]:
+                  - generic [ref=f45e228]:
+                    - generic [ref=f45e229]: The user messages you about the product.
+                    - generic [ref=f45e230]:
+                      - text: This opens a 24 hour
+                      - link "customer service window" [ref=f45e231] [cursor=pointer]:
+                        - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+                      - text: (“CSW”).
+                - cell "-" [ref=f45e232]
+                - cell "Messages sent from a WhatsApp user to a business are not charged." [ref=f45e235]
+              - row [ref=f45e238]:
+                - cell "3" [ref=f45e239]
+                - cell [ref=f45e242]:
+                  - generic [ref=f45e244]:
+                    - text: You send a
+                    - link "text message" [ref=f45e245] [cursor=pointer]:
+                      - /url: /documentation/business-messaging/whatsapp/messages/text-messages
+                    - text: to the user (
+                    - code [ref=f45e246]: "\"type\":\"text\""
+                    - text: ), describing the product in more detail.
+                - cell "None" [ref=f45e247]
+                - cell "All non-template messages are free within an open customer service window." [ref=f45e250]
+              - row [ref=f45e253]:
+                - cell "4" [ref=f45e254]
+                - cell "The user purchases the product and you send them a utility template confirming their order." [ref=f45e257]
+                - cell "None" [ref=f45e260]
+                - cell "The CSW is still open, and utility templates sent within an open CSW are free." [ref=f45e263]
+              - row [ref=f45e266]:
+                - cell "26" [ref=f45e267]
+                - cell "The CSW closes, which means you can no longer send non-template messages." [ref=f45e270]
+                - cell "-" [ref=f45e273]
+                - cell "24 hours have passed since the user last messaged you." [ref=f45e276]
+              - row [ref=f45e279]:
+                - cell "30" [ref=f45e280]
+                - cell "You send a utility template message to the user, updating them on their order." [ref=f45e283]
+                - cell "Utility" [ref=f45e286]
+                - cell "Utility template messages sent outside of a CSW are charged, and no open CSW exists between you and the user." [ref=f45e289]
+          - generic [ref=f45e294]:
+            - heading "Pricing calendar" [level=2] [ref=f45e295]
+            - button [ref=f45e296] [cursor=pointer]
+          - generic [ref=f45e300]: "To better enable our customers to plan and prepare for pricing updates, the following pricing calendar applies for messaging and voice on the WhatsApp Business Platform:"
+          - list [ref=f45e301]:
+            - listitem [ref=f45e303]:
+              - text: Meta may update pricing only
+              - emphasis [ref=f45e304]: on the 1st day of each quarter
+              - text: ", thus up to 4 times per year: January 1, April 1, July 1, and/or October 1."
+            - listitem [ref=f45e306]: "Meta will provide advanced notice that is better aligned to the effort required to implement different types of pricing updates, per below:"
+          - table [ref=f45e308]:
+            - rowgroup [ref=f45e309]:
+              - row [ref=f45e310]:
+                - columnheader "Type of pricing update" [ref=f45e311]
+                - columnheader "Examples" [ref=f45e312]
+                - columnheader "Minimum advance notice" [ref=f45e313]
+            - rowgroup [ref=f45e314]:
+              - row [ref=f45e315]:
+                - cell [ref=f45e316]:
+                  - strong [ref=f45e319]: Rate card update
+                - cell "Updating the rate for a given market–product Updating the volume tiers for a given market–product (utility and authentication only) Moving a market from one pricing region (for example, “Other”) to another or to be standalone on the rate card" [ref=f45e320]:
+                  - generic [ref=f45e321]:
+                    - generic [ref=f45e322]:
+                      - text: Updating the
+                      - link "rate" [ref=f45e323] [cursor=pointer]:
+                        - /url: "#rates"
+                      - text: for a given market–product
+                    - generic [ref=f45e324]: Updating the volume tiers for a given market–product (utility and authentication only)
+                    - generic [ref=f45e325]:
+                      - text: Moving a market from one
+                      - link "pricing region" [ref=f45e326] [cursor=pointer]:
+                        - /url: "#country-calling-codes"
+                      - text: (for example, “Other”) to another or to be standalone on the rate card
+                - cell "1 month" [ref=f45e327]
+              - row [ref=f45e330]:
+                - cell [ref=f45e331]:
+                  - strong [ref=f45e334]: Pricing model add-on
+                - cell [ref=f45e335]:
+                  - generic [ref=f45e337]:
+                    - text: Our July 1, 2025, introduction of new
+                    - link "volume tiers" [ref=f45e338] [cursor=pointer]:
+                      - /url: "#volume-tiers"
+                    - text: for utility and authentication messages
+                - cell "3 months" [ref=f45e339]
+              - row [ref=f45e342]:
+                - cell [ref=f45e343]:
+                  - strong [ref=f45e346]: Pricing model change
+                - cell "Our July 1, 2025 update to our pricing model, from conversation-based pricing to per-message pricing" [ref=f45e347]
+                - cell "6 months" [ref=f45e350]
+          - generic [ref=f45e355]:
+            - heading "Rates" [level=2] [ref=f45e356]
+            - button [ref=f45e357] [cursor=pointer]
+          - generic [ref=f45e361]:
+            - text: Rates vary based on
+            - link "template category" [ref=f45e362] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/templates/template-categorization
+            - text: ","
+            - link "volume tier" [ref=f45e363] [cursor=pointer]:
+              - /url: "#volume-tiers"
+            - text: ", and"
+            - link "country/region" [ref=f45e364] [cursor=pointer]:
+              - /url: "#country-calling-codes"
+            - text: rate.
+          - generic [ref=f45e367]:
+            - heading "Rate cards and volume tiers" [level=3] [ref=f45e368]
+            - button [ref=f45e369] [cursor=pointer]
+          - generic [ref=f45e373]:
+            - text: These rate cards reflect our current rates and volume tiers, effective July 1, 2026, based on WhatsApp Business account timezone. This information is also available interactively on our
+            - link [ref=f45e374] [cursor=pointer]:
+              - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fbusiness.whatsapp.com%2Fproducts%2Fplatform-pricing%23rates&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - text: WhatsApp Business website
+              - generic [ref=f45e375]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e376]
+            - text: .
+          - table [ref=f45e380]:
+            - rowgroup [ref=f45e381]:
+              - row [ref=f45e382]:
+                - columnheader "Currency" [ref=f45e383]
+                - columnheader "Rates(CSV)" [ref=f45e384]
+                - columnheader "Volume tiers(CSV)" [ref=f45e385]
+                - columnheader "Rates and Volume tiers(PDF)" [ref=f45e386]
+            - rowgroup [ref=f45e387]:
+              - row [ref=f45e388]:
+                - cell "USD" [ref=f45e389]
+                - cell [ref=f45e391]:
+                  - link "USD rates" [ref=f45e393] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735608455_876449615529066_702006520977041900_n.csv%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DEnzi3LH9vJAQ7kNvwFmJgF-%26_nc_oc%3DAdoY9XfQ-g5HaGdE9MkAHIYBF8JJqmWcjErdPohEOLPbQjGCo0CmtkG0ngrbxFvvxow%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEIijT0he9uQysVgE--7JW7JeFzNXlAQoRWkq76wQvstw%26oe%3D6A7A230A&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e394]:
+                  - link "USD volume tiers" [ref=f45e396] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737075891_1702232854373489_5701801020098956708_n.csv%3F_nc_cat%3D101%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DhCgmU87PdNEQ7kNvwH6xksS%26_nc_oc%3DAdpx2ouARZam6GqpGem3QQZn1azqat1UQyHf2-z5YwP4LRTlbbWwHVfwRDAvhG58M5w%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFaWtAps-sulUs6YQk-JWQwc7EEj1PlWYPTWFuObjW19w%26oe%3D6A7A1432&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e397]:
+                  - link "USD rates and volume tiers" [ref=f45e399] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735958960_1334659692185186_1051304524066939928_n.pdf%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Dy_-uz2tB_sYQ7kNvwHkkbcr%26_nc_oc%3DAdq49O2A3iwP2wFcOlhmEo8pKWpdpGthROzOiPSOGJxVCHXWVGQA_N-z789UmI15KHY%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHQBLukox7BLAN0mTFnAsom9B01NTab7QWdT4hSlq4Wcg%26oe%3D6A79FD82&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e400]:
+                - cell "AED" [ref=f45e401]
+                - cell [ref=f45e403]:
+                  - link "AED rates" [ref=f45e405] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736007923_1007780768825862_1511088673050509864_n.csv%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DTAst-H6UxmoQ7kNvwEF9-TS%26_nc_oc%3DAdplZ4s4lfpnGad_6Wvg5Xv0xC-5xHQBuJzmz8-CAuAOCJazbYkhQ_t8C_t9xno8ADM%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEzd2j9LzD83Ua-dEmxg_KyXONuCTgCirNAkYQEyk-zrw%26oe%3D6A7A3143&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e406]:
+                  - link "AED volume tiers" [ref=f45e408] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737543898_2205636523614147_3149899026296297993_n.csv%3F_nc_cat%3D106%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DyAht0FYdGFQQ7kNvwHjL-fU%26_nc_oc%3DAdoQ1q88i0xv_nbBehkgjHT9DC4sWqYB0qZcZj7ZUsKB3gb95fZHyiCNSL_PLij39Ns%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFkSh8YfAoxKK3_b-b1QDE4ZBlbdgHtHZaOu8b2rF76uQ%26oe%3D6A7A22D9&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e409]:
+                  - link "AED rates and volume tiers" [ref=f45e411] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737577477_1529340172226220_5555586059054904533_n.pdf%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Df-OHQ-YO6ZAQ7kNvwFDqPlz%26_nc_oc%3DAdqrGnKgExQAbY6sy9meuiT0O4LzxoohjIPMBParmBARXqrQHBi4QfOohcFUlBfLfJI%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHzSJEMKfbrg6H143s1JhzyL4UGQL8cVQT7Rw30jvGPMw%26oe%3D6A7A13DE&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e412]:
+                - cell "ARS" [ref=f45e413]
+                - cell [ref=f45e415]:
+                  - link "ARS rates" [ref=f45e417] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735544505_1951035662214119_8041070606606550692_n.csv%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DLTUaC8l0XqYQ7kNvwE3dwIP%26_nc_oc%3DAdq7Ug9d5hw_gJ7AduYPb6IP0iQn_6ChaFfxXqS3rtldqmnlwb2Ism_ixobZH_sGPF0%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEKxv-QrtbPjJc-l9iTPz1-GqgskWzlnxgcy3LycMU_sw%26oe%3D6A7A3084&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e418]:
+                  - link "ARS volume tiers" [ref=f45e420] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736032900_1646538203123299_3991554277711287498_n.csv%3F_nc_cat%3D101%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DCBbo6UKQGFcQ7kNvwEeVsTy%26_nc_oc%3DAdpl9_z9SLcltFz0Um31WdPty-Sw6azhdK6Y4Nr459h3KDLM_5Oo16pYjUStkpNByqc%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFmXLxUxq8zxGWoMKKfD4RJ_Cusr1iYqEtEkfwEspCE_Q%26oe%3D6A7A32AF&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e421]:
+                  - link "ARS rates and volume tiers" [ref=f45e423] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737413236_1579756600476488_3419930143722592762_n.pdf%3F_nc_cat%3D111%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DUrrc5TSZnIwQ7kNvwENGovm%26_nc_oc%3DAdrpll-KO69jPi74-TSB2iRbaBziKLhGsil_UPIPCZantaWz0t09LAQrfxQJYrx1KYo%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGTJ_djwUNrCsr289F4gpRP3ydqpOLeAWnCgPKxtN0_9A%26oe%3D6A7A2046&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e424]:
+                - cell "AUD" [ref=f45e425]
+                - cell [ref=f45e427]:
+                  - link "AUD rates" [ref=f45e429] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737819602_2250319009144778_2723599044309184961_n.csv%3F_nc_cat%3D108%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DyNvCIMlJ3IwQ7kNvwEb50Su%26_nc_oc%3DAdrfkW2F4nkv4tRYi_jpgLkE6QR9Nm5zTXI8loYMVO5NwOJzM-zr0ObrZL6EuxJzUfg%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFxLHbzWex8ehxZGc4oHx2oEf_m6kfVKFHo3pvwGvxeyA%26oe%3D6A7A1361&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e430]:
+                  - link "AUD volume tiers" [ref=f45e432] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F738188485_1032545096390806_7329272158665046349_n.csv%3F_nc_cat%3D108%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D0CyrpWWhuCkQ7kNvwGrdJkf%26_nc_oc%3DAdor4xQkUWEZNhJaKnyQzuYWjpBoQduz341AkFFYEi-UrCdqo6N33Mwuen742kop6Ms%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQF5Bromn5tK32t86JV3wsTil6XPTS-zuZuz6I7wD3lJOg%26oe%3D6A7A19CF&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e433]:
+                  - link "AUD rates and volume tiers" [ref=f45e435] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735210839_884591274108825_6944922357200504424_n.pdf%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D5IWcSeqkrIsQ7kNvwEXxEO8%26_nc_oc%3DAdqvQzcccSgfyYPuCj9Iw9I-OZ9X6mEjEsSuaoB8SHFwVSDmaseOHHRrMW1khvXRFcM%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHdtKLwyTCigBP_rnTOs7Ad9VRzGMqpCry7AmS2GlJG6Q%26oe%3D6A7A2985&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e436]:
+                - cell "BRL" [ref=f45e437]
+                - cell [ref=f45e439]:
+                  - link "BRL rates" [ref=f45e441] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735552825_1485054360056316_195551103792202202_n.csv%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DDI4iXmqWuu0Q7kNvwEH25mo%26_nc_oc%3DAdplzF7vHM72kr3eGaDNWyVq8FkSwm8cLGtYg9az2LWG_fGIqnxNKw1xGSUVbmsJI3I%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEkgCS1jeKzpENnFYEsSbVae2UtW2BaymMBEE_z477sOw%26oe%3D6A7A2A55&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e442]:
+                  - link "BRL volume tiers" [ref=f45e444] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735595288_1739825867366495_2229215757296612949_n.csv%3F_nc_cat%3D102%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D4PEHGEoXaDcQ7kNvwGDHdyR%26_nc_oc%3DAdqoXglp3ZXlm8_7HXwNvuqCVl2K9WTgQOJBZKAhFMdyUp1ZfPsqimN7z4XzkOY0Www%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQE-LQQP7KSvzRhlP9Iz0fPmEu984wayMU34z6YJdLVdIQ%26oe%3D6A7A2BE6&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e445]:
+                  - link "BRL rates and volume tiers" [ref=f45e447] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737730541_1380600147294120_5812385598624907160_n.pdf%3F_nc_cat%3D106%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DGR6fNN6zdTUQ7kNvwFhUYZE%26_nc_oc%3DAdojOkf_28wDu3UqD8YBwUkAEye38upBPVrpjrzGJ6MvbTuPPwEY82Rab5a7OmJvA_8%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQETSwqS72QOK6bFe3wxzn64afO6DgDvriovG5aB3-Isbg%26oe%3D6A7A3401&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e448]:
+                - cell "CLP" [ref=f45e449]
+                - cell [ref=f45e451]:
+                  - link "CLP rates" [ref=f45e453] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737577492_1804373267193354_4636676735932956940_n.csv%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DJlSw7huYn8wQ7kNvwHPcBNg%26_nc_oc%3DAdqxK6S8ifqJjnosY04iL87M42XkmcCEFnhwDCf0thZVnvikF-zY0Bik1Egd1kT9OjM%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGYt_PYoMSi-6KaFDZOyTHwifThzMrkv7PAIjWC7KECPw%26oe%3D6A7A3344&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e454]:
+                  - link "CLP volume tiers" [ref=f45e456] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736413128_1042652738200319_72159566375144995_n.csv%3F_nc_cat%3D108%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Dg1zzmQfdjNQQ7kNvwEwf8o9%26_nc_oc%3DAdoXxOBhvly7hFLH2VlAUGu3KauPWUaUfTEQpuFHw8UE_O5ZYoB1TqcQCkrtJm7bwPs%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEWnzEvfgGUeVCkkMN1TU8_JQbR-H0mhaCFk_CN1UTvwA%26oe%3D6A7A03B8&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e457]:
+                  - link "CLP rates and volume tiers" [ref=f45e459] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736413007_999185086362914_3868948611378535219_n.pdf%3F_nc_cat%3D109%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D0q17VHO6ozwQ7kNvwGLoZDb%26_nc_oc%3DAdq7jehFy5nv5__hCImw-YjD9qKKWOglv2PLFcDyXv8gttZS0y93qvfePDJ6XrbtfrM%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFiMNxtEOdRhncLC1itiEfImrBp2UMFiLN1LH5A7Cp_hg%26oe%3D6A7A2CD0&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e460]:
+                - cell "COP" [ref=f45e461]
+                - cell [ref=f45e463]:
+                  - link "COP rates" [ref=f45e465] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735482743_2296023081140804_2474258772751213192_n.csv%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DZggEHlsyLdoQ7kNvwFMCQVF%26_nc_oc%3DAdoBpFlnZmC9SYoVuWNq9xb8r4wn8KmMLQeFvUqJ8t2ijYPI-PgMECl9RzN8xRhHtRc%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQF_x9deRzOwWF_ZBG9INs7UIKCXGAhbftWgVeqOs6BXcQ%26oe%3D6A7A31F1&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e466]:
+                  - link "COP volume tiers" [ref=f45e468] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735786322_1563169278856774_8318221048910614101_n.csv%3F_nc_cat%3D108%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Ds1qLP_U9VQoQ7kNvwHewh0V%26_nc_oc%3DAdot7BWX2aHQs4pjF3yFbgYlFBa_BRwtoWFhsgr5wb_vWvbkkvUnQOnGpoSZLx8E3U0%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHMjWr-i0gzyyoZlVJXN1z5o80UYmzXDWHUWeJ8AzwGOg%26oe%3D6A7A2FDB&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e469]:
+                  - link "COP rates and volume tiers" [ref=f45e471] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736261268_3399672776863686_6664467053461918579_n.pdf%3F_nc_cat%3D101%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DupBLKQRdVKkQ7kNvwFjTw6p%26_nc_oc%3DAdr6uVTgaPsQd2Fa_B-NaDGoN_UieYS-KTCWQ62jIn7iOMEh3uYCExlmEe8OnM1cRz4%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFQ7s7ZRERs9xMjpGRqmtnTtBE4zqwjvoPSLlKH4CVw4A%26oe%3D6A7A1C0E&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e472]:
+                - cell "EUR" [ref=f45e473]
+                - cell [ref=f45e475]:
+                  - link "EUR rates" [ref=f45e477] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735577288_880523067910219_5282602229183099875_n.csv%3F_nc_cat%3D111%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Db8RDBUiAR4IQ7kNvwH3KjWf%26_nc_oc%3DAdrgySi1SzVq15C6KO8aos9NA39X0VNr9isBr0GrCyZgxSIDUAyqUeNlj_QDkvFoAYY%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGm-2FlI3zfp_6LS4gPTAJgAVI6zje3IFxUrsVumrZ9iA%26oe%3D6A7A130A&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e478]:
+                  - link "EUR volume tiers" [ref=f45e480] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F738438435_4431554183839532_4085221187255469478_n.csv%3F_nc_cat%3D101%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D_h14oZWA6R0Q7kNvwGeqv3v%26_nc_oc%3DAdrY-3b6lFKNVqsskj8SFNfP_09fwzME2h4zewCHsDAiKtsk_mr1b0lnItv9HQlKz1Y%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGI9WiVda4-1p3YYpynuTtdhMLhc3M3mIF4K_gShbnyhw%26oe%3D6A7A0145&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e481]:
+                  - link "EUR rates and volume tiers" [ref=f45e483] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F734958213_26993049673710039_8772457889658925801_n.pdf%3F_nc_cat%3D104%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DXqvDicuTXQwQ7kNvwGYE5YQ%26_nc_oc%3DAdoHh0P-dirYzINzqKSQpLZ1eNPHL2l1TmxvnLf1qTSNvxaTpwJPog3U2SAcdh3UhZ0%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQE-pQBMs4QNVkx9UqXJejPyHuKpoBc1h8lO5a3jkYb3Dg%26oe%3D6A7A008C&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e484]:
+                - cell "GBP" [ref=f45e485]
+                - cell [ref=f45e487]:
+                  - link "GBP rates" [ref=f45e489] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735430054_26918261854536870_5055388467024304012_n.csv%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DueYy860Kj8UQ7kNvwEhgCxV%26_nc_oc%3DAdqVVJN7VjWpfovAJBTRl4I9xLaUcscgxI6Ac0TbIOCat9BAQDioLm1WxL9ANDjSvbE%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHEtI6E-jyhZJEc_iV7q-EFt_pV32geo4DXKya141WjRQ%26oe%3D6A79FDCE&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e490]:
+                  - link "GBP volume tiers" [ref=f45e492] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735504700_2096207764666537_2245163982827477699_n.csv%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DLqrK5s8kckYQ7kNvwEuPDv-%26_nc_oc%3DAdp-dTlNGerZarm-VZLg1OhgRA-UG3Zdlw0B10vRswCHbUowyyE5jS24ebFfCiK-bTA%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEJmNvbW9rgOMpUn0i9WrsYBwz6Q0edpSkjI3tRVy9R7Q%26oe%3D6A7A04CE&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e493]:
+                  - link "GBP rates and volume tiers" [ref=f45e495] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735608285_4417940318486706_4352340668351392604_n.pdf%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D9ffjhz2nRGgQ7kNvwF_j98i%26_nc_oc%3DAdoO3YQfe6OIK3apzqoOBOU8SZ5AKELsV6QxCXFojnb_-x6wCasbf4DWG3HDFvwAFu4%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHuyMWDfI_LoWP_-RgNQgtWcahuIM0TK_aZWt7hWUeigw%26oe%3D6A7A13A6&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e496]:
+                - cell "IDR" [ref=f45e497]
+                - cell [ref=f45e499]:
+                  - link "IDR rates" [ref=f45e501] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736248761_4017328625226592_348718840733499952_n.csv%3F_nc_cat%3D106%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Dlx-mpwqZSYIQ7kNvwFEmskH%26_nc_oc%3DAdq0Lcv5Xm4ZaMEFYbGEY2LJajVhQPIVxNz--Br4yBCB-GDn9lbx6zXOMEOx0KUEkWo%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGBqg9Pox19MVIVEz-rCSjU9Lmd1auhbubXSErJMeblGg%26oe%3D6A7A0D69&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e502]:
+                  - link "IDR volume tiers" [ref=f45e504] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F738217727_1011684251610955_29790659035043351_n.csv%3F_nc_cat%3D111%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DKfRK_qlBYBUQ7kNvwF5pkO4%26_nc_oc%3DAdrZUsdC5-rVuzEY5DktUHjPN3I-3jS8b-wn3bB1zKzr8OARAH00gnZY62NeQZlkztA%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFPcceimyZvlKfpovLf5jInbWqSs2eP-KV0teZCigIfcQ%26oe%3D6A7A034A&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e505]:
+                  - link "IDR rates and volume tiers" [ref=f45e507] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737249720_4588912348010993_3128121200416753655_n.pdf%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DZ-RrI7VZPZcQ7kNvwHdvTJR%26_nc_oc%3DAdqBvMkBilgs7V_wczB2VZGyvVwLxo6WjCTHf2lgmyYaF_4IBugCujr8KYoioHAJ6rY%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFChamod_lkzLnB4JwXEvfFb_5J2U95-d-6P85mfA796A%26oe%3D6A7A0F02&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e508]:
+                - cell "INR" [ref=f45e509]
+                - cell [ref=f45e511]:
+                  - link "INR rates" [ref=f45e513] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736778577_2057477481812167_3914865669314423839_n.csv%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DuPiP4jTZsXUQ7kNvwHGL1j7%26_nc_oc%3DAdqfYSG-NDd71TIGgBT8unsnaVOxX6H8KLNgBjH92zhL77cxldTRe5EVDUhOOSWmRk8%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQG05RWFrhnEYStFNIwKumSLmOnzzpEZJ7Addc6aSzCr-Q%26oe%3D6A7A27AD&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e514]:
+                  - link "INR volume tiers" [ref=f45e516] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735482746_895954676210792_8671102688426610970_n.csv%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DYQk5nr4GZBsQ7kNvwEGY4Fn%26_nc_oc%3DAdrP-uyV1AlfWp5w-fecXT6B_IurlMvYg3gFBHYNoOp1aBxWalOvw3pLvzLXE6uFYvI%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGKCm4gg7NvKcu2sAuTEPXDWIjfNS1zxqKIkm1qysGeKQ%26oe%3D6A7A0560&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e517]:
+                  - link "INR rates and volume tiers" [ref=f45e519] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736384855_1505842434676019_4947936918470739818_n.pdf%3F_nc_cat%3D111%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DzfltpYWTjqgQ7kNvwEsFGi6%26_nc_oc%3DAdrafx1sSFtGp9D73UX6tiw9TT2d0m-xyE0zV--s8YZ0_mDrjND8GNOT7Eu4fe8bjt4%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGumQMzMrGohCMRwzrkHDYh8TpLdq-CyHbIMOWVi0Ui6g%26oe%3D6A7A2077&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e520]:
+                - cell "MXN" [ref=f45e521]
+                - cell [ref=f45e523]:
+                  - link "MXN rates" [ref=f45e525] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F738303933_2082142922514658_5654975035703609718_n.csv%3F_nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DETHDDV8iJucQ7kNvwGZJcuN%26_nc_oc%3DAdqgH0NDg8F-Vp481vX72HPhSXnqHOp8QAEOcW5m-hCbvIruPERsBtj5TQjMcOoEKOI%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHWtt94EFfbrunDlzdYdjr2cXBnr3YcKOndCnlVkllVOg%26oe%3D6A7A16E7&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e526]:
+                  - link "MXN volume tiers" [ref=f45e528] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737467685_1942444759760824_5108418538792223432_n.csv%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DegsNuJUwWlYQ7kNvwF5AgMi%26_nc_oc%3DAdrxls3QX1NwoVVw3Sm_tLb-L8At4xS5nzdsajlJR_xMIC4-uBL6s_iSLIMEXeKWQkU%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQGdkerEKFGUQpZsH7Tdy7j9h_aYLWDKSR4NxofTSe1JFg%26oe%3D6A79FE03&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e529]:
+                  - link "MXN rates and volume tiers" [ref=f45e531] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735010003_1033289046050785_4574233614213498855_n.pdf%3F_nc_cat%3D100%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D5SMcRZ09HXAQ7kNvwGGOw9k%26_nc_oc%3DAdq03OaJovBdtgOXlqzUJeyMGsvsGmdq8fInlTGbQEBqMX_9U_5wqR1kBL3c-CmsTHE%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEHGOI4XhurgR6SwL8Hw1iRjfOolDPKBZE6wqCZVoYKKQ%26oe%3D6A7A028F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e532]:
+                - cell "MYR" [ref=f45e533]
+                - cell [ref=f45e535]:
+                  - link "MYR rates" [ref=f45e537] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736019878_2036940027213698_6346536453281015409_n.csv%3F_nc_cat%3D104%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DS_mVXKa-CUMQ7kNvwEHd0wY%26_nc_oc%3DAdqxHAKS76FNVYNn9mGcYooTK6M9obDqm08prKtFGMPe9e__Gb79SHThpY3P-b1w51k%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQE68XVfahjW8NRox7U072zW8WlWIpfamGCA-HLrKht4XA%26oe%3D6A7A0F21&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e538]:
+                  - link "MYR volume tiers" [ref=f45e540] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737249720_1529462038920457_4883100668876133763_n.csv%3F_nc_cat%3D105%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DFrYUSVRFZR8Q7kNvwEv21y0%26_nc_oc%3DAdrz2i0j4Yze6cCP-uj1lacT81gAj0FPwy7xp6gYHJB6OeVuWeh_QHA-5AiC0IKG3Y8%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQECdKyJSnM9I_tyiV89qBnjHWFA32aqbH3uac-rUtS2Jw%26oe%3D6A7A1AAF&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e541]:
+                  - link "MYR rates and volume tiers" [ref=f45e543] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735597616_991741870500391_6460664815430493087_n.pdf%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3D6ghslt9b928Q7kNvwFZuG6W%26_nc_oc%3DAdoKIMZsP39Y0LNvnT9uTlbrVnMO1WbXdpnrXjKMq8TP6V7lrOYowu3qh2NBZnfrNqg%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQF1VmH89Vw8eaV9o9VrNWcYOJB7yQmSxGFYW5Swul_UKw%26oe%3D6A7A015D&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e544]:
+                - cell "PEN" [ref=f45e545]
+                - cell [ref=f45e547]:
+                  - link "PEN rates" [ref=f45e549] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735210839_913840621730202_4639960200844523870_n.csv%3F_nc_cat%3D111%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DdHlraxSbArAQ7kNvwG_FVNI%26_nc_oc%3DAdqdYV3ygG80ONdISQAZGLGUw2ucwxgrcglCKIOlPeCfZO5ruFTn8ZsbzO3W8mb031c%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFJbx2ug8eg5OHA6ThJjC1HYr5OMm0_qCZy8kZbtAOkYA%26oe%3D6A7A158F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e550]:
+                  - link "PEN volume tiers" [ref=f45e552] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735608282_2191695831666586_6461143467874321366_n.csv%3F_nc_cat%3D106%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DuZOJi3hRZ0AQ7kNvwFnBUlK%26_nc_oc%3DAdr91rGyDl5y-grB0txkSWrV9a-x25xej6QQWIS-3nC5BP2w1zkHGZUt-eSZlbOLwlw%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFlsTJn-1QXM5yw8fbJokEmb5--BPfQiu1jMyPd6BfVlQ%26oe%3D6A7A06A3&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e553]:
+                  - link "PEN rates and volume tiers" [ref=f45e555] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735994319_3400176270160441_2750577549294559078_n.pdf%3F_nc_cat%3D103%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DhqWFV5sQ7BgQ7kNvwH25UdD%26_nc_oc%3DAdpO9d9gAp1C5a77kzzABHqU9jPlzBixYOarflxCD-c3QNrAeUOwgNOvNVWGPP5cXpI%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHGy1wxcTkuUgYwV0qkHGe55NclJdmt8Sl9V3g36OrScg%26oe%3D6A7A29F7&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e556]:
+                - cell "SAR" [ref=f45e557]
+                - cell [ref=f45e559]:
+                  - link "SAR rates" [ref=f45e561] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F734958344_1400197512001211_1727363918616552387_n.csv%3F_nc_cat%3D104%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DlUwkT_DetYoQ7kNvwGk-raz%26_nc_oc%3DAdpxjjKAc_nEqfQIpZ_QuyMOFQ7xlLqIeKXcfIjsrFVxM9XT1DGjnMrjeyFxQLL4M_A%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQG-DPotZDrCMgejp-O57FGxiKo9jiXWTQ8_IopcDwHvuw%26oe%3D6A7A213D&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e562]:
+                  - link "SAR volume tiers" [ref=f45e564] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F736045144_4611753665817050_6210021807198769413_n.csv%3F_nc_cat%3D103%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3Dp4AMWADTIKoQ7kNvwG3LAOk%26_nc_oc%3DAdpx4nBELoX72JZdJQcVgogvsgHcyhugNOjMxa5RkCXXP0LnnYNkr-i_P_uvdjpSFkA%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFRy9Diw3uYGSCAV6K9kkz4_UnJQVRhIVei4DTxlCBqog%26oe%3D6A7A10E3&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e565]:
+                  - link "SAR rates and volume tiers" [ref=f45e567] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F737674863_845888481708031_7067407008342933548_n.pdf%3F_nc_cat%3D104%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DLnDKZz5WvlIQ7kNvwE8uwq1%26_nc_oc%3DAdpW6ez5hDvG9DLAtrjICIXno4Mf6HENbkqMH3g5Vi9IuMYWkB79QrsuX_dKExiVHlA%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQG_Nlu6apG-kRDN4tvT9KNC3fFjX0--il2pnzq7KLs6Mg%26oe%3D6A7A16D1&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - row [ref=f45e568]:
+                - cell "SGD" [ref=f45e569]
+                - cell [ref=f45e571]:
+                  - link "SGD rates" [ref=f45e573] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F738235648_27545834748410359_3612846730455957655_n.csv%3F_nc_cat%3D107%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DGXqVhiY_adAQ7kNvwHOZWNK%26_nc_oc%3DAdoQdXfTEK2Pd2-HVXDsoDlMIw4fIkHp_-QJCblOKAiEKhQnen9oZsxNpS4Gjr0PBJY%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQFicYMwf9eaTY0sXGOzWjYGhbCzSevc9QOAQNyacPSBxg%26oe%3D6A7A07A4&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e574]:
+                  - link "SGD volume tiers" [ref=f45e576] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735544502_1024960916924033_6280503177956106671_n.csv%3F_nc_cat%3D103%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DsRuB4oSzN_wQ7kNvwE4DoMW%26_nc_oc%3DAdoIsBFjwQm7t_gpwQfnZEKPmtPmsyWIWjGdljxlhjeiZZiXVi0RNC_2NU7IaRNmFOQ%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQEnG7bcEIQIk2N8g3BKlacwnlhnDuwlw2eWAoPKrh1T6A%26oe%3D6A7A311D&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                - cell [ref=f45e577]:
+                  - link "SGD rates and volume tiers" [ref=f45e579] [cursor=pointer]:
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fscontent.fcai19-9.fna.fbcdn.net%2Fv%2Ft39.8562-6%2F735687605_1604668864416234_1010790687769924176_n.pdf%3F_nc_cat%3D109%26ccb%3D1-7%26_nc_sid%3Db8d81d%26_nc_ohc%3DSk_G2vASPr8Q7kNvwFEv7Ht%26_nc_oc%3DAdofHu3EgbcEOjYgBYkdWZcSGHpmqX72LyhN3DZFOyK4jar8ZtjItOZT_-lpXr-86UM%26_nc_zt%3D14%26_nc_ht%3Dscontent.fcai19-9.fna%26_nc_gid%3DVD2t2wP-AE2vc61IWCGZvg%26_nc_ss%3D7a289%26oh%3D00_AQHiqTxsrVYmkLxanRt6rMBnYGoIIYcjIQxzTueEEN6Yzw%26oe%3D6A7A18C8&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+          - generic [ref=f45e582]:
+            - heading "Updates to rate cards" [level=3] [ref=f45e583]
+            - button [ref=f45e584] [cursor=pointer]
+          - generic [ref=f45e588]:
+            - text: Below are future updates to our rates. See our
+            - link "rate cards" [ref=f45e589] [cursor=pointer]:
+              - /url: "#rate-cards-and-volume-tiers"
+            - text: above for current rates.
+          - generic [ref=f45e592]:
+            - heading "Rate card updates effective October 1, 2026" [level=4] [ref=f45e593]
+            - button [ref=f45e594] [cursor=pointer]
+          - generic [ref=f45e598]:
+            - text: To give customers more than 1-month notice – more time to plan and prepare – Meta is sharing pricing updates launching October 1, 2026 by June 1, 2026. Consistent with July 1, 2026, Meta will move additional markets out of their respective “Rest Of” pricing region to be standalone on rate cards. Below are at least the markets Meta will move out, and the corresponding updates to rates. Meta will announce to-be rates no later than September 1, 2026, per the
+            - link "pricing calendar" [ref=f45e599] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing#pricing-calendar
+            - text: .
+          - list [ref=f45e600]:
+            - listitem [ref=f45e602]: Bangladesh*, Iraq*, Nepal*, Sri Lanka* – Lower utility and authentication rates, plus a new authentication-international rate that is higher vs. the current regional authentication rate
+            - listitem [ref=f45e604]: Kazakhstan*, Kuwait*, Morocco*, Oman*, Ukraine* – Higher utility and authentication rates, plus a new authentication-international rate that is higher vs. the current regional authentication rate
+          - generic [ref=f45e607]:
+            - heading "Pricing updates effective August 1, 2026 and October 1, 2026" [level=4] [ref=f45e608]
+            - button [ref=f45e609] [cursor=pointer]
+          - generic [ref=f45e613]:
+            - text: Pricing updates for Meta Business Agent, service, and utility messages will launch on August 1, 2026 and October 1, 2026. Refer
+            - link "here to learn more" [ref=f45e614] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/non-template-messages
+            - text: .
+          - generic [ref=f45e617]:
+            - heading "Billing localization for Brazil and India" [level=4] [ref=f45e618]
+            - button [ref=f45e619] [cursor=pointer]
+          - strong [ref=f45e624]: Brazil
+          - generic [ref=f45e625]: For Brazil, gradual roll-out began as planned on July 1, 2026. As of July 16, 2026, all eligible Solution Providers and directly-integrated businesses can create new WABAs in BRL.
+          - generic [ref=f45e628]:
+            - emphasis [ref=f45e629]: Effective July 1, 2026, as of 9am PT
+            - text: – Only Solution Providers and directly-integrated businesses whose Sold-To country is Brazil in
+            - link [ref=f45e630] [cursor=pointer]:
+              - /url: https://business.facebook.com/billing_hub/legal_entities
+              - text: Billing Hub
+              - generic [ref=f45e631]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e632]
+            - text: (eligible customers) can create new WhatsApp Business accounts (WABAs) in BRL (Brazilian Reals). Learn more about billing localization for Brazil
+            - link [ref=f45e635] [cursor=pointer]:
+              - /url: https://www.facebook.com/business/help/4344414845795884
+              - text: here
+              - generic [ref=f45e636]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e637]
+            - text: .
+          - generic [ref=f45e640]:
+            - text: Per-message rates in BRL are now published
+            - link "below" [ref=f45e641] [cursor=pointer]:
+              - /url: "#updates-to-rate-cards"
+            - text: . Charges from any BRL WABA will be invoiced in BRL by Meta’s local entity in Brazil, Facebook Brasil.
+          - generic [ref=f45e642]:
+            - text: As a reminder, eligible customers must ensure all WABAs in their business portfolio are migrated to BRL by June 30, 2027 to avoid disruptions, since as of July 1, 2027 Meta will no longer deliver the messages of non-BRL WABAs of eligible customers. To make this migration process easier and faster, use the
+            - link "WABA Currency Migration APIs" [ref=f45e643] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/change-billing-currency
+            - text: ", which are available as of June 1, 2026."
+          - strong [ref=f45e645]: India
+          - generic [ref=f45e646]:
+            - text: Billing localization launched on January 1, 2026 for Solution Providers and directly-integrated businesses whose Sold-To country is India in
+            - link [ref=f45e647] [cursor=pointer]:
+              - /url: https://business.facebook.com/billing_hub/legal_entities
+              - text: Billing Hub
+              - generic [ref=f45e648]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e649]
+            - text: (eligible customers). Learn more
+            - link [ref=f45e652] [cursor=pointer]:
+              - /url: https://www.facebook.com/business/help/2301408543603167
+              - text: here
+              - generic [ref=f45e653]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e654]
+            - text: .
+          - generic [ref=f45e657]:
+            - text: Eligible customers must ensure all WABAs in their business portfolio are migrated to INR by December 31, 2026 to avoid disruptions, since as of January 1, 2027 Meta will no longer deliver the messages of non-INR WABAs of eligible customers. To make this migration process easier and faster, use the
+            - link "WABA Currency Migration APIs" [ref=f45e658] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/change-billing-currency
+            - text: ", which are available as of June 1, 2026."
+          - generic [ref=f45e661]:
+            - heading "Previous rate card updates" [level=4] [ref=f45e662]
+            - button [ref=f45e663] [cursor=pointer]
+          - list [ref=f45e667]:
+            - listitem [ref=f45e669]:
+              - text: "Effective July 1, 2026 at 12am by WhatsApp Business account timezone, the rate updates below applied:"
+              - list [ref=f45e670]:
+                - listitem [ref=f45e672]: Hong Kong* – Higher utility and authentication rates.
+                - listitem [ref=f45e674]: Hungary* – Higher utility and authentication rates.
+                - listitem [ref=f45e676]: Italy – Higher marketing message rate.
+                - listitem [ref=f45e678]: Poland* – Lower marketing, utility and authentication rates.
+                - listitem [ref=f45e680]: Qatar* – Higher utility and authentication rates.
+                - listitem [ref=f45e682]: Romania* – Higher utility and authentication rates.
+                - listitem [ref=f45e684]: Singapore* – Higher utility and authentication rates.
+                - listitem [ref=f45e686]: Spain – Higher marketing message rate.
+                - listitem [ref=f45e688]: United Kingdom – Higher marketing message rate.
+              - generic [ref=f45e689]: "* Until June 30, 2026, messages to users in these markets were charged the respective regional rates (e.g., Rest of Central and Eastern Europe for Poland). These markets have been moved out of regional rate pricing to be standalone on rate cards, with market-specific rates."
+              - generic [ref=f45e690]: For utility and authentication messages – Volume tiers for these markets are now market-specific. For example, messages businesses send to users in Poland a/ no longer count toward the volume tiers of Rest of Central and Eastern Europe and instead b/ count toward the volume tiers of Poland.
+            - listitem [ref=f45e692]:
+              - text: "Effective April 1, 2026 at 12am by WhatsApp Business account timezone, the rate updates below applied:"
+              - list [ref=f45e693]:
+                - listitem [ref=f45e695]: Saudi Arabia – Higher marketing message rate.
+                - listitem [ref=f45e697]: India – Higher authentication-international rate.
+                - listitem [ref=f45e699]: Pakistan – Higher utility and authentication rates. No change to the authentication-international rate.
+                - listitem [ref=f45e701]: Turkey – Lower utility and authentication rates.
+                - listitem [ref=f45e703]: "8 new billing currencies introduced: ARS (Argentina), CLP (Chile), COP (Colombia), MYR (Malaysia), PEN (Peru), SAR (Saudi Arabia), SGD (Singapore), AED (United Arab Emirates)."
+            - listitem [ref=f45e705]:
+              - text: "Effective January 1, 2026 at 12am by WhatsApp Business account timezone, the rate updates below applied:"
+              - list [ref=f45e706]:
+                - listitem [ref=f45e708]: India - Higher marketing rate.
+                - listitem [ref=f45e710]: France, Egypt - Lower marketing rates.
+                - listitem [ref=f45e712]: North America - Lower utility and authentication rates.
+            - listitem [ref=f45e714]:
+              - text: "Effective October 1, 2025 at 12am by WhatsApp Business account timezone, the rate updates below applied:"
+              - list [ref=f45e715]:
+                - listitem [ref=f45e717]: Colombia – Higher utility and authentication rates.
+                - listitem [ref=f45e719]: Mexico – Lower marketing rates.
+                - listitem [ref=f45e721]: United Arab Emirates – Higher marketing message rate.
+                - listitem [ref=f45e723]: Argentina, Egypt, Saudi Arabia – Lower utility and authentication rates.
+                - listitem [ref=f45e725]: Zimbabwe is mapped to our “Rest of Africa” region vs. “Other”. Messages delivered to WhatsApp users with a +263 country calling code (Zimbabwe) will be charged “Rest of Africa” rates.
+            - listitem [ref=f45e727]: Effective July 1, 2025 – Lower utility and authentication message rates across several markets, to ensure pricing is on-par to alternate channels for these use cases. Marketing conversation rates became marketing message rates.
+            - listitem [ref=f45e729]:
+              - text: Effective April 1, 2025 – Lowered
+              - link "authentication-international conversation rates" [ref=f45e730] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing/authentication-international-rates
+              - text: for Egypt, Nigeria, Pakistan, and South Africa.
+            - listitem [ref=f45e732]:
+              - text: Effective February 1, 2025 – Lowered
+              - link "authentication conversation rates" [ref=f45e733] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing#rates
+              - text: for Egypt, Malaysia, Nigeria, Pakistan, Saudi Arabia, South Africa, and the United Arab Emirates.
+            - listitem [ref=f45e735]:
+              - text: Effective November 1, 2024 –
+              - link "Service conversations" [ref=f45e736] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing/conversation-based-pricing#service-conversations
+              - text: are now free for all businesses.
+            - listitem [ref=f45e738]:
+              - text: Effective October 1, 2024 – Updated
+              - link "marketing conversation rates" [ref=f45e739] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing#rates
+              - text: in India, Saudi Arabia, the United Arab Emirates, and the United Kingdom.
+            - listitem [ref=f45e741]:
+              - text: Effective August 1, 2024 – Lowered
+              - link "utility conversation rates" [ref=f45e742] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/pricing#rates
+              - text: .
+          - generic [ref=f45e745]:
+            - heading "Authentication-international rates" [level=3] [ref=f45e746]
+            - button [ref=f45e747] [cursor=pointer]
+          - generic [ref=f45e751]:
+            - text: Specific countries have an authentication-international rate. Our rate cards reflect these rates. See
+            - link "Authentication-International rates" [ref=f45e752] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/authentication-international-rates
+            - text: to learn about these rates and if they apply to you.
+          - generic [ref=f45e755]:
+            - heading "Country calling codes" [level=3] [ref=f45e756]
+            - button [ref=f45e757] [cursor=pointer]
+          - generic [ref=f45e761]:
+            - text: Charges for messages are based on the country calling code of the recipient WhatsApp phone number. The table below shows how Meta maps country calling codes and ISO 3166 Alpha-2 country codes to countries or regions. If a country is not listed below, it maps to
+            - strong [ref=f45e762]: Other
+            - text: .
+          - table [ref=f45e764]:
+            - rowgroup [ref=f45e765]:
+              - row [ref=f45e766]:
+                - columnheader "Markets" [ref=f45e767]
+                - columnheader "Calling Code (and network prefix if applicable)" [ref=f45e768]
+                - columnheader "ISO Country Code" [ref=f45e770]
+            - rowgroup [ref=f45e771]:
+              - row [ref=f45e772]:
+                - cell [ref=f45e773]:
+                  - generic [ref=f45e774]:
+                    - generic [ref=f45e775]: Countries
+                    - generic [ref=f45e776]: ArgentinaBrazilChileColombiaEgyptFranceGermanyHong KongHungaryIndiaIndonesiaIsraelItalyMalaysiaMexicoNetherlandsNigeriaPakistanPeruPolandQatarRomaniaRussiaSaudi ArabiaSingaporeSouth AfricaSpainTurkeyUnited Arab EmiratesUnited Kingdom
+                - cell [ref=f45e778]:
+                  - generic [ref=f45e779]: "54555657203349852369162972396052312349251489744079666527349097144"
+                - cell [ref=f45e783]:
+                  - generic [ref=f45e784]: ARBRCLCOEGFRDEHKHUINIDILITMYMXNLNGPKPEPLQARORUSASGZAESTRAEGB
+              - row [ref=f45e788]:
+                - cell [ref=f45e789]:
+                  - generic [ref=f45e790]:
+                    - generic [ref=f45e791]: North America
+                    - generic [ref=f45e792]: Canada United States
+                - cell "1 1" [ref=f45e794]
+                - cell "CA US" [ref=f45e799]
+              - row [ref=f45e804]:
+                - cell [ref=f45e805]:
+                  - generic [ref=f45e806]:
+                    - generic [ref=f45e807]: Rest of Africa
+                    - generic [ref=f45e808]: Algeria Angola Benin Botswana Burkina Faso Burundi Cameroon Chad Republic of the Congo (Brazzaville) Eritrea Ethiopia Gabon Gambia Ghana Guinea-Bissau Ivory Coast Kenya Lesotho Liberia Libya Madagascar Malawi Mali Mauritania Morocco Mozambique Namibia Niger Rwanda Senegal Sierra Leone Somalia South Sudan Sudan Swaziland Tanzania Togo Tunisia Uganda Zambia Zimbabwe
+                - cell "213 244 229 267 226 257 237 235 242 291 251 241 220 233 245 225 254 266 231 218 261 265 223 222 212 258 264 227 250 221 232 252 211 249 268 255 228 216 256 260 263" [ref=f45e810]
+                - cell "DZ AO BJ BW BF BI CM TD CG ER ET GA GM GH GW CI KE LS LR LY MG MW ML MR MA MZ NA NE RW SN SL SO SS SD SZ TZ TG TN UG ZM ZW" [ref=f45e815]
+              - row [ref=f45e820]:
+                - cell [ref=f45e821]:
+                  - generic [ref=f45e822]:
+                    - generic [ref=f45e823]: Rest of Asia Pacific
+                    - generic [ref=f45e824]: Afghanistan Australia Bangladesh Cambodia China Japan Laos Mongolia Nepal New Zealand Papua New Guinea Philippines Sri Lanka Taiwan Tajikistan Thailand Turkmenistan Uzbekistan Vietnam
+                - cell "93 61 880 855 86 81 856 976 977 64 675 63 94 886 992 66 993 998 84" [ref=f45e826]
+                - cell "AF AU BD KH CN JP LA MN NP NZ PG PH LK TW TJ TH TM UZ VN" [ref=f45e831]
+              - row [ref=f45e836]:
+                - cell [ref=f45e837]:
+                  - generic [ref=f45e838]:
+                    - generic [ref=f45e839]: Rest of Central and Eastern Europe
+                    - generic [ref=f45e840]: Albania Armenia Azerbaijan Belarus Bulgaria Croatia Czech Republic Georgia Greece Latvia Lithuania Moldova North Macedonia Serbia Slovakia Slovenia Ukraine
+                - cell "355 374 994 375 359 385 420 995 30 371 370 373 389 381 421 386 380" [ref=f45e842]
+                - cell "AL AM AZ BY BG HR CZ GE GR LV LT MD MK RS SK SI UA" [ref=f45e847]
+              - row [ref=f45e852]:
+                - cell [ref=f45e853]:
+                  - generic [ref=f45e854]:
+                    - generic [ref=f45e855]: Rest of Western Europe
+                    - generic [ref=f45e856]: Austria Belgium Denmark Finland Ireland Norway Portugal Sweden Switzerland
+                - cell "43 32 45 358 353 47 351 46 41" [ref=f45e858]
+                - cell "AT BE DK FI IE NO PT SE CH" [ref=f45e863]
+              - row [ref=f45e868]:
+                - cell [ref=f45e869]:
+                  - generic [ref=f45e870]:
+                    - generic [ref=f45e871]: Rest of Latin America
+                    - generic [ref=f45e872]: Bolivia Costa Rica Dominican Republic Ecuador El Salvador Guatemala Haiti Honduras Jamaica Nicaragua Panama Paraguay Puerto Rico Uruguay Venezuela
+                - cell "591 506 1 (809, 829, 849) 593 503 502 509 504 1 (658, 876) 505 507 595 1 (787, 939) 598 58" [ref=f45e874]
+                - cell "BO CR DO EC SV GT HT HN JM NI PA PY PR UY VE" [ref=f45e879]
+              - row [ref=f45e884]:
+                - cell [ref=f45e885]:
+                  - generic [ref=f45e886]:
+                    - generic [ref=f45e887]: Rest of Middle East
+                    - generic [ref=f45e888]: Bahrain Iraq Jordan Kuwait Lebanon Oman Yemen
+                - cell "973 964 962 965 961 968 967" [ref=f45e890]
+                - cell "BH IQ JO KW LB OM YE" [ref=f45e895]
+              - row [ref=f45e900]:
+                - cell "Other All other countries" [ref=f45e901]:
+                  - generic [ref=f45e902]:
+                    - generic [ref=f45e903]: Other
+                    - generic [ref=f45e904]: All other countries
+                - cell "Varies by country" [ref=f45e906]
+                - cell [ref=f45e911]
+          - generic [ref=f45e914]:
+            - heading "Volume tiers" [level=2] [ref=f45e915]
+            - button [ref=f45e916] [cursor=pointer]
+          - generic [ref=f45e920]: You can unlock lower utility and authentication rates based on the number of messages you send in a month.
+          - generic [ref=f45e923]:
+            - heading "Tiering accrual" [level=3] [ref=f45e924]
+            - button [ref=f45e925] [cursor=pointer]
+          - list [ref=f45e929]:
+            - listitem [ref=f45e931]:
+              - strong [ref=f45e932]: Messages are aggregated at the business portfolio level, across all WhatsApp Business accounts (WABAs) owned by the portfolio
+              - text: — To determine what tier rates may apply in a given month for a given market–category pair, Meta aggregates messages across all of a business portfolio’s WABAs for each market-category pair (e.g., Brazil–authentication, Brazil–utility, India–authentication, and so on).
+            - listitem [ref=f45e934]:
+              - strong [ref=f45e935]: Only messages that are charged count toward the tiers
+              - text: "— Thus, the following messages do not count:"
+              - list [ref=f45e936]:
+                - listitem [ref=f45e938]: Utility templates delivered to WhatsApp users within an open customer service window.
+                - listitem [ref=f45e940]:
+                  - text: Utility templates delivered within a
+                  - link "free entry point window" [ref=f45e941] [cursor=pointer]:
+                    - /url: "#free-entry-point-windows"
+                  - text: .
+            - listitem [ref=f45e943]:
+              - strong [ref=f45e944]: Volume tiers will be determined solely by Meta
+              - text: — All insights data is approximate due to small variations in data processing. Undue reliance should not be placed on insights data.
+          - generic [ref=f45e947]:
+            - heading "Key dynamics" [level=3] [ref=f45e948]
+            - button [ref=f45e949] [cursor=pointer]
+          - list [ref=f45e953]:
+            - listitem [ref=f45e955]:
+              - strong [ref=f45e956]: Tiers are market–category specific
+              - text: — Volume tiers are aligned to our rate cards and differ by market (e.g., Brazil or Rest of Latin America) and category (utility, authentication).
+            - listitem [ref=f45e958]:
+              - strong [ref=f45e959]: Rates are tier-specific
+              - text: — When a business sends enough messages at a given market–category pair to reach the next tier, they unlock the rate of the next tier, specifically for messages in that tier. This rate applies across all of their WABAs.
+            - listitem [ref=f45e961]:
+              - strong [ref=f45e962]: Tiers reset monthly
+              - text: — At the start of the next month (12am WABA timezone), message count resets to 0 and businesses begin to accrue messages toward that month.
+          - generic [ref=f45e965]:
+            - heading "Volume tiers examples" [level=3] [ref=f45e966]
+            - button [ref=f45e967] [cursor=pointer]
+          - generic [ref=f45e971]:
+            - text: The table below is illustrative and only highlights the dynamics of volume tiers. Please refer to our
+            - link "rate cards" [ref=f45e972] [cursor=pointer]:
+              - /url: "#rate-cards-and-volume-tiers"
+            - text: to see the rates charged.
+          - img "Table showing volume tier rate examples" [ref=f45e974] [cursor=pointer]
+          - generic [ref=f45e975]: "Below are several examples to highlight how the tiers work and what is charged in a given month, for a given market–category. These examples refer to the illustrative table above:"
+          - generic [ref=f45e976]: "Example 1: A business that sends a total of B authentication messages in a month to India is charged:"
+          - list [ref=f45e977]:
+            - listitem [ref=f45e979]: List rate for the first A messages.
+            - listitem [ref=f45e981]: Tier rate 1 for messages A+1 to B.
+            - listitem [ref=f45e983]: Total charges for that month = Rate per tier 𝗑 messages in each tier.
+          - generic [ref=f45e984]: "Example 2: A business that starts to be charged our authentication-international rates on the 15th day of the month:"
+          - list [ref=f45e985]:
+            - listitem [ref=f45e987]: "Day 1 to 14 of that month: Volume tiers apply on the authentication rate."
+            - listitem [ref=f45e989]: "Day 15 onward of that month: Volume tiers apply on the authentication-international rate, with messages continuing to accrue in that month. For example, if a business has already reached the Tier 2, the business would be charged Tier 2’s authentication-international rate:"
+          - generic [ref=f45e990]: "Example 3: A business has 3 WABAs sending authentication messages to India. For WABA A, it is still July 31 based on their timezone. For WABAs B and C, it is already August 1 based on their timezone. For July, the business is already being charged Tier Rate 1."
+          - list [ref=f45e991]:
+            - listitem [ref=f45e993]: The business portfolio will be accruing toward tiers for both July (via WABA A) and August (via WABAs B, C) for a period of time.
+            - listitem [ref=f45e995]: The business can reach the next tier for July, via WABA A. If that happens, messages for the remainder of July for WABA A will be charged Tier Rate 2.
+          - generic [ref=f45e996]: "Example 4: A business has 3 WABAs, integrated across 2 partners. Provider 1 sends the first B messages in a given month, and provider 2 starts sending messages as of when the business is in the 3rd tier. The business does not send enough messages that month to reach the next tier. What Meta charges each provider:"
+          - list [ref=f45e997]:
+            - listitem [ref=f45e999]: "Provider 1: List rate for A messages, then Tier Rate 1 from A+1 to B, and Tier Rate 2 for B+1 to C."
+            - listitem [ref=f45e1001]: "Provider 2: Tier Rate 2 across all of their messages."
+          - generic [ref=f45e1004]:
+            - heading "Tiering webhooks" [level=3] [ref=f45e1005]
+            - button [ref=f45e1006] [cursor=pointer]
+          - generic [ref=f45e1010]:
+            - text: Starting October 1, 2025, an
+            - link "account_update" [ref=f45e1011] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/account_update
+            - text: webhook with
+            - code [ref=f45e1012]: event
+            - text: set to
+            - code [ref=f45e1013]: VOLUME_BASED_PRICING_TIER_UPDATE
+            - text: will be triggered when your WhatsApp Business account reaches a new volume tier, in any market, in a given month. This complements our
+            - link "pricing_analytics" [ref=f45e1014] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/analytics#pricing-analytics
+            - text: endpoint, which will continue to provide intra-month tiering progress and tiering information for delivered messages.
+          - generic [ref=f45e1015]: "Example webhook:"
+          - generic [ref=f45e1016]:
+            - generic [ref=f45e1017]: "{ \"object\": \"whatsapp_business_account\", \"entry\": [ { \"id\": \"102290129340398\", \"time\": 1743451903, \"changes\": [ { \"value\": { \"volume_tier_info\": { \"tier_update_time\": 1743451903, \"pricing_category\": \"UTILITY\", \"tier\": \"25000001:50000000\", \"effective_month\": \"2025-11\", \"region\": \"India\" }, \"event\": \"VOLUME_BASED_PRICING_TIER_UPDATE\" }, \"field\": \"account_update\" } ] } ] }"
+            - button [ref=f45e1020] [cursor=pointer]
+          - list [ref=f45e1023]:
+            - listitem [ref=f45e1025]:
+              - code [ref=f45e1026]: tier_update_time
+              - text: tells when your WABA reached a higher volume tier (Unix timestamp).
+            - listitem [ref=f45e1028]:
+              - code [ref=f45e1029]: pricing_category
+              - text: tells you the template category (
+              - code [ref=f45e1030]: UTILITY
+              - text: or
+              - code [ref=f45e1031]: AUTHENTICATION
+              - text: ) for which your new volume tier rate applies.
+            - listitem [ref=f45e1033]:
+              - code [ref=f45e1034]: tier
+              - text: tells you the new volume tier’s lower and upper bounds.
+            - listitem [ref=f45e1036]:
+              - code [ref=f45e1037]: effective_month
+              - text: tells you the month in which your new volume tier rate is in effect.
+            - listitem [ref=f45e1039]:
+              - code [ref=f45e1040]: region
+              - text: tells you the WhatsApp user country/region for which your new volume tier rate applies.
+          - generic [ref=f45e1041]:
+            - text: Note that it’s possible for multiple
+            - link "account_update" [ref=f45e1042] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/account_update
+            - text: webhooks to be triggered that describe the same tier switch event. In these cases, use the webhook with the smaller
+            - code [ref=f45e1043]: tier_update_time
+            - text: Unix timestamp as the official webhook.
+          - generic [ref=f45e1046]:
+            - heading "Tiering analytics" [level=3] [ref=f45e1047]
+            - button [ref=f45e1048] [cursor=pointer]
+          - generic [ref=f45e1052]:
+            - text: You can get
+            - link "volume tier information" [ref=f45e1053] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/analytics#volume-tier-information
+            - text: via
+            - link "template analytics" [ref=f45e1054] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/analytics#template-analytics
+            - text: .
+          - generic [ref=f45e1057]:
+            - heading "When messages are not charged" [level=2] [ref=f45e1058]
+            - button [ref=f45e1059] [cursor=pointer]
+          - generic [ref=f45e1063]: Meta does not charge for messages in certain cases, as outlined below.
+          - generic [ref=f45e1066]:
+            - heading "Non-template messages" [level=3] [ref=f45e1067]
+            - button [ref=f45e1068] [cursor=pointer]
+          - generic [ref=f45e1074]:
+            - text: Pricing updates for Meta Business Agent, service, and utility messages will launch on August 1, 2026 and October 1, 2026.
+            - link "Learn more" [ref=f45e1075] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/non-template-messages
+            - text: .
+          - generic [ref=f45e1076]:
+            - text: Non-template messages, which can only be sent within an open
+            - link "customer service window" [ref=f45e1077] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+            - text: ", are not charged as of November 1, 2024. These messages have"
+            - code [ref=f45e1078]: type
+            - text: set to
+            - code [ref=f45e1079]: free_customer_service
+            - text: in the
+            - code [ref=f45e1080]: pricing
+            - text: object of status
+            - link "messages" [ref=f45e1081] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+            - text: "webhooks:"
+          - generic [ref=f45e1082]:
+            - generic [ref=f45e1083]: "\"pricing\": { \"billable\": false, \"pricing_model\": \"PMP\", \"type\": \"free_customer_service\", \"category\": \"service\" }"
+            - button [ref=f45e1086] [cursor=pointer]
+          - generic [ref=f45e1091]:
+            - heading "Utility template messages in response to users" [level=3] [ref=f45e1092]
+            - button [ref=f45e1093] [cursor=pointer]
+          - generic [ref=f45e1099]:
+            - text: Pricing updates for Meta Business Agent, service, and utility messages will launch on August 1, 2026 and October 1, 2026.
+            - link "Learn more" [ref=f45e1100] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/non-template-messages
+            - text: .
+          - generic [ref=f45e1101]:
+            - text: Utility template messages sent within an open
+            - link "customer service window" [ref=f45e1102] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+            - text: are not charged as of July 1, 2025. These messages will have
+            - code [ref=f45e1103]: type
+            - text: set to
+            - code [ref=f45e1104]: free_customer_service
+            - text: and
+            - code [ref=f45e1105]: category
+            - text: set to
+            - code [ref=f45e1106]: utility
+            - text: in the
+            - code [ref=f45e1107]: pricing
+            - text: object of status
+            - link "messages" [ref=f45e1108] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+            - text: "webhooks:"
+          - generic [ref=f45e1109]:
+            - generic [ref=f45e1110]: "\"pricing\": { \"billable\": false, \"pricing_model\": \"PMP\", \"type\": \"free_customer_service\", \"category\": \"utility\" }"
+            - button [ref=f45e1113] [cursor=pointer]
+          - generic [ref=f45e1118]:
+            - heading "Edge case" [level=4] [ref=f45e1119]
+            - button [ref=f45e1120] [cursor=pointer]
+          - generic [ref=f45e1124]:
+            - text: If you send a message to a WhatsApp user prior to July 1, 2025 (which is when Meta switched from conversation-based pricing to per-message pricing), a utility conversation is opened between you and a user that spans the switch to per-message pricing (the conversation was opened before the switch but won’t close until after the switch). In this case, utility templates sent to the user after the switch while the conversation is open will be free, but attributed to the open conversation. In status
+            - link "messages" [ref=f45e1125] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+            - text: webhooks, these messages will have a
+            - code [ref=f45e1126]: pricing_model
+            - text: of
+            - code [ref=f45e1127]: CBP
+            - text: and the utility conversation ID will be assigned to
+            - code [ref=f45e1128]: conversation.id
+            - text: . Once the conversation closes, subsequent utility messages will use per-message pricing, which will be reflected in new webhooks.
+          - generic [ref=f45e1131]:
+            - heading "Free entry point windows (FEP)" [level=3] [ref=f45e1132]
+            - button [ref=f45e1133] [cursor=pointer]
+          - generic [ref=f45e1137]: "If a WhatsApp user messages you via a Click to WhatsApp Ad or Facebook Page Call-to-Action button using a device running our Android or iOS app (our desktop and web apps are not supported):"
+          - list [ref=f45e1138]:
+            - listitem [ref=f45e1140]:
+              - text: A 24-hour
+              - link "customer service window" [ref=f45e1141] [cursor=pointer]:
+                - /url: /documentation/business-messaging/whatsapp/messages/send-messages#customer-service-windows
+              - text: is opened (as normal).
+            - listitem [ref=f45e1143]: If you respond within 24 hours using any type of message, the message will be free, and a Free Entry Point (“FEP”) window will be opened, starting from the time when you responded.
+          - generic [ref=f45e1144]: FEP windows remain open for 72 hours. While open, you can send any type of message to the user at no charge. Note, however, that the customer service window is independent of the FEP window, so if the customer service window closes, you will only be able to send template messages.
+          - generic [ref=f45e1147]:
+            - heading "Other pricing topics" [level=2] [ref=f45e1148]
+            - button [ref=f45e1149] [cursor=pointer]
+          - generic [ref=f45e1155]:
+            - heading "New max-price feature for Marketing Messages API for WhatsApp" [level=3] [ref=f45e1156]
+            - button [ref=f45e1157] [cursor=pointer]
+          - generic [ref=f45e1161]:
+            - text: Starting in 2026, businesses integrated into Marketing Messages API for WhatsApp can choose to set a
+            - link "max-price" [ref=f45e1162] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/marketing-messages/pricing
+            - text: per marketing message delivery; when a max-price is set, Meta will charge that max-price or lower for delivery.
+          - generic [ref=f45e1165]:
+            - heading "New pricing policy for AI Providers leveraging WhatsApp Business Platform" [level=3] [ref=f45e1166]
+            - button [ref=f45e1167] [cursor=pointer]
+          - generic [ref=f45e1171]:
+            - text: Click
+            - link "here" [ref=f45e1172] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/ai-providers
+            - text: to learn more about our new pricing policy for “AI Providers” leveraging WhatsApp Business Platform, which is effective February 16, 2026, and updated as of May 12, 2026.
+          - generic [ref=f45e1175]:
+            - heading "WhatsApp Business Calling API pricing" [level=3] [ref=f45e1176]
+            - button [ref=f45e1177] [cursor=pointer]
+          - generic [ref=f45e1181]:
+            - text: The WhatsApp Business Calling API has different pricing. See our
+            - link "Calling API pricing document" [ref=f45e1182] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/calling/pricing
+            - text: to learn more.
+          - generic [ref=f45e1185]:
+            - heading "Conversation-based pricing" [level=3] [ref=f45e1186]
+            - button [ref=f45e1187] [cursor=pointer]
+          - generic [ref=f45e1191]:
+            - link "Conversation-based pricing" [ref=f45e1192] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/pricing/conversation-based-pricing
+            - text: is deprecated. It was replaced with per-message pricing on July 1, 2025.
+          - generic [ref=f45e1195]:
+            - heading "Analytics" [level=2] [ref=f45e1196]
+            - button [ref=f45e1197] [cursor=pointer]
+          - generic [ref=f45e1201]:
+            - text: Use the
+            - link "pricing_analytics field" [ref=f45e1202] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/analytics#pricing-analytics
+            - text: to get per-message pricing breakdowns and tiering information for delivered messages.
+          - generic [ref=f45e1205]:
+            - heading "Webhooks" [level=2] [ref=f45e1206]
+            - button [ref=f45e1207] [cursor=pointer]
+          - generic [ref=f45e1211]:
+            - text: Billable messages have
+            - code [ref=f45e1212]: type
+            - text: set to
+            - code [ref=f45e1213]: regular
+            - text: in the
+            - code [ref=f45e1214]: pricing
+            - text: object of status
+            - link "messages" [ref=f45e1215] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/webhooks/reference/messages/status
+            - text: "webhooks:"
+          - generic [ref=f45e1216]:
+            - generic [ref=f45e1217]: "\"pricing\": { \"billable\": true, \"pricing_model\": \"PMP\", \"type\": \"regular\", \"category\": \"<PRICING_CATEGORY>\" }"
+            - button [ref=f45e1220] [cursor=pointer]
+          - generic [ref=f45e1223]:
+            - text: The
+            - code [ref=f45e1224]: <PRICING_CATEGORY>
+            - text: tells you what rate was applied (for example,
+            - code [ref=f45e1225]: marketing
+            - text: ). See the status messages webhook reference for a list of possible values.
+          - generic [ref=f45e1226]:
+            - text: Note that currently, tiering information is not included in any webhooks. Use the
+            - link "pricing_analytics field" [ref=f45e1227] [cursor=pointer]:
+              - /url: /documentation/business-messaging/whatsapp/analytics#pricing-analytics
+            - text: to get tiering information for delivered messages.
+          - generic [ref=f45e1230]:
+            - heading "Billing" [level=2] [ref=f45e1231]
+            - button [ref=f45e1232] [cursor=pointer]
+          - generic [ref=f45e1236]:
+            - text: Billing and billing-related actions are handled through the Meta Business Suite. See
+            - link [ref=f45e1237] [cursor=pointer]:
+              - /url: https://www.facebook.com/business/help/2225184664363779
+              - text: About Billing For Your WhatsApp Business Account
+              - generic [ref=f45e1238]:
+                - text: ⁠
+                - img "This link opens in a new tab or window" [ref=f45e1239]
+            - text: for more information.
+  - generic [ref=f45e1242]:
+    - separator [ref=f45e1243]
+    - contentinfo [ref=f45e1244]:
+      - generic [ref=f45e1245]:
+        - separator [ref=f45e1246]
+        - generic [ref=f45e1248]:
+          - generic [ref=f45e1250]:
+            - generic [ref=f45e1252]:
+              - img "Meta" [ref=f45e1254]
+              - list [ref=f45e1256]:
+                - listitem:
+                  - link "Facebook":
+                    - /url: https://www.facebook.com/MetaforDevelopers
+                    - img "Facebook"
+                - listitem:
+                  - link "Instagram":
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.instagram.com%2Fmetafordevelopers%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                    - img "Instagram"
+                - listitem:
+                  - link "X":
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Ftwitter.com%2Fmetafordevs&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                    - img "X"
+                - listitem:
+                  - link "LinkedIn":
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.linkedin.com%2Fshowcase%2Fmeta-for-developers%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                    - img "LinkedIn"
+                - listitem:
+                  - link "YouTube":
+                    - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.youtube.com%2FMetaDevelopers%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                    - img "YouTube"
+            - generic [ref=f45e1258]:
+              - generic [ref=f45e1261]:
+                - heading "Build with Meta" [level=2] [ref=f45e1262]
+                - list [ref=f45e1264]:
+                  - listitem [ref=f45e1265]:
+                    - link "AI" [ref=f45e1267] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.llama.com%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                  - listitem [ref=f45e1268]:
+                    - link "Meta Horizon" [ref=f45e1270] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fdevelopers.meta.com%2Fhorizon%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                  - listitem [ref=f45e1271]:
+                    - link "Social technologies" [ref=f45e1273] [cursor=pointer]:
+                      - /url: /social-technologies/
+                  - listitem [ref=f45e1274]:
+                    - link "Wearables" [ref=f45e1276] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fdevelopers.meta.com%2Fwearables%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+              - generic [ref=f45e1279]:
+                - heading "News" [level=2] [ref=f45e1280]
+                - list [ref=f45e1282]:
+                  - listitem [ref=f45e1283]:
+                    - link "Meta for Developers" [ref=f45e1285] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fdevelopers.meta.com%2Fblog%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                  - listitem [ref=f45e1286]:
+                    - link "Blog" [ref=f45e1288] [cursor=pointer]:
+                      - /url: /blog/
+                  - listitem [ref=f45e1289]:
+                    - link "Success stories" [ref=f45e1291] [cursor=pointer]:
+                      - /url: /success-stories/
+              - generic [ref=f45e1294]:
+                - heading "Support" [level=2] [ref=f45e1295]
+                - list [ref=f45e1297]:
+                  - listitem [ref=f45e1298]:
+                    - link "Developer Support" [ref=f45e1300] [cursor=pointer]:
+                      - /url: /support/
+                  - listitem [ref=f45e1301]:
+                    - link "Bug tool" [ref=f45e1303] [cursor=pointer]:
+                      - /url: /support/bugs/
+                  - listitem [ref=f45e1304]:
+                    - link "Platform status" [ref=f45e1306] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fmetastatus.com%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                  - listitem [ref=f45e1307]:
+                    - link "Developer community forum" [ref=f45e1309] [cursor=pointer]:
+                      - /url: https://www.facebook.com/groups/fbdevelopers/
+                  - listitem [ref=f45e1310]:
+                    - link "Report an incident" [ref=f45e1312] [cursor=pointer]:
+                      - /url: /incident/report/
+              - generic [ref=f45e1315]:
+                - heading "About us" [level=2] [ref=f45e1316]
+                - list [ref=f45e1318]:
+                  - listitem [ref=f45e1319]:
+                    - link "About" [ref=f45e1321] [cursor=pointer]:
+                      - /url: https://l.facebook.com/l.php?u=https%3A%2F%2Fabout.fb.com%2F&h=AUANLZI4K7f7WnmrXZPuqnToLigsMRPjmvpwgrDQdb5gcENJHs-phPtl6ceLdOeJEXSJE9kfl1LpXWbSwrdjEqj9kTu7z43PuoQ0TkjLRz20cZ9dKWAC1L7GZsvx-8t4MI_4wALYKMloLajShxOK-A
+                  - listitem [ref=f45e1322]:
+                    - link "Careers" [ref=f45e1324] [cursor=pointer]:
+                      - /url: https://www.facebook.com/careers
+              - generic [ref=f45e1327]:
+                - heading "Terms and policies" [level=2] [ref=f45e1328]
+                - list [ref=f45e1330]:
+                  - listitem [ref=f45e1331]:
+                    - link "Responsible platform initiatives" [ref=f45e1333] [cursor=pointer]:
+                      - /url: /products/responsible-platform-initiatives/
+                  - listitem [ref=f45e1334]:
+                    - link "Platform terms" [ref=f45e1336] [cursor=pointer]:
+                      - /url: /terms/dfc_platform_terms/
+                  - listitem [ref=f45e1337]:
+                    - link "Developer policies" [ref=f45e1339] [cursor=pointer]:
+                      - /url: /devpolicy/
+                  - listitem [ref=f45e1340]:
+                    - link "Privacy policy" [ref=f45e1342] [cursor=pointer]:
+                      - /url: https://www.facebook.com/about/privacy
+                  - listitem [ref=f45e1343]:
+                    - link "Cookies" [ref=f45e1345] [cursor=pointer]:
+                      - /url: https://www.facebook.com/help/cookies
+          - button "Change language" [ref=f45e1350] [cursor=pointer]:
+            - generic [ref=f45e1351]: English (US)

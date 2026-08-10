@@ -1,0 +1,965 @@
+- generic [ref=f5e7]:
+  - generic [ref=f5e735]:
+    - link "تخطي إلى المحتوى" [ref=f5e736] [cursor=pointer]:
+      - /url: "#app-shell-main-content"
+    - generic [ref=f5e737]:
+      - complementary "تنقل تطبيق متجر التطبيقات" [ref=f5e739]:
+        - button "الرجوع للتطبيقات" [ref=f5e740] [cursor=pointer]
+        - heading "متجر التطبيقات" [level=2] [ref=f5e751]
+        - navigation [ref=f5e752]:
+          - generic [ref=f5e753]:
+            - heading "متجر التطبيقات" [level=3] [ref=f5e755]
+            - link "تطبيقاتي" [ref=f5e757] [cursor=pointer]:
+              - /url: /my-apps
+            - link "تصفح التطبيقات" [ref=f5e762] [cursor=pointer]:
+              - /url: /marketplace
+            - link "قوالب المتجر" [ref=f5e768] [cursor=pointer]:
+              - /url: /marketplace/themes
+            - link "الباقات" [ref=f5e777] [cursor=pointer]:
+              - /url: /marketplace/bundles
+            - link "مدفوعاتي" [ref=f5e784] [cursor=pointer]:
+              - /url: /payments
+      - generic [ref=f5e794]:
+        - generic [ref=f5e795]:
+          - generic [ref=f5e802]:
+            - heading "التطبيقات المثبتة" [level=1] [ref=f5e803]
+            - paragraph [ref=f5e804]: 75 تطبيق مثبت حالياً.
+          - generic [ref=f5e805]:
+            - button "كل التطبيقات 75" [ref=f5e806]:
+              - text: كل التطبيقات
+              - generic [ref=f5e812]: "75"
+            - button "نشط 24" [ref=f5e813]:
+              - text: نشط
+              - generic [ref=f5e817]: "24"
+            - button "تجريبي 51" [ref=f5e818]:
+              - text: تجريبي
+              - generic [ref=f5e822]: "51"
+            - button "ملغي 0" [ref=f5e823]:
+              - text: ملغي
+              - generic [ref=f5e827]: "0"
+          - textbox "ابحث عن تطبيق أو ميزة أو مطور…" [ref=f5e832]
+        - generic [ref=f5e833]:
+          - generic [ref=f5e836]:
+            - generic [ref=f5e840]:
+              - heading "الطلب اليدوي" [level=3] [ref=f5e841]
+              - generic [ref=f5e842]: نشط
+            - paragraph [ref=f5e843]: "إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن."
+            - generic [ref=f5e844]: /شهر
+            - generic [ref=f5e848]:
+              - link [ref=f5e849] [cursor=pointer]:
+                - /url: /my-apps/manual-orders-pro/settings
+                - button "تفاصيل" [ref=f5e850]
+              - button [ref=f5e851]
+          - generic [ref=f5e853]:
+            - generic [ref=f5e857]:
+              - heading "مصادر الطلبات والمحاسبة" [level=3] [ref=f5e858]
+              - generic [ref=f5e859]: تجريبي
+            - paragraph [ref=f5e860]: تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.
+            - generic [ref=f5e861]: /شهر
+            - generic [ref=f5e865]:
+              - link [ref=f5e866] [cursor=pointer]:
+                - /url: /my-apps/order-accounting-sources/settings
+                - button "تفاصيل" [ref=f5e867]
+              - button [ref=f5e868]
+          - generic [ref=f5e870]:
+            - generic [ref=f5e874]:
+              - heading "المخزون المتعدد" [level=3] [ref=f5e875]
+              - generic [ref=f5e876]: تجريبي
+            - paragraph [ref=f5e877]: إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.
+            - generic [ref=f5e878]: /شهر
+            - generic [ref=f5e882]:
+              - link [ref=f5e883] [cursor=pointer]:
+                - /url: /my-apps/multi-warehouse-pro/settings
+                - button "تفاصيل" [ref=f5e884]
+              - button [ref=f5e885]
+          - generic [ref=f5e887]:
+            - generic [ref=f5e891]:
+              - heading "تكامل WooCommerce" [level=3] [ref=f5e892]
+              - generic [ref=f5e893]: تجريبي
+            - paragraph [ref=f5e894]: مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.
+            - generic [ref=f5e895]: /شهر
+            - generic [ref=f5e899]:
+              - link [ref=f5e900] [cursor=pointer]:
+                - /url: /my-apps/woocommerce-pro/settings
+                - button "تفاصيل" [ref=f5e901]
+              - button [ref=f5e902]
+          - generic [ref=f5e904]:
+            - generic [ref=f5e908]:
+              - heading "الكوبونات والعروض" [level=3] [ref=f5e909]
+              - generic [ref=f5e910]: تجريبي
+            - paragraph [ref=f5e911]: إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.
+            - generic [ref=f5e912]: /شهر
+            - generic [ref=f5e916]:
+              - link [ref=f5e917] [cursor=pointer]:
+                - /url: /my-apps/coupons-pro/settings
+                - button "تفاصيل" [ref=f5e918]
+              - button [ref=f5e919]
+          - generic [ref=f5e921]:
+            - generic [ref=f5e925]:
+              - heading "نظام POS" [level=3] [ref=f5e926]
+              - generic [ref=f5e927]: تجريبي
+            - paragraph [ref=f5e928]: "نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية."
+            - generic [ref=f5e929]: /شهر
+            - generic [ref=f5e933]:
+              - link [ref=f5e934] [cursor=pointer]:
+                - /url: /my-apps/pos-pro/settings
+                - button "تفاصيل" [ref=f5e935]
+              - button [ref=f5e936]
+          - generic [ref=f5e939]:
+            - generic [ref=f5e943]:
+              - heading "مركز التأكيد والمتابعة" [level=3] [ref=f5e944]
+              - generic [ref=f5e945]: نشط
+            - paragraph [ref=f5e946]: مساحة عمل موحدة لفريق التأكيد — إدارة اتصالات العملاء، تأكيد الطلبات، جدولة المتابعات، وتحديث الحالات.
+            - generic [ref=f5e947]: /شهر
+            - generic [ref=f5e951]:
+              - link [ref=f5e952] [cursor=pointer]:
+                - /url: /my-apps/agent-workspace/settings
+                - button "تفاصيل" [ref=f5e953]
+              - button [ref=f5e954]
+          - generic [ref=f5e957]:
+            - generic [ref=f5e961]:
+              - heading "COD Deposit" [level=3] [ref=f5e962]
+              - generic [ref=f5e963]: نشط
+            - paragraph [ref=f5e964]: طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.
+            - generic [ref=f5e965]: مجاني
+            - generic [ref=f5e969]:
+              - link [ref=f5e970] [cursor=pointer]:
+                - /url: /my-apps/cod-deposit/settings
+                - button "تفاصيل" [ref=f5e971]
+              - button [ref=f5e972]
+          - generic [ref=f5e975]:
+            - generic [ref=f5e979]:
+              - heading "MultiView - عروض متعددة للمنتج" [level=3] [ref=f5e980]
+              - generic [ref=f5e981]: نشط
+            - paragraph [ref=f5e982]: أنشئ نسخ متعددة لنفس المنتج بصور وعناوين مختلفة — كل نسخة لها رابط تتبع مستقل لاختبار أي صورة تحقق أعلى مبيعات.
+            - generic [ref=f5e983]: مجاني
+            - generic [ref=f5e987]:
+              - link [ref=f5e988] [cursor=pointer]:
+                - /url: /my-apps/product-presentations/settings
+                - button "تفاصيل" [ref=f5e989]
+              - button [ref=f5e990]
+          - generic [ref=f5e993]:
+            - generic [ref=f5e997]:
+              - heading "حجوزات المواعيد" [level=3] [ref=f5e998]
+              - generic [ref=f5e999]: نشط
+            - paragraph [ref=f5e1000]: نظام حجز وإدارة المواعيد مع جدولة المواعيد المتاحة وإدارة الحالات.
+            - generic [ref=f5e1001]: /شهر
+            - generic [ref=f5e1005]:
+              - link [ref=f5e1006] [cursor=pointer]:
+                - /url: /my-apps/booking-app/settings
+                - button "تفاصيل" [ref=f5e1007]
+              - button [ref=f5e1008]
+          - generic [ref=f5e1011]:
+            - generic [ref=f5e1015]:
+              - heading "نماذج التسجيل الذكية" [level=3] [ref=f5e1016]
+              - generic [ref=f5e1017]: نشط
+            - paragraph [ref=f5e1018]: بناء نماذج تسجيل احترافية مع ربط Facebook Pixel. تحويل الزوار إلى عملاء Leads مباشرة في CRM مع تحليلات الزوار ونسبة التحويل.
+            - generic [ref=f5e1019]: /شهر
+            - generic [ref=f5e1023]:
+              - link [ref=f5e1024] [cursor=pointer]:
+                - /url: /my-apps/forms-app/settings
+                - button "تفاصيل" [ref=f5e1025]
+              - button [ref=f5e1026]
+          - generic [ref=f5e1029]:
+            - generic [ref=f5e1033]:
+              - heading "البيع بالجملة" [level=3] [ref=f5e1034]
+              - generic [ref=f5e1035]: نشط
+            - paragraph [ref=f5e1036]: نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.
+            - generic [ref=f5e1037]: /شهر
+            - generic [ref=f5e1041]:
+              - link [ref=f5e1042] [cursor=pointer]:
+                - /url: /my-apps/wholesale-pro/settings
+                - button "تفاصيل" [ref=f5e1043]
+              - button [ref=f5e1044]
+          - generic [ref=f5e1047]:
+            - generic [ref=f5e1051]:
+              - heading "Pixel وتحليلات التحويل" [level=3] [ref=f5e1052]
+              - generic [ref=f5e1053]: نشط
+            - paragraph [ref=f5e1054]: تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة.
+            - generic [ref=f5e1055]: /شهر
+            - generic [ref=f5e1059]:
+              - link [ref=f5e1060] [cursor=pointer]:
+                - /url: /my-apps/facebook-pixel-capi/settings
+                - button "تفاصيل" [ref=f5e1061]
+              - button [ref=f5e1062]
+          - generic [ref=f5e1065]:
+            - generic [ref=f5e1069]:
+              - heading "ربط صفحات فيسبوك" [level=3] [ref=f5e1070]
+              - generic [ref=f5e1071]: نشط
+            - paragraph [ref=f5e1072]: ربط صفحات فيسبوك وإدارة الصفحات الأساسية والمحتوى.
+            - generic [ref=f5e1073]: /شهر
+            - generic [ref=f5e1077]:
+              - link [ref=f5e1078] [cursor=pointer]:
+                - /url: /my-apps/facebook-pages-connect/settings
+                - button "تفاصيل" [ref=f5e1079]
+              - button [ref=f5e1080]
+          - generic [ref=f5e1083]:
+            - generic [ref=f5e1087]:
+              - heading "كتالوج ومتجر فيسبوك" [level=3] [ref=f5e1088]
+              - generic [ref=f5e1089]: نشط
+            - paragraph [ref=f5e1090]: مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop، إدارة المخزون، وإعلانات Dynamic Ads.
+            - generic [ref=f5e1091]: /شهر
+            - generic [ref=f5e1095]:
+              - link [ref=f5e1096] [cursor=pointer]:
+                - /url: /my-apps/facebook-catalog-shop/settings
+                - button "تفاصيل" [ref=f5e1097]
+              - button [ref=f5e1098]
+          - generic [ref=f5e1101]:
+            - generic [ref=f5e1105]:
+              - heading "المتجر" [level=3] [ref=f5e1106]
+              - generic [ref=f5e1107]: نشط
+            - paragraph [ref=f5e1108]: إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.
+            - generic [ref=f5e1109]:
+              - generic [ref=f5e1110]: حسب الاستخدام
+              - generic [ref=f5e1113]: ج 158.00
+            - generic [ref=f5e1114]:
+              - link [ref=f5e1115] [cursor=pointer]:
+                - /url: /my-apps/store/settings
+                - button "تفاصيل" [ref=f5e1116]
+              - button [ref=f5e1117]
+          - generic [ref=f5e1120]:
+            - generic [ref=f5e1128]:
+              - heading "تحليل المنافسين" [level=3] [ref=f5e1129]
+              - generic [ref=f5e1130]: تجريبي
+            - paragraph [ref=f5e1131]: تحليل السوق والمنافسين وتقارير المقارنة
+            - generic [ref=f5e1132]:
+              - generic [ref=f5e1133]: /شهر
+              - generic [ref=f5e1136]: 7/5/2026
+            - generic [ref=f5e1140]:
+              - link [ref=f5e1141] [cursor=pointer]:
+                - /url: /my-apps/competitor-analysis/settings
+                - button "تفاصيل" [ref=f5e1142]
+              - button [ref=f5e1143]
+          - generic [ref=f5e1146]:
+            - generic [ref=f5e1154]:
+              - heading "برنامج الشركاء" [level=3] [ref=f5e1155]
+              - generic [ref=f5e1156]: تجريبي
+            - paragraph [ref=f5e1157]: برنامج شركاء المنصة و نظام العمولات
+            - generic [ref=f5e1158]:
+              - generic [ref=f5e1159]: /شهر
+              - generic [ref=f5e1162]: 7/5/2026
+            - generic [ref=f5e1166]:
+              - link [ref=f5e1167] [cursor=pointer]:
+                - /url: /my-apps/partner-program/settings
+                - button "تفاصيل" [ref=f5e1168]
+              - button [ref=f5e1169]
+          - generic [ref=f5e1172]:
+            - generic [ref=f5e1180]:
+              - heading "الأفليت والدروب شيبنج" [level=3] [ref=f5e1181]
+              - generic [ref=f5e1182]: تجريبي
+            - paragraph [ref=f5e1183]: نظام الأفليت والتسويق بالعمولة
+            - generic [ref=f5e1184]:
+              - generic [ref=f5e1185]: /شهر
+              - generic [ref=f5e1188]: 7/5/2026
+            - generic [ref=f5e1192]:
+              - link [ref=f5e1193] [cursor=pointer]:
+                - /url: /my-apps/affiliate-program/settings
+                - button "تفاصيل" [ref=f5e1194]
+              - button [ref=f5e1195]
+          - generic [ref=f5e1198]:
+            - generic [ref=f5e1206]:
+              - heading "المهام والمواعيد" [level=3] [ref=f5e1207]
+              - generic [ref=f5e1208]: تجريبي
+            - paragraph [ref=f5e1209]: إدارة المهام والمواعيد وجدولة الأعمال
+            - generic [ref=f5e1210]:
+              - generic [ref=f5e1211]: /شهر
+              - generic [ref=f5e1214]: 7/5/2026
+            - generic [ref=f5e1218]:
+              - link [ref=f5e1219] [cursor=pointer]:
+                - /url: /my-apps/business-tools/settings
+                - button "تفاصيل" [ref=f5e1220]
+              - button [ref=f5e1221]
+          - generic [ref=f5e1224]:
+            - generic [ref=f5e1228]:
+              - heading "Unified Inbox" [level=3] [ref=f5e1229]
+              - generic [ref=f5e1230]: نشط
+            - paragraph [ref=f5e1231]: صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.
+            - generic [ref=f5e1232]: /شهر
+            - generic [ref=f5e1236]:
+              - link [ref=f5e1237] [cursor=pointer]:
+                - /url: /my-apps/unified-inbox/settings
+                - button "تفاصيل" [ref=f5e1238]
+              - button [ref=f5e1239]
+          - generic [ref=f5e1242]:
+            - generic [ref=f5e1246]:
+              - heading "توزيع المحادثات" [level=3] [ref=f5e1247]
+              - generic [ref=f5e1248]: تجريبي
+            - paragraph [ref=f5e1249]: توزيع محادثات واتساب على فريق العمل وإعدادات صندوق الوارد.
+            - generic [ref=f5e1250]:
+              - generic [ref=f5e1251]: حسب الاستخدام
+              - generic [ref=f5e1254]: 6/27/2026
+            - generic [ref=f5e1258]:
+              - link [ref=f5e1259] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-routing/settings
+                - button "تفاصيل" [ref=f5e1260]
+              - button [ref=f5e1261]
+          - generic [ref=f5e1264]:
+            - generic [ref=f5e1268]:
+              - heading "قوالب الرسائل" [level=3] [ref=f5e1269]
+              - generic [ref=f5e1270]: تجريبي
+            - paragraph [ref=f5e1271]: إنشاء وإدارة قوالب رسائل واتساب للطلبات و HR والنظام.
+            - generic [ref=f5e1272]:
+              - generic [ref=f5e1273]: حسب الاستخدام
+              - generic [ref=f5e1276]: 6/27/2026
+            - generic [ref=f5e1280]:
+              - link [ref=f5e1281] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-templates/settings
+                - button "تفاصيل" [ref=f5e1282]
+              - button [ref=f5e1283]
+          - generic [ref=f5e1286]:
+            - generic [ref=f5e1290]:
+              - heading "إشعارات واتساب" [level=3] [ref=f5e1291]
+              - generic [ref=f5e1292]: تجريبي
+            - paragraph [ref=f5e1293]: إشعارات تلقائية للعملاء عبر واتساب للمناسبات وأعياد الميلاد.
+            - generic [ref=f5e1294]:
+              - generic [ref=f5e1295]: حسب الاستخدام
+              - generic [ref=f5e1298]: 6/27/2026
+            - generic [ref=f5e1302]:
+              - link [ref=f5e1303] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-notifications/settings
+                - button "تفاصيل" [ref=f5e1304]
+              - button [ref=f5e1305]
+          - generic [ref=f5e1308]:
+            - generic [ref=f5e1312]:
+              - heading "إعدادات واتساب" [level=3] [ref=f5e1313]
+              - generic [ref=f5e1314]: تجريبي
+            - paragraph [ref=f5e1315]: إعدادات حساب واتساب والأرقام وجهات الاتصال.
+            - generic [ref=f5e1316]:
+              - generic [ref=f5e1317]: حسب الاستخدام
+              - generic [ref=f5e1320]: 6/27/2026
+            - generic [ref=f5e1324]:
+              - link [ref=f5e1325] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-settings/settings
+                - button "تفاصيل" [ref=f5e1326]
+              - button [ref=f5e1327]
+          - generic [ref=f5e1330]:
+            - generic [ref=f5e1334]:
+              - heading "صندوق الوارد" [level=3] [ref=f5e1335]
+              - generic [ref=f5e1336]: تجريبي
+            - paragraph [ref=f5e1337]: محادثات واتساب المباشرة مع العملاء، إرسال واستقبال الرسائل والوسائط.
+            - generic [ref=f5e1338]:
+              - generic [ref=f5e1339]: حسب الاستخدام
+              - generic [ref=f5e1342]: 6/27/2026
+            - generic [ref=f5e1346]:
+              - link [ref=f5e1347] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-inbox/settings
+                - button "تفاصيل" [ref=f5e1348]
+              - button [ref=f5e1349]
+          - generic [ref=f5e1352]:
+            - generic [ref=f5e1356]:
+              - heading "Facebook Catalog Sync" [level=3] [ref=f5e1357]
+              - generic [ref=f5e1358]: تجريبي
+            - paragraph [ref=f5e1359]: مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop.
+            - generic [ref=f5e1360]:
+              - generic [ref=f5e1361]: /شهر
+              - generic [ref=f5e1364]: 5/19/2026
+            - generic [ref=f5e1368]:
+              - link [ref=f5e1369] [cursor=pointer]:
+                - /url: /my-apps/facebook-catalog/settings
+                - button "تفاصيل" [ref=f5e1370]
+              - button [ref=f5e1371]
+          - generic [ref=f5e1374]:
+            - generic [ref=f5e1378]:
+              - heading "نظام الرواتب" [level=3] [ref=f5e1379]
+              - generic [ref=f5e1380]: تجريبي
+            - paragraph [ref=f5e1381]: حساب الرواتب التلقائي مع السلف والخصومات والمكافآت. 15 جنيه لكل موظف شهرياً.
+            - generic [ref=f5e1382]:
+              - generic [ref=f5e1383]: /شهر
+              - generic [ref=f5e1386]: 5/19/2026
+            - generic [ref=f5e1390]:
+              - link [ref=f5e1391] [cursor=pointer]:
+                - /url: /my-apps/hr-payroll/settings
+                - button "تفاصيل" [ref=f5e1392]
+              - button [ref=f5e1393]
+          - generic [ref=f5e1396]:
+            - generic [ref=f5e1400]:
+              - heading "CRM Lite" [level=3] [ref=f5e1401]
+              - generic [ref=f5e1402]: نشط
+            - paragraph [ref=f5e1403]: Customer pipeline and basic segmentation for small teams.
+            - generic [ref=f5e1404]: مجاني
+            - generic [ref=f5e1408]:
+              - link [ref=f5e1409] [cursor=pointer]:
+                - /url: /my-apps/crm-lite/settings
+                - button "تفاصيل" [ref=f5e1410]
+              - button [ref=f5e1411]
+          - generic [ref=f5e1414]:
+            - generic [ref=f5e1418]:
+              - heading "Gamification Pro" [level=3] [ref=f5e1419]
+              - generic [ref=f5e1420]: تجريبي
+            - paragraph [ref=f5e1421]: نظام تحفيز متكامل مع نقاط، شارات، مستويات، ومكافآت.
+            - generic [ref=f5e1422]:
+              - generic [ref=f5e1423]: /شهر
+              - generic [ref=f5e1426]: 5/19/2026
+            - generic [ref=f5e1430]:
+              - link [ref=f5e1431] [cursor=pointer]:
+                - /url: /my-apps/gamification-pro/settings
+                - button "تفاصيل" [ref=f5e1432]
+              - button [ref=f5e1433]
+          - generic [ref=f5e1436]:
+            - generic [ref=f5e1440]:
+              - heading "نظام البث المتقدم" [level=3] [ref=f5e1441]
+              - generic [ref=f5e1442]: تجريبي
+            - paragraph [ref=f5e1443]: نظام إرسال رسائل جماعية متقدم مع تصنيف العملاء وجدولة الإرسال.
+            - generic [ref=f5e1444]:
+              - generic [ref=f5e1445]: /شهر
+              - generic [ref=f5e1448]: 5/19/2026
+            - generic [ref=f5e1452]:
+              - link [ref=f5e1453] [cursor=pointer]:
+                - /url: /my-apps/broadcast-pro/settings
+                - button "تفاصيل" [ref=f5e1454]
+              - button [ref=f5e1455]
+          - generic [ref=f5e1458]:
+            - generic [ref=f5e1462]:
+              - heading "التحليلات المتقدمة" [level=3] [ref=f5e1463]
+              - generic [ref=f5e1464]: تجريبي
+            - paragraph [ref=f5e1465]: تحليلات متقدمة مع تقارير مخصصة وتصدير البيانات وتتبع الأهداف.
+            - generic [ref=f5e1466]:
+              - generic [ref=f5e1467]: /شهر
+              - generic [ref=f5e1470]: 5/19/2026
+            - generic [ref=f5e1474]:
+              - link [ref=f5e1475] [cursor=pointer]:
+                - /url: /my-apps/analytics-advanced/settings
+                - button "تفاصيل" [ref=f5e1476]
+              - button [ref=f5e1477]
+          - generic [ref=f5e1480]:
+            - generic [ref=f5e1484]:
+              - heading "Order Source Tracking" [level=3] [ref=f5e1485]
+              - generic [ref=f5e1486]: تجريبي
+            - paragraph [ref=f5e1487]: Track the operational source of each order, including manual, storefront, import, API, and conversation sources.
+            - generic [ref=f5e1488]:
+              - generic [ref=f5e1489]: /شهر
+              - generic [ref=f5e1492]: 5/19/2026
+            - generic [ref=f5e1496]:
+              - link [ref=f5e1497] [cursor=pointer]:
+                - /url: /my-apps/order-source-tracking/settings
+                - button "تفاصيل" [ref=f5e1498]
+              - button [ref=f5e1499]
+          - generic [ref=f5e1502]:
+            - generic [ref=f5e1506]:
+              - heading "إدارة الفرص والمبيعات" [level=3] [ref=f5e1507]
+              - generic [ref=f5e1508]: تجريبي
+            - paragraph [ref=f5e1509]: إدارة فرص المبيعات، الـ Pipeline، والتوقعات المالية.
+            - generic [ref=f5e1510]:
+              - generic [ref=f5e1511]: /شهر
+              - generic [ref=f5e1514]: 5/19/2026
+            - generic [ref=f5e1518]:
+              - link [ref=f5e1519] [cursor=pointer]:
+                - /url: /my-apps/opportunities-pipeline/settings
+                - button "تفاصيل" [ref=f5e1520]
+              - button [ref=f5e1521]
+          - generic [ref=f5e1524]:
+            - generic [ref=f5e1528]:
+              - heading "Webhooks & API Pro" [level=3] [ref=f5e1529]
+              - generic [ref=f5e1530]: تجريبي
+            - paragraph [ref=f5e1531]: تكاملات API متقدمة مع Webhooks، Zapier، وأتمتة العمليات.
+            - generic [ref=f5e1532]:
+              - generic [ref=f5e1533]: /شهر
+              - generic [ref=f5e1536]: 5/19/2026
+            - generic [ref=f5e1540]:
+              - link [ref=f5e1541] [cursor=pointer]:
+                - /url: /my-apps/webhooks-pro/settings
+                - button "تفاصيل" [ref=f5e1542]
+              - button [ref=f5e1543]
+          - generic [ref=f5e1546]:
+            - generic [ref=f5e1550]:
+              - heading "تكامل Telegram" [level=3] [ref=f5e1551]
+              - generic [ref=f5e1552]: تجريبي
+            - paragraph [ref=f5e1553]: إدارة مجموعات وقنوات تليجرام، الرد الآلي، والبوتات المتقدمة.
+            - generic [ref=f5e1554]:
+              - generic [ref=f5e1555]: /شهر
+              - generic [ref=f5e1558]: 5/19/2026
+            - generic [ref=f5e1562]:
+              - link [ref=f5e1563] [cursor=pointer]:
+                - /url: /my-apps/telegram-integration/settings
+                - button "تفاصيل" [ref=f5e1564]
+              - button [ref=f5e1565]
+          - generic [ref=f5e1568]:
+            - generic [ref=f5e1572]:
+              - heading "Order Confirmation & Distribution" [level=3] [ref=f5e1573]
+              - generic [ref=f5e1574]: تجريبي
+            - paragraph [ref=f5e1575]: Confirmation and internal assignment details for order operations teams.
+            - generic [ref=f5e1576]:
+              - generic [ref=f5e1577]: /شهر
+              - generic [ref=f5e1580]: 5/19/2026
+            - generic [ref=f5e1584]:
+              - link [ref=f5e1585] [cursor=pointer]:
+                - /url: /my-apps/order-confirmation-distribution/settings
+                - button "تفاصيل" [ref=f5e1586]
+              - button [ref=f5e1587]
+          - generic [ref=f5e1590]:
+            - generic [ref=f5e1594]:
+              - heading "نظام الفواتير الاحترافي" [level=3] [ref=f5e1595]
+              - generic [ref=f5e1596]: تجريبي
+            - paragraph [ref=f5e1597]: إنشاء وإرسال الفواتير، متابعة المدفوعات، وتقارير الضرائب.
+            - generic [ref=f5e1598]:
+              - generic [ref=f5e1599]: /شهر
+              - generic [ref=f5e1602]: 5/19/2026
+            - generic [ref=f5e1606]:
+              - link [ref=f5e1607] [cursor=pointer]:
+                - /url: /my-apps/invoicing-pro/settings
+                - button "تفاصيل" [ref=f5e1608]
+              - button [ref=f5e1609]
+          - generic [ref=f5e1612]:
+            - generic [ref=f5e1616]:
+              - heading "نظام التوظيف الذكي" [level=3] [ref=f5e1617]
+              - generic [ref=f5e1618]: تجريبي
+            - paragraph [ref=f5e1619]: إدارة عملية التوظيف من الإعلان حتى التعيين مع AI Screening.
+            - generic [ref=f5e1620]:
+              - generic [ref=f5e1621]: /شهر
+              - generic [ref=f5e1624]: 5/19/2026
+            - generic [ref=f5e1628]:
+              - link [ref=f5e1629] [cursor=pointer]:
+                - /url: /my-apps/hr-recruitment/settings
+                - button "تفاصيل" [ref=f5e1630]
+              - button [ref=f5e1631]
+          - generic [ref=f5e1634]:
+            - generic [ref=f5e1638]:
+              - heading "نظام المواعيد والحجوزات" [level=3] [ref=f5e1639]
+              - generic [ref=f5e1640]: تجريبي
+            - paragraph [ref=f5e1641]: نظام حجوزات متكامل مع Calendar، تذكيرات، وتكامل مع Google Calendar.
+            - generic [ref=f5e1642]:
+              - generic [ref=f5e1643]: /شهر
+              - generic [ref=f5e1646]: 5/19/2026
+            - generic [ref=f5e1650]:
+              - link [ref=f5e1651] [cursor=pointer]:
+                - /url: /my-apps/appointments-pro/settings
+                - button "تفاصيل" [ref=f5e1652]
+              - button [ref=f5e1653]
+          - generic [ref=f5e1656]:
+            - generic [ref=f5e1660]:
+              - heading "تقارير وتحليلات الشحن" [level=3] [ref=f5e1661]
+              - generic [ref=f5e1662]: نشط
+            - paragraph [ref=f5e1663]: تقارير ذكية لتحليل تكاليف الشحن، مقارنة سعر العميل بالسعر الفعلي، وإحصائيات أداء الشحن.
+            - generic [ref=f5e1664]: /شهر
+            - generic [ref=f5e1668]:
+              - link [ref=f5e1669] [cursor=pointer]:
+                - /url: /my-apps/order-shipping-reports/settings
+                - button "تفاصيل" [ref=f5e1670]
+              - button [ref=f5e1671]
+          - generic [ref=f5e1674]:
+            - generic [ref=f5e1678]:
+              - heading "إدارة المخزون المتقدمة" [level=3] [ref=f5e1679]
+              - generic [ref=f5e1680]: نشط
+            - paragraph [ref=f5e1681]: نظام إدارة مخزون متقدم مع Barcode، تتبع Serial Numbers، وتنبيهات ذكية.
+            - generic [ref=f5e1682]: /شهر
+            - generic [ref=f5e1686]:
+              - link [ref=f5e1687] [cursor=pointer]:
+                - /url: /my-apps/inventory-pro/settings
+                - button "تفاصيل" [ref=f5e1688]
+              - button [ref=f5e1689]
+          - generic [ref=f5e1692]:
+            - generic [ref=f5e1696]:
+              - heading "نظام الحضور والانصراف" [level=3] [ref=f5e1697]
+              - generic [ref=f5e1698]: تجريبي
+            - paragraph [ref=f5e1699]: تتبع حضور وانصراف الموظفين مع Geofencing والتأخير التلقائي. 10 جنيه لكل موظف شهرياً.
+            - generic [ref=f5e1700]:
+              - generic [ref=f5e1701]: /شهر
+              - generic [ref=f5e1704]: 5/19/2026
+            - generic [ref=f5e1708]:
+              - link [ref=f5e1709] [cursor=pointer]:
+                - /url: /my-apps/hr-attendance/settings
+                - button "تفاصيل" [ref=f5e1710]
+              - button [ref=f5e1711]
+          - generic [ref=f5e1714]:
+            - generic [ref=f5e1718]:
+              - heading "Telegram for Business" [level=3] [ref=f5e1719]
+              - generic [ref=f5e1720]: نشط
+            - paragraph [ref=f5e1721]: إدارة مجموعات وقنوات تليجرام، الرد الآلي، والبوتات المتقدمة.
+            - generic [ref=f5e1722]: /شهر
+            - generic [ref=f5e1726]:
+              - link [ref=f5e1727] [cursor=pointer]:
+                - /url: /my-apps/telegram-business/settings
+                - button "تفاصيل" [ref=f5e1728]
+              - button [ref=f5e1729]
+          - generic [ref=f5e1732]:
+            - generic [ref=f5e1736]:
+              - heading "الجدولة الذكية للمهام" [level=3] [ref=f5e1737]
+              - generic [ref=f5e1738]: تجريبي
+            - paragraph [ref=f5e1739]: جدولة مهام ذكية مع تذكيرات، أتمتة، وربط مع الأهداف.
+            - generic [ref=f5e1740]:
+              - generic [ref=f5e1741]: /شهر
+              - generic [ref=f5e1744]: 5/19/2026
+            - generic [ref=f5e1748]:
+              - link [ref=f5e1749] [cursor=pointer]:
+                - /url: /my-apps/smart-scheduler/settings
+                - button "تفاصيل" [ref=f5e1750]
+              - button [ref=f5e1751]
+          - generic [ref=f5e1754]:
+            - generic [ref=f5e1758]:
+              - heading "إدارة الأصول والمعدات" [level=3] [ref=f5e1759]
+              - generic [ref=f5e1760]: تجريبي
+            - paragraph [ref=f5e1761]: إدارة أصول الشركة، المعدات، الصيانة، والتخصيص للموظفين.
+            - generic [ref=f5e1762]:
+              - generic [ref=f5e1763]: /شهر
+              - generic [ref=f5e1766]: 5/19/2026
+            - generic [ref=f5e1770]:
+              - link [ref=f5e1771] [cursor=pointer]:
+                - /url: /my-apps/hr-assets/settings
+                - button "تفاصيل" [ref=f5e1772]
+              - button [ref=f5e1773]
+          - generic [ref=f5e1776]:
+            - generic [ref=f5e1780]:
+              - heading "نظام الفواتير المتقدم" [level=3] [ref=f5e1781]
+              - generic [ref=f5e1782]: نشط
+            - paragraph [ref=f5e1783]: تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.
+            - generic [ref=f5e1784]: /شهر
+            - generic [ref=f5e1788]:
+              - link [ref=f5e1789] [cursor=pointer]:
+                - /url: /my-apps/order-invoicing/settings
+                - button "تفاصيل" [ref=f5e1790]
+              - button [ref=f5e1791]
+          - generic [ref=f5e1794]:
+            - generic [ref=f5e1798]:
+              - heading "نظام Kudos (تقدير الموظفين)" [level=3] [ref=f5e1799]
+              - generic [ref=f5e1800]: تجريبي
+            - paragraph [ref=f5e1801]: نظام تقدير الموظفين والثناء بين أعضاء الفريق.
+            - generic [ref=f5e1802]:
+              - generic [ref=f5e1803]: /شهر
+              - generic [ref=f5e1806]: 5/19/2026
+            - generic [ref=f5e1810]:
+              - link [ref=f5e1811] [cursor=pointer]:
+                - /url: /my-apps/kudos-recognition/settings
+                - button "تفاصيل" [ref=f5e1812]
+              - button [ref=f5e1813]
+          - generic [ref=f5e1816]:
+            - generic [ref=f5e1820]:
+              - heading "RAG - قاعدة المعرفة" [level=3] [ref=f5e1821]
+              - generic [ref=f5e1822]: تجريبي
+            - paragraph [ref=f5e1823]: إدارة قاعدة معرفة ذكية للشركة مع Vector Embeddings والبحث الذكي.
+            - generic [ref=f5e1824]:
+              - generic [ref=f5e1825]: /شهر
+              - generic [ref=f5e1828]: 5/19/2026
+            - generic [ref=f5e1832]:
+              - link [ref=f5e1833] [cursor=pointer]:
+                - /url: /my-apps/ai-rag-knowledge/settings
+                - button "تفاصيل" [ref=f5e1834]
+              - button [ref=f5e1835]
+          - generic [ref=f5e1838]:
+            - generic [ref=f5e1842]:
+              - heading "الحضور والانصراف المتقدم" [level=3] [ref=f5e1843]
+              - generic [ref=f5e1844]: تجريبي
+            - paragraph [ref=f5e1845]: تتبع حضور وانصراف الموظفين مع Geofencing، QR Code، والتأخير التلقائي.
+            - generic [ref=f5e1846]:
+              - generic [ref=f5e1847]: /شهر
+              - generic [ref=f5e1850]: 5/19/2026
+            - generic [ref=f5e1854]:
+              - link [ref=f5e1855] [cursor=pointer]:
+                - /url: /my-apps/hr-attendance-pro/settings
+                - button "تفاصيل" [ref=f5e1856]
+              - button [ref=f5e1857]
+          - generic [ref=f5e1860]:
+            - generic [ref=f5e1864]:
+              - heading "CRM الأساسي" [level=3] [ref=f5e1865]
+              - generic [ref=f5e1866]: نشط
+            - paragraph [ref=f5e1867]: إدارة العملاء والمحادثات والملاحظات. حتى 1000 عميل.
+            - generic [ref=f5e1868]: /شهر
+            - generic [ref=f5e1872]:
+              - link [ref=f5e1873] [cursor=pointer]:
+                - /url: /my-apps/crm-basic/settings
+                - button "تفاصيل" [ref=f5e1874]
+              - button [ref=f5e1875]
+          - generic [ref=f5e1878]:
+            - generic [ref=f5e1882]:
+              - heading "Quantity Offers Pro" [level=3] [ref=f5e1883]
+              - generic [ref=f5e1884]: تجريبي
+            - paragraph [ref=f5e1885]: Create multi-pack quantity offers with mix-and-match variant selection directly on product pages.
+            - generic [ref=f5e1886]:
+              - generic [ref=f5e1887]: /شهر
+              - generic [ref=f5e1890]: 5/19/2026
+            - generic [ref=f5e1894]:
+              - link [ref=f5e1895] [cursor=pointer]:
+                - /url: /my-apps/quantity-offers-pro/settings
+                - button "تفاصيل" [ref=f5e1896]
+              - button [ref=f5e1897]
+          - generic [ref=f5e1900]:
+            - generic [ref=f5e1904]:
+              - heading "AI Image Studio" [level=3] [ref=f5e1905]
+              - generic [ref=f5e1906]: تجريبي
+            - paragraph [ref=f5e1907]: توليد صور احترافية للمنتجات والتسويق باستخدام AI. 200 صورة شهرياً.
+            - generic [ref=f5e1908]:
+              - generic [ref=f5e1909]: /شهر
+              - generic [ref=f5e1912]: 5/19/2026
+            - generic [ref=f5e1916]:
+              - link [ref=f5e1917] [cursor=pointer]:
+                - /url: /my-apps/ai-image-studio/settings
+                - button "تفاصيل" [ref=f5e1918]
+              - button [ref=f5e1919]
+          - generic [ref=f5e1922]:
+            - generic [ref=f5e1926]:
+              - heading "WooCommerce Sync" [level=3] [ref=f5e1927]
+              - generic [ref=f5e1928]: تجريبي
+            - paragraph [ref=f5e1929]: "مزامنة كاملة مع WooCommerce: استيراد/تصدير المنتجات والطلبات."
+            - generic [ref=f5e1930]:
+              - generic [ref=f5e1931]: /شهر
+              - generic [ref=f5e1934]: 5/19/2026
+            - generic [ref=f5e1938]:
+              - link [ref=f5e1939] [cursor=pointer]:
+                - /url: /my-apps/woocommerce-sync/settings
+                - button "تفاصيل" [ref=f5e1940]
+              - button [ref=f5e1941]
+          - generic [ref=f5e1944]:
+            - generic [ref=f5e1948]:
+              - heading "نظام HR الأساسي" [level=3] [ref=f5e1949]
+              - generic [ref=f5e1950]: تجريبي
+            - paragraph [ref=f5e1951]: إدارة بيانات الموظفين، الأقسام، المناصب، والهيكل التنظيمي. مجاني حتى 10 موظفين.
+            - generic [ref=f5e1952]:
+              - generic [ref=f5e1953]: /شهر
+              - generic [ref=f5e1956]: 5/19/2026
+            - generic [ref=f5e1960]:
+              - link [ref=f5e1961] [cursor=pointer]:
+                - /url: /my-apps/hr-core/settings
+                - button "تفاصيل" [ref=f5e1962]
+              - button [ref=f5e1963]
+          - generic [ref=f5e1966]:
+            - generic [ref=f5e1970]:
+              - heading "إدارة الموارد البشرية الأساسية" [level=3] [ref=f5e1971]
+              - generic [ref=f5e1972]: تجريبي
+            - paragraph [ref=f5e1973]: نظام شامل لإدارة بيانات الموظفين والأقسام والمناصب. يتم الدفع حسب عدد الموظفين النشطين.
+            - generic [ref=f5e1974]:
+              - generic [ref=f5e1975]: حسب الاستخدام
+              - generic [ref=f5e1978]: ج 725.00
+              - generic [ref=f5e1979]: 5/19/2026
+            - generic [ref=f5e1983]:
+              - link [ref=f5e1984] [cursor=pointer]:
+                - /url: /my-apps/hr-basic/settings
+                - button "تفاصيل" [ref=f5e1985]
+              - button [ref=f5e1986]
+          - generic [ref=f5e1989]:
+            - generic [ref=f5e1993]:
+              - heading "تكامل WhatsApp Business" [level=3] [ref=f5e1994]
+              - generic [ref=f5e1995]: تجريبي
+            - paragraph [ref=f5e1996]: تكامل كامل مع WhatsApp Business API. دفع 0.1 ج لكل رسالة.
+            - generic [ref=f5e1997]:
+              - generic [ref=f5e1998]: حسب الاستخدام
+              - generic [ref=f5e2001]: ج 14.50
+              - generic [ref=f5e2002]: 5/19/2026
+            - generic [ref=f5e2006]:
+              - link [ref=f5e2007] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-integration/settings
+                - button "تفاصيل" [ref=f5e2008]
+              - button [ref=f5e2009]
+          - generic [ref=f5e2012]:
+            - generic [ref=f5e2016]:
+              - heading "نظام المحفظة الإلكترونية" [level=3] [ref=f5e2017]
+              - generic [ref=f5e2018]: تجريبي
+            - paragraph [ref=f5e2019]: محفظة إلكترونية للعملاء والشركات مع شحن وسحب وتحويل.
+            - generic [ref=f5e2020]:
+              - generic [ref=f5e2021]: /شهر
+              - generic [ref=f5e2024]: 5/19/2026
+            - generic [ref=f5e2028]:
+              - link [ref=f5e2029] [cursor=pointer]:
+                - /url: /my-apps/wallet-system/settings
+                - button "تفاصيل" [ref=f5e2030]
+              - button [ref=f5e2031]
+          - generic [ref=f5e2034]:
+            - generic [ref=f5e2038]:
+              - heading "إدارة الطلبات - المستوى الأساسي" [level=3] [ref=f5e2039]
+              - generic [ref=f5e2040]: نشط
+            - paragraph [ref=f5e2041]: نظام متكامل لمعالجة الطلبات، تتبع الحالات، وطباعة الفواتير. يشمل التكامل مع سلة التسوق.
+            - generic [ref=f5e2042]: /شهر
+            - generic [ref=f5e2046]:
+              - link [ref=f5e2047] [cursor=pointer]:
+                - /url: /my-apps/order-core/settings
+                - button "تفاصيل" [ref=f5e2048]
+              - button [ref=f5e2049]
+          - generic [ref=f5e2052]:
+            - generic [ref=f5e2056]:
+              - heading "Commerce Advanced" [level=3] [ref=f5e2057]
+              - generic [ref=f5e2058]: تجريبي
+            - paragraph [ref=f5e2059]: Advanced commerce controls for pre-orders, extended inventory signals, and special selling flows.
+            - generic [ref=f5e2060]:
+              - generic [ref=f5e2061]: /شهر
+              - generic [ref=f5e2064]: 5/19/2026
+            - generic [ref=f5e2068]:
+              - link [ref=f5e2069] [cursor=pointer]:
+                - /url: /my-apps/commerce-advanced/settings
+                - button "تفاصيل" [ref=f5e2070]
+              - button [ref=f5e2071]
+          - generic [ref=f5e2074]:
+            - generic [ref=f5e2078]:
+              - heading "UGC Reviews Pro" [level=3] [ref=f5e2079]
+              - generic [ref=f5e2080]: تجريبي
+            - paragraph [ref=f5e2081]: Photo and video review blocks designed for product pages and trust-building templates.
+            - generic [ref=f5e2082]:
+              - generic [ref=f5e2083]: /شهر
+              - generic [ref=f5e2086]: 5/19/2026
+            - generic [ref=f5e2090]:
+              - link [ref=f5e2091] [cursor=pointer]:
+                - /url: /my-apps/ugc-reviews-pro/settings
+                - button "تفاصيل" [ref=f5e2092]
+              - button [ref=f5e2093]
+          - generic [ref=f5e2096]:
+            - generic [ref=f5e2100]:
+              - heading "CRM + نظام الولاء" [level=3] [ref=f5e2101]
+              - generic [ref=f5e2102]: تجريبي
+            - paragraph [ref=f5e2103]: CRM متقدم مع نظام نقاط الولاء، المكافآت، والهدايا للعملاء.
+            - generic [ref=f5e2104]:
+              - generic [ref=f5e2105]: /شهر
+              - generic [ref=f5e2108]: 5/19/2026
+            - generic [ref=f5e2112]:
+              - link [ref=f5e2113] [cursor=pointer]:
+                - /url: /my-apps/crm-loyalty/settings
+                - button "تفاصيل" [ref=f5e2114]
+              - button [ref=f5e2115]
+          - generic [ref=f5e2118]:
+            - generic [ref=f5e2122]:
+              - heading "Turbo Analytics Pro" [level=3] [ref=f5e2123]
+              - generic [ref=f5e2124]: تجريبي
+            - paragraph [ref=f5e2125]: تحليلات فورية Real-time مع AI Insights والتنبؤات المستقبلية.
+            - generic [ref=f5e2126]:
+              - generic [ref=f5e2127]: /شهر
+              - generic [ref=f5e2130]: 5/19/2026
+            - generic [ref=f5e2134]:
+              - link [ref=f5e2135] [cursor=pointer]:
+                - /url: /my-apps/turbo-analytics/settings
+                - button "تفاصيل" [ref=f5e2136]
+              - button [ref=f5e2137]
+          - generic [ref=f5e2140]:
+            - generic [ref=f5e2144]:
+              - heading "محادثات AI المتقدمة" [level=3] [ref=f5e2145]
+              - generic [ref=f5e2146]: تجريبي
+            - paragraph [ref=f5e2147]: محادثات AI متقدمة مع RAG وتعلم Few-Shot ودعم متعدد اللغات. 2000 محادثة شهرياً.
+            - generic [ref=f5e2148]:
+              - generic [ref=f5e2149]: /شهر
+              - generic [ref=f5e2152]: 5/19/2026
+            - generic [ref=f5e2156]:
+              - link [ref=f5e2157] [cursor=pointer]:
+                - /url: /my-apps/ai-chat-pro/settings
+                - button "تفاصيل" [ref=f5e2158]
+              - button [ref=f5e2159]
+          - generic [ref=f5e2162]:
+            - generic [ref=f5e2166]:
+              - heading "شحن Turbo الذكي" [level=3] [ref=f5e2167]
+              - generic [ref=f5e2168]: نشط
+            - paragraph [ref=f5e2169]: "تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات."
+            - generic [ref=f5e2170]: /شهر
+            - generic [ref=f5e2174]:
+              - link [ref=f5e2175] [cursor=pointer]:
+                - /url: /my-apps/order-shipping-turbo/settings
+                - button "تفاصيل" [ref=f5e2176]
+              - button [ref=f5e2177]
+          - generic [ref=f5e2180]:
+            - generic [ref=f5e2184]:
+              - heading "WhatsApp Business API" [level=3] [ref=f5e2185]
+              - generic [ref=f5e2186]: نشط
+            - paragraph [ref=f5e2187]: تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.
+            - generic [ref=f5e2188]: /شهر
+            - generic [ref=f5e2192]:
+              - link [ref=f5e2193] [cursor=pointer]:
+                - /url: /my-apps/whatsapp-business/settings
+                - button "تفاصيل" [ref=f5e2194]
+              - button [ref=f5e2195]
+          - generic [ref=f5e2198]:
+            - generic [ref=f5e2202]:
+              - heading "محادثات AI الأساسية" [level=3] [ref=f5e2203]
+              - generic [ref=f5e2204]: نشط
+            - paragraph [ref=f5e2205]: محادثات ذكية مع العملاء باستخدام الذكاء الاصطناعي. دفع 0.5 ج لكل محادثة.
+            - generic [ref=f5e2206]:
+              - generic [ref=f5e2207]: حسب الاستخدام
+              - generic [ref=f5e2210]: ج 72.50
+            - generic [ref=f5e2211]:
+              - link [ref=f5e2212] [cursor=pointer]:
+                - /url: /my-apps/ai-chat-basic/settings
+                - button "تفاصيل" [ref=f5e2213]
+              - button [ref=f5e2214]
+          - generic [ref=f5e2217]:
+            - generic [ref=f5e2221]:
+              - heading "التحليلات والتقارير" [level=3] [ref=f5e2222]
+              - generic [ref=f5e2223]: تجريبي
+            - paragraph [ref=f5e2224]: تحليلات متقدمة مع تقارير مخصصة، تصدير البيانات، وتتبع الأهداف.
+            - generic [ref=f5e2225]:
+              - generic [ref=f5e2226]: /شهر
+              - generic [ref=f5e2229]: 5/19/2026
+            - generic [ref=f5e2233]:
+              - link [ref=f5e2234] [cursor=pointer]:
+                - /url: /my-apps/analytics-basic/settings
+                - button "تفاصيل" [ref=f5e2235]
+              - button [ref=f5e2236]
+          - generic [ref=f5e2239]:
+            - generic [ref=f5e2243]:
+              - heading "إعلانات فيسبوك وانستجرام" [level=3] [ref=f5e2244]
+              - generic [ref=f5e2245]: تجريبي
+            - paragraph [ref=f5e2246]: إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.
+            - generic [ref=f5e2247]:
+              - generic [ref=f5e2248]: /شهر
+              - generic [ref=f5e2251]: 5/19/2026
+            - generic [ref=f5e2255]:
+              - link [ref=f5e2256] [cursor=pointer]:
+                - /url: /my-apps/facebook-ads-pro/settings
+                - button "تفاصيل" [ref=f5e2257]
+              - button [ref=f5e2258]
+          - generic [ref=f5e2261]:
+            - generic [ref=f5e2265]:
+              - heading "Notification Automation" [level=3] [ref=f5e2266]
+              - generic [ref=f5e2267]: تجريبي
+            - paragraph [ref=f5e2268]: Notification center, reminders, alert rules, and operational notification settings.
+            - generic [ref=f5e2269]:
+              - generic [ref=f5e2270]: /شهر
+              - generic [ref=f5e2273]: 5/15/2026
+            - generic [ref=f5e2277]:
+              - link [ref=f5e2278] [cursor=pointer]:
+                - /url: /my-apps/notification-automation/settings
+                - button "تفاصيل" [ref=f5e2279]
+              - button [ref=f5e2280]
+          - generic [ref=f5e2283]:
+            - generic [ref=f5e2287]:
+              - heading "Affiliate Pro" [level=3] [ref=f5e2288]
+              - generic [ref=f5e2289]: نشط
+            - paragraph [ref=f5e2290]: Affiliate management, affiliate marketplace, product sharing, and commission workflows.
+            - generic [ref=f5e2291]: /شهر
+            - generic [ref=f5e2295]:
+              - link [ref=f5e2296] [cursor=pointer]:
+                - /url: /my-apps/affiliate-pro/settings
+                - button "تفاصيل" [ref=f5e2297]
+              - button [ref=f5e2298]
+          - generic [ref=f5e2301]:
+            - generic [ref=f5e2305]:
+              - heading "Procurement Pro" [level=3] [ref=f5e2306]
+              - generic [ref=f5e2307]: تجريبي
+            - paragraph [ref=f5e2308]: Supplier, purchase order, purchase invoice, and supplier payment workflows.
+            - generic [ref=f5e2309]:
+              - generic [ref=f5e2310]: /شهر
+              - generic [ref=f5e2313]: 5/15/2026
+            - generic [ref=f5e2317]:
+              - link [ref=f5e2318] [cursor=pointer]:
+                - /url: /my-apps/procurement-pro/settings
+                - button "تفاصيل" [ref=f5e2319]
+              - button [ref=f5e2320]
+          - generic [ref=f5e2323]:
+            - generic [ref=f5e2327]:
+              - heading "المتجر الإلكتروني الأساسي" [level=3] [ref=f5e2328]
+              - generic [ref=f5e2329]: نشط
+            - paragraph [ref=f5e2330]: متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.
+            - generic [ref=f5e2331]: /شهر
+            - generic [ref=f5e2335]:
+              - link [ref=f5e2336] [cursor=pointer]:
+                - /url: /my-apps/ecommerce-basic/settings
+                - button "تفاصيل" [ref=f5e2337]
+              - button [ref=f5e2338]
+          - generic [ref=f5e2341]:
+            - generic [ref=f5e2345]:
+              - heading "Conversion Suite" [level=3] [ref=f5e2346]
+              - generic [ref=f5e2347]: تجريبي
+            - paragraph [ref=f5e2348]: Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.
+            - generic [ref=f5e2349]:
+              - generic [ref=f5e2350]: /شهر
+              - generic [ref=f5e2353]: 5/15/2026
+            - generic [ref=f5e2357]:
+              - link [ref=f5e2358] [cursor=pointer]:
+                - /url: /my-apps/conversion-suite/settings
+                - button "تفاصيل" [ref=f5e2359]
+              - button [ref=f5e2360]
+          - generic [ref=f5e2363]:
+            - generic [ref=f5e2367]:
+              - heading "المتجر الأساسي" [level=3] [ref=f5e2368]
+              - generic [ref=f5e2369]: تجريبي
+            - paragraph [ref=f5e2370]: متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.
+            - generic [ref=f5e2371]:
+              - generic [ref=f5e2372]: /شهر
+              - generic [ref=f5e2375]: 5/15/2026
+            - generic [ref=f5e2379]:
+              - link [ref=f5e2380] [cursor=pointer]:
+                - /url: /my-apps/store-basic/settings
+                - button "تفاصيل" [ref=f5e2381]
+              - button [ref=f5e2382]
+  - region "Notifications alt+T"

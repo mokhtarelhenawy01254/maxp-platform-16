@@ -7,7 +7,8 @@ import {
   Gift, GitBranch, ShoppingBag, Webhook, Activity,
   FileSpreadsheet, Wallet, Award, Gamepad2,
   CreditCard, Monitor, UserPlus, Image, Database,
-  Clock, SquarePen,
+  Clock, SquarePen, Search, ShieldAlert, ListOrdered,
+  RefreshCcw, FileBarChart, Cog, ArrowLeftRight, Volume2,
 } from "lucide-react";
 import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "@/components/icons/brands";
 import type { ReactElement } from "react";
@@ -33,6 +34,16 @@ export const appIcons: Record<string, React.ElementType> = {
   truck: Truck,
   "file-text": FileText,
   percent: Percent,
+  zap: Zap,
+  search: Search,
+  "shield-alert": ShieldAlert,
+  "list-ordered": ListOrdered,
+  "refresh-ccw": RefreshCcw,
+  "file-bar-chart": FileBarChart,
+  cog: Cog,
+  "arrow-left-right": ArrowLeftRight,
+  "square-pen": SquarePen,
+  "volume-2": Volume2,
 };
 
 export const appIconsBySlug: Record<string, React.ElementType> = {
@@ -80,4 +91,14 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "multi-warehouse-pro": PackageOpen,
   "order-accounting-sources": GitBranch,
   "manual-orders-pro": SquarePen,
+  "order-automation": Zap,
+  "bulk-search": Search,
+  "customer-blocks": ShieldAlert,
+  "bulk-orders": ListOrdered,
+  "quick-status": RefreshCcw,
+  "status-summary": FileBarChart,
+  "returns-settings": Cog,
+  "order-workflow": ArrowLeftRight,
+  "facebook-post": SquarePen,
+  "google-tag-manager": BarChart3,
 };

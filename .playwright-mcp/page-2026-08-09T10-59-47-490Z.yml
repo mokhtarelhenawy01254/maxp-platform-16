@@ -1,0 +1,26 @@
+- generic [ref=f5e7]:
+  - generic [ref=f5e230]:
+    - generic [ref=f5e232]:
+      - generic [ref=f5e233]: نظام تشغيل الأعمال
+      - heading "نحن نؤمّن بياناتك" [level=1] [ref=f5e277]
+      - paragraph [ref=f5e235]: تشفير عالي المستوى وأمان فائق لضمان سلامة بيانات شركتك في كل مرة تسجل فيها الدخول.
+      - generic [ref=f5e236]:
+        - generic [ref=f5e237]:
+          - generic [ref=f5e238]: ابدأ فوراً
+          - generic [ref=f5e239]: فوراً
+        - generic [ref=f5e240]:
+          - generic [ref=f5e241]: بدون بطاقة بنكية
+          - generic [ref=f5e242]: فترة تجريبية
+    - generic [ref=f5e244]:
+      - link "M ماكس بي لنظام تشغيل الأعمال" [ref=f5e245] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f5e246]: M
+        - generic [ref=f5e247]: ماكس بي لنظام تشغيل الأعمال
+      - generic [ref=f5e248]:
+        - generic [ref=f5e249]: التحقق من الجلسة
+        - heading "جاري التحقق من الجلسة" [level=2] [ref=f5e278]
+        - paragraph [ref=f5e251]: نراجع حالة الحساب ونجهّز مساحة العمل المناسبة لك.
+      - generic [ref=f5e279]:
+        - generic [ref=f5e280]: Loading...
+        - paragraph [ref=f5e286]: ثوانٍ قليلة ويتم توجيهك تلقائيًا.
+  - region "Notifications alt+T"

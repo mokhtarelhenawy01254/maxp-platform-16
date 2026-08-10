@@ -1,0 +1,67 @@
+- generic [ref=f26e4]:
+  - banner [ref=f26e5]:
+    - generic [ref=f26e6] [cursor=pointer]:
+      - img "Twilio logo" [ref=f26e7]
+      - heading "Help Center" [level=1] [ref=f26e8]
+    - generic [ref=f26e9]:
+      - button "Ask AI" [ref=f26e10] [cursor=pointer]
+      - button "Open System Status view System status" [ref=f26e18] [cursor=pointer]:
+        - generic [ref=f26e19]:
+          - img "Open System Status view" [ref=f26e21]
+          - generic [ref=f26e23]: System status
+      - button "Sign up" [ref=f26e24] [cursor=pointer]
+      - button "Login" [ref=f26e27] [cursor=pointer]
+  - generic [ref=f26e32]:
+    - generic [ref=f26e34]:
+      - heading "How can we help you?" [level=2] [ref=f26e35]
+      - generic [ref=f26e39]:
+        - combobox [ref=f26e40]:
+          - textbox [ref=f26e41]
+          - listbox
+        - button [ref=f26e43] [cursor=pointer]:
+          - img "Search input icon" [ref=f26e46]
+    - main [ref=f26e49]:
+      - article [ref=f26e50]:
+        - article [ref=f26e51]:
+          - img "noData image" [ref=f26e53]
+          - generic [ref=f26e54]:
+            - heading "You don't have any search results yet" [level=3] [ref=f26e55]
+            - paragraph [ref=f26e56]: You'll see relevant results once you enter a search term above.
+  - contentinfo [ref=f26e57]:
+    - generic [ref=f26e58]:
+      - img "Twilio logo" [ref=f26e59]
+      - navigation "Footer" [ref=f26e60]:
+        - generic [ref=f26e61]:
+          - link "Legal" [ref=f26e62] [cursor=pointer]:
+            - /url: https://www.twilio.com/legal/tos
+          - separator [ref=f26e63]
+        - generic [ref=f26e64]:
+          - link "Privacy" [ref=f26e65] [cursor=pointer]:
+            - /url: https://www.twilio.com/legal/privacy
+          - separator [ref=f26e66]
+        - generic [ref=f26e67]:
+          - link "Twilio.org" [ref=f26e68] [cursor=pointer]:
+            - /url: https://www.twilio.org
+          - separator [ref=f26e69]
+        - generic [ref=f26e70]:
+          - link "Press & Media" [ref=f26e71] [cursor=pointer]:
+            - /url: https://www.twilio.com/press
+          - separator [ref=f26e72]
+        - generic [ref=f26e73]:
+          - link "Signal" [ref=f26e74] [cursor=pointer]:
+            - /url: https://signal.twilio.com
+          - separator [ref=f26e75]
+        - generic [ref=f26e76]:
+          - link "Investors" [ref=f26e77] [cursor=pointer]:
+            - /url: https://investors.twilio.com/overview/default.aspx
+          - separator [ref=f26e78]
+        - link "Jobs" [ref=f26e80] [cursor=pointer]:
+          - /url: https://www.twilio.com/company/jobs
+    - paragraph [ref=f26e82]:
+      - text: Copyright © 2026 Twilio Inc. All Rights Reserved. This site is protected by reCAPTCHA and the Google
+      - link "Privacy Policy" [ref=f26e83] [cursor=pointer]:
+        - /url: https://policies.google.com/privacy
+      - text: and
+      - link "Terms of Service" [ref=f26e84] [cursor=pointer]:
+        - /url: https://policies.google.com/terms
+      - text: apply.

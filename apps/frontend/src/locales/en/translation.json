@@ -8381,6 +8381,39 @@
       },
       "serviceRequests": {
         "description": "Manage service requests from customers"
+      },
+      "orderAutomation": {
+        "description": "Automatically change order statuses"
+      },
+      "bulkSearch": {
+        "description": "Search multiple orders by number or phone"
+      },
+      "customerBlocks": {
+        "description": "Manage blocked customers list"
+      },
+      "bulkOrders": {
+        "description": "Run bulk operations on orders"
+      },
+      "quickStatus": {
+        "description": "Quickly change order status"
+      },
+      "statusSummary": {
+        "description": "Order status distribution summary"
+      },
+      "returnsSettings": {
+        "description": "Returns system settings"
+      },
+      "orderWorkflow": {
+        "description": "Customize order processing workflow"
+      },
+      "facebookPost": {
+        "description": "Create and publish Facebook posts"
+      },
+      "googleTagManager": {
+        "description": "Set up GTM container and tracking codes"
+      },
+      "broadcast": {
+        "description": "Send broadcast campaigns and bulk messages to customers"
       }
     }
   },
@@ -11177,6 +11210,8 @@
     "changeLog": "Change Log",
     "oldStatus": "Old Status",
     "changedAt": "Changed At",
+    "duplicateTitle": "Warning: Duplicate Order",
+    "duplicateOrder": "Code {{code}} was entered before — this order is repeated (entered {{count}} times)",
     "noResults": "No Results Found"
   },
   "returns": {

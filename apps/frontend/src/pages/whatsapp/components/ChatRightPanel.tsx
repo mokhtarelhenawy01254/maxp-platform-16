@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, MapPin, Tag, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, MapPin, Tag, Plus, Sparkles, Loader2, Pencil, PackagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxCustomerAvatarUrl } from '../../../utils/imageUrl';
@@ -7,10 +7,17 @@ import { Contact } from '../../../hooks/useWhatsAppQueries';
 import { apiClient } from '../../../services/apiClient';
 import { customerService } from '../../../services/customerService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import type { Order } from '../../../hooks/inbox/useCustomerProfile';
 
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { toast } from 'sonner';
 import { tToast } from "../../../utils/i18n-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { getBestContactDisplayName } from '../whatsappContactDisplay';
@@ -24,6 +31,9 @@ interface ChatRightPanelProps {
   onClose?: () => void;
   onOpenLabels?: () => void;
   labels?: { id: string; name: string; color: string }[];
+  onEditOrder?: (order: Order) => void;
+  onAddToOrder?: (order: Order) => void;
+  refreshToken?: number;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -46,7 +56,7 @@ const ORDER_STATUS_THEME: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'ملغي', color: '#ef4444' },
 };
 
-const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose, onOpenLabels, labels = [] }) => {
+const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose, onOpenLabels, labels = [], onEditOrder, onAddToOrder, refreshToken = 0 }) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
@@ -105,7 +115,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
       loadCustomerData(customerId);
     }
     setAvatarError(false);
-  }, [customerId, loadCustomerData]);
+  }, [customerId, loadCustomerData, refreshToken]);
 
   // Fetch active journey for this customer
   useEffect(() => {
@@ -562,7 +572,45 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                           <div key={order.id} style={sectionStyle}>
                             <div className="mb-1.5 flex items-start justify-between">
                               <div className="min-w-0">
-                                <p className="text-sm font-bold text-foreground">#{order.orderNumber}</p>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      title="خيارات الطلب"
+                                      className="group flex items-center gap-1 text-sm font-bold text-foreground transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-md"
+                                    >
+                                      <span>#{order.orderNumber}</span>
+                                      <span className="text-[10px] text-muted-foreground/70 transition-colors group-hover:text-primary">
+                                        ▾
+                                      </span>
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start" className="w-52">
+                                    {onEditOrder ? (
+                                      <DropdownMenuItem onClick={() => onEditOrder(order)}>
+                                        <Pencil className="size-4" />
+                                        <span>تعديل الطلب</span>
+                                      </DropdownMenuItem>
+                                    ) : null}
+                                    {onAddToOrder ? (
+                                      <DropdownMenuItem onClick={() => onAddToOrder(order)}>
+                                        <PackagePlus className="size-4" />
+                                        <span>إضافة للطلب</span>
+                                      </DropdownMenuItem>
+                                    ) : null}
+                                    {!onEditOrder && !onAddToOrder ? null : <DropdownMenuSeparator />}
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        if (order.orderNumber) {
+                                          window.open(`/orders/${encodeURIComponent(order.orderNumber)}`, '_blank');
+                                        }
+                                      }}
+                                    >
+                                      <ShoppingBag className="size-4" />
+                                      <span>عرض التفاصيل</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                                 <p className="text-xs text-muted-foreground">
                                   {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: arSA })}
                                 </p>

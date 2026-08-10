@@ -104,10 +104,13 @@ class SocketService {
   private audioContext: AudioContext | null = null;
   private isAudioInitialized: boolean = false;
   private isConnecting: boolean = false;
+  private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
+  private alarmSources: Array<{ stop: () => void }> = [];
 
   constructor() {
     // تهيئة Audio Context (سيتم تفعيله بعد أول user interaction)
     this.initAudioContext();
+    this.setupAudioUnlock();
   }
 
   // تهيئة Audio Context
@@ -200,6 +203,159 @@ class SocketService {
           console.warn("⚠️ [SOUND] Failed to enable audio context:", error);
         });
     }
+  }
+
+  // فتح الصوت مرة واحدة عند أول تفاعل (متطلب المتصفح لسياسة autoplay)
+  private setupAudioUnlock() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const unlock = () => {
+      this.enableSound();
+      this.isAudioInitialized = true;
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
+    };
+
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
+    window.addEventListener("click", unlock);
+  }
+
+  private getAudioContext(): AudioContext | null {
+    if (!this.audioContext) {
+      try {
+        // @ts-ignore - للتوافق مع جميع المتصفحات
+        const AudioContextClass =
+          window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          this.audioContext = new AudioContextClass();
+        }
+      } catch (error) {
+        console.error("❌ [SOUND] Failed to create audio context:", error);
+        return null;
+      }
+    }
+
+    return this.audioContext;
+  }
+
+  // إنذار صفّارة عالي لتنبيه أي حد في المكان بأن طلباً جديداً وصل
+  playOrderAlarm(options?: { volume?: number; durationMs?: number }) {
+    const audioContext = this.getAudioContext();
+    if (!audioContext) {
+      console.warn("⚠️ [SOUND] Audio context not available");
+      return;
+    }
+
+    const runAlarm = () => {
+      this.stopOrderAlarm();
+
+      const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
+      const durationMs = options?.durationMs ?? 7000;
+
+      const masterGain = audioContext.createGain();
+      masterGain.gain.setValueAtTime(
+        0.001,
+        audioContext.currentTime,
+      );
+      masterGain.gain.exponentialRampToValueAtTime(
+        0.9 * volume,
+        audioContext.currentTime + 0.15,
+      );
+      masterGain.connect(audioContext.destination);
+
+      // نغمة إنذار متقطعة (ألارم): تردد متذبذب + نبضات
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = "square";
+      oscillator.frequency.setValueAtTime(1100, audioContext.currentTime);
+      const filter = audioContext.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(1400, audioContext.currentTime);
+      filter.Q.value = 1.2;
+
+      oscillator.connect(filter);
+      filter.connect(masterGain);
+      oscillator.start();
+
+      const stopAll = () => {
+        try {
+          oscillator.stop();
+          oscillator.disconnect();
+          filter.disconnect();
+          masterGain.disconnect();
+        } catch (error) {
+          // تجاهل أخطاء الإيقاف
+        }
+      };
+
+      this.alarmSources.push({ stop: stopAll });
+
+      // تشغيل النبضات (صفق / صفق) مع انقطاعات
+      const now = audioContext.currentTime;
+      const cycleMs = 350;
+      const cycles = Math.max(1, Math.floor(durationMs / cycleMs));
+
+      for (let index = 0; index < cycles; index += 1) {
+        const cycleStart = now + index * (cycleMs / 1000);
+        const onGain = cycleMs * 0.55;
+        masterGain.gain.setValueAtTime(0.9 * volume, cycleStart);
+        masterGain.gain.setValueAtTime(
+          0.001,
+          cycleStart + onGain / 1000,
+        );
+        // صفّارة: تغيير التردد صعود وهبوط
+        const wobble = index % 2 === 0 ? 1150 : 800;
+        oscillator.frequency.setValueAtTime(wobble, cycleStart);
+      }
+
+      masterGain.gain.setValueAtTime(
+        0.001,
+        now + cycles * (cycleMs / 1000),
+      );
+
+      this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
+      console.log("🚨 [SOUND] Order alarm played (loud)", {
+        volume,
+        durationMs,
+      });
+    };
+
+    if (audioContext.state === "suspended") {
+      audioContext
+        .resume()
+        .then(runAlarm)
+        .catch((error) => {
+          console.warn("⚠️ [SOUND] Could not resume audio context:", error);
+        });
+    } else {
+      runAlarm();
+    }
+  }
+
+  // إيقاف الإنذار فوراً
+  stopOrderAlarm() {
+    if (this.alarmStopTimer) {
+      clearTimeout(this.alarmStopTimer);
+      this.alarmStopTimer = null;
+    }
+    for (const source of this.alarmSources) {
+      try {
+        source.stop();
+      } catch (error) {
+        // تجاهل
+      }
+    }
+    this.alarmSources = [];
+  }
+
+  // اختبار سريع لصوت الطلبات من صفحة الإعدادات
+  testOrderSound(volume = 1) {
+    this.playOrderAlarm({ volume, durationMs: 1800 });
   }
 
   connect() {

@@ -1,0 +1,49 @@
+- generic [ref=f5e7]:
+  - generic [ref=f5e10]:
+    - generic [ref=f5e12]:
+      - generic [ref=f5e13]:
+        - link "E" [ref=f5e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "El Nouby" [ref=f5e16]: E
+        - generic [ref=f5e17]:
+          - button "الرئيسية" [ref=f5e18] [cursor=pointer]
+          - button "الطلبات" [ref=f5e23] [cursor=pointer]
+          - button "المنتجات" [ref=f5e29] [cursor=pointer]
+          - button "المتجر" [ref=f5e35] [cursor=pointer]
+          - button "المخزون" [ref=f5e44] [cursor=pointer]
+          - button "حسابي" [ref=f5e50] [cursor=pointer]
+          - button "إدارة شركاتي" [ref=f5e57] [cursor=pointer]
+          - button "التطبيقات" [ref=f5e63] [cursor=pointer]
+          - button "الإعدادات" [ref=f5e69] [cursor=pointer]
+      - generic [ref=f5e75]:
+        - generic [ref=f5e76]:
+          - link "E El Nouby الرئيسية" [ref=f5e78] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=f5e79]: E
+            - generic [ref=f5e80]:
+              - heading "El Nouby" [level=2] [ref=f5e81]
+              - paragraph [ref=f5e82]: الرئيسية
+          - button "طي القائمة" [ref=f5e83] [cursor=pointer]
+        - generic [ref=f5e86]:
+          - generic [ref=f5e87]: البحث داخل القائمة
+          - textbox "البحث داخل القائمة" [ref=f5e88]:
+            - /placeholder: البحث
+        - link "لوحة التحكم" [ref=f5e91] [cursor=pointer]:
+          - /url: /company-dashboard
+    - generic [ref=f5e96]:
+      - banner [ref=f5e97]:
+        - generic [ref=f5e99]:
+          - generic [ref=f5e100]:
+            - button "تبديل للوضع الليلي" [ref=f5e101] [cursor=pointer]
+            - button "Change language" [ref=f5e103] [cursor=pointer]:
+              - generic [ref=f5e104]: ar
+            - button "الإشعارات" [ref=f5e106] [cursor=pointer]
+            - link "header.whatsapp" [ref=f5e109] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "الملف الشخصي EN" [ref=f5e114]:
+            - generic [ref=f5e115]: EN
+            - generic [ref=f5e116]:
+              - generic [ref=f5e117]: El
+              - generic [ref=f5e118]: OWNER
+      - main [ref=f5e121]
+  - region "Notifications alt+T"
