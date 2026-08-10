@@ -51,12 +51,39 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import {
   WhatsAppPageShell,
   WhatsAppSurfaceCard,
-  WhatsAppMetricCard,
 } from "./components/WhatsAppPageShell";
 import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
+
+/* ── Lightweight KPI item (no border — sits inside a shared strip container) ── */
+function KpiItem({
+  label,
+  value,
+  hint,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
+        <Icon className="size-4.5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-[color:var(--color-muted-foreground)]">{label}</p>
+        <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{value}</p>
+        {hint ? (
+          <p className="truncate text-[11px] text-[color:var(--color-muted-foreground)] opacity-70">{hint}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 interface Flow {
   id: string;
@@ -642,29 +669,26 @@ const WhatsAppCustomerJourney: React.FC = () => {
       ) : null}
 
       {/* ─────────── KPI STRIP ─────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <WhatsAppMetricCard
+      <div className="grid gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3 shadow-soft sm:grid-cols-2 sm:p-4 lg:grid-cols-4 lg:gap-4 lg:p-5">
+        <KpiItem
           label={t("whatsappJourney.stats.activeJourneys") as string}
           value={String(stats.activeCount)}
           hint={`${stats.activeCount} / ${stats.totalJourneys}`}
           icon={Users}
-          tone="success"
         />
-        <WhatsAppMetricCard
+        <KpiItem
           label={t("whatsappJourney.stats.totalSent") as string}
           value={String(stats.totalSent)}
           hint={t("whatsappJourney.steps.send") as string}
           icon={Send}
-          tone="info"
         />
-        <WhatsAppMetricCard
+        <KpiItem
           label={t("whatsappJourney.stats.completionRate") as string}
           value={`${stats.completionRate}%`}
           hint={`${stats.completedCount} / ${stats.totalJourneys}`}
           icon={TrendingUp}
-          tone="primary"
         />
-        <WhatsAppMetricCard
+        <KpiItem
           label={t("whatsappJourney.monitoring.deliveryHealth") as string}
           value={
             stats.needsAttention
@@ -673,7 +697,6 @@ const WhatsAppCustomerJourney: React.FC = () => {
           }
           hint={t("whatsappJourney.monitoring.liveMonitor") as string}
           icon={Zap}
-          tone={stats.needsAttention ? "danger" : "success"}
         />
       </div>
 
@@ -725,10 +748,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         type="button"
                         onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "group flex w-full flex-col gap-2.5 rounded-2xl border p-3.5 text-start transition-all",
+                          "group flex w-full flex-col gap-2.5 rounded-xl p-3.5 text-start transition-all",
                           selected
-                            ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-card))] shadow-sm"
-                            : "border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:border-[color:color-mix(in_srgb,var(--color-primary)_40%,var(--shell-control-border))] hover:bg-[color:var(--color-muted)]",
+                            ? "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-muted))] ring-1 ring-[color:var(--color-primary)]"
+                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)]",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -800,7 +823,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] pt-2.5">
+                        <div className="flex items-center justify-between gap-2 border-t border-[color:color-mix(in_srgb,var(--color-muted-foreground)_12%,transparent)] pt-2.5">
                           <span className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
                             <MessageSquare className="size-3" />
                             {flow._count?.steps || 0} {t("whatsappJourney.steps.title")}
@@ -860,7 +883,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       key={journey.id}
                       type="button"
                       onClick={() => setSelectedJourney(journey)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3 text-start transition-colors hover:bg-[color:var(--color-muted)]"
+                      className="flex w-full items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-colors hover:bg-[color:var(--color-muted)]"
                     >
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
                         {initials}
@@ -998,41 +1021,19 @@ const WhatsAppCustomerJourney: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-muted)_40%,var(--color-background))] p-4">
-              {steps.length > 0 || isAdmin ? (
-                <FlowCanvas
-                  steps={steps}
-                  isAdmin={isAdmin}
-                  onOpenCopilot={() => copilot.setOpen(true)}
-                  onReorder={(next) => {
-                    setSteps(next as Step[]);
-                  }}
-                  onEdit={openEditStepDialog as (step: FlowStep) => void}
-                  onAdd={openCreateStepDialog}
-                  onDelete={(step) =>
-                    setDeleteTarget({ type: "step", id: step.id || "" })
-                  }
-                />
-              ) : (
-                <FlowCanvas
-                  steps={steps}
-                  isAdmin={isAdmin}
-                  onOpenCopilot={() => copilot.setOpen(true)}
-                  onReorder={() => {
-                    /* read-only */
-                  }}
-                  onEdit={() => {
-                    /* read-only */
-                  }}
-                  onAdd={() => {
-                    /* read-only */
-                  }}
-                  onDelete={() => {
-                    /* read-only */
-                  }}
-                />
-              )}
-            </div>
+            <FlowCanvas
+              steps={steps}
+              isAdmin={isAdmin}
+              onOpenCopilot={() => copilot.setOpen(true)}
+              onReorder={(next) => {
+                setSteps(next as Step[]);
+              }}
+              onEdit={openEditStepDialog as (step: FlowStep) => void}
+              onAdd={openCreateStepDialog}
+              onDelete={(step) =>
+                setDeleteTarget({ type: "step", id: step.id || "" })
+              }
+            />
           )}
         </WhatsAppSurfaceCard>
       </div>
