@@ -244,7 +244,7 @@ const listStudies = async (req, res) => {
     res.json({ success: true, data: { items: studies, total, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error fetching radiology studies:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسات الأشعة' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب دراسات الأشعة', detail: String(error?.message || error) });
   }
 };
 
