@@ -579,8 +579,15 @@ if [ -n "$PM2_BIN" ]; then
   echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
 
   echo "🧩 Verifying marketplace full catalog API after reload..."
-  MARKETPLACE_CATALOG_JSON="$(curl -fsS --max-time 20 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/marketplace/apps?page=1&limit=200")"
-  MARKETPLACE_CATALOG_JSON="$MARKETPLACE_CATALOG_JSON" node -e 'const payload=JSON.parse(process.env.MARKETPLACE_CATALOG_JSON||"{}"); const data=Array.isArray(payload.data)?payload.data:[]; const total=Number((payload.pagination&&payload.pagination.total)||data.length); const limit=Number((payload.pagination&&payload.pagination.limit)||0); if(limit!==200||data.length===0||data.length!==total){ console.error("❌ Marketplace full catalog API verification failed",{count:data.length,total,limit}); process.exit(1); } console.log("✅ Marketplace full catalog API returned "+data.length+"/"+total+" apps with limit="+limit);'
+  MARKETPLACE_CATALOG_FILE="$(mktemp)"
+  if curl -fsS --max-time 20 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/marketplace/apps?page=1&limit=200" > "$MARKETPLACE_CATALOG_FILE"; then
+    MARKETPLACE_CATALOG_FILE="$MARKETPLACE_CATALOG_FILE" node -e 'const fs=require("fs"); const payload=JSON.parse(fs.readFileSync(process.env.MARKETPLACE_CATALOG_FILE,"utf8")||"{}"); const data=Array.isArray(payload.data)?payload.data:[]; const total=Number((payload.pagination&&payload.pagination.total)||data.length); const limit=Number((payload.pagination&&payload.pagination.limit)||0); if(limit!==200||data.length===0||data.length!==total){ console.error("❌ Marketplace full catalog API verification failed",{count:data.length,total,limit}); process.exit(1); } console.log("✅ Marketplace full catalog API returned "+data.length+"/"+total+" apps with limit="+limit);'
+    rm -f "$MARKETPLACE_CATALOG_FILE"
+  else
+    echo "❌ Failed to fetch marketplace catalog for verification"
+    rm -f "$MARKETPLACE_CATALOG_FILE"
+    exit 1
+  fi
   echo "📋 Printing last 50 lines of PM2 backend and AI service error logs for debugging..."
   "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
   "$PM2_BIN" logs maxp-ai-service --lines 50 --nostream || true
