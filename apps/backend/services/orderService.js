@@ -286,6 +286,32 @@ class OrderService {
         finalSubtotal = subtotal - appliedDiscount;
       }
 
+      // 🎁 الخصم التلقائي: لو نظام الخصم التلقائي مفعّل والعميل عنده كوبون خصم فعّال،
+      // نطبقه على الطلب (من المحادثة) — مش بس طلبات المتجر.
+      let autoDiscountVoucherId = null;
+      let autoDiscountAppliedValue = 0;
+      try {
+        const autoDiscountService = require('./autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(companyId);
+        if (autoActive && resolvedCustomerId) {
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId,
+            customerId: resolvedCustomerId,
+            cartTotal: finalSubtotal
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            appliedDiscount += voucherRes.discount;
+            finalSubtotal = subtotal - appliedDiscount;
+            autoDiscountVoucherId = voucherRes.voucher.id;
+            autoDiscountAppliedValue = voucherRes.discount;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+            console.log(`✅ [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to conversation order for customer ${resolvedCustomerId}`);
+          }
+        }
+      } catch (autoDiscountError) {
+        console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount on conversation order:', autoDiscountError.message);
+      }
+
       const explicitShipping = toFiniteNumberOrNull(data.shippingAmount ?? data.shippingCost ?? data.shipping);
       const shipping = explicitShipping !== null
         ? explicitShipping
@@ -379,6 +405,11 @@ class OrderService {
             shippingAddress: data.shippingAddress || data.address || null,
             sourceType: data.sourceType || 'ai_conversation',
             extractionMethod: data.extractionMethod || 'ai_tool',
+            metadata: JSON.stringify({
+              ...(autoDiscountVoucherId && { autoDiscountVoucherId }),
+              ...(autoDiscountVoucherId && { autoDiscountApplied: autoDiscountAppliedValue }),
+              ...(conversationId && { conversationId }),
+            }),
             orderItems: {
               create: [orderItem],
             },

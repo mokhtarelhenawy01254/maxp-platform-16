@@ -209,6 +209,38 @@ class EnhancedOrderService {
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
 
+      // 🎁 الخصم التلقائي: لو نظام الخصم التلقائي مفعّل والعميل عنده كوبون خصم فعّال،
+      // نطبقه على أي طلب (يدوي/محادثة/متجر) — مش بس طلبات المتجر.
+      try {
+        const autoDiscountService = require('./autoDiscountService');
+        const autoActive = await autoDiscountService.isAutoDiscountActive(data.companyId);
+        if (autoActive && customer?.id) {
+          const cartTotalForDiscount =
+            parseFloat(data.subtotal) > 0
+              ? parseFloat(data.subtotal)
+              : (Array.isArray(data.products) && data.products.length > 0
+                  ? data.products.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)), 0)
+                  : (parseFloat(data.productPrice) || 0) * (parseInt(data.quantity) || 1));
+          const voucherRes = await autoDiscountService.applyVoucherDiscount({
+            companyId: data.companyId,
+            customerId: customer.id,
+            cartTotal: cartTotalForDiscount
+          });
+          if (voucherRes.discount > 0 && voucherRes.voucher) {
+            data.autoDiscountVoucherId = voucherRes.voucher.id;
+            data.autoDiscountApplied = voucherRes.discount;
+            // نجمع خصم الكوبون التلقائي مع أي خصم موجود (يدوي/كوبون)
+            const existingDiscount =
+              (parseFloat(data.manualDiscount) || 0) + (parseFloat(data.couponDiscount) || 0) + (parseFloat(data.discount) || 0);
+            data.autoDiscountTotal = existingDiscount + voucherRes.discount;
+            await autoDiscountService.markVoucherUsed(voucherRes.voucher.id);
+            console.log(`✅ [AUTO-DISCOUNT] Applied ${voucherRes.discount} EGP discount to order for customer ${customer.id}`);
+          }
+        }
+      } catch (autoDiscountError) {
+        console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount:', autoDiscountError.message);
+      }
+
       // حساب التكاليف (أو استخدام التكاليف المرسلة يدوياً)
       const costs = await this.calculateOrderCosts(data);
 
@@ -659,10 +691,11 @@ class EnhancedOrderService {
     // حساب الضرائب (0% حالياً)
     const tax = parseFloat(data.tax) || 0;
 
-    // حساب الخصم (يدوي + كوبون)
+    // حساب الخصم (يدوي + كوبون + الخصم التلقائي)
     const manualDiscount = parseFloat(data.manualDiscount) || 0;
     const couponDiscount = parseFloat(data.couponDiscount) || 0;
-    const discount = manualDiscount + couponDiscount || parseFloat(data.discount) || 0;
+    const autoDiscount = parseFloat(data.autoDiscountApplied) || 0;
+    const discount = manualDiscount + couponDiscount + autoDiscount || parseFloat(data.discount) || 0;
 
     const total = subtotal + shipping + tax - discount;
 
@@ -848,6 +881,8 @@ class EnhancedOrderService {
         source: data.source,
         requestType: data.requestType || 'delivery',
         returnAmount: data.returnAmount || null,
+        ...(data.autoDiscountVoucherId && { autoDiscountVoucherId: data.autoDiscountVoucherId }),
+        ...(data.autoDiscountApplied && { autoDiscountApplied: data.autoDiscountApplied }),
         originalData: {
           productName: data.productName,
           productColor: data.productColor,
@@ -1023,6 +1058,22 @@ class EnhancedOrderService {
 
       // ✅ إزالة حقول المنتج من orderData لأنها مش جزء من Order schema
       const { products, productName, productColor, productSize, productPrice, quantity, ...cleanOrderData } = orderData;
+
+      // 🎁 تسجيل كوبون الخصم التلقائي في الـ metadata (لو الطلب استخدم كوبون)
+      if (orderData.autoDiscountVoucherId || orderData.autoDiscountApplied) {
+        let existingMetadata = {};
+        if (typeof cleanOrderData.metadata === 'string') {
+          try { existingMetadata = JSON.parse(cleanOrderData.metadata) || {}; } catch (e) { existingMetadata = {}; }
+        } else if (cleanOrderData.metadata && typeof cleanOrderData.metadata === 'object') {
+          existingMetadata = cleanOrderData.metadata;
+        }
+        existingMetadata = {
+          ...existingMetadata,
+          ...(orderData.autoDiscountVoucherId && { autoDiscountVoucherId: orderData.autoDiscountVoucherId }),
+          ...(orderData.autoDiscountApplied && { autoDiscountApplied: orderData.autoDiscountApplied })
+        };
+        cleanOrderData.metadata = JSON.stringify(existingMetadata);
+      }
 
       console.log('💸 [DB-SAVE] التكاليف قبل الحفظ:', {
         subtotal: cleanOrderData.subtotal,
