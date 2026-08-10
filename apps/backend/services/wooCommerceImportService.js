@@ -331,6 +331,32 @@ async function updateExistingOrder(prisma, existingOrder, orderData, companyId, 
 
     if (hasStatusChanged) {
         await recordStatusHistory(prisma, existingOrder.id, normalizedData.status, existingOrder.status, triggeredBy, 'Synced from WooCommerce');
+
+        // 🚨 PRODUCTION-FIX (turbo-notification-gap): مزامنة Woo بتغيّر حالة الطلب تلقائياً
+        // من غير زرار — كان بيكتب history بس من غير إشعار WhatsApp للعميل. نبعث الإشعار
+        // بنفس منوال sendOrderStatusNotification + dedup (زي مسار الزرار اليدوي) من غير
+        // ما نعتمد على updateOrderStatus (عشان منعملش history مكرر/تحديث مكرر).
+        if (normalizedData.status) {
+            try {
+                const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+                const isDup = await WhatsAppNotificationService.isDuplicateNotification({
+                    companyId,
+                    orderId: existingOrder.id,
+                    eventType: normalizedData.status,
+                });
+                if (!isDup) {
+                    const notificationOrder = {
+                        ...existingOrder,
+                        status: normalizedData.status,
+                        customerPhone: existingOrder.customerPhone || existingOrder.customer?.phone,
+                        customerName: existingOrder.customerName || existingOrder.customer?.firstName,
+                    };
+                    await WhatsAppNotificationService.sendOrderStatusNotification(notificationOrder, normalizedData.status);
+                }
+            } catch (notifErr) {
+                console.warn(`⚠️ [WOO-IMPORT] WhatsApp status notification failed for ${existingOrder.orderNumber}:`, notifErr.message);
+            }
+        }
     }
 
     return { status: 'updated', order: updatedOrder };

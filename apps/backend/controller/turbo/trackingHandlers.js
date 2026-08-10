@@ -21,9 +21,34 @@ const trackShipment = async (req, res) => {
     if (!matched) return res.status(404).json({ success: false, error: 'Shipment not found in Turbo', message: 'لم يتم العثور على الشحنة في نظام Turbo خلال آخر 30 يوم' });
     if (matched.internalStatus !== order.turboShipmentStatus) {
       const upd = { turboShipmentStatus: matched.internalStatus, turboMetadata: JSON.stringify(matched.raw || matched), updatedAt: new Date() };
-      if (matched.internalStatus === 'delivered') { upd.status = 'DELIVERED'; upd.paymentStatus = 'COMPLETED'; }
-      else if (matched.internalStatus === 'cancelled') upd.status = 'CANCELLED';
-      else if (matched.internalStatus === 'returned') upd.status = 'RETURNED';
+      let trackedStatus = null;
+      if (matched.internalStatus === 'delivered') { upd.status = 'DELIVERED'; upd.paymentStatus = 'COMPLETED'; trackedStatus = 'DELIVERED'; }
+      else if (matched.internalStatus === 'cancelled') { upd.status = 'CANCELLED'; trackedStatus = 'CANCELLED'; }
+      else if (matched.internalStatus === 'returned') { upd.status = 'RETURNED'; trackedStatus = 'RETURNED'; }
+
+      // 🚨 PRODUCTION-FIX (turbo-notification-gap): نفس مشكلة turboStatusSyncService —
+      // trackShipment كان بيعدّل status مباشرة من غير إشعار. مرّر التغيير عبر
+      // orderService.updateOrderStatus (history + إشعار + side-effects) قبل التحديث المباشر.
+      if (trackedStatus && trackedStatus !== order.status && !order.tableType) {
+        try {
+          const orderService = require('../../services/orderService');
+          await orderService.updateOrderStatus(
+            order.orderNumber,
+            companyId,
+            trackedStatus,
+            `تحديث تلقائي من تتبع تربو (${matched.internalStatus})`,
+            'SYSTEM',
+            'Turbo Tracking',
+            null,
+            true,
+            { skipCallAttemptGuard: true, skipTransitionValidation: true }
+          );
+          console.log(`✅ [TURBO-TRACK] Order ${order.orderNumber} status -> ${trackedStatus} via orderService (notification + history).`);
+        } catch (trackErr) {
+          console.warn(`⚠️ [TURBO-TRACK] Status update via orderService failed for ${order.orderNumber}:`, trackErr.message);
+        }
+      }
+
       if (order.orderNumber) await prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: upd });
       else if (order.id) await prisma.order.update({ where: { id: order.id }, data: upd });
     }

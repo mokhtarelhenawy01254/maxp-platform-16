@@ -216,6 +216,33 @@ async function syncTurboStatusToOrder({
       updateData.turboShipmentId = String(payload.order_number);
     }
 
+    // 🚨 PRODUCTION-FIX (turbo-notification-gap): قبل التحديث المباشر لحقول تربو،
+    // مرّر تغيير حالة الطلب عبر orderService.updateGuestOrderStatus — لأنه المسار الوحيد
+    // اللي بيكتب statusHistory وبيبعث إشعار WhatsApp (sendOrderStatusNotification) وبيشغّل
+    // side-effects (كاش باك/ولاء عند DELIVERED). كان السينك القديم بيعدّل guestOrder.status
+    // مباشرة في الـ DB من غير أي إشعار — فالأوردرات اللي بتتحرك تلقائياً من تربو
+    // (webhook / sync-status / refresh) كانت بتفضل من غير رسالة للعميل.
+    const guestTargetStatus = orderStatus && GUEST_ORDER_STATUS_MAP[orderStatus] ? GUEST_ORDER_STATUS_MAP[orderStatus] : null;
+    const guestStatusChanged = Boolean(guestTargetStatus) && guestTargetStatus !== existingGuestOrder.status;
+    if (guestStatusChanged) {
+      try {
+        const orderService = require('./orderService');
+        await orderService.updateGuestOrderStatus(
+          existingGuestOrder.orderNumber,
+          companyId,
+          guestTargetStatus,
+          `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
+          'SYSTEM',
+          'Turbo Sync',
+          null,
+          { skipCallAttemptGuard: true, skipTransitionValidation: true }
+        );
+        console.log(`✅ [TURBO-SYNC] GuestOrder ${existingGuestOrder.orderNumber} status -> ${guestTargetStatus} via orderService (notification + history).`);
+      } catch (guestStatusErr) {
+        console.warn(`⚠️ [TURBO-SYNC] GuestOrder status update via orderService failed for ${existingGuestOrder.orderNumber}:`, guestStatusErr.message);
+      }
+    }
+
     await safeQuery(() => prisma.guestOrder.update({
       where: { id: existingGuestOrder.id },
       data: updateData
@@ -347,6 +374,35 @@ async function syncTurboStatusToOrder({
 
   if (paymentStatus) {
     updateData.paymentStatus = paymentStatus;
+  }
+
+  // 🚨 PRODUCTION-FIX (turbo-notification-gap): قبل التحديث المباشر لحقول تربو،
+  // مرّر تغيير حالة الطلب عبر orderService.updateOrderStatus — لأنه المسار الوحيد
+  // اللي بيكتب statusHistory وبيبعث إشعار WhatsApp (sendOrderStatusNotification) وبيشغّل
+  // side-effects (كاش باك/ولاء عند DELIVERED، إرجاع عند RETURNED...). كان السينك القديم
+  // بيعدّل order.status مباشرة في الـ DB من غير أي إشعار — فالأوردرات اللي بتتحرك تلقائياً
+  // من تربو (webhook / sync-status / refresh) كانت بتفضل من غير رسالة للعميل.
+  // ملاحظة: updateOrderStatus بيجيب الطلب تاني بكل العلاقات (customer/orderItems) وبيشغّل
+  // الإشعار في الخلفية (fire-and-forget) + بيخصم الـ dedup — فيتماشى مع مسار الزرار اليدوي.
+  const statusChanged = Boolean(orderStatus) && orderStatus !== existingOrder.status;
+  if (statusChanged) {
+    try {
+      const orderService = require('./orderService');
+      await orderService.updateOrderStatus(
+        existingOrder.orderNumber,
+        companyId,
+        orderStatus,
+        `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
+        'SYSTEM',
+        'Turbo Sync',
+        null,
+        true,
+        { skipCallAttemptGuard: true, skipTransitionValidation: true }
+      );
+      console.log(`✅ [TURBO-SYNC] Order ${existingOrder.orderNumber} status -> ${orderStatus} via orderService (notification + history).`);
+    } catch (statusErr) {
+      console.warn(`⚠️ [TURBO-SYNC] Status update via orderService failed for ${existingOrder.orderNumber}:`, statusErr.message);
+    }
   }
 
   await safeQuery(() => prisma.order.update({
