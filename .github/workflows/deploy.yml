@@ -28,6 +28,7 @@ jobs:
       cancel-in-progress: true
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
+      catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
 
     steps:
       - name: Checkout code
@@ -79,7 +80,63 @@ jobs:
         run: |
           node scripts/check-file-sizes.js --max-kb=150
 
+      - name: Check for Facebook Ads Changes
+        id: fb-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
+            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fb-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Backend-only deploys skip the frontend install/build/upload path (~70s).
+      # Conservative: frontend builds whenever ANY changed path is NOT backend-only,
+      # so an unexpected change still triggers the full build.
+      - name: Check if Frontend Needs Rebuild
+        id: fe-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if [ -z "$CHANGED" ]; then
+            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Non-frontend path prefixes that never affect the frontend build.
+          if echo "$CHANGED" | grep -vqE "^(apps/backend/|apps/ai-service/|scripts/|\.github/|\.agents/|nginx_configs/|\.env\.example|docs/|.*\.md)"; then
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Marketplace catalog files feed the DB via catalog:sync-target; only run it
+      # when they change (it still runs on every workflow_dispatch).
+      - name: Check if Marketplace Catalog Changed
+        id: cat-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cat-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Cache Backend node_modules
+        if: steps.fb-check.outputs.fb-changed == 'true'
         uses: actions/cache@v4
         id: cache-backend
         with:
@@ -89,6 +146,7 @@ jobs:
             backend-node-
 
       - name: Cache Frontend node_modules
+        if: steps.fe-check.outputs.fe-needed == 'true'
         uses: actions/cache@v4
         id: cache-frontend
         with:
@@ -97,7 +155,10 @@ jobs:
           restore-keys: |
             frontend-node-
 
+      # Only install backend deps + run the Facebook Ads regression when
+      # facebook-related files actually changed — otherwise skip (saves ~56s/deploy).
       - name: Install Backend Test Dependencies
+        if: steps.fb-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npm ci
@@ -108,19 +169,22 @@ jobs:
         continue-on-error: false
 
       - name: Generate Prisma Client
+        if: steps.fb-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npx prisma generate --schema=prisma/schema
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
+        if: steps.fb-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
         continue-on-error: false
 
-      # Build Frontend
+      # Build Frontend (skipped when only backend files changed)
       - name: Install Frontend Dependencies
+        if: steps.fe-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: |
           if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
@@ -135,11 +199,13 @@ jobs:
 
       # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
       - name: Check Frontend Icon Imports
+        if: steps.fe-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: node scripts/check-icon-imports.cjs
         continue-on-error: false
 
       - name: Build Frontend
+        if: steps.fe-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: |
           # Purge Vite's persistent transform cache before building so a stale
@@ -168,21 +234,18 @@ jobs:
         run: node scripts/generate-i18n-types.js
         continue-on-error: false
 
-      # Strip dev dependencies after tests (deps already installed above)
-      - name: Prune Dev Dependencies
-        working-directory: ./apps/backend
-        run: |
-          npm prune --production --ignore-scripts
-        env:
-          HUSKY: '0'
-        continue-on-error: false
-
       # Packaging for reliable transfer (Optimized to exclude large node_modules)
       - name: Package Assets
+        env:
+          FE_NEEDED: ${{ steps.fe-check.outputs.fe-needed }}
         run: |
-          echo "📦 Packaging Frontend..."
-          tar -czf frontend.tar.gz -C apps/frontend/dist .
-          tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+          if [ "$FE_NEEDED" == "true" ]; then
+            echo "📦 Packaging Frontend..."
+            tar -czf frontend.tar.gz -C apps/frontend/dist .
+            tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+          else
+            echo "ℹ️ Skipping frontend tarballs (backend-only deploy)"
+          fi
           tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
 
           echo "📦 Packaging Shared..."
@@ -251,10 +314,8 @@ jobs:
             set -e
             echo "🧹 Cleaning stale staging dirs (older than 1 day)..."
             find $HOME -maxdepth 1 -name "deploy_staging_*" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
-            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/backend_uploads_backup 2>/dev/null || true
+            sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
             sudo journalctl --vacuum-time=1d 2>/dev/null || true
-            sudo npm cache clean --force 2>/dev/null || true
-            sudo docker system prune -af --volumes 2>/dev/null || true
             pm2 flush 2>/dev/null || true
 
             DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}"
@@ -353,6 +414,7 @@ jobs:
         env:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
+          CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -361,7 +423,7 @@ jobs:
           debug: true
           timeout: 60m
           command_timeout: 50m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED
           script: |
             set -e
             sudo -n true || {

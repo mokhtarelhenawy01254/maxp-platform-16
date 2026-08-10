@@ -133,6 +133,12 @@ router.post('/vouchers/process-expired',
   customerLoyaltyController.processExpiredVouchers
 );
 
+// تحليلات نظام الولاء الحالي (الخصم التلقائي أو المستويات)
+router.get('/system-analytics',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getSystemAnalytics
+);
+
 // تجاوز عميل (طريقة الحساب + المزايا المخصصة)
 router.get('/customers/:customerId/tier-override',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),

@@ -16,6 +16,11 @@ const DEFAULT_SETTINGS = {
  */
 async function getSettings(companyId) {
   const prisma = getSharedPrismaClient();
+  // 🛡️ لو الـ companyId ناقص/غير صالح (مثل SUPER_ADMIN من غير سياق شركة)
+  // نرجّع الإعدادات الافتراضية بدل ما نوقع في خطأ Prisma validation → 500
+  if (!companyId) {
+    return { ...DEFAULT_SETTINGS, loyaltySystem: 'TIERS' };
+  }
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: { loyaltySystem: true, loyaltySettings: true }
@@ -63,6 +68,10 @@ async function isAutoDiscountActive(companyId) {
  */
 async function updateSettings(companyId, data) {
   const prisma = getSharedPrismaClient();
+  // 🛡️ لو الـ companyId ناقص، منمنعش P2025/validation → 500 على الحفظ
+  if (!companyId) {
+    throw new Error('Company context is missing');
+  }
   const system = data.system === 'AUTO_DISCOUNT' ? 'AUTO_DISCOUNT' : 'TIERS';
   const current = await getSettings(companyId);
   const next = { ...current, ...data };
@@ -173,11 +182,28 @@ async function convertExpiredVouchers() {
     try {
       const settings = await getSettings(v.companyId);
       if (settings.convertExpiredToCashback !== false) {
-        const WalletService = require('./walletService');
-        const result = await WalletService.addCashback(v.customerId, v.sourceOrderId, Number(v.amount), 1, Number(v.amount));
-        await prisma.customerLoyaltyVoucher.update({
+        // 🛡️ Idempotency: لو الكوبون ده اتحوّل فعلاً (فيه transaction id)، نتخطاه
+        // عشان منضاعفش الكاش باك لو الـ cron اشتغل تاني على نفس الكوبون.
+        const already = await prisma.customerLoyaltyVoucher.findUnique({
           where: { id: v.id },
-          data: { status: 'CONVERTED', convertedAt: new Date(), convertedWalletTxId: result?.transaction?.id }
+          select: { status: true, convertedWalletTxId: true }
+        });
+        if (!already || already.status !== 'ACTIVE' || already.convertedWalletTxId) {
+          continue;
+        }
+
+        const WalletService = require('./walletService');
+        // 🛡️ بنعمل addCashback + تحديث حالة الكوبون في نفس الـ transaction
+        // عشان لو فشل أي واحد، ميحصلش كاش باك من غير تحويل حالة (ولا العكس).
+        const result = await prisma.$transaction(async (tx) => {
+          const walletRes = await WalletService.addCashbackWithTx(
+            tx, v.customerId, v.sourceOrderId, Number(v.amount), 1, Number(v.amount)
+          );
+          const updated = await tx.customerLoyaltyVoucher.update({
+            where: { id: v.id },
+            data: { status: 'CONVERTED', convertedAt: new Date(), convertedWalletTxId: walletRes?.transaction?.id }
+          });
+          return { updated, txId: walletRes?.transaction?.id };
         });
         converted++;
       } else {
@@ -338,6 +364,36 @@ async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }
 }
 
 /**
+ * تحويل كائن الكوبون للشكل الموحّد اللي بيرجع للواجهة (مستخدم في كل الأماكن).
+ */
+function mapVoucherToPublic(voucher) {
+  if (!voucher) return null;
+  return {
+    id: voucher.id,
+    percent: Number(voucher.percent),
+    amount: Number(voucher.amount),
+    expiresAt: voucher.expiresAt,
+    sourceOrderNumber: voucher.orderNumber || null
+  };
+}
+
+/**
+ * ملخص الخصم التلقائي لعميل واحد (كوبون فعّال + حالة الخصم) — مستخدم في بوابة العميل
+ * في مكانين (المسؤول + العميل نفسه) عشان مفيش تكرار/انحراف.
+ */
+async function getCustomerAutoDiscountSummary({ customerId, companyId, settings }) {
+  const cfg = settings || await getSettings(companyId);
+  const voucher = await getActiveVoucher(customerId, companyId);
+  let status = null;
+  if (voucher) {
+    status = 'AVAILABLE';
+  } else {
+    status = await getCustomerAutoDiscountStatus({ companyId, customerId, settings: cfg });
+  }
+  return { activeVoucher: mapVoucherToPublic(voucher), status };
+}
+
+/**
  * إثراء قائمة عملاء بحالة الخصم (AVAILABLE / PRE_ACTIVATION) لصفحة قائمة العملاء.
  * بيبقى null لو نظام الخصم التلقائي مش مفعّل أو مفيش حالة.
  */
@@ -397,5 +453,7 @@ module.exports = {
   restoreRedeemedPointsForOrder,
   getLoyaltyActivatedAt,
   getCustomerAutoDiscountStatus,
+  getCustomerAutoDiscountSummary,
+  mapVoucherToPublic,
   enrichCustomersWithAutoDiscountStatus
 };

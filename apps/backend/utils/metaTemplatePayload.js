@@ -3,8 +3,15 @@
  * publishTemplateToMeta و resubmitMetaTemplate (مصدر واحد حتى لا يحيد أحدهما).
  */
 
+const { isOrderCategory } = require('../services/whatsapp/notificationTypes');
+
 function buildMetaTemplatePayload(localTemplate) {
-  const metaCategory = localTemplate.category === 'MARKETING' ? 'MARKETING'
+  // قوالب حالة الطلب (category ORDER/ORDERS أو eventType حالة طلب خام مثل "delivered")
+  // لازم تتنشر UTILITY في ميتا — رسائل transactional مش تسويق. حتى لو اتحفظ
+  // category = MARKETING على القالب المحلي، منمنعش إنها تطلع MARKETING في ميتا.
+  const metaCategory = isOrderCategory(localTemplate.category, localTemplate.eventType)
+    ? 'UTILITY'
+    : localTemplate.category === 'MARKETING' ? 'MARKETING'
     : localTemplate.category === 'AUTHENTICATION' ? 'AUTHENTICATION'
     : 'UTILITY';
 

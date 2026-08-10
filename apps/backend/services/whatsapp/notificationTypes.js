@@ -42,7 +42,12 @@ function isOrderCategory(category, eventType) {
     cat === 'ORDERS' ||
     evt.startsWith('ORDER_') ||
     evt === 'PAYMENT_REMINDER' ||
-    evt.startsWith('PAYMENT_')
+    evt.startsWith('PAYMENT_') ||
+    // 🚨 PRODUCTION-FIX: الكودات الخام لحالات الطلبات (DELIVERED/confirmed/returned...)
+    // بتتخزّن كـ eventType من sendOrderStatusNotification مش بتبدأ بـ ORDER_،
+    // فكانت بتقع في الـ default وبيتخلق منها قالب ميتا MARKETING بدل UTILITY
+    // (مثال حقيقي: حالة "delivered" → قالب deliveredmsj72rwc).
+    ORDER_STATUS_TO_EVENT_TYPE[evt] !== undefined
   );
 }
 const PERSISTED_CATEGORY_FALLBACKS = {

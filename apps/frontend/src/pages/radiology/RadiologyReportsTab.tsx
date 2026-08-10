@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Loader2, Pencil, RefreshCw, X as XMarkIcon } from "lucide-react";
+import { FileText, Loader2, Pencil, Printer, RefreshCw, X as XMarkIcon } from "lucide-react";
+import tokenManager from "../../utils/tokenManager";
 import {
-  api, fetchJson, RadiologyReport, RadiologyReportStatusMap, RadiologyStudy,
+  api, fetchJson, getCompanyId, RadiologyReport, RadiologyReportStatusMap, RadiologyReportTemplate, RadiologyStudy,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 
@@ -38,6 +39,8 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
   const [report, setReport] = useState<RadiologyReport | null>(null);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [templates, setTemplates] = useState<RadiologyReportTemplate[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -46,6 +49,8 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
         const r = await fetchJson<RadiologyReport>(api(`studies/${studyId}/report`));
         setReport(r);
         setText(r?.reportText || "");
+        const tpls = await fetchJson<RadiologyReportTemplate[]>(api("report-templates"));
+        setTemplates(tpls || []);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "فشل تحميل التقرير");
         onClose();
@@ -54,6 +59,11 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
       }
     })();
   }, [studyId]);
+
+  const applyTemplate = (id: string) => {
+    const tpl = templates.find(t => t.id === id);
+    if (tpl) setText(tpl.body);
+  };
 
   const save = async () => {
     if (saving) return;
@@ -73,6 +83,29 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
     }
   };
 
+  const printPdf = async () => {
+    if (printing) return;
+    setPrinting(true);
+    try {
+      const headers = tokenManager.createAuthHeaders({});
+      const cid = getCompanyId();
+      if (cid) headers["X-Company-Id"] = cid;
+      const res = await fetch(api(`studies/${studyId}/report/pdf`), { headers });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        throw new Error(j?.error || "فشل إنشاء PDF");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل إنشاء PDF");
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
@@ -87,8 +120,20 @@ export function RadiologyReportModal({ studyId, onClose, onSaved }: { studyId: s
             {report?.reportStatus ? (
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">حالة التقرير: {RadiologyReportStatusMap[report.reportStatus]?.label ?? report.reportStatus}</p>
             ) : null}
+            {templates.length > 0 ? (
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">قوالب جاهزة</label>
+                <select className={MODAL_INPUT_CLS} value="" onChange={e => applyTemplate(e.target.value)}>
+                  <option value="">اختر قالباً لاستخدامه...</option>
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            ) : null}
             <textarea className={`${MODAL_INPUT_CLS} min-h-[240px] resize-y`} value={text} onChange={e => setText(e.target.value)} placeholder="نص التقرير الطبي..." />
             <div className="flex justify-end gap-3 mt-6">
+              <button onClick={printPdf} disabled={printing} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                {printing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}طباعة PDF
+              </button>
               <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
               <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}حفظ التقرير

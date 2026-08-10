@@ -120,4 +120,20 @@ describe('isOrderCategory', () => {
     expect(isOrderCategory('HR', 'ATTENDANCE_REMINDER')).toBe(false);
     expect(isOrderCategory('LOYALTY', 'LOYALTY_POINTS')).toBe(false);
   });
+
+  test('🔴 regression: recognizes RAW order status codes as order events', () => {
+    expect(isOrderCategory('MARKETING', 'delivered')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'DELIVERED')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'confirmed')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'CONFIRMED')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'RETURNED')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'out_for_delivery')).toBe(true);
+    expect(isOrderCategory('MARKETING', 'cancelled')).toBe(true);
+  });
+
+  test('🔴 regression: raw NON-order statuses stay non-order', () => {
+    expect(isOrderCategory('MARKETING', 'NEWSLETTER_SUBSCRIBED')).toBe(false);
+    expect(isOrderCategory('MARKETING', 'LOYALTY_POINTS')).toBe(false);
+    expect(isOrderCategory('MARKETING', 'LEAVE_APPROVED')).toBe(false);
+  });
 });

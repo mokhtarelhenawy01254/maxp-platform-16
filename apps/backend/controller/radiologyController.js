@@ -692,6 +692,238 @@ const markDelivered = async (req, res) => {
   }
 };
 
+// ==================== REPORT PDF ====================
+
+const getStudyReportPdf = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const study = await prisma.radiologyStudy.findFirst({ where: { id, companyId }, include: { report: true } });
+    if (!study) return res.status(404).json({ success: false, error: 'الدراسة غير موجودة' });
+
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+    const { generateStudyReportPdf } = require('../services/radiologyPdfService');
+    const pdfBuffer = await generateStudyReportPdf(study, company);
+
+    const filename = `report-${(study.studyNumber || study.id).replace(/[^a-zA-Z0-9-]/g, '')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating radiology report PDF:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء PDF التقرير' });
+  }
+};
+
+// ==================== CONTRACTS ====================
+const CONTRACT_DISCOUNT_TYPES = ['PERCENTAGE', 'CUSTOM', 'NONE'];
+
+const clampPercent = (value) => {
+  if (value === undefined || value === null || value === '') return 0;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, n));
+};
+
+const listContracts = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { search, includeInactive } = req.query;
+    const where = { companyId };
+    if (includeInactive !== 'true') where.isActive = true;
+    if (search && String(search).trim()) {
+      const term = String(search).trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { region: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const contracts = await getSharedPrismaClient().radiologyContract.findMany({ where, orderBy: { name: 'asc' } });
+    res.json({ success: true, data: contracts });
+  } catch (error) {
+    console.error('Error fetching radiology contracts:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب التعاقدات' });
+  }
+};
+
+const createContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { name, region, governorate, discountType, discountPercent, externalSample } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم التعاقد مطلوب' });
+
+    const type = String(discountType || 'PERCENTAGE').trim().toUpperCase();
+    if (!CONTRACT_DISCOUNT_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع الخصم غير صالح' });
+
+    const contract = await getSharedPrismaClient().radiologyContract.create({
+      data: {
+        companyId,
+        name: String(name).trim(),
+        region: normalizeText(region),
+        governorate: normalizeText(governorate),
+        discountType: type,
+        discountPercent: clampPercent(discountPercent),
+        externalSample: normalizeBool(externalSample, false),
+      },
+    });
+
+    res.json({ success: true, data: contract });
+  } catch (error) {
+    console.error('Error creating radiology contract:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء التعاقد' });
+  }
+};
+
+const updateContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyContract.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'التعاقد غير موجود' });
+
+    const data = {};
+    if (body.name !== undefined) {
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم التعاقد مطلوب' });
+      data.name = String(body.name).trim();
+    }
+    if (body.region !== undefined) data.region = normalizeText(body.region);
+    if (body.governorate !== undefined) data.governorate = normalizeText(body.governorate);
+    if (body.discountType !== undefined) {
+      const type = String(body.discountType).trim().toUpperCase();
+      if (!CONTRACT_DISCOUNT_TYPES.includes(type)) return res.status(400).json({ success: false, error: 'نوع الخصم غير صالح' });
+      data.discountType = type;
+    }
+    if (body.discountPercent !== undefined) data.discountPercent = clampPercent(body.discountPercent);
+    if (body.externalSample !== undefined) data.externalSample = normalizeBool(body.externalSample, false);
+    if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
+
+    const contract = await prisma.radiologyContract.update({ where: { id }, data });
+    res.json({ success: true, data: contract });
+  } catch (error) {
+    console.error('Error updating radiology contract:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث التعاقد' });
+  }
+};
+
+const deleteContract = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyContract.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'التعاقد غير موجود' });
+
+    const contract = await prisma.radiologyContract.update({ where: { id }, data: { isActive: false } });
+    res.json({ success: true, message: 'تم حذف التعاقد', data: contract });
+  } catch (error) {
+    console.error('Error deleting radiology contract:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف التعاقد' });
+  }
+};
+
+// ==================== REPORT TEMPLATES ====================
+
+const listReportTemplates = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { includeInactive } = req.query;
+    const where = { companyId };
+    if (includeInactive !== 'true') where.isActive = true;
+
+    const templates = await getSharedPrismaClient().radiologyReportTemplate.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
+    res.json({ success: true, data: templates });
+  } catch (error) {
+    console.error('Error fetching radiology report templates:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب قوالب التقارير' });
+  }
+};
+
+const createReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { name, body } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ success: false, error: 'اسم القالب مطلوب' });
+    if (!body || !String(body).trim()) return res.status(400).json({ success: false, error: 'نص القالب مطلوب' });
+
+    const template = await getSharedPrismaClient().radiologyReportTemplate.create({
+      data: { companyId, name: String(name).trim(), body: String(body).trim() },
+    });
+    res.json({ success: true, data: template });
+  } catch (error) {
+    console.error('Error creating radiology report template:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء قالب التقرير' });
+  }
+};
+
+const updateReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyReportTemplate.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'القالب غير موجود' });
+
+    const data = {};
+    if (body.name !== undefined) {
+      if (!String(body.name).trim()) return res.status(400).json({ success: false, error: 'اسم القالب مطلوب' });
+      data.name = String(body.name).trim();
+    }
+    if (body.body !== undefined) {
+      if (!String(body.body).trim()) return res.status(400).json({ success: false, error: 'نص القالب مطلوب' });
+      data.body = String(body.body).trim();
+    }
+    if (body.isActive !== undefined) data.isActive = normalizeBool(body.isActive, true);
+
+    const template = await prisma.radiologyReportTemplate.update({ where: { id }, data });
+    res.json({ success: true, data: template });
+  } catch (error) {
+    console.error('Error updating radiology report template:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث القالب' });
+  }
+};
+
+const deleteReportTemplate = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.radiologyReportTemplate.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'القالب غير موجود' });
+
+    const template = await prisma.radiologyReportTemplate.update({ where: { id }, data: { isActive: false } });
+    res.json({ success: true, message: 'تم حذف القالب', data: template });
+  } catch (error) {
+    console.error('Error deleting radiology report template:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف القالب' });
+  }
+};
+
 module.exports = {
   RADIOLOGY_STUDY_CHAIN,
   RADIOLOGY_REPORT_CHAIN,
@@ -714,4 +946,13 @@ module.exports = {
   upsertStudyReport,
   advanceReport,
   markDelivered,
+  getStudyReportPdf,
+  listContracts,
+  createContract,
+  updateContract,
+  deleteContract,
+  listReportTemplates,
+  createReportTemplate,
+  updateReportTemplate,
+  deleteReportTemplate,
 };

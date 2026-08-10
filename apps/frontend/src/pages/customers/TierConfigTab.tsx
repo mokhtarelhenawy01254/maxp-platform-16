@@ -12,10 +12,51 @@ import {
   Trash2,
   Pencil,
   X,
-  ChevronDown,
   ChevronUp,
   Zap,
+  BarChart3,
+  Users,
+  Clock,
+  Coins,
+  CheckCircle,
+  Info,
 } from "lucide-react";
+
+// بطاقة إحصائية صغيرة لقسم تحليل بيانات النظام
+function AnalyticsStat({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: number;
+  sub?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: "amber" | "indigo" | "emerald" | "purple" | "sky" | "gray";
+}) {
+  const colorCls: Record<string, string> = {
+    amber: "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400",
+    indigo: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400",
+    emerald: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400",
+    purple: "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400",
+    sky: "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400",
+    gray: "bg-gray-100 dark:bg-gray-700/40 text-gray-600 dark:text-gray-400",
+  };
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/60">
+      <div className="flex items-center justify-between mb-2">
+        <span className={`h-8 w-8 rounded-lg inline-flex items-center justify-center shrink-0 ${colorCls[color]}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</span>
+      </div>
+      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-snug">{label}</p>
+      {sub && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{sub}</p>}
+    </div>
+  );
+}
 
 interface TierItem {
   id: string;
@@ -52,6 +93,35 @@ interface CustomerOverride {
   tierMethod?: string | null;
   tierBenefits?: any;
 }
+
+interface AutoDiscountAnalytics {
+  system: "AUTO_DISCOUNT";
+  totalDeliveredOrders: number;
+  appliedCustomers: number;
+  waitingForDelivery: number;
+  activeVouchers: number;
+  usedVouchers: number;
+  convertedVouchers: number;
+  expiredVouchers: number;
+  preActivationCustomers: number;
+}
+
+interface TierAnalytics {
+  id: string;
+  name: string;
+  nameAr?: string;
+  color: string;
+  priority: number;
+  customersCount: number;
+}
+
+interface TiersAnalytics {
+  system: "TIERS";
+  totalEnrolled: number;
+  tiers: TierAnalytics[];
+}
+
+type SystemAnalytics = AutoDiscountAnalytics | TiersAnalytics | null;
 
 const METHODS = [
   { value: "POINTS", label: "بالنقاط", hint: "الحدود بالنقاط" },
@@ -229,7 +299,28 @@ const TierConfigTab: React.FC = () => {
       setActiveSystem(data.loyaltySystem);
       setSystem(data.loyaltySystem);
     }
-  };
+  };  // ── تحليلات نظام الولاء الحالي (خصم تلقائي أو مستويات) ──
+  const [analytics, setAnalytics] = useState<SystemAnalytics>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const loadAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await apiClient.get("/hr/customer-loyalty/system-analytics");
+      setAnalytics((res.data?.data as SystemAnalytics) || null);
+    } catch (e) {
+      console.error("Error loading loyalty analytics:", e);
+      setAnalytics(null);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSystem) {
+      loadAnalytics();
+    }
+  }, [activeSystem, loadAnalytics]);
 
 
   const saveDefaultMethod = async () => {
@@ -428,6 +519,99 @@ const TierConfigTab: React.FC = () => {
           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${activeSystem === "AUTO_DISCOUNT" ? "bg-amber-500" : "bg-indigo-600"} text-white`}>
             <span className="h-1.5 w-1.5 rounded-full bg-white" /> مفعّل
           </span>
+        </div>
+      )}
+
+      {/* تحليلات النظام المفعّل */}
+      {activeSystem && (
+        <div className={`rounded-lg border p-4 ${activeSystem === "AUTO_DISCOUNT" ? "border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-900/10" : "border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-gray-500" />
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">تحليل بيانات {activeSystem === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "المستويات"}</h4>
+            </div>
+            {analyticsLoading && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+          </div>
+
+          {analyticsLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: activeSystem === "AUTO_DISCOUNT" ? 6 : 3 }).map((_, i) => (
+                <div key={i} className="h-20 rounded-lg bg-gray-100 dark:bg-gray-700/40 animate-pulse" />
+              ))}
+            </div>
+          ) : analytics?.system === "AUTO_DISCOUNT" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <AnalyticsStat
+                label="العملاء اللي اتطبق عليهم النظام"
+                value={analytics.appliedCustomers ?? 0}
+                sub={`${analytics.totalDeliveredOrders ?? 0} أوردر مسلّم`}
+                icon={Users}
+                color="amber"
+              />
+              <AnalyticsStat
+                label="في انتظار استلام الأوردر"
+                value={analytics.waitingForDelivery ?? 0}
+                sub="الخصم هيتفعل بعد التسليم"
+                icon={Clock}
+                color="indigo"
+              />
+              <AnalyticsStat
+                label="في مرحلة الخصم (كوبون فعّال)"
+                value={analytics.activeVouchers ?? 0}
+                icon={Zap}
+                color="emerald"
+              />
+              <AnalyticsStat
+                label="اتحوّل لكاش باك"
+                value={analytics.convertedVouchers ?? 0}
+                sub="كوبون انتهى من غير استخدام"
+                icon={Coins}
+                color="purple"
+              />
+              <AnalyticsStat
+                label="كوبونات مستخدمة فعلياً"
+                value={analytics.usedVouchers ?? 0}
+                icon={CheckCircle}
+                color="sky"
+              />
+              <AnalyticsStat
+                label="طلبات قبل التفعيل (متفعّلش النظام عليهم)"
+                value={analytics.preActivationCustomers ?? 0}
+                sub="عملوا أوردر مسلّم قبل تفعيل النظام"
+                icon={Info}
+                color="gray"
+              />
+            </div>
+          ) : analytics?.system === "TIERS" ? (
+            <div>
+              <div className="mb-3 flex items-center gap-3">
+                <div className="px-3 py-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                  <p className="text-xl font-bold">{analytics.totalEnrolled ?? 0}</p>
+                  <p className="text-xs">إجمالي العملاء المسجلين في نظام الولاء</p>
+                </div>
+              </div>
+              {(analytics.tiers || []).length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {analytics.tiers.map((tier: TierAnalytics) => (
+                    <div key={tier.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/60">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="h-6 w-6 rounded-lg inline-flex items-center justify-center shrink-0" style={{ backgroundColor: (tier.color || "#6366f1") + "20", color: tier.color }}>
+                          <Crown className="h-3.5 w-3.5" />
+                        </span>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{tier.nameAr || tier.name}</p>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{tier.customersCount ?? 0}</p>
+                      <p className="text-xs text-gray-500">عميل في هذا المستوى</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-3 text-center">لا توجد مستويات بعد — أضف مستوى لعرض تحليل العملاء.</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">لا توجد بيانات تحليل بعد.</p>
+          )}
         </div>
       )}
 

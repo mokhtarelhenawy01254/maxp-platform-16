@@ -6,7 +6,7 @@
  * Usage: node scripts/check_syntax.js
  */
 
-const { spawnSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -39,7 +39,7 @@ const EXCLUDED_FILES = new Set([
 ]);
 
 const run = (command, args, options = {}) =>
-  spawnSync(command, args, {
+  spawn(command, args, {
     cwd: backendRoot,
     encoding: 'utf8',
     stdio: 'pipe',
@@ -79,29 +79,54 @@ console.log(`Checking syntax for ${files.length} backend JS file(s)...`);
 
 const failures = [];
 
-for (const absoluteFile of files) {
-  const relativeFile = path.relative(backendRoot, absoluteFile);
-  const result = run(process.execPath, ['--check', absoluteFile]);
+// 🚀 Parallel syntax check — spawning `node --check` per file is the hot path
+// (was ~25s sequential on the runner + again on the server). A bounded pool
+// keeps it fast without exhausting CPU. Order of failures is not guaranteed.
+const POOL_SIZE = Math.min(16, Math.max(4, Math.floor(files.length / 8)));
 
-  if (result.status === 0) {
-    continue;
-  }
-
-  failures.push(relativeFile);
-  console.error(`FAIL ${relativeFile}`);
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
+function checkFile(absoluteFile) {
+  return new Promise((resolve) => {
+    const relativeFile = path.relative(backendRoot, absoluteFile);
+    const child = run(process.execPath, ['--check', absoluteFile]);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      failures.push(relativeFile);
+      console.error(`FAIL ${relativeFile}`);
+      if (stdout) process.stdout.write(stdout);
+      if (stderr) process.stderr.write(stderr);
+      resolve();
+    });
+  });
 }
 
-if (failures.length > 0) {
-  console.error(
-    `Syntax check FAILED for ${failures.length} file(s) out of ${files.length}. ` +
-      `Refusing to proceed — a syntax error in production would crash the backend.`
-  );
-  for (const file of failures) {
-    console.error(`  - ${file}`);
+(async () => {
+  let cursor = 0;
+  async function worker() {
+    while (cursor < files.length) {
+      const current = cursor++;
+      await checkFile(files[current]);
+    }
   }
-  process.exit(1);
-}
 
-console.log(`All ${files.length} backend files passed syntax check.`);
+  await Promise.all(Array.from({ length: POOL_SIZE }, worker));
+
+  if (failures.length > 0) {
+    console.error(
+      `Syntax check FAILED for ${failures.length} file(s) out of ${files.length}. ` +
+        `Refusing to proceed — a syntax error in production would crash the backend.`
+    );
+    for (const file of failures) {
+      console.error(`  - ${file}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`All ${files.length} backend files passed syntax check.`);
+})();
