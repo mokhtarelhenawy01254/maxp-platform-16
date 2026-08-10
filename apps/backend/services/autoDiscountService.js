@@ -396,8 +396,7 @@ async function getCustomerAutoDiscountSummary({ customerId, companyId, settings 
 /**
  * إثراء قائمة عملاء بحالة الخصم (AVAILABLE / PRE_ACTIVATION) لصفحة قائمة العملاء.
  * بيبقى null لو نظام الخصم التلقائي مش مفعّل أو مفيش حالة.
- */
-async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
+ */async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
   if (!Array.isArray(customers) || customers.length === 0) return customers;
   const settings = await getSettings(companyId);
   if (settings.loyaltySystem !== 'AUTO_DISCOUNT' || settings.enabled === false) {
@@ -439,6 +438,78 @@ async function enrichCustomersWithAutoDiscountStatus(companyId, customers) {
   }));
 }
 
+/**
+ * Backfill: إصدار كوبونات لأي أوردر مسلّم قديم لسه مفيش ليه كوبون
+ * (بسبب مشاكل سابقة/خطأ جلب بيانات/نظام موقوف لفترة).
+ * بيضمن إن النظام "يحسب تلقائياً ويتفعل" للأوردرات المسلّمة الناقصة.
+ * مرشح: الأوردر المسلّم بعد تاريخ التفعيل ومفيش له كوبون أصلاً.
+ */
+async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
+  const prisma = getSharedPrismaClient();
+  if (!companyId) return { processed: 0, issued: 0, skipped: 0 };
+
+  const active = await isAutoDiscountActive(companyId);
+  if (!active) return { processed: 0, issued: 0, skipped: 0, reason: 'system_off' };
+
+  const settings = await getSettings(companyId);
+  const activatedAt = await getLoyaltyActivatedAt(companyId, settings);
+
+  // الأوردرات المسلّمة
+  const delivered = await prisma.order.findMany({
+    where: {
+      companyId,
+      status: 'DELIVERED',
+      customerId: { not: null },
+      ...(activatedAt ? { createdAt: { gte: activatedAt } } : {})
+    },
+    orderBy: { createdAt: 'asc' },
+    take: limit,
+    select: { id: true, orderNumber: true, customerId: true, total: true, createdAt: true }
+  });
+
+  if (delivered.length === 0) return { processed: 0, issued: 0, skipped: 0 };
+
+  // الأوردرات اللي ليها كوبون أصلاً
+  const withVoucher = await prisma.customerLoyaltyVoucher.findMany({
+    where: { companyId, sourceOrderId: { in: delivered.map(o => o.id) } },
+    select: { sourceOrderId: true }
+  });
+  const withVoucherIds = new Set(withVoucher.map(v => v.sourceOrderId));
+
+  let issued = 0;
+  let skipped = 0;
+  for (const order of delivered) {
+    if (withVoucherIds.has(order.id)) { skipped++; continue; }
+
+    const percent = Number(settings.discountPercent || 10);
+    const amount = (Number(order.total || 0) * percent) / 100;
+    const expiresAt = new Date(Date.now() + (Number(settings.validityDays || 3) * 24 * 60 * 60 * 1000));
+
+    try {
+      await prisma.customerLoyaltyVoucher.create({
+        data: {
+          companyId,
+          customerId: order.customerId,
+          sourceOrderId: order.id,
+          orderNumber: order.orderNumber,
+          percent,
+          amount,
+          expiresAt
+        }
+      });
+      issued++;
+    } catch (error) {
+      console.error(`❌ [AUTO-DISCOUNT-BACKFILL] Failed for order ${order.orderNumber}:`, error.message);
+      skipped++;
+    }
+  }
+
+  if (issued > 0) {
+    console.log(`✅ [AUTO-DISCOUNT-BACKFILL] Issued ${issued} vouchers for company ${companyId}`);
+  }
+  return { processed: delivered.length, issued, skipped };
+}
+
 module.exports = {
   DEFAULT_SETTINGS,
   getSettings,
@@ -455,5 +526,6 @@ module.exports = {
   getCustomerAutoDiscountStatus,
   getCustomerAutoDiscountSummary,
   mapVoucherToPublic,
-  enrichCustomersWithAutoDiscountStatus
+  enrichCustomersWithAutoDiscountStatus,
+  backfillMissingVouchers
 };
