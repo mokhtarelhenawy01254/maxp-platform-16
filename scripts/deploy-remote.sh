@@ -238,13 +238,6 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   echo "📦 Extracting backend files from tarball..."
   # Keep the current backend running during file sync/preparation.
   # We only switch/reload at the very end to minimize production downtime.
-  
-  # Save uploads folder if it exists in backend2 (preserve user uploads)
-  if [ -d "/var/www/backend2/uploads" ]; then
-    echo "💾 Saving uploads folder from backend2..."
-    sudo rm -rf "$BACKEND_UPLOADS_BACKUP"
-    sudo cp -r /var/www/backend2/uploads "$BACKEND_UPLOADS_BACKUP"
-  fi
 
   # Save .env if it exists in backend2
   if [ -f "/var/www/backend2/.env" ]; then
@@ -255,6 +248,7 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   rm -rf "$DEPLOY_STAGING/backend_extract"
   mkdir -p "$DEPLOY_STAGING/backend_extract"
   tar -xzf "$DEPLOY_STAGING/backend.tar.gz" -C "$DEPLOY_STAGING/backend_extract"
+  # uploads is preserved by --exclude uploads, so no backup/restore is needed.
   sudo rsync -a --delete \
     --exclude uploads \
     --exclude logs \
@@ -262,9 +256,10 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     --exclude node_modules \
     --exclude prisma/generated \
     --exclude data/facebook-oauth-config.json \
+    --chown="$USER:$USER" \
     "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
   sudo mkdir -p /var/www/backend2/logs
-  sudo chown -R $USER:$USER /var/www/backend2
+  sudo chown "$USER:$USER" /var/www/backend2 /var/www/backend2/logs
   
   # Restore .env strategy: backup first (preserves real secrets), then fallback to template
   if [ -f "/tmp/backend_env_backup.env" ]; then
@@ -272,6 +267,7 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   elif [ -f "/var/www/backend2/.env.production" ]; then
     sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
   fi
+  sudo chown "$USER:$USER" /var/www/backend2/.env 2>/dev/null || true
 
   # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
   # This ensures BackendClient tools (offers_list_active, etc.) can authenticate
@@ -296,12 +292,6 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
   fi
 
-              # Restore uploads
-  if [ -d "$BACKEND_UPLOADS_BACKUP" ]; then
-    sudo rsync -a "$BACKEND_UPLOADS_BACKUP/" /var/www/backend2/uploads/
-    sudo rm -rf "$BACKEND_UPLOADS_BACKUP"
-  fi
-  
   echo "✅ Backend extracted and restored successfully"
 elif [ -d "$DEPLOY_STAGING/backend" ]; then
   echo "📦 Moving backend files from staging directory..."
@@ -398,9 +388,10 @@ echo "✅ Server-side backend syntax gate passed."
 echo "📦 Installing backend production dependencies on server..."
 cd /var/www/backend2
 if [ -f package-lock.json ]; then
-  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev
+  # --prefer-offline: npm cache is preserved between deploys now, so skip re-downloading unchanged packages
+  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev --prefer-offline
 else
-  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
+  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev --prefer-offline
 fi
  
 # NOTE: Server-side npm/prisma steps restored for efficiency.
@@ -487,16 +478,21 @@ echo "✅ Database schema synchronized with PostgreSQL"
 
 # Step 7.5: Sync file-defined marketplace apps/bundles into DB before the app boots.
 # This keeps production (CATALOG_SOURCE=db) from hiding newly shipped catalog entries.
-echo "🧩 Syncing missing marketplace catalog entries..."
-NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
-    echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
-    exit 1
-}
+# Skipped when the workflow already determined no catalog files changed (saves ~30s).
+if [ "${CATALOG_CHANGED:-true}" = "true" ]; then
+  echo "🧩 Syncing missing marketplace catalog entries..."
+  NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
+      echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
+      exit 1
+  }
 
-echo "🧹 Deactivating deprecated marketplace apps..."
-NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
-    echo "⚠️ Deprecated app deactivation had issues, continuing..."
-}
+  echo "🧹 Deactivating deprecated marketplace apps..."
+  NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
+      echo "⚠️ Deprecated app deactivation had issues, continuing..."
+  }
+else
+  echo "ℹ️ Skipping marketplace catalog sync (no catalog files changed)"
+fi
 
 # Restart services
 echo "🔄 Restarting services..."

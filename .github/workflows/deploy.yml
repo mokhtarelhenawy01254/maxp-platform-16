@@ -28,6 +28,7 @@ jobs:
       cancel-in-progress: true
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
+      catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
 
     steps:
       - name: Checkout code
@@ -115,6 +116,23 @@ jobs:
             echo "fe-needed=true" >> "$GITHUB_OUTPUT"
           else
             echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Marketplace catalog files feed the DB via catalog:sync-target; only run it
+      # when they change (it still runs on every workflow_dispatch).
+      - name: Check if Marketplace Catalog Changed
+        id: cat-check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cat-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Cache Backend node_modules
@@ -396,6 +414,7 @@ jobs:
         env:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
+          CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -404,7 +423,7 @@ jobs:
           debug: true
           timeout: 60m
           command_timeout: 50m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED
           script: |
             set -e
             sudo -n true || {
