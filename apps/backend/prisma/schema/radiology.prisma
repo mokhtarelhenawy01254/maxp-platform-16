@@ -37,6 +37,8 @@ model RadiologyStudy {
   createdBy         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  images            RadiologyStudyImage[]
+  report            RadiologyReport?
 }
 
 model RadiologyStudyImage {
@@ -51,6 +53,7 @@ model RadiologyStudyImage {
   metadataJson      String?    // JSON string of parsed DICOM tags
   data              Bytes      // raw DICOM file bytes
   createdAt         DateTime @default(now())
+  study             RadiologyStudy @relation(fields: [studyId], references: [id])
 }
 
 model RadiologyReport {
@@ -62,4 +65,5 @@ model RadiologyReport {
   signedAt     DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  study        RadiologyStudy @relation(fields: [studyId], references: [id])
 }
