@@ -800,6 +800,161 @@ async function getCustomerPortalSummary(req, res) {
   }
 }
 
+async function getSystemSettings(req, res) {
+  try {
+    const { companyId } = req.user;
+    const settings = await autoDiscountService.getSettings(companyId);
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('❌ Error getting loyalty system settings:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات النظام' });
+  }
+}
+
+async function updateSystemSettings(req, res) {
+  try {
+    const { companyId } = req.user;
+    const settings = await autoDiscountService.updateSettings(companyId, req.body);
+    res.json({ success: true, data: settings, message: 'تم تحديث نظام الولاء بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating loyalty system settings:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات النظام' });
+  }
+}
+
+/**
+ * تحليلات نظام الولاء الحالي (الخصم التلقائي أو المستويات)
+ * GET /api/v1/hr/customer-loyalty/system-analytics
+ * يعتمد على الـ loyaltySystem المفعّل للشركة:
+ *  - AUTO_DISCOUNT: عدد العملاء بالكوبونات (ACTIVE/USED/CONVERTED/EXPIRED)،
+ *    وعدد الأوردرات المسلّمة، والعملاء اللي طلبوا قبل التفعيل (لهم أوردر مسلّم بس مفيش كوبون)
+ *  - TIERS: عدد العملاء في كل مستوى (من CustomerLoyaltyRecord.tierId)
+ */
+async function getSystemAnalytics(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+
+    const settings = await autoDiscountService.getSettings(companyId);
+    const loyaltySystem = settings?.loyaltySystem || 'TIERS';
+    const activatedAt = settings?.loyaltyActivatedAt
+      ? new Date(settings.loyaltyActivatedAt)
+      : null;
+
+    let data;
+
+    if (loyaltySystem === 'AUTO_DISCOUNT') {
+      // ── عدّ الكوبونات حسب الحالة ──
+      const [activeVouchers, usedVouchers, convertedVouchers, expiredVouchers, totalDeliveredOrders] =
+        await Promise.all([
+          prisma.customerLoyaltyVoucher.count({
+            where: { companyId, status: 'ACTIVE' }
+          }),
+          prisma.customerLoyaltyVoucher.count({
+            where: { companyId, status: 'USED' }
+          }),
+          prisma.customerLoyaltyVoucher.count({
+            where: { companyId, status: 'CONVERTED' }
+          }),
+          prisma.customerLoyaltyVoucher.count({
+            where: { companyId, status: 'EXPIRED' }
+          }),
+          prisma.order.count({
+            where: { companyId, status: 'DELIVERED' }
+          })
+        ]);
+
+      // العملاء اللي اتعملهم كوبون على الأقل (اتطبق عليهم النظام)
+      const customersWithVouchers = await prisma.customerLoyaltyVoucher.findMany({
+        where: { companyId },
+        select: { customerId: true },
+        distinct: ['customerId']
+      });
+      const appliedCustomers = customersWithVouchers.length;
+
+      // العملاء اللي طلبوا (أوردر مسلّم) لكن قبل التفعيل — مفيش كوبون ليهم
+      const customersWithDeliveredOrder = await prisma.order.findMany({
+        where: { companyId, status: 'DELIVERED' },
+        select: { customerId: true },
+        distinct: ['customerId']
+      });
+      const deliveredCustomerIds = customersWithDeliveredOrder.map((c) => c.customerId);
+
+      let preActivationCustomers = 0;
+      if (activatedAt && deliveredCustomerIds.length > 0) {
+        const ordersBeforeActivation = await prisma.order.findMany({
+          where: {
+            companyId,
+            status: 'DELIVERED',
+            customerId: { in: deliveredCustomerIds },
+            createdAt: { lt: activatedAt }
+          },
+          select: { customerId: true },
+          distinct: ['customerId']
+        });
+        const preActivationIds = ordersBeforeActivation.map((c) => c.customerId);
+        const withVoucherIds = new Set(customersWithVouchers.map((c) => c.customerId));
+        preActivationCustomers = preActivationIds.filter((id) => !withVoucherIds.has(id)).length;
+      }
+
+      data = {
+        system: 'AUTO_DISCOUNT',
+        totalDeliveredOrders,
+        appliedCustomers,
+        waitingForDelivery: Math.max(0, totalDeliveredOrders - (activeVouchers + usedVouchers + convertedVouchers)),
+        activeVouchers,
+        usedVouchers,
+        convertedVouchers,
+        expiredVouchers,
+        preActivationCustomers
+      };
+    } else {
+      // ── نظام المستويات: عدد العملاء في كل مستوى ──
+      const tiers = await prisma.customerLoyaltyTier.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          name: true,
+          nameAr: true,
+          color: true,
+          priority: true,
+          _count: {
+            select: {
+              customerLoyaltyRecords: {
+                where: { companyId, status: 'ACTIVE' }
+              }
+            }
+          }
+        },
+        orderBy: { priority: 'asc' }
+      });
+
+      // العملاء المسجلين في برامج الولاء (بدون مستوى محدد) + إجمالي العملاء
+      const enrolledCustomers = await prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE' }
+      });
+
+      data = {
+        system: 'TIERS',
+        totalEnrolled: enrolledCustomers,
+        tiers: tiers.map((t) => ({
+          id: t.id,
+          name: t.name,
+          nameAr: t.nameAr,
+          color: t.color,
+          priority: t.priority,
+          customersCount: t._count.customerLoyaltyRecords
+        }))
+      };
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error getting loyalty system analytics:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب تحليلات النظام' });
+  }
+}
+
 module.exports = {
   getPrograms,
   getProgramById,
@@ -823,26 +978,9 @@ module.exports = {
   updateCashbackSettings,
   getNotificationSchedule,
   updateNotificationSchedule,
-  getSystemSettings: async (req, res) => {
-    try {
-      const { companyId } = req.user;
-      const settings = await autoDiscountService.getSettings(companyId);
-      res.json({ success: true, data: settings });
-    } catch (error) {
-      console.error('❌ Error getting loyalty system settings:', error);
-      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات النظام' });
-    }
-  },
-  updateSystemSettings: async (req, res) => {
-    try {
-      const { companyId } = req.user;
-      const settings = await autoDiscountService.updateSettings(companyId, req.body);
-      res.json({ success: true, data: settings, message: 'تم تحديث نظام الولاء بنجاح' });
-    } catch (error) {
-      console.error('❌ Error updating loyalty system settings:', error);
-      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات النظام' });
-    }
-  },
+  getSystemSettings,
+  updateSystemSettings,
+  getSystemAnalytics,
   processExpiredVouchers: async (req, res) => {
     try {
       const result = await autoDiscountService.convertExpiredVouchers();

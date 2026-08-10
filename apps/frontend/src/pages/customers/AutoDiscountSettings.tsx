@@ -114,15 +114,6 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
                 />
                 <p className="text-[10px] text-gray-400 mt-1">الأوردرات اللي اتسلمت قبل التاريخ ده مش بتاخد كوبون خصم وبتتوصف "قبل تفعيل النظام".</p>
               </div>
-              <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" checked={Boolean(cfg.convertExpiredToCashback)} onChange={(e) => set("convertExpiredToCashback", e.target.checked)} className="h-4 w-4 accent-amber-500" />
-                  تحويل الكوبون المنتهي لكاش باك
-                </label>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-gray-500">قيمة النقطة عند الاستبدال (ج.م لكل نقطة)</label>
                 <input type="number" min="0.01" step="0.01" value={cfg.pointsRedemptionValue} onChange={(e) => set("pointsRedemptionValue", Number(e.target.value))} className={inputCls + " mt-1"} />
@@ -130,7 +121,24 @@ const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) 
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+              <label className="flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={Boolean(cfg.convertExpiredToCashback)} onChange={(e) => set("convertExpiredToCashback", e.target.checked)} className="h-4 w-4 accent-amber-500 mt-0.5" />
+                <span>
+                  تحويل الكوبون المنتهي لكاش باك
+                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">الكوبون اللي خلصت مدته من غير استخدام بيتحوّل لرصيد كاش باك في محفظة العميل.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={Boolean(cfg.redeemPointsEnabled)} onChange={(e) => set("redeemPointsEnabled", e.target.checked)} className="h-4 w-4 accent-amber-500 mt-0.5" />
+                <span>
+                  استبدال النقاط بالخصم
+                  <span className="block text-[10px] font-normal text-gray-400 mt-0.5">العميل يقدر يستبدل النقاط اللي جمعها بخصم على الأوردر الجاي.</span>
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
               {savedMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{savedMsg}</span>}
               {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
               <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 disabled:opacity-50 whitespace-nowrap">
