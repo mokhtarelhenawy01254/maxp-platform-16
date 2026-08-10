@@ -67,13 +67,15 @@ class PromptCacheService:
         )
 
     async def _create_cached_content(self, instructions: str, ttl: int) -> str:
-        settings = self._settings
-        if not settings.google_api_key:
+        from src.llm.key_resolver import get_active_key
+
+        api_key = await get_active_key("GOOGLE")
+        if not api_key:
             return ""
 
         import google.generativeai as genai
 
-        genai.configure(api_key=settings.google_api_key)
+        genai.configure(api_key=api_key)
 
         try:
             cached = genai.cached_content(

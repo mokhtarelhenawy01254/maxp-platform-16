@@ -4,5 +4,6 @@
   "approval.rejected": "The request has been rejected. The customer will be notified.",
   "error.chat.customer": "Sorry, an error occurred processing your request. Please try again.",
   "error.chat.merchant": "Sorry, an error occurred processing your merchant request. Please try again.",
-  "fallback.default": "I'm sorry, I couldn't process your request at this time."
+  "fallback.default": "I'm sorry, I couldn't process your request at this time.",
+  "chat.agent_paused": "The assistant is temporarily unavailable. Please try again later."
 }

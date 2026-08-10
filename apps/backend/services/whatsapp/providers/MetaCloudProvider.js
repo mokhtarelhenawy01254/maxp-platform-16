@@ -155,6 +155,44 @@ async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
   return response.data?.id || null;
 }
 
+/**
+ * يرفع وسيطاً (صورة/فيديو/مستند) لاستخدامه في HEADER قالب ميتا عبر
+ * Resumable Upload API — ميتا تتطلب الـ handle الناتج في example.header_handle
+ * عند إنشاء/تعديل قالب هيدره من نوع IMAGE|VIDEO|DOCUMENT.
+ *
+ * @returns {Promise<string|null>} الـ handle (h) أو id، أو null عند الفشل
+ */
+async function uploadTemplateMedia(sessionId, fileBuffer, mimetype, filename) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const wabaId = session?.metaWabaId;
+  if (!wabaId) {
+    throw new Error('Missing Meta WABA ID for session');
+  }
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/uploads`;
+
+  const response = await apiCall(() => axios.post(url, fileBuffer, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': mimetype,
+      file_offset: '0',
+      file_length: String(fileBuffer.length),
+      file_type: mimetype,
+      file_name: filename
+    },
+    timeout: 60000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity
+  }));
+
+  return response.data?.h || response.data?.id || null;
+}
+
 async function sendMedia(sessionId, to, media, kind, options = {}) {
   const session = await getSession(sessionId);
   if (!session) {
@@ -375,6 +413,14 @@ function generateComponentExamples(components) {
         return { ...comp, example: { body_text: [examples] } };
       }
     }
+    // HEADER وسائط (IMAGE/VIDEO/DOCUMENT): ميتا تتطلب example.header_handle
+    // من Resumable Upload API عند إنشاء/تعديل القالب — من غيره يرفض القالب.
+    if (comp.type === 'HEADER' && comp.format && comp.format !== 'TEXT') {
+      const mediaHandle = comp.headerHandle || comp.mediaHandle || comp.example?.header_handle?.[0];
+      if (mediaHandle && !comp.example?.header_handle) {
+        return { ...comp, example: { header_handle: [mediaHandle] } };
+      }
+    }
     return comp;
   });
 }
@@ -493,6 +539,7 @@ module.exports = {
   sendText,
   sendMedia,
   uploadMediaFile,
+  uploadTemplateMedia,
   sendLocation,
   sendContacts,
   sendReaction,

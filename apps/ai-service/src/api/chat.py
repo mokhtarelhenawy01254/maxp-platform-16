@@ -171,6 +171,22 @@ async def chat(
             attachments=body.attachments or [],
         )
 
+        # Paused agent → return a friendly notice instead of an empty reply.
+        if outcome.get("paused"):
+            reason = outcome.get("reply_hint")
+            locale = "ar"
+            if reason:
+                pause_msg = f"{t('chat.agent_paused', locale=locale)} ({reason})"
+            else:
+                pause_msg = t("chat.agent_paused", locale=locale)
+            return ChatResponse(
+                status="ok",
+                thread_id=thread_id,
+                reply=pause_msg,
+                tool_calls=[],
+                response_attachments=[],
+            )
+
         reply = sanitize_model_reply(outcome.get("reply", ""))
         tool_results = outcome.get("tool_results") or []
         response_attachments = outcome.get("response_attachments") or []

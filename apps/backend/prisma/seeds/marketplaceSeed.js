@@ -1052,6 +1052,38 @@ async function seedMarketplace() {
         "trialDays": 14
       },
       {
+        "slug": "lab-app",
+        "name": "نظام المعمل",
+        "description": "نظام متكامل لإدارة المعامل: كتالوج الاختبارات والمعايير، الاستقبال وأخذ العينات، إدخال النتائج، مراجعة وتوقيع وتسليم التقارير.",
+        "icon": "🧪",
+        "monthlyPrice": 199,
+        "yearlyPrice": 1990,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"كتالوج الاختبارات والمعايير\",\"القيم المرجعية والوحدات\",\"الاستقبال وأخذ العينات\",\"أوقات الصيام وخصائص المريض\",\"إدخال النتائج والفلاجات\",\"مراجعة وتوقيع التقارير\",\"تسليم النتائج\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "MEDICAL",
+        "trialDays": 14
+      },
+      {
+        "slug": "radiology-app",
+        "name": "نظام الأشعة",
+        "description": "نظام متكامل لإدارة مراكز الأشعة: الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+        "icon": "🩻",
+        "monthlyPrice": 249,
+        "yearlyPrice": 2490,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"دراسات الأشعة\",\"قارئ الصور DICOM\",\"التقارير\",\"الاستقبال\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "MEDICAL",
+        "trialDays": 14
+      },
+      {
         "slug": "forms-app",
         "name": "نماذج التسجيل الذكية",
         "description": "بناء نماذج تسجيل احترافية مع ربط Facebook Pixel. تحويل الزوار إلى عملاء Leads مباشرة في CRM مع تحليلات الزوار ونسبة التحويل.",

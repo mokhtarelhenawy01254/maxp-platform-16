@@ -82,6 +82,16 @@ export interface StorefrontSettings {
     secretKey?: string;
     mode?: string;
   };
+  checkoutAddressSettings?: {
+    mode?: "hybrid" | "ai_parse" | "dropdown";
+    aiEnabled?: boolean;
+    model?: string;
+    confidenceThreshold?: number;
+    showConfirmationToCustomer?: boolean;
+    cacheResults?: boolean;
+    logRawAddress?: boolean;
+    merchantCombobox?: boolean;
+  };
   [key: string]: any;
 }
 

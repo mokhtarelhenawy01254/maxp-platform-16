@@ -124,6 +124,7 @@ class OrderWorkflowService {
             { code: 'READY', name: 'جاهز', color: '#22C55E', sortOrder: 47 },
             { code: 'ON_HOLD_PREP', name: 'تجهيز معلق', color: '#EAB308', sortOrder: 48 },
             { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', color: '#EF4444', sortOrder: 49 },
+            { code: 'SHORTAGE_FAILED', name: 'فشل بسبب العجز', color: '#7C3AED', sortOrder: 495 },
             { code: 'READY_TO_SHIP', name: 'جاهز للشحن', color: '#22C55E', sortOrder: 50 },
             { code: 'SHIPPED', name: 'تم الشحن', color: '#A855F7', sortOrder: 60, notifyCustomer: true },
             { code: 'NOT_SHIPPED', name: 'لم يتم الشحن', color: '#6B7280', sortOrder: 65 },

@@ -240,14 +240,14 @@ export interface OrderStatusDefinition {
 }
 
 export interface OrdersFilters {
-  status: string;
-  paymentStatus: string;
-  sourceType: string;
-  merchantId: string;
-  affiliateId: string;
-  fulfillmentSource: string;
-  merchantOperationStatus: string;
-  merchantSettlementStatus: string;
+  status: string[];
+  paymentStatus: string[];
+  sourceType: string[];
+  merchantId: string[];
+  affiliateId: string[];
+  fulfillmentSource: string[];
+  merchantOperationStatus: string[];
+  merchantSettlementStatus: string[];
   search: string;
   startDate: string;
   endDate: string;
@@ -651,14 +651,14 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
 
 const ORDERS_LIST_STORAGE_KEY = "orders:list:view-state:v1";
 const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
-  status: "",
-  paymentStatus: "",
-  sourceType: "",
-  merchantId: "",
-  affiliateId: "",
-  fulfillmentSource: "",
-  merchantOperationStatus: "",
-  merchantSettlementStatus: "",
+  status: [],
+  paymentStatus: [],
+  sourceType: [],
+  merchantId: [],
+  affiliateId: [],
+  fulfillmentSource: [],
+  merchantOperationStatus: [],
+  merchantSettlementStatus: [],
   search: "",
   startDate: "",
   endDate: "",
@@ -734,23 +734,37 @@ export const getMerchantOperationsTotals = (
   ...(summary?.summary || {}),
 });
 
-const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => ({
-  status: searchParams.get("status") || "",
-  paymentStatus: searchParams.get("paymentStatus") || "",
-  sourceType: searchParams.get("sourceType") || "",
-  merchantId: searchParams.get("merchantId") || "",
-  affiliateId: searchParams.get("affiliateId") || "",
-  fulfillmentSource: searchParams.get("fulfillmentSource") || "",
-  merchantOperationStatus: searchParams.get("merchantOperationStatus") || "",
-  merchantSettlementStatus: searchParams.get("merchantSettlementStatus") || "",
-  search: searchParams.get("search") || "",
+const parseMultiFilterParam = (rawValue: string | null): string[] => {
+  if (!rawValue) return [];
+  return rawValue.split(",").map((s) => s.trim()).filter(Boolean);
+};
+
+const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilters => {
+  const rawStatus = searchParams.get("status") || "";
+  return {
+    status: rawStatus
+      ? rawStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+    paymentStatus: parseMultiFilterParam(searchParams.get("paymentStatus")),
+    sourceType: parseMultiFilterParam(searchParams.get("sourceType")),
+    merchantId: parseMultiFilterParam(searchParams.get("merchantId")),
+    affiliateId: parseMultiFilterParam(searchParams.get("affiliateId")),
+    fulfillmentSource: parseMultiFilterParam(searchParams.get("fulfillmentSource")),
+    merchantOperationStatus: parseMultiFilterParam(
+      searchParams.get("merchantOperationStatus"),
+    ),
+    merchantSettlementStatus: parseMultiFilterParam(
+      searchParams.get("merchantSettlementStatus"),
+    ),
+    search: searchParams.get("search") || "",
   startDate: searchParams.get("startDate") || "",
   endDate: searchParams.get("endDate") || "",
   extractionMethod: searchParams.get("extractionMethod") || "",
   minConfidence: searchParams.get("minConfidence") || "",
   onlyUnseen: searchParams.get("onlyUnseen") === "true",
   timeRange: searchParams.get("timeRange") || "",
-});
+  };
+};
 
 const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
   const candidate =
@@ -759,24 +773,30 @@ const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       : {};
 
   return {
-    status: typeof candidate.status === "string" ? candidate.status : "",
-    paymentStatus:
-      typeof candidate.paymentStatus === "string" ? candidate.paymentStatus : "",
-    sourceType: typeof candidate.sourceType === "string" ? candidate.sourceType : "",
-    merchantId: typeof candidate.merchantId === "string" ? candidate.merchantId : "",
-    affiliateId: typeof candidate.affiliateId === "string" ? candidate.affiliateId : "",
-    fulfillmentSource:
-      typeof candidate.fulfillmentSource === "string"
-        ? candidate.fulfillmentSource
-        : "",
-    merchantOperationStatus:
-      typeof candidate.merchantOperationStatus === "string"
-        ? candidate.merchantOperationStatus
-        : "",
-    merchantSettlementStatus:
-      typeof candidate.merchantSettlementStatus === "string"
-        ? candidate.merchantSettlementStatus
-        : "",
+    status: Array.isArray(candidate.status)
+      ? candidate.status.filter((s): s is string => typeof s === "string")
+      : [],
+    paymentStatus: Array.isArray(candidate.paymentStatus)
+      ? candidate.paymentStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    sourceType: Array.isArray(candidate.sourceType)
+      ? candidate.sourceType.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantId: Array.isArray(candidate.merchantId)
+      ? candidate.merchantId.filter((s): s is string => typeof s === "string")
+      : [],
+    affiliateId: Array.isArray(candidate.affiliateId)
+      ? candidate.affiliateId.filter((s): s is string => typeof s === "string")
+      : [],
+    fulfillmentSource: Array.isArray(candidate.fulfillmentSource)
+      ? candidate.fulfillmentSource.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantOperationStatus: Array.isArray(candidate.merchantOperationStatus)
+      ? candidate.merchantOperationStatus.filter((s): s is string => typeof s === "string")
+      : [],
+    merchantSettlementStatus: Array.isArray(candidate.merchantSettlementStatus)
+      ? candidate.merchantSettlementStatus.filter((s): s is string => typeof s === "string")
+      : [],
     search: typeof candidate.search === "string" ? candidate.search : "",
     startDate: typeof candidate.startDate === "string" ? candidate.startDate : "",
     endDate: typeof candidate.endDate === "string" ? candidate.endDate : "",
@@ -1106,6 +1126,7 @@ const Orders: React.FC = () => {
     restoredListViewState.filters,
   );
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   // Sync URL search parameters back to local filters state
   useEffect(() => {
@@ -1123,7 +1144,9 @@ const Orders: React.FC = () => {
     setLimit((prev) => (prev !== newLimit ? newLimit : prev));
   }, [searchParams]);
 
-  const isTrashView = filters.status.toLowerCase() === "trash";
+  const isTrashView =
+    Array.isArray(filters.status) &&
+    filters.status.some((s) => s.toLowerCase() === "trash");
 
   const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">(() => {
     try {
@@ -1178,14 +1201,14 @@ const Orders: React.FC = () => {
     AGENT_WORKSPACE_APP_SLUGS,
   );
   const merchantOperationFilterIsActive = Boolean(
-    filters.merchantId ||
-      filters.fulfillmentSource ||
-      filters.merchantOperationStatus ||
-      filters.merchantSettlementStatus,
+    filters.merchantId.length > 0 ||
+      filters.fulfillmentSource.length > 0 ||
+      filters.merchantOperationStatus.length > 0 ||
+      filters.merchantSettlementStatus.length > 0,
   );
-  const affiliateFilterIsActive = Boolean(filters.affiliateId);
+  const affiliateFilterIsActive = filters.affiliateId.length > 0;
   const canShowUnifiedOperationFilters = isAdmin && !isMerchant;
-  const sourceFilterIsActive = Boolean(filters.sourceType);
+  const sourceFilterIsActive = filters.sourceType.length > 0;
   const hasOrderSourceTrackingApp = hasAnyCompanyAppSlug(
     activeCompanyAppSlugSet,
     ORDER_SOURCE_TRACKING_APP_SLUGS,
@@ -1224,6 +1247,8 @@ const Orders: React.FC = () => {
 
       if (typeof value === "string" && value) {
         params[key] = value;
+      } else if (Array.isArray(value) && value.length > 0) {
+        params[key] = value.join(",");
       }
     });
 
@@ -1287,6 +1312,10 @@ const Orders: React.FC = () => {
           return count + (value ? 1 : 0);
         }
 
+        if (Array.isArray(value)) {
+          return count + value.length;
+        }
+
         if (!value) return count;
         return count + 1;
       }, 0),
@@ -1295,14 +1324,14 @@ const Orders: React.FC = () => {
   const advancedFilterCount = useMemo(() => {
     let count = 0;
 
-    if (filters.status) count += 1;
-    if (filters.paymentStatus) count += 1;
-    if (filters.sourceType) count += 1;
-    if (filters.merchantId) count += 1;
-    if (filters.affiliateId) count += 1;
-    if (filters.fulfillmentSource) count += 1;
-    if (filters.merchantOperationStatus) count += 1;
-    if (filters.merchantSettlementStatus) count += 1;
+    if (filters.status.length > 0) count += filters.status.length;
+    if (filters.paymentStatus.length > 0) count += filters.paymentStatus.length;
+    if (filters.sourceType.length > 0) count += filters.sourceType.length;
+    if (filters.merchantId.length > 0) count += filters.merchantId.length;
+    if (filters.affiliateId.length > 0) count += filters.affiliateId.length;
+    if (filters.fulfillmentSource.length > 0) count += filters.fulfillmentSource.length;
+    if (filters.merchantOperationStatus.length > 0) count += filters.merchantOperationStatus.length;
+    if (filters.merchantSettlementStatus.length > 0) count += filters.merchantSettlementStatus.length;
     if (filters.extractionMethod) count += 1;
     if (filters.minConfidence) count += 1;
     if (filters.timeRange || filters.startDate || filters.endDate) count += 1;
@@ -1441,7 +1470,8 @@ const Orders: React.FC = () => {
   }, [isAdmin, isMerchant]);
 
   useEffect(() => {
-    if (!isAdmin || isMerchant || !filters.merchantId) {
+    const selectedMerchantId = filters.merchantId[0] || "";
+    if (!isAdmin || isMerchant || filters.merchantId.length !== 1 || !selectedMerchantId) {
       setMerchantSettlementSummary(null);
       setMerchantSettlementError("");
       setMerchantSettlementLoading(false);
@@ -1458,7 +1488,7 @@ const Orders: React.FC = () => {
           success?: boolean;
           data?: MerchantSettlementSummary;
           message?: string;
-        }>(`/merchants/${filters.merchantId}/settlement-summary`, {
+        }>(`/merchants/${selectedMerchantId}/settlement-summary`, {
           _skipErrorToast: true,
         });
 
@@ -1560,11 +1590,11 @@ const Orders: React.FC = () => {
 
       // Merchants use the same core Orders screen, scoped by the simple orders API.
       const usesUnifiedOperationFilters = Boolean(
-        filters.merchantId ||
-          filters.affiliateId ||
-          filters.fulfillmentSource ||
-          filters.merchantOperationStatus ||
-          filters.merchantSettlementStatus,
+        filters.merchantId.length > 0 ||
+          filters.affiliateId.length > 0 ||
+          filters.fulfillmentSource.length > 0 ||
+          filters.merchantOperationStatus.length > 0 ||
+          filters.merchantSettlementStatus.length > 0,
       );
       const useEnhanced =
         !isMerchant &&
@@ -1576,11 +1606,15 @@ const Orders: React.FC = () => {
         const queryParams = {
           page: page.toString(),
           limit: limit.toString(),
-          ...(filters.status && { status: filters.status.toUpperCase() }),
-          ...(filters.paymentStatus && {
-            paymentStatus: filters.paymentStatus.toUpperCase(),
+          ...(filters.status.length > 0 && {
+            status: filters.status.map((s) => s.toUpperCase()).join(","),
           }),
-          ...(filters.sourceType && { sourceType: filters.sourceType }),
+          ...(filters.paymentStatus.length > 0 && {
+            paymentStatus: filters.paymentStatus.map((s) => s.toUpperCase()).join(","),
+          }),
+          ...(filters.sourceType.length > 0 && {
+            sourceType: filters.sourceType.join(","),
+          }),
           ...(filters.search && { search: filters.search }),
           ...(filters.extractionMethod && {
             extractionMethod: filters.extractionMethod,
@@ -1632,6 +1666,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch enhanced orders:", data.message);
@@ -1644,18 +1679,18 @@ const Orders: React.FC = () => {
           limit: limit.toString(),
         };
 
-        if (filters.status) queryParams.status = filters.status;
-        if (filters.paymentStatus)
-          queryParams.paymentStatus = filters.paymentStatus;
-        if (filters.sourceType) queryParams.sourceType = filters.sourceType;
-        if (filters.merchantId) queryParams.merchantId = filters.merchantId;
-        if (filters.affiliateId) queryParams.affiliateId = filters.affiliateId;
-        if (filters.fulfillmentSource)
-          queryParams.fulfillmentSource = filters.fulfillmentSource;
-        if (filters.merchantOperationStatus)
-          queryParams.merchantOperationStatus = filters.merchantOperationStatus;
-        if (filters.merchantSettlementStatus)
-          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus;
+        if (filters.status.length > 0) queryParams.status = filters.status.join(",");
+        if (filters.paymentStatus.length > 0)
+          queryParams.paymentStatus = filters.paymentStatus.join(",");
+        if (filters.sourceType.length > 0) queryParams.sourceType = filters.sourceType.join(",");
+        if (filters.merchantId.length > 0) queryParams.merchantId = filters.merchantId.join(",");
+        if (filters.affiliateId.length > 0) queryParams.affiliateId = filters.affiliateId.join(",");
+        if (filters.fulfillmentSource.length > 0)
+          queryParams.fulfillmentSource = filters.fulfillmentSource.join(",");
+        if (filters.merchantOperationStatus.length > 0)
+          queryParams.merchantOperationStatus = filters.merchantOperationStatus.join(",");
+        if (filters.merchantSettlementStatus.length > 0)
+          queryParams.merchantSettlementStatus = filters.merchantSettlementStatus.join(",");
         if (filters.search) queryParams.search = filters.search;
         if (filters.startDate) queryParams.startDate = filters.startDate;
         if (filters.endDate) queryParams.endDate = filters.endDate;
@@ -1700,6 +1735,7 @@ const Orders: React.FC = () => {
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
           setSelectedOrders([]);
+          setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
           const metaFlag = (data as { meta?: { showIncompleteCartsInOrders?: boolean } })?.meta;
           if (metaFlag && typeof metaFlag.showIncompleteCartsInOrders === "boolean") {
@@ -1871,14 +1907,14 @@ const Orders: React.FC = () => {
   const clearAdvancedFilters = () => {
     setFilters((prev) => ({
       ...prev,
-      status: "",
-      paymentStatus: "",
-      sourceType: "",
-      merchantId: "",
-      affiliateId: "",
-      fulfillmentSource: "",
-      merchantOperationStatus: "",
-      merchantSettlementStatus: "",
+      status: [],
+      paymentStatus: [],
+      sourceType: [],
+      merchantId: [],
+      affiliateId: [],
+      fulfillmentSource: [],
+      merchantOperationStatus: [],
+      merchantSettlementStatus: [],
       startDate: "",
       endDate: "",
       extractionMethod: "",
@@ -2301,8 +2337,11 @@ const Orders: React.FC = () => {
         });
       }
     }
-    const activeFilter = normalizeStatusCode(filters.status);
-    if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
+    filters.status.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter || activeFilter === "TRASH" || activeFilter === "TRASH_ORDER") {
+        return;
+      }
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -2310,14 +2349,15 @@ const Orders: React.FC = () => {
           name: getStatusDisplay(activeFilter).label,
         });
       }
-    }
+    });
     return list;
   }, [orderStatuses, filters.status, showIncompleteInOrders]);
 
   const filterablePaymentStatuses = useMemo(() => {
     const list = [...paymentStatuses];
-    const activeFilter = normalizeStatusCode(filters.paymentStatus);
-    if (activeFilter) {
+    filters.paymentStatus.forEach((raw) => {
+      const activeFilter = normalizeStatusCode(raw);
+      if (!activeFilter) return;
       const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
       if (!exists) {
         list.push({
@@ -2325,7 +2365,7 @@ const Orders: React.FC = () => {
           name: getPaymentStatusText(activeFilter.toLowerCase()),
         });
       }
-    }
+    });
     return list;
   }, [paymentStatuses, filters.paymentStatus]);
 
@@ -2585,12 +2625,15 @@ const Orders: React.FC = () => {
         onSetQuickDate={setQuickDate}
         onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
+        onRefresh={fetchOrders}
+        lastUpdatedAt={lastUpdatedAt}
+        isConnected={isConnected}
       />
 
       <OrdersStatsBar
         isAdmin={isAdmin}
         isMerchant={isMerchant}
-        merchantId={filters.merchantId}
+        merchantId={filters.merchantId[0] || ""}
         merchantSettlementSummary={merchantSettlementSummary}
         merchantSettlementLoading={merchantSettlementLoading}
         merchantSettlementError={merchantSettlementError}
@@ -2598,12 +2641,12 @@ const Orders: React.FC = () => {
         formatPrice={formatPrice}
         getFulfillmentSourceText={getFulfillmentSourceText}
         onClearMerchantFilters={() => {
-          handleFilterChange("merchantOperationStatus", "");
-          handleFilterChange("merchantSettlementStatus", "");
+          handleFilterChange("merchantOperationStatus", []);
+          handleFilterChange("merchantSettlementStatus", []);
         }}
         onShowDueOrders={() => {
-          handleFilterChange("merchantOperationStatus", "DELIVERED");
-          handleFilterChange("merchantSettlementStatus", "PAYABLE");
+          handleFilterChange("merchantOperationStatus", ["DELIVERED"]);
+          handleFilterChange("merchantSettlementStatus", ["PAYABLE"]);
         }}
       />
 

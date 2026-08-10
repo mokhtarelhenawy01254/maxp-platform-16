@@ -21,13 +21,19 @@ import PatientDetailModal from "./booking/PatientDetailModal";
 import PatientDetailPage from "./booking/PatientDetailPage";
 import DoctorDetailPage from "./booking/DoctorDetailPage";
 import InvoicesTab from "./booking/InvoicesTab";
+import PriceListsTab from "./booking/PriceListsTab";
+import WorkflowPage from "./booking/WorkflowPage";
+import BookingReportsTab from "./booking/BookingReportsTab";
+import OperationsPage from "./booking/OperationsPage";
+import InsuranceCompaniesTab from "./booking/InsuranceCompaniesTab";
+import MemberTypesTab from "./booking/MemberTypesTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services", "patients", "invoices", "price-lists", "workflow", "reports", "operations", "insurance-companies", "member-types"].includes(urlTab) ? urlTab : "dashboard") as TabId;
   const patientUrlId = urlTab === "patients" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
   const doctorUrlId = urlTab === "doctors" && (path || "").split("/")[1] ? (path || "").split("/")[1] : null;
 
@@ -510,6 +516,36 @@ export default function BookingManagementPage() {
                 onPaymentClose={() => setPaymentInvoice(null)}
                 onPaymentSave={payInvoice}
               />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "price-lists" && (
+            <TabErrorBoundary tabLabel="قوائم الأسعار">
+              <PriceListsTab />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "workflow" && (
+            <TabErrorBoundary tabLabel="سير العمل">
+              <WorkflowPage />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "reports" && (
+            <TabErrorBoundary tabLabel="التقارير">
+              <BookingReportsTab />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "operations" && (
+            <TabErrorBoundary tabLabel="العمليات">
+              <OperationsPage />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "insurance-companies" && (
+            <TabErrorBoundary tabLabel="شركات التأمين">
+              <InsuranceCompaniesTab />
+            </TabErrorBoundary>
+          )}
+          {activeTab === "member-types" && (
+            <TabErrorBoundary tabLabel="أنواع الأعضاء">
+              <MemberTypesTab />
             </TabErrorBoundary>
           )}
         </>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -14,6 +14,21 @@ const CustomerRegister: React.FC = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [step, setStep] = useState<"PHONE" | "OTP">("PHONE");
+
+  // Already-logged-in customers should not see the login form again.
+  useEffect(() => {
+    try {
+      const token = tokenManager.getAccessToken();
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload?.role === "CUSTOMER") {
+          navigate("/account", { replace: true });
+        }
+      }
+    } catch {
+      // ignore malformed token
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -86,14 +101,18 @@ const CustomerRegister: React.FC = () => {
       if (response.data?.success && response.data?.data?.token) {
         tokenManager.setAccessToken(response.data.data.token);
         setSuccessMessage("تم تسجيل الدخول بنجاح");
-        navigate("/account/whatsapp");
+        navigate("/account");
         return;
       }
 
       setError(response.data?.message || "تعذر تسجيل الدخول");
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
       setError(
-        err.response?.data?.message || err.message || "حدث خطأ أثناء التسجيل",
+        error.response?.data?.message || error.message || "حدث خطأ أثناء التسجيل",
       );
     } finally {
       setIsLoading(false);

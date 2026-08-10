@@ -122,7 +122,7 @@ class WhatsAppJourneyService {
      */
     async enrollCustomer(companyId, customerId, orderId) {
         try {
-            console.log(`[JOURNEY] Attempting to enroll customer ${customerId} for company ${companyId}`);
+            console.log(`[JOURNEY] enrollCustomer called: company=${companyId}, customer=${customerId}, order=${orderId}`);
 
             // 1. جلب الرحلة المفعلة لهذه الشركة
             const flow = await this.prisma.whatsAppFollowUpFlow.findFirst({
@@ -133,6 +133,8 @@ class WhatsAppJourneyService {
                     }
                 }
             });
+
+            console.log(`[JOURNEY] Flow lookup result: ${flow ? `"${flow.name}" steps=${flow.steps?.length}` : 'NONE'}`);
 
             if (!flow || flow.steps.length === 0) {
                 console.log(`[JOURNEY] No active flow found for company ${companyId}`);
@@ -160,7 +162,7 @@ class WhatsAppJourneyService {
             nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
 
             // 4. إنشاء السجل
-            await this.prisma.customerJourney.create({
+            const created = await this.prisma.customerJourney.create({
                 data: {
                     companyId,
                     customerId,
@@ -172,10 +174,11 @@ class WhatsAppJourneyService {
                     logs: `Started journey: ${flow.name} at ${new Date().toISOString()}`
                 }
             });
+            console.log(`✅ [JOURNEY] Journey created: ${created.id} for order ${orderId}, nextSendAt ${created.nextSendAt.toISOString()}`);
 
             console.log(`✅ [JOURNEY] Enrolled customer successfully in flow: ${flow.name}`);
         } catch (error) {
-            console.error('❌ [JOURNEY-ERROR] Enrollment failed:', error);
+            console.error('❌ [JOURNEY-ERROR] Enrollment failed:', error.message, '| stack:', error?.stack?.split('\n').slice(0, 3).join(' '));
         }
     }
 
@@ -220,7 +223,7 @@ class WhatsAppJourneyService {
         // Category-triggered journeys: lookup WhatsApp contact
         try {
             const contact = await this.prisma.whatsAppContact.findFirst({
-                where: { customerId: journey.customerId, companyId: journey.companyId },
+                where: { customerId: journey.customerId },
                 select: { phoneNumber: true }
             });
             return contact?.phoneNumber || '';

@@ -2152,8 +2152,10 @@ router.post('/', async (req, res) => {
           price: parseFloat(item.price || 0),
           total: parseFloat((item.price || 0) * (item.quantity || 1)),
           productSku: item.productSku || item.sku || null,
-          productColor,
-          productSize,
+          // productColor/productSize مقبولان في OrderItem كـ String فقط؛
+          // خصائص الفاريانت (سايز) قد تكون Int (37) فيخفق إنشاء الـ primary order.
+          productColor: productColor == null ? null : String(productColor),
+          productSize: productSize == null ? null : String(productSize),
           productId: item.productId || null,
           variantId: item.variantId || null,
           productImage,
@@ -2236,7 +2238,16 @@ router.post('/', async (req, res) => {
           customerEmail: order.guestEmail || null,
           customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
           shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-          governorate: shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '',
+          governorate: (() => {
+            const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
+            try {
+              const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
+              const normalized = getTurboGovernorateName(rawGovernorate);
+              return normalized || rawGovernorate || '';
+            } catch (e) {
+              return rawGovernorate || '';
+            }
+          })(),
           city: shippingAddress?.city || '',
           subtotal: parseFloat(order.total),
           shipping: parseFloat(order.shippingCost || 0),
@@ -2475,6 +2486,44 @@ router.post('/', async (req, res) => {
       }
     } catch (distError) {
       console.error('❌ [CREATE-ORDER] Error in auto-distribution:', distError.message);
+    }
+
+    // 🤖 Trigger the order-confirmation agent (منى) to resolve the delivery area
+    // against the shipping company's map. Fire-and-forget — never blocks checkout.
+    try {
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const addressFieldsForAgent = (() => {
+        if (typeof shippingAddress === 'object' && shippingAddress) {
+          return {
+            address_text: [
+              shippingAddress.street || shippingAddress.address || '',
+              shippingAddress.city || '',
+              shippingAddress.governorate || '',
+            ].filter(Boolean).join(', ') || null,
+            governorate: shippingAddress.governorate || shippingAddress.state || null,
+            city: shippingAddress.city || null,
+          };
+        }
+        const raw = typeof shippingAddress === 'string' ? shippingAddress : (order?.customerAddress || order?.shippingAddress || '');
+        return {
+          address_text: typeof raw === 'string' && raw.trim() ? raw : null,
+          governorate: null,
+          city: null,
+        };
+      })();
+
+      aiServiceAdminClient.notifyOrderCreated({
+        company_id: company.id,
+        order_number: order?.orderNumber || createdOrder?.orderNumber || orderNumber,
+        customer_phone: order?.guestPhone || createdOrder?.customerPhone || null,
+        customer_name: order?.guestName || createdOrder?.customerName || null,
+        ...addressFieldsForAgent,
+        source: 'storefront',
+      }).catch((agentErr) => {
+        console.warn('⚠️ [ORDER-CREATED-AGENT] AI agent trigger failed (non-blocking):', agentErr.message);
+      });
+    } catch (agentTriggerErr) {
+      console.warn('⚠️ [ORDER-CREATED-AGENT] AI agent trigger skipped (non-blocking):', agentTriggerErr.message);
     }
 
     try {

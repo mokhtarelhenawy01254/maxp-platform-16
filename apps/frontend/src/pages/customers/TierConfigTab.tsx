@@ -14,6 +14,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Zap,
 } from "lucide-react";
 
 interface TierItem {
@@ -132,6 +133,8 @@ const validateRangeConflicts = (tier: TierItem, allTiers: TierItem[]): string =>
 
 const TierConfigTab: React.FC = () => {
   const [system, setSystem] = useState<string>("TIERS");
+  const [activeSystem, setActiveSystem] = useState<string | null>(null);
+  const [systemLoading, setSystemLoading] = useState(true);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [programId, setProgramId] = useState<string>("");
   const [defaultMethod, setDefaultMethod] = useState<string>("POINTS");
@@ -183,10 +186,51 @@ const TierConfigTab: React.FC = () => {
 
   // تحميل نظام الولاء الحالي (المستويات أو الخصم التلقائي)
   useEffect(() => {
+    let cancelled = false;
     apiClient.get("/hr/customer-loyalty/system-settings")
-      .then((res) => setSystem(res.data?.data?.loyaltySystem || "TIERS"))
-      .catch(() => setSystem("TIERS"));
+      .then((res) => {
+        if (cancelled) return;
+        const s = res.data?.data?.loyaltySystem || "TIERS";
+        setSystem(s);
+        setActiveSystem(s);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSystem("TIERS");
+        setActiveSystem("TIERS");
+      })
+      .finally(() => {
+        if (!cancelled) setSystemLoading(false);
+      });
+    return () => { cancelled = true; };
   }, []);
+
+  // تبديل نظام الولاء + حفظه فوراً + تحديث البار من غير ريفريش
+  const switchSystem = async (s: string) => {
+    if (s === system) return;
+    setSaving(true);
+    setErrorMsg("");
+    setSavedMsg("");
+    try {
+      await apiClient.put("/hr/customer-loyalty/system-settings", { system: s });
+      setSystem(s);
+      setActiveSystem(s);
+      setSavedMsg(`تم تفعيل ${s === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "نظام المستويات"} ✓`);
+    } catch (e: any) {
+      setErrorMsg(e.response?.data?.error || "فشل تبديل النظام");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // بعد حفظ إعدادات الخصم التلقائي من جواه، حدّث النظام المفعّل في البار فوراً
+  const handleAutoDiscountSaved = (data?: any) => {
+    if (data?.loyaltySystem) {
+      setActiveSystem(data.loyaltySystem);
+      setSystem(data.loyaltySystem);
+    }
+  };
+
 
   const saveDefaultMethod = async () => {
     if (!programId) return;
@@ -359,19 +403,49 @@ const TierConfigTab: React.FC = () => {
         {errorMsg && <span className="text-sm text-red-600 dark:text-red-400 font-medium">{errorMsg}</span>}
       </div>
 
+      {/* شريط النظام المفعّل */}
+      {activeSystem === null ? (
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          <span className="text-sm text-gray-500 dark:text-gray-400">جارٍ تحميل النظام المفعّل...</span>
+        </div>
+      ) : (
+        <div className={`rounded-lg border px-4 py-3 flex flex-wrap items-center gap-3 ${activeSystem === "AUTO_DISCOUNT" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700" : "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-700"}`}>
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${activeSystem === "AUTO_DISCOUNT" ? "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400" : "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400"}`}>
+            {activeSystem === "AUTO_DISCOUNT" ? <Zap className="h-5 w-5" /> : <Crown className="h-5 w-5" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {activeSystem === "AUTO_DISCOUNT" ? "نظام الخصم التلقائي" : "نظام المستويات"}{" "}
+              <span className={`font-medium ${activeSystem === "AUTO_DISCOUNT" ? "text-amber-600 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-400"}`}>— النظام المفعّل حالياً</span>
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {activeSystem === "AUTO_DISCOUNT"
+                ? "بعد كل أوردر مسلّم العميل بياخد كوبون خصم على الأوردر الجاي، ولو انتهى من غير استخدام بيتحول لكاش باك."
+                : "مزايا وحسابات المستويات هي الشغّالة حالياً، ونظام الخصم التلقائي متوقف."}
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${activeSystem === "AUTO_DISCOUNT" ? "bg-amber-500" : "bg-indigo-600"} text-white`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-white" /> مفعّل
+          </span>
+        </div>
+      )}
+
       {/* محدد نظام الولاء */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">نظام الولاء</label>
         <div className="flex gap-2 mt-2">
           <button
-            onClick={() => setSystem("TIERS")}
-            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "TIERS" ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+            onClick={() => switchSystem("TIERS")}
+            disabled={saving}
+            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "TIERS" ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"}`}
           >
             نظام المستويات
           </button>
           <button
-            onClick={() => setSystem("AUTO_DISCOUNT")}
-            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "AUTO_DISCOUNT" ? "bg-amber-500 text-white border-amber-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+            onClick={() => switchSystem("AUTO_DISCOUNT")}
+            disabled={saving}
+            className={`px-4 py-2 rounded-lg text-sm border transition-colors ${system === "AUTO_DISCOUNT" ? "bg-amber-500 text-white border-amber-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"}`}
           >
             الخصم التلقائي
           </button>
@@ -379,8 +453,10 @@ const TierConfigTab: React.FC = () => {
         <p className="text-xs text-gray-400 mt-2">تفعيل أحد النظامين يوقف الآخر تلقائياً</p>
       </div>
 
-      {system === "AUTO_DISCOUNT" ? (
-        <AutoDiscountSettings />
+      {systemLoading ? (
+        <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>
+      ) : system === "AUTO_DISCOUNT" ? (
+        <AutoDiscountSettings onSaved={handleAutoDiscountSaved} />
       ) : (
       <>
       {/* طريقة الحساب الافتراضية */}

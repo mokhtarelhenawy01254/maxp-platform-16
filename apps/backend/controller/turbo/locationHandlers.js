@@ -50,4 +50,40 @@ const getBranches = async (req, res) => {
   }
 };
 
-module.exports = { getGovernments, getAreas, getBranches };
+const searchAreaByText = async (req, res) => {
+  try {
+    const q = req.query.q || req.query.query;
+    const limit = req.query.limit;
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!q || !String(q).trim()) return res.status(400).json({ success: false, error: 'Search query is required' });
+    const prisma = getSharedPrismaClient();
+    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboEnabled: true } }), 3);
+    const turboService = new TurboService(company?.turboApiKey || null, companyId);
+    const result = await turboService.searchAreaByText(q, { limit });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error searching area:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to search area' });
+  }
+};
+
+const searchAreaByTextPublic = async (req, res) => {
+  try {
+    const q = req.query.q || req.query.query;
+    const limit = req.query.limit;
+    const companyId = req.query.companyId || req.headers?.['x-company-id'] || req.body?.companyId;
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required' });
+    if (!q || !String(q).trim()) return res.status(400).json({ success: false, error: 'Search query is required' });
+    const prisma = getSharedPrismaClient();
+    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboEnabled: true } }), 3);
+    const turboService = new TurboService(company?.turboApiKey || null, companyId);
+    const result = await turboService.searchAreaByText(q, { limit });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error searching area (public):', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to search area' });
+  }
+};
+
+module.exports = { getGovernments, getAreas, getBranches, searchAreaByText, searchAreaByTextPublic };

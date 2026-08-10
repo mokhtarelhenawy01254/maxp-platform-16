@@ -19,6 +19,10 @@ export default function CustomerWalletRouteEntry() {
     return <LoadingState />;
   }
 
+  if (user?.role === "CUSTOMER") {
+    return <Navigate to="/account/cashback" replace />;
+  }
+
   if (user?.role !== "CUSTOMER") {
     return <Navigate to="/payments" replace />;
   }

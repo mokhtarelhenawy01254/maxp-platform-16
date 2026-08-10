@@ -154,18 +154,20 @@ router.get('/payments', authenticateDoctorToken, async (req, res) => {
       appointmentIds.length > 0
         ? prisma.medicalInvoice.aggregate({
             where: { appointmentId: { in: appointmentIds }, status: { notIn: ['REFUNDED'] } },
-            _sum: { total: true, amountPaid: true },
+            _sum: { total: true, discount: true, additionAmount: true, amountPaid: true },
           })
-        : Promise.resolve({ _sum: { total: 0, amountPaid: 0 } }),
+        : Promise.resolve({ _sum: { total: 0, discount: 0, additionAmount: 0, amountPaid: 0 } }),
     ]);
+
+    const billed = (totals._sum.total || 0) - (totals._sum.discount || 0) + (totals._sum.additionAmount || 0);
 
     res.json({
       success: true,
       data: {
         invoices,
-        totalRevenue: totals._sum.total || 0,
+        totalRevenue: billed,
         collected: totals._sum.amountPaid || 0,
-        outstanding: (totals._sum.total || 0) - (totals._sum.amountPaid || 0),
+        outstanding: Math.max(0, billed - (totals._sum.amountPaid || 0)),
       },
     });
   } catch (error) {

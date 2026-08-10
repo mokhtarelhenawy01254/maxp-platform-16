@@ -4,24 +4,18 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
-  Search, Package, Loader2, Crown,
+  Package, Loader2,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart, ArrowRight,
-  ShoppingBag, Flame, Rocket, Brain, BadgeCheck,
-  Clock, Shield, Award, GraduationCap, LayoutGrid,
-  ListFilter, Eye, SlidersHorizontal, Truck,
+  DollarSign, Grid3X3, Star, Heart,
+  ShoppingBag, Flame, Brain,
+  LayoutGrid,
+  Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
-import { tokenManager } from "../../utils/tokenManager";
-import { getApiUrl } from "../../config/environment";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -42,24 +36,16 @@ import {
 import {
   AppCard,
   SearchBar,
-  SectionRow,
-  HeroBanner,
   FilterSidebar,
   CategorySidebar,
   CategoryBar,
-  AppCardSkeleton,
-  HeroBannerSkeleton,
   SectionSkeleton,
 } from "@/components/marketplace";
 import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters, SortOption, ToolCollectionId } from "@/types/marketplace";
 import {
-  appIconsBySlug, categoryIcons, categoryCssClass, appIcons,
-  shouldUseTextIcon, isAddOnApp, normalizeRequiredApps,
-  getPrice, formatInstallCount,
-  starterBundles,
+  appIconsBySlug, categoryIcons, appIcons,
+  normalizeRequiredApps,
 } from "@/utils/marketplace";
-import { getMarketplaceFeatureItems } from "./featureCatalog";
-import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "../../components/icons/brands";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -84,10 +70,10 @@ const DISPLAY_INCREMENT = 20;
 
 const collections = [
   { id: "ALL" as ToolCollectionId, labelKey: "marketplace.allTools", icon: Grid3X3 },
-  { id: "CORE" as ToolCollectionId, labelKey: "marketplace.coreTools", icon: Zap },
-  { id: "ADD_ONS" as ToolCollectionId, labelKey: "marketplace.addOns", icon: Sparkles },
-  { id: "FREE" as ToolCollectionId, labelKey: "marketplace.free", icon: CheckCircle2 },
-  { id: "PAID" as ToolCollectionId, labelKey: "marketplace.paid", icon: Crown },
+  { id: "FEATURED" as ToolCollectionId, labelKey: "marketplace.featured", icon: Sparkles },
+  { id: "POPULAR" as ToolCollectionId, labelKey: "marketplace.popular", icon: TrendingUp },
+  { id: "TRENDING" as ToolCollectionId, labelKey: "marketplace.trending", icon: Flame },
+  { id: "FREE" as ToolCollectionId, labelKey: "marketplace.freeApps", icon: CheckCircle2 },
 ];
 
 const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
@@ -109,10 +95,10 @@ function getDefaultPricingModel(app: MarketplaceApp) {
 
 function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
   if (col === "ALL") return true;
-  if (col === "CORE") return !isAddOnApp(app);
-  if (col === "ADD_ONS") return isAddOnApp(app);
+  if (col === "FEATURED") return app.isFeatured;
+  if (col === "POPULAR") return (app.installCount || 0) > 0;
+  if (col === "TRENDING") return !!app.isTrending || (app.isFeatured && app.isPopular);
   if (col === "FREE") return app.pricingModel === "FREE";
-  if (col === "PAID") return app.pricingModel !== "FREE";
   return true;
 }
 
@@ -129,7 +115,7 @@ function matchesFilters(app: MarketplaceApp, filters: MarketplaceFilters) {
   return true;
 }
 
-function getCategoryDisplayCategories(categories: Category[], t: (key: string) => string) {
+function getCategoryDisplayCategories(categories: Category[]) {
   const categoryIconsMap: Record<string, typeof Package> = {
     AI: Brain, MARKETING: Sparkles, SALES: ShoppingBag, CRM: BarChart3,
     ACCOUNTING: DollarSign, FINANCE: DollarSign, ANALYTICS: TrendingUp,
@@ -242,14 +228,8 @@ export default function MarketplaceV2() {
   const displayedApps = filteredApps.slice(0, displayCount);
   const installedCount = apps.filter(a => a.isInstalled).length;
 
-  const featuredApps = useMemo(() => apps.filter(a => a.isFeatured && a.isActive), [apps]);
   const popularApps = useMemo(() => [...apps].sort((a, b) => (b.installCount || 0) - (a.installCount || 0)).filter(a => (a.installCount || 0) > 0).slice(0, 10), [apps]);
   const trendingApps = useMemo(() => [...apps].filter(a => a.isTrending || (a.isFeatured && a.isPopular)).slice(0, 10), [apps]);
-  const newApps = useMemo(() => [...apps].filter(a => a.isNew).slice(0, 10), [apps]);
-  const topRatedApps = useMemo(() => [...apps].filter(a => a.rating && a.rating >= 4).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 10), [apps]);
-  const freeApps = useMemo(() => apps.filter(a => a.pricingModel === "FREE").slice(0, 10), [apps]);
-  const premiumApps = useMemo(() => apps.filter(a => a.pricingModel !== "FREE" && a.rating && a.rating >= 4).slice(0, 10), [apps]);
-  const recentlyUpdatedApps = useMemo(() => [...apps].filter(a => a.isRecentlyUpdated).slice(0, 10), [apps]);
 
   const hasMoreApps = filteredApps.length > displayCount;
   useEffect(() => {
@@ -349,7 +329,7 @@ export default function MarketplaceV2() {
     });
   };
 
-  const categoryDisplay = getCategoryDisplayCategories(categories, t);
+  const categoryDisplay = getCategoryDisplayCategories(categories);
   const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.labelKey || "marketplace.sortFeatured";
 
   const handleCategorySelect = (category: string) => {
@@ -361,7 +341,6 @@ export default function MarketplaceV2() {
     <div className="min-h-screen bg-background">
       {loading ? (
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-          <HeroBannerSkeleton />
           <div className="mt-8">
             <SectionSkeleton count={4} />
             <SectionSkeleton count={4} />
@@ -369,8 +348,6 @@ export default function MarketplaceV2() {
         </div>
       ) : (
         <>
-          <HeroBanner featuredApps={featuredApps} className="mb-6 mt-4 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8" />
-
           <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16">
             <div className="mp-stats-bar">
               <div className="mp-stat-item">
@@ -554,131 +531,6 @@ export default function MarketplaceV2() {
                 </div>
               ) : (
                 <>
-                  {!selectedCategory && !debouncedSearch && (
-                    <>
-                      <SectionRow
-                        type="FEATURED"
-                        title={t('marketplace.featured')}
-                        apps={featuredApps}
-                        installingApp={installingApp}
-                        uninstallingApp={uninstallingApp}
-                        onQuickInstall={handleQuickInstall}
-                        onUninstall={(app) => setConfirmUninstallApp(app)}
-                      />
-                      {popularApps.length >= 4 && (
-                        <SectionRow
-                          type="POPULAR"
-                          title={t('marketplace.popular')}
-                          apps={popularApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-                      {trendingApps.length >= 3 && (
-                        <SectionRow
-                          type="TRENDING"
-                          title={t('marketplace.trending')}
-                          apps={trendingApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-                      {newApps.length >= 3 && (
-                        <SectionRow
-                          type="NEW"
-                          title={t('marketplace.newApps')}
-                          apps={newApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-                      {topRatedApps.length >= 4 && (
-                        <SectionRow
-                          type="BEST_RATED"
-                          title={t('marketplace.bestRated')}
-                          apps={topRatedApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-                      {freeApps.length >= 3 && (
-                        <SectionRow
-                          type="FREE"
-                          title={t('marketplace.freeApps')}
-                          apps={freeApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-                      {recentlyUpdatedApps.length >= 3 && (
-                        <SectionRow
-                          type="RECENTLY_UPDATED"
-                          title={t('marketplace.recentlyUpdated')}
-                          apps={recentlyUpdatedApps}
-                          installingApp={installingApp}
-                          uninstallingApp={uninstallingApp}
-                          onQuickInstall={handleQuickInstall}
-                          onUninstall={(app) => setConfirmUninstallApp(app)}
-                        />
-                      )}
-
-                      {starterBundles.length > 0 && (
-                        <section className="mp-section-row">
-                          <div className="mp-section-header-v2">
-                            <div className="flex items-center gap-2">
-                              <GraduationCap size={17} className="text-primary" />
-                              <h2 className="text-base font-extrabold text-foreground tracking-tight">
-                                {t('marketplace.startHere')}
-                              </h2>
-                            </div>
-                            <Link
-                              to="/marketplace/bundles"
-                              className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
-                            >
-                              {t('marketplace.viewAll')}
-                              <ArrowRight size={12} />
-                            </Link>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-3 -mt-1">{t('marketplace.starterBundleDesc')}</p>
-                          <div className="mp-section-scroll">
-                            {starterBundles.map((bundle) => {
-                              const BundleIcon = bundle.icon;
-                              return (
-                                <Link
-                                  key={bundle.id}
-                                  to={`/marketplace/bundles`}
-                                  className="mp-starter-bundle-card flex flex-col items-center text-center p-5"
-                                >
-                                  <div className={cn("flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white mb-3 shadow-lg", bundle.gradient)}>
-                                    <BundleIcon size={22} />
-                                  </div>
-                                  <h4 className="text-sm font-extrabold text-foreground">{t(`marketplace.${bundle.businessType}`)}</h4>
-                                  <p className="text-[11px] text-muted-foreground mt-1 mb-3">
-                                    {bundle.apps.length} {t('marketplace.features').toLowerCase()}
-                                  </p>
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[10px] font-bold">
-                                    <Zap size={10} />
-                                    {t('marketplace.oneClickSetup')}
-                                  </span>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </section>
-                      )}
-                    </>
-                  )}
-
                   <div className="mp-section-header-v2 mt-2">
                     <div className="flex items-center gap-2">
                       <LayoutGrid size={17} className="text-primary" />

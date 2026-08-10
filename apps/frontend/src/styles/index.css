@@ -6503,3 +6503,48 @@ select {
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
 }
+
+/* EnhancedOrderModal overlay — vertical centering on sm+ screens.
+   The sm:items-center utility isn't being picked up by Tailwind's JIT
+   scanner because this component is loaded via React.lazy, so the
+   class never reaches the generated stylesheet. We hand-roll the
+   media query here to guarantee the modal sits dead-center on
+   desktop while still anchoring to the bottom on mobile. */
+.modal-overlay {
+  align-items: flex-end;
+}
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
+
+/* EnhancedOrderModal panel — smart responsive width.
+   Same problem: the `sm:w-[min(92vw,520px)] md:w-[min(86vw,560px)]
+   lg:w-[min(70vw,580px)] xl:w-[min(54vw,580px)]` arbitrary-value
+   classes aren't in the generated CSS because the file is
+   React.lazy'd. Hand-rolled here so the modal picks a content-fit
+   width at every breakpoint instead of full-screen. */
+.modal-panel {
+  width: 100%;
+}
+@media (min-width: 640px) {
+  .modal-panel {
+    width: min(92vw, 520px);
+  }
+}
+@media (min-width: 768px) {
+  .modal-panel {
+    width: min(86vw, 560px);
+  }
+}
+@media (min-width: 1024px) {
+  .modal-panel {
+    width: min(70vw, 580px);
+  }
+}
+@media (min-width: 1280px) {
+  .modal-panel {
+    width: min(54vw, 580px);
+  }
+}

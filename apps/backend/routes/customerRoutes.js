@@ -34,6 +34,10 @@ router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateT
 // Campaign history (from DB)
 router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignHistory);
 
+// 🎉 جدولة حملات المناسبات (أوتوماتيك)
+router.post('/whatsapp-notify/occasions/schedule', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.scheduleOccasionCampaign);
+router.get('/whatsapp-notify/occasions/scheduled', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getScheduledOccasionCampaigns);
+
 // Legacy manual send (kept for backward compat)
 router.post('/whatsapp-notify/send', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.sendBulkWhatsAppNotification);
 

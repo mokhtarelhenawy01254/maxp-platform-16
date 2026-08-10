@@ -1215,6 +1215,16 @@ class OrderService {
             await loyaltyService.applyLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
+
+            // 🚀 تسجيل العميل في سلسلة ما بعد الاستلام (بعد أسبوع/أسبوعين/تالت...) عند التسليم الفعلي
+            try {
+              const WhatsAppJourneyService = require('./whatsapp/WhatsAppJourneyService');
+              await WhatsAppJourneyService.enrollCustomer(order.companyId, order.customerId, order.id).catch(error => {
+                console.error(`❌ [JOURNEY-BG-ERROR] Enroll failed for ${orderNumber}:`, error.message);
+              });
+            } catch (journeyError) {
+              console.error(`❌ [JOURNEY-ERROR] Enroll threw for ${orderNumber}:`, journeyError.message);
+            }
           }
 
           // 📱 WhatsApp Notification (with duplicate check)

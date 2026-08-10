@@ -11,6 +11,7 @@ model BroadcastCampaign {
   trackClicks         Boolean              @default(true)
   autoResend          Boolean              @default(false)
   images              String?              @db.LongText
+  waHeaderMedia       String?
   status              String               @default("draft")
   recipientCount      Int                  @default(0)
   sentCount           Int                  @default(0)
@@ -716,6 +717,9 @@ model WhatsAppNotificationTemplate {
   contentWithMedia           Boolean                                @default(false)
   mediaUrl                   String?
   mediaType                  String?
+  headerFormat               String?
+  headerMediaHandle          String?
+  headerUsesOrderProduct     Boolean                                @default(false)
   hasButtons                 Boolean                                @default(false)
   buttons                    String?                                @db.Text
   hasList                    Boolean                                @default(false)

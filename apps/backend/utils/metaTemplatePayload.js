@@ -49,6 +49,19 @@ function buildMetaTemplatePayload(localTemplate) {
     } catch (e) { /* skip invalid buttons */ }
   }
 
+  // تجهيز HEADER وسائط (IMAGE/VIDEO/DOCUMENT) — إن وجد.
+  // ميتا تتطلب example.header_handle (من Resumable Upload API) عند إنشاء القالب.
+  let headerComponent = null;
+  const headerFormat = localTemplate.headerFormat || null;
+  const headerMediaHandle = localTemplate.headerMediaHandle || null;
+  if (headerFormat && headerFormat !== 'TEXT' && headerMediaHandle) {
+    headerComponent = {
+      type: 'HEADER',
+      format: headerFormat,
+      example: { header_handle: [headerMediaHandle] }
+    };
+  }
+
   const variableCount = Object.keys(variableIndex).length;
   const variableOrder = variableCount > 0
     ? JSON.stringify(
@@ -62,6 +75,7 @@ function buildMetaTemplatePayload(localTemplate) {
     metaCategory,
     bodyText,
     buttonsComponent,
+    headerComponent,
     metaPadding: metaPaddingNotes.length > 0 ? metaPaddingNotes.join('، ') : null,
     variableIndex,
     variableCount,

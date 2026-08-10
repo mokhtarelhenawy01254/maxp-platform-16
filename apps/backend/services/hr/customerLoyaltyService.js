@@ -1017,8 +1017,10 @@ class CustomerLoyaltyService {
       // الخصم التلقائي: الكوبون النشط + رصيد المحفظة (الكاش باك)
       let activeVoucher = null;
       let walletBalance = 0;
+      let loyaltySystem = 'TIERS';
       try {
         const autoDiscountService = require('../autoDiscountService');
+        loyaltySystem = (await autoDiscountService.getSettings(companyId)).loyaltySystem || 'TIERS';
         if (await autoDiscountService.isAutoDiscountActive(companyId)) {
           const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
           if (voucher) {
@@ -1069,7 +1071,8 @@ class CustomerLoyaltyService {
         } : null,
         rewards: rewards || { freeShipping: false, discountPercent: 0 },
         activeVoucher,
-        walletBalance
+        walletBalance,
+        loyaltySystem
       };
     } catch (error) {
       console.error('❌ Error getting customer tier progress:', error);

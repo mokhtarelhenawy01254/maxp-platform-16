@@ -201,6 +201,7 @@
 2. **من النهارده فقط**: الطلبات القديمة (قبل الترقية) لن تُحصَّل أو تُعلَّق — تبدأ الميزة من أول طلب جديد بعد الترقية.
 3. فشل اختبارَي `walletService.autoCreate.test.js` و `marketplaceController.hybrid.test.js` **قائم من قبل** (لا علاقة لهذه التعديلات).
 
+
 ---
 
 ## ١٠. ميزة إضافية: "مزيد المعلومات" للطلبات المعلّقة (ببيانات مقنّعة)
@@ -244,11 +245,11 @@
 - `apps/backend/services/billingNotificationService.js` — سكان يومي للتحرير.
 - `apps/backend/routes/orders.js` + `apps/backend/controller/walletController.js` — تمييز السبب في `billing-holds` و`billing/summary`.
 - `apps/frontend/src/pages/admin/ManualOrder/ManualOrderPage.tsx` — فحص ذاتي للاشتراك + بانر تحذير/شاشة ممنوع.
-- `apps/frontend/src/App.tsx` — إزالة AppAccessRoute من `/orders/manual`.
-- `apps/frontend/src/pages/orders/Orders.tsx` — بانر + مودال يدعمان تعليق الاشتراك.
+ - `apps/frontend/src/App.tsx` — إبقاء AppAccessRoute على `/orders/manual` (manual-orders-pro / store-pro).
+ - `apps/frontend/src/pages/orders/Orders.tsx` — بانر + مودال يدعمان تعليق الاشتراك.
 
 ### اختبار التحقق (قاعدة بيانات محلية) — 11/11
 - ✅ تعليق `subscription_expired` + `billingHoldAmount = null` + إشعار
 - ✅ مخفي من قائمة الطلبات لكن موجود في DB
 - ✅ لا تحرير والاشتراك منتهي / تحرير كامل بعد التفعيل + مسح metadata
-- ✅ شركة بدون سجل → NONE (مقفول)
+ - ✅ شركة بدون سجل → NONE (مقفول)

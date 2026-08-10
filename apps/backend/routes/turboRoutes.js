@@ -107,6 +107,12 @@ router.get('/governments', verifyToken.authenticateToken, checkAppAccess('order-
 router.get('/areas/:governmentId', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getAreas);
 
 /**
+ * GET /api/turbo/search-area?q=...
+ * بحث نصي ذكي عن المنطقة عبر كل محافظات/مناطق شركة الشحن
+ */
+router.get('/search-area', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.searchAreaByText);
+
+/**
  * GET /api/turbo/reports/shipping
  * جلب تقرير الشحن
  */

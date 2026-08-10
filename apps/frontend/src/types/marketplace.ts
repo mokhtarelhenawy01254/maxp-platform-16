@@ -187,7 +187,7 @@ export interface AppBadge {
   className?: string;
 }
 
-export type ToolCollectionId = "ALL" | "CORE" | "ADD_ONS" | "FREE" | "PAID";
+export type ToolCollectionId = "ALL" | "FEATURED" | "POPULAR" | "TRENDING" | "FREE";
 
 export type SectionType =
   | "FEATURED"

@@ -15,6 +15,31 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
+DEFAULT_CHANNELS = ["MESSENGER", "WHATSAPP", "INSTAGRAM", "TELEGRAM", "DASHBOARD", "WEB_CHAT"]
+
+CHANNEL_KEY_MAP = {
+    "facebook": "MESSENGER",
+    "facebook_messenger": "MESSENGER",
+    "messenger": "MESSENGER",
+    "whatsapp": "WHATSAPP",
+    "instagram": "INSTAGRAM",
+    "telegram": "TELEGRAM",
+    "chat": "DASHBOARD",
+    "dashboard": "DASHBOARD",
+    "merchant": "DASHBOARD",
+    "web_chat": "WEB_CHAT",
+    "webchat": "WEB_CHAT",
+    "web-chat": "WEB_CHAT",
+    "widget": "WEB_CHAT",
+    "site": "WEB_CHAT",
+}
+
+
+def normalize_channel_key(channel: str | None) -> str:
+    """Map a runtime channel value to the routing config key."""
+    key = str(channel or "").strip().lower()
+    return CHANNEL_KEY_MAP.get(key, key.upper())
+
 
 async def _get_or_create_setting(company_id: str, session: AsyncSession) -> AiSetting:
     result = await session.execute(
@@ -22,11 +47,54 @@ async def _get_or_create_setting(company_id: str, session: AsyncSession) -> AiSe
     )
     setting = result.scalar_one_or_none()
     if not setting:
-        setting = AiSetting(company_id=company_id)
+        setting = AiSetting(company_id=company_id, autoReplyEnabled=True)
         session.add(setting)
         await session.commit()
         await session.refresh(setting)
     return setting
+
+
+def _parse_channel_map(raw: str | None) -> dict[str, bool]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return {str(k).upper(): bool(v) for k, v in data.items()}
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return {}
+
+
+def _channel_reply_state(setting: AiSetting | None) -> dict[str, bool]:
+    parsed = _parse_channel_map(setting.channelReplyEnabled if setting else None)
+    return {ch: parsed.get(ch, True) for ch in DEFAULT_CHANNELS}
+
+
+async def _get_setting_row(company_id: str, session: AsyncSession) -> AiSetting | None:
+    result = await session.execute(
+        select(AiSetting).where(AiSetting.company_id == company_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def is_channel_reply_enabled(
+    company_id: str, channel: str, session: AsyncSession
+) -> bool:
+    """True when the AI is allowed to auto-reply on this channel for the company.
+
+    Defaults to enabled so existing behaviour is preserved. The global
+    ``autoReplyEnabled`` master switch gates everything; an explicit
+    ``channelReplyEnabled`` map entry of ``false`` disables that channel.
+    """
+    row = await _get_setting_row(company_id, session)
+    if row is None:
+        return True
+    if not row.autoReplyEnabled:
+        return False
+    parsed = _parse_channel_map(row.channelReplyEnabled)
+    key = normalize_channel_key(channel)
+    return parsed.get(key, True)
 
 
 # ── Guardrails ──────────────────────────────────────────────────────────
@@ -100,7 +168,7 @@ async def get_auto_reply(
         select(AiSetting).where(AiSetting.company_id == company_id)
     )
     row = result.scalar_one_or_none()
-    return {"autoReplyEnabled": row.autoReplyEnabled if row else False}
+    return {"autoReplyEnabled": row.autoReplyEnabled if row else True}
 
 
 @router.put("/settings/auto-reply")
@@ -110,9 +178,80 @@ async def update_auto_reply(
     session: SessionDep = None,
 ) -> dict[str, Any]:
     setting = await _get_or_create_setting(company_id, session)
-    setting.autoReplyEnabled = bool(body.get("autoReplyEnabled", False))
+    setting.autoReplyEnabled = bool(body.get("autoReplyEnabled", True))
     await session.commit()
     return {"success": True}
+
+
+# ── Per-channel reply toggle ────────────────────────────────────────────
+
+
+@router.get("/settings/channel-reply")
+async def get_channel_reply(
+    company_id: str = Query(...),
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    row = await _get_setting_row(company_id, session)
+    return {"success": True, "channels": _channel_reply_state(row)}
+
+
+@router.put("/settings/channel-reply")
+async def update_channel_reply(
+    company_id: str = Query(...),
+    body: dict[str, Any] = None,
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    setting = await _get_or_create_setting(company_id, session)
+    channels = (body or {}).get("channels") or {}
+    if not isinstance(channels, dict):
+        raise HTTPException(status_code=400, detail="channels must be an object")
+    sanitized: dict[str, bool] = {}
+    for key in DEFAULT_CHANNELS:
+        val = channels.get(key, True)
+        sanitized[key] = bool(val) if isinstance(val, bool) else True
+    setting.channelReplyEnabled = json.dumps(sanitized, ensure_ascii=False)
+    await session.commit()
+    return {"success": True, "channels": sanitized}
+
+
+# ── Agent pause / resume ────────────────────────────────────────────────
+
+
+@router.get("/settings/pause")
+async def get_agent_pause(
+    company_id: str = Query(...),
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    row = await _get_setting_row(company_id, session)
+    return {
+        "success": True,
+        "paused": bool(row.agentPaused) if row else False,
+        "pauseReason": (row.pauseReason or None) if row else None,
+    }
+
+
+@router.put("/settings/pause")
+async def update_agent_pause(
+    company_id: str = Query(...),
+    body: dict[str, Any] = None,
+    session: SessionDep = None,
+) -> dict[str, Any]:
+    setting = await _get_or_create_setting(company_id, session)
+    paused = bool((body or {}).get("paused", False))
+    reason = str((body or {}).get("reason") or "").strip()[:200] or None
+    setting.agentPaused = paused
+    setting.pauseReason = reason if paused else None
+    await session.commit()
+    await session.refresh(setting)
+    return {"success": True, "paused": setting.agentPaused, "pauseReason": setting.pauseReason}
+
+
+async def agent_pause_state(company_id: str, session: AsyncSession) -> tuple[bool, str | None]:
+    """Return (paused, pause_reason) for the company, defaulting to not paused."""
+    row = await _get_setting_row(company_id, session)
+    if row is None:
+        return False, None
+    return bool(row.agentPaused), (row.pauseReason or None)
 
 
 # ── Comment Filters ─────────────────────────────────────────────────────

@@ -52,6 +52,7 @@ export interface StorefrontTierProgress {
     expiresAt: string;
   } | null;
   walletBalance: number;
+  loyaltySystem: string;
 }
 
 interface CheckoutStore {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import i18n from "../../i18n";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,7 +17,6 @@ import {
   Video,
   File,
   MessageSquare,
-  Eye,
   Library,
   History,
   ChevronDown,
@@ -70,6 +69,7 @@ interface MetaComponent {
   format?: string;
   text?: string;
   buttons?: { type: string; text: string; url?: string }[];
+  example?: { header_handle?: string[] };
 }
 
 interface MetaTemplate {
@@ -166,6 +166,7 @@ const COMPLIANCE_RULES = [
   { id: "body_length", check: (f: typeof initialForm) => f.bodyText.length > 1024, message: "محتوى الرسالة (BODY) يجب ألا يتجاوز 1024 حرفاً" },
   { id: "named_vars_header", check: (f: typeof initialForm) => f.headerFormat === "TEXT" && hasNamedVariables(f.headerText), message: "⚠️ Meta لا يقبل أسماء متغيرات في HEADER. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
   { id: "named_vars_body", check: (f: typeof initialForm) => hasNamedVariables(f.bodyText), message: "⚠️ Meta لا يقبل أسماء متغيرات في BODY. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
+  { id: "header_media_required", check: (f: typeof initialForm) => f.headerFormat !== "TEXT" && !f.headerMediaHandle, message: "⚠️ رأس IMAGE/VIDEO/DOCUMENT يتطلب رفع وسيط — ميتا ترفض القالب بدونه (header_handle)" },
   { id: "button_url_invalid", check: (f: typeof initialForm) => f.buttonText && !isValidButtonUrl(f.buttonUrl), message: "رابط الزر (URL) يجب أن يبدأ بـ https:// — مثال: https://example.com/pay" },
   { id: "var_start_body", check: (f: typeof initialForm) => /^\{\{1\}\}/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن يبدأ محتوى الرسالة (BODY) بمتغير {{1}}. أضف نصاً قبل المتغير.", severity: "warning" },
   { id: "var_end_body", check: (f: typeof initialForm) => /\{\{\d+\}\}$/.test(f.bodyText.trim()), message: "⚠️ Meta لا يقبل أن ينتهي محتوى الرسالة (BODY) بمتغير. أضف نقطة أو نصاً بعد المتغير.", severity: "warning" },
@@ -208,6 +209,8 @@ const initialForm = {
   category: "MARKETING",
   headerFormat: "TEXT" as string,
   headerText: "",
+  headerMediaHandle: "",
+  headerMediaName: "",
   bodyText: "",
   footerText: "",
   buttonText: "",
@@ -255,6 +258,7 @@ const WhatsAppMetaTemplates: React.FC<{
   const [editShowCompliance, setEditShowCompliance] = useState(false);
 
   const [varValues, setVarValues] = useState<Record<string, string>>({});
+  const [uploadingHeader, setUploadingHeader] = useState(false);
 
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
@@ -342,7 +346,9 @@ const WhatsAppMetaTemplates: React.FC<{
     if (f.headerFormat === "TEXT" && f.headerText) {
       components.unshift({ type: "HEADER", format: "TEXT", text: f.headerText });
     } else if (f.headerFormat !== "TEXT") {
-      components.unshift({ type: "HEADER", format: f.headerFormat, text: f.headerText || undefined });
+      const headerComp: any = { type: "HEADER", format: f.headerFormat };
+      if (f.headerMediaHandle) headerComp.headerHandle = f.headerMediaHandle;
+      components.unshift(headerComp);
     } else if (f.headerText) {
       components.unshift({ type: "HEADER", format: "TEXT", text: f.headerText });
     }
@@ -475,6 +481,8 @@ const WhatsAppMetaTemplates: React.FC<{
       category: libTpl.category,
       headerFormat: libTpl.headerFormat || "TEXT",
       headerText: lang.headerText,
+      headerMediaHandle: "",
+      headerMediaName: "",
       bodyText: lang.bodyText,
       footerText: lang.footerText,
       buttonText: libTpl.buttonText || "",
@@ -485,6 +493,38 @@ const WhatsAppMetaTemplates: React.FC<{
     setCreateStep(1);
     setCreateOpen(true);
   }, []);
+
+  const uploadHeaderMedia = useCallback(async (
+    file: File,
+    apply: (handle: string, name: string) => void,
+  ) => {
+    if (!selectedSessionId) {
+      tToast.error("WhatsAppMetaTemplates.msg_5d29");
+      return;
+    }
+    setUploadingHeader(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionId", selectedSessionId);
+      const res = await apiClient.post<{ success?: boolean; mediaId?: string; fileName?: string; error?: string }>(
+        "/whatsapp-templates/templates/upload-media",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" }, ...withCompanyConfig() },
+      );
+      const data = res.data;
+      if (data?.success && data.mediaId) {
+        apply(data.mediaId, data.fileName || file.name);
+        tToast.success("WhatsAppMetaTemplates.success_upload_media");
+      } else {
+        toast.error(data?.error || "فشل رفع الوسيط");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل رفع الوسيط إلى ميتا");
+    } finally {
+      setUploadingHeader(false);
+    }
+  }, [selectedSessionId, withCompanyConfig]);
 
   const filteredLibrary = useMemo(() => {
     if (!librarySearch) return templateLibrary;
@@ -634,6 +674,8 @@ const WhatsAppMetaTemplates: React.FC<{
                               category: tmpl.category,
                               headerFormat: headerComponent?.format || "TEXT",
                               headerText: headerComponent?.text || "",
+                              headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
+                              headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
                               bodyText: bodyComponent?.text || "",
                               footerText: footerComponent?.text || "",
                               buttonText: buttonsComponent?.buttons?.[0]?.text || "",
@@ -776,12 +818,22 @@ const WhatsAppMetaTemplates: React.FC<{
                       placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
                   )}
                   {form.headerFormat !== "TEXT" && (
-                    <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
-                      <Eye className="ml-2 size-4" />
-                      <span>يتم تحديد {form.headerFormat === "IMAGE" ? "الصورة" : form.headerFormat === "VIDEO" ? "الفيديو" : "المستند"} عند الإرسال</span>
-                    </div>
+                    <HeaderMediaUploadField
+                      handle={form.headerMediaHandle}
+                      fileName={form.headerMediaName}
+                      format={form.headerFormat}
+                      uploading={uploadingHeader}
+                      onUpload={(file) => uploadHeaderMedia(file, (handle, name) =>
+                        setForm((p) => ({ ...p, headerMediaHandle: handle, headerMediaName: name })))}
+                      onRemove={() => setForm((p) => ({ ...p, headerMediaHandle: "", headerMediaName: "" }))}
+                    />
                   )}
                 </div>
+                {form.headerFormat !== "TEXT" && !form.headerMediaHandle && (
+                  <p className="text-[11px] text-amber-500 dark:text-amber-400">
+                    ⚠️ ارفع وسيطاً (صورة/فيديو/مستند) — ميتا تتطلب sample media في الهيدر لاعتماد القالب
+                  </p>
+                )}
                 {form.headerText && !headerVarsOk && (
                   <p className="text-[11px] text-red-500 dark:text-red-400">
                     ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
@@ -1053,12 +1105,22 @@ const WhatsAppMetaTemplates: React.FC<{
                     <Input value={editForm.headerText} onChange={(e) => setEditForm((p) => p ? { ...p, headerText: e.target.value } : null)}
                       placeholder="نص الرأس" className="h-11 flex-1" />
                   ) : (
-                    <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
-                      <Eye className="ml-2 size-4" />
-                      <span>يتم تحديد الوسائط عند الإرسال</span>
-                    </div>
+                    <HeaderMediaUploadField
+                      handle={editForm.headerMediaHandle}
+                      fileName={editForm.headerMediaName}
+                      format={editForm.headerFormat}
+                      uploading={uploadingHeader}
+                      onUpload={(file) => uploadHeaderMedia(file, (handle, name) =>
+                        setEditForm((p) => p ? { ...p, headerMediaHandle: handle, headerMediaName: name } : null))}
+                      onRemove={() => setEditForm((p) => p ? { ...p, headerMediaHandle: "", headerMediaName: "" } : null)}
+                    />
                   )}
                 </div>
+                {editForm.headerFormat !== "TEXT" && !editForm.headerMediaHandle && (
+                  <p className="text-[11px] text-amber-500 dark:text-amber-400">
+                    ⚠️ ارفع وسيطاً للهيدر — ميتا تتطلب sample media
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>محتوى الرسالة *</Label>
@@ -1304,5 +1366,81 @@ const WhatsAppMetaTemplates: React.FC<{
     </WhatsAppPageShell>
   );
 };
+
+/**
+ * حقل رفع وسيط رأس القالب (IMAGE/VIDEO/DOCUMENT):
+ * يرفع الملف عبر /whatsapp-templates/templates/upload-media ويعرض الـ handle الناتج
+ * مع إمكانية الإزالة. الـ handle يُستخدم لاحقاً في example.header_handle (الإنشاء)
+ * أو كـ header parameter (الإرسال).
+ */
+function HeaderMediaUploadField({
+  handle,
+  fileName,
+  format,
+  uploading,
+  onUpload,
+  onRemove,
+}: {
+  handle: string;
+  fileName: string;
+  format: string;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mediaLabel = format === "VIDEO" ? "فيديو" : format === "DOCUMENT" ? "مستند" : "صورة";
+
+  return (
+    <div className="flex h-11 flex-1 items-center gap-2">
+      {handle ? (
+        <div className="flex h-full flex-1 items-center gap-2 rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3">
+          <FileText className="ml-1 size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />
+          <span className="flex-1 truncate text-sm text-[color:var(--color-muted-foreground)]" dir="ltr">
+            {fileName || handle}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0"
+            onClick={onRemove}
+            title="إزالة الوسيط"
+          >
+            <Trash2 className="size-4 text-red-500 dark:text-red-400" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 flex-1"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <>
+              <RefreshCw className="ml-2 size-4 animate-spin" />
+              جاري الرفع إلى ميتا...
+            </>
+          ) : (
+            <>اختر {mediaLabel} للرأس</>
+          )}
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept={format === "VIDEO" ? "video/*" : format === "DOCUMENT" ? "application/pdf" : "image/*"}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
 
 export default WhatsAppMetaTemplates;

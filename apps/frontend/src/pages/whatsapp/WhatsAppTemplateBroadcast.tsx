@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import {
-  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List, Image as ImageIcon, RefreshCw, Search, Trash2, Copy, Filter, Layers, Users, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +17,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import { broadcastService } from "../../services/broadcastService";
@@ -31,6 +37,7 @@ interface MetaTemplate {
 
 interface CustomerList {
   id: string; name: string; description: string; count: number; isDefault?: boolean;
+  criteria?: any; isStale?: boolean; createdAt?: string; updatedAt?: string;
 }
 
 interface Campaign {
@@ -45,6 +52,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 = ({ companyId, companyName: _companyName, superAdminMode: _superAdminMode = false }) => {
   const { t, i18n } = useTranslation();
   void i18n;
+  const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState("create");
 
@@ -54,6 +62,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
+
+  // Header media for Meta templates with an IMAGE header
+  const [waHeaderMedia, setWaHeaderMedia] = useState("");
+  const [headerMediaName, setHeaderMediaName] = useState("");
+  const [headerUploading, setHeaderUploading] = useState(false);
 
   // Campaign creation
   const [campaignName, setCampaignName] = useState("");
@@ -65,6 +78,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [recipients, setRecipients] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
   const [selectedTag, setSelectedTag] = useState("");
+
+  // Customer lists tab state
+  const [listsSearch, setListsSearch] = useState("");
+  const [listsFilter, setListsFilter] = useState<"all" | "custom" | "default">("all");
+  const [listToDelete, setListToDelete] = useState<CustomerList | null>(null);
+  const [deletingList, setDeletingList] = useState(false);
+  const [refreshingListId, setRefreshingListId] = useState<string | null>(null);
 
   const [scheduleAt, setScheduleAt] = useState("");
   const [templateVars, _setTemplateVars] = useState<string[]>([]);
@@ -135,6 +155,99 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     } catch { }
   }, []);
 
+  const filteredCustomerLists = useMemo(() => {
+    let out = customerLists;
+    if (listsFilter === "custom") out = out.filter((l) => !l.isDefault);
+    if (listsFilter === "default") out = out.filter((l) => l.isDefault);
+    if (listsSearch.trim()) {
+      const q = listsSearch.trim().toLowerCase();
+      out = out.filter((l) =>
+        l.name.toLowerCase().includes(q) ||
+        (l.description || "").toLowerCase().includes(q),
+      );
+    }
+    return out;
+  }, [customerLists, listsFilter, listsSearch]);
+
+  const reloadLists = useCallback(async () => {
+    await fetchCustomerLists();
+  }, [fetchCustomerLists]);
+
+  const handleDeleteList = useCallback(async () => {
+    if (!listToDelete) return;
+    setDeletingList(true);
+    try {
+      await broadcastService.deleteCustomerList(listToDelete.id);
+      toast.success("تم حذف القائمة");
+      setListToDelete(null);
+      await reloadLists();
+    } catch (err: any) {
+      toast.error(err?.message || "فشل في حذف القائمة");
+    } finally {
+      setDeletingList(false);
+    }
+  }, [listToDelete, reloadLists]);
+
+  const handleDuplicateList = useCallback(async (list: CustomerList) => {
+    try {
+      const criteria = typeof list.criteria === "string"
+        ? (() => { try { return JSON.parse(list.criteria); } catch { return {}; } })()
+        : (list.criteria || {});
+      await broadcastService.createCustomerList({
+        name: `${list.name} (نسخة)`,
+        description: list.description || "",
+        criteria,
+      });
+      toast.success("تم إنشاء نسخة من القائمة");
+      await reloadLists();
+    } catch (err: any) {
+      toast.error(err?.message || "فشل في نسخ القائمة");
+    }
+  }, [reloadLists]);
+
+  const handleRefreshListCount = useCallback(async (list: CustomerList) => {
+    if (list.isDefault) return;
+    setRefreshingListId(list.id);
+    try {
+      await broadcastService.refreshCustomerListCount(list.id);
+      toast.success("تم تحديث عدد العملاء");
+      await reloadLists();
+    } catch (err: any) {
+      toast.error(err?.message || "فشل في تحديث العدد");
+    } finally {
+      setRefreshingListId(null);
+    }
+  }, [reloadLists]);
+
+  const listCriteriaText = useCallback((criteria: any): string => {
+    if (!criteria) return "جميع العملاء النشطين";
+    const c = typeof criteria === "string"
+      ? (() => { try { return JSON.parse(criteria); } catch { return {}; } })()
+      : criteria;
+    const type = c.type || "all";
+    switch (type) {
+      case "active": return `نشط خلال آخر ${c.hours ?? 24} ساعة`;
+      case "inactive": return `غير نشط منذ ${c.days ?? 7} يوم`;
+      case "tag": return `يحمل وسم: ${c.tag}`;
+      case "orderStatus": return `طلبات بحالة "${c.status}" خلال ${c.days} يوم`;
+      case "returnRequest": return `مرتجعات بحالة "${c.status || "الكل"}" خلال ${c.days} يوم`;
+      case "paymentStatus": return `دفع بحالة "${c.status}" خلال ${c.days} يوم`;
+      case "city": return `من مدينة: ${c.city}`;
+      case "customerRating": return `التقييم: ${c.rating}`;
+      case "latest": return `أحدث ${c.limit ?? 100} عميل`;
+      case "oldest": return `أقدم ${c.limit ?? 100} عميل`;
+      case "minTotalSpent": return `إجمالي إنفاق ≥ ${c.amount}`;
+      case "minOrdersCount": return `عدد طلبات ≥ ${c.count}`;
+      case "preset": return `قالب: ${c.preset}`;
+      default: return "جميع العملاء النشطين";
+    }
+  }, []);
+
+  const formatListDate = useCallback((date: string | undefined) => {
+    if (!date) return "—";
+    try { return new Date(date).toLocaleString("ar-EG"); } catch { return "—"; }
+  }, []);
+
   const fetchLeadCategories = useCallback(async () => {
     try {
       const res = await apiClient.get("/whatsapp/lead-categories", withCompanyConfig());
@@ -179,16 +292,66 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     setRecipients((prev) => prev.filter((p) => p !== phone));
   }, []);
 
+  const fetchAllListPhones = useCallback(async (listId: string): Promise<string[]> => {
+    const phones: string[] = [];
+    const pageSize = 200;
+    let page = 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const res = await broadcastService.getCustomersInListPaginated(listId, page, pageSize);
+      const customers = (res as any)?.data || [];
+      customers.forEach((c: any) => {
+        if (c?.phone) phones.push(c.phone);
+      });
+      const total = (res as any)?.total ?? customers.length;
+      if (!customers.length || page * pageSize >= total) break;
+      page += 1;
+    }
+    return phones;
+  }, []);
+
   const handleSelectList = useCallback(async (listId: string) => {
     setSelectedListId(listId);
     if (listId === "manual") return;
     try {
-      const res = await broadcastService.getCustomersInList(listId);
-      const customers = Array.isArray(res) ? res : (res as any)?.data || [];
-      const phones = customers.map((c: any) => c.phone).filter(Boolean);
+      const phones = await fetchAllListPhones(listId);
+      if (phones.length === 0) {
+        toast.warning("لا يوجد أرقام هواتف في هذه القائمة");
+        return;
+      }
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
-    } catch { }
+      toast.success(`تم تحميل ${phones.length} عميل من القائمة`);
+    } catch {
+      tToast.error("WhatsAppTemplateBroadcast.failed_load_914a");
+    }
   }, []);
+
+  const handleListSelectForSend = useCallback(async (list: CustomerList) => {
+    setActiveTab("create");
+    await handleSelectList(list.id);
+    toast.success(`تم تحميل "${list.name}" (${list.count} عميل)`);
+  }, [handleSelectList]);
+
+  useEffect(() => {
+    const urlListId = searchParams.get("listId");
+    if (!urlListId || urlListId === "manual") return;
+    let cancelled = false;
+    const apply = async () => {
+      const res = await broadcastService.getCustomerLists();
+      const lists = Array.isArray(res) ? res : (res as any)?.data || [];
+      const found = lists.find((l: any) => l.id === urlListId);
+      if (cancelled) return;
+      if (found) {
+        setActiveTab("create");
+        await handleSelectList(found.id);
+        toast.success(`تم تحميل القائمة "${found.name}" (${found.count} عميل)`);
+      } else {
+        toast.error("القائمة المحددة غير موجودة");
+      }
+    };
+    void apply();
+    return () => { cancelled = true; };
+  }, [searchParams, handleSelectList]);
 
   const handleSelectTag = useCallback(async (tagName: string) => {
     setSelectedTag(tagName);
@@ -242,6 +405,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         targetAudience: selectedListId || "manual",
         waTemplateName: selectedTemplate,
         waLanguageCode: languageCode,
+        waHeaderMedia: waHeaderMedia || undefined,
         whatsAppSessionId: selectedSessionId,
         manualPhones: JSON.stringify(recipients),
         sendNow: scheduleAt ? "false" : "true",
@@ -275,7 +439,37 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     } finally {
       if (!scheduleAt) { setSending(false); setSendProgress(null); }
     }
-  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, selectedSessionId, withCompanyConfig, fetchCampaigns]);
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, selectedSessionId, withCompanyConfig, fetchCampaigns, waHeaderMedia]);
+
+  const handleUploadHeaderMedia = useCallback(async (file: File) => {
+    if (!selectedSessionId) {
+      tToast.error("WhatsAppTemplateBroadcast.msg_03ea");
+      return;
+    }
+    setHeaderUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionId", selectedSessionId);
+      const res = await apiClient.post<{ success?: boolean; mediaId?: string; fileName?: string; error?: string }>(
+        "/whatsapp-templates/templates/upload-media",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" }, ...withCompanyConfig() },
+      );
+      const data = res.data;
+      if (data?.success && data.mediaId) {
+        setWaHeaderMedia(data.mediaId);
+        setHeaderMediaName(data.fileName || file.name);
+        toast.success("تم رفع صورة الرأس — سترسل في هيدر القالب لكل عميل");
+      } else {
+        toast.error(data?.error || "فشل رفع الصورة");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل رفع الصورة إلى ميتا");
+    } finally {
+      setHeaderUploading(false);
+    }
+  }, [selectedSessionId, withCompanyConfig]);
 
   const openRate = (c: Campaign) =>
     c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;
@@ -364,6 +558,43 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>صورة الرأس (اختياري — لقوالب الهيدر IMAGE)</Label>
+                    {waHeaderMedia ? (
+                      <div className="flex h-11 items-center gap-2 rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3">
+                        <ImageIcon className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />
+                        <span className="flex-1 truncate text-sm text-[color:var(--color-muted-foreground)]" dir="ltr">
+                          {headerMediaName || waHeaderMedia}
+                        </span>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500" onClick={() => { setWaHeaderMedia(""); setHeaderMediaName(""); }}>
+                          إزالة
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[var(--color-muted)] text-sm text-[color:var(--color-muted-foreground)] hover:bg-[var(--shell-overlay-bg)]">
+                        {headerUploading ? (
+                          <><RefreshCw className="size-4 animate-spin" /> جاري الرفع إلى ميتا...</>
+                        ) : (
+                          <><ImageIcon className="size-4" /> اختر صورة تُرسل في هيدر القالب</>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={headerUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadHeaderMedia(file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    )}
+                    <p className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                      تظهر الصورة في كل رسالة من الحملة (يمكن لكل قالب هيدره IMAGE فقط). لتغيير الصورة لكل عميل، استخدم رابط HTTPS مخصص في البث.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -733,6 +964,143 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
 
         {/* ===================== CUSTOMER LISTS TAB ===================== */}
         <TabsContent value="lists" className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[color:var(--color-foreground)]">قوائم العملاء</h3>
+              <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                أنشئ وأدر قوائم العملاء، ثم أرسل إليها مباشرة عبر قالب واتساب.
+              </p>
+            </div>
+            <Button variant="outline" className="rounded-full" render={<a href="/customers/lists" />}>
+                <Layers className="size-4" /> إدارة القوائم الكاملة
+            </Button>
+          </div>
+
+          {/* Search + filter */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+              <Input
+                value={listsSearch}
+                onChange={(e) => setListsSearch(e.target.value)}
+                placeholder="ابحث في القوائم..."
+                className="h-10 rounded-full border-[color:var(--shell-control-border)] pr-9"
+              />
+            </div>
+            <div className="flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-1">
+              {([
+                { value: "all", label: "الكل" },
+                { value: "custom", label: "المخصصة" },
+                { value: "default", label: "الافتراضية" },
+              ] as const).map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setListsFilter(f.value)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    listsFilter === f.value
+                      ? "bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)]"
+                      : "text-[color:var(--color-muted-foreground)] hover:bg-[color:var(--color-muted)]",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Customer lists grid */}
+          {filteredCustomerLists.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-6 py-16 text-center sm:rounded-3xl">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-card))] text-[color:var(--color-primary)]">
+                <Layers className="size-7" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-[color:var(--color-foreground)]">
+                  {listsSearch || listsFilter !== "all" ? "لم يتم العثور على قوائم" : "لا توجد قوائم عملاء"}
+                </p>
+                <p className="max-w-sm text-sm text-[color:var(--color-muted-foreground)]">
+                  {listsSearch || listsFilter !== "all"
+                    ? "جرّب تغيير البحث أو الفلترة."
+                    : "أنشئ قائمة عملاء ذكية من صفحة إدارة القوائم أو أنشئ واحدة سريعاً هنا."}
+                </p>
+              </div>
+              {!listsSearch && listsFilter === "all" && (
+                <Button className="rounded-full" render={<a href="/customers/lists" />}>
+                    <Plus className="size-4" /> إنشاء قائمة جديدة
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredCustomerLists.map((list) => (
+                <div
+                  key={list.id}
+                  className="flex flex-col rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-raised sm:rounded-3xl"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-card))] text-[color:var(--color-primary)]">
+                        <Users className="size-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="truncate font-semibold text-[color:var(--color-foreground)]">{list.name}</h4>
+                        <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                          {list.isDefault ? "قائمة افتراضية" : formatListDate(list.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    {list.isDefault && (
+                      <Badge className="shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-info)_15%,var(--color-card))] text-[color:var(--color-info)]">
+                        افتراضية
+                      </Badge>
+                    )}
+                  </div>
+
+                  {list.description ? (
+                    <p className="mb-3 line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">{list.description}</p>
+                  ) : null}
+
+                  <div className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-[color:var(--color-muted)] px-2.5 py-1 text-[11px] text-[color:var(--color-muted-foreground)]">
+                    <Filter className="size-3" />
+                    {listCriteriaText(list.criteria)}
+                    {(list as any).isStale ? <span className="mr-1 text-amber-500">• قديم</span> : null}
+                  </div>
+
+                  <div className="mb-4 flex items-baseline gap-1.5">
+                    <span className="text-2xl font-bold text-[color:var(--color-foreground)]">
+                      {list.count.toLocaleString("ar-EG")}
+                    </span>
+                    <span className="text-sm text-[color:var(--color-muted-foreground)]">عميل</span>
+                  </div>
+
+                  <div className="mt-auto flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pt-3">
+                    <Button size="sm" className="rounded-full" onClick={() => void handleListSelectForSend(list)}>
+                      <Send className="size-3.5" /> إرسال
+                    </Button>
+                    {!list.isDefault && (
+                      <>
+                        <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleDuplicateList(list)} title="نسخ قائمة">
+                          <Copy className="size-3.5" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="rounded-full" onClick={() => void handleRefreshListCount(list)} disabled={refreshingListId === list.id} title="تحديث العدد">
+                          {refreshingListId === list.id ? <RefreshCw className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="mr-auto rounded-full text-destructive hover:text-destructive" onClick={() => setListToDelete(list)} aria-label="حذف">
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Lead categories (import) — secondary panel */}
           <Card className="rounded-2xl">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -740,10 +1108,8 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                   <CardTitle className="text-lg">تصنيفات العملاء</CardTitle>
                   <CardDescription>استيراد جهات الاتصال من التصنيفات المتاحة في صفحة تقسيم العملاء</CardDescription>
                 </div>
-                <Button variant="outline" className="rounded-full" asChild>
-                  <a href="/customers/segments">
+                <Button variant="outline" className="rounded-full" render={<a href="/customers/segments" />}>
                     <List className="size-4" /> مركز التقسيم
-                  </a>
                 </Button>
               </div>
             </CardHeader>
@@ -828,6 +1194,25 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete list confirm */}
+      <AlertDialog open={!!listToDelete} onOpenChange={(o) => !o && setListToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف قائمة العملاء</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف قائمة "{listToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">إلغاء</AlertDialogCancel>
+            <AlertDialogAction className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive" onClick={() => void handleDeleteList()} disabled={deletingList}>
+              {deletingList ? <RefreshCw className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </WhatsAppPageShell>
   );
 };

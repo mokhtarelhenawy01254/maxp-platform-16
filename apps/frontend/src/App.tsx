@@ -50,6 +50,7 @@ const CustomerDetails = React.lazy(
   () => import("./pages/customers/CustomerDetails"),
 );
 const CustomerEdit = React.lazy(() => import("./pages/customers/CustomerEdit"));
+const CustomerPortalView = React.lazy(() => import("./pages/customers/CustomerPortalView"));
 const CustomerWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerWhatsAppNotify"),
 );
@@ -663,6 +664,9 @@ const TeamPerformanceAnalytics = React.lazy(
 const TodayOps = React.lazy(
   () => import("./pages/Analytics/orders/TodayOps"),
 );
+const OrderStatusAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/OrderStatusAnalytics"),
+);
 const AbandonedCartAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
 );
@@ -943,6 +947,12 @@ const EducationFunnelPage = React.lazy(
 const HotelManagementPage = React.lazy(
   () => import("./pages/admin/HotelManagementPage"),
 );
+const LabManagementPage = React.lazy(
+  () => import("./pages/lab/LabManagementPage"),
+);
+const RadiologyManagementPage = React.lazy(
+  () => import("./pages/radiology/RadiologyManagementPage"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -1041,6 +1051,18 @@ const ParentWalletPage = React.lazy(
 );
 const ParentBuyPackagePage = React.lazy(
   () => import("./pages/parent/ParentBuyPackagePage"),
+);
+const CustomerPortalLayout = React.lazy(
+  () => import("./pages/account/CustomerPortalLayout"),
+);
+const CustomerAccountHome = React.lazy(
+  () => import("./pages/account/CustomerAccountHome"),
+);
+const CustomerWalletPage = React.lazy(
+  () => import("./pages/account/CustomerWalletPage"),
+);
+const CustomerProfilePage = React.lazy(
+  () => import("./pages/account/CustomerProfilePage"),
 );
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
@@ -1440,6 +1462,9 @@ const CustomerSegments = React.lazy(
 const CustomerNotifications = React.lazy(
   () => import("./pages/customers/CustomerNotifications"),
 );
+const CustomerLists = React.lazy(
+  () => import("./pages/customers/CustomerLists"),
+);
 const RecruitmentDashboard = React.lazy(
   () => import("./pages/hr/recruitment/RecruitmentDashboard"),
 );
@@ -1492,6 +1517,7 @@ if (typeof window !== "undefined") {
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
+  p["/customers/lists"] = () => import("./pages/customers/CustomerLists");
   p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
@@ -1837,6 +1863,10 @@ const AppContent = () => {
             <Route path="/patient/appointments" element={<PatientLayout><PatientAppointmentsPage /></PatientLayout>} />
             <Route path="/patient/history" element={<PatientLayout><PatientHistoryPage /></PatientLayout>} />
             <Route path="/patient/invoices" element={<PatientLayout><PatientInvoicesPage /></PatientLayout>} />
+            {/* Customer Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/account" element={<CustomerPortalLayout><CustomerAccountHome /></CustomerPortalLayout>} />
+            <Route path="/account/cashback" element={<CustomerPortalLayout><CustomerWalletPage /></CustomerPortalLayout>} />
+            <Route path="/account/profile" element={<CustomerPortalLayout><CustomerProfilePage /></CustomerPortalLayout>} />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
@@ -2784,6 +2814,16 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/customers/lists"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerLists />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
                   path="/leads"
                   element={
                     <Layout>
@@ -2837,6 +2877,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.edit']}>
                       <Layout>
                         <CustomerEdit />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customers/:id/portal"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerPortalView />
                       </Layout>
                     </PermissionProtectedRoute>
                   }
@@ -4291,7 +4341,9 @@ const AppContent = () => {
                   path="/orders/manual"
                   element={
                     <Layout>
-                      <ManualOrderPage />
+                      <AppAccessRoute requiredAppSlugs={['manual-orders-pro', 'store-pro']}>
+                        <ManualOrderPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4599,6 +4651,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TodayOps />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/status-analysis"
+                  element={
+                    <Layout>
+                      <OrderStatusAnalytics />
                     </Layout>
                   }
                 />
@@ -6866,6 +6926,22 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <BookingManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/lab/*"
+                  element={
+                    <Layout fullWidth>
+                      <LabManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/radiology/*"
+                  element={
+                    <Layout fullWidth>
+                      <RadiologyManagementPage />
                     </Layout>
                   }
                 />

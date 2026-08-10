@@ -203,10 +203,24 @@ const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
 const bookingReportsRoutes = require("./routes/bookingReportsRoutes");
 const bookingPatientsRoutes = require("./routes/bookingPatientsRoutes");
+const bookingReferringPhysiciansRoutes = require("./routes/bookingReferringPhysiciansRoutes");
 const bookingInvoicesRoutes = require("./routes/bookingInvoicesRoutes");
 const bookingDoctorAvailabilityRoutes = require("./routes/bookingDoctorAvailabilityRoutes");
 const bookingDoctorPortalRoutes = require("./routes/bookingDoctorPortalRoutes");
 const bookingPatientPortalRoutes = require("./routes/bookingPatientPortalRoutes");
+const bookingPriceListsRoutes = require("./routes/bookingPriceListsRoutes");
+const bookingWorkflowRoutes = require("./routes/bookingWorkflowRoutes");
+const bookingOperationsRoutes = require("./routes/bookingOperationsRoutes");
+const bookingInsuranceCompaniesRoutes = require("./routes/bookingInsuranceCompaniesRoutes");
+const bookingInsuranceMemberTypesRoutes = require("./routes/bookingInsuranceMemberTypesRoutes");
+const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsRoutes");
+const labTestsRoutes = require("./routes/labTestsRoutes");
+const labOrdersRoutes = require("./routes/labOrdersRoutes");
+const labCulturesRoutes = require("./routes/labCulturesRoutes");
+const labContractsRoutes = require("./routes/labContractsRoutes");
+const labHomeVisitsRoutes = require("./routes/labHomeVisitsRoutes");
+const labSampleTypesRoutes = require("./routes/labSampleTypesRoutes");
+const radiologyRoutes = require("./routes/radiologyRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -572,6 +586,7 @@ app.use(
 );
 app.use("/api/v1/public/orders", require("./routes/publicOrdersRoutes"));
 app.use("/api/v1/public/loyalty", require("./routes/publicLoyaltyRoutes"));
+app.use("/api/v1/public/turbo/location", require("./routes/publicTurboLocationRoutes"));
 app.use(
   "/api/v1/public/storefront",
   require("./routes/publicStorefrontRoutes"),
@@ -580,6 +595,7 @@ app.use("/api/v1/public/platform", publicPlatformRoutes);
 app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
 app.use("/api/v1/public/merchants", publicMerchantRoutes);
 app.use("/api/v1/public/booking", require("./routes/publicBookingRoutes"));
+app.use("/api/v1/public/widget", require("./routes/publicWidgetChatRoutes"));
 app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
@@ -768,9 +784,23 @@ app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/booking/patients", bookingPatientsRoutes);
+app.use("/api/v1/booking/referring-physicians", bookingReferringPhysiciansRoutes);
 app.use("/api/v1/booking/invoices", bookingInvoicesRoutes);
 app.use("/api/v1/booking/doctor-portal", bookingDoctorPortalRoutes);
 app.use("/api/v1/booking/patient-portal", bookingPatientPortalRoutes);
+app.use("/api/v1/booking/price-lists", bookingPriceListsRoutes);
+app.use("/api/v1/booking/workflow", bookingWorkflowRoutes);
+app.use("/api/v1/booking/operations", bookingOperationsRoutes);
+app.use("/api/v1/booking/insurance-companies", bookingInsuranceCompaniesRoutes);
+app.use("/api/v1/booking/insurance-member-types", bookingInsuranceMemberTypesRoutes);
+app.use("/api/v1/booking/patient-documents", bookingPatientDocumentsRoutes);
+app.use("/api/v1/lab/tests", labTestsRoutes);
+app.use("/api/v1/lab/orders", labOrdersRoutes);
+app.use("/api/v1/lab/cultures", labCulturesRoutes);
+app.use("/api/v1/lab/contracts", labContractsRoutes);
+app.use("/api/v1/lab/home-visits", labHomeVisitsRoutes);
+app.use("/api/v1/lab/sample-types", labSampleTypesRoutes);
+app.use("/api/v1/radiology", radiologyRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -1128,6 +1158,22 @@ try {
   startAutoDiscountVoucherCron();
 } catch (error) {
   console.error("❌ [AUTO-DISCOUNT-CRON] Failed to start voucher conversion cron:", error);
+}
+
+// Start customer birthday automation cron
+try {
+  const { startCustomerBirthdayScheduler } = require("./cron/customerBirthdayCron");
+  startCustomerBirthdayScheduler();
+} catch (error) {
+  console.error("❌ [CUSTOMER-BIRTHDAY-CRON] Failed to start customer birthday cron:", error);
+}
+
+// Start scheduled occasion campaign cron
+try {
+  const { startOccasionCampaignScheduler } = require("./cron/occasionCampaignCron");
+  startOccasionCampaignScheduler();
+} catch (error) {
+  console.error("❌ [OCCASION-CRON] Failed to start occasion campaign cron:", error);
 }
 
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب

@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 import uuid
+from contextlib import suppress
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -11,6 +12,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import async_session
+from src.db.repo.agent_repo import AgentRepository
 from src.services.queue_service import QueuePriority, queue_service
 
 logger = structlog.get_logger(__name__)
@@ -18,6 +20,27 @@ logger = structlog.get_logger(__name__)
 
 def _generate_id() -> str:
     return str(uuid.uuid4())
+
+
+async def _channel_reply_enabled(company_id: str, channel: str, session: AsyncSession) -> bool:
+    try:
+        from src.api.admin.settings import is_channel_reply_enabled
+        return await is_channel_reply_enabled(company_id, channel, session)
+    except Exception:
+        logger.warning("channel_reply_check_failed", company_id=company_id, channel=channel, exc_info=True)
+        return True
+
+
+async def _company_has_active_agents(company_id: str, session: AsyncSession) -> bool:
+    try:
+        row = await session.execute(
+            "SELECT 1 FROM ai.agents WHERE company_id = :c AND status = 'ACTIVE' LIMIT 1",
+            {"c": company_id},
+        )
+        return row.scalar_one_or_none() is not None
+    except Exception:
+        logger.warning("active_agents_check_failed", company_id=company_id, exc_info=True)
+        return False
 
 
 def _parse_metadata(meta: str | dict | None) -> dict:
@@ -145,10 +168,9 @@ async def handle_memory_consolidation(job: dict[str, Any]) -> None:
             return
 
         from src.llm.client import LLMClient
-        from src.config import get_settings
+        from src.llm.key_resolver import get_active_key
 
-        settings = get_settings()
-        api_key = settings.google_api_key
+        api_key = await get_active_key("GOOGLE")
         provider = LLMClient(provider="GOOGLE", model="gemini-2.5-flash", api_key=api_key) if api_key else None
 
         for conv in conversations:
@@ -324,6 +346,10 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
     logger.info("processing facebook message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "facebook", session):
+            logger.info("facebook reply disabled for company", company_id=company_id)
+            return
+
         # 1. Get Page Token
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :page_id AND company_id = :company_id",
@@ -383,7 +409,7 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 6. AI Process — try DB channel agent first, fall back to template
+        # 6. AI Process — try DB channel agent; no agent on channel = no reply
         from src.agents.base import BaseAgent
         from src.workflows.orchestration_flow import _resolve_channel_agent
         from src.skills.registry import get_skill_registry
@@ -398,6 +424,9 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to facebook, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="facebook-sales-support-agent",
                 company_id=company_id,
@@ -479,6 +508,10 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
             break
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "facebook", session):
+            logger.info("facebook comment reply disabled for company", company_id=company_id)
+            return
+
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :page_id",
             {"page_id": page_id},
@@ -499,7 +532,7 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         )
         await session.commit()
 
-    # AI Reply to comment — try DB channel agent first, fall back to template
+    # AI Reply to comment — try DB channel agent; no agent on channel = no reply
     from src.agents.base import BaseAgent
     from src.workflows.orchestration_flow import _resolve_channel_agent
     from src.skills.registry import get_skill_registry
@@ -514,6 +547,9 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
     except Exception:
         logger.warning("channel_agent_resolution_failed", exc_info=True)
     if not agent:
+        if await _company_has_active_agents(company_id, session):
+            logger.info("no agent routed to facebook, skipping comment reply", company_id=company_id)
+            return
         agent = await BaseAgent.from_template(
             template_slug="facebook-sales-support-agent",
             company_id=company_id,
@@ -577,6 +613,10 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
     logger.info("processing whatsapp message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "whatsapp", session):
+            logger.info("whatsapp reply disabled for company", company_id=company_id)
+            return
+
         # 1. Get Page/Phone Token
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :pid AND company_id = :cid",
@@ -641,6 +681,9 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to whatsapp, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="sales-agent",
                 company_id=company_id,
@@ -692,6 +735,10 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
     logger.info("processing telegram message", sender_id=sender_id, company_id=company_id)
 
     async with async_session() as session:
+        if not await _channel_reply_enabled(company_id, "telegram", session):
+            logger.info("telegram reply disabled for company", company_id=company_id)
+            return
+
         # 1. Customer Lookup/Creation
         cust_row = await session.execute(
             "SELECT id FROM customers WHERE telegram_id = :sid AND company_id = :cid",
@@ -745,6 +792,9 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
         except Exception:
             logger.warning("channel_agent_resolution_failed", exc_info=True)
         if not agent:
+            if await _company_has_active_agents(company_id, session):
+                logger.info("no agent routed to telegram, skipping reply", company_id=company_id)
+                return
             agent = await BaseAgent.from_template(
                 template_slug="sales-agent",
                 company_id=company_id,
@@ -944,6 +994,198 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
             await session.commit()
 
 
+async def _resolve_order_confirmation_agent(
+    company_id: str, session: AsyncSession
+) -> tuple[str | None, Any | None]:
+    """Resolve the ORDER_CONFIRMATION agent (منى) for a company.
+
+    Prefers an ACTIVE DB agent whose role is ORDER_CONFIRMATION or whose
+    template_slug references order-confirmation. Falls back to the whatsapp
+    channel agent so order-created triggers still work when the company only
+    has a generic channel agent.
+    """
+    from src.agents.base import BaseAgent
+    from src.agents.loader import get_template
+    from src.workflows.orchestration_flow import (
+        _build_runtime_agent_from_db,
+        _resolve_agent_model,
+        _resolve_channel_agent,
+        _sync_agent_config_from_db,
+    )
+    from src.skills.registry import get_skill_registry
+
+    # 1) Prefer a DB agent configured as ORDER_CONFIRMATION.
+    try:
+        repo = AgentRepository(session)
+        db_agents = await repo.list_active_agents(company_id)
+        targets = [a for a in db_agents if str(a.role or "").upper() == "ORDER_CONFIRMATION"]
+        if not targets:
+            targets = [
+                a for a in db_agents
+                if a.template_slug and "order-confirmation" in str(a.template_slug)
+            ]
+        if targets:
+            db_agent = targets[0]
+            resolved_model = await _resolve_agent_model(db_agent, session)
+            tmpl_instr = None
+            if db_agent.template_slug:
+                with suppress(Exception):
+                    tmpl = await get_template(db_agent.template_slug, session)
+                    if tmpl:
+                        tmpl_instr = {
+                            "soul": tmpl.instructions_soul or "",
+                            "persona": tmpl.instructions_persona or "",
+                            "agents": tmpl.instructions_agents or "",
+                            "tools": tmpl.instructions_tools or "",
+                        }
+            registry = get_skill_registry()
+            runtime_agent = registry.get(company_id, db_agent.id)
+            if runtime_agent:
+                await _sync_agent_config_from_db(runtime_agent, db_agent, session)
+                return db_agent.id, runtime_agent
+            runtime_agent, _ = _build_runtime_agent_from_db(
+                db_agent, model=resolved_model, template_instructions=tmpl_instr
+            )
+            registry.register(company_id, db_agent.id, runtime_agent)
+            return db_agent.id, runtime_agent
+    except Exception:
+        logger.warning("order_confirmation_agent_lookup_failed", company_id=company_id, exc_info=True)
+
+    # 2) Fall back to the whatsapp channel agent (registry/DB) or template agent.
+    try:
+        _id, channel_agent, _src = await _resolve_channel_agent(
+            company_id=company_id, channel="whatsapp",
+            registry=get_skill_registry(), session=session,
+        )
+        if channel_agent:
+            return _id, channel_agent
+    except Exception:
+        logger.warning("order_created_channel_agent_failed", company_id=company_id, exc_info=True)
+
+    # 3) Last resort: instantiate the order-confirmation template directly.
+    try:
+        from src.agents.loader import get_template
+
+        agent = await BaseAgent.from_template(
+            template_slug="order-confirmation-agent",
+            company_id=company_id,
+            overrides={
+                "id": f"oc_agent_{company_id[-8:]}",
+                "name": "منى — منسقة تأكيد الطلبات",
+                "persona": {"channel": "whatsapp"},
+            },
+            session=session,
+        )
+        return agent.config.id, agent
+    except Exception:
+        logger.warning("order_confirmation_template_failed", company_id=company_id, exc_info=True)
+
+    return None, None
+
+
+async def handle_order_created(job: dict[str, Any]) -> None:
+    """Background task: a new order was created → resolve its delivery area.
+
+    Runs the ORDER_CONFIRMATION agent (منى) with the order context. The agent
+    searches the shipping company's area map (search_area_by_text), updates the
+    order when confident, or messages the customer on WhatsApp to confirm.
+    """
+    payload = job.get("payload", {})
+    company_id = payload.get("company_id")
+    order_number = payload.get("order_number")
+    if not company_id or not order_number:
+        logger.warning("order.created skipped: missing required fields", payload=payload)
+        return
+
+    logger.info("processing order created", company_id=company_id, order_number=order_number)
+
+    async with async_session() as session:
+        agent_id, agent = await _resolve_order_confirmation_agent(company_id, session)
+        if not agent:
+            logger.info("no order confirmation agent available", company_id=company_id)
+            return
+
+        address_text = payload.get("address_text") or ""
+        governorate = payload.get("governorate") or ""
+        city = payload.get("city") or ""
+        phone = payload.get("customer_phone") or ""
+        customer_name = payload.get("customer_name") or ""
+
+        # Build the task so منى resolves the area; if unclear she contacts the
+        # customer on WhatsApp via whatsapp_send. The reply is logged for audit.
+        task = {
+            "description": (
+                f"تم إنشاء طلب جديد رقم {order_number} على المتجر. "
+                f"العنوان المكتوب من العميل: «{address_text or 'غير متوفر'}». "
+                f"المحافظة المكتوبة: «{governorate or 'غير متوفر'}» — المنطقة/المدينة: «{city or 'غير متوفر'}». "
+                f"رقم العميل: {phone or 'غير متوفر'}، الاسم: {customer_name or 'غير متوفر'}.\n\n"
+                "مهمتك: حددي المحافظة والمنطقة الصحيحة على خريطة شركة الشحن. "
+                "استخدمي search_area_by_text بالنص الكامل للعنوان، ثم shipping_company_governorates وshipping_company_areas للتحقق. "
+                "لو اتحددت المحافظة والمنطقة بثقة عالية → حدّثي بيانات الطلب عبر order_update_details. "
+                "لو العنوان غامض أو المنطقة مش واضحة → كلمي العميل على الواتساب عبر whatsapp_send واطلبي منه تأكيد المنطقة (سؤال واحد بس). "
+                "ممنوع تخترعي محافظة أو منطقة مش موجودة في خريطة شركة الشحن."
+            ),
+            "company_id": company_id,
+            "channel": "whatsapp",
+            "user_id": payload.get("customer_id") or f"order_{order_number}",
+            "job_id": job.get("id"),
+            "force_pipeline": True,
+        }
+
+        try:
+            task_result = await agent.process_task(task)
+            result_data = task_result.get("result", {}) or {}
+            reply = result_data.get("reply") or ""
+            tool_results = result_data.get("tool_results") or task_result.get("tool_results") or []
+            logger.info(
+                "order_created_agent_done",
+                company_id=company_id,
+                order_number=order_number,
+                agent_id=agent_id,
+                reply_length=len(reply),
+            )
+            # Audit: write the resolution outcome into the order metadata so the
+            # merchant can see what the agent concluded (or whether it contacted
+            # the customer). Best-effort — never blocks or throws.
+            try:
+                from src.tools.backend_client import get_backend_client
+
+                audit = {
+                    "addressResolution": {
+                        "agentId": agent_id,
+                        "source": payload.get("source") or "storefront",
+                        "triggeredAt": datetime.utcnow().isoformat(),
+                        "reply": (reply or "")[:500],
+                        "toolCalls": [
+                            str(t.get("name") or t.get("tool") or "")[:100]
+                            for t in tool_results
+                            if isinstance(t, dict)
+                        ][:10],
+                        "status": "done",
+                    }
+                }
+                await get_backend_client().update_order_details(
+                    company_id,
+                    order_number,
+                    {"metadataPatch": audit},
+                )
+            except Exception as audit_exc:
+                logger.warning(
+                    "order_created_agent_audit_failed",
+                    company_id=company_id,
+                    order_number=order_number,
+                    error=str(audit_exc),
+                )
+        except Exception as exc:
+            logger.error(
+                "order_created_agent_failed",
+                company_id=company_id,
+                order_number=order_number,
+                agent_id=agent_id,
+                error=str(exc),
+                exc_info=True,
+            )
+
 
 TASK_HANDLERS = {
     "memory.consolidate": handle_memory_consolidation,
@@ -954,6 +1196,7 @@ TASK_HANDLERS = {
     "facebook.read_receipt": handle_facebook_read_receipt,
     "whatsapp.message": handle_whatsapp_message,
     "telegram.message": handle_telegram_message,
+    "order.created": handle_order_created,
 }
 
 

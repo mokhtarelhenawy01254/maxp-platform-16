@@ -625,6 +625,7 @@ model StorefrontSettings {
   designTokens                     Json?
   enabledPaymentMethods            String                @default("[\"cod\"]")
   paymentGatewayConfig             Json?
+  checkoutAddressSettings          Json?
   facebookPixelConfigs             FacebookPixelConfig[]
   company                          Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

@@ -24,6 +24,7 @@ interface Customer {
   };
   successScore?: number;
   customerRating?: string;
+  autoDiscountStatus?: string | null;
 }
 
 interface CustomerNote {

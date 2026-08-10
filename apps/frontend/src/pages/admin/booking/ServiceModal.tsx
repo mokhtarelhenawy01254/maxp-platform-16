@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { BookingService, BookingBranch, BookingDoctor, ServiceFormData, ServiceCategory, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
@@ -16,6 +17,7 @@ interface BranchPkg { count: number; price: number }
 
 
 export default function ServiceModal({ service, branches, doctors, categories, onClose, onSave }: Props) {
+  const navigate = useNavigate();
   const initBranchAssignments = () => {
     if (!service?.branchServices) return {} as Record<string, BranchPkg[]>;
     const acc: Record<string, BranchPkg[]> = {};
@@ -104,6 +106,7 @@ export default function ServiceModal({ service, branches, doctors, categories, o
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">السعر الأساسي (ج.م)</label>
               <input type="number" min={0} className={MODAL_INPUT_CLS} placeholder="0" value={basePrice} onChange={e => setBasePrice(e.target.value)} />
+              <button onClick={() => navigate("/admin/booking/price-lists")} className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">إدارة قوائم الأسعار التعاقدية</button>
             </div>
             <div className="flex items-end pb-1">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">

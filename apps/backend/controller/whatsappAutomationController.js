@@ -335,7 +335,7 @@ class WhatsAppAutomationController {
             // Attach WhatsApp contact info for chat linking
             const withContact = await Promise.all(journeys.map(async (j) => {
                 const waContact = await this.prisma.whatsAppContact.findFirst({
-                    where: { customerId: j.customerId, companyId },
+                    where: { customerId: j.customerId },
                     select: { id: true, phoneNumber: true, name: true, jid: true }
                 });
                 return { ...j, whatsappContactId: waContact?.id || null, whatsappPhone: waContact?.phoneNumber || null };

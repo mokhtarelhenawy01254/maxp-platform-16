@@ -5,6 +5,27 @@ const { v4: uuidv4 } = require('uuid');
 
 const BOOKING_SLOT_DURATION = 30;
 const BOOKING_LAST_SLOT = '20:00';
+const BOOKING_TIMELINE_DAY_START = '08:00';
+const BOOKING_TIMELINE_DAY_END = '22:00';
+const BOOKING_TIMELINE_SLOT_STEP = 5;
+
+const timeToMinutes = (timeStr) => {
+  if (!timeStr) return null;
+  const [h, m] = String(timeStr).split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+};
+
+const formatMinutes = (total) => {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+const formatDoctorName = (doc) => {
+  if (!doc) return '';
+  return `${doc.title ? `${doc.title} ` : ''}${doc.name || ''}`.trim();
+};
 
 const getAllAppointments = async (req, res) => {
   try {
@@ -203,17 +224,118 @@ const getAvailableSlots = async (req, res) => {
   }
 };
 
+const getTimeline = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { date, branchId, serviceId } = req.query;
+    if (!date) return res.status(400).json({ success: false, error: 'التاريخ مطلوب' });
+
+    const prisma = getSharedPrismaClient();
+    const dayOfWeek = new Date(date).getDay();
+
+    const [doctors, appointments] = await Promise.all([
+      prisma.bookingDoctor.findMany({
+        where: { companyId, ...(branchId ? { branchId } : {}), isActive: true },
+        include: {
+          branch: { select: { id: true, name: true } },
+          availability: true,
+        },
+        orderBy: [{ title: 'asc' }, { name: 'asc' }],
+      }),
+      prisma.appointment.findMany({
+        where: {
+          companyId,
+          appointmentDate: new Date(date),
+          ...(branchId ? { branchId } : {}),
+          ...(serviceId ? { serviceId } : {}),
+        },
+        include: {
+          doctor: { select: { id: true, title: true, name: true, specialty: true } },
+          service: { select: { id: true, name: true } },
+          branch: { select: { id: true, name: true } },
+        },
+        orderBy: { startTime: 'asc' },
+      }),
+    ]);
+
+    const resources = (doctors || []).map((doc) => {
+      const availability = (doc.availability || []).find(a => a.dayOfWeek === dayOfWeek && a.isAvailable);
+      const startTime = availability ? availability.startTime : BOOKING_TIMELINE_DAY_START;
+      const endTime = availability ? availability.endTime : BOOKING_TIMELINE_DAY_END;
+      const startMin = timeToMinutes(startTime) ?? timeToMinutes(BOOKING_TIMELINE_DAY_START);
+      const endMin = timeToMinutes(endTime) ?? timeToMinutes(BOOKING_TIMELINE_DAY_END);
+      const slots = [];
+      for (let m = startMin; m < endMin; m += BOOKING_TIMELINE_SLOT_STEP) {
+        slots.push({ time: formatMinutes(m) });
+      }
+      return {
+        doctorId: doc.id,
+        doctorName: formatDoctorName(doc) || doc.id,
+        specialty: doc.specialty || '',
+        branchId: doc.branchId,
+        branchName: doc.branch?.name || '',
+        startTime,
+        endTime,
+        isAvailable: !!availability,
+        slots,
+      };
+    });
+
+    const formattedAppointments = (appointments || []).map(a => ({
+      id: a.id,
+      customerId: a.customerId || '',
+      patientId: a.patientId || '',
+      customerName: a.customerName,
+      customerEmail: a.customerEmail || '',
+      customerPhone: a.customerPhone || '',
+      customerGender: a.customerGender || '',
+      branchId: a.branchId || '',
+      branchName: a.branch?.name || '',
+      doctorId: a.doctorId || '',
+      doctorName: a.doctor ? formatDoctorName(a.doctor) : '',
+      serviceId: a.serviceId || '',
+      serviceName: a.serviceName || a.service?.name || '',
+      title: a.title || '',
+      description: a.description || '',
+      appointmentDate: a.appointmentDate.toISOString().split('T')[0],
+      startTime: a.startTime,
+      endTime: a.endTime || '',
+      duration: a.duration || 30,
+      status: a.status,
+      bookingStatus: a.bookingStatus || '',
+      reportStatus: a.reportStatus || '',
+      room: a.room || '',
+      preparationNote: a.preparationNote || '',
+      notes: a.notes || '',
+      source: a.source || '',
+      paymentRequired: a.paymentRequired,
+      paymentStatus: a.paymentStatus || '',
+      diagnosis: a.diagnosis || '',
+      treatmentPlan: a.treatmentPlan || '',
+      prescription: a.prescription || '',
+      followUpDate: a.followUpDate ? a.followUpDate.toISOString().split('T')[0] : null,
+      createdAt: a.createdAt ? a.createdAt.toISOString() : '',
+    }));
+
+    res.json({ success: true, data: { resources, appointments: formattedAppointments } });
+  } catch (error) {
+    console.error('Error fetching timeline:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الجدول الزمني' });
+  }
+};
+
 const createAppointment = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body;
-    console.log('[BOOKING-DEBUG] createAppointment body:', JSON.stringify(body));
     let customerName = body.customerName || 'مريض';
     let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
     let startTime = body.startTime || '00:00';
-    let { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired, diagnosis, treatmentPlan, prescription, vitals, followUpDate } = body;
+    let { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired, diagnosis, treatmentPlan, prescription, vitals, followUpDate, room, preparationNote } = body;
     if (doctorId === '') doctorId = undefined;
     if (serviceId === '') serviceId = undefined;
     if (!branchId) return res.status(400).json({ success: false, error: 'الفرع مطلوب' });
@@ -263,7 +385,8 @@ const createAppointment = async (req, res) => {
     let serviceDuration = BOOKING_SLOT_DURATION;
     if (serviceId) {
       const service = await getSharedPrismaClient().bookingService.findFirst({ where: { id: serviceId, companyId } });
-      if (service) serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
+      if (!service) return res.status(400).json({ success: false, error: 'الخدمة غير موجودة' });
+      serviceDuration = service.durationMinutes || BOOKING_SLOT_DURATION;
     }
 
     // Reject if the requested slot overlaps an existing active appointment in the same branch/doctor
@@ -329,6 +452,7 @@ const createAppointment = async (req, res) => {
         source: source || (req.user.role === 'AI_SERVICE' ? 'ai-service' : 'dashboard'),
         notes, paymentRequired: paymentRequired || false,
         paymentStatus: paymentRequired ? 'pending' : null,
+        room: room || null, preparationNote: preparationNote || null,
         diagnosis, treatmentPlan, prescription, vitals,
         followUpDate: followUpDate ? new Date(followUpDate) : null,
         createdById: req.user.id,
@@ -350,6 +474,10 @@ const createAppointment = async (req, res) => {
       appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
       startTime: appointment.startTime, endTime: appointment.endTime,
       duration: appointment.duration, status: appointment.status,
+      bookingStatus: appointment.bookingStatus || '',
+      reportStatus: appointment.reportStatus || '',
+      room: appointment.room || '',
+      preparationNote: appointment.preparationNote || '',
       source: appointment.source,
       paymentRequired: appointment.paymentRequired, paymentStatus: appointment.paymentStatus,
       createdById: appointment.createdById,
@@ -374,20 +502,53 @@ const updateAppointment = async (req, res) => {
     const existing = await getSharedPrismaClient().appointment.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
 
-    const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status', 'patientId', 'diagnosis', 'treatmentPlan', 'prescription', 'vitals', 'followUpDate'];
+    const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status', 'patientId', 'diagnosis', 'treatmentPlan', 'prescription', 'vitals', 'followUpDate', 'room', 'preparationNote', 'bookingStatus', 'reportStatus'];
+    const fkFields = new Set(['branchId', 'doctorId', 'serviceId', 'patientId']);
     const data = {};
     for (const field of allowedFields) {
-      if (req.body[field] !== undefined) data[field] = req.body[field];
+      const value = req.body[field];
+      if (value === undefined) continue;
+      if (fkFields.has(field) && value === '') continue;
+      data[field] = value;
     }
     if (data.appointmentDate) data.appointmentDate = new Date(data.appointmentDate);
     if (data.followUpDate) data.followUpDate = new Date(data.followUpDate);
     if (data.status === 'confirmed') data.confirmedAt = new Date();
 
-    const appointment = await getSharedPrismaClient().appointment.update({
+    const rescheduled = (data.appointmentDate instanceof Date
+      && existing.appointmentDate instanceof Date
+      && data.appointmentDate.getTime() !== existing.appointmentDate.getTime())
+      || (data.startTime !== undefined && existing.startTime !== undefined && data.startTime !== existing.startTime);
+    if (rescheduled) {
+      data.labelPrinted = false;
+      data.resultDelivered = false;
+      data.deliveredWithoutReport = false;
+    }
+
+    const prisma = getSharedPrismaClient();
+    const assertInCompany = async (model, id, error) => {
+      if (!id) return true;
+      const record = await prisma[model].findFirst({ where: { id, companyId }, select: { id: true } });
+      if (!record) return false;
+      return true;
+    };
+    if (!(await assertInCompany('bookingBranch', data.branchId, 'الفرع غير موجود'))) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
+    if (!(await assertInCompany('bookingDoctor', data.doctorId, 'الطبيب غير موجود'))) return res.status(400).json({ success: false, error: 'الطبيب غير موجود' });
+    if (!(await assertInCompany('bookingService', data.serviceId, 'الخدمة غير موجودة'))) return res.status(400).json({ success: false, error: 'الخدمة غير موجودة' });
+    if (!(await assertInCompany('patient', data.patientId, 'المريض غير موجود'))) return res.status(400).json({ success: false, error: 'المريض غير موجود' });
+
+    const appointment = await prisma.appointment.update({
       where: { id },
       data,
       include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
     });
+
+    if (rescheduled) {
+      await prisma.reportDelivery.updateMany({
+        where: { appointmentId: id, companyId },
+        data: { status: 'NOT_READY', deliveredAt: null, deliveredBy: null },
+      });
+    }
 
     const formatted = {
       id: appointment.id, customerName: appointment.customerName,
@@ -400,6 +561,10 @@ const updateAppointment = async (req, res) => {
       appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
       startTime: appointment.startTime, endTime: appointment.endTime,
       duration: appointment.duration, status: appointment.status,
+      bookingStatus: appointment.bookingStatus || '',
+      reportStatus: appointment.reportStatus || '',
+      room: appointment.room || '',
+      preparationNote: appointment.preparationNote || '',
       notes: appointment.notes,
       diagnosis: appointment.diagnosis, treatmentPlan: appointment.treatmentPlan,
       prescription: appointment.prescription, vitals: appointment.vitals,
@@ -525,4 +690,4 @@ const bulkDelete = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };
+module.exports = { getAllAppointments, getAvailableSlots, getTimeline, createAppointment, updateAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };

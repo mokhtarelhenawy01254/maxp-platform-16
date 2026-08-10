@@ -1,6 +1,7 @@
-import { useState } from "react";
-;
-import { BookingPatient, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, tryParseJSON } from "./shared";
+import { useEffect, useState } from "react";
+import { BookingPatient, ReferringPhysician, PriceList, InsuranceCompany, InsuranceMemberType, PATIENT_STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, tryParseJSON, api, fetchJson } from "./shared";
+import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
+import { toast } from "sonner";
 
 import { X } from 'lucide-react'
 interface Props {
@@ -10,6 +11,24 @@ interface Props {
 }
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const MARITAL_STATUS = [
+  { value: "", label: "غير محدد" },
+  { value: "SINGLE", label: "أعزب/عزباء" },
+  { value: "MARRIED", label: "متزوج/متزوجة" },
+  { value: "DIVORCED", label: "مطلق/مطلقة" },
+  { value: "WIDOW", label: "أرمل/أرملة" },
+];
+
+const SOURCES = [
+  { value: "", label: "غير محدد" },
+  { value: "whatsapp", label: "واتساب" },
+  { value: "facebook", label: "فيسبوك" },
+  { value: "web", label: "موقع إلكتروني" },
+  { value: "dashboard", label: "لوحة التحكم" },
+  { value: "physician", label: "طبيب محوّل" },
+  { value: "walkin", label: "زيارة مباشرة" },
+];
 
 const toList = (v: unknown): string => {
   const arr = tryParseJSON<string[]>(v) || (Array.isArray(v) ? v : null);
@@ -26,6 +45,12 @@ const toDateInput = (d?: string): string => {
   return d.split("T")[0] || d;
 };
 
+const parseMedicalHistory = (v: unknown): MedicalHistoryValue | null => {
+  const parsed = tryParseJSON<MedicalHistoryValue>(v);
+  if (parsed && parsed.conditions && Array.isArray(parsed.conditions)) return parsed;
+  return null;
+};
+
 export default function PatientModal({ patient, onClose, onSave }: Props) {
   const [form, setForm] = useState<{
     firstName: string; lastName: string; phone: string; email: string;
@@ -33,6 +58,12 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     nationalId: string; nationalIdImage: string; address: string;
     allergies: string; chronicDiseases: string; medications: string;
     notes: string; isActive: boolean; password: string;
+    status: string; source: string; maritalStatus: string; occupation: string; city: string;
+    referringPhysicianId: string;
+    priceListId: string;
+    title: string; insuranceNumber: string; insuranceCompanyId: string; memberTypeId: string;
+    homePhone: string; workPhone: string; fax: string; postalCode: string;
+    medicalHistory: MedicalHistoryValue | null;
   }>({
     firstName: patient?.firstName || "",
     lastName: patient?.lastName || "",
@@ -50,7 +81,43 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     notes: patient?.notes || "",
     isActive: patient?.isActive ?? true,
     password: "",
+    status: (patient?.status || "ACTIVE") as string,
+    source: patient?.source || "",
+    maritalStatus: patient?.maritalStatus || "",
+    occupation: patient?.occupation || "",
+    city: patient?.city || "",
+    referringPhysicianId: patient?.referringPhysicianId || "",
+    priceListId: patient?.priceListId || "",
+    title: patient?.title || "",
+    insuranceNumber: patient?.insuranceNumber || "",
+    insuranceCompanyId: patient?.insuranceCompanyId || "",
+    memberTypeId: patient?.memberTypeId || "",
+    homePhone: patient?.homePhone || "",
+    workPhone: patient?.workPhone || "",
+    fax: patient?.fax || "",
+    postalCode: patient?.postalCode || "",
+    medicalHistory: parseMedicalHistory(patient?.medicalHistory),
   });
+
+  const [referringPhysicians, setReferringPhysicians] = useState<ReferringPhysician[]>([]);
+  const [priceLists, setPriceLists] = useState<PriceList[]>([]);
+  const [insuranceCompanies, setInsuranceCompanies] = useState<InsuranceCompany[]>([]);
+  const [memberTypes, setMemberTypes] = useState<InsuranceMemberType[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.allSettled([
+      fetchJson<ReferringPhysician[]>(api("referring-physicians")),
+      fetchJson<PriceList[]>(api("price-lists")),
+      fetchJson<InsuranceCompany[]>(api("insurance-companies")),
+      fetchJson<InsuranceMemberType[]>(api("insurance-member-types")),
+    ]).then(([physicians, lists, companies, types]) => {
+      if (physicians.status === "fulfilled") setReferringPhysicians(physicians.value);
+      if (lists.status === "fulfilled") setPriceLists(lists.value);
+      if (companies.status === "fulfilled") setInsuranceCompanies(companies.value);
+      if (types.status === "fulfilled") setMemberTypes(types.value);
+    }).catch(() => { /* keep empty lists */ });
+  }, []);
 
   const valid = form.firstName.trim() !== "";
 
@@ -60,31 +127,57 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    onSave({
-      ...patient,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      email: form.email.trim() || undefined,
-      gender: form.gender || undefined,
-      birthDate: form.birthDate || undefined,
-      bloodType: form.bloodType || undefined,
-      nationalId: form.nationalId.trim() || undefined,
-      nationalIdImage: form.nationalIdImage || undefined,
-      address: form.address.trim() || undefined,
-      allergies: fromList(form.allergies),
-      chronicDiseases: fromList(form.chronicDiseases),
-      medications: fromList(form.medications),
-      notes: form.notes.trim() || undefined,
-      isActive: form.isActive,
-      password: form.password || undefined,
-    });
+  const handleSave = async () => {
+    if (saving || !valid) return;
+    setSaving(true);
+    try {
+      await onSave({
+        ...patient,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
+        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
+        bloodType: form.bloodType || undefined,
+        nationalId: form.nationalId.trim() || undefined,
+        nationalIdImage: form.nationalIdImage || undefined,
+        address: form.address.trim() || undefined,
+        allergies: fromList(form.allergies),
+        chronicDiseases: fromList(form.chronicDiseases),
+        medications: fromList(form.medications),
+        notes: form.notes.trim() || undefined,
+        isActive: form.isActive,
+        password: form.password || undefined,
+        status: form.status || undefined,
+        source: form.source || undefined,
+        maritalStatus: form.maritalStatus || undefined,
+        occupation: form.occupation.trim() || undefined,
+        city: form.city.trim() || undefined,
+        referringPhysicianId: form.referringPhysicianId || undefined,
+        priceListId: form.priceListId || undefined,
+        title: form.title.trim() || undefined,
+        insuranceNumber: form.insuranceNumber.trim() || undefined,
+        insuranceCompanyId: form.insuranceCompanyId || undefined,
+        memberTypeId: form.memberTypeId || undefined,
+        homePhone: form.homePhone.trim() || undefined,
+        workPhone: form.workPhone.trim() || undefined,
+        fax: form.fax.trim() || undefined,
+        postalCode: form.postalCode.trim() || undefined,
+        medicalHistory: form.medicalHistory
+          ? { conditions: form.medicalHistory.conditions, allergies: form.medicalHistory.allergies }
+          : undefined,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل حفظ المريض");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+      <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{patient?.id ? "تعديل مريض" : "إضافة مريض"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><X className="w-5 h-5" /></button>
@@ -133,9 +226,72 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
               </select>
             </div>
           </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحالة</label>
+              <select className={MODAL_INPUT_CLS} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                {Object.entries(PATIENT_STATUS_MAP).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحالة الاجتماعية</label>
+              <select className={MODAL_INPUT_CLS} value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                {MARITAL_STATUS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مصدر الإحالة</label>
+              <select className={MODAL_INPUT_CLS} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
+                {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المهنة</label><input className={MODAL_INPUT_CLS} value={form.occupation} onChange={e => setForm({ ...form, occupation: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المدينة</label><input className={MODAL_INPUT_CLS} value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
+          </div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الطبيب المحوّل</label>
+            <select className={MODAL_INPUT_CLS} value={form.referringPhysicianId} onChange={e => setForm({ ...form, referringPhysicianId: e.target.value })}>
+              <option value="">بدون</option>
+              {referringPhysicians.map(r => <option key={r.id} value={r.id}>{r.name}{r.specialty ? ` (${r.specialty})` : ""}</option>)}
+            </select>
+          </div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">قائمة الأسعار</label>
+            <select className={MODAL_INPUT_CLS} value={form.priceListId} onChange={e => setForm({ ...form, priceListId: e.target.value })}>
+              <option value="">الافتراضية</option>
+              {priceLists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اللقب (دكتور، مهندس...)</label><input className={MODAL_INPUT_CLS} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم التأمين</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.insuranceNumber} onChange={e => setForm({ ...form, insuranceNumber: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">شركة التأمين</label>
+              <select className={MODAL_INPUT_CLS} value={form.insuranceCompanyId} onChange={e => setForm({ ...form, insuranceCompanyId: e.target.value })}>
+                <option value="">بدون</option>
+                {insuranceCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع العضوية</label>
+              <select className={MODAL_INPUT_CLS} value={form.memberTypeId} onChange={e => setForm({ ...form, memberTypeId: e.target.value })}>
+                <option value="">بدون</option>
+                {memberTypes.map(m => <option key={m.id} value={m.id}>{m.name}{m.coveragePercent ? ` (تغطية ${m.coveragePercent}٪)` : ""}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">هاتف المنزل</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.homePhone} onChange={e => setForm({ ...form, homePhone: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">هاتف العمل</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.workPhone} onChange={e => setForm({ ...form, workPhone: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">فاكس</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.fax} onChange={e => setForm({ ...form, fax: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرمز البريدي</label><input className={MODAL_INPUT_CLS} dir="ltr" value={form.postalCode} onChange={e => setForm({ ...form, postalCode: e.target.value })} /></div>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحساسية (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.allergies} onChange={e => setForm({ ...form, allergies: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أمراض مزمنة (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.chronicDiseases} onChange={e => setForm({ ...form, chronicDiseases: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أدوية حالية (افصل بفاصلة)</label><input className={MODAL_INPUT_CLS} value={form.medications} onChange={e => setForm({ ...form, medications: e.target.value })} /></div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">التاريخ الطبي</p>
+            <MedicalHistoryChecklist value={form.medicalHistory} onChange={v => setForm({ ...form, medicalHistory: v })} />
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{patient?.id ? "كلمة مرور بوابة المريض (اتركها فارغة للاحتفاظ)" : "كلمة مرور بوابة المريض (اختياري)"}</label><input type="password" className={MODAL_INPUT_CLS} dir="ltr" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
           {patient?.id && (
@@ -147,7 +303,7 @@ export default function PatientModal({ patient, onClose, onSave }: Props) {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={handleSave} disabled={!valid} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+          <button onClick={handleSave} disabled={!valid || saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>

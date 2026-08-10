@@ -10,6 +10,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { OrderDetailsType, Government, Area } from "../types";
+import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
 import { validateEgyptianPhone } from "../../../utils/validation";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import {
@@ -64,12 +65,6 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
   editForm,
   setEditForm,
   governments,
-  areas,
-  loadingGovernments,
-  loadingAreas,
-  selectedGovernmentId,
-  setSelectedGovernmentId,
-  handleGovernmentChange,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -397,29 +392,23 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             {t("orderDetails.governorate")}
           </label>
           {isEditing ? (
-            <select
-              value={editForm.governorate}
-              onChange={(e) => {
-                const selectedGov = governments.find(
-                  (g) => g.name === e.target.value,
-                );
-                if (selectedGov) {
-                  handleGovernmentChange(selectedGov.id, selectedGov.name);
-                } else {
-                  setEditForm({ ...editForm, governorate: e.target.value });
-                  setSelectedGovernmentId(null);
-                }
+            <GovernorateAreaSearch
+              value={{
+                governorate: editForm.governorate || "",
+                area: editForm.city || "",
               }}
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100"
-              disabled={loadingGovernments}
-            >
-              <option value="">{t("orderDetails.selectGovernorate")}</option>
-              {governments.map((gov) => (
-                <option key={gov.id} value={gov.name}>
-                  {gov.name}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => {
+                setEditForm({
+                  ...editForm,
+                  governorate: next.governorate,
+                  city: next.area,
+                });
+              }}
+              placeholder={t("orderDetails.selectGovernorate") as string}
+              searchPlaceholder={t("orderDetails.searchArea") as string}
+              emptyText={t("orderDetails.noAreasAvailable") as string}
+              loadingText={t("orderDetails.loading") as string}
+            />
           ) : (
             <p className="text-gray-900 dark:text-gray-100">
               {(() => {
@@ -446,31 +435,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             {t("orderDetails.areaCity")}
           </label>
           {isEditing ? (
-            <select
-              value={editForm.city}
-              onChange={(e) =>
-                setEditForm({ ...editForm, city: e.target.value })
-              }
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100"
-              disabled={
-                loadingAreas || !selectedGovernmentId || areas.length === 0
-              }
-            >
-              <option value="">
-                {loadingAreas
-                  ? t("orderDetails.loading")
-                  : !selectedGovernmentId
-                    ? t("orderDetails.selectGovernorateFirst")
-                    : areas.length === 0
-                      ? t("orderDetails.noAreasAvailable")
-                      : t("orderDetails.selectArea")}
-              </option>
-              {areas.map((area) => (
-                <option key={area.id} value={area.name}>
-                  {area.name}
-                </option>
-              ))}
-            </select>
+            <p className="text-gray-900 dark:text-gray-100">
+              {editForm.city
+                ? String(editForm.city).replace(/^\d+:/, "").trim()
+                : t("orders.notSpecified")}
+            </p>
           ) : (
             <p className="text-gray-900 dark:text-gray-100">
               {order.city

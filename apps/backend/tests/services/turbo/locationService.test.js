@@ -260,4 +260,90 @@ describe('LocationService', () => {
       );
     });
   });
+
+  describe('searchAreaByText', () => {
+    test('returns empty matches for empty query', async () => {
+      const client = createMockClient();
+      const service = new LocationService(client);
+      const result = await service.searchAreaByText('  ');
+      expect(result.success).toBe(true);
+      expect(result.matches).toEqual([]);
+      expect(result.count).toBe(0);
+    });
+
+    test('matches area by exact name and returns governorate context', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }, { id: '2', name: 'الجيزة' }] },
+      });
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }, { id: 'a2', name: 'مدينة نصر' }] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.searchAreaByText('المعادي');
+
+      expect(result.success).toBe(true);
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.matches[0]).toMatchObject({
+        governorate: 'القاهرة',
+        area: 'المعادي',
+      });
+      expect(result.matches[0].confidence).toBe(1);
+    });
+
+    test('restricts to matched governorate when its name appears in the query', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }, { id: '2', name: 'الجيزة' }] },
+      });
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: 'a1', name: 'المعادي' }] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.searchAreaByText('القاهرة المعادي');
+
+      // Only القاهرة areas are loaded (single get-area call)
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.matches[0].governorate).toBe('القاهرة');
+    });
+
+    test('returns governorate-only fallback row when no area matched', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: '1', name: 'القاهرة' }] },
+      });
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: 'a1', name: 'حلوان' }] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.searchAreaByText('القاهرة 6 أكتوبر');
+
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.matches[0].governorate).toBe('القاهرة');
+    });
+
+    test('handles governorate-name-only query with no matched areas', async () => {
+      const client = createMockClient();
+      const axiosMock = require('axios');
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: '3', name: 'الإسكندرية' }] },
+      });
+      axiosMock.get.mockResolvedValueOnce({
+        data: { success: 1, feed: [{ id: 'a9', name: 'سموحة' }] },
+      });
+
+      const service = new LocationService(client);
+      const result = await service.searchAreaByText('سموحة');
+
+      expect(result.success).toBe(true);
+      expect(result.count).toBeGreaterThan(0);
+      expect(result.matches[0].area).toBe('سموحة');
+    });
+  });
 });

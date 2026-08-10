@@ -498,10 +498,10 @@ async def _rerank_visual(
     if len(candidates) < 2:
         return results
 
-    from src.config import get_settings
+    from src.llm.key_resolver import get_active_key
     import httpx, re, json as _json
 
-    api_key = get_settings().google_api_key
+    api_key = await get_active_key("GOOGLE")
     if not api_key:
         return results
 

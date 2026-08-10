@@ -10,7 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.skill import Skill
 
-_SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "skills"
+# Same root resolution as src/skills/integration.py — the deploy layout is
+# <root>/apps/ai-service/skills, so seed and runtime MUST agree on the path.
+# (parent x3 from src/skills/seed.py -> apps/ai-service -> skills).
+_SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
+
+# System-wide skills are stored under a single global company id so any
+# company can resolve them (matches existing production rows in ai.skills).
+GLOBAL_SKILL_COMPANY_ID = "global"
 logger = structlog.get_logger(__name__)
 
 
@@ -41,7 +48,7 @@ async def seed_skills(session: AsyncSession) -> list[Skill]:
         instructions = md_path.read_text(encoding="utf-8") if md_path.exists() else ""
 
         existing = await session.execute(
-            select(Skill).where(Skill.id == skill_id, Skill.company_id == "__system__")
+            select(Skill).where(Skill.id == skill_id, Skill.company_id == GLOBAL_SKILL_COMPANY_ID)
         )
         record = existing.scalar_one_or_none()
 
@@ -61,7 +68,7 @@ async def seed_skills(session: AsyncSession) -> list[Skill]:
         else:
             record = Skill(
                 id=skill_id,
-                company_id="__system__",
+                company_id=GLOBAL_SKILL_COMPANY_ID,
                 name=config.get("displayName", skill_id),
                 version=config.get("version", "1.0.0"),
                 description=config.get("description", ""),

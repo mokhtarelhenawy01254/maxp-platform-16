@@ -47,6 +47,7 @@ model BookingDoctor {
   company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch          BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   appointments    Appointment[]
+  assignedAppointments Appointment[] @relation("AssignedDoctor")
   availability    DoctorAvailability[]
   doctorServices  BookingDoctorService[]
 
@@ -93,6 +94,7 @@ model BookingService {
   branchServices       BookingBranchService[]
   doctorServices       BookingDoctorService[]
   appointments         Appointment[]
+  priceListItems       PriceListItem[]
 
   @@index([companyId])
   @@map("booking_services")
@@ -200,16 +202,46 @@ model Patient {
   medications     Json?     /// List: ["aspirin 81mg daily"]
   notes           String?
   isActive        Boolean   @default(true)
+  /// Clinic record enhancements (adapted from RIS)
+  status               String?   @default("ACTIVE") /// ACTIVE|INACTIVE|REVIEW
+  source               String?   /// referral source: whatsapp/facebook/web/dashboard/physician
+  maritalStatus        String?   /// SINGLE|MARRIED|DIVORCED|WIDOW
+  occupation           String?
+  city                 String?
+  medicalHistory       Json?     /// Structured health questionnaire: {"conditions":[{"code","label","checked"}],"allergies":[...]}
+  referringPhysicianId String?
+  priceListId          String?
+  mergedIntoId         String?
+  /// Insurance & contact enhancements (adapted from external RIS)
+  title                String?
+  insuranceNumber      String?
+  insuranceCompanyId   String?
+  memberTypeId         String?
+  homePhone            String?
+  workPhone            String?
+  fax                  String?
+  postalCode           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  referringPhysician ReferringPhysician? @relation(fields: [referringPhysicianId], references: [id], onDelete: SetNull)
+  priceList       PriceList?  @relation(fields: [priceListId], references: [id], onDelete: SetNull)
+  insuranceCompany InsuranceCompany? @relation(fields: [insuranceCompanyId], references: [id], onDelete: SetNull)
+  memberType      InsuranceMemberType? @relation(fields: [memberTypeId], references: [id], onDelete: SetNull)
+  mergedInto      Patient?    @relation("PatientMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedPatients  Patient[]   @relation("PatientMerge")
+  documents       PatientDocument[]
   appointments    Appointment[]
   invoices        MedicalInvoice[]
 
   @@index([companyId])
   @@index([customerId])
   @@index([phone])
+  @@index([referringPhysicianId])
+  @@index([priceListId])
+  @@index([insuranceCompanyId])
+  @@index([memberTypeId])
   @@map("patients")
 }
 
@@ -226,6 +258,16 @@ model MedicalInvoice {
   status        String          @default("UNPAID") /// UNPAID | PARTIAL | PAID | REFUNDED
   dueDate       DateTime?       @db.Date
   notes         String?
+  /// Clinic billing enhancements (adapted from RIS)
+  discountReason    String?
+  additionAmount    Float          @default(0)
+  additionReason    String?
+  insuranceAmount   Float          @default(0)
+  expenseSplit      String         @default("PATIENT") /// PATIENT|INSURANCE|BOTH
+  insuranceCompanyId String?
+  ticketNumber      String?
+  cashierId         String?
+  cashierName       String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -238,6 +280,7 @@ model MedicalInvoice {
   @@index([patientId])
   @@index([appointmentId])
   @@index([status])
+  @@index([insuranceCompanyId])
   @@map("medical_invoices")
 }
 
@@ -247,9 +290,13 @@ model MedicalPayment {
   companyId   String
   invoiceId   String
   amount      Float
-  method      String          @default("CASH") /// CASH | CARD | WALLET | ONLINE
+  method      String          @default("CASH") /// CASH | CARD | CREDIT | VODAFONE_CASH | PAYMOB | INSTAPAY | FAWRY | VOUCHER | REFERRAL
   paidAt      DateTime        @default(now())
   notes       String?
+  /// Billing enhancements
+  reason            String?   /// Discount / payback reason
+  paybackOfPaymentId String?
+  cashierName       String?
   createdById String?
   createdAt   DateTime        @default(now())
   company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -258,4 +305,192 @@ model MedicalPayment {
   @@index([companyId])
   @@index([invoiceId])
   @@map("medical_payments")
+}
+
+/// Referring physicians / referral sources for clinic patients
+model ReferringPhysician {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  phone     String?
+  specialty String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patients  Patient[]
+
+  @@index([companyId])
+  @@map("referring_physicians")
+}
+
+/// Contract price lists (Base + per-entity lists inherited from Base)
+model PriceList {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  baseListId  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  baseList    PriceList?  @relation("BasePriceList", fields: [baseListId], references: [id], onDelete: SetNull)
+  derivedLists PriceList[] @relation("BasePriceList")
+  items       PriceListItem[]
+  patients    Patient[]
+  insuranceCompanies InsuranceCompany[]
+
+  @@index([companyId])
+  @@map("price_lists")
+}
+
+/// Price override per service inside a price list
+model PriceListItem {
+  id          String   @id @default(cuid())
+  priceListId String
+  serviceId   String
+  price       Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  priceList   PriceList      @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  service     BookingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([priceListId, serviceId])
+  @@index([serviceId])
+  @@map("price_list_items")
+}
+
+/// Cashier shifts for daily cash reconciliation
+model CashierShift {
+  id             String    @id @default(cuid())
+  companyId      String
+  cashierId      String
+  cashierName    String
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  openingBalance Float     @default(0)
+  closingBalance Float?
+  status         String    @default("OPEN") /// OPEN|CLOSED
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([cashierId])
+  @@map("cashier_shifts")
+}
+
+/// Barcode / tube label printing tracking per exam
+model ExamLabel {
+  id            String   @id @default(cuid())
+  companyId     String
+  appointmentId String
+  patientId     String?
+  labelType     String   @default("EXAM") /// EXAM|ENVELOPE
+  printedAt     DateTime @default(now())
+  printedBy     String?
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([appointmentId])
+  @@map("exam_labels")
+}
+
+/// Report delivery tracking (handing results to patient)
+model ReportDelivery {
+  id            String   @id @default(cuid())
+  companyId     String
+  appointmentId String
+  patientId     String?
+  status        String   @default("NOT_READY") /// NOT_READY|READY|DELIVERED
+  deliveredAt   DateTime?
+  deliveredBy   String?
+  paidStatus    String?  /// PAID|UNPAID|PARTIAL
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([appointmentId])
+  @@map("report_deliveries")
+}
+
+/// Unified audit log for clinic money / record movements
+model TransactionLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  entityType  String   /// PATIENT|INVOICE|PAYMENT|PAYBACK|APPOINTMENT
+  entityId    String
+  action      String   /// CREATE|UPDATE|PAYMENT|PAYBACK|DISCOUNT|ADJUSTMENT|MERGE
+  description String?
+  amount      Float?
+  payer       String?
+  userId      String?
+  userName    String?
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("transaction_logs")
+}
+
+/// Insurance companies (managed entities, each bound to a price list)
+model InsuranceCompany {
+  id            String   @id @default(cuid())
+  companyId     String
+  name          String
+  priceListId   String?
+  phone1        String?
+  fax           String?
+  contactName   String?
+  contactPhone  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  priceList     PriceList? @relation(fields: [priceListId], references: [id], onDelete: SetNull)
+  patients      Patient[]
+
+  @@index([companyId])
+  @@index([priceListId])
+  @@map("insurance_companies")
+}
+
+/// Insurance member types (family roles + coverage %)
+model InsuranceMemberType {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String   /// Member|Husband|Wife|Children|10%...
+  coveragePercent Float    @default(0) /// 0-100 insurance coverage
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patients        Patient[]
+
+  @@index([companyId])
+  @@map("insurance_member_types")
+}
+
+/// Patient documents (prescriptions, images, videos, insurance, others)
+model PatientDocument {
+  id           String   @id @default(cuid())
+  companyId    String
+  patientId    String
+  documentType String   @default("OTHER") /// DRIVING_LICENSE|INSURANCE|PRESCRIPTION|IMAGE|VIDEO|OTHER
+  name         String?
+  fileData     String?  /// base64 data URL or URL
+  mimeType     String?
+  notes        String?
+  uploadedBy   String?
+  uploadedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([patientId])
+  @@map("patient_documents")
 }

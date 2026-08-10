@@ -3,15 +3,42 @@ from __future__ import annotations
 from typing import Any
 
 from agent_framework import FunctionTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 import src.db.session as _db_mod
 from src.tools.definitions._helpers import _executed_result, _write_result
 from src.tools.repositories.order_repository import OrderRepository
 
 
+def _accept_order_id_aliases(cls, data):
+    """Accept order_id / orderNumber as aliases for order_number.
+
+    Why: agent_framework calls `input_model(**arguments)` with field
+    NAMES, not validation aliases. The LLM sometimes uses `order_id`
+    instead of `order_number` so we translate at validation time.
+    """
+    if isinstance(data, dict):
+        for alias in ("order_id", "orderNumber"):
+            if alias in data and "order_number" not in data:
+                data["order_number"] = data[alias]
+                break
+    return data
+
+
 class OrderLookupInput(BaseModel):
     order_number: str = Field(description="Order number to look up")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
+
+class OrderLookupByPhoneInput(BaseModel):
+    phone: str = Field(description="Customer phone number (Egyptian format: 010..., 01..., or +20...)")
+    status: str | None = Field(default=None, description="Optional order status filter")
+    limit: int = Field(default=10, description="Max orders to return (1-50)")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -57,10 +84,49 @@ class OrderRecentListInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+class OrderConfirmInput(BaseModel):
+    order_number: str = Field(description="Order number to confirm")
+    notes: str | None = Field(default=None, description="Optional confirmation note")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
+
+class OrderUpdateDetailsInput(BaseModel):
+    order_number: str = Field(description="Order number or ID to update")
+    shipping_address: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured delivery address object with keys like governorate, city, area, address, phone",
+    )
+    customer_name: str | None = Field(default=None, description="Customer name")
+    customer_phone: str | None = Field(default=None, description="Customer phone number")
+    city: str | None = Field(default=None, description="City / area name")
+    governorate: str | None = Field(default=None, description="Governorate name")
+    notes: str | None = Field(default=None, description="Order notes")
+    metadata_patch: dict[str, Any] | None = Field(
+        default=None,
+        description="Deep-merged metadata patch to attach to the order (e.g. address resolution audit fields)",
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
+
+
 class OrderCancelInput(BaseModel):
     order_number: str = Field(description="Order number to cancel")
     reason: str = Field(description="Reason for cancellation")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
 
 
 class OrderRefundInput(BaseModel):
@@ -68,6 +134,11 @@ class OrderRefundInput(BaseModel):
     amount: float | None = Field(default=None, description="Refund amount (full if omitted)")
     reason: str = Field(description="Reason for refund")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        return _accept_order_id_aliases(cls, data)
 
 
 async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
@@ -105,6 +176,48 @@ async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
         "deliveredAt": str(order.get("deliveredAt") or ""),
         "updatedAt": str(order.get("updatedAt") or ""),
     }}
+
+
+async def order_lookup_by_phone(input_data: OrderLookupByPhoneInput) -> dict[str, Any]:
+    """Search orders for a customer by phone number.
+
+    Queries the orders table directly (same pattern as order_lookup), matching
+    customerPhone for regular orders and guestPhone for storefront guest
+    orders. The customer usually doesn't remember their order number — this
+    lets the agent find all orders for the number they provide.
+    """
+    company_id = input_data.company_id or ""
+    phone = (input_data.phone or "").strip()
+    if not company_id or not phone:
+        return {"found": False, "code": "MISSING_PARAMS", "phone": phone}
+
+    sf = _db_mod.async_session
+    limit = max(1, min(input_data.limit, 50))
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        orders = await repo.get_orders_by_phone(
+            company_id,
+            phone,
+            limit=limit,
+            status=input_data.status,
+        )
+
+    return {
+        "found": bool(orders),
+        "phone": phone,
+        "count": len(orders),
+        "orders": [
+            {
+                "orderNumber": o.get("orderNumber") or o.get("order_number") or "",
+                "status": o.get("status", ""),
+                "paymentStatus": o.get("paymentStatus", ""),
+                "total": str(o.get("total", 0)),
+                "customerName": o.get("customerName") or o.get("customer_name") or o.get("guestName") or "",
+                "createdAt": str(o.get("createdAt") or o.get("created_at") or ""),
+            }
+            for o in orders
+        ],
+    }
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:
@@ -187,6 +300,104 @@ async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
     return _executed_result("ORDER_CANCELLED", result)
 
 
+async def order_confirm(input_data: OrderConfirmInput) -> dict[str, Any]:
+    """Confirm an existing order through the backend.
+
+    Reuses the merchant order-status route so all side effects run:
+    confirmedAt/confirmedBy, ORDER_CONFIRMED WhatsApp notification, and
+    Turbo auto-shipment (passing the order to the shipping company).
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.confirm_order(
+            company_id,
+            input_data.order_number,
+            notes=input_data.notes,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number,
+            "newStatus": "CONFIRMED",
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number,
+        }
+
+
+async def order_update_details(input_data: OrderUpdateDetailsInput) -> dict[str, Any]:
+    """Update order address/contact details through the backend.
+
+    Applies the address using the SHIPPING COMPANY's governorate/area names —
+    never invent locations that are not in the shipping map.
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+
+    data: dict[str, Any] = {}
+    if input_data.shipping_address is not None:
+        data["shippingAddress"] = input_data.shipping_address
+    if input_data.customer_name is not None:
+        data["customerName"] = input_data.customer_name
+    if input_data.customer_phone is not None:
+        data["customerPhone"] = input_data.customer_phone
+    if input_data.city is not None:
+        data["city"] = input_data.city
+    if input_data.governorate is not None:
+        data["governorate"] = input_data.governorate
+    if input_data.notes is not None:
+        data["notes"] = input_data.notes
+    if input_data.metadata_patch is not None:
+        data["metadataPatch"] = input_data.metadata_patch
+
+    if not data:
+        return {
+            "success": False,
+            "error": "Nothing to update",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.update_order_details(
+            company_id,
+            input_data.order_number,
+            data,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number,
+            "updatedFields": result.get("updatedFields", []),
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number,
+        }
+
+
 async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
     return _write_result("order.refund", {
         "orderNumber": input_data.order_number,
@@ -208,6 +419,13 @@ order_lookup_tool = FunctionTool(
     func=order_lookup,
     input_model=OrderLookupInput,
     format_result=_format_order_lookup,
+)
+
+order_lookup_by_phone_tool = FunctionTool(
+    name="order_lookup_by_phone",
+    description="Search all orders for a customer by their PHONE NUMBER. USE THIS when the customer asks about 'my orders' / 'my order' but does not know the order number — pass the phone number they provide. Returns a list of matching orders (orderNumber, status, total, date). If empty, the number has no orders.",
+    func=order_lookup_by_phone,
+    input_model=OrderLookupByPhoneInput,
 )
 
 order_create_draft_tool = FunctionTool(
@@ -245,6 +463,20 @@ order_cancel_tool = FunctionTool(
     input_model=OrderCancelInput,
 )
 
+order_confirm_tool = FunctionTool(
+    name="order_confirm",
+    description="Confirm an existing order after the customer explicitly agrees on the order and the delivery address. This moves the order to CONFIRMED, notifies the customer, and hands it over to the shipping company. NEVER call this before the address is verified against the shipping company's map and the customer confirmed.",
+    func=order_confirm,
+    input_model=OrderConfirmInput,
+)
+
+order_update_details_tool = FunctionTool(
+    name="order_update_details",
+    description="Update an existing order's delivery address / customer contact details. Use after the customer provides a corrected address that matches the shipping company's governorate/area map. Pass structured shipping_address with keys: governorate, city/area, address, phone. NEVER invent locations not present in the shipping company map.",
+    func=order_update_details,
+    input_model=OrderUpdateDetailsInput,
+)
+
 order_refund_tool = FunctionTool(
     name="order_refund",
     description="Process a refund for an order. REQUIRES MERCHANT APPROVAL.",
@@ -254,10 +486,13 @@ order_refund_tool = FunctionTool(
 
 __all_tools__ = [
     order_lookup_tool,
+    order_lookup_by_phone_tool,
     order_create_draft_tool,
     order_create_confirmed_tool,
     order_summary_tool,
     order_recent_list_tool,
+    order_confirm_tool,
+    order_update_details_tool,
     order_cancel_tool,
     order_refund_tool,
 ]

@@ -21,17 +21,11 @@ async def health() -> dict[str, str]:
 
 @router.get("/ready")
 async def ready() -> JSONResponse:
+    from src.llm.key_resolver import get_active_key
+
     settings = get_settings()
-    configured_providers = {
-        name: key
-        for name, key in [
-            ("anthropic", settings.anthropic_api_key),
-            ("openai", settings.openai_api_key),
-            ("google", settings.google_api_key),
-        ]
-        if key
-    }
-    if not configured_providers:
+    google_key = await get_active_key("GOOGLE")
+    if not google_key:
         return JSONResponse(
             status_code=503,
             content={
@@ -39,14 +33,13 @@ async def ready() -> JSONResponse:
                 "reason": "No LLM provider is configured",
             },
         )
-    primary = list(configured_providers.keys())[0]
     return JSONResponse(
         status_code=200,
         content={
             "status": "ready",
             "service": settings.app_name,
             "version": settings.version,
-            "provider": primary,
-            "configured_providers": list(configured_providers.keys()),
+            "provider": "google",
+            "configured_providers": ["google"],
         },
     )

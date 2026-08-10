@@ -745,6 +745,8 @@
     "tabs": {
       "agents": "Agents",
       "sandbox": "AI Assistant",
+      "train": "Train Agent",
+      "widget": "Web Chat",
       "rag": "Knowledge Base",
       "tools": "Tools",
       "skills": "Skills",
@@ -768,6 +770,7 @@
       "channel": "Channel",
       "agent": "Responsible Agent",
       "autoReply": "Auto Reply",
+      "reply": "Reply",
       "toolStatus": "Tool Status",
       "selectPlaceholder": "Select agent...",
       "noRouting": "No Routing (CEO)",
@@ -781,7 +784,47 @@
       "assignAll": "Assign Agent to All",
       "assignAllPlaceholder": "Select agent for all",
       "reset": "Reset",
-      "modified": "Modified"
+      "modified": "Modified",
+      "agentPause": "Pause Agent",
+      "pausedBody": "The agent is paused on all channels. Customers will see a friendly notice.",
+      "resumeBody": "The agent is running. Toggle to pause it across all channels.",
+      "pauseReasonPlaceholder": "e.g. public holiday, store maintenance...",
+      "pauseReasonHint": "The reason is shown to customers inside the notice."
+    },
+    "train": {
+      "title": "Train Agent",
+      "subtitle": "Teach your agent your prices, policies and business facts in plain words",
+      "topicLabel": "Topic",
+      "whatToTeach": "Write the fact",
+      "placeholder": "e.g. We deliver inside Cairo within 24-48h, delivery fee is 60 EGP, free above 1500 EGP...",
+      "hint": "The agent extracts and stores the fact so it can answer from it later",
+      "save": "Save to Agent",
+      "saved": "Saved successfully",
+      "saveFailed": "Failed to save",
+      "savedFacts": "{{count}} facts saved",
+      "savedFactsSuffix": "facts saved",
+      "topic": {
+        "location": "Location",
+        "hours": "Opening hours",
+        "delivery": "Delivery",
+        "payment": "Payment",
+        "policy": "Policy",
+        "prices": "Prices",
+        "contact": "Contact",
+        "general": "General"
+      }
+    },
+    "widget": {
+      "title": "Web Chat Widget",
+      "subtitle": "Add the AI agent to any website with one line and let visitors chat directly",
+      "themeColor": "Theme color",
+      "titleLabel": "Widget title",
+      "embedCode": "Embed code",
+      "copy": "Copy",
+      "copied": "Copied",
+      "usage": "Paste this before the </body> tag on your website",
+      "routingHint": "Route the agent to Web Chat",
+      "routingBody": "Open the Routing tab and assign an agent to the \"Web Chat\" channel. Without an assigned agent, visitors get a fallback reply."
     },
     "sandbox": {
       "chat": {
@@ -4045,7 +4088,10 @@
       "status": "Status",
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "activeCustomers": "{{count}} Active"
+      "activeCustomers": "{{count}} Active",
+      "count": "{{count}} flows",
+      "selectPrompt": "Select a flow to view its steps",
+      "editing": "Editing flow"
     },
     "steps": {
       "title": "Flow Steps",
@@ -4059,7 +4105,32 @@
       "preview": "Message Preview",
       "orderNumber": "Order Number",
       "firstName": "First Name",
-      "lastName": "Last Name"
+      "lastName": "Last Name",
+      "timeline": "Timeline",
+      "timelineCount": "Flow timeline · {{count}} step",
+      "timelineCount_plural": "Flow timeline · {{count}} steps",
+      "buildSequence": "Build the sequence",
+      "dragHint": "Drag to reorder · Click to edit · Add delays between messages",
+      "readonlyHint": "Read-only view",
+      "validated": "Validated",
+      "errorCount": "{{count}} error",
+      "errorCount_plural": "{{count}} errors",
+      "warningCount": "{{count}} warning",
+      "warningCount_plural": "{{count}} warnings",
+      "livePreview": "Live preview",
+      "stepOf": "Step {{current}} of {{total}}",
+      "instant": "Instant",
+      "waitDays": "Wait {{days}} {{unit}}",
+      "dayUnit": "day",
+      "daysUnit": "days",
+      "emptyMessage": "(empty message)",
+      "addFirstStep": "Add first step",
+      "noStepsTitle": "No steps yet",
+      "noStepsDesc": "Start by adding the first message in this flow",
+      "hidePreview": "Hide preview",
+      "showPreview": "Show preview",
+      "send": "Send",
+      "noIssues": "No issues"
     },
     "monitoring": {
       "customer": "Customer",
@@ -4074,7 +4145,13 @@
       "failed": "Failed",
       "inactive": "Inactive",
       "details": "Journey Details",
-      "step": "Step {{current}} of {{total}}"
+      "step": "Step {{current}} of {{total}}",
+      "liveMonitor": "Live Monitor",
+      "deliveryHealth": "Delivery Health",
+      "good": "Good",
+      "needsAttention": "Needs attention",
+      "openChat": "Open chat",
+      "viewDetails": "View details"
     },
     "dialogs": {
       "deleteFlowTitle": "Delete Flow",
@@ -4087,6 +4164,20 @@
       "saveError": "Failed to save data. Please check database connection",
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Delete failed"
+    },
+    "copilot": {
+      "title": "AI Co-pilot",
+      "ready": "Co-pilot ready",
+      "placeholder": "Describe the flow you want to build...",
+      "quickPrompts": "Quick prompts",
+      "thinking": "Thinking...",
+      "you": "You",
+      "assistant": "Co-pilot",
+      "send": "Send",
+      "close": "Close co-pilot",
+      "open": "Open AI co-pilot",
+      "hint": "Press ↵ to send · ⇧↵ for newline",
+      "poweredBy": "Powered by maxp-ai-service. Suggestions can be applied with one click."
     },
     "hints": {
       "title": "Smart Tips",
@@ -9210,6 +9301,7 @@
     "additionalPhone": "Additional Phone Number",
     "governorate": "Governorate",
     "selectGovernorate": "Select Governorate",
+    "searchArea": "Type area or governorate...",
     "areaCity": "Area / City",
     "addressLine": "Address",
     "nearestLandmark": "Nearest Landmark",
@@ -10000,8 +10092,36 @@
     "followUpScheduled": "Follow-up scheduled",
     "cancelReasonTitle": "Cancellation reason",
     "cancelReasonPlaceholder": "Write the cancellation reason...",
+    "cancelReasonRequired": "Cancellation reason is required",
+    "cancelReasonSelect": "Select a cancellation reason...",
+    "cancelAdditionalNotes": "Additional notes",
+    "cancelAdditionalNotesOptional": "optional",
+    "cancelAdditionalNotesPlaceholder": "Add an additional note (optional)...",
+    "cancelLoadingReasons": "Loading preset reasons...",
     "cancelConfirm": "Confirm cancellation",
     "cancelClose": "Close",
+    "overridePathRules": "Override path rules",
+    "manageCompanyOnly": "Managed by company permissions",
+    "merchantFulfillmentNotice": "The company is responsible for fulfilling this order from its warehouse; this modal is view-only.",
+    "merchantFulfillmentReadOnly": "The company fulfills this order; you can only track it from here",
+    "detailTabs": {
+      "details": "Details",
+      "update": "Update",
+      "history": "History"
+    },
+    "noHistoryItems": "No history items yet",
+    "detailSectionIcons": {
+      "customer": "Customer",
+      "products": "Products",
+      "summary": "Order summary",
+      "update": "Update order",
+      "conversation": "Conversation",
+      "notes": "Notes",
+      "partnerOps": "Partner operations"
+    },
+    "saveChanges": "Save changes",
+    "discardChanges": "Discard",
+    "changesPending": "You have unsaved changes",
     "workspaceSubtitle": "A unified workspace for assigned orders, confirmation queue, and distribution",
     "bulkOrders": "Bulk Orders",
     "bulkOrdersSubtitle": "Manage and execute bulk orders",
@@ -10593,7 +10713,17 @@
     "overviewPeriodLabel": "Last {{count}} days",
     "overviewOrdersTrendAria": "Order volume trend, last 14 days",
     "overviewRevenueTrendAria": "Revenue trend, last 14 days",
-    "overviewAovTrendAria": "Average order value trend, last 14 days"
+    "overviewAovTrendAria": "Average order value trend, last 14 days",
+    "statusSearch": "Search status...",
+    "statusSelectAll": "Select All",
+    "statusNoResults": "No results",
+    "filterSearch": "Search...",
+    "filterSelectAll": "Select All",
+    "filterNoResults": "No results",
+    "refreshOrders": "Refresh orders",
+    "lastUpdatedAt": "Updated: {{time}}",
+    "liveUpdates": "Live — auto updates enabled",
+    "offlineUpdates": "Offline — data may be stale"
   },
   "preparation": {
     "page": {
@@ -10779,6 +10909,7 @@
       "PACKAGED": "Packaged",
       "READY_TO_SHIP": "Ready to Ship",
       "STOCK_SHORTAGE": "Stock Shortage",
+      "SHORTAGE_FAILED": "Shortage Failed",
       "PENDING_CANCELLATION": "Pending Cancellation"
     },
     "stageDescriptions": {
@@ -10788,6 +10919,7 @@
       "PACKAGED": "Order is packaged and awaiting delivery to shipping",
       "READY_TO_SHIP": "Ready to hand over to shipping company or create shipment",
       "STOCK_SHORTAGE": "Orders on hold due to stock shortage or awaiting transfer",
+      "SHORTAGE_FAILED": "Order failed due to permanent stock shortage — will not be fulfilled",
       "PENDING_CANCELLATION": "Orders the customer requested cancellation during preparation — must stop immediately"
     },
     "shortageReasons": {
@@ -10861,6 +10993,7 @@
       "pos": "POS",
       "unknown": "Unknown"
     },
+    "shortageFailedTab": "Shortage Failed",
     "actionLabels": {
       "viewOnlyDesc": "Merchant can see customer name and products only — preparation tools are disabled.",
       "viewOnly": "View Only",
@@ -10936,7 +11069,9 @@
       "tomorrowSuccess": "Follow-up set to tomorrow",
       "clearDateSuccess": "Follow-up date cleared",
       "customerNotifiedBadge": "Customer Notified",
-      "ownerBadge": "Assignee: {{name}}"
+      "ownerBadge": "Assignee: {{name}}",
+      "markAsShortageFailed": "Mark as Shortage Failed",
+      "confirmShortageFailed": "Are you sure you want to mark this order as shortage failed? The order will not be fulfilled."
     },
     "problemPanel": {
       "title": "On Hold — Problem Reason",
@@ -13849,6 +13984,7 @@
     "customerLoyalty": "Customer Loyalty",
     "customerPointsCenter": "Customer Points Center",
     "customerSegments": "Segmentation Hub",
+    "customerLists": "Customer Lists",
     "customerNotifications": "Customer Notifications",
     "customers": "Customers",
     "customersBirthday": "Customers Birthdays",
@@ -13938,6 +14074,36 @@
     "bookingWorkflow": "Workflow",
     "bookingReports": "Reports",
     "bookingOperations": "Operations",
+    "bookingInsuranceCompanies": "Insurance Companies",
+    "bookingMemberTypes": "Member Types",
+    "labModule": "Lab System",
+    "labDashboard": "Lab Dashboard",
+    "labTests": "Test Catalog",
+    "labReception": "Reception",
+    "labOrders": "Orders",
+    "labPatients": "Patients",
+    "labMedicalReports": "Medical Reports",
+    "labCultures": "Cultures",
+    "labPriceLists": "Price Lists",
+    "labContracts": "Contracts",
+    "labBranches": "Branches",
+    "labInvoices": "Payments",
+    "labReports": "Reports",
+    "labHomeVisits": "Home Visits",
+    "labSettings": "Settings",
+    "radiologyModule": "Radiology System",
+    "radiologyDashboard": "Radiology Dashboard",
+    "radiologyReception": "Reception",
+    "radiologyPatients": "Patients",
+    "radiologyStudies": "Studies",
+    "radiologyReports": "Medical Reports",
+    "radiologyExamTypes": "Exam Types",
+    "radiologyPriceLists": "Price Lists",
+    "radiologyContracts": "Contracts",
+    "radiologyBranches": "Branches",
+    "radiologyInvoices": "Payments",
+    "radiologyReportsOverview": "Reports",
+    "radiologySettings": "Settings",
     "marketplace": "Marketplace",
     "marketplaceManagement": "Marketplace Management",
     "merchantCommissions": "My Commissions",
@@ -16210,7 +16376,8 @@
     "msg_e04d": "يوجد أخطاء توافق مع سياسات Meta — راجع رسائل الفحص أعلاه",
     "success_update_ee74": "تم تحديث القالب — سيمر بمراجعة ميتا",
     "success_delete_3acd": "تم حذف القالب",
-    "failed_create_1d9d": "فشل إنشاء القالب"
+    "failed_create_1d9d": "فشل إنشاء القالب",
+    "success_upload_media": "تم رفع الوسيط إلى ميتا — جاهز لاستخدامه في رأس القالب"
   },
   "WhatsAppTemplateBroadcast": {
     "failed_load_914a": "فشل في تحميل العملاء حسب الوسم",

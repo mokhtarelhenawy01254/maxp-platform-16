@@ -314,6 +314,33 @@ async function answerKnowledgeQuestion({ companyId, questionId, answer }) {
   return await response.json();
 }
 
+/**
+ * Train the agent from free-form merchant text (auto-extraction to knowledge).
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {string} params.text
+ * @param {string|null} [params.topic]
+ * @returns {Promise<Object>}
+ */
+async function trainKnowledge({ companyId, text, topic }) {
+  const url = new URL('/knowledge-questions/train', getAiServiceUrl());
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ text, topic }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`AI service train knowledge error ${response.status}: ${body}`);
+  }
+  return await response.json();
+}
+
 module.exports = {
   sendChatMessage,
   resumeWorkflow,
@@ -322,6 +349,7 @@ module.exports = {
   listKnowledgeQuestions,
   countPendingKnowledgeQuestions,
   answerKnowledgeQuestion,
+  trainKnowledge,
   consolidateDreamer,
   normalizeAiServiceResponse,
 };

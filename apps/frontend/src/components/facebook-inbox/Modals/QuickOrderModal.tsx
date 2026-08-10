@@ -26,7 +26,7 @@ import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
 import { InboxConversation } from "../../../types/inbox.types";
-import { EGYPT_GOVERNORATES } from "../../../constants/egyptGovernorates";
+import { GovernorateAreaSearch } from "../../ui/GovernorateAreaSearch";
 import { detectUserGovernorate } from "../../../utils/geolocation";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
 
@@ -551,6 +551,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [customerName, setCustomerName] = useState(initialCustomerName || convCustomerName || "");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
   const [notes, setNotes] = useState("");
 
   // Shipping State
@@ -884,7 +885,8 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         customerPhone: phone,
         customerName: customerName.trim(),
         customerAddress: address,
-        city: city,
+        city: area || city,
+        governorate: city,
         notes: notes,
         status: "PENDING",
         paymentMethod: "cod",
@@ -1321,20 +1323,19 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   <div className="space-y-4">
                     <div>
                       <label className="mb-1 block text-xs" style={mutedStyle}>
-                        المحافظة
+                        المحافظة والمنطقة
                       </label>
-                      <select
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="business-control-input w-full"
-                      >
-                        <option value="">اختر المحافظة...</option>
-                        {EGYPT_GOVERNORATES.map((gov) => (
-                          <option key={gov.id} value={gov.nameAr}>
-                            {gov.nameAr}
-                          </option>
-                        ))}
-                      </select>
+                      <GovernorateAreaSearch
+                        value={{ governorate: city, area }}
+                        onChange={(next) => {
+                          setCity(next.governorate);
+                          setArea(next.area);
+                        }}
+                        placeholder="ابحث عن المنطقة..."
+                        searchPlaceholder="اكتب اسم المنطقة أو المحافظة..."
+                        emptyText="لا توجد نتائج مطابقة"
+                        loadingText="جاري البحث..."
+                      />
                     </div>
 
                     <div>

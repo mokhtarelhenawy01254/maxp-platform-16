@@ -15,6 +15,7 @@ import {
   CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
+import { GovernorateAreaSearch } from "../../../../components/ui/GovernorateAreaSearch";
 import { customerService } from "../../../../services/customerService";
 import { apiClient } from "../../../../services/apiClient";
 import {
@@ -25,36 +26,6 @@ import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuthSimple";
-// قائمة المحافظات المصرية - translation keys (resolved inside component via useTranslation)
-const EGYPT_GOVERNORATE_KEYS = [
-  'manualOrder.k_25',
-  'manualOrder.k_26',
-  'manualOrder.k_27',
-  'manualOrder.k_28',
-  'manualOrder.k_29',
-  'manualOrder.k_30',
-  'manualOrder.k_31',
-  'manualOrder.k_32',
-  'manualOrder.k_33',
-  'manualOrder.k_34',
-  'manualOrder.k_35',
-  'manualOrder.k_36',
-  'manualOrder.k_37',
-  'manualOrder.k_38',
-  'manualOrder.k_39',
-  'manualOrder.k_40',
-  'manualOrder.k_41',
-  'manualOrder.k_42',
-  'manualOrder.k_43',
-  'manualOrder.k_44',
-  'manualOrder.k_45',
-  'manualOrder.k_46',
-  'manualOrder.k_47',
-  'manualOrder.k_48',
-  'manualOrder.k_49',
-  'manualOrder.k_50',
-  'manualOrder.k_51',
-];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
   String(value || "").replace(/^\d+:/, "").trim();
@@ -135,7 +106,6 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
-  const EGYPT_GOVERNORATES = useMemo(() => EGYPT_GOVERNORATE_KEYS.map(k => t(k)), [t]);
   const canOverrideBlockedCustomer = [
     "OWNER",
     "COMPANY_ADMIN",
@@ -209,14 +179,6 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const shippingCost = shippingInfo?.price || 0;
   const totalDiscount = couponDiscount + manualDiscount;
   const grandTotal = subtotal - totalDiscount + shippingCost;
-  const availableGovernorates = useMemo(() => {
-    const source =
-      governments.length > 0
-        ? governments.map((gov) => normalizeLocationLabel(gov.name))
-        : EGYPT_GOVERNORATES;
-
-    return Array.from(new Set(source.filter(Boolean)));
-  }, [governments]);
 
   useEffect(() => {
     if (!canUseTurboLocationLookups) {
@@ -725,27 +687,18 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               {t('manualOrder.k_95')} <span className="text-red-500 dark:text-red-400">*</span>
             </label>
-            <SearchableSelect
-              options={availableGovernorates.map((gov) => ({
-                value: gov,
-                label: gov,
-              }))}
-              value={governorate}
-              onChange={(nextGovernorate) => {
-                setGovernorate(nextGovernorate);
-                if (
-                  normalizeLocationLabel(nextGovernorate) !==
-                  normalizeLocationLabel(governorate)
-                ) {
-                  setArea("");
-                }
+            <GovernorateAreaSearch
+              value={{ governorate, area }}
+              onChange={(next) => {
+                setGovernorate(normalizeLocationLabel(next.governorate));
+                setArea(normalizeLocationLabel(next.area));
               }}
               placeholder={t('manualOrder.k_1')}
               searchPlaceholder={t('manualOrder.k_2')}
               emptyText={t('manualOrder.k_3')}
-              disabled={false}
-              loading={loadingGovernments}
               loadingText={t('manualOrder.k_4')}
+              disabled={!canUseTurboLocationLookups}
+              autoSearchText={address || ""}
             />
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">

@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
 import { Save, Loader2, Zap } from "lucide-react";
 
+interface AutoDiscountSettingsProps {
+  onSaved?: (data?: any) => void;
+}
+
 /**
  * إعدادات نظام "الخصم التلقائي":
  * كوبون خصم % على الأوردر الجاي، صلاحيته أيام، ويتحول لكاش باك عند الانتهاء،
  * + معدل النقاط وقيمة الاستبدال.
  */
-const AutoDiscountSettings: React.FC = () => {
+const AutoDiscountSettings: React.FC<AutoDiscountSettingsProps> = ({ onSaved }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
@@ -21,6 +25,7 @@ const AutoDiscountSettings: React.FC = () => {
     pointsPerAmount: 5,
     pointsRedemptionValue: 1,
     redeemPointsEnabled: true,
+    loyaltyActivatedAt: undefined as string | undefined,
   });
 
   const load = async () => {
@@ -43,8 +48,9 @@ const AutoDiscountSettings: React.FC = () => {
     setSavedMsg("");
     setErrorMsg("");
     try {
-      await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
+      const res = await apiClient.put("/hr/customer-loyalty/system-settings", cfg);
       setSavedMsg("تم حفظ إعدادات الخصم التلقائي ✓");
+      onSaved?.(res.data?.data);
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || "فشل الحفظ");
     } finally {
@@ -99,15 +105,28 @@ const AutoDiscountSettings: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">قيمة النقطة عند الاستبدال (ج.م لكل نقطة)</label>
-                <input type="number" min="0.01" step="0.01" value={cfg.pointsRedemptionValue} onChange={(e) => set("pointsRedemptionValue", Number(e.target.value))} className={inputCls + " mt-1"} />
-                <p className="text-[10px] text-gray-400 mt-1">مثال: 1 = كل نقطة بجنية — 500 نقطة = 500ج أوردر</p>
+                <label className="text-xs text-gray-500">تاريخ تفعيل نظام الخصم</label>
+                <input
+                  type="date"
+                  value={cfg.loyaltyActivatedAt ? cfg.loyaltyActivatedAt.slice(0, 10) : ""}
+                  onChange={(e) => set("loyaltyActivatedAt", e.target.value ? new Date(e.target.value + "T00:00:00").toISOString() : null)}
+                  className={inputCls + " mt-1"}
+                />
+                <p className="text-[10px] text-gray-400 mt-1">الأوردرات اللي اتسلمت قبل التاريخ ده مش بتاخد كوبون خصم وبتتوصف "قبل تفعيل النظام".</p>
               </div>
               <div className="flex items-end pb-1">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <input type="checkbox" checked={Boolean(cfg.convertExpiredToCashback)} onChange={(e) => set("convertExpiredToCashback", e.target.checked)} className="h-4 w-4 accent-amber-500" />
                   تحويل الكوبون المنتهي لكاش باك
                 </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500">قيمة النقطة عند الاستبدال (ج.م لكل نقطة)</label>
+                <input type="number" min="0.01" step="0.01" value={cfg.pointsRedemptionValue} onChange={(e) => set("pointsRedemptionValue", Number(e.target.value))} className={inputCls + " mt-1"} />
+                <p className="text-[10px] text-gray-400 mt-1">مثال: 1 = كل نقطة بجنية — 500 نقطة = 500ج أوردر</p>
               </div>
             </div>
 

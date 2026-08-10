@@ -313,6 +313,22 @@ async function updateAutoReply(companyId, enabled) {
   return request('PUT', `/admin/settings/auto-reply?company_id=${encodeURIComponent(companyId)}`, { autoReplyEnabled: enabled });
 }
 
+async function getChannelReply(companyId) {
+  return request('GET', `/admin/settings/channel-reply?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateChannelReply(companyId, channels) {
+  return request('PUT', `/admin/settings/channel-reply?company_id=${encodeURIComponent(companyId)}`, { channels });
+}
+
+async function getAgentPause(companyId) {
+  return request('GET', `/admin/settings/pause?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateAgentPause(companyId, paused, reason) {
+  return request('PUT', `/admin/settings/pause?company_id=${encodeURIComponent(companyId)}`, { paused, reason });
+}
+
 async function getGlobalFilterSettings(companyId) {
   return request('GET', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`);
 }
@@ -379,6 +395,10 @@ async function updateSelfReviewSettings(data) {
   return request('PATCH', '/admin/self-review/settings', data);
 }
 
+async function notifyOrderCreated(data) {
+  return request('POST', '/admin/orders/created', data);
+}
+
 module.exports = {
   listTools,
   listSkills,
@@ -422,6 +442,10 @@ module.exports = {
   updateGuardrails,
   getAutoReply,
   updateAutoReply,
+  getChannelReply,
+  updateChannelReply,
+  getAgentPause,
+  updateAgentPause,
   visualSearch,
   getGlobalFilterSettings,
   updateGlobalFilterSettings,
@@ -431,4 +455,5 @@ module.exports = {
   updateReviewModel,
   getSelfReviewSettings,
   updateSelfReviewSettings,
+  notifyOrderCreated,
 };

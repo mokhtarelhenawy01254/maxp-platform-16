@@ -3,7 +3,7 @@ import { buildApiUrl } from "../../../utils/urlHelper";
 import tokenManager from "../../../utils/tokenManager";
 ;
 
-import { BarChart4, Building2, CalendarDays, Users, Wrench } from 'lucide-react'
+import { BarChart4, Building2, CalendarDays, Users, Wrench, Tag, ListChecks, Printer, ShieldCheck, BadgePercent } from 'lucide-react'
 export const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
 };
@@ -170,6 +170,17 @@ export interface BookingAppointment {
   diagnosis?: string; treatmentPlan?: string; prescription?: string;
   vitals?: string[] | Record<string, unknown> | string;
   followUpDate?: string;
+  bookingStatus?: string;
+  reportStatus?: string;
+  accessionNumber?: string;
+  ticketNumber?: string;
+  room?: string;
+  preparationNote?: string;
+  assignedDoctorId?: string;
+  assignedDoctorName?: string;
+  deliveredWithoutReport?: boolean;
+  resultDelivered?: boolean;
+  labelPrinted?: boolean;
 }
 
 export interface BookingPatient {
@@ -183,10 +194,57 @@ export interface BookingPatient {
   notes?: string; isActive: boolean; createdAt: string;
   visitCount?: number;
   password?: string;
+  status?: string;
+  source?: string;
+  maritalStatus?: string;
+  occupation?: string;
+  city?: string;
+  medicalHistory?: string[] | Record<string, unknown> | string;
+  referringPhysicianId?: string;
+  referringPhysician?: { id: string; name: string; phone?: string; specialty?: string };
+  priceListId?: string;
+  priceList?: { id: string; name: string };
+  mergedIntoId?: string;
+  title?: string;
+  insuranceNumber?: string;
+  insuranceCompanyId?: string;
+  insuranceCompany?: { id: string; name: string; priceListId?: string };
+  memberTypeId?: string;
+  memberType?: { id: string; name: string; coveragePercent?: number };
+  homePhone?: string;
+  workPhone?: string;
+  fax?: string;
+  postalCode?: string;
   customer?: { id: string; firstName: string; lastName: string; phone?: string };
 }
 
-export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar" | "patients" | "invoices";
+export interface InsuranceCompany {
+  id: string; name: string; priceListId?: string;
+  phone1?: string; fax?: string; contactName?: string; contactPhone?: string;
+  isActive: boolean;
+  priceList?: { id: string; name: string };
+}
+
+export interface InsuranceMemberType {
+  id: string; name: string; coveragePercent: number; isActive: boolean;
+}
+
+export interface PatientDocument {
+  id: string; patientId: string; documentType: string;
+  name?: string; fileData?: string; mimeType?: string; notes?: string;
+  uploadedBy?: string; uploadedAt: string;
+}
+
+export const DOCUMENT_TYPES = [
+  { value: "DRIVING_LICENSE", label: "رخصة قيادة" },
+  { value: "INSURANCE", label: "تأمين" },
+  { value: "PRESCRIPTION", label: "وصفة طبية" },
+  { value: "IMAGE", label: "صورة" },
+  { value: "VIDEO", label: "فيديو" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+export type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar" | "patients" | "invoices" | "price-lists" | "workflow" | "reports" | "operations" | "insurance-companies" | "member-types";
 
 export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
   { id: "dashboard", label: "لوحة التحكم", icon: BarChart4 },
@@ -197,6 +255,12 @@ export const TABS: { id: TabId; label: string; icon: typeof BarChart4 }[] = [
   { id: "services", label: "الخدمات", icon: Wrench },
   { id: "patients", label: "المرضى", icon: Users },
   { id: "invoices", label: "المدفوعات", icon: BarChart4 },
+  { id: "price-lists", label: "قوائم الأسعار", icon: Tag },
+  { id: "workflow", label: "سير العمل", icon: ListChecks },
+  { id: "reports", label: "التقارير", icon: BarChart4 },
+  { id: "operations", label: "العمليات", icon: Printer },
+  { id: "insurance-companies", label: "شركات التأمين", icon: ShieldCheck },
+  { id: "member-types", label: "أنواع الأعضاء", icon: BadgePercent },
 ];
 
 export interface BookingInvoice {
@@ -206,7 +270,17 @@ export interface BookingInvoice {
   appointment?: { id: string; appointmentDate: string; serviceName?: string };
   total: number; discount: number; amountPaid: number; net: number; remaining: number;
   status: string; dueDate?: string; notes?: string; createdAt: string;
-  payments?: { id: string; amount: number; method: string; paidAt: string }[];
+  discountReason?: string;
+  additionAmount?: number;
+  additionReason?: string;
+  insuranceAmount?: number;
+  expenseSplit?: string;
+  insuranceCompanyId?: string;
+  insuranceCompany?: { id: string; name: string };
+  ticketNumber?: string;
+  cashierId?: string;
+  cashierName?: string;
+  payments?: { id: string; amount: number; method: string; paidAt: string; reason?: string; cashierName?: string }[];
 }
 
 export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -216,8 +290,74 @@ export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }
   REFUNDED: { label: "ملغاة", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
 };
 
-export const PAYMENT_METHODS = ["CASH", "CARD", "WALLET", "ONLINE"];
-export const PAYMENT_METHOD_LABEL: Record<string, string> = { CASH: "نقدي", CARD: "بطاقة", WALLET: "محفظة", ONLINE: "أونلاين" };
+export const PAYMENT_METHODS = ["CASH", "CARD", "CREDIT", "VODAFONE_CASH", "PAYMOB", "INSTAPAY", "FAWRY", "VOUCHER", "REFERRAL"];
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  CASH: "نقدي", CARD: "بطاقة", CREDIT: "آجل", VODAFONE_CASH: "فودافون كاش",
+  PAYMOB: "باي موب", INSTAPAY: "انستا باي", FAWRY: "فوري", VOUCHER: "قسيمة", REFERRAL: "إحالة",
+};
+
+export const PATIENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  ACTIVE: { label: "نشط", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  INACTIVE: { label: "غير نشط", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+  REVIEW: { label: "قيد المراجعة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+};
+
+export const BOOKING_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  UNCONFIRMED: { label: "غير مؤكد", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+  CONFIRMED: { label: "مؤكد", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  CHECKED_IN: { label: "تم الحضور", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  PROCEDURE_STARTED: { label: "بدأ الكشف", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  PROCEDURE_COMPLETED: { label: "اكتمل الكشف", color: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300" },
+  CHECKED_OUT: { label: "غادر", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300" },
+  CANCELLED: { label: "ملغي", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
+  MISSED: { label: "لم يحضر", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300" },
+};
+
+export const REPORT_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "بانتظار التقارير", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+  NOTES_IN_PROGRESS: { label: "كتابة الملاحظات", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  NOTES_COMPLETED: { label: "اكتملت الملاحظات", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  UNDER_REVIEW: { label: "قيد المراجعة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  APPROVED: { label: "معتمد", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+};
+
+export interface ReferringPhysician {
+  id: string; name: string; phone?: string; specialty?: string; isActive: boolean;
+}
+
+export interface PriceList {
+  id: string; name: string; description?: string; baseListId?: string;
+  isActive: boolean; createdAt: string;
+  items?: PriceListItem[];
+}
+
+export interface PriceListItem {
+  id: string; priceListId: string; serviceId: string; price: number; isActive: boolean;
+  service?: { id: string; name: string; basePrice?: number };
+}
+
+export interface ExamLabel {
+  id: string; appointmentId: string; patientId?: string;
+  labelType: string; printedAt: string; printedBy?: string;
+}
+
+export interface ReportDelivery {
+  id: string; appointmentId: string; patientId?: string;
+  status: string; deliveredAt?: string; deliveredBy?: string; paidStatus?: string;
+}
+
+export interface TransactionLog {
+  id: string; entityType: string; entityId: string; action: string;
+  description?: string; amount?: number; payer?: string;
+  userId?: string; userName?: string; createdAt: string;
+}
+
+export interface CashierShift {
+  id: string; cashierId: string; cashierName: string;
+  openedAt: string; closedAt?: string;
+  openingBalance: number; closingBalance?: number;
+  status: string;
+}
 
 export const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pending: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },

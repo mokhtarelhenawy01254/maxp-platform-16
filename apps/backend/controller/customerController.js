@@ -4,6 +4,7 @@ const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const WalletService = require('../services/walletService');
 const customerBlocklistService = require('../services/customerBlocklistService');
+const autoDiscountService = require('../services/autoDiscountService');
 
 const getAllCustomer = async (req, res) => {
   try {
@@ -116,9 +117,20 @@ const getAllCustomer = async (req, res) => {
     // حساب معلومات الترقيم
     const totalPages = Math.ceil(total / limit);
 
+    // 🏷️ إضافة حالة الخصم التلقائي لكل عميل (خصم متاح / قبل تفعيل النظام)
+    let data = customers;
+    if (autoDiscountService) {
+      data = await autoDiscountService
+        .enrichCustomersWithAutoDiscountStatus(companyId, customers)
+        .catch((e) => {
+          console.error('❌ [AUTO-DISCOUNT] Enrich customer list failed:', e.message);
+          return customers;
+        });
+    }
+
     res.json({
       success: true,
-      data: customers,
+      data,
       pagination: {
         page,
         limit,

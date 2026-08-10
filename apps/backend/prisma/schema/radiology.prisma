@@ -1,0 +1,69 @@
+// Radiology module - exam types and studies
+model RadiologyExamType {
+  id           String   @id @default(cuid())
+  companyId    String?
+  name         String
+  category     String?    // CT, MRI, X-Ray, US, DEXA, NM, PET, Fluoroscopy, Other
+  abbreviation String?
+  price        Float    @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RadiologyStudy {
+  id                String   @id @default(cuid())
+  companyId         String?
+  studyNumber       String?    // RAD-YYYYMMDD-XXXX
+  patientId         String?    // external ref to booking Patient
+  patientName       String
+  patientPhone      String?
+  patientGender     String?
+  patientAge        String?
+  examTypeId        String?
+  examTypeName      String?
+  modality          String?
+  status            String   @default("PENDING_IMAGING") // PENDING_IMAGING | IMAGED | PENDING_REPORT | REPORTED | DELIVERED
+  emergency         Boolean  @default(false)
+  withContrast      Boolean  @default(false)
+  referralDoctor    String?
+  notes             String?
+  accessionNumber   String?
+  submissionStatus  String   @default("NOT_SUBMITTED") // NOT_SUBMITTED | SUBMITTED | REPORT_READY  (Rology tracking)
+  rologyStudyLink   String?
+  rologyReportLink  String?
+  rologyRadiologist String?
+  reportReceivedAt  DateTime?
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  images            RadiologyStudyImage[]
+  report            RadiologyReport?
+}
+
+model RadiologyStudyImage {
+  id                String   @id @default(cuid())
+  studyId           String
+  fileName          String
+  storedName        String
+  fileSize          Int
+  mimeType          String?  @default("application/dicom")
+  seriesDescription String?
+  sliceIndex        Int?
+  metadataJson      String?    // JSON string of parsed DICOM tags
+  data              Bytes      // raw DICOM file bytes
+  createdAt         DateTime @default(now())
+  study             RadiologyStudy @relation(fields: [studyId], references: [id])
+}
+
+model RadiologyReport {
+  id           String   @id @default(cuid())
+  studyId      String   @unique
+  reportText   String
+  reportStatus String   @default("DRAFT") // DRAFT | REVIEWED | SIGNED | DELIVERED
+  signedBy     String?
+  signedAt     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  study        RadiologyStudy @relation(fields: [studyId], references: [id])
+}

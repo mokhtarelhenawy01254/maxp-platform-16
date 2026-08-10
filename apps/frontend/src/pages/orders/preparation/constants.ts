@@ -31,6 +31,7 @@ export const DEFAULT_PREPARATION_QUEUE_SETTINGS: PreparationQueueSettings = {
 };
 
 export const SHORTAGE_HOLD_STATUS = "STOCK_SHORTAGE";
+export const SHORTAGE_FAILED_STATUS = "SHORTAGE_FAILED";
 export const SHORTAGE_HOLD_METADATA_KEY = "preparationShortageHold";
 export const PROBLEM_HOLD_STATUS = "ON_HOLD_PREP";
 export const PROBLEM_HOLD_METADATA_KEY = "preparationHold";
@@ -43,6 +44,7 @@ export const TERMINAL_NON_PREPARATION_STATUSES = new Set([
   "REFUNDED", "PARTIALLY_REFUNDED",
   "DUPLICATE_ORDER", "TRASH", "TRASH_ORDER",
   "EXCHANGED", "PARTIALLY_DELIVERED",
+  "SHORTAGE_FAILED",
 ]);
 
 export const SHORTAGE_REASON_OPTIONS: Array<{

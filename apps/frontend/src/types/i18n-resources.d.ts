@@ -738,6 +738,8 @@ declare module 'react-i18next' {
         tabs: {
           agents: string;
           sandbox: string;
+          train: string;
+          widget: string;
           rag: string;
           tools: string;
           skills: string;
@@ -761,6 +763,7 @@ declare module 'react-i18next' {
           channel: string;
           agent: string;
           autoReply: string;
+          reply: string;
           toolStatus: string;
           selectPlaceholder: string;
           noRouting: string;
@@ -775,6 +778,46 @@ declare module 'react-i18next' {
           assignAllPlaceholder: string;
           reset: string;
           modified: string;
+          agentPause: string;
+          pausedBody: string;
+          resumeBody: string;
+          pauseReasonPlaceholder: string;
+          pauseReasonHint: string;
+        };
+        train: {
+          title: string;
+          subtitle: string;
+          topicLabel: string;
+          whatToTeach: string;
+          placeholder: string;
+          hint: string;
+          save: string;
+          saved: string;
+          saveFailed: string;
+          savedFacts: string;
+          savedFactsSuffix: string;
+          topic: {
+            location: string;
+            hours: string;
+            delivery: string;
+            payment: string;
+            policy: string;
+            prices: string;
+            contact: string;
+            general: string;
+          };
+        };
+        widget: {
+          title: string;
+          subtitle: string;
+          themeColor: string;
+          titleLabel: string;
+          embedCode: string;
+          copy: string;
+          copied: string;
+          usage: string;
+          routingHint: string;
+          routingBody: string;
         };
         sandbox: {
           chat: {
@@ -9203,6 +9246,7 @@ declare module 'react-i18next' {
         additionalPhone: string;
         governorate: string;
         selectGovernorate: string;
+        searchArea: string;
         areaCity: string;
         addressLine: string;
         nearestLandmark: string;
@@ -9993,8 +10037,36 @@ declare module 'react-i18next' {
         followUpScheduled: string;
         cancelReasonTitle: string;
         cancelReasonPlaceholder: string;
+        cancelReasonRequired: string;
+        cancelReasonSelect: string;
+        cancelAdditionalNotes: string;
+        cancelAdditionalNotesOptional: string;
+        cancelAdditionalNotesPlaceholder: string;
+        cancelLoadingReasons: string;
         cancelConfirm: string;
         cancelClose: string;
+        overridePathRules: string;
+        manageCompanyOnly: string;
+        merchantFulfillmentNotice: string;
+        merchantFulfillmentReadOnly: string;
+        detailTabs: {
+          details: string;
+          update: string;
+          history: string;
+        };
+        noHistoryItems: string;
+        detailSectionIcons: {
+          customer: string;
+          products: string;
+          summary: string;
+          update: string;
+          conversation: string;
+          notes: string;
+          partnerOps: string;
+        };
+        saveChanges: string;
+        discardChanges: string;
+        changesPending: string;
         workspaceSubtitle: string;
         bulkOrders: string;
         bulkOrdersSubtitle: string;
@@ -10587,6 +10659,16 @@ declare module 'react-i18next' {
         overviewOrdersTrendAria: string;
         overviewRevenueTrendAria: string;
         overviewAovTrendAria: string;
+        statusSearch: string;
+        statusSelectAll: string;
+        statusNoResults: string;
+        filterSearch: string;
+        filterSelectAll: string;
+        filterNoResults: string;
+        refreshOrders: string;
+        lastUpdatedAt: string;
+        liveUpdates: string;
+        offlineUpdates: string;
       };
       preparation: {
         page: {
@@ -10772,6 +10854,7 @@ declare module 'react-i18next' {
           PACKAGED: string;
           READY_TO_SHIP: string;
           STOCK_SHORTAGE: string;
+          SHORTAGE_FAILED: string;
           PENDING_CANCELLATION: string;
         };
         stageDescriptions: {
@@ -10781,6 +10864,7 @@ declare module 'react-i18next' {
           PACKAGED: string;
           READY_TO_SHIP: string;
           STOCK_SHORTAGE: string;
+          SHORTAGE_FAILED: string;
           PENDING_CANCELLATION: string;
         };
         shortageReasons: {
@@ -10854,6 +10938,7 @@ declare module 'react-i18next' {
           pos: string;
           unknown: string;
         };
+        shortageFailedTab: string;
         actionLabels: {
           viewOnlyDesc: string;
           viewOnly: string;
@@ -10930,6 +11015,8 @@ declare module 'react-i18next' {
           clearDateSuccess: string;
           customerNotifiedBadge: string;
           ownerBadge: string;
+          markAsShortageFailed: string;
+          confirmShortageFailed: string;
         };
         problemPanel: {
           title: string;
@@ -13842,6 +13929,7 @@ declare module 'react-i18next' {
         customerLoyalty: string;
         customerPointsCenter: string;
         customerSegments: string;
+        customerLists: string;
         customerNotifications: string;
         customers: string;
         customersBirthday: string;
@@ -13931,6 +14019,36 @@ declare module 'react-i18next' {
         bookingWorkflow: string;
         bookingReports: string;
         bookingOperations: string;
+        bookingInsuranceCompanies: string;
+        bookingMemberTypes: string;
+        labModule: string;
+        labDashboard: string;
+        labTests: string;
+        labReception: string;
+        labOrders: string;
+        labPatients: string;
+        labMedicalReports: string;
+        labCultures: string;
+        labPriceLists: string;
+        labContracts: string;
+        labBranches: string;
+        labInvoices: string;
+        labReports: string;
+        labHomeVisits: string;
+        labSettings: string;
+        radiologyModule: string;
+        radiologyDashboard: string;
+        radiologyReception: string;
+        radiologyPatients: string;
+        radiologyStudies: string;
+        radiologyReports: string;
+        radiologyExamTypes: string;
+        radiologyPriceLists: string;
+        radiologyContracts: string;
+        radiologyBranches: string;
+        radiologyInvoices: string;
+        radiologyReportsOverview: string;
+        radiologySettings: string;
         marketplace: string;
         marketplaceManagement: string;
         merchantCommissions: string;
@@ -16204,6 +16322,7 @@ declare module 'react-i18next' {
         success_update_ee74: string;
         success_delete_3acd: string;
         failed_create_1d9d: string;
+        success_upload_media: string;
       };
       WhatsAppTemplateBroadcast: {
         failed_load_914a: string;

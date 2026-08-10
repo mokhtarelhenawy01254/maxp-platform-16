@@ -7,6 +7,7 @@ import {
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   EyeIcon,
+  InformationCircleIcon,
   PencilIcon,
   UsersIcon,
   ShoppingBagIcon,
@@ -220,6 +221,31 @@ const CustomerList: React.FC = () => {
     }
   };
 
+  const getAutoDiscountBadge = (status: string | null | undefined) => {
+    if (!status) return null;
+    if (status === "AVAILABLE") {
+      return (
+        <span
+          className="mr-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          title="عند العميل كوبون خصم فعّال على أوردره الجاي"
+        >
+          خصم متاح
+        </span>
+      );
+    }
+    if (status === "PRE_ACTIVATION") {
+      return (
+        <span
+          className="mr-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+          title="طلب قبل تفعيل نظام الولاء — الخصم التلقائي مش بيطبق عليه"
+        >
+          قبل تفعيل النظام
+        </span>
+      );
+    }
+    return null;
+  };
+
   if (isLoading && customers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -416,6 +442,7 @@ const CustomerList: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                             {customer.firstName || ""} {customer.lastName || ""}
                             {getRatingBadge(customer.customerRating)}
+                            {getAutoDiscountBadge(customer.autoDiscountStatus)}
                           </div>
                           {parseTags(customer.tags).length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -463,11 +490,18 @@ const CustomerList: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2 space-x-reverse">
                         <Link
+                          to={`/customers/${customer.id}/portal`}
+                          title="صفحة العميل (النقاط والخصومات والكاش باك)"
+                          className="text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-900 dark:hover:text-fuchsia-300"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Link>
+                        <Link
                           to={`/customers/${customer.id}`}
                           title={t("customers.tableActions")}
                           className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <InformationCircleIcon className="h-4 w-4" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}/edit`}
