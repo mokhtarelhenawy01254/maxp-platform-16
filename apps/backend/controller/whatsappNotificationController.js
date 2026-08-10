@@ -8,6 +8,7 @@ const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotifi
 const { v4: uuidv4 } = require('uuid');
 const { mapVariablesByOrder, extractLocalVariableOrder } = require('../utils/metaTemplateVariables');
 const { buildMetaTemplatePayload } = require('../utils/metaTemplatePayload');
+const { isOrderCategory } = require('../services/whatsapp/notificationTypes');
 
 function buildQueuedSuccessMessage(result) {
   if (!result?.queueId) {
@@ -856,6 +857,9 @@ async function updateCustomerPreferences(req, res) {
 function getCategoryForEvent(eventType) {
   if (eventType.startsWith('TASK_')) return 'TASKS';
   if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDERS';
+  // الحالات الخام لحالات الطلبات (delivered/confirmed/returned...) مش بتبدأ بـ ORDER_
+  // وكانت بتقع في الـ default MARKETING — تصنيفها الصحيح ORDERS (رسالة حالة طلب).
+  if (isOrderCategory(null, eventType)) return 'ORDERS';
   if (eventType === 'NEW_SIGNUP_WELCOME') return 'CUSTOMER';
   if (
     eventType === 'NEW_SIGNUP_ADMIN_ALERT' ||
