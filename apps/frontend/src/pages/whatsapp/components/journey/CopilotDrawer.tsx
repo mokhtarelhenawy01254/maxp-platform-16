@@ -3,15 +3,8 @@
  * @description AI Co-pilot drawer for the Customer Journey page.
  *
  * Opens via `Cmd+K` (or `Ctrl+K`) and lets the user describe what they
- * want in natural language. The prompt is sent to the maxp-ai-service
- * via `aiServiceAdminClient.chatWithAgent`, and the reply is rendered
- * with streaming-feel reveal + suggested actions.
- *
- * Features:
- *   - Natural-language → flow suggestion
- *   - Smart insights on existing flows (low conversion, long delays, etc.)
- *   - Anomaly detection summary
- *   - Conversation history within the session
+ * want in natural language. The prompt is sent to the maxp-ai-service,
+ * and the reply is rendered with suggested actions.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,12 +21,9 @@ import {
   Check,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { apiClient } from "../../../../services/apiClient";
 import { cn } from "@/lib/utils";
-
-// ─────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────
 
 type Role = "user" | "assistant";
 
@@ -66,10 +56,6 @@ interface CopilotDrawerProps {
   onApplySuggestion?: (suggestion: Suggestion) => void;
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────
-
 export function CopilotDrawer({
   open,
   onClose,
@@ -87,7 +73,6 @@ export function CopilotDrawer({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch a default agent for journey flows on first open
   useEffect(() => {
     if (!open || activeAgent) return;
     let cancelled = false;
@@ -106,16 +91,12 @@ export function CopilotDrawer({
     };
   }, [open, activeAgent]);
 
-  // Auto-focus when opened
   useEffect(() => {
-    if (open) {
-      // small delay to allow slide-in animation
-      const t = window.setTimeout(() => inputRef.current?.focus(), 80);
-      return () => window.clearTimeout(t);
-    }
+    if (!open) return undefined;
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -135,7 +116,6 @@ export function CopilotDrawer({
     setInput("");
     setIsStreaming(true);
 
-    // Build a thread key so the backend can keep memory across turns
     const threadId = `journey-${flowId || "global"}`;
 
     try {
@@ -146,7 +126,6 @@ export function CopilotDrawer({
         context: {
           flowId,
           flowName,
-          // Pass the user's locale so the agent can reply in the right language
           locale: i18n.language,
         },
       });
@@ -169,8 +148,6 @@ export function CopilotDrawer({
         },
       ]);
     } catch {
-      // Fallback to built-in canned responses so the UI still
-      // works when the backend / AI service is unreachable.
       const fallback = getFallbackReply(trimmed, flowName);
       setMessages((m) => [
         ...m,
@@ -197,10 +174,10 @@ export function CopilotDrawer({
 
   const greeting = useMemo(() => {
     if (flowName) {
-      return `I'm analyzing "${flowName}". Ask me anything about its performance, suggest new steps, or describe a flow you want to build.`;
+      return t("whatsappJourney.copilot.placeholder");
     }
-    return "Describe the flow you want to build, or paste an existing sequence and I'll help you improve it.";
-  }, [flowName]);
+    return t("whatsappJourney.copilot.placeholder");
+  }, [flowName, t]);
 
   if (!open) return null;
 
@@ -208,8 +185,7 @@ export function CopilotDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
-        style={{ background: "rgba(0,0,0,0.4)" }}
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -217,69 +193,44 @@ export function CopilotDrawer({
       {/* Drawer */}
       <aside
         role="dialog"
-        aria-label="AI Co-pilot"
+        aria-label={t("whatsappJourney.copilot.title") as string}
         className={cn(
-          "fixed top-0 z-50 flex h-full w-full max-w-md flex-col border-l shadow-2xl",
+          "fixed top-0 z-50 flex h-full w-full max-w-md flex-col border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-2xl",
           "transition-transform duration-200 ease-out",
+          isRtl ? "border-r" : "border-l",
         )}
         style={{
           insetInlineEnd: 0,
-          background: "var(--editorial-surface-raised, white)",
-          borderColor: "var(--editorial-border)",
-          // Slide-in from the side
           transform: open ? "translateX(0)" : `translateX(${isRtl ? "-100%" : "100%"})`,
         }}
         dir={isRtl ? "rtl" : "ltr"}
       >
         {/* Header */}
-        <header
-          className="flex items-center justify-between border-b p-4"
-          style={{ borderColor: "var(--editorial-border)" }}
-        >
+        <header className="flex items-center justify-between border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-4 py-3.5">
           <div className="flex items-center gap-3">
-            <span
-              className="flex size-9 items-center justify-center"
-              style={{
-                background: "var(--editorial-ink)",
-                color: "var(--editorial-accent)",
-                borderRadius: "var(--editorial-radius-sm, 4px)",
-              }}
-            >
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
               <Sparkles className="size-4" />
             </span>
             <div>
-              <p
-                className="ed-eyebrow"
-                style={{ color: "var(--editorial-ink-soft)" }}
-              >
-                ◇ ai co-pilot
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+                {t("whatsappJourney.copilot.title")}
               </p>
-              <h2
-                className="ed-display"
-                style={{
-                  fontSize: 18,
-                  color: "var(--editorial-ink)",
-                  lineHeight: 1.1,
-                  margin: 0,
-                }}
-              >
-                {activeAgent ? "Co-pilot ready" : "Co-pilot"}
+              <h2 className="text-base font-semibold text-[color:var(--color-foreground)]">
+                {activeAgent
+                  ? t("whatsappJourney.copilot.ready")
+                  : t("whatsappJourney.copilot.title")}
               </h2>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span
-              className="ed-kbd"
-              style={{ fontSize: 10 }}
-            >
+            <kbd className="hidden items-center rounded-md border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)] sm:inline-flex">
               ESC
-            </span>
+            </kbd>
             <button
               type="button"
-              className="ed-btn ed-btn-ghost"
-              style={{ height: 32, width: 32, padding: 0 }}
+              className="flex size-8 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
               onClick={onClose}
-              aria-label="Close co-pilot"
+              aria-label={t("whatsappJourney.copilot.close") as string}
             >
               <X className="size-4" />
             </button>
@@ -292,7 +243,7 @@ export function CopilotDrawer({
           className="flex-1 space-y-4 overflow-y-auto p-4"
         >
           {messages.length === 0 ? (
-            <EmptyState greeting={greeting} onPrompt={(p) => setInput(p)} />
+            <EmptyState greeting={greeting} />
           ) : (
             messages.map((msg) => (
               <MessageBubble
@@ -304,29 +255,25 @@ export function CopilotDrawer({
           )}
 
           {isStreaming && (
-            <div className="flex items-center gap-2 ed-eyebrow" style={{ color: "var(--editorial-ink-soft)" }}>
+            <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
               <Loader2 className="size-3 animate-spin" />
-              thinking…
+              {t("whatsappJourney.copilot.thinking")}
             </div>
           )}
         </div>
 
         {/* Quick prompts */}
         {messages.length === 0 && (
-          <div className="border-t p-4" style={{ borderColor: "var(--editorial-border-subtle)" }}>
-            <p
-              className="ed-eyebrow mb-2"
-              style={{ color: "var(--editorial-ink-soft)" }}
-            >
-              quick prompts
+          <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] p-4">
+            <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+              {t("whatsappJourney.copilot.quickPrompts")}
             </p>
             <div className="flex flex-wrap gap-2">
               {quickPrompts.map((p) => (
                 <button
                   key={p.label}
                   type="button"
-                  className="ed-badge ed-badge-soft"
-                  style={{ cursor: "pointer", fontSize: 10 }}
+                  className="cursor-pointer rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-[10px] font-medium text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-muted))] hover:text-[color:var(--color-foreground)]"
                   onClick={() => setInput(p.prompt)}
                 >
                   {p.label}
@@ -337,54 +284,33 @@ export function CopilotDrawer({
         )}
 
         {/* Composer */}
-        <div
-          className="border-t p-4"
-          style={{ borderColor: "var(--editorial-border)" }}
-        >
-          <div
-            className="flex items-end gap-2 border p-2"
-            style={{
-              borderColor: "var(--editorial-border)",
-              borderRadius: "var(--editorial-radius-sm, 4px)",
-              background: "var(--editorial-surface-sunken)",
-            }}
-          >
+        <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] p-4">
+          <div className="flex items-end gap-2 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] p-2">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
               rows={2}
-              placeholder={t("whatsappJourney.copilot.placeholder", {
-                defaultValue: "Describe the flow you want…",
-              })}
-              className="min-h-[2.5rem] flex-1 resize-none border-0 bg-transparent p-2 text-sm outline-none"
-              style={{ color: "var(--editorial-ink)" }}
+              placeholder={t("whatsappJourney.copilot.placeholder") as string}
+              className="min-h-[2.5rem] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-[color:var(--color-foreground)] outline-none placeholder:text-[color:var(--color-muted-foreground)]"
             />
-            <button
-              type="button"
-              className="ed-btn ed-btn-primary"
-              style={{ height: 36, width: 36, padding: 0 }}
+            <Button
+              size="icon"
+              className="size-9 shrink-0"
               onClick={() => void send()}
               disabled={!input.trim() || isStreaming}
-              aria-label="Send"
+              aria-label={t("whatsappJourney.copilot.send") as string}
             >
               {isStreaming ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               ) : (
-                <Send className="size-3.5" />
+                <Send className="size-4" />
               )}
-            </button>
+            </Button>
           </div>
-          <p
-            className="ed-mono mt-2 text-center"
-            style={{
-              fontSize: 9,
-              color: "var(--editorial-ink-soft)",
-              letterSpacing: "0.1em",
-            }}
-          >
-            press <span className="ed-kbd" style={{ fontSize: 9 }}>↵</span> to send · <span className="ed-kbd" style={{ fontSize: 9 }}>⇧↵</span> for newline
+          <p className="mt-2 text-center text-[9px] text-[color:var(--color-muted-foreground)]">
+            {t("whatsappJourney.copilot.hint")}
           </p>
         </div>
       </aside>
@@ -403,10 +329,6 @@ const quickPrompts = [
   { label: "win-back dormant", prompt: "Design a win-back flow for customers who haven't purchased in 90 days. Include emotional hook and re-engagement offer." },
 ];
 
-/**
- * Built-in canned reply used when the AI service / backend is
- * unreachable. Keeps the drawer functional as a UI surface.
- */
 function getFallbackReply(
   message: string,
   flowName?: string,
@@ -487,40 +409,20 @@ Or describe the outcome you want and I'll draft the steps.`,
 
 function EmptyState({
   greeting,
-  onPrompt,
 }: {
   greeting: string;
-  onPrompt: (prompt: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 py-12 text-center">
-      <span
-        className="flex size-12 items-center justify-center"
-        style={{
-          background: "var(--editorial-ink)",
-          color: "var(--editorial-accent)",
-          borderRadius: "var(--editorial-radius-sm, 4px)",
-        }}
-      >
+      <span className="flex size-12 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
         <Wand2 className="size-5" />
       </span>
-      <p
-        className="ed-display"
-        style={{
-          color: "var(--editorial-ink)",
-          fontSize: 22,
-          lineHeight: 1.2,
-          maxWidth: 320,
-        }}
-      >
+      <p className="max-w-[320px] text-base font-semibold leading-relaxed text-[color:var(--color-foreground)]">
         {greeting}
       </p>
-      <p
-        className="text-xs"
-        style={{ color: "var(--editorial-ink-soft)", maxWidth: 320 }}
-      >
-        Powered by your <code style={{ fontFamily: "var(--editorial-mono)" }}>maxp-ai-service</code>.
-        Suggestions can be applied with one click.
+      <p className="max-w-[320px] text-xs text-[color:var(--color-muted-foreground)]">
+        {t("whatsappJourney.copilot.poweredBy")}
       </p>
     </div>
   );
@@ -533,38 +435,32 @@ function MessageBubble({
   message: Message;
   onApplySuggestion?: (suggestion: Suggestion) => void;
 }) {
+  const { t } = useTranslation();
   const isUser = message.role === "user";
   return (
     <div
-      className={cn("flex flex-col gap-2", isUser ? "items-end" : "items-start")}
+      className={cn(
+        "flex flex-col gap-2",
+        isUser ? "items-end" : "items-start",
+      )}
     >
-      <p
-        className="ed-eyebrow"
-        style={{ color: "var(--editorial-ink-soft)" }}
-      >
-        {isUser ? "◇ you" : "◇ co-pilot"}
+      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+        {isUser
+          ? t("whatsappJourney.copilot.you")
+          : t("whatsappJourney.copilot.assistant")}
       </p>
       <div
-        className="max-w-[90%] border p-3 text-sm leading-6"
-        style={{
-          background: isUser
-            ? "var(--editorial-ink)"
-            : "var(--editorial-surface-sunken)",
-          color: isUser
-            ? "var(--editorial-surface-raised)"
-            : "var(--editorial-ink)",
-          borderColor: isUser
-            ? "var(--editorial-ink)"
-            : "var(--editorial-border-subtle)",
-          borderRadius: "var(--editorial-radius-sm, 4px)",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
+        className={cn(
+          "max-w-[90%] rounded-2xl border p-3 text-sm leading-6",
+          isUser
+            ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)]"
+            : "border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-foreground)]",
+        )}
+        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
       >
         {message.content}
       </div>
 
-      {/* Insights */}
       {message.insights && message.insights.length > 0 && (
         <ul className="m-0 flex w-full max-w-[90%] flex-col gap-2 p-0" style={{ listStyle: "none" }}>
           {message.insights.map((insight, i) => (
@@ -573,15 +469,13 @@ function MessageBubble({
         </ul>
       )}
 
-      {/* Suggestions */}
       {message.suggestions && message.suggestions.length > 0 && (
         <div className="flex w-full max-w-[90%] flex-wrap gap-2">
           {message.suggestions.map((s, i) => (
             <button
               key={i}
               type="button"
-              className="ed-badge ed-badge-accent"
-              style={{ cursor: "pointer" }}
+              className="cursor-pointer rounded-full border border-[color:color-mix(in_srgb,var(--color-primary)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-3 py-1 text-xs font-medium text-[color:var(--color-primary)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_18%,transparent)]"
               onClick={() => onApplySuggestion?.(s)}
             >
               {s.label}
@@ -595,9 +489,9 @@ function MessageBubble({
 
 function InsightCard({ insight }: { insight: Insight }) {
   const toneColor: Record<Insight["tone"], string> = {
-    warning: "var(--editorial-accent)",
-    danger: "oklch(0.55 0.21 25)",
-    info: "var(--editorial-ink-muted)",
+    warning: "var(--color-warning, #d97706)",
+    danger: "var(--color-destructive)",
+    info: "var(--color-muted-foreground)",
     success: "var(--business-success)",
   };
   const Icon =
@@ -611,27 +505,18 @@ function InsightCard({ insight }: { insight: Insight }) {
 
   return (
     <li
-      className="flex items-start gap-3 border p-3"
-      style={{
-        borderColor: "var(--editorial-border-subtle)",
-        borderRadius: "var(--editorial-radius-sm, 4px)",
-        background: "var(--editorial-surface-raised)",
-      }}
+      className="flex items-start gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3"
     >
       <span
-        className="flex size-7 shrink-0 items-center justify-center"
+        className="flex size-7 shrink-0 items-center justify-center rounded-lg"
         style={{
-          background: "var(--editorial-surface-sunken)",
+          background: `color-mix(in srgb, ${toneColor[insight.tone]} 12%, transparent)`,
           color: toneColor[insight.tone],
-          borderRadius: "var(--editorial-radius-sm, 4px)",
         }}
       >
         <Icon className="size-3.5" />
       </span>
-      <p
-        className="m-0 text-xs leading-5"
-        style={{ color: "var(--editorial-ink)" }}
-      >
+      <p className="m-0 text-xs leading-5 text-[color:var(--color-foreground)]">
         {insight.text}
       </p>
     </li>
@@ -642,10 +527,6 @@ function InsightCard({ insight }: { insight: Insight }) {
 // Hook: global Cmd+K handler
 // ─────────────────────────────────────────────────────────────────
 
-/**
- * useCopilotShortcut — adds a global keyboard shortcut to toggle the drawer.
- * Returns the open state and toggle function.
- */
 export function useCopilotShortcut() {
   const [open, setOpen] = useState(false);
 

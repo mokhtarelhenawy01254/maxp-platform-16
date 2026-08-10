@@ -4088,7 +4088,10 @@
       "status": "Status",
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "activeCustomers": "{{count}} Active"
+      "activeCustomers": "{{count}} Active",
+      "count": "{{count}} flows",
+      "selectPrompt": "Select a flow to view its steps",
+      "editing": "Editing flow"
     },
     "steps": {
       "title": "Flow Steps",
@@ -4102,7 +4105,32 @@
       "preview": "Message Preview",
       "orderNumber": "Order Number",
       "firstName": "First Name",
-      "lastName": "Last Name"
+      "lastName": "Last Name",
+      "timeline": "Timeline",
+      "timelineCount": "Flow timeline · {{count}} step",
+      "timelineCount_plural": "Flow timeline · {{count}} steps",
+      "buildSequence": "Build the sequence",
+      "dragHint": "Drag to reorder · Click to edit · Add delays between messages",
+      "readonlyHint": "Read-only view",
+      "validated": "Validated",
+      "errorCount": "{{count}} error",
+      "errorCount_plural": "{{count}} errors",
+      "warningCount": "{{count}} warning",
+      "warningCount_plural": "{{count}} warnings",
+      "livePreview": "Live preview",
+      "stepOf": "Step {{current}} of {{total}}",
+      "instant": "Instant",
+      "waitDays": "Wait {{days}} {{unit}}",
+      "dayUnit": "day",
+      "daysUnit": "days",
+      "emptyMessage": "(empty message)",
+      "addFirstStep": "Add first step",
+      "noStepsTitle": "No steps yet",
+      "noStepsDesc": "Start by adding the first message in this flow",
+      "hidePreview": "Hide preview",
+      "showPreview": "Show preview",
+      "send": "Send",
+      "noIssues": "No issues"
     },
     "monitoring": {
       "customer": "Customer",
@@ -4117,7 +4145,13 @@
       "failed": "Failed",
       "inactive": "Inactive",
       "details": "Journey Details",
-      "step": "Step {{current}} of {{total}}"
+      "step": "Step {{current}} of {{total}}",
+      "liveMonitor": "Live Monitor",
+      "deliveryHealth": "Delivery Health",
+      "good": "Good",
+      "needsAttention": "Needs attention",
+      "openChat": "Open chat",
+      "viewDetails": "View details"
     },
     "dialogs": {
       "deleteFlowTitle": "Delete Flow",
@@ -4130,6 +4164,20 @@
       "saveError": "Failed to save data. Please check database connection",
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Delete failed"
+    },
+    "copilot": {
+      "title": "AI Co-pilot",
+      "ready": "Co-pilot ready",
+      "placeholder": "Describe the flow you want to build...",
+      "quickPrompts": "Quick prompts",
+      "thinking": "Thinking...",
+      "you": "You",
+      "assistant": "Co-pilot",
+      "send": "Send",
+      "close": "Close co-pilot",
+      "open": "Open AI co-pilot",
+      "hint": "Press ↵ to send · ⇧↵ for newline",
+      "poweredBy": "Powered by maxp-ai-service. Suggestions can be applied with one click."
     },
     "hints": {
       "title": "Smart Tips",

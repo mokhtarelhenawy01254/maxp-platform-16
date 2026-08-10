@@ -4088,7 +4088,10 @@
       "status": "الحالة",
       "enabled": "مفعلة",
       "disabled": "معطلة",
-      "activeCustomers": "{{count}} عميل نشط"
+      "activeCustomers": "{{count}} عميل نشط",
+      "count": "{{count}} سلسلة",
+      "selectPrompt": "اختر سلسلة لعرض خطواتها",
+      "editing": "تحرير السلسلة"
     },
     "steps": {
       "title": "خطوات السلسلة",
@@ -4102,7 +4105,32 @@
       "preview": "معاينة الرسالة",
       "orderNumber": "رقم الطلب",
       "firstName": "اسم العميل",
-      "lastName": "اسم العائلة"
+      "lastName": "اسم العائلة",
+      "timeline": "التسلسل الزمني",
+      "timelineCount": "التسلسل الزمني · {{count}} خطوة",
+      "buildSequence": "ابنِ تسلسل الرسائل",
+      "dragHint": "اسحب لإعادة الترتيب · اضغط للتعديل · أضف فترات تأخير بين الرسائل",
+      "readonlyHint": "عرض للقراءة فقط",
+      "validated": "مُتحقق",
+      "errorCount": "{{count}} خطأ",
+      "errorCount_plural": "{{count}} أخطاء",
+      "warningCount": "{{count}} تحذير",
+      "warningCount_plural": "{{count}} تحذيرات",
+      "livePreview": "معاينة حية",
+      "stepOf": "خطوة {{current}} من {{total}}",
+      "instant": "فوري",
+      "waitDays": "انتظر {{days}} {{unit}}",
+      "dayUnit": "يوم",
+      "daysUnit": "أيام",
+      "emptyMessage": "(رسالة فارغة)",
+      "addFirstStep": "أضف الخطوة الأولى",
+      "noStepsTitle": "لا توجد خطوات بعد",
+      "noStepsDesc": "ابدأ بإضافة أول رسالة في هذه السلسلة",
+      "hidePreview": "إخفاء المعاينة",
+      "showPreview": "عرض المعاينة",
+      "send": "إرسال",
+      "noIssues": "لا توجد مشاكل",
+      "timelineCount_plural": "[AR] Flow timeline · {{count}} steps"
     },
     "monitoring": {
       "customer": "العميل",
@@ -4117,7 +4145,13 @@
       "failed": "فشل",
       "inactive": "غير نشط",
       "details": "تفاصيل النشاط",
-      "step": "الخطوة {{current}} من {{total}}"
+      "step": "الخطوة {{current}} من {{total}}",
+      "liveMonitor": "المراقبة المباشرة",
+      "deliveryHealth": "صحة الإرسال",
+      "good": "جيد",
+      "needsAttention": "تحتاج اهتمام",
+      "openChat": "فتح المحادثة",
+      "viewDetails": "عرض التفاصيل"
     },
     "dialogs": {
       "deleteFlowTitle": "حذف السلسلة",
@@ -4130,6 +4164,20 @@
       "saveError": "فشل في حفظ البيانات. يرجى التأكد من الاتصال بقاعدة البيانات",
       "deleteSuccess": "تم الحذف بنجاح",
       "deleteError": "فشل في الحذف"
+    },
+    "copilot": {
+      "title": "مساعد الذكاء الاصطناعي",
+      "ready": "المساعد جاهز",
+      "placeholder": "صف السلسلة التي تريد بناءها...",
+      "quickPrompts": "أوامر سريعة",
+      "thinking": "يفكر...",
+      "you": "أنت",
+      "assistant": "المساعد",
+      "send": "إرسال",
+      "close": "إغلاق المساعد",
+      "open": "فتح المساعد",
+      "hint": "اضغط ↵ للإرسال · ⇧↵ لسطر جديد",
+      "poweredBy": "مدعوم بـ maxp-ai-service. يمكن تطبيق الاقتراحات بضغطة واحدة."
     },
     "hints": {
       "title": "نصائح ذكية",
