@@ -82,6 +82,8 @@ export interface Contact {
     content: string | null;
     messageType: string;
     fromMe: boolean;
+    senderId?: string | null;
+    senderName?: string | null;
     timestamp: string;
   };
   window: {

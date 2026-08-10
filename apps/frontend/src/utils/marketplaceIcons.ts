@@ -9,6 +9,7 @@ import {
   CreditCard, Monitor, UserPlus, Image, Database,
   Clock, SquarePen, Search, ShieldAlert, ListOrdered,
   RefreshCcw, FileBarChart, Cog, ArrowLeftRight, Volume2,
+  Calculator, Tag,
 } from "lucide-react";
 import { WhatsAppIcon, TelegramIcon, FacebookIcon } from "@/components/icons/brands";
 import type { ReactElement } from "react";
@@ -16,6 +17,11 @@ import type { ReactElement } from "react";
 export const appIcons: Record<string, React.ElementType> = {
   megaphone: Megaphone,
   "chart-bar": BarChart3,
+  calculator: Calculator,
+  "dollar-sign": DollarSign,
+  tag: Tag,
+  "trending-up": TrendingUp,
+  wallet: Wallet,
   bot: Bot,
   store: Store,
   users: Users,
@@ -101,4 +107,16 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "order-workflow": ArrowLeftRight,
   "facebook-post": SquarePen,
   "google-tag-manager": BarChart3,
+  "break-even": Calculator,
+  "product-break-even": DollarSign,
+  "pricing-strategy": Tag,
+  "profitability-engine": TrendingUp,
+  "campaign-calculator": Megaphone,
+  "ad-budget-planner": Wallet,
+  "discount-impact": Percent,
+  "shipping-optimizer": Truck,
+  "monthly-pnl": BarChart3,
+  "clv-calculator": Users,
+  "upsell-planner": ShoppingCart,
+  "refund-rate": RefreshCcw,
 };

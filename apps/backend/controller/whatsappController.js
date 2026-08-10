@@ -1172,6 +1172,7 @@ async function getConversations(req, res) {
                         content: true,
                         messageType: true,
                         fromMe: true,
+                        senderId: true,
                         timestamp: true,
                         status: true
                     }
@@ -1180,6 +1181,28 @@ async function getConversations(req, res) {
         }
 
         const lastMessagesMap = new Map(lastMessages.map(m => [`${m.sessionId}:${m.remoteJid}`, m]));
+
+        // حل اسم الموظف المرسل لآخر رسالة (المحادثات اللي آخر رسالة فيها من الموظف)
+        const lastSenderIds = [...new Set(
+            lastMessages.filter(m => m.fromMe && m.senderId).map(m => m.senderId)
+        )];
+        let lastSenderMap = {};
+        if (lastSenderIds.length > 0) {
+            const lastSenders = await getSharedPrismaClient().user.findMany({
+                where: { id: { in: lastSenderIds } },
+                select: { id: true, firstName: true, lastName: true }
+            });
+            lastSenderMap = Object.fromEntries(
+                lastSenders.map(u => [u.id, [u.firstName, u.lastName].filter(Boolean).join(' ')])
+            );
+        }
+        for (const m of lastMessages) {
+            if (m.fromMe && m.senderId) {
+                m.senderName = lastSenderMap[m.senderId] || null;
+            } else {
+                m.senderName = null;
+            }
+        }
 
         const conversationsWithLastMessage = contacts.map(contact => ({
             ...contact,
@@ -4564,6 +4587,46 @@ async function deleteAllChats(req, res) {
     }
 }
 
+/**
+ * تشغيل جلب صور البروفايل المفقودة لجهات الاتصال في الخلفية.
+ * POST /api/whatsapp/profile-pics/refresh
+ * اختياري: ?sessionId=... لتحديد جلسة واحدة، غير كده كل جلسات الشركة.
+ */
+async function refreshProfilePics(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId } = req.query;
+
+        const sessionFilter = {
+            companyId,
+            ...(sessionId ? { id: sessionId } : {})
+        };
+        const sessions = await getSharedPrismaClient().whatsAppSession.findMany({
+            where: sessionFilter,
+            select: { id: true }
+        });
+
+        if (sessions.length === 0) {
+            return res.json({ success: true, started: 0, message: 'لا توجد جلسات' });
+        }
+
+        // fire-and-forget في الخلفية — الفرونت بيـ refetch المحادثات كل 30 ثانية
+        for (const s of sessions) {
+            WhatsAppManager.fetchMissingProfilePics(s.id)
+                .catch(err => console.error(`❌ Background profile pics refresh failed for ${s.id}:`, err?.message || err));
+        }
+
+        res.json({
+            success: true,
+            started: sessions.length,
+            message: 'جاري تحديث صور البروفايل في الخلفية'
+        });
+    } catch (error) {
+        console.error('❌ Error refreshing profile pics:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء تحديث صور البروفايل' });
+    }
+}
+
 module.exports = {
     // Sessions
     createSession,
@@ -4579,6 +4642,7 @@ module.exports = {
     // Conversations & Messages
     getConversations,
     getMessages,
+    refreshProfilePics,
     sendMessage,
     sendMedia,
     markAsRead,

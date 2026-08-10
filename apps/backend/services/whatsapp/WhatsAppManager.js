@@ -69,6 +69,9 @@ const profilePicCache = new Map(); // `${sessionId}:${jid}` -> { url, expiresAt 
 const PROFILE_PIC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour (نجاح)
 const PROFILE_PIC_MISS_TTL_MS = 10 * 60 * 1000; // 10 min (مفيش صورة — retry دوري)
 
+// منع تشغيل جلب صور البروفايل مرتين على نفس الجلسة في نفس الوقت
+const profilePicFetchRunning = new Set(); // sessionId
+
 // ponytail: global reconnect throttle, per-session cooldowns if cycling persists
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
@@ -3703,6 +3706,8 @@ async function handleContactsUpdate(sessionId, companyId, updates) {
 
 /**
  * جلب صور البروفايل المفقودة لجهات الاتصال
+ * بيمشي على كل الكونطاكت اللي معندهاش صورة (على دفعات) مع rate limit.
+ * عنده guard بيشغله مرة واحدة لكل جلسة في نفس الوقت.
  */
 async function fetchMissingProfilePics(sessionId) {
     const session = getSession(sessionId);
@@ -3711,45 +3716,67 @@ async function fetchMissingProfilePics(sessionId) {
         return;
     }
 
+    if (profilePicFetchRunning.has(sessionId)) {
+        WA_LOG.info(sessionId, 'Profile pic fetch already running — skipping');
+        return;
+    }
+    profilePicFetchRunning.add(sessionId);
+
+    const BATCH_SIZE = 50;
+    const RATE_LIMIT_MS = 200;
+
     try {
         const prisma = getSharedPrismaClient();
-        const contacts = await prisma.whatsAppContact.findMany({
-            where: {
-                sessionId,
-                profilePicUrl: null,
-                jid: { endsWith: '@s.whatsapp.net' }
-            },
-            select: { id: true, jid: true },
-            take: 50
-        });
-
-        if (contacts.length === 0) return;
-
-        WA_LOG.info(sessionId, `Fetching profile pics for ${contacts.length} contacts`);
+        let offset = 0;
         let fetched = 0;
+        let checked = 0;
 
-        for (const contact of contacts) {
-            try {
-                const url = await session.sock.profilePictureUrl(contact.jid, 'image');
-                if (url) {
-                    await prisma.whatsAppContact.update({
-                        where: { id: contact.id },
-                        data: { profilePicUrl: url, updatedAt: new Date() }
-                    });
-                    fetched++;
+        while (true) {
+            const contacts = await prisma.whatsAppContact.findMany({
+                where: {
+                    sessionId,
+                    profilePicUrl: null,
+                    jid: { endsWith: '@s.whatsapp.net' }
+                },
+                select: { id: true, jid: true },
+                skip: offset,
+                take: BATCH_SIZE
+            });
+
+            if (contacts.length === 0) break;
+            offset += contacts.length;
+
+            for (const contact of contacts) {
+                checked++;
+                try {
+                    const url = await session.sock.profilePictureUrl(contact.jid, 'image');
+                    if (url) {
+                        await prisma.whatsAppContact.update({
+                            where: { id: contact.id },
+                            data: { profilePicUrl: url, updatedAt: new Date() }
+                        });
+                        fetched++;
+                    }
+                } catch {
+                    // No profile pic or unavailable — skip
                 }
-                // Rate limit: wait 200ms between requests
-                await new Promise(r => setTimeout(r, 200));
-            } catch {
-                // No profile pic or unavailable — skip
+                // Rate limit: wait between requests
+                await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
             }
+
+            // لو باقي كونطاكت كتير (أكتر من دفعة) نكمل على طول
+            if (contacts.length < BATCH_SIZE) break;
         }
 
         if (fetched > 0) {
-            WA_LOG.ok(sessionId, `Fetched ${fetched}/${contacts.length} missing profile pics`);
+            WA_LOG.ok(sessionId, `Fetched ${fetched}/${checked} missing profile pics`);
+        } else if (checked > 0) {
+            WA_LOG.info(sessionId, `No new profile pics to fetch (${checked} checked)`);
         }
     } catch (error) {
         WA_LOG.error(sessionId, `Error fetching missing profile pics: ${error.message}`);
+    } finally {
+        profilePicFetchRunning.delete(sessionId);
     }
 }
 

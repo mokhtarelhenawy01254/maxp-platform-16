@@ -293,6 +293,9 @@ router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('what
 // جلب رسائل محادثة
 router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getMessages);
 
+// تشغيل جلب صور البروفايل المفقودة في الخلفية
+router.post('/profile-pics/refresh', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.refreshProfilePics);
+
 // إرسال رسالة نصية
 router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendMessage);
 

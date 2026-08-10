@@ -2217,5 +2217,527 @@
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
     "updatedAt": "2026-08-09T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-break-even",
+    "slug": "break-even",
+    "name": "حاسبة المشاريع — نقطة التعادل",
+    "nameEn": "Project Break-Even Calculator",
+    "description": "احسب عدد الطلبات والإيرادات المطلوبة لتحقيق نقطة التعادل لمتجرك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق التشغيل التي تحتاج معرفة نقطة التعادل بوضوح.",
+      "surface": "داخل قسم حاسبة المشاريع — نقطة التعادل في أدوات التسويق.",
+      "outcome": "معرفة عدد الطلبات والإيرادات المطلوبة لتغطية التكاليف الثابتة والمتغيرة."
+    },
+    "features": {
+      "breakEven": {
+        "enabled": true,
+        "name": "حساب نقطة التعادل",
+        "description": "حساب عدد الطلبات والإيرادات والوقت اللازم لتحقيق نقطة التعادل.",
+        "access": "PAID"
+      },
+      "costAnalysis": {
+        "enabled": true,
+        "name": "تحليل التكاليف",
+        "description": "تحليل التكاليف الثابتة والمتغيرة وتكلفة الطلب الواصل وأثر المرتجعات.",
+        "access": "PAID"
+      },
+      "scenarios": {
+        "enabled": true,
+        "name": "سيناريوهات الحفظ",
+        "description": "حفظ ومقارنة السيناريوهات المحافظ والمتوسط والطموح.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "calculator",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-product-break-even",
+    "slug": "product-break-even",
+    "name": "B-EV المنتج — CAC و ROAS",
+    "nameEn": "Product B-EV - CAC & ROAS",
+    "description": "حساب نقطة التعادل على مستوى المنتج مع CAC الفعّال والهامش المطلوب.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق والمتاجر التي تريد معرفة ربحية كل منتج قبل الإعلان عنه.",
+      "surface": "داخل أداة B-EV المنتج — CAC و ROAS في أدوات التسويق.",
+      "outcome": "معرفة تكلفة اكتساب العميل القصوى والهامش المطلوب لكل منتج."
+    },
+    "features": {
+      "productBreakEven": {
+        "enabled": true,
+        "name": "نقطة تعادل المنتج",
+        "description": "حساب نقطة التعادل لكل منتج بناءً على التكلفة والسعر والهوامش.",
+        "access": "PAID"
+      },
+      "cacRoas": {
+        "enabled": true,
+        "name": "CAC و ROAS",
+        "description": "حساب CAC الفعّال والحد الأقصى للـ ROAS المطلوب للربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "dollar-sign",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-pricing-strategy",
+    "slug": "pricing-strategy",
+    "name": "استراتيجية التسعير",
+    "nameEn": "Pricing Strategy",
+    "description": "حدد السعر الأمثل لمنتجاتك مع محاكاة ما-لو وما تحقيقه من هامش ربح.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر الذين يريدون تسعير منتجاتهم بشكل مربح ومدروس.",
+      "surface": "داخل أداة استراتيجية التسعير في أدوات التسويق.",
+      "outcome": "سعر مثالي يحقق هامش ربح واضح مع فهم أثر الخصومات والعمولات."
+    },
+    "features": {
+      "pricing": {
+        "enabled": true,
+        "name": "حساب السعر الأمثل",
+        "description": "حساب سعر البيع الموصى به بناءً على التكلفة والهامش المستهدف.",
+        "access": "PAID"
+      },
+      "whatIf": {
+        "enabled": true,
+        "name": "محاكاة ما-لو",
+        "description": "تجربة سيناريوهات خصم وعمولة مختلفة لمعرفة أثرها على الربح.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "tag",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-profitability-engine",
+    "slug": "profitability-engine",
+    "name": "محرك الربحية",
+    "nameEn": "Profitability Engine",
+    "description": "محرك متكامل لحساب صافي الربح وهامش المساهمة ونقطة التعادل التشغيلية.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الفرق التي تريد رؤية كاملة لربحية المتجر من الإعلان وحتى التسليم.",
+      "surface": "داخل أداة محرك الربحية في أدوات التسويق.",
+      "outcome": "فهم شامل للربح الصافي بعد كل التكاليف التشغيلية والإعلانية."
+    },
+    "features": {
+      "profitability": {
+        "enabled": true,
+        "name": "حساب الربحية",
+        "description": "حساب صافي الربح وهامش المساهمة والربح لكل طلب.",
+        "access": "PAID"
+      },
+      "whatIf": {
+        "enabled": true,
+        "name": "سيناريوهات التحسين",
+        "description": "تجربة تحسينات على التكلفة والتحويل وأثرها على الربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "trending-up",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-campaign-calculator",
+    "slug": "campaign-calculator",
+    "name": "حاسبة الحملات",
+    "nameEn": "Campaign Calculator",
+    "description": "توقع نتائج حملاتك الإعلانية من الوصول حتى الإيراد ونقطة التعادل.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المسوّقون وأصحاب المتاجر الذين يخططون لحملات إعلانية مربحة.",
+      "surface": "داخل أداة حاسبة الحملات في أدوات التسويق.",
+      "outcome": "توقعات واضحة لنتائج الحملة وميزانية مخططة قبل إطلاق الإعلانات."
+    },
+    "features": {
+      "campaignPrediction": {
+        "enabled": true,
+        "name": "توقع نتائج الحملة",
+        "description": "توقع الإيراد والطلبات ونقطة التعادل من مدخلات ميزانية الحملة.",
+        "access": "PAID"
+      },
+      "budgetPlanning": {
+        "enabled": true,
+        "name": "تخطيط الميزانية",
+        "description": "توزيع ميزانية الحملة وتحديد التكلفة المطلوبة لكل طلب.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "megaphone",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-ad-budget-planner",
+    "slug": "ad-budget-planner",
+    "name": "مخطط الميزانية الإعلانية",
+    "nameEn": "Ad Budget Planner",
+    "description": "خطط ميزانية إعلاناتك الشهرية مع التوزيع الأمثل على القنوات والحملات.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق التي تريد توزيع ميزانيتها الإعلانية بشكل مدروس.",
+      "surface": "داخل أداة مخطط الميزانية الإعلانية في أدوات التسويق.",
+      "outcome": "ميزانية إعلانية موزعة بعناية لتحقيق أفضل عائد ممكن."
+    },
+    "features": {
+      "budgetAllocation": {
+        "enabled": true,
+        "name": "توزيع الميزانية",
+        "description": "توزيع الميزانية الإعلانية على القنوات والحملات المختلفة.",
+        "access": "PAID"
+      },
+      "forecast": {
+        "enabled": true,
+        "name": "توقع العائد",
+        "description": "توقع الطلبات والإيراد المتوقع من الميزانية المخططة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "wallet",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-discount-impact",
+    "slug": "discount-impact",
+    "name": "حاسبة أثر الخصم",
+    "nameEn": "Discount Impact Calculator",
+    "description": "اعرف أثر أي خصم على أرباحك وعدد الطلبات الإضافية المطلوبة لتعويضه.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر الذين يخططون لعروض وخصومات دون خسارة الأرباح.",
+      "surface": "داخل أداة حاسبة أثر الخصم في أدوات التسويق.",
+      "outcome": "فهم واضح لأثر الخصم على الربح ونسبة الزيادة المطلوبة في الطلبات."
+    },
+    "features": {
+      "discountImpact": {
+        "enabled": true,
+        "name": "قياس أثر الخصم",
+        "description": "حساب أثر نسبة الخصم على هامش الربح لكل طلب.",
+        "access": "PAID"
+      },
+      "requiredLift": {
+        "enabled": true,
+        "name": "الطلبات المطلوبة للتعويض",
+        "description": "حساب عدد الطلبات الإضافية المطلوبة لتعويض أثر الخصم.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "percent",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-shipping-optimizer",
+    "slug": "shipping-optimizer",
+    "name": "محسن الشحن",
+    "nameEn": "Shipping Optimizer",
+    "description": "حسّن تكاليف الشحن والمدد واختر أفضل شركات الشحن لمتجرك.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التشغيل والمتاجر التي تريد خفض تكاليف الشحن.",
+      "surface": "داخل أداة محسن الشحن في أدوات التسويق.",
+      "outcome": "خفض تكاليف الشحن وتحسين اختيار شركات التوصيل."
+    },
+    "features": {
+      "shippingOptimization": {
+        "enabled": true,
+        "name": "تحسين تكاليف الشحن",
+        "description": "مقارنة وتقييم تكاليف الشحن واختيار الأنسب لمتجرك.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "truck",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-monthly-pnl",
+    "slug": "monthly-pnl",
+    "name": "القوائم المالية الشهرية",
+    "nameEn": "Monthly P&L Dashboard",
+    "description": "تابع أرباح وخسائر متجرك الشهرية مع تفصيل المصروفات والهوامش.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الإدارة وأصحاب المتاجر الذين يريدون رؤية مالية شهرية واضحة.",
+      "surface": "داخل أداة القوائم المالية الشهرية في أدوات التسويق.",
+      "outcome": "قائمة أرباح وخسائر شهرية واضحة تساعد على اتخاذ قرارات مالية أفضل."
+    },
+    "features": {
+      "pnl": {
+        "enabled": true,
+        "name": "القائمة الشهرية",
+        "description": "عرض الإيراد والمصروفات وصافي الربح على أساس شهري.",
+        "access": "PAID"
+      },
+      "marginAnalysis": {
+        "enabled": true,
+        "name": "تحليل الهوامش",
+        "description": "تحليل هامش الربح الإجمالي والصافي ونقطة تعادل الإيرادات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "bar-chart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-clv-calculator",
+    "slug": "clv-calculator",
+    "name": "حاسبة القيمة الدائمة للعميل (CLV)",
+    "nameEn": "CLV Calculator",
+    "description": "احسب القيمة الدائمة للعميل واعرف كم تستطيع أن تنفق على اكتسابه.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "فرق التسويق التي تريد تحديد سقف تكلفة اكتساب العميل.",
+      "surface": "داخل أداة حاسبة القيمة الدائمة للعميل في أدوات التسويق.",
+      "outcome": "معرفة القيمة الحقيقية لكل عميل وتحديد ميزانية اكتساب مناسبة."
+    },
+    "features": {
+      "clv": {
+        "enabled": true,
+        "name": "حساب القيمة الدائمة",
+        "description": "حساب القيمة الدائمة للعميل بناءً على متوسط الشراء والتكرار.",
+        "access": "PAID"
+      },
+      "cacLimit": {
+        "enabled": true,
+        "name": "سقف تكلفة الاكتساب",
+        "description": "تحديد الحد الأقصى لتكلفة اكتساب عميل جديد للحفاظ على الربحية.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "users",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-upsell-planner",
+    "slug": "upsell-planner",
+    "name": "مخطِّط البيع الإضافي والتكميلي",
+    "nameEn": "Upsell & Cross-sell Planner",
+    "description": "خطط لعروض البيع الإضافي والتكميلي وارفع متوسط قيمة الطلب.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد رفع متوسط قيمة الطلب بعروض ذكية.",
+      "surface": "داخل أداة مخطِّط البيع الإضافي والتكميلي في أدوات التسويق.",
+      "outcome": "خطة بيع إضافي ترفع متوسط قيمة الطلب والإيراد."
+    },
+    "features": {
+      "upsellPlanning": {
+        "enabled": true,
+        "name": "تخطيط البيع الإضافي",
+        "description": "بناء عروض بيع إضافي وتكميلي مرتبطة بالمنتجات.",
+        "access": "PAID"
+      },
+      "aovImpact": {
+        "enabled": true,
+        "name": "أثر متوسط قيمة الطلب",
+        "description": "قياس أثر عروض البيع الإضافي على متوسط قيمة الطلب والإيراد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "shopping-cart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-refund-rate",
+    "slug": "refund-rate",
+    "name": "حاسبة معدل المرتجعات",
+    "nameEn": "Refund & Return Rate",
+    "description": "احسب معدل المرتجعات وتأثيره على أرباحك وتكاليف التشغيل.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 7,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المتاجر التي تريد فهم أثر المرتجعات على ربحيتها.",
+      "surface": "داخل أداة حاسبة معدل المرتجعات في أدوات التسويق.",
+      "outcome": "قياس دقيق لمعدل المرتجعات وأثرها المالي على التشغيل."
+    },
+    "features": {
+      "refundRate": {
+        "enabled": true,
+        "name": "حساب معدل المرتجعات",
+        "description": "حساب نسبة المرتجعات وتكلفتها على المتجر.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "refresh-ccw",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z"
   }
 ]

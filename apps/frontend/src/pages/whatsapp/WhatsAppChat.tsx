@@ -376,6 +376,22 @@ const WhatsAppChatContent: React.FC = () => {
     localStorage.setItem('whatsappChatRightPanelVisible', String(showRightPanel));
   }, [showRightPanel]);
 
+  // تحديث صور البروفايل المفقودة من واتساب (مرة كل 30 دقيقة)
+  useEffect(() => {
+    const LAST_KEY = 'whatsappProfilePicsRefreshLast';
+    const INTERVAL_MS = 30 * 60 * 1000;
+    try {
+      const last = Number(localStorage.getItem(LAST_KEY) || 0);
+      if (Date.now() - last < INTERVAL_MS) return;
+      localStorage.setItem(LAST_KEY, String(Date.now()));
+    } catch {
+      // ignore storage errors
+    }
+    api.post('/whatsapp/profile-pics/refresh').catch(() => {
+      // background refresh — fail silently
+    });
+  }, []);
+
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
   const [labels, setLabels] = useState<{id: string; name: string; color: string}[]>([]);
@@ -2025,61 +2041,6 @@ const WhatsAppChatContent: React.FC = () => {
     return getContactDisplayPhone({ jid: participantJid });
   };
 
-  // فتح QuickOrderModal لإنشاء طلب جديد لعملاء القائمة الجانبية
-  const handleQuickOrderFromSidebar = useCallback((contact: Contact) => {
-    setQuickOrderContact(contact);
-    setOrderForModal(null);
-    setOrderIntent('create');
-    setShowQuickOrderModal(true);
-  }, []);
-
-  // جلب بيانات الطلب وفتحه في QuickOrderModal بوضع التعديل
-  const handleEditOrderFromSidebar = useCallback(async (orderNumber: string, contact: Contact) => {
-    setQuickOrderContact(contact);
-    setShowQuickOrderModal(true);
-    setOrderIntent('edit');
-    setOrderForModal(null);
-    try {
-      const response = await api.get(`/orders-enhanced/${encodeURIComponent(orderNumber)}`);
-      const body: any = response.data;
-      if (body?.success && body?.data) {
-        const raw = body.data;
-        const existingOrder: QuickOrderExistingOrder = {
-          id: raw.id || raw.orderNumber || orderNumber,
-          orderNumber: raw.orderNumber || orderNumber,
-          status: raw.status,
-          total: parseFloat(raw.total ?? raw.finalTotal ?? 0) || 0,
-          createdAt: raw.createdAt,
-          items: (Array.isArray(raw.items) ? raw.items : []).map((item: any) => ({
-            name: item.name || item.productName || 'منتج',
-            quantity: parseInt(item.quantity) || 1,
-            price: parseFloat(item.price) || 0,
-            image: item.image || item.mainImage || null,
-            productId: item.productId || item.product?.id || null,
-            variantId: item.variantId || item.variant?.id || null,
-            sku: item.sku || item.variant?.sku || null,
-            productColor: item.productColor || item.color || item.variant?.color || null,
-            productSize: item.productSize || item.size || item.variant?.size || null,
-          })),
-          customerName: raw.customerName || raw.customer?.name || '',
-          customerPhone: raw.customerPhone || raw.customer?.phone || '',
-          city: raw.city || raw.governorate || '',
-          address: raw.customerAddress || (typeof raw.shippingAddress === 'string' ? raw.shippingAddress : raw.shippingAddress?.address || ''),
-          notes: raw.notes || '',
-          shipping: parseFloat(raw.shipping ?? raw.shippingCost ?? 0) || 0,
-          tax: parseFloat(raw.tax ?? 0) || 0,
-          currency: raw.currency || 'EGP',
-          paymentMethod: raw.paymentMethod || 'cod',
-        };
-        setOrderForModal(existingOrder);
-      } else {
-        toast.error('تعذر تحميل بيانات الطلب');
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'تعذر تحميل بيانات الطلب'));
-    }
-  }, [api, getErrorMessage, toast]);
-
   const messageMenuLeft = messageContextMenu && typeof window !== 'undefined'
     ? Math.min(messageContextMenu.mouseX, window.innerWidth - 264)
     : 0;
@@ -2168,8 +2129,6 @@ const WhatsAppChatContent: React.FC = () => {
         showArchived={showArchived}
         onToggleArchived={(archived) => setShowArchived(archived)}
         counts={conversationCounts}
-        onEditOrder={handleEditOrderFromSidebar}
-        onAddOrder={handleQuickOrderFromSidebar}
       />
 
       <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">

@@ -4082,6 +4082,9 @@ declare module 'react-i18next' {
           enabled: string;
           disabled: string;
           activeCustomers: string;
+          count: string;
+          selectPrompt: string;
+          editing: string;
         };
         steps: {
           title: string;
@@ -4096,6 +4099,31 @@ declare module 'react-i18next' {
           orderNumber: string;
           firstName: string;
           lastName: string;
+          timeline: string;
+          timelineCount: string;
+          timelineCount_plural: string;
+          buildSequence: string;
+          dragHint: string;
+          readonlyHint: string;
+          validated: string;
+          errorCount: string;
+          errorCount_plural: string;
+          warningCount: string;
+          warningCount_plural: string;
+          livePreview: string;
+          stepOf: string;
+          instant: string;
+          waitDays: string;
+          dayUnit: string;
+          daysUnit: string;
+          emptyMessage: string;
+          addFirstStep: string;
+          noStepsTitle: string;
+          noStepsDesc: string;
+          hidePreview: string;
+          showPreview: string;
+          send: string;
+          noIssues: string;
         };
         monitoring: {
           customer: string;
@@ -4111,6 +4139,12 @@ declare module 'react-i18next' {
           inactive: string;
           details: string;
           step: string;
+          liveMonitor: string;
+          deliveryHealth: string;
+          good: string;
+          needsAttention: string;
+          openChat: string;
+          viewDetails: string;
         };
         dialogs: {
           deleteFlowTitle: string;
@@ -4123,6 +4157,20 @@ declare module 'react-i18next' {
           saveError: string;
           deleteSuccess: string;
           deleteError: string;
+        };
+        copilot: {
+          title: string;
+          ready: string;
+          placeholder: string;
+          quickPrompts: string;
+          thinking: string;
+          you: string;
+          assistant: string;
+          send: string;
+          close: string;
+          open: string;
+          hint: string;
+          poweredBy: string;
         };
         hints: {
           title: string;
