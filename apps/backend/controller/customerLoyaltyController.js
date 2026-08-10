@@ -872,27 +872,27 @@ async function getSystemAnalytics(req, res) {
       });
       const appliedCustomers = customersWithVouchers.length;
 
-      // العملاء اللي طلبوا (أوردر مسلّم) لكن قبل التفعيل — مفيش كوبون ليهم
-      const customersWithDeliveredOrder = await prisma.order.findMany({
-        where: { companyId, status: 'DELIVERED' },
-        select: { customerId: true },
-        distinct: ['customerId']
+      // الأوردرات المسلّمة اللي لسه مأخدتش كوبون خصم (في انتظار تفعيل الخصم)
+      const ordersWithVoucher = await prisma.customerLoyaltyVoucher.findMany({
+        where: { companyId, sourceOrderId: { not: null } },
+        select: { sourceOrderId: true },
+        distinct: ['sourceOrderId']
       });
-      const deliveredCustomerIds = customersWithDeliveredOrder.map((c) => c.customerId);
+      const orderIdsWithVoucher = new Set(ordersWithVoucher.map((v) => v.sourceOrderId));
+      const deliveredOrders = await prisma.order.findMany({
+        where: { companyId, status: 'DELIVERED' },
+        select: { id: true, customerId: true, createdAt: true }
+      });
+      const waitingForDelivery = deliveredOrders.filter((o) => !orderIdsWithVoucher.has(o.id)).length;
+
+      // العملاء اللي طلبوا (أوردر مسلّم) لكن قبل التفعيل — مفيش كوبون ليهم
+      const deliveredCustomerIds = deliveredOrders.map((c) => c.customerId);
 
       let preActivationCustomers = 0;
       if (activatedAt && deliveredCustomerIds.length > 0) {
-        const ordersBeforeActivation = await prisma.order.findMany({
-          where: {
-            companyId,
-            status: 'DELIVERED',
-            customerId: { in: deliveredCustomerIds },
-            createdAt: { lt: activatedAt }
-          },
-          select: { customerId: true },
-          distinct: ['customerId']
-        });
-        const preActivationIds = ordersBeforeActivation.map((c) => c.customerId);
+        const preActivationIds = deliveredOrders
+          .filter((o) => new Date(o.createdAt) < activatedAt)
+          .map((c) => c.customerId);
         const withVoucherIds = new Set(customersWithVouchers.map((c) => c.customerId));
         preActivationCustomers = preActivationIds.filter((id) => !withVoucherIds.has(id)).length;
       }
@@ -901,7 +901,7 @@ async function getSystemAnalytics(req, res) {
         system: 'AUTO_DISCOUNT',
         totalDeliveredOrders,
         appliedCustomers,
-        waitingForDelivery: Math.max(0, totalDeliveredOrders - (activeVouchers + usedVouchers + convertedVouchers)),
+        waitingForDelivery,
         activeVouchers,
         usedVouchers,
         convertedVouchers,
