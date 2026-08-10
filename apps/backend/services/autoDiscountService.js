@@ -338,6 +338,36 @@ async function getCustomerAutoDiscountStatus({ companyId, customerId, settings }
 }
 
 /**
+ * تحويل كائن الكوبون للشكل الموحّد اللي بيرجع للواجهة (مستخدم في كل الأماكن).
+ */
+function mapVoucherToPublic(voucher) {
+  if (!voucher) return null;
+  return {
+    id: voucher.id,
+    percent: Number(voucher.percent),
+    amount: Number(voucher.amount),
+    expiresAt: voucher.expiresAt,
+    sourceOrderNumber: voucher.orderNumber || null
+  };
+}
+
+/**
+ * ملخص الخصم التلقائي لعميل واحد (كوبون فعّال + حالة الخصم) — مستخدم في بوابة العميل
+ * في مكانين (المسؤول + العميل نفسه) عشان مفيش تكرار/انحراف.
+ */
+async function getCustomerAutoDiscountSummary({ customerId, companyId, settings }) {
+  const cfg = settings || await getSettings(companyId);
+  const voucher = await getActiveVoucher(customerId, companyId);
+  let status = null;
+  if (voucher) {
+    status = 'AVAILABLE';
+  } else {
+    status = await getCustomerAutoDiscountStatus({ companyId, customerId, settings: cfg });
+  }
+  return { activeVoucher: mapVoucherToPublic(voucher), status };
+}
+
+/**
  * إثراء قائمة عملاء بحالة الخصم (AVAILABLE / PRE_ACTIVATION) لصفحة قائمة العملاء.
  * بيبقى null لو نظام الخصم التلقائي مش مفعّل أو مفيش حالة.
  */
@@ -397,5 +427,7 @@ module.exports = {
   restoreRedeemedPointsForOrder,
   getLoyaltyActivatedAt,
   getCustomerAutoDiscountStatus,
+  getCustomerAutoDiscountSummary,
+  mapVoucherToPublic,
   enrichCustomersWithAutoDiscountStatus
 };

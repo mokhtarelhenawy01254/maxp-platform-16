@@ -874,19 +874,15 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
     const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
     const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT';
 
-    let activeVoucher = null;
+    // ملخص الخصم التلقائي (كوبون فعّال + حالة الخصم) — موحّد مع بوابة المسؤول
+    let autoSummary = { activeVoucher: null, status: null };
     if (isAutoDiscount) {
-      const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
-      if (voucher) {
-        activeVoucher = {
-          id: voucher.id,
-          percent: Number(voucher.percent),
-          amount: Number(voucher.amount),
-          expiresAt: voucher.expiresAt,
-          sourceOrderNumber: voucher.orderNumber || null
-        };
-      }
+      autoSummary = await autoDiscountService
+        .getCustomerAutoDiscountSummary({ companyId, customerId, settings: autoSettings })
+        .catch(() => ({ activeVoucher: null, status: null }));
     }
+    const activeVoucher = autoSummary.activeVoucher;
+    const autoDiscountStatus = autoSummary.status;
 
     return res.json({
       success: true,
@@ -927,6 +923,7 @@ router.get('/loyalty-summary', verifyToken.authenticateToken, async (req, res) =
           ? {
               discountPercent: Number(autoSettings.discountPercent || 0),
               validityDays: Number(autoSettings.validityDays || 3),
+              status: autoDiscountStatus,
               activeVoucher
             }
           : null,

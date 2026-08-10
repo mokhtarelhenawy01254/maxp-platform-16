@@ -1023,14 +1023,7 @@ class CustomerLoyaltyService {
         loyaltySystem = (await autoDiscountService.getSettings(companyId)).loyaltySystem || 'TIERS';
         if (await autoDiscountService.isAutoDiscountActive(companyId)) {
           const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
-          if (voucher) {
-            activeVoucher = {
-              id: voucher.id,
-              percent: Number(voucher.percent),
-              amount: Number(voucher.amount),
-              expiresAt: voucher.expiresAt
-            };
-          }
+          activeVoucher = autoDiscountService.mapVoucherToPublic(voucher);
           const wallet = await prisma.customerWallet.findFirst({ where: { customerId, companyId, isActive: true } });
           walletBalance = wallet ? Number(wallet.balance) : 0;
         }

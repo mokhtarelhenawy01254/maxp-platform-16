@@ -730,25 +730,15 @@ async function getCustomerPortalSummary(req, res) {
     const loyaltySystem = autoSettings?.loyaltySystem || 'TIERS';
     const isAutoDiscount = loyaltySystem === 'AUTO_DISCOUNT';
 
-    let activeVoucher = null;
-    let autoDiscountStatus = null;
+    // ملخص الخصم التلقائي (كوبون فعّال + حالة الخصم) — موحّد مع صفحة العميل العامة
+    let autoSummary = { activeVoucher: null, status: null };
     if (isAutoDiscount) {
-      const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
-      if (voucher) {
-        activeVoucher = {
-          id: voucher.id,
-          percent: Number(voucher.percent),
-          amount: Number(voucher.amount),
-          expiresAt: voucher.expiresAt,
-          sourceOrderNumber: voucher.orderNumber || null
-        };
-        autoDiscountStatus = 'AVAILABLE';
-      } else {
-        autoDiscountStatus = await autoDiscountService
-          .getCustomerAutoDiscountStatus({ companyId, customerId, settings: autoSettings })
-          .catch(() => null);
-      }
+      autoSummary = await autoDiscountService
+        .getCustomerAutoDiscountSummary({ companyId, customerId, settings: autoSettings })
+        .catch(() => ({ activeVoucher: null, status: null }));
     }
+    const activeVoucher = autoSummary.activeVoucher;
+    const autoDiscountStatus = autoSummary.status;
 
     res.json({
       success: true,
