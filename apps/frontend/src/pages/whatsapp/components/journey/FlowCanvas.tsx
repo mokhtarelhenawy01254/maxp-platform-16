@@ -39,6 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface FlowStep {
   id?: string;
@@ -315,6 +316,8 @@ export function FlowCanvas({
                       onHover={(id) => setHoveredStepId(id)}
                       onHoverEnd={() => setHoveredStepId(null)}
                       issues={issueByStepId.get(stepKey) || []}
+                      isHovered={hoveredStepId === stepKey}
+                      isFirst={index === 0}
                     />
                   );
                 })}
@@ -348,6 +351,8 @@ interface SortableStepProps {
   onHover: (id: string) => void;
   onHoverEnd: () => void;
   issues: FlowIssue[];
+  isHovered: boolean;
+  isFirst: boolean;
 }
 
 function SortableStep({
@@ -360,6 +365,8 @@ function SortableStep({
   onHover,
   onHoverEnd,
   issues,
+  isHovered,
+  isFirst,
 }: SortableStepProps) {
   const { t } = useTranslation();
   const id = step.id || `idx-${step.stepOrder}`;
@@ -378,6 +385,9 @@ function SortableStep({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const hasErrors = issues.some((i) => i.severity === "error");
+  const hasWarnings = issues.some((i) => i.severity === "warning");
+
   return (
     <li
       ref={setNodeRef}
@@ -386,131 +396,159 @@ function SortableStep({
       onMouseLeave={onHoverEnd}
       className="relative list-none"
     >
-      <div
-        className={cn(
-          "group relative flex items-stretch gap-3 rounded-xl border p-3.5 transition-colors",
-          isDragging
-            ? "border-[color:var(--color-primary)] bg-[color:var(--color-card)] shadow-md"
-            : "border-transparent hover:border-[color:var(--shell-control-border)] hover:bg-[color:color-mix(in_srgb,var(--color-muted)_50%,transparent)]",
-        )}
+      <motion.div
+        initial={{ opacity: 0, x: -8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.06 }}
+        className="group relative flex items-stretch gap-0"
       >
-        {/* Drag handle */}
-        {isAdmin && (
-          <button
-            type="button"
-            className="flex shrink-0 cursor-grab items-center justify-center self-stretch px-0.5 text-[color:var(--color-muted-foreground)] active:cursor-grabbing"
-            aria-label="Drag to reorder"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="size-4" />
-          </button>
-        )}
-
-        {/* Number + step content */}
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
-              {index + 1}
-            </span>
-            <Badge
-              variant="outline"
-              className="gap-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]"
-            >
-              <MessageSquare className="size-2.5" />
-              {t("whatsappJourney.steps.send")}
-            </Badge>
-            {step.delayDays > 0 ? (
-              <Badge
-                variant="outline"
-                className="gap-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]"
-              >
-                {t("whatsappJourney.steps.waitDays", {
-                  days: step.delayDays,
-                  unit:
-                    step.delayDays === 1
-                      ? t("whatsappJourney.steps.dayUnit")
-                      : t("whatsappJourney.steps.daysUnit"),
-                })}
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className="gap-1 rounded-full border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] px-2 py-0.5 text-[10px] font-medium text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
-              >
-                {t("whatsappJourney.steps.instant")}
-              </Badge>
+        {/* ── Timeline rail column ── */}
+        <div className="relative flex w-6 shrink-0 flex-col items-center">
+          {/* Node dot */}
+          <span
+            className={cn(
+              "relative z-10 mt-3.5 flex size-2.5 items-center justify-center rounded-full transition-all duration-200",
+              isFirst && "size-3",
+              hasErrors
+                ? "bg-[color:var(--color-destructive)] ring-2 ring-[color:var(--color-destructive)]/20 animate-pulse"
+                : hasWarnings
+                  ? "bg-[color:var(--color-warning)] ring-2 ring-[color:var(--color-warning)]/20"
+                  : isHovered
+                    ? "bg-[color:var(--color-primary)] ring-2 ring-[color:var(--color-primary)]/25 scale-125"
+                    : "bg-[color:var(--color-primary)] ring-[1.5px] ring-[color:var(--color-primary)]/15",
             )}
-          </div>
-          <p
-            className="text-sm leading-5 text-[color:var(--color-foreground)]"
-            style={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}
-          >
-            {step.content || (
-              <span className="text-[color:var(--color-muted-foreground)]">
-                {t("whatsappJourney.steps.emptyMessage")}
-              </span>
-            )}
-          </p>
-          {issues.length > 0 ? (
-            <ul className="m-0 flex flex-col gap-1 p-0" style={{ listStyle: "none" }}>
-              {issues.map((issue, i) => (
-                <li
-                  key={i}
-                  className={cn(
-                    "flex items-center gap-1.5 text-xs",
-                    issue.severity === "error"
-                      ? "text-[color:var(--color-destructive)]"
-                      : "text-[color:var(--color-muted-foreground)]",
-                  )}
-                >
-                  {issue.severity === "error" ? (
-                    <AlertCircle className="size-3 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="size-3 shrink-0" />
-                  )}
-                  {issue.message}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          />
+          {/* Vertical connector to next step */}
+          {!isLast && (
+            <div
+              className="mt-1 w-0.5 flex-1"
+              style={{
+                minHeight: 24,
+                background:
+                  "color-mix(in srgb, var(--shell-control-border) 60%, transparent)",
+              }}
+              aria-hidden
+            />
+          )}
         </div>
 
-        {/* Actions */}
-        {isAdmin && (
-          <div className="flex shrink-0 items-start gap-0.5">
-            <button
-              type="button"
-              className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-              onClick={() => onEdit(step)}
-              aria-label={t("common.edit") as string}
-            >
-              <Edit3 className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-destructive)_12%,transparent)] hover:text-[color:var(--color-destructive)]"
-              onClick={() => onDelete(step)}
-              aria-label={t("common.delete") as string}
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Connector between steps */}
-      {!isLast && (
+        {/* ── Step card ── */}
         <div
-          className="mx-auto my-1 w-0.5"
-          style={{
-            height: 12,
-            background:
-              "color-mix(in srgb, var(--shell-control-border) 80%, transparent)",
-          }}
-          aria-hidden
-        />
-      )}
+          className={cn(
+            "min-w-0 flex-1 rounded-xl p-3.5 transition-all duration-200",
+            isDragging
+              ? "bg-[color:var(--color-card)] shadow-md ring-1 ring-[color:var(--color-primary)]"
+              : "hover:bg-[color:color-mix(in_srgb,var(--color-muted)_50%,transparent)]",
+            isHovered && "bg-[color:color-mix(in_srgb,var(--color-primary)_6%,transparent)]",
+          )}
+        >
+          <div className="flex items-start gap-2">
+            {/* Drag handle */}
+            {isAdmin && (
+              <button
+                type="button"
+                className="flex shrink-0 cursor-grab items-center justify-center pt-0.5 text-[color:var(--color-muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                aria-label={t("whatsappJourney.steps.dragHint") as string}
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical className="size-3.5" />
+              </button>
+            )}
+
+            {/* Content */}
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] font-bold tabular-nums text-[color:var(--color-muted-foreground)]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Badge
+                  variant="outline"
+                  className="gap-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-1.5 py-px text-[10px] font-medium text-[color:var(--color-muted-foreground)]"
+                >
+                  <MessageSquare className="size-2.5" />
+                  {t("whatsappJourney.steps.send")}
+                </Badge>
+                {step.delayDays > 0 ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-1.5 py-px text-[10px] font-medium text-[color:var(--color-muted-foreground)]"
+                  >
+                    {t("whatsappJourney.steps.waitDays", {
+                      days: step.delayDays,
+                      unit:
+                        step.delayDays === 1
+                          ? t("whatsappJourney.steps.dayUnit")
+                          : t("whatsappJourney.steps.daysUnit"),
+                    })}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 rounded-full border-[color:color-mix(in_srgb,var(--business-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--business-success)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[color:color-mix(in_srgb,var(--business-success)_80%,var(--color-foreground))]"
+                  >
+                    {t("whatsappJourney.steps.instant")}
+                  </Badge>
+                )}
+              </div>
+              <p
+                className="text-sm leading-5 text-[color:var(--color-foreground)]"
+                style={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}
+              >
+                {step.content || (
+                  <span className="text-[color:var(--color-muted-foreground)]">
+                    {t("whatsappJourney.steps.emptyMessage")}
+                  </span>
+                )}
+              </p>
+              {issues.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {issues.map((issue, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                        issue.severity === "error"
+                          ? "bg-[color:color-mix(in_srgb,var(--color-destructive)_10%,transparent)] text-[color:var(--color-destructive)]"
+                          : "bg-[color:color-mix(in_srgb,var(--color-warning)_10%,transparent)] text-[color:var(--color-warning)]",
+                      )}
+                    >
+                      {issue.severity === "error" ? (
+                        <AlertCircle className="size-2.5 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="size-2.5 shrink-0" />
+                      )}
+                      {issue.message}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Actions — show on hover */}
+            {isAdmin && (
+              <div className="flex shrink-0 items-start gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                  onClick={() => onEdit(step)}
+                  aria-label={t("common.edit") as string}
+                >
+                  <Edit3 className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  className="flex size-7 items-center justify-center rounded-lg text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-destructive)_12%,transparent)] hover:text-[color:var(--color-destructive)]"
+                  onClick={() => onDelete(step)}
+                  aria-label={t("common.delete") as string}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </li>
   );
 }
@@ -569,7 +607,12 @@ function ValidationBadge({
 function FlowEmptyState({ onAdd, isAdmin }: { onAdd: () => void; isAdmin: boolean }) {
   const { t } = useTranslation();
   return (
-    <div className="flex min-h-[16rem] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_40%,transparent)] py-10 text-center">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35 }}
+      className="flex min-h-[16rem] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-card)_40%,transparent)] py-10 text-center"
+    >
       <div className="flex size-12 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-[color:var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
         <MessageSquare className="size-6" />
       </div>
@@ -587,7 +630,7 @@ function FlowEmptyState({ onAdd, isAdmin }: { onAdd: () => void; isAdmin: boolea
           {t("whatsappJourney.steps.addFirstStep")}
         </Button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -611,14 +654,20 @@ function WhatsAppPreviewPane({ step, totalSteps }: WhatsAppPreviewPaneProps) {
         <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
           {t("whatsappJourney.steps.livePreview")}
         </p>
-        <span className="text-xs font-medium text-[color:var(--color-muted-foreground)]">
+        <motion.span
+          key={step ? step.id || `idx-${step.stepOrder}` : "empty"}
+          className="text-xs font-medium text-[color:var(--color-muted-foreground)]"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           {step
             ? t("whatsappJourney.steps.stepOf", {
                 current: stepNumber,
                 total: totalSteps,
               })
             : "—"}
-        </span>
+        </motion.span>
       </div>
 
       {/* WhatsApp message preview */}
@@ -633,40 +682,53 @@ function WhatsAppPreviewPane({ step, totalSteps }: WhatsAppPreviewPaneProps) {
           minHeight: "14rem",
         }}
       >
-        {step ? (
-          <div
-            className="ms-auto max-w-[80%]"
-            style={{
-              background: "#DCF8C6",
-              borderRadius: "8px 8px 2px 8px",
-              padding: "8px 12px",
-              boxShadow: "0 1px 0.5px rgba(0,0,0,.13)",
-            }}
-          >
-            <p
+        <AnimatePresence mode="wait">
+          {step ? (
+            <motion.div
+              key={step.id || `idx-${step.stepOrder}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              className="ms-auto max-w-[80%]"
               style={{
-                fontSize: 14,
-                lineHeight: 1.4,
-                color: "#303030",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                margin: 0,
+                background: "#DCF8C6",
+                borderRadius: "8px 8px 2px 8px",
+                padding: "8px 12px",
+                boxShadow: "0 1px 0.5px rgba(0,0,0,.13)",
               }}
             >
-              {applyVariables(step.content)}
-            </p>
-            <div
-              className="mt-1 text-end"
-              style={{ fontSize: 10, color: "#888" }}
+              <p
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.4,
+                  color: "#303030",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  margin: 0,
+                }}
+              >
+                {applyVariables(step.content)}
+              </p>
+              <div
+                className="mt-1 text-end"
+                style={{ fontSize: 10, color: "#888" }}
+              >
+                12:05 PM ✓✓
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty-preview"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex h-full min-h-[12rem] items-center justify-center text-[color:color-mix(in_srgb,var(--color-foreground)_50%,transparent)]"
             >
-              12:05 PM ✓✓
-            </div>
-          </div>
-        ) : (
-          <div className="flex h-full min-h-[12rem] items-center justify-center text-[color:color-mix(in_srgb,var(--color-foreground)_50%,transparent)]">
-            <p className="text-xs">{t("whatsappJourney.flows.selectPrompt")}</p>
-          </div>
-        )}
+              <p className="text-xs">{t("whatsappJourney.flows.selectPrompt")}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Variables legend */}

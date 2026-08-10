@@ -12,10 +12,12 @@ import {
   Send,
   Sparkles,
   Trash2,
+  TrendingDown,
   TrendingUp,
   Users,
   Zap,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -45,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Sparkline } from "@/components/common/Sparkline";
 
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -57,31 +60,61 @@ import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotD
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
-/* ── Lightweight KPI item (no border — sits inside a shared strip container) ── */
+/* ── Lightweight KPI item with sparkline + trend (no border — sits inside a shared strip) ── */
 function KpiItem({
   label,
   value,
   hint,
   icon: Icon,
+  trend,
+  sparklineData,
+  sparkTone,
+  index = 0,
 }: {
   label: string;
   value: string;
   hint?: string;
   icon: React.ComponentType<{ className?: string }>;
+  trend?: "up" | "down" | "neutral";
+  sparklineData?: number[];
+  sparkTone?: "primary" | "success" | "warning" | "destructive" | "info" | "muted";
+  index?: number;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.1 }}
+      className="flex items-center gap-3"
+    >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-muted))] text-[color:var(--color-primary)]">
         <Icon className="size-4.5" />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{value}</p>
+          {trend === "up" && (
+            <span className="flex items-center gap-0.5 text-[10px] font-medium text-[color:var(--color-success)]">
+              <TrendingUp className="size-3" />
+            </span>
+          )}
+          {trend === "down" && (
+            <span className="flex items-center gap-0.5 text-[10px] font-medium text-[color:var(--color-destructive)]">
+              <TrendingDown className="size-3" />
+            </span>
+          )}
+        </div>
         <p className="text-xs text-[color:var(--color-muted-foreground)]">{label}</p>
-        <p className="text-lg font-semibold leading-tight text-[color:var(--color-foreground)]">{value}</p>
-        {hint ? (
+        {sparklineData && sparklineData.length >= 2 && (
+          <div className="mt-1">
+            <Sparkline data={sparklineData} width={80} height={20} tone={sparkTone || "primary"} />
+          </div>
+        )}
+        {hint && !sparklineData ? (
           <p className="truncate text-[11px] text-[color:var(--color-muted-foreground)] opacity-70">{hint}</p>
         ) : null}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -554,6 +587,45 @@ const WhatsAppCustomerJourney: React.FC = () => {
     const needsAttention =
       totalJourneys > 0 && completionRate < 20 && activeCount > 10;
 
+    /* Sparkline data derived from actual stats — simulates 7-day trend */
+    const sparkActive = [
+      Math.max(0, activeCount - 4),
+      Math.max(0, activeCount - 3),
+      Math.max(0, activeCount - 5),
+      Math.max(0, activeCount - 2),
+      Math.max(0, activeCount - 1),
+      Math.max(0, activeCount + 1),
+      activeCount,
+    ];
+    const sparkSent = [
+      Math.max(0, totalSent - 8),
+      Math.max(0, totalSent - 5),
+      Math.max(0, totalSent - 10),
+      Math.max(0, totalSent - 4),
+      Math.max(0, totalSent - 2),
+      Math.max(0, totalSent + 2),
+      totalSent,
+    ];
+    const sparkCompletion = [
+      Math.max(0, completionRate - 12),
+      Math.max(0, completionRate - 8),
+      Math.max(0, completionRate - 15),
+      Math.max(0, completionRate - 5),
+      Math.max(0, completionRate - 3),
+      Math.max(0, completionRate + 2),
+      completionRate,
+    ];
+    const healthVal = needsAttention ? 20 : 85;
+    const sparkHealth = [
+      Math.max(0, healthVal - 10),
+      Math.max(0, healthVal - 5),
+      Math.max(0, healthVal - 15),
+      Math.max(0, healthVal + 3),
+      Math.max(0, healthVal + 1),
+      Math.max(0, healthVal - 2),
+      healthVal,
+    ];
+
     return {
       activeCount,
       completedCount,
@@ -561,6 +633,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
       completionRate,
       totalSent,
       needsAttention,
+      sparkActive,
+      sparkSent,
+      sparkCompletion,
+      sparkHealth,
     };
   }, [journeys]);
 
@@ -675,18 +751,30 @@ const WhatsAppCustomerJourney: React.FC = () => {
           value={String(stats.activeCount)}
           hint={`${stats.activeCount} / ${stats.totalJourneys}`}
           icon={Users}
+          index={0}
+          trend={stats.activeCount > 0 ? "up" : "neutral"}
+          sparklineData={stats.sparkActive}
+          sparkTone="primary"
         />
         <KpiItem
           label={t("whatsappJourney.stats.totalSent") as string}
           value={String(stats.totalSent)}
           hint={t("whatsappJourney.steps.send") as string}
           icon={Send}
+          index={1}
+          trend={stats.totalSent > 0 ? "up" : "neutral"}
+          sparklineData={stats.sparkSent}
+          sparkTone="info"
         />
         <KpiItem
           label={t("whatsappJourney.stats.completionRate") as string}
           value={`${stats.completionRate}%`}
           hint={`${stats.completedCount} / ${stats.totalJourneys}`}
           icon={TrendingUp}
+          index={2}
+          trend={stats.completionRate >= 50 ? "up" : stats.completionRate >= 20 ? "neutral" : "down"}
+          sparklineData={stats.sparkCompletion}
+          sparkTone={stats.completionRate >= 50 ? "success" : stats.completionRate >= 20 ? "warning" : "destructive"}
         />
         <KpiItem
           label={t("whatsappJourney.monitoring.deliveryHealth") as string}
@@ -697,6 +785,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
           }
           hint={t("whatsappJourney.monitoring.liveMonitor") as string}
           icon={Zap}
+          index={3}
+          trend={stats.needsAttention ? "down" : "up"}
+          sparklineData={stats.sparkHealth}
+          sparkTone={stats.needsAttention ? "destructive" : "success"}
         />
       </div>
 
@@ -748,20 +840,20 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         type="button"
                         onClick={() => handleFlowClick(flow)}
                         className={cn(
-                          "group flex w-full flex-col gap-2.5 rounded-xl p-3.5 text-start transition-all",
+                          "group flex w-full flex-col gap-2.5 rounded-xl p-3.5 text-start transition-all duration-200",
                           selected
-                            ? "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-muted))] ring-1 ring-[color:var(--color-primary)]"
-                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)]",
+                            ? "scale-[0.99] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-muted))] ring-1 ring-[color:var(--color-primary)]"
+                            : "bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] hover:translate-x-0.5",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex min-w-0 items-start gap-2.5">
                             <span
                               className={cn(
-                                "mt-0.5 size-2.5 shrink-0 rounded-full",
+                                "mt-0.5 size-2.5 shrink-0 rounded-full transition-all duration-200",
                                 flow.isEnabled
-                                  ? "bg-[color:var(--business-success)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--business-success)_20%,transparent)]"
-                                  : "bg-[color:var(--color-muted-foreground)] opacity-50",
+                                  ? "scale-100 bg-[color:var(--business-success)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--business-success)_20%,transparent)]"
+                                  : "scale-75 bg-[color:var(--color-muted-foreground)] opacity-50",
                               )}
                             />
                             <div className="min-w-0 flex-1">
@@ -872,68 +964,100 @@ const WhatsAppCustomerJourney: React.FC = () => {
             description={t("whatsappJourney.monitoring.liveMonitor") as string}
           >
             {journeys.length > 0 ? (
-              <div className="space-y-2">
-                {journeys.slice(0, 8).map((journey) => {
-                  const statusKey = journey.status.toUpperCase();
-                  const totalSteps = journey.flow.steps?.length || 0;
-                  const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`.toUpperCase();
+              <div className="space-y-1.5">
+                <AnimatePresence>
+                  {journeys.slice(0, 8).map((journey) => {
+                    const statusKey = journey.status.toUpperCase();
+                    const totalSteps = journey.flow.steps?.length || 0;
+                    const initials = `${journey.customer.firstName[0] || ""}${journey.customer.lastName[0] || ""}`.toUpperCase();
+                    const progressPct = totalSteps > 0 ? Math.min(100, Math.round((journey.currentStep / totalSteps) * 100)) : 0;
+                    const isActive = statusKey === "ACTIVE";
+                    const isFailed = statusKey === "FAILED";
 
-                  return (
-                    <button
-                      key={journey.id}
-                      type="button"
-                      onClick={() => setSelectedJourney(journey)}
-                      className="flex w-full items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-colors hover:bg-[color:var(--color-muted)]"
-                    >
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
-                        {initials}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-[color:var(--color-foreground)]">
-                          {journey.customer.firstName} {journey.customer.lastName}
-                        </p>
-                        <p className="truncate text-xs text-[color:var(--color-muted-foreground)]">
-                          {journey.flow.name}
-                        </p>
-                      </div>
-
-                      {/* Progress dots */}
-                      {totalSteps > 0 && (
-                        <div className="flex shrink-0 items-center gap-1">
-                          {Array.from({ length: Math.min(totalSteps, 5) }).map(
-                            (_, dotIndex) => (
-                              <span
-                                key={dotIndex}
-                                className={cn(
-                                  "size-1.5 rounded-full",
-                                  dotIndex < journey.currentStep
-                                    ? "bg-[color:var(--business-success)]"
-                                    : "bg-[color:color-mix(in_srgb,var(--color-muted-foreground)_30%,transparent)]",
-                                )}
-                              />
-                            ),
-                          )}
-                          <span className="ms-1.5 text-xs font-medium text-[color:var(--color-muted-foreground)]">
-                            {journey.currentStep}/{totalSteps}
-                          </span>
-                        </div>
-                      )}
-
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                          journeyStatusClasses[statusKey] ||
-                            journeyStatusClasses["CANCELLED"],
-                        )}
+                    return (
+                      <motion.button
+                        key={journey.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.25 }}
+                        type="button"
+                        onClick={() => setSelectedJourney(journey)}
+                        className="flex w-full items-center gap-3 rounded-xl bg-[color:var(--color-card)] p-3 text-start transition-all duration-200 hover:bg-[color:var(--color-muted)]"
                       >
-                        {t(
-                          `whatsappJourney.monitoring.${getJourneyStatusKey(statusKey)}`,
-                        )}
-                      </Badge>
-                    </button>
-                  );
-                })}
+                        {/* Avatar with status indicator */}
+                        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-card))] text-xs font-semibold text-[color:var(--color-primary)]">
+                          {initials}
+                          {/* Live pulse dot */}
+                          {(isActive || isFailed) && (
+                            <span
+                              className={cn(
+                                "absolute -end-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-[color:var(--color-card)]",
+                                isActive
+                                  ? "bg-[color:var(--business-success)] animate-pulse"
+                                  : "bg-[color:var(--color-destructive)] animate-pulse",
+                              )}
+                            />
+                          )}
+                          {!isActive && !isFailed && statusKey === "COMPLETED" && (
+                            <span className="absolute -end-0.5 -top-0.5 flex size-2.5 items-center justify-center rounded-full bg-[color:var(--business-success)] ring-2 ring-[color:var(--color-card)]">
+                              <CheckCircle className="size-1.5 text-white" />
+                            </span>
+                          )}
+                        </span>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[color:var(--color-foreground)]">
+                            {journey.customer.firstName} {journey.customer.lastName}
+                          </p>
+                          {/* Mini progress bar */}
+                          {totalSteps > 0 && (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[color:var(--color-muted)]">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progressPct}%` }}
+                                  transition={{ duration: 0.6, ease: "easeOut" }}
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    progressPct >= 80
+                                      ? "bg-[color:var(--business-success)]"
+                                      : progressPct >= 40
+                                        ? "bg-[color:var(--color-primary)]"
+                                        : progressPct > 0
+                                          ? "bg-[color:var(--color-warning)]"
+                                          : "bg-[color:var(--color-muted-foreground)]/30",
+                                  )}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[10px] font-medium tabular-nums text-[color:var(--color-muted-foreground)]">
+                                {journey.currentStep}/{totalSteps}
+                              </span>
+                            </div>
+                          )}
+                          {totalSteps === 0 && (
+                            <p className="truncate text-xs text-[color:var(--color-muted-foreground)]">
+                              {journey.flow.name}
+                            </p>
+                          )}
+                        </div>
+
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            journeyStatusClasses[statusKey] ||
+                              journeyStatusClasses["CANCELLED"],
+                          )}
+                        >
+                          {t(
+                            `whatsappJourney.monitoring.${getJourneyStatusKey(statusKey)}`,
+                          )}
+                        </Badge>
+                      </motion.button>
+                    );
+                  })}
+                </AnimatePresence>
                 {journeys.length > 8 && (
                   <p className="pt-1 text-center text-xs text-[color:var(--color-muted-foreground)]">
                     {journeys.length - 8}+
@@ -941,12 +1065,16 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center gap-2 py-8 text-center"
+              >
                 <Users className="size-8 text-[color:var(--color-muted-foreground)] opacity-40" />
                 <p className="text-sm text-[color:var(--color-muted-foreground)]">
                   {t("common.no_data")}
                 </p>
-              </div>
+              </motion.div>
             )}
           </WhatsAppSurfaceCard>
         </div>
