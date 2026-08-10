@@ -26,7 +26,27 @@ async function getSettings(companyId) {
       cfg = { ...cfg, ...JSON.parse(company.loyaltySettings) };
     }
   } catch (e) { /* ignore malformed */ }
-  return { ...cfg, loyaltySystem: company?.loyaltySystem || 'TIERS' };
+  const result = { ...cfg, loyaltySystem: company?.loyaltySystem || 'TIERS' };
+  // 🕐 backfill: لو الخصم التلقائي مفعّل وملوش تاريخ تفعيل محفوظ (بيانات قديمة)،
+  // نستدل من أول كوبون صدر ونحفظه مرة واحدة عشان التاريخ يبقى ثابت
+  if (result.loyaltySystem === 'AUTO_DISCOUNT' && !result.loyaltyActivatedAt) {
+    try {
+      const firstVoucher = await prisma.customerLoyaltyVoucher.findFirst({
+        where: { companyId },
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true }
+      });
+      if (firstVoucher?.createdAt) {
+        result.loyaltyActivatedAt = firstVoucher.createdAt.toISOString();
+        const persisted = { ...cfg, loyaltyActivatedAt: result.loyaltyActivatedAt };
+        await prisma.company.update({
+          where: { id: companyId },
+          data: { loyaltySettings: JSON.stringify(persisted) }
+        }).catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
+  }
+  return result;
 }
 
 /**

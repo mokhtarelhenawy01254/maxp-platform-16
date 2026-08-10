@@ -122,7 +122,10 @@ const getAllCustomer = async (req, res) => {
     if (autoDiscountService) {
       data = await autoDiscountService
         .enrichCustomersWithAutoDiscountStatus(companyId, customers)
-        .catch(() => customers);
+        .catch((e) => {
+          console.error('❌ [AUTO-DISCOUNT] Enrich customer list failed:', e.message);
+          return customers;
+        });
     }
 
     res.json({
